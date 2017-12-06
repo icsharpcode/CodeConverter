@@ -132,6 +132,38 @@ namespace ICSharpCode.CodeConverter.Util
                 textBuilder.Remove(textBuilder.Length - newLine.Length, newLine.Length);
 
                 return textBuilder.ToString();
+            } else if (trivia.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DocumentationCommentTrivia)) {
+                var textBuilder = new StringBuilder();
+
+                if (commentText.EndsWith("*/")) {
+                    commentText = commentText.TrimEnd('\'');
+                }
+
+                if (commentText.StartsWith("'''")) {
+                    commentText = commentText.TrimStart('\'');
+                }
+
+                commentText = commentText.Trim();
+
+                var newLine = Environment.NewLine;
+                var lines = commentText.Split(new[] { newLine }, StringSplitOptions.None);
+                foreach (var line in lines) {
+                    var trimmedLine = line.Trim();
+
+                    // Note: we trim leading '*' characters in multi-line comments.
+                    // If the '*' was intentional, sorry, it's gone.
+                    if (trimmedLine.StartsWith("'")) {
+                        trimmedLine = trimmedLine.TrimStart('\'');
+                        trimmedLine = trimmedLine.TrimStart(null);
+                    }
+
+                    textBuilder.AppendLine(trimmedLine);
+                }
+
+                // remove last line break
+                textBuilder.Remove(textBuilder.Length - newLine.Length, newLine.Length);
+
+                return textBuilder.ToString();
             } else {
                 throw new InvalidOperationException();
             }
