@@ -595,5 +595,47 @@ End Sub", @"public void Linq103()
     }
 }");
 		}
+
+        [Fact]
+        public void PartiallyQualifiedName()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Public Function TestMethod(dir As String) As String
+         Return IO.Path.Combine(dir, ""file.txt"")
+    End Function
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualBasic;
+
+class TestClass
+{
+    public string TestMethod(string dir)
+    {
+        return System.IO.Path.Combine(dir, ""file.txt"");
+    }
+}");
+        }
+
+        [Fact]
+        public void UsingGlobalImport()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Public Function TestMethod() As String
+         Return vbCrLf
+    End Function
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualBasic;
+
+class TestClass
+{
+    public string TestMethod()
+    {
+        return Constants.vbCrLf;
+    }
+}");
+        }
 	}
 }
