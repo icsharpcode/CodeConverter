@@ -34,9 +34,17 @@ namespace ICSharpCode.CodeConverter.CSharp
 			MemberInInterface
 		}
 
-		public static CSharpSyntaxNode Convert(VBasic.VisualBasicSyntaxNode input, SemanticModel semanticModel, Document targetDocument)
+		public static CSharpSyntaxNode ConvertSingle(VBasic.VisualBasicCompilation compilation, VBasic.VisualBasicSyntaxTree syntaxTree)
 		{
-			return input.Accept(new NodesVisitor(semanticModel, targetDocument));
+			return ConvertMultiple(compilation, new[] {syntaxTree}).Values.Single();
+		}
+
+		public static Dictionary<string, CSharpSyntaxNode> ConvertMultiple(VBasic.VisualBasicCompilation compilation, IEnumerable<VBasic.VisualBasicSyntaxTree> syntaxTrees)
+		{
+			var cSharpFirstPass = syntaxTrees.ToDictionary(tree => tree.FilePath ?? "unknown",
+				tree => (CSharpSyntaxTree) SyntaxFactory.SyntaxTree(tree.GetRoot().Accept(new NodesVisitor(compilation.GetSemanticModel(tree, true)))));
+			var cSharpCompilation = CSharpCompilation.Create("Conversion", cSharpFirstPass.Values, compilation.References);
+			return cSharpFirstPass.ToDictionary(cs => cs.Key, cs => new CompilationErrorFixer(cSharpCompilation, cs.Value).Fix());
 		}
 
 		public static ConversionResult ConvertText(string text, MetadataReference[] references)
@@ -45,10 +53,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 				throw new ArgumentNullException(nameof(text));
 			if (references == null)
 				throw new ArgumentNullException(nameof(references));
-			var tree = VBasic.SyntaxFactory.ParseSyntaxTree(SourceText.From(text));
+			var tree = (VBasic.VisualBasicSyntaxTree) VBasic.SyntaxFactory.ParseSyntaxTree(SourceText.From(text));
 			var compilation = VBasic.VisualBasicCompilation.Create("Conversion", new[] { tree }, references);
 			try {
-				return new ConversionResult(Convert((VBasic.VisualBasicSyntaxNode)tree.GetRoot(), compilation.GetSemanticModel(tree, true), null).NormalizeWhitespace().ToFullString());
+				return new ConversionResult(ConvertSingle(compilation, tree).NormalizeWhitespace().ToFullString());
 			} catch (Exception ex) {
 				return new ConversionResult(ex);
 			}

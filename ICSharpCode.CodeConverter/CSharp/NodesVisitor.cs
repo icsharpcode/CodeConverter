@@ -38,16 +38,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 		class NodesVisitor : VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
 		{
 			private SemanticModel semanticModel;
-			private Document targetDocument;
 			private readonly Dictionary<ITypeSymbol, string> createConvertMethodsLookupByReturnType;
 			private readonly Dictionary<MemberDeclarationSyntax, MemberDeclarationSyntax[]> additionalDeclarations = new Dictionary<MemberDeclarationSyntax, MemberDeclarationSyntax[]>();
 			private readonly Stack<string> withBlockTempVariableNames = new Stack<string>();
 			readonly IDictionary<string, string> importedNamespaces;
 
-			public NodesVisitor(SemanticModel semanticModel, Document targetDocument)
+			public NodesVisitor(SemanticModel semanticModel)
 			{
 				this.semanticModel = semanticModel;
-				this.targetDocument = targetDocument;
 				importedNamespaces = new Dictionary<string, string> {{VBasic.VisualBasicExtensions.RootNamespace(semanticModel.Compilation).ToString(), ""}};
 				this.createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
 			}
