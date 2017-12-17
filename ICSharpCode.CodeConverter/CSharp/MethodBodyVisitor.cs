@@ -43,10 +43,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
 			public override SyntaxList<StatementSyntax> VisitStopOrEndStatement(VBSyntax.StopOrEndStatementSyntax node)
 			{
-				return SingleStatement(SyntaxFactory.ParseStatement(GetCSharpEquivalentStatementText(node)));
+				return SingleStatement(SyntaxFactory.ParseStatement(ConvertStopOrEndToCSharpStatementText(node)));
 			}
 
-			private static string GetCSharpEquivalentStatementText(VBSyntax.StopOrEndStatementSyntax node)
+			private static string ConvertStopOrEndToCSharpStatementText(VBSyntax.StopOrEndStatementSyntax node)
 			{
 				switch (VBasic.VisualBasicExtensions.Kind(node.StopOrEndKeyword)) {
 					case VBasic.SyntaxKind.StopKeyword:
@@ -73,10 +73,22 @@ namespace ICSharpCode.CodeConverter.CSharp
 
 			public override SyntaxList<StatementSyntax> VisitAddRemoveHandlerStatement(VBSyntax.AddRemoveHandlerStatementSyntax node)
 			{
-				var syntaxKind = node.Kind() == VBasic.SyntaxKind.AddHandlerStatement ? SyntaxKind.AddAssignmentExpression : SyntaxKind.SubtractAssignmentExpression;
+				var syntaxKind = ConvertAddRemoveHandlerToCSharpSyntaxKind(node);
 				return SingleStatement(SyntaxFactory.AssignmentExpression(syntaxKind,
 					(ExpressionSyntax)node.EventExpression.Accept(nodesVisitor),
 					(ExpressionSyntax)node.DelegateExpression.Accept(nodesVisitor)));
+			}
+
+			private static SyntaxKind ConvertAddRemoveHandlerToCSharpSyntaxKind(VBSyntax.AddRemoveHandlerStatementSyntax node)
+			{
+				switch (node.Kind()) {
+					case VBasic.SyntaxKind.AddHandlerStatement:
+						return SyntaxKind.AddAssignmentExpression;
+					case VBasic.SyntaxKind.RemoveHandlerStatement:
+						return SyntaxKind.SubtractAssignmentExpression;
+					default:
+						throw new NotImplementedException(node.Kind() + " not implemented!");
+				}
 			}
 
 			public override SyntaxList<StatementSyntax> VisitExpressionStatement(VBSyntax.ExpressionStatementSyntax node)
