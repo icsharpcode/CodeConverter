@@ -4,7 +4,7 @@ Convert code from C# to VB.NET and vice versa using Roslyn
 
 NuGet: [https://www.nuget.org/packages/ICSharpCode.CodeConverter/](https://www.nuget.org/packages/ICSharpCode.CodeConverter/)
 
-VSIX: to be published
+VSIX: [https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter)
 
 Web site: [https://roslyncodeconverter.azurewebsites.net](https://roslyncodeconverter.azurewebsites.net)
 

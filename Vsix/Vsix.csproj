@@ -54,8 +54,8 @@
     <ProjectGuid>{99498EF8-C9E0-433B-8D7B-EA8E9E66F0C7}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RefactoringEssentials.VsExtension</RootNamespace>
-    <AssemblyName>RefactoringEssentials.VsExtension.2017</AssemblyName>
+    <RootNamespace>CodeConverter.VsExtension</RootNamespace>
+    <AssemblyName>CodeConverter.VsExtension</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <GeneratePkgDefFile>true</GeneratePkgDefFile>
     <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
