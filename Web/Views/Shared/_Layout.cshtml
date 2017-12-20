@@ -1,5 +1,6 @@
 ﻿@using System.Diagnostics
 @using System.Reflection
+@using ICSharpCode.CodeConverter
 <!DOCTYPE html>
 <html>
 <head>
@@ -43,7 +44,7 @@
             var versionInfo = HttpContext.Current.Cache["AssemblyVersionInformation"];
             if (null == versionInfo)
             {
-                Assembly assembly = Assembly.GetAssembly(typeof(RefactoringEssentials.Converter.CodeConverter));
+                Assembly assembly = Assembly.GetAssembly(typeof(CodeConverter));
                 FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
 
                 versionInfo = fvi.FileVersion;

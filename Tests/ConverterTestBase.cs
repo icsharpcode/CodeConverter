@@ -1,18 +1,17 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Formatting;
-using Microsoft.CodeAnalysis.Text;
-using Microsoft.CodeAnalysis.VisualBasic;
-using RefactoringEssentials.VB.Converter;
-using System;
+﻿using System;
 using System.Collections.Immutable;
 using System.Text;
-using RefactoringEssentials.Tests.Common;
+using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.VB;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Formatting;
 using Microsoft.CodeAnalysis.Formatting;
-using RefactoringEssentials.CSharp.Converter;
+using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis.VisualBasic;
 using Xunit;
 
-namespace RefactoringEssentials.Tests
+namespace CodeConverter.Tests
 {
 	public class ConverterTestBase
 	{

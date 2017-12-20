@@ -1,10 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Editing;
-using System.Collections.Generic;
 
-namespace RefactoringEssentials
+namespace ICSharpCode.CodeConverter.Util
 {
 #if NR6
 	public

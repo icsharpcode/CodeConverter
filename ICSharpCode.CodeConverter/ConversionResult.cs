@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace RefactoringEssentials.Converter
+namespace ICSharpCode.CodeConverter
 {
 	public class ConversionResult
 	{

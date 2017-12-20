@@ -4,12 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Symbols;
-using Microsoft.CodeAnalysis.Shared.Extensions;
-using Roslyn.Utilities;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace RefactoringEssentials
+namespace ICSharpCode.CodeConverter.Util
 {
 #if NR6
 	public

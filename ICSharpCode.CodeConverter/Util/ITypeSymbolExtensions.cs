@@ -1,17 +1,14 @@
 using System;
-using System.Linq;
-using System.ComponentModel;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis;
-using System.Reflection;
 using System.Collections.Generic;
-using System.Threading;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
+using System.Linq;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace RefactoringEssentials
+namespace ICSharpCode.CodeConverter.Util
 {
-	[EditorBrowsableAttribute(EditorBrowsableState.Never)]
+	[EditorBrowsable(EditorBrowsableState.Never)]
 #if NR6
     public
 #endif

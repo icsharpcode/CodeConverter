@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace RefactoringEssentials
+namespace CodeConverter.Tests
 {
 #if NR6
 	public

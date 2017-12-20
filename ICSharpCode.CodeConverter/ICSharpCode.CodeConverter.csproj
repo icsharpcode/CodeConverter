@@ -7,7 +7,7 @@
     <Company>ICSharpCode</Company>
     <Description>Code Converter C# to VB.NET and vice versa (Roslyn-based).</Description>
     <Product>Code Converter</Product>
-    <Copyright>Copyright (c) 2014-2018 AlphaSierraPapa and Xamarin Inc.</Copyright>
+    <Copyright>Copyright (c) 2014-2018 AlphaSierraPapa</Copyright>
     <AssemblyVersion>5.5.0.0</AssemblyVersion>
     <FileVersion>5.5.0.0</FileVersion>
     <Version>5.5.0</Version>

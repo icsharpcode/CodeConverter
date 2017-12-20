@@ -1,6 +1,6 @@
 using System;
 
-namespace RefactoringEssentials
+namespace ICSharpCode.CodeConverter.Util
 {
 #if NR6
     public

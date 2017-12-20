@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace RefactoringEssentials
+namespace ICSharpCode.CodeConverter.Util
 {
 	[Flags]
 	internal enum BindingFlags

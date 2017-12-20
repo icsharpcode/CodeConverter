@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace RefactoringEssentials
+namespace ICSharpCode.CodeConverter.Util
 {
 #if NR6
     public

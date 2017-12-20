@@ -1,8 +1,8 @@
 ﻿using System;
-using ConvVB = RefactoringEssentials.VB.Converter;
-using ConvCS = RefactoringEssentials.CSharp.Converter;
+using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.VB;
 
-namespace RefactoringEssentials.Converter
+namespace ICSharpCode.CodeConverter
 {
 	public static class CodeConverter
 	{
@@ -19,13 +19,13 @@ namespace RefactoringEssentials.Converter
 				case "C#":
 					switch (code.ToLanguage) {
 						case "Visual Basic":
-							return ConvVB.CSharpConverter.ConvertText(code.Text, code.References);
+							return CSharpConverter.ConvertText(code.Text, code.References);
 					}
 					break;
 				case "Visual Basic":
 					switch (code.ToLanguage) {
 						case "C#":
-							return ConvCS.VisualBasicConverter.ConvertText(code.Text, code.References);
+							return VisualBasicConverter.ConvertText(code.Text, code.References);
 					}
 					break;
 

@@ -1,9 +1,10 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.CodeConverter.Util;
+using Microsoft.CodeAnalysis;
 
-namespace RefactoringEssentials.Converter
+namespace ICSharpCode.CodeConverter
 {
 	public class CodeWithOptions
 	{

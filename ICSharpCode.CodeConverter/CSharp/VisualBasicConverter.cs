@@ -1,16 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
+using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankSpecifierSyntax;
+using ArrayTypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayTypeSyntax;
+using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
+using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
+using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using SyntaxFacts = Microsoft.CodeAnalysis.CSharp.SyntaxFacts;
+using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using RefactoringEssentials.Converter;
-using Microsoft.CodeAnalysis.Text;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace RefactoringEssentials.CSharp.Converter
+namespace ICSharpCode.CodeConverter.CSharp
 {
 	public partial class VisualBasicConverter
 	{
@@ -64,7 +71,7 @@ namespace RefactoringEssentials.CSharp.Converter
 
 			foreach (var name in declarator.Names) {
 				var type = rawType;
-				if (!name.Nullable.IsKind(VBasic.SyntaxKind.None)) {
+				if (!SyntaxTokenExtensions.IsKind(name.Nullable, VBasic.SyntaxKind.None)) {
 					if (type is ArrayTypeSyntax)
 						type = ((ArrayTypeSyntax)type).WithElementType(SyntaxFactory.NullableType(((ArrayTypeSyntax)type).ElementType));
 					else
@@ -157,7 +164,7 @@ namespace RefactoringEssentials.CSharp.Converter
 
 		static SyntaxTokenList ConvertModifiers(SyntaxTokenList modifiers, TokenContext context = TokenContext.Global)
 		{
-			return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context).Where(t => t.Kind() != SyntaxKind.None));
+			return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context).Where(t => CSharpExtensions.Kind(t) != SyntaxKind.None));
 		}
 
 		static SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)
@@ -185,7 +192,7 @@ namespace RefactoringEssentials.CSharp.Converter
 				if (!visibility)
 					yield return VisualBasicDefaultVisibility(context);
 			}
-			foreach (var token in modifiers.Where(m => !IgnoreInContext(m, context)).OrderBy(m => m.IsKind(VBasic.SyntaxKind.PartialKeyword))) {
+			foreach (var token in modifiers.Where(m => !IgnoreInContext(m, context)).OrderBy(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.PartialKeyword))) {
 				var m = ConvertModifier(token, context);
 				if (m.HasValue) yield return m.Value;
 			}
@@ -212,7 +219,7 @@ namespace RefactoringEssentials.CSharp.Converter
 		static bool IsVisibility(SyntaxToken token, TokenContext context)
 		{
 			return token.IsKind(VBasic.SyntaxKind.PublicKeyword, VBasic.SyntaxKind.FriendKeyword, VBasic.SyntaxKind.ProtectedKeyword, VBasic.SyntaxKind.PrivateKeyword)
-				|| (context == TokenContext.VariableOrConst && token.IsKind(VBasic.SyntaxKind.ConstKeyword));
+				|| (context == TokenContext.VariableOrConst && SyntaxTokenExtensions.IsKind(token, VBasic.SyntaxKind.ConstKeyword));
 		}
 
 		static SyntaxToken VisualBasicDefaultVisibility(TokenContext context)

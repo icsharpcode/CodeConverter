@@ -1,13 +1,25 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.VisualBasic;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.CodeConverter.Util;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.VisualBasic;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using ArgumentSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentSyntax;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
+using ExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax;
+using IdentifierNameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.IdentifierNameSyntax;
+using LiteralExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax;
+using QualifiedNameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.QualifiedNameSyntax;
+using StatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSyntax;
+using SyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
+using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
+using TypeSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax;
+using UsingStatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.UsingStatementSyntax;
+using VariableDeclaratorSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax;
 
-namespace RefactoringEssentials.VB.Converter
+namespace ICSharpCode.CodeConverter.VB
 {
 	public partial class CSharpConverter
 	{
@@ -298,7 +310,7 @@ namespace RefactoringEssentials.VB.Converter
 				if (stepExpression == null || !(stepExpression.Token.Value is int))
 					return false;
 				int step = (int)stepExpression.Token.Value;
-				if (iterator.OperatorToken.IsKind(SyntaxKind.MinusToken))
+				if (SyntaxTokenExtensions.IsKind(iterator.OperatorToken, SyntaxKind.MinusToken))
 					step = -step;
 
 				var condition = node.Condition as CSS.BinaryExpressionSyntax;
@@ -400,7 +412,7 @@ namespace RefactoringEssentials.VB.Converter
 					simpleTypeName = type.ToString();
 				return SyntaxFactory.CatchBlock(
 					SyntaxFactory.CatchStatement(
-						SyntaxFactory.IdentifierName(catchClause.Declaration.Identifier.IsKind(CS.SyntaxKind.None) ? SyntaxFactory.Identifier($"__unused{simpleTypeName}{index + 1}__") : ConvertIdentifier(catchClause.Declaration.Identifier)),
+						SyntaxFactory.IdentifierName(SyntaxTokenExtensions.IsKind(catchClause.Declaration.Identifier, CS.SyntaxKind.None) ? SyntaxFactory.Identifier($"__unused{simpleTypeName}{index + 1}__") : ConvertIdentifier(catchClause.Declaration.Identifier)),
 						SyntaxFactory.SimpleAsClause(type),
 						catchClause.Filter == null ? null : SyntaxFactory.CatchFilterClause((ExpressionSyntax)catchClause.Filter.FilterExpression.Accept(nodesVisitor))
 					), statements

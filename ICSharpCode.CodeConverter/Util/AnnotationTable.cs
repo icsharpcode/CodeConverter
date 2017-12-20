@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 
-namespace RefactoringEssentials
+namespace ICSharpCode.CodeConverter.Util
 {
 	/// <summary>
 	/// An AnnotationTable helps you attach your own annotation types/instances to syntax.  

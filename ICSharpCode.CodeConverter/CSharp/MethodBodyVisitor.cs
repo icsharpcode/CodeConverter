@@ -1,14 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using ArgumentListSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArgumentListSyntax;
+using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
+using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
+using IdentifierNameSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax;
+using LocalDeclarationStatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.LocalDeclarationStatementSyntax;
+using StatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax;
+using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
-namespace RefactoringEssentials.CSharp.Converter
+namespace ICSharpCode.CodeConverter.CSharp
 {
 	public partial class VisualBasicConverter
 	{
@@ -45,7 +54,7 @@ namespace RefactoringEssentials.CSharp.Converter
 					case VBasic.SyntaxKind.EndKeyword:
 						return "System.Environment.Exit(0);";
 					default:
-						throw new NotImplementedException(node.StopOrEndKeyword.Kind() + " not implemented!");
+						throw new NotImplementedException(CSharpExtensions.Kind(node.StopOrEndKeyword) + " not implemented!");
 				}
 			}
 
@@ -112,7 +121,7 @@ namespace RefactoringEssentials.CSharp.Converter
 						VBasic.VisualBasicSyntaxNode typeContainer = (VBasic.VisualBasicSyntaxNode)node.Ancestors().OfType<VBSyntax.LambdaExpressionSyntax>().FirstOrDefault()
 							?? node.Ancestors().OfType<VBSyntax.MethodBlockSyntax>().FirstOrDefault();
 						var info = typeContainer.TypeSwitch(
-							(VBSyntax.LambdaExpressionSyntax e) => semanticModel.GetTypeInfo(e).Type.GetReturnType(),
+							(VBSyntax.LambdaExpressionSyntax e) => ModelExtensions.GetTypeInfo(semanticModel, e).Type.GetReturnType(),
 							(VBSyntax.MethodBlockSyntax e) => {
 								var type = (TypeSyntax)e.SubOrFunctionStatement.AsClause?.Type.Accept(nodesVisitor) ?? SyntaxFactory.ParseTypeName("object");
 								return semanticModel.GetSymbolInfo(type).Symbol.GetReturnType();
@@ -352,7 +361,7 @@ namespace RefactoringEssentials.CSharp.Converter
 			{
 				if (node.DoStatement.WhileOrUntilClause != null) {
 					var stmt = node.DoStatement.WhileOrUntilClause;
-					if (stmt.WhileOrUntilKeyword.IsKind(VBasic.SyntaxKind.WhileKeyword))
+					if (SyntaxTokenExtensions.IsKind(stmt.WhileOrUntilKeyword, VBasic.SyntaxKind.WhileKeyword))
 						return SingleStatement(SyntaxFactory.WhileStatement(
 							(ExpressionSyntax)stmt.Condition.Accept(nodesVisitor),
 							SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(this))).UnpackBlock()
@@ -365,7 +374,7 @@ namespace RefactoringEssentials.CSharp.Converter
 				}
 				if (node.LoopStatement.WhileOrUntilClause != null) {
 					var stmt = node.LoopStatement.WhileOrUntilClause;
-					if (stmt.WhileOrUntilKeyword.IsKind(VBasic.SyntaxKind.WhileKeyword))
+					if (SyntaxTokenExtensions.IsKind(stmt.WhileOrUntilKeyword, VBasic.SyntaxKind.WhileKeyword))
 						return SingleStatement(SyntaxFactory.DoStatement(
 							SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(this))).UnpackBlock(),
 							(ExpressionSyntax)stmt.Condition.Accept(nodesVisitor)

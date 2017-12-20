@@ -1,10 +1,9 @@
 using System;
-using RefactoringEssentials;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace RefactoringEssentials
+namespace ICSharpCode.CodeConverter.Util
 {
 	static class CSharpUtil
 	{

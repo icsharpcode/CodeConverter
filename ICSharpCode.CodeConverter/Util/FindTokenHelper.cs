@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
-namespace RefactoringEssentials
+namespace ICSharpCode.CodeConverter.Util
 {
 	internal static class FindTokenHelper
 	{

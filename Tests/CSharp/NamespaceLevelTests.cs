@@ -1,6 +1,6 @@
 ﻿using Xunit;
 
-namespace RefactoringEssentials.Tests.CSharp.Converter
+namespace CodeConverter.Tests.CSharp
 {
 	public class NamespaceLevelTests : ConverterTestBase
 	{

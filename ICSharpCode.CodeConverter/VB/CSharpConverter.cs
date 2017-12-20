@@ -1,16 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
-using CS = Microsoft.CodeAnalysis.CSharp;
-using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using RefactoringEssentials.Converter;
-using Microsoft.CodeAnalysis.Text;
+using CS = Microsoft.CodeAnalysis.CSharp;
+using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
+using ExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax;
+using SyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
+using SyntaxFacts = Microsoft.CodeAnalysis.VisualBasic.SyntaxFacts;
+using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
+using TypeSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax;
+using VariableDeclaratorSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax;
 
-namespace RefactoringEssentials.VB.Converter
+namespace ICSharpCode.CodeConverter.VB
 {
 	public partial class CSharpConverter
 	{
@@ -82,7 +87,7 @@ namespace RefactoringEssentials.VB.Converter
 		static bool IsVisibility(SyntaxToken token, TokenContext context)
 		{
 			return token.IsKind(CS.SyntaxKind.PublicKeyword, CS.SyntaxKind.InternalKeyword, CS.SyntaxKind.ProtectedKeyword, CS.SyntaxKind.PrivateKeyword)
-				|| (context == TokenContext.VariableOrConst && token.IsKind(CS.SyntaxKind.ConstKeyword));
+				|| (context == TokenContext.VariableOrConst && SyntaxTokenExtensions.IsKind(token, CS.SyntaxKind.ConstKeyword));
 		}
 
 		static SyntaxToken CSharpDefaultVisibility(TokenContext context)

@@ -2,9 +2,9 @@
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using RefactoringEssentials.Converter;
 using System;
 using System.Windows;
+using ICSharpCode.CodeConverter;
 
 namespace RefactoringEssentials.VsExtension
 {

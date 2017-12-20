@@ -1,6 +1,6 @@
 ﻿using Xunit;
 
-namespace RefactoringEssentials.Tests.VB.Converter
+namespace CodeConverter.Tests.VB
 {
 	public class TypeCastTests : ConverterTestBase
 	{

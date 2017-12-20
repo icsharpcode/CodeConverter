@@ -1,13 +1,41 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.VisualBasic;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.CodeConverter.Util;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.VisualBasic;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using ArgumentListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax;
+using ArgumentSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentSyntax;
+using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArrayRankSpecifierSyntax;
+using AttributeListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.AttributeListSyntax;
+using AttributeSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.AttributeSyntax;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
+using ExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax;
+using IdentifierNameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.IdentifierNameSyntax;
+using InterpolatedStringContentSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolatedStringContentSyntax;
+using LambdaExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.LambdaExpressionSyntax;
+using NameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.NameSyntax;
+using OrderingSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.OrderingSyntax;
+using ParameterListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterListSyntax;
+using ParameterSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterSyntax;
+using QueryClauseSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.QueryClauseSyntax;
+using ReturnStatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ReturnStatementSyntax;
+using SimpleNameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleNameSyntax;
+using StatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSyntax;
+using SyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
+using SyntaxFacts = Microsoft.CodeAnalysis.VisualBasic.SyntaxFacts;
+using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
+using TypeArgumentListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeArgumentListSyntax;
+using TypeParameterConstraintClauseSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeParameterConstraintClauseSyntax;
+using TypeParameterListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeParameterListSyntax;
+using TypeParameterSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeParameterSyntax;
+using TypeSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax;
+using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
+using YieldStatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.YieldStatementSyntax;
 
-namespace RefactoringEssentials.VB.Converter
+namespace ICSharpCode.CodeConverter.VB
 {
 	public partial class CSharpConverter
 	{
@@ -278,7 +306,7 @@ End Function";
 			public override VisualBasicSyntaxNode VisitDelegateDeclaration(CSS.DelegateDeclarationSyntax node)
 			{
 				var id = ConvertIdentifier(node.Identifier);
-				var methodInfo = semanticModel.GetDeclaredSymbol(node) as INamedTypeSymbol;
+				var methodInfo = ModelExtensions.GetDeclaredSymbol(semanticModel, node) as INamedTypeSymbol;
 				if (methodInfo.DelegateInvokeMethod.GetReturnType()?.SpecialType == SpecialType.System_Void) {
 					return SyntaxFactory.DelegateSubStatement(
 						SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(this))),
@@ -352,11 +380,11 @@ End Function";
 						SyntaxFactory.ReturnStatement((ExpressionSyntax)node.ExpressionBody.Expression.Accept(this))
 					);
 				}
-				if (node.Modifiers.Any(m => m.IsKind(CS.SyntaxKind.ExternKeyword))) {
+				if (node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword))) {
 					block = SyntaxFactory.List<StatementSyntax>();
 				}
 				var id = ConvertIdentifier(node.Identifier);
-				var methodInfo = semanticModel.GetDeclaredSymbol(node);
+				var methodInfo = ModelExtensions.GetDeclaredSymbol(semanticModel, node);
 				var containingType = methodInfo?.ContainingType;
 				var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(this)));
 				var parameterList = (ParameterListSyntax)node.ParameterList?.Accept(this);
@@ -480,7 +508,7 @@ End Function";
 			public override VisualBasicSyntaxNode VisitEventFieldDeclaration(CSS.EventFieldDeclarationSyntax node)
 			{
 				var decl = node.Declaration.Variables.Single();
-				var id = SyntaxFactory.Identifier(decl.Identifier.ValueText, SyntaxFacts.IsKeywordKind(decl.Identifier.Kind()), decl.Identifier.GetIdentifierText(), TypeCharacter.None);
+				var id = SyntaxFactory.Identifier(decl.Identifier.ValueText, SyntaxFacts.IsKeywordKind(VisualBasicExtensions.Kind(decl.Identifier)), decl.Identifier.GetIdentifierText(), TypeCharacter.None);
 				SyntaxList<AttributeListSyntax> attributes, returnAttributes;
 				ConvertAndSplitAttributes(node.AttributeLists, out attributes, out returnAttributes);
 				return SyntaxFactory.EventStatement(attributes, ConvertModifiers(node.Modifiers, TokenContext.Member), id, null, SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Declaration.Type.Accept(this)), null);
@@ -492,7 +520,7 @@ End Function";
 				var attr = new List<AttributeListSyntax>();
 
 				foreach (var attrList in attributeLists) {
-					if (attrList.Target?.Identifier.IsKind(CS.SyntaxKind.ReturnKeyword) == true)
+					if (SyntaxTokenExtensions.IsKind((SyntaxToken) attrList.Target?.Identifier, CS.SyntaxKind.ReturnKeyword) == true)
 						retAttr.Add((AttributeListSyntax)attrList.Accept(this));
 					else
 						attr.Add((AttributeListSyntax)attrList.Accept(this));
@@ -756,11 +784,11 @@ End Function";
 			public override VisualBasicSyntaxNode VisitAssignmentExpression(CSS.AssignmentExpressionSyntax node)
 			{
 				if (node.Parent is CSS.ExpressionStatementSyntax) {
-					if (semanticModel.GetTypeInfo(node.Right).ConvertedType.IsDelegateType()) {
-						if (node.OperatorToken.IsKind(CS.SyntaxKind.PlusEqualsToken)) {
+					if (ModelExtensions.GetTypeInfo(semanticModel, node.Right).ConvertedType.IsDelegateType()) {
+						if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.PlusEqualsToken)) {
 							return SyntaxFactory.AddHandlerStatement((ExpressionSyntax)node.Left.Accept(this), (ExpressionSyntax)node.Right.Accept(this));
 						}
-						if (node.OperatorToken.IsKind(CS.SyntaxKind.MinusEqualsToken)) {
+						if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.MinusEqualsToken)) {
 							return SyntaxFactory.RemoveHandlerStatement((ExpressionSyntax)node.Left.Accept(this), (ExpressionSyntax)node.Right.Accept(this));
 						}
 					}
@@ -909,7 +937,7 @@ End Function";
 				if (node.IsKind(CS.SyntaxKind.IsExpression)) {
 					return SyntaxFactory.TypeOfIsExpression((ExpressionSyntax)node.Left.Accept(this), (TypeSyntax)node.Right.Accept(this));
 				}
-				if (node.OperatorToken.IsKind(CS.SyntaxKind.EqualsEqualsToken)) {
+				if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.EqualsEqualsToken)) {
 					ExpressionSyntax otherArgument = null;
 					if (node.Left.IsKind(CS.SyntaxKind.NullLiteralExpression)) {
 						otherArgument = (ExpressionSyntax)node.Right.Accept(this);
@@ -921,7 +949,7 @@ End Function";
 						return SyntaxFactory.IsExpression(otherArgument, Literal(null));
 					}
 				}
-				if (node.OperatorToken.IsKind(CS.SyntaxKind.ExclamationEqualsToken)) {
+				if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.ExclamationEqualsToken)) {
 					ExpressionSyntax otherArgument = null;
 					if (node.Left.IsKind(CS.SyntaxKind.NullLiteralExpression)) {
 						otherArgument = (ExpressionSyntax)node.Right.Accept(this);
@@ -934,8 +962,8 @@ End Function";
 					}
 				}
 				var kind = ConvertToken(CS.CSharpExtensions.Kind(node), TokenContext.Local);
-				if (node.IsKind(CS.SyntaxKind.AddExpression) && (semanticModel.GetTypeInfo(node.Left).ConvertedType?.SpecialType == SpecialType.System_String
-					|| semanticModel.GetTypeInfo(node.Right).ConvertedType?.SpecialType == SpecialType.System_String)) {
+				if (node.IsKind(CS.SyntaxKind.AddExpression) && (ModelExtensions.GetTypeInfo(semanticModel, node.Left).ConvertedType?.SpecialType == SpecialType.System_String
+					|| ModelExtensions.GetTypeInfo(semanticModel, node.Right).ConvertedType?.SpecialType == SpecialType.System_String)) {
 					kind = SyntaxKind.ConcatenateExpression;
 				}
 				return SyntaxFactory.BinaryExpression(
@@ -953,7 +981,7 @@ End Function";
 
 			public override VisualBasicSyntaxNode VisitCastExpression(CSS.CastExpressionSyntax node)
 			{
-				var type = semanticModel.GetTypeInfo(node.Type).Type;
+				var type = ModelExtensions.GetTypeInfo(semanticModel, node.Type).Type;
 				var expr = (ExpressionSyntax)node.Expression.Accept(this);
 				switch (type.SpecialType) {
 					case SpecialType.System_Object:
@@ -1107,7 +1135,7 @@ End Function";
 
 			LambdaExpressionSyntax ConvertLambdaExpression(CSS.AnonymousFunctionExpressionSyntax node, object block, SeparatedSyntaxList<CSS.ParameterSyntax> parameters, SyntaxTokenList modifiers)
 			{
-				var symbol = semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
+				var symbol = ModelExtensions.GetSymbolInfo(semanticModel, node).Symbol as IMethodSymbol;
 				var parameterList = SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters.Select(p => (ParameterSyntax)p.Accept(this))));
 				LambdaHeaderSyntax header;
 				if (symbol.ReturnsVoid)
@@ -1297,8 +1325,8 @@ End Function";
 			public override VisualBasicSyntaxNode VisitTypeParameter(CSS.TypeParameterSyntax node)
 			{
 				SyntaxToken variance = default(SyntaxToken);
-				if (!node.VarianceKeyword.IsKind(CS.SyntaxKind.None)) {
-					variance = SyntaxFactory.Token(node.VarianceKeyword.IsKind(CS.SyntaxKind.InKeyword) ? SyntaxKind.InKeyword : SyntaxKind.OutKeyword);
+				if (!SyntaxTokenExtensions.IsKind(node.VarianceKeyword, CS.SyntaxKind.None)) {
+					variance = SyntaxFactory.Token(SyntaxTokenExtensions.IsKind(node.VarianceKeyword, CS.SyntaxKind.InKeyword) ? SyntaxKind.InKeyword : SyntaxKind.OutKeyword);
 				}
 				// copy generic constraints
 				var clause = FindClauseForParameter(node);
@@ -1351,7 +1379,7 @@ End Function";
 					case CS.SyntaxKind.ClassDeclaration:
 						var classOrInterface = type.BaseList?.Types.FirstOrDefault()?.Type;
 						if (classOrInterface == null) return;
-						var classOrInterfaceSymbol = semanticModel.GetSymbolInfo(classOrInterface).Symbol;
+						var classOrInterfaceSymbol = ModelExtensions.GetSymbolInfo(semanticModel, classOrInterface).Symbol;
 						if (classOrInterfaceSymbol?.IsInterfaceType() == true) {
 							arr = type.BaseList?.Types.Select(t => (TypeSyntax)t.Type.Accept(this)).ToArray();
 							if (arr.Length > 0)
@@ -1426,7 +1454,7 @@ End Function";
 				if (originalName != null && originalName.Parent is CSS.InvocationExpressionSyntax)
 					return name;
 
-				var symbolInfo = semanticModel.GetSymbolInfo(originalName);
+				var symbolInfo = ModelExtensions.GetSymbolInfo(semanticModel, originalName);
 				var symbol = symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault();
 				if (symbol.IsKind(SymbolKind.Method))
 					return SyntaxFactory.AddressOfExpression(name);

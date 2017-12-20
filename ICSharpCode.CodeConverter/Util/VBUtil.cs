@@ -1,10 +1,9 @@
 ﻿using System;
-using RefactoringEssentials;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.VisualBasic;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
-namespace RefactoringEssentials
+namespace ICSharpCode.CodeConverter.Util
 {
 	static class VBUtil
 	{

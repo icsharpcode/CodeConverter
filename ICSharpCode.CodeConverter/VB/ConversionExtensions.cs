@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using CS = Microsoft.CodeAnalysis.CSharp;
 
-namespace RefactoringEssentials.VB.Converter
+namespace ICSharpCode.CodeConverter.VB
 {
 	static class ConversionExtensions
 	{

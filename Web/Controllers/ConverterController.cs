@@ -6,7 +6,7 @@ using System.Net.Http;
 using System.Web.Http;
 using System.Web.Http.Description;
 using CodeConverterWebApp.Models;
-using RefactoringEssentials.Converter;
+using ICSharpCode.CodeConverter;
 
 namespace CodeConverterWebApp.Controllers
 {

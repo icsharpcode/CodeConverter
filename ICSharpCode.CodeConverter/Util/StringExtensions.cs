@@ -1,13 +1,13 @@
 using System;
-using System.Collections.Immutable;
-using Microsoft.CodeAnalysis;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Simplification;
 
-namespace RefactoringEssentials
+namespace ICSharpCode.CodeConverter.Util
 {
 #if NR6
     public
