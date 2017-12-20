@@ -283,18 +283,6 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Mono_Debug|AnyCPU' ">
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug_Mono.2017</OutputPath>
-    <WarningLevel>4</WarningLevel>
-    <AssemblyName>Vsix</AssemblyName>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Mono_Release|AnyCPU' ">
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Mono_Release.2017</OutputPath>
-    <WarningLevel>4</WarningLevel>
-    <AssemblyName>Vsix</AssemblyName>
-  </PropertyGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
