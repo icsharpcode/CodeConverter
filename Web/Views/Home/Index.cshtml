@@ -1,0 +1,76 @@
+﻿@{
+    Page.Title = "Home Page";
+    Page.Keywords = "free,Roslyn,code,converter,tool,conversion,class,module,c#,VB.NET,Visual Basic,csharp,cs,refactoring,open source,oss";
+    Page.Description = "Convert C# to VB.NET using the Roslyn Code Converter that is part of the Refactorings Essentials extension for Visual Studio";
+}
+
+<script src="~/Scripts/angular.min.js"></script>
+
+<div class="row">
+    <div class="col-md-8">
+        <h1>Code Converter by Refactoring Essentials</h1>
+        <div ng-app="ccApp" ng-controller="ccController">
+
+            <div class="form-group">
+                <label>Input code</label>
+                <textarea class="form-control" ng-model="inputCode" rows="10" style="min-width: 100%"></textarea>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="radio" ng-model="requestedConversion" value="cs2vbnet">
+                    C# to VB.NET
+                </label>
+                <label>
+                    <input type="radio" ng-model="requestedConversion" value="vbnet2cs">
+                    VB.NET to C#
+                </label>
+                &nbsp;
+                <button class="btn btn-default" ng-click="convert()">Convert Code</button>
+                <div class="spinner" ng-show="converterCallInflight"></div>
+            </div>
+            <div class="form-group">
+                <label>Converted code</label>
+                <textarea class="form-control" ng-model="convertedCode" rows="10" style="min-width: 100%"></textarea>
+            </div>
+
+            <p ng-show="showErrors" style="white-space: pre-wrap">Error message:<br />{{errorMessageOnResponse}}</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    var app = angular.module('ccApp', []);
+
+    app.controller('ccController', function ($scope, $http) {
+        $scope.inputCode = "public class Test {}";
+        $scope.convertedCode = "";
+        $scope.requestedConversion = "cs2vbnet";
+        $scope.errorMessageOnResponse = "";
+        $scope.showErrors = false;
+        $scope.converterCallInflight = false;
+
+        $scope.convert = function () {
+            $scope.converterCallInflight = true;
+            $scope.convertedCode = "";
+            $scope.errorMessageOnResponse = "";
+            $scope.showErrors = false;
+
+            var data = JSON.stringify({ code: $scope.inputCode, requestedConversion: $scope.requestedConversion });
+
+            $http.post('/api/converter/', data)
+                .then(function successCallback(response) {
+                    $scope.converterCallInflight = false;
+                    $scope.convertedCode = response.data.convertedCode;
+
+                    if (!response.data.conversionOk) {
+                        $scope.showErrors = true;
+                        $scope.errorMessageOnResponse = response.data.errorMessage;
+                    }
+                }, function errorCallback(response) {
+                    $scope.converterCallInflight = false;
+                    $scope.showErrors = true;
+                    $scope.errorMessageOnResponse = "Call to the server backend failed";
+                });
+        };
+    });
+</script>
