@@ -6,7 +6,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@Page.Title - Roslyn Code Converter by Refactoring Essentials</title>
+    <title>@Page.Title - Roslyn Code Converter</title>
     @RenderSection("head", required: false)
 
     <meta name="keywords" content="@Page.Keywords" />
@@ -51,7 +51,7 @@
                 HttpContext.Current.Cache["AssemblyVersionInformation"] = versionInfo;
             }
             <footer>
-                <p>&copy; 2015-@DateTime.Now.Year - Code Converter by <a href="http://vsrefactoringessentials.com/">Refactoring Essentials</a>; Version @versionInfo</p>
+                <p>&copy; 2015-@DateTime.Now.Year - Code Converter by <a href="https://github.com/icsharpcode/CodeConverter/">https://github.com/icsharpcode/CodeConverter/</a> - Version @versionInfo</p>
             </footer>
         }
         </div>
