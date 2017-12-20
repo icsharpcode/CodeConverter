@@ -14,22 +14,20 @@ namespace RefactoringEssentials.CSharp.Converter
 	{
 		class NodesVisitor : VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
 		{
-			SemanticModel semanticModel;
-			Document targetDocument;
-			private static Lazy<Dictionary<ITypeSymbol, string>> createConvertMethodsLookupByReturnType;
-			readonly Dictionary<MemberDeclarationSyntax, MemberDeclarationSyntax[]> additionalDeclarations = new Dictionary<MemberDeclarationSyntax, MemberDeclarationSyntax[]>();
+			private SemanticModel semanticModel;
+			private Document targetDocument;
+			private readonly Dictionary<ITypeSymbol, string> createConvertMethodsLookupByReturnType;
+			private readonly Dictionary<MemberDeclarationSyntax, MemberDeclarationSyntax[]> additionalDeclarations = new Dictionary<MemberDeclarationSyntax, MemberDeclarationSyntax[]>();
 			private readonly Stack<string> withBlockTempVariableNames = new Stack<string>();
 
 			public NodesVisitor(SemanticModel semanticModel, Document targetDocument)
 			{
 				this.semanticModel = semanticModel;
 				this.targetDocument = targetDocument;
-				if (createConvertMethodsLookupByReturnType == default(Lazy<Dictionary<ITypeSymbol, string>>)) {
-					createConvertMethodsLookupByReturnType = new Lazy<Dictionary<ITypeSymbol, string>>(CreateConvertMethodsLookupByReturnType);
-				}
+				this.createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
 			}
 
-			private Dictionary<ITypeSymbol, string> CreateConvertMethodsLookupByReturnType()
+			private static Dictionary<ITypeSymbol, string> CreateConvertMethodsLookupByReturnType(SemanticModel semanticModel)
 			{
 				var systemDotConvert = typeof(Convert).FullName;
 				var convertMethods = semanticModel.Compilation.GetTypeByMetadataName(systemDotConvert).GetMembers().Where(m =>
@@ -719,7 +717,7 @@ namespace RefactoringEssentials.CSharp.Converter
 			private ExpressionSyntax GetConvertMethodForKeywordOrNull(SyntaxNode type)
 			{
 				var convertedType = semanticModel.GetTypeInfo(type).ConvertedType;
-				return createConvertMethodsLookupByReturnType.Value.TryGetValue(convertedType, out var convertMethodName)
+				return createConvertMethodsLookupByReturnType.TryGetValue(convertedType, out var convertMethodName)
 					? SyntaxFactory.ParseExpression(convertMethodName) : null;
 			}
 
@@ -740,7 +738,6 @@ namespace RefactoringEssentials.CSharp.Converter
 						return Literal(null)
 							.WithTrailingTrivia(
 								SyntaxFactory.Comment("/* TODO Change to default(_) if this is not a reference type */"));
-
 					}
 					return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(type.ToMinimalDisplayString(semanticModel, node.SpanStart))) : Literal(null);
 				}
