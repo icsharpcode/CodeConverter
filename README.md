@@ -12,3 +12,8 @@ Web site: [https://roslyncodeconverter.azurewebsites.net](https://roslyncodeconv
 
 Check out the [ConverterController](https://github.com/icsharpcode/CodeConverter/blob/master/Web/Controllers/ConverterController.cs) in the Web project - this is the easiest place to get started.
 Alternatively - with a bit of VS glue code - the [CodeConversion class](https://github.com/icsharpcode/CodeConverter/blob/master/Vsix/CodeConversion.cs) in the VSIX project.
+
+##  History
+
+It started as part of [Refactoring Essentials](https://github.com/icsharpcode/RefactoringEssentials). However, because of the way analyzers are tied to Visual Studio and Roslyn versions
+made it super-hard to co-evolve the code converter bits. That is why we teased the converters out and they are now a self-contained entity.
