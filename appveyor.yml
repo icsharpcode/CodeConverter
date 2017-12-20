@@ -7,7 +7,7 @@ before_build:
 - nuget restore CodeConverter.sln
 
 build:
-project: CodeConverter.sln
+  project: CodeConverter.sln
 
 test:
   assemblies:
