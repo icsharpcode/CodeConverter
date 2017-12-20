@@ -9,6 +9,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{21DBA1CE-AF55-4159-B04B-B8C621BE8921}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <AssemblyName>CodeConverter.Tests</AssemblyName>
     <RootNamespace>CodeConverter.Tests</RootNamespace>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
