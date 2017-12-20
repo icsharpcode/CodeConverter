@@ -1,11 +1,14 @@
-﻿
-  version: 5.5.{build}
-  configuration: Debug
-  
-  image: Visual Studio 2017
+﻿platform: Any CPU
+version: 5.5.{build}
+configuration: Debug
+image: Visual Studio 2017
 
-  before_build: 
-    - cmd: nuget restore CodeConverter.sln
+before_build:
+- nuget restore CodeConverter.sln
 
-  build:
-    project: CodeConverter.sln
+build:
+project: CodeConverter.sln
+
+test:
+  assemblies:
+    - 'Tests\bin\%configuration%\CodeConverter.Tests.dll'
