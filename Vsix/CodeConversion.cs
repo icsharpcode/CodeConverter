@@ -3,9 +3,16 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using System;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using ICSharpCode.CodeConverter;
+using ICSharpCode.CodeConverter.CSharp;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.VisualStudio.LanguageServices;
+using Task = System.Threading.Tasks.Task;
 
 namespace RefactoringEssentials.VsExtension
 {
@@ -69,11 +76,11 @@ namespace RefactoringEssentials.VsExtension
             return CodeConverter.Convert(codeWithOptions);
         }
 
-        public void PerformVBToCSConversion(string inputCode)
+        public async Task PerformVBToCSConversion(string documentFilePath)
         {
             string convertedText = null;
             try {
-                var result = TryConvertingVBToCSCode(inputCode); // Switch to calling VisualBasicConverter.ConvertSingle() directly with the relevant workspace document
+                var result = await TryConvertingVBToCSCode(documentFilePath);
                 if (!result.Success) {
                     var newLines = Environment.NewLine + Environment.NewLine;
                     VsShellUtilities.ShowMessageBox(
@@ -107,13 +114,13 @@ namespace RefactoringEssentials.VsExtension
             Clipboard.SetText(convertedText);
         }
 
-        ConversionResult TryConvertingVBToCSCode(string inputCode)
+        async Task<ConversionResult> TryConvertingVBToCSCode(string documentPath)
         {
-            var codeWithOptions = new CodeWithOptions(inputCode)
-                .SetFromLanguage("Visual Basic", 14)
-                .SetToLanguage("C#", 6)
-                .WithDefaultReferences();
-            return CodeConverter.Convert(codeWithOptions);
+            var documentId = visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(documentPath).Single();
+            var document = visualStudioWorkspace.CurrentSolution.GetDocument(documentId);
+            var syntaxTree = await document.GetSyntaxTreeAsync();
+            var compilation = await document.Project.GetCompilationAsync();
+            return VisualBasicConverter.ConvertSingle((VisualBasicCompilation)compilation, (VisualBasicSyntaxTree)syntaxTree);
         }
 
         void WriteStatusBarText(string text)
@@ -160,7 +167,7 @@ namespace RefactoringEssentials.VsExtension
             return viewHost.TextView.Selection;
         }
 
-        IWpfTextViewHost GetCurrentVBViewHost()
+        public IWpfTextViewHost GetCurrentVBViewHost()
         {
             IWpfTextViewHost viewHost = VisualStudioInteraction.GetCurrentViewHost(serviceProvider);
             if (viewHost == null)

@@ -104,7 +104,7 @@ namespace RefactoringEssentials.VsExtension
                 menuItem.Visible = false;
                 menuItem.Enabled = false;
 
-                string itemPath = VisualStudioInteraction.GetSingleSelectedItemPath();
+                string itemPath = VisualStudioInteraction.GetSingleSelectedItemOrDefault()?.ItemPath;
                 var fileInfo = new FileInfo(itemPath);
                 if (!CodeConversion.IsCSFileName(fileInfo.Name))
                     return;
@@ -122,7 +122,7 @@ namespace RefactoringEssentials.VsExtension
 
         async void ProjectItemMenuItemCallback(object sender, EventArgs e)
         {
-            string itemPath = VisualStudioInteraction.GetSingleSelectedItemPath();
+            string itemPath = VisualStudioInteraction.GetSingleSelectedItemOrDefault()?.ItemPath;
             var fileInfo = new FileInfo(itemPath);
             if (!CodeConversion.IsCSFileName(fileInfo.Name))
                 return;

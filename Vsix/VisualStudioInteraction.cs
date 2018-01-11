@@ -57,11 +57,6 @@ namespace RefactoringEssentials.VsExtension
             }
         }
 
-        public static string GetSingleSelectedItemPath()
-        {
-            return GetSingleSelectedItemOrDefault()?.ItemPath;
-        }
-
         public static IWpfTextViewHost GetCurrentViewHost(IServiceProvider serviceProvider)
         {
             IVsTextManager txtMgr = (IVsTextManager)serviceProvider.GetService(typeof(SVsTextManager));

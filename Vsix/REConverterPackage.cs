@@ -41,7 +41,12 @@ namespace RefactoringEssentials.VsExtension
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     public sealed class REConverterPackage : Package
     {
-        public VisualStudioWorkspace VsWorkspace { get; private set; }
+        public VisualStudioWorkspace VsWorkspace {
+            get {
+                var componentModel = (IComponentModel)GetGlobalService(typeof(SComponentModel));
+                return componentModel.GetService<VisualStudioWorkspace>();
+            }
+        }
 
         /// <summary>
         /// ConvertCSToVBCommandPackage GUID string.
@@ -68,8 +73,6 @@ namespace RefactoringEssentials.VsExtension
         {
             ConvertCSToVBCommand.Initialize(this);
             ConvertVBToCSCommand.Initialize(this);
-            var componentModel = (IComponentModel)Microsoft.VisualStudio.Shell.Package.GetGlobalService(typeof(SComponentModel));
-            VsWorkspace = componentModel.GetService<Microsoft.VisualStudio.LanguageServices.VisualStudioWorkspace>();
             base.Initialize();
         }
     }

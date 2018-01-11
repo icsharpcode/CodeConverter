@@ -2,6 +2,8 @@
 using System.ComponentModel.Design;
 using Microsoft.VisualStudio.Shell;
 using System.IO;
+using System.Linq;
+using Task = System.Threading.Tasks.Task;
 
 namespace RefactoringEssentials.VsExtension
 {
@@ -104,7 +106,7 @@ namespace RefactoringEssentials.VsExtension
                 menuItem.Visible = false;
                 menuItem.Enabled = false;
 
-                string itemPath = VisualStudioInteraction.GetSingleSelectedItemPath();
+                string itemPath = VisualStudioInteraction.GetSingleSelectedItemOrDefault()?.ItemPath;
                 var fileInfo = new FileInfo(itemPath);
                 if (!CodeConversion.IsVBFileName(fileInfo.Name))
                     return;
@@ -114,25 +116,28 @@ namespace RefactoringEssentials.VsExtension
             }
         }
 
-        void CodeEditorMenuItemCallback(object sender, EventArgs e)
+        async void CodeEditorMenuItemCallback(object sender, EventArgs e)
         {
-            string selectedText = codeConversion.GetVBSelectionInCurrentView()?.StreamSelectionSpan.GetText();
-            codeConversion.PerformVBToCSConversion(selectedText);
+            //string selectedText = codeConversion.GetVBSelectionInCurrentView()?.StreamSelectionSpan.GetText(); //TODO implement for selection only here again by passing span
+            await ConvertVbDocument(codeConversion.GetCurrentVBViewHost().GetTextDocument().FilePath);
         }
 
         async void ProjectItemMenuItemCallback(object sender, EventArgs e)
         {
-            string itemPath = VisualStudioInteraction.GetSingleSelectedItemPath();
-            var fileInfo = new FileInfo(itemPath);
+            string itemPath = VisualStudioInteraction.GetSingleSelectedItemOrDefault()?.ItemPath;
+            await ConvertVbDocument(itemPath);
+        }
+
+        private async Task ConvertVbDocument(string documentPath)
+        {
+            var fileInfo = new FileInfo(documentPath);
             if (!CodeConversion.IsVBFileName(fileInfo.Name))
                 return;
 
             try {
-                using (StreamReader reader = new StreamReader(itemPath)) {
-                    string csCode = await reader.ReadToEndAsync();
-                    codeConversion.PerformVBToCSConversion(csCode);
-                }
-            } catch (Exception ex) {
+                await codeConversion.PerformVBToCSConversion(documentPath);//TODO Figure out when there are multiple document ids for a single file path
+            }
+            catch (Exception ex) {
                 VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.VBToCSConversionTitle, ex);
             }
         }
