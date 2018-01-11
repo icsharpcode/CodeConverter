@@ -353,6 +353,7 @@
     <Compile Include="ConvertVBToCSCommand.cs" />
     <Compile Include="REConverterPackage.cs" />
     <Compile Include="VisualStudioInteraction.cs" />
+    <Compile Include="VsDocument.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="VSPackage.resx">

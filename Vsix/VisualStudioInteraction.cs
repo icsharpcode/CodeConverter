@@ -12,42 +12,38 @@ namespace RefactoringEssentials.VsExtension
 {
     static class VisualStudioInteraction
     {
-        public static bool GetSingleSelectedItem(out IVsHierarchy hierarchy, out uint itemID)
+        public static VsDocument GetSingleSelectedItemOrDefault()
         {
-            hierarchy = null;
-            itemID = VSConstants.VSITEMID_NIL;
-            int hresult = VSConstants.S_OK;
-
             var monitorSelection = Package.GetGlobalService(typeof(SVsShellMonitorSelection)) as IVsMonitorSelection;
             var solution = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
-            if ((monitorSelection == null) || (solution == null))
-                return false;
 
-            IVsMultiItemSelect multiItemSelect = null;
+            if ((monitorSelection == null) || (solution == null))
+                return null;
+
             IntPtr hierarchyPtr = IntPtr.Zero;
             IntPtr selectionContainerPtr = IntPtr.Zero;
 
             try {
-                hresult = monitorSelection.GetCurrentSelection(out hierarchyPtr, out itemID, out multiItemSelect, out selectionContainerPtr);
+                var hresult = monitorSelection.GetCurrentSelection(out hierarchyPtr, out uint itemID, out var multiItemSelect, out selectionContainerPtr);
                 if (ErrorHandler.Failed(hresult) || (hierarchyPtr == IntPtr.Zero) || (itemID == VSConstants.VSITEMID_NIL))
-                    return false;
+                    return null;
 
                 if (multiItemSelect != null)
-                    return false;
+                    return null;
 
                 if (itemID == VSConstants.VSITEMID_ROOT)
-                    return false;
+                    return null;
 
-                hierarchy = Marshal.GetObjectForIUnknown(hierarchyPtr) as IVsHierarchy;
+                var hierarchy = Marshal.GetObjectForIUnknown(hierarchyPtr) as IVsHierarchy;
                 if (hierarchy == null)
-                    return false;
+                    return null;
 
                 Guid guidProjectID = Guid.Empty;
 
                 if (ErrorHandler.Failed(solution.GetGuidOfProject(hierarchy, out guidProjectID)))
-                    return false;
+                    return null;
 
-                return true;
+                return new VsDocument((IVsProject) hierarchy, guidProjectID, itemID);
             } finally {
                 if (selectionContainerPtr != IntPtr.Zero) {
                     Marshal.Release(selectionContainerPtr);
@@ -61,14 +57,7 @@ namespace RefactoringEssentials.VsExtension
 
         public static string GetSingleSelectedItemPath()
         {
-            IVsHierarchy hierarchy = null;
-            uint itemID = VSConstants.VSITEMID_NIL;
-            if (!GetSingleSelectedItem(out hierarchy, out itemID))
-                return null;
-
-            string itemPath = null;
-            ((IVsProject)hierarchy).GetMkDocument(itemID, out itemPath);
-            return itemPath;
+            return GetSingleSelectedItemOrDefault()?.ItemPath;
         }
 
         public static IWpfTextViewHost GetCurrentViewHost(IServiceProvider serviceProvider)
