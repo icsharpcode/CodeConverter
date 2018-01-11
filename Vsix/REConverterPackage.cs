@@ -5,9 +5,13 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.ComponentModel.Composition;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using Microsoft.CodeAnalysis;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.ComponentModelHost;
+using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;
 
 namespace RefactoringEssentials.VsExtension
@@ -37,6 +41,8 @@ namespace RefactoringEssentials.VsExtension
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     public sealed class REConverterPackage : Package
     {
+        public VisualStudioWorkspace VsWorkspace { get; private set; }
+
         /// <summary>
         /// ConvertCSToVBCommandPackage GUID string.
         /// </summary>
@@ -52,6 +58,7 @@ namespace RefactoringEssentials.VsExtension
             // not sited yet inside Visual Studio environment. The place to do all the other
             // initialization is the Initialize method.
         }
+        
 
         /// <summary>
         /// Initialization of the package; this method is called right after the package is sited, so this is the place
@@ -61,6 +68,8 @@ namespace RefactoringEssentials.VsExtension
         {
             ConvertCSToVBCommand.Initialize(this);
             ConvertVBToCSCommand.Initialize(this);
+            var componentModel = (IComponentModel)Microsoft.VisualStudio.Shell.Package.GetGlobalService(typeof(SComponentModel));
+            VsWorkspace = componentModel.GetService<Microsoft.VisualStudio.LanguageServices.VisualStudioWorkspace>();
             base.Initialize();
         }
     }
