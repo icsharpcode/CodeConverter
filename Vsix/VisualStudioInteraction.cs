@@ -7,6 +7,8 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.VisualStudio.LanguageServices;
+
 
 namespace RefactoringEssentials.VsExtension
 {
@@ -82,6 +84,11 @@ namespace RefactoringEssentials.VsExtension
             ITextDocument textDocument = null;
             viewHost.TextView.TextDataModel.DocumentBuffer.Properties.TryGetProperty(typeof(ITextDocument), out textDocument);
             return textDocument;
+        }
+
+        public static VisualStudioWorkspace GetWorkspace(IServiceProvider serviceProvider)
+        {
+            return (VisualStudioWorkspace) serviceProvider.GetService(typeof(VisualStudioWorkspace)); 
         }
 
         public static void ShowException(IServiceProvider serviceProvider, string title, Exception ex)

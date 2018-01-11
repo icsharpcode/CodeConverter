@@ -37,9 +37,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             MemberInInterface
         }
 
-        public static CSharpSyntaxNode ConvertSingle(VBasic.VisualBasicCompilation compilation, VBasic.VisualBasicSyntaxTree syntaxTree)
+        public static ConversionResult ConvertSingle(VBasic.VisualBasicCompilation compilation, VBasic.VisualBasicSyntaxTree syntaxTree)
         {
-            return ConvertMultiple(compilation, new[] {syntaxTree}).Values.Single();
+            try {
+                var cSharpSyntaxNode = ConvertSingleUnhandled(compilation, syntaxTree);
+                var formattedNode = Formatter.Format(cSharpSyntaxNode, new AdhocWorkspace());
+                return new ConversionResult(formattedNode.ToFullString());
+            } catch (Exception ex) {
+                return new ConversionResult(ex);
+            }
         }
 
         public static Dictionary<string, CSharpSyntaxNode> ConvertMultiple(VBasic.VisualBasicCompilation compilation, IEnumerable<VBasic.VisualBasicSyntaxTree> syntaxTrees)
@@ -48,6 +54,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 tree => ConvertCompilationTree(compilation, tree));
             var cSharpCompilation = CSharpCompilation.Create("Conversion", cSharpFirstPass.Values, compilation.References);
             return cSharpFirstPass.ToDictionary(cs => cs.Key, cs => new CompilationErrorFixer(cSharpCompilation, cs.Value).Fix());
+        }
+
+        private static CSharpSyntaxNode ConvertSingleUnhandled(VBasic.VisualBasicCompilation compilation, VBasic.VisualBasicSyntaxTree syntaxTree)
+        {
+            return ConvertMultiple(compilation, new[] {syntaxTree}).Values.Single();
         }
 
         private static CSharpSyntaxTree ConvertCompilationTree(VBasic.VisualBasicCompilation compilation, VBasic.VisualBasicSyntaxTree tree)
@@ -65,7 +76,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 throw new ArgumentNullException(nameof(references));
 
             try {
-                var cSharpSyntaxNode = ConvertText(references, text);
+                var cSharpSyntaxNode = ConvertTextUnhandled(references, text);
                 var formattedNode = Formatter.Format(cSharpSyntaxNode, new AdhocWorkspace());
                 return new ConversionResult(formattedNode.ToFullString());
             } catch (Exception ex) {
@@ -73,7 +84,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        private static SyntaxNode ConvertText(IReadOnlyCollection<MetadataReference> references, string text)
+        private static SyntaxNode ConvertTextUnhandled(IReadOnlyCollection<MetadataReference> references, string text)
         {
             try
             {
@@ -94,7 +105,7 @@ End Class";
         {
             var tree = CreateTree(fullTreeText);
             var compilation = CreateCompilationFromTree(tree, references);
-            return ConvertSingle(compilation, tree);
+            return ConvertSingleUnhandled(compilation, tree);
         }
 
         private static VBasic.VisualBasicSyntaxTree CreateTree(string text)

@@ -24,6 +24,8 @@ namespace RefactoringEssentials.VsExtension
         /// </summary>
         readonly REConverterPackage package;
 
+        private CodeConversion codeConversion;
+
         /// <summary>
         /// Gets the instance of the command.
         /// </summary>
@@ -62,6 +64,7 @@ namespace RefactoringEssentials.VsExtension
             }
 
             this.package = package;
+            codeConversion = new CodeConversion(package, package.VsWorkspace);
 
             OleMenuCommandService commandService = this.ServiceProvider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
             if (commandService != null) {
@@ -89,8 +92,8 @@ namespace RefactoringEssentials.VsExtension
         {
             var menuItem = sender as OleMenuCommand;
             if (menuItem != null) {
-
-                menuItem.Visible = !CodeConversion.GetVBSelectionInCurrentView(ServiceProvider)?.StreamSelectionSpan.IsEmpty ?? false;
+                
+                menuItem.Visible = !codeConversion.GetVBSelectionInCurrentView()?.StreamSelectionSpan.IsEmpty ?? false;
             }
         }
 
@@ -113,8 +116,8 @@ namespace RefactoringEssentials.VsExtension
 
         void CodeEditorMenuItemCallback(object sender, EventArgs e)
         {
-            string selectedText = CodeConversion.GetVBSelectionInCurrentView(ServiceProvider)?.StreamSelectionSpan.GetText();
-            CodeConversion.PerformVBToCSConversion(ServiceProvider, selectedText);
+            string selectedText = codeConversion.GetVBSelectionInCurrentView()?.StreamSelectionSpan.GetText();
+            codeConversion.PerformVBToCSConversion(selectedText);
         }
 
         async void ProjectItemMenuItemCallback(object sender, EventArgs e)
@@ -127,7 +130,7 @@ namespace RefactoringEssentials.VsExtension
             try {
                 using (StreamReader reader = new StreamReader(itemPath)) {
                     string csCode = await reader.ReadToEndAsync();
-                    CodeConversion.PerformVBToCSConversion(ServiceProvider, csCode);
+                    codeConversion.PerformVBToCSConversion(csCode);
                 }
             } catch (Exception ex) {
                 VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.VBToCSConversionTitle, ex);
