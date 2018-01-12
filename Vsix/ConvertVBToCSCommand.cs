@@ -3,6 +3,7 @@ using System.ComponentModel.Design;
 using Microsoft.VisualStudio.Shell;
 using System.IO;
 using System.Linq;
+using Microsoft.VisualStudio.Text;
 using Task = System.Threading.Tasks.Task;
 
 namespace RefactoringEssentials.VsExtension
@@ -118,8 +119,8 @@ namespace RefactoringEssentials.VsExtension
 
         async void CodeEditorMenuItemCallback(object sender, EventArgs e)
         {
-            //string selectedText = codeConversion.GetVBSelectionInCurrentView()?.StreamSelectionSpan.GetText(); //TODO implement for selection only here again by passing span
-            await ConvertVbDocument(codeConversion.GetCurrentVBViewHost().GetTextDocument().FilePath);
+            string selectedText = codeConversion.GetVBSelectionInCurrentView().StreamSelectionSpan.GetText();
+            await ConvertVbDocument(codeConversion.GetCurrentVBViewHost().GetTextDocument().FilePath, selectedText);
         }
 
         async void ProjectItemMenuItemCallback(object sender, EventArgs e)
@@ -128,14 +129,14 @@ namespace RefactoringEssentials.VsExtension
             await ConvertVbDocument(itemPath);
         }
 
-        private async Task ConvertVbDocument(string documentPath)
+        private async Task ConvertVbDocument(string documentPath, string selectionText = "")
         {
             var fileInfo = new FileInfo(documentPath);
             if (!CodeConversion.IsVBFileName(fileInfo.Name))
                 return;
 
             try {
-                await codeConversion.PerformVBToCSConversion(documentPath);//TODO Figure out when there are multiple document ids for a single file path
+                await codeConversion.PerformVBToCSConversion(documentPath, selectionText);
             }
             catch (Exception ex) {
                 VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.VBToCSConversionTitle, ex);

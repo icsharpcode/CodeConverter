@@ -10,6 +10,7 @@ using System.Windows;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.VisualStudio.LanguageServices;
 using Task = System.Threading.Tasks.Task;
@@ -76,11 +77,11 @@ namespace RefactoringEssentials.VsExtension
             return CodeConverter.Convert(codeWithOptions);
         }
 
-        public async Task PerformVBToCSConversion(string documentFilePath)
+        public async Task PerformVBToCSConversion(string documentFilePath, string selectionText)
         {
             string convertedText = null;
             try {
-                var result = await TryConvertingVBToCSCode(documentFilePath);
+                var result = await TryConvertingVBToCSCode(documentFilePath, selectionText);
                 if (!result.Success) {
                     var newLines = Environment.NewLine + Environment.NewLine;
                     VsShellUtilities.ShowMessageBox(
@@ -114,13 +115,22 @@ namespace RefactoringEssentials.VsExtension
             Clipboard.SetText(convertedText);
         }
 
-        async Task<ConversionResult> TryConvertingVBToCSCode(string documentPath)
-        {
+        async Task<ConversionResult> TryConvertingVBToCSCode(string documentPath, string selectionText)
+        {   
+            //TODO Figure out when there are multiple document ids for a single file path
             var documentId = visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(documentPath).Single();
             var document = visualStudioWorkspace.CurrentSolution.GetDocument(documentId);
-            var syntaxTree = await document.GetSyntaxTreeAsync();
             var compilation = await document.Project.GetCompilationAsync();
+            var syntaxTree = await GetSyntaxTree(document, selectionText);
             return VisualBasicConverter.ConvertSingle((VisualBasicCompilation)compilation, (VisualBasicSyntaxTree)syntaxTree);
+        }
+
+        private static async Task<SyntaxTree> GetSyntaxTree(Document document, string selectionText)
+        {
+            if (string.IsNullOrWhiteSpace(selectionText)) {
+                return await document.GetSyntaxTreeAsync();
+            }
+            return SyntaxFactory.ParseSyntaxTree(SourceText.From(selectionText));
         }
 
         void WriteStatusBarText(string text)
