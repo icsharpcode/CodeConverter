@@ -931,10 +931,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitObjectCreationExpression(VBSyntax.ObjectCreationExpressionSyntax node)
             {
-                var argumentListSyntax = node.ArgumentList ?? VBasic.SyntaxFactory.ArgumentList(); //VB can omit empty arg lists entirely
                 return SyntaxFactory.ObjectCreationExpression(
                     (TypeSyntax)node.Type.Accept(visitor),
-                    (ArgumentListSyntax)argumentListSyntax.Accept(visitor),
+                    (ArgumentListSyntax)node.ArgumentList?.Accept(visitor) ?? SyntaxFactory.ArgumentList(), //VB can omit empty arg lists entirely
                     (InitializerExpressionSyntax)node.Initializer?.Accept(visitor)
                 );
             }

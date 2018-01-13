@@ -805,9 +805,12 @@ namespace ICSharpCode.CodeConverter.Util
             this T node, SyntaxNode otherNode) where T : SyntaxNode
         {
             node = otherNode.HasLeadingTrivia
-                ? node.WithLeadingTrivia(otherNode.GetLeadingTrivia().Select(ConvertTrivia).Where(x => x != default(SyntaxTrivia)))
+                ? node.WithLeadingTrivia(otherNode.GetLeadingTrivia().Select(ConvertTrivia)
+                    .Where(x => x != default(SyntaxTrivia)))
                 : node;
-            node = node.HasTrailingTrivia ? node.WithTrailingTrivia(otherNode.GetTrailingTrivia().Select(ConvertTrivia).Where(x => x != default(SyntaxTrivia))) : node;
+            node = node.HasTrailingTrivia
+                ? node.WithTrailingTrivia(otherNode.GetTrailingTrivia().Select(ConvertTrivia)
+                    .Where(x => x != default(SyntaxTrivia))) : node;
             return node;
         }
 
