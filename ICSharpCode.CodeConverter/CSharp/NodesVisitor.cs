@@ -1223,7 +1223,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 						qualifiedName = qualifiedName.Substring(typeOrNamespace.Length + 1);
 					}
 				}
-				return qualifiedName.ToString() != defaultNode.ToString() ? 
+				return qualifiedName != defaultNode.ToString() ? 
 					SyntaxFactory.ParseName(qualifiedName.Replace(node.ToString(), defaultNode.ToString()))
 					: defaultNode;
 			}
