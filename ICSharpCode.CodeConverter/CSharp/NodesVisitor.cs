@@ -1207,8 +1207,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 				var typeBlockSyntax = node.GetAncestor<VBSyntax.TypeBlockSyntax>();
 
 				var typeOrNamespace = targetSymbolInfo.ContainingNamespace.ToDisplayString(referenceSymbolFormat);
-				if (typeBlockSyntax != null)
-				{
+				if (typeBlockSyntax != null) {
 					var declaredSymbol = semanticModel.GetDeclaredSymbol(typeBlockSyntax);
 					var prefixes = GetSymbolQualification(declaredSymbol)
 					.Where(x => x != null).Select(p => p.ToDisplayString(referenceSymbolFormat) + ".");
