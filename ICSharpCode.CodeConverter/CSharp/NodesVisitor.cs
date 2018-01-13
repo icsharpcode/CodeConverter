@@ -39,7 +39,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             private SemanticModel semanticModel;
             private readonly Dictionary<ITypeSymbol, string> createConvertMethodsLookupByReturnType;
-            private readonly Dictionary<MemberDeclarationSyntax, MemberDeclarationSyntax[]> additionalDeclarations = new Dictionary<MemberDeclarationSyntax, MemberDeclarationSyntax[]>();
+            private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
             private readonly Stack<string> withBlockTempVariableNames = new Stack<string>();
             readonly IDictionary<string, string> importedNamespaces;
             private readonly CommentConvertingVisitor visitor;
@@ -143,15 +143,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             IEnumerable<MemberDeclarationSyntax> ConvertMembers(SyntaxList<VBSyntax.StatementSyntax> members)
             {
-                foreach (var member in members.Select(m => (MemberDeclarationSyntax)m.Accept(visitor))) {
-                    MemberDeclarationSyntax[] declarations;
-                    if (member is BaseFieldDeclarationSyntax && additionalDeclarations.TryGetValue(member, out declarations)) {
-                        foreach (var d in declarations)
-                            yield return d;
+                foreach (var member in members) {
+                    yield return (MemberDeclarationSyntax)member.Accept(visitor);
+
+                    if (additionalDeclarations.TryGetValue(member, out var additionalStatements)) {
                         additionalDeclarations.Remove(member);
-                    } else {
-                        yield return member;
+                        foreach (var additionalStatement in additionalStatements) {
+                            yield return additionalStatement;
+                        }
                     }
+                    
                 }
             }
 
@@ -333,7 +334,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var convertableModifiers = node.Modifiers.Where(m => !SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
                 var convertedModifiers = ConvertModifiers(convertableModifiers, TokenContext.VariableOrConst);
                 var key = SyntaxFactory.FieldDeclaration(SyntaxFactory.VariableDeclaration(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword))));
-                var declarations = new List<BaseFieldDeclarationSyntax>(node.Declarators.Count);
+                var declarations = new List<MemberDeclarationSyntax>(node.Declarators.Count);
 
                 foreach (var declarator in node.Declarators) {
                     foreach (var decl in SplitVariableDeclarations(declarator, this, semanticModel).Values) {
@@ -351,8 +352,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
 
-                additionalDeclarations.Add(key, declarations.ToArray());
-                return key;
+                additionalDeclarations.Add(node, declarations.Skip(1).ToArray());
+                return declarations.First();
             }
 
             public override CSharpSyntaxNode VisitPropertyStatement(VBSyntax.PropertyStatementSyntax node)
@@ -554,8 +555,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)))
                     );
 
-                    additionalDeclarations.Add(key, new MemberDeclarationSyntax[] { eventDecl, delegateDecl });
-                    return key;
+                    additionalDeclarations.Add(node, new MemberDeclarationSyntax[] { delegateDecl });
+                    return eventDecl;
                 } else {
                     return SyntaxFactory.EventFieldDeclaration(
                         SyntaxFactory.List(attributes),
