@@ -681,7 +681,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 				if (stmt.IdentifierName == null)
 					catcher = null;
 				else {
-					var typeInfo = ModelExtensions.GetTypeInfo(semanticModel, stmt.IdentifierName).Type;
+					var typeInfo = semanticModel.GetTypeInfo(stmt.IdentifierName).Type;
 					catcher = SyntaxFactory.CatchDeclaration(
 						SyntaxFactory.ParseTypeName(typeInfo.ToMinimalDisplayString(semanticModel, node.SpanStart)),
 						ConvertIdentifier(stmt.IdentifierName.Identifier, semanticModel)
@@ -765,7 +765,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 			public override CSharpSyntaxNode VisitLiteralExpression(VBSyntax.LiteralExpressionSyntax node)
 			{
 				if (node.Token.Value == null) {
-					var type = ModelExtensions.GetTypeInfo(semanticModel, node).ConvertedType;
+					var type = semanticModel.GetTypeInfo(node).ConvertedType;
 					if (type == null) {
 						return Literal(null)
 							.WithTrailingTrivia(
@@ -828,7 +828,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 					return SyntaxFactory.AliasQualifiedName((IdentifierNameSyntax)left, simpleNameSyntax);
 				} else {
 					var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, QualifyNode(node.Expression, left), simpleNameSyntax);
-					if (ModelExtensions.GetSymbolInfo(semanticModel, node).Symbol is IMethodSymbol methodSymbol && methodSymbol.ReturnType.Equals(ModelExtensions.GetTypeInfo(semanticModel, node).ConvertedType)) {
+					if (semanticModel.GetSymbolInfo(node).Symbol is IMethodSymbol methodSymbol && methodSymbol.ReturnType.Equals(semanticModel.GetTypeInfo(node).ConvertedType)) {
 						var visitMemberAccessExpression = SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax, SyntaxFactory.ArgumentList());
 						return visitMemberAccessExpression;
 					} else {
@@ -857,9 +857,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 				if (invocation is VBSyntax.ArrayCreationExpressionSyntax)
 					return node.Expression.Accept(this);
 				var symbol = invocation.TypeSwitch(
-					(VBSyntax.InvocationExpressionSyntax e) => ExtractMatch(ModelExtensions.GetSymbolInfo(semanticModel, e)),
-					(VBSyntax.ObjectCreationExpressionSyntax e) => ExtractMatch(ModelExtensions.GetSymbolInfo(semanticModel, e)),
-					(VBSyntax.RaiseEventStatementSyntax e) => ExtractMatch(ModelExtensions.GetSymbolInfo(semanticModel, e.Name)),
+					(VBSyntax.InvocationExpressionSyntax e) => ExtractMatch(semanticModel.GetSymbolInfo(e)),
+					(VBSyntax.ObjectCreationExpressionSyntax e) => ExtractMatch(semanticModel.GetSymbolInfo(e)),
+					(VBSyntax.RaiseEventStatementSyntax e) => ExtractMatch(semanticModel.GetSymbolInfo(e.Name)),
 					_ => { throw new NotSupportedException(); }
 				);
 				SyntaxToken token = default(SyntaxToken);
@@ -955,7 +955,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 				if (node.Initializers.Count == 0 && node.Parent is VBSyntax.ArrayCreationExpressionSyntax)
 					return null;
 				var initializer = SyntaxFactory.InitializerExpression(SyntaxKind.CollectionInitializerExpression, SyntaxFactory.SeparatedList(node.Initializers.Select(i => (ExpressionSyntax)i.Accept(this))));
-				var typeInfo = ModelExtensions.GetTypeInfo(semanticModel, node);
+				var typeInfo = semanticModel.GetTypeInfo(node);
 				return typeInfo.Type == null && (typeInfo.ConvertedType?.SpecialType == SpecialType.System_Collections_IEnumerable || typeInfo.ConvertedType?.IsKind(SymbolKind.ArrayType) == true)
 					? (CSharpSyntaxNode)SyntaxFactory.ImplicitArrayCreationExpression(initializer)
 					: initializer;
@@ -1058,8 +1058,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
 			public override CSharpSyntaxNode VisitInvocationExpression(VBSyntax.InvocationExpressionSyntax node)
 			{
-				var invocationSymbol = ExtractMatch(ModelExtensions.GetSymbolInfo(semanticModel, node));
-				var symbol = ExtractMatch(ModelExtensions.GetSymbolInfo(semanticModel, node.Expression));
+				var invocationSymbol = ExtractMatch(semanticModel.GetSymbolInfo(node));
+				var symbol = ExtractMatch(semanticModel.GetSymbolInfo(node.Expression));
 				if (invocationSymbol?.IsIndexer() == true || symbol?.GetReturnType()?.IsArrayType() == true && !(symbol is IMethodSymbol)) //The null case happens quite a bit - should try to fix
 				{
 					return SyntaxFactory.ElementAccessExpression(
