@@ -110,6 +110,22 @@ End Interface");
         }
 
         [Fact]
+        public void TestInterfaceWithTwoMembers()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"interface ITest : System.IDisposable
+{
+    void Test ();
+    void Test2 ();
+}", @"Interface ITest
+    Inherits System.IDisposable
+
+    Sub Test()
+    Sub Test2()
+End Interface");
+        }
+
+        [Fact]
         public void TestEnum()
         {
             TestConversionCSharpToVisualBasic(

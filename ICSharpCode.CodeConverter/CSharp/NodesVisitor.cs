@@ -831,7 +831,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 } else {
                     var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, QualifyNode(node.Expression, left), simpleNameSyntax);
                     if (semanticModel.GetSymbolInfo(node).Symbol is IMethodSymbol methodSymbol && methodSymbol.ReturnType.Equals(semanticModel.GetTypeInfo(node).ConvertedType)) {
-                        var visitMemberAccessExpression = SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax.WithoutTrailingEndOfLineTrivia(), SyntaxFactory.ArgumentList());
+                        var visitMemberAccessExpression = SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax, SyntaxFactory.ArgumentList());
                         return visitMemberAccessExpression;
                     } else {
                         return memberAccessExpressionSyntax;
@@ -930,16 +930,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitObjectCreationExpression(VBSyntax.ObjectCreationExpressionSyntax node)
             {
-                var typeSyntax = (TypeSyntax)node.Type.Accept(visitor);
-                var argumentList = (ArgumentListSyntax)node.ArgumentList?.Accept(visitor);
-                if (argumentList == null) {
-                    //VB can omit empty arg lists entirely - need to remove the potential newline to avoid a newline before the arglist we're adding
-                    typeSyntax = typeSyntax.WithoutTrailingEndOfLineTrivia();
-                    argumentList = SyntaxFactory.ArgumentList();
-                }
                 return SyntaxFactory.ObjectCreationExpression(
-                    typeSyntax,
-                    argumentList,
+                    (TypeSyntax)node.Type.Accept(visitor),
+                    // VB can omit empty arg lists:
+                    (ArgumentListSyntax)node.ArgumentList?.Accept(visitor) ?? SyntaxFactory.ArgumentList(),
                     (InitializerExpressionSyntax)node.Initializer?.Accept(visitor)
                 );
             }
