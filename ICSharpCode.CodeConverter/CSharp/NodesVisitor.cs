@@ -334,7 +334,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var unConvertableModifiers = node.Modifiers.Where(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword)).Select(m => m.Text).ToList();
                 var convertableModifiers = node.Modifiers.Where(m => !SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
                 var convertedModifiers = ConvertModifiers(convertableModifiers, TokenContext.VariableOrConst);
-                var key = SyntaxFactory.FieldDeclaration(SyntaxFactory.VariableDeclaration(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword))));
                 var declarations = new List<MemberDeclarationSyntax>(node.Declarators.Count);
 
                 foreach (var declarator in node.Declarators) {
@@ -536,7 +535,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var id = ConvertIdentifier(node.Identifier, semanticModel);
 
                 if (node.AsClause == null) {
-                    var key = SyntaxFactory.EventFieldDeclaration(SyntaxFactory.VariableDeclaration(SyntaxFactory.ParseTypeName("__event" + id.ValueText)));
                     var delegateName = SyntaxFactory.Identifier(id.ValueText + "EventHandler");
 
                     var delegateDecl = SyntaxFactory.DelegateDeclaration(
