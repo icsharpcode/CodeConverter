@@ -24,12 +24,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         class MethodBodyVisitor : VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>>
         {
             SemanticModel semanticModel;
-            NodesVisitor nodesVisitor;
+            readonly VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor;
             private readonly Stack<string> withBlockTempVariableNames;
 
             public bool IsIterator { get; set; }
 
-            public MethodBodyVisitor(SemanticModel semanticModel, NodesVisitor nodesVisitor, Stack<string> withBlockTempVariableNames)
+            public MethodBodyVisitor(SemanticModel semanticModel, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, Stack<string> withBlockTempVariableNames)
             {
                 this.semanticModel = semanticModel;
                 this.nodesVisitor = nodesVisitor;

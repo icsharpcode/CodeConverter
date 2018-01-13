@@ -62,7 +62,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        static Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(VBSyntax.VariableDeclaratorSyntax declarator, NodesVisitor nodesVisitor, SemanticModel semanticModel)
+        static Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(VBSyntax.VariableDeclaratorSyntax declarator, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, SemanticModel semanticModel)
         {
             var rawType = (TypeSyntax)declarator.AsClause?.TypeSwitch(
                 (VBSyntax.SimpleAsClauseSyntax c) => c.Type,
