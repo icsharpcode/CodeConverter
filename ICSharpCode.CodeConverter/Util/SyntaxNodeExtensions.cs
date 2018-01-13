@@ -862,6 +862,17 @@ namespace ICSharpCode.CodeConverter.Util
                 ? SyntaxFactory.Comment($"/* TODO ERROR: Skipped {convertedKind.Value.Key}")
                 : default(SyntaxTrivia);
         }
+        public static T WithoutTrailingEndOfLineTrivia<T>(this T cSharpNode) where T : CSharpSyntaxNode
+        {
+            var lastDescendant = cSharpNode.DescendantNodesAndTokens().Last();
+            var triviaWithoutNewline = lastDescendant.GetTrailingTrivia().Where(t => !t.IsKind(SyntaxKind.EndOfLineTrivia));
+            if (lastDescendant.IsNode) {
+                return cSharpNode.ReplaceNode(lastDescendant.AsNode(),
+                    lastDescendant.AsNode().WithTrailingTrivia(triviaWithoutNewline));
+            }
+            return cSharpNode.ReplaceToken(lastDescendant.AsToken(),
+                lastDescendant.AsToken().WithTrailingTrivia(triviaWithoutNewline));
+        }
 
         public static T WithOrderedTriviaFromSubTree<T>(
             this T node,
