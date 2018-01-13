@@ -245,7 +245,6 @@ class TestClass
         {
             return this.m_test3;
         }
-
         set
         {
             this.m_test3 = value;
