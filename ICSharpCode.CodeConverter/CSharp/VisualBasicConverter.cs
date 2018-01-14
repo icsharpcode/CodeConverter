@@ -42,6 +42,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static Dictionary<string, CSharpSyntaxNode> ConvertMultiple(VBasic.VisualBasicCompilation compilation, IEnumerable<VBasic.VisualBasicSyntaxTree> syntaxTrees)
         {
             var cSharpFirstPass = syntaxTrees.ToDictionary(tree => tree.FilePath ?? "unknown",
+                //todo use commentconverting visitor at top level to catch classes
                 tree => (CSharpSyntaxTree) SyntaxFactory.SyntaxTree(tree.GetRoot().Accept(new NodesVisitor(compilation.GetSemanticModel(tree, true)))));
             var cSharpCompilation = CSharpCompilation.Create("Conversion", cSharpFirstPass.Values, compilation.References);
             return cSharpFirstPass.ToDictionary(cs => cs.Key, cs => new CompilationErrorFixer(cSharpCompilation, cs.Value).Fix());

@@ -21,10 +21,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var lastSourceToken = sourceNode.GetLastToken();
 
-            var descendantNodes = destination.DescendantNodes();//TODO Check the perf of this, seems pretty bad at a glance
+            var descendantNodes = destination.DescendantNodes();//TODO Check/fix perf
             var missedPortsWhichAreChildren = trailingPortsDelegatedToParent
                 .Where(tnp => tnp.Key != lastSourceToken)
-                .Where(tnp => descendantNodes.Contains(tnp.Value))
+                .Where(tnp => descendantNodes.Select(f => f.FullSpan).Contains(tnp.Value.FullSpan))//TODO Check/fix perf
                 .ToList();
             foreach (var missedPort in missedPortsWhichAreChildren.ToList()) {
                 destination = destination.ReplaceNode(missedPort.Value,
