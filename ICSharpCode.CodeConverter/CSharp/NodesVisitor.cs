@@ -166,11 +166,21 @@ namespace ICSharpCode.CodeConverter.CSharp
                 TypeParameterListSyntax parameters;
                 SyntaxList<TypeParameterConstraintClauseSyntax> constraints;
                 SplitTypeParameters(stmt.TypeParameterList, out parameters, out constraints);
+                var convertedIdentifier = ConvertIdentifier(stmt.Identifier, semanticModel);
+
+                //TODO Consider moving into comment visitor if it doesn't seem to weirdly coupled - need something similar for other objects where we don't visit some of the syntax
+                if (constraints.Any()) {
+                    constraints = constraints.Replace(constraints.Last(), constraints.Last().WithConvertedTriviaFrom(node.ClassStatement));
+                } else if (parameters != null) {
+                    parameters = parameters.WithConvertedTriviaFrom(node.ClassStatement);
+                } else {
+                    convertedIdentifier = convertedIdentifier.WithConvertedTriviaFrom(node.ClassStatement);
+                }
 
                 return SyntaxFactory.ClassDeclaration(
                     attributes,
                     ConvertModifiers(stmt.Modifiers),
-                    ConvertIdentifier(stmt.Identifier, semanticModel),
+                    convertedIdentifier,
                     parameters,
                     ConvertInheritsAndImplements(node.Inherits, node.Implements),
                     constraints,
@@ -425,7 +435,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 SyntaxKind blockKind;
                 bool isIterator = node.GetModifiers().Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
-                var body = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(new MethodBodyVisitor(semanticModel, visitor, withBlockTempVariableNames) { IsIterator = isIterator })));
+                var body = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor(isIterator))));
                 var attributes = SyntaxFactory.List(node.AccessorStatement.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(visitor)));
                 var modifiers = ConvertModifiers(node.AccessorStatement.Modifiers, TokenContext.Local);
 
@@ -453,7 +463,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 BaseMethodDeclarationSyntax block = (BaseMethodDeclarationSyntax)node.SubOrFunctionStatement.Accept(visitor);
                 bool isIterator = node.SubOrFunctionStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
 
-                return block.WithBody(SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(new MethodBodyVisitor(semanticModel, visitor, withBlockTempVariableNames) { IsIterator = isIterator }))));
+                return block.WithBody(SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor(isIterator)))));
             }
 
             public override CSharpSyntaxNode VisitMethodStatement(VBSyntax.MethodStatementSyntax node)
@@ -578,9 +588,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                     (TypeSyntax)block.AsClause?.Type.Accept(visitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)),
                     ConvertToken(block.OperatorToken),
                     (ParameterListSyntax)block.ParameterList.Accept(visitor),
-                    SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(new MethodBodyVisitor(semanticModel, visitor, withBlockTempVariableNames)))),
+                    SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor()))),
                     null
                 );
+            }
+
+            private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(bool isIterator = false)
+            {
+                var methodBodyVisitor = new MethodBodyVisitor(semanticModel, visitor, withBlockTempVariableNames) {IsIterator = isIterator};
+                return methodBodyVisitor.CommentConvertingVisitor;
             }
 
             public override CSharpSyntaxNode VisitConstructorBlock(VBSyntax.ConstructorBlockSyntax node)
@@ -616,7 +632,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier, semanticModel),
                     (ParameterListSyntax)block.ParameterList.Accept(visitor),
                     ctorCall,
-                    SyntaxFactory.Block(statements.SelectMany(s => s.Accept(new MethodBodyVisitor(semanticModel, visitor, withBlockTempVariableNames))))
+                    SyntaxFactory.Block(statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())))
                 );
             }
 
@@ -695,7 +711,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.CatchClause(
                     catcher,
                     filter,
-                    SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(new MethodBodyVisitor(semanticModel, visitor, withBlockTempVariableNames))))
+                    SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())))
                 );
             }
 
@@ -706,7 +722,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitFinallyBlock(VBSyntax.FinallyBlockSyntax node)
             {
-                return SyntaxFactory.FinallyClause(SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(new MethodBodyVisitor(semanticModel, visitor, withBlockTempVariableNames)))));
+                return SyntaxFactory.FinallyClause(SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor()))));
             }
 
 
@@ -1081,7 +1097,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (node.Body is VBSyntax.ExpressionSyntax)
                     body = node.Body.Accept(visitor);
                 else {
-                    var stmt = node.Body.Accept(new MethodBodyVisitor(semanticModel, visitor, withBlockTempVariableNames));
+                    var stmt = node.Body.Accept(CreateMethodBodyVisitor());
                     if (stmt.Count == 1)
                         body = stmt[0];
                     else {
@@ -1096,7 +1112,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitMultiLineLambdaExpression(VBSyntax.MultiLineLambdaExpressionSyntax node)
             {
-                var body = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(new MethodBodyVisitor(semanticModel, visitor, withBlockTempVariableNames))));
+                var body = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())));
                 var param = (ParameterListSyntax)node.SubOrFunctionHeader.ParameterList.Accept(visitor);
                 if (param.Parameters.Count == 1)
                     return SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);

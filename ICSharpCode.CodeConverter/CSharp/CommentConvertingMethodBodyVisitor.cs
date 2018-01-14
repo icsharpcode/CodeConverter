@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -19,7 +20,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
         {
             var cSharpSyntaxNodes = wrappedVisitor.Visit(node);
-            return SyntaxFactory.List(cSharpSyntaxNodes.Take(cSharpSyntaxNodes.Count - 1).Concat(cSharpSyntaxNodes.Last().WithConvertedTriviaFrom(node)));
+            // Port trivia to the last statement in the list
+            var allButLast = cSharpSyntaxNodes.Take(cSharpSyntaxNodes.Count - 1);
+            var lastWithTrivia = cSharpSyntaxNodes.Last().WithConvertedTriviaFrom(node);
+            return SyntaxFactory.List(allButLast.Concat(lastWithTrivia));
         }
     }
 }

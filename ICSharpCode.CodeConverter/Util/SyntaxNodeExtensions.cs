@@ -800,18 +800,44 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return node.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(trailingTrivia);
         }
+        public static SyntaxToken WithConvertedTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
+        {
+            node = otherNode.HasLeadingTrivia
+                ? node.WithLeadingTrivia(ConvertTrivia(otherNode.GetLeadingTrivia()))
+                : node;
+
+            if (!otherNode.HasTrailingTrivia || IsLastDescendantOfStatement(otherNode)) return node;
+
+            var convertedTrivia = ConvertTrivia(otherNode.GetTrailingTrivia());
+            return node.WithTrailingTrivia(convertedTrivia);
+        }
 
         public static T WithConvertedTriviaFrom<T>(
             this T node, SyntaxNode otherNode) where T : SyntaxNode
         {
             node = otherNode.HasLeadingTrivia
-                ? node.WithLeadingTrivia(otherNode.GetLeadingTrivia().Select(ConvertTrivia)
-                    .Where(x => x != default(SyntaxTrivia)))
+                ? node.WithLeadingTrivia(ConvertTrivia(otherNode.GetLeadingTrivia()))
                 : node;
-            node = node.HasTrailingTrivia
-                ? node.WithTrailingTrivia(otherNode.GetTrailingTrivia().Select(ConvertTrivia)
-                    .Where(x => x != default(SyntaxTrivia))) : node;
-            return node;
+
+            if (!otherNode.HasTrailingTrivia  || IsLastDescendantOfStatement(otherNode)) return node;
+
+            var convertedTrivia = ConvertTrivia(otherNode.GetTrailingTrivia());
+            return node.WithTrailingTrivia(convertedTrivia);
+        }
+
+        /// <remarks>
+        /// The last descendant of a statement's trivia counts as the statements trivia too.
+        /// </remarks>
+        private static bool IsLastDescendantOfStatement(SyntaxNode otherNode)
+        {
+            return otherNode.IsLastDescendantOf<Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSyntax>() || otherNode.IsLastDescendantOf<StatementSyntax>();
+        }
+
+        private static bool IsLastDescendantOf<T>(this SyntaxNode node) where T: SyntaxNode
+        {
+            var ancestorStatement = node.GetAncestor<T>();
+            if (ancestorStatement == null) return false;
+            return ancestorStatement.DescendantNodes().Last() == node;
         }
 
         private static IEnumerable<SyntaxTrivia> ConvertTrivia(IReadOnlyCollection<SyntaxTrivia> triviaToConvert)
