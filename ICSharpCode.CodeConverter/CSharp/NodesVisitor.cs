@@ -159,21 +159,26 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitClassBlock(VBSyntax.ClassBlockSyntax node)
             {
-                var stmt = node.ClassStatement;
-                var attributes = SyntaxFactory.List(stmt.AttributeLists.SelectMany(ConvertAttribute));
-                var members = SyntaxFactory.List(ConvertMembers(node.Members));
+                return node.ClassStatement.Accept(TriviaConvertingVisitor);
+            }
+
+            public override CSharpSyntaxNode VisitClassStatement(VBSyntax.ClassStatementSyntax node)
+            {
+                var nodeParent = (VBSyntax.ClassBlockSyntax) node.Parent;
+                var attributes = SyntaxFactory.List(node.AttributeLists.SelectMany(ConvertAttribute));
+                var members = SyntaxFactory.List(ConvertMembers(nodeParent.Members));
 
                 TypeParameterListSyntax parameters;
                 SyntaxList<TypeParameterConstraintClauseSyntax> constraints;
-                SplitTypeParameters(stmt.TypeParameterList, out parameters, out constraints);
-                var convertedIdentifier = ConvertIdentifier(stmt.Identifier, semanticModel);
-                
+                SplitTypeParameters(node.TypeParameterList, out parameters, out constraints);
+                var convertedIdentifier = ConvertIdentifier(node.Identifier, semanticModel);
+
                 return SyntaxFactory.ClassDeclaration(
                     attributes,
-                    ConvertModifiers(stmt.Modifiers),
+                    ConvertModifiers(node.Modifiers),
                     convertedIdentifier,
                     parameters,
-                    ConvertInheritsAndImplements(node.Inherits, node.Implements),
+                    ConvertInheritsAndImplements(nodeParent.Inherits, nodeParent.Implements),
                     constraints,
                     members
                 );
