@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.VB;
@@ -227,7 +228,20 @@ namespace CodeConverter.Tests
             }
         }
 
-        public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
+        public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode)
+        {
+            const string start = @"using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualBasic;
+";
+            if (expectedCsharpCode.StartsWith(start)) {
+                expectedCsharpCode = expectedCsharpCode.Substring(start.Length);
+            }
+            TestConversionVisualBasicToCSharpWithoutComments(string.Join("\n", AddLineNumberComments(visualBasicCode, "' ")), start + AddLineNumberComments(expectedCsharpCode, "// "));
+        }
+
+        public void TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
         {
             TestWorkspace csharpWorkspace, vbWorkspace;
             Document inputDocument, outputDocument;
@@ -254,6 +268,20 @@ namespace CodeConverter.Tests
                 }
                 Assert.True(false, sb.ToString());
             }
+        }
+
+        private static string AddLineNumberComments(string code, string singleLineCommentStart)
+        {
+            int skipped = 0;
+            var lines = code.Substring(2).Split('\r'); // Don't split at very start
+            var newLines = lines.Select((s, i) => {
+                if (s.Trim() == "{") {
+                    skipped++;
+                    return s;
+                }
+                return s + singleLineCommentStart + (i - skipped).ToString();
+            });
+            return code.Substring(0, 2) + string.Join("\r", newLines);
         }
 
         VisualBasicSyntaxNode Convert(CSharpSyntaxNode input, SemanticModel semanticModel, Document targetDocument)
