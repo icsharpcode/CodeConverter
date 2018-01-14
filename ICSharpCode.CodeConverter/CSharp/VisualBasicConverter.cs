@@ -43,7 +43,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var cSharpFirstPass = syntaxTrees.ToDictionary(tree => tree.FilePath ?? "unknown",
                 //todo use commentconverting visitor at top level to catch classes
-                tree => (CSharpSyntaxTree) SyntaxFactory.SyntaxTree(tree.GetRoot().Accept(new NodesVisitor(compilation.GetSemanticModel(tree, true)))));
+                tree => {
+                    var visualBasicSyntaxVisitor = new NodesVisitor(compilation.GetSemanticModel(tree, true));
+                    return (CSharpSyntaxTree)SyntaxFactory.SyntaxTree(tree.GetRoot().Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor));
+                });
             var cSharpCompilation = CSharpCompilation.Create("Conversion", cSharpFirstPass.Values, compilation.References);
             return cSharpFirstPass.ToDictionary(cs => cs.Key, cs => new CompilationErrorFixer(cSharpCompilation, cs.Value).Fix());
         }
