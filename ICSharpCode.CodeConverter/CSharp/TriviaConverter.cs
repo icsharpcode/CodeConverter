@@ -16,9 +16,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             destination = sourceNode.HasLeadingTrivia
                 ? destination.WithLeadingTrivia(sourceNode.GetLeadingTrivia().ConvertTrivia())
                 : destination;
-
-            if (!sourceNode.HasTrailingTrivia) return destination;
-
+            
             var lastSourceToken = sourceNode.GetLastToken();
 
             var descendantNodes = destination.DescendantNodes();//TODO Check/fix perf
@@ -31,8 +29,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 missedPort.Value.WithTrailingTrivia(missedPort.Key.TrailingTrivia));
                 trailingPortsDelegatedToParent.Remove(missedPort.Key);
             }
-
-            if (lastSourceToken == sourceNode.Parent.GetLastToken()) {
+            
+            if (!lastSourceToken.HasTrailingTrivia) return destination;
+            if (lastSourceToken == sourceNode.Parent?.GetLastToken()) {
                 trailingPortsDelegatedToParent[lastSourceToken] = destination;
                 return destination;
             }
