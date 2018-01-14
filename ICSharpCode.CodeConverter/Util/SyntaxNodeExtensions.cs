@@ -806,41 +806,18 @@ namespace ICSharpCode.CodeConverter.Util
                 ? node.WithLeadingTrivia(ConvertTrivia(otherNode.GetLeadingTrivia()))
                 : node;
 
-            if (!otherNode.HasTrailingTrivia || IsLastDescendantOfStatement(otherNode)) return node;
+            if (!otherNode.HasTrailingTrivia || ParentHasSameTrailingTrivia(otherNode)) return node;
 
             var convertedTrivia = ConvertTrivia(otherNode.GetTrailingTrivia());
             return node.WithTrailingTrivia(convertedTrivia);
         }
 
-        public static T WithConvertedTriviaFrom<T>(
-            this T node, SyntaxNode otherNode) where T : SyntaxNode
+        public static bool ParentHasSameTrailingTrivia(this SyntaxNode otherNode)
         {
-            node = otherNode.HasLeadingTrivia
-                ? node.WithLeadingTrivia(ConvertTrivia(otherNode.GetLeadingTrivia()))
-                : node;
-
-            if (!otherNode.HasTrailingTrivia  || IsLastDescendantOfStatement(otherNode)) return node;
-
-            var convertedTrivia = ConvertTrivia(otherNode.GetTrailingTrivia());
-            return node.WithTrailingTrivia(convertedTrivia);
+            return otherNode.Parent.GetLastToken() == otherNode.GetLastToken();
         }
 
-        /// <remarks>
-        /// The last descendant of a statement's trivia counts as the statements trivia too.
-        /// </remarks>
-        private static bool IsLastDescendantOfStatement(SyntaxNode otherNode)
-        {
-            return otherNode.IsLastDescendantOf<Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSyntax>() || otherNode.IsLastDescendantOf<StatementSyntax>();
-        }
-
-        private static bool IsLastDescendantOf<T>(this SyntaxNode node) where T: SyntaxNode
-        {
-            var ancestorStatement = node.GetAncestor<T>();
-            if (ancestorStatement == null) return false;
-            return ancestorStatement.DescendantNodes().Last() == node;
-        }
-
-        private static IEnumerable<SyntaxTrivia> ConvertTrivia(IReadOnlyCollection<SyntaxTrivia> triviaToConvert)
+        public static IEnumerable<SyntaxTrivia> ConvertTrivia(this IReadOnlyCollection<SyntaxTrivia> triviaToConvert)
         {
             return triviaToConvert.Select(ConvertTrivia).Where(x => x != default(SyntaxTrivia));
         }

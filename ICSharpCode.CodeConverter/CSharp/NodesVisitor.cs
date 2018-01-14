@@ -167,16 +167,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxList<TypeParameterConstraintClauseSyntax> constraints;
                 SplitTypeParameters(stmt.TypeParameterList, out parameters, out constraints);
                 var convertedIdentifier = ConvertIdentifier(stmt.Identifier, semanticModel);
-
-                //TODO Consider moving into comment visitor if it doesn't seem to weirdly coupled - need something similar for other objects where we don't visit some of the syntax
-                if (constraints.Any()) {
-                    constraints = constraints.Replace(constraints.Last(), constraints.Last().WithConvertedTriviaFrom(node.ClassStatement));
-                } else if (parameters != null) {
-                    parameters = parameters.WithConvertedTriviaFrom(node.ClassStatement);
-                } else {
-                    convertedIdentifier = convertedIdentifier.WithConvertedTriviaFrom(node.ClassStatement);
-                }
-
+                
                 return SyntaxFactory.ClassDeclaration(
                     attributes,
                     ConvertModifiers(stmt.Modifiers),
@@ -595,7 +586,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(bool isIterator = false)
             {
-                var methodBodyVisitor = new MethodBodyVisitor(semanticModel, visitor, withBlockTempVariableNames) {IsIterator = isIterator};
+                var methodBodyVisitor = new MethodBodyVisitor(semanticModel, visitor, withBlockTempVariableNames, visitor.TriviaConverter) {IsIterator = isIterator};
                 return methodBodyVisitor.CommentConvertingVisitor;
             }
 

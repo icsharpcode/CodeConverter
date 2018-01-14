@@ -11,17 +11,19 @@ namespace ICSharpCode.CodeConverter.CSharp
     public class CommentConvertingMethodBodyVisitor : VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>>
     {
         private readonly VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> wrappedVisitor;
+        private readonly TriviaConverter triviaConverter;
 
-        public CommentConvertingMethodBodyVisitor(VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> wrappedVisitor)
+        public CommentConvertingMethodBodyVisitor(VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> wrappedVisitor, TriviaConverter triviaConverter)
         {
             this.wrappedVisitor = wrappedVisitor;
+            this.triviaConverter = triviaConverter;
         }
 
         public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
         {
             var cSharpSyntaxNodes = wrappedVisitor.Visit(node);
             // Port trivia to the last statement in the list
-            var lastWithConvertedTrivia = cSharpSyntaxNodes.LastOrDefault()?.WithConvertedTriviaFrom(node);
+            var lastWithConvertedTrivia = triviaConverter.PortConvertedTrivia(node, cSharpSyntaxNodes.LastOrDefault());
             return cSharpSyntaxNodes.Replace(cSharpSyntaxNodes.LastOrDefault(), lastWithConvertedTrivia);
         }
     }

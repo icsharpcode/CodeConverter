@@ -30,12 +30,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             public bool IsIterator { get; set; }
             public VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CommentConvertingVisitor { get; }
 
-            public MethodBodyVisitor(SemanticModel semanticModel, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, Stack<string> withBlockTempVariableNames)
+            public MethodBodyVisitor(SemanticModel semanticModel, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, Stack<string> withBlockTempVariableNames, TriviaConverter triviaConverter)
             {
                 this.semanticModel = semanticModel;
                 this.nodesVisitor = nodesVisitor;
                 this.withBlockTempVariableNames = withBlockTempVariableNames;
-                this.CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this);
+                this.CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
             }
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)

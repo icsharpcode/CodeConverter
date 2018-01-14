@@ -13,17 +13,19 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     public class CommentConvertingNodesVisitor : VisualBasicSyntaxVisitor<CSharpSyntaxNode>
     {
+        public TriviaConverter TriviaConverter { get; }
         private readonly VisualBasicSyntaxVisitor<CSharpSyntaxNode> wrappedVisitor;
         private static readonly SyntaxTrivia EndOfLine = SyntaxFactory.SyntaxTrivia(SyntaxKind.EndOfLineTrivia, Environment.NewLine);
 
         public CommentConvertingNodesVisitor(VisualBasicSyntaxVisitor<CSharpSyntaxNode> wrappedVisitor)
         {
+            TriviaConverter = new TriviaConverter();
             this.wrappedVisitor = wrappedVisitor;
         }
         public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)
         {
             var cSharpSyntaxNode = wrappedVisitor.Visit(node);
-            return cSharpSyntaxNode.WithConvertedTriviaFrom(node);
+            return TriviaConverter.PortConvertedTrivia(node, cSharpSyntaxNode);
         }
     }
 }
