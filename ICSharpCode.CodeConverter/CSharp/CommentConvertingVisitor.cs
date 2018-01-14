@@ -42,7 +42,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)
         {
-            return wrappedVisitor.Visit(node).WithConvertedTriviaFrom(node);
+            var cSharpSyntaxNode = wrappedVisitor.Visit(node);
+            return cSharpSyntaxNode.WithConvertedTriviaFrom(node);
         }
 
         public override CSharpSyntaxNode VisitImportsStatement(ImportsStatementSyntax node)

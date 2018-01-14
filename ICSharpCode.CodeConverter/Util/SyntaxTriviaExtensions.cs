@@ -94,9 +94,15 @@ namespace ICSharpCode.CodeConverter.Util
         public static string GetCommentText(this SyntaxTrivia trivia)
         {
             var commentText = trivia.ToString();
-            if (trivia.Kind() == SyntaxKind.SingleLineCommentTrivia) {
+            if (trivia.IsKind(SyntaxKind.SingleLineCommentTrivia)) {
                 if (commentText.StartsWith("//")) {
                     commentText = commentText.Substring(2);
+                }
+
+                return commentText.TrimStart(null);
+            } else if (trivia.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.CommentTrivia)) {
+                if (commentText.StartsWith("'")) {
+                    commentText = commentText.Substring(1);
                 }
 
                 return commentText.TrimStart(null);

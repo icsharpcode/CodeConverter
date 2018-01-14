@@ -814,7 +814,11 @@ namespace ICSharpCode.CodeConverter.Util
             return node;
         }
 
-        // Random stuff
+        private static IEnumerable<SyntaxTrivia> ConvertTrivia(IReadOnlyCollection<SyntaxTrivia> triviaToConvert)
+        {
+            return triviaToConvert.Select(ConvertTrivia).Where(x => x != default(SyntaxTrivia));
+        }
+
         private static SyntaxTrivia ConvertTrivia(SyntaxTrivia t)
         {
             if (t.IsKind(VBSyntaxKind.CommentTrivia))
@@ -838,6 +842,12 @@ namespace ICSharpCode.CodeConverter.Util
                 // Mapping one to one here leads to newlines appearing where the natural line-end was in VB.
                 // e.g. ToString\r\n()
                 // Because C Sharp needs those brackets. Handling each possible case of this is far more effort than it's worth.
+                var previousTrivia = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None);
+                var previousWasComment = previousTrivia.IsKind(VBSyntaxKind.CommentTrivia) ||
+                        previousTrivia.IsKind(VBSyntaxKind.DocumentationCommentTrivia);
+                if (previousWasComment) {
+                    return SyntaxFactory.SyntaxTrivia(SyntaxKind.EndOfLineTrivia, t.ToString());
+                }
                 return default(SyntaxTrivia);
             }
 

@@ -370,7 +370,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     (VBSyntax.SimpleAsClauseSyntax c) => c.Type,
                     (VBSyntax.AsNewClauseSyntax c) => {
                         initializer = SyntaxFactory.EqualsValueClause((ExpressionSyntax)c.NewExpression.Accept(visitor));
-                        return VBasic.SyntaxExtensions.Type(c.NewExpression);
+                        return VBasic.SyntaxExtensions.Type(c.NewExpression.WithoutTrivia()); // We'll end up visiting this twice so avoid trivia this time
                     },
                     _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
                 )?.Accept(visitor) ?? SyntaxFactory.ParseTypeName("var");
