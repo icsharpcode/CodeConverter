@@ -21,9 +21,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var cSharpSyntaxNodes = wrappedVisitor.Visit(node);
             // Port trivia to the last statement in the list
-            var allButLast = cSharpSyntaxNodes.Take(cSharpSyntaxNodes.Count - 1);
-            var lastWithTrivia = cSharpSyntaxNodes.Last().WithConvertedTriviaFrom(node);
-            return SyntaxFactory.List(allButLast.Concat(lastWithTrivia));
+            var lastWithConvertedTrivia = cSharpSyntaxNodes.LastOrDefault()?.WithConvertedTriviaFrom(node);
+            return cSharpSyntaxNodes.Replace(cSharpSyntaxNodes.LastOrDefault(), lastWithConvertedTrivia);
         }
     }
 }
