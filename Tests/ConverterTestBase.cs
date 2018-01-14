@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
@@ -273,15 +274,18 @@ using Microsoft.VisualBasic;
         private static string AddLineNumberComments(string code, string singleLineCommentStart)
         {
             int skipped = 0;
-            var lines = code.Substring(2).Split('\r'); // Don't split at very start
+            var lines = code.Split('\r'); // Don't split at very start
             var newLines = lines.Select((s, i) => {
-                if (s.Trim() == "{") {
+                if (s.Trim() == "{" || i == 0 || s.IndexOf("class ", 0, StringComparison.InvariantCultureIgnoreCase) > -1) {
                     skipped++;
                     return s;
                 }
+                if (s.Trim() == "") {
+                    s = new string(Enumerable.Repeat(' ', lines[i - 1].Trim('\n').Length).ToArray());
+                }
                 return s + singleLineCommentStart + (i - skipped).ToString();
             });
-            return code.Substring(0, 2) + string.Join("\r", newLines);
+            return string.Join("\r", newLines);
         }
 
         VisualBasicSyntaxNode Convert(CSharpSyntaxNode input, SemanticModel semanticModel, Document targetDocument)
