@@ -868,13 +868,7 @@ namespace ICSharpCode.CodeConverter.Util
                 // Mapping one to one here leads to newlines appearing where the natural line-end was in VB.
                 // e.g. ToString\r\n()
                 // Because C Sharp needs those brackets. Handling each possible case of this is far more effort than it's worth.
-                var previousTrivia = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None);
-                var previousWasComment = previousTrivia.IsKind(VBSyntaxKind.CommentTrivia) ||
-                        previousTrivia.IsKind(VBSyntaxKind.DocumentationCommentTrivia);
-                if (previousWasComment) {
-                    return SyntaxFactory.SyntaxTrivia(SyntaxKind.EndOfLineTrivia, t.ToString());
-                }
-                return default(SyntaxTrivia);
+                return SyntaxFactory.SyntaxTrivia(SyntaxKind.EndOfLineTrivia, t.ToString());
             }
 
             //Each of these would need its own method to recreate for C# with the right structure probably so let's just warn about them for now.
