@@ -11,12 +11,12 @@ using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    public class CommentConvertingVisitor : VisualBasicSyntaxVisitor<CSharpSyntaxNode>
+    public class CommentConvertingNodesVisitor : VisualBasicSyntaxVisitor<CSharpSyntaxNode>
     {
         private readonly VisualBasicSyntaxVisitor<CSharpSyntaxNode> wrappedVisitor;
         private static readonly SyntaxTrivia EndOfLine = SyntaxFactory.SyntaxTrivia(SyntaxKind.EndOfLineTrivia, Environment.NewLine);
 
-        public CommentConvertingVisitor(VisualBasicSyntaxVisitor<CSharpSyntaxNode> wrappedVisitor)
+        public CommentConvertingNodesVisitor(VisualBasicSyntaxVisitor<CSharpSyntaxNode> wrappedVisitor)
         {
             this.wrappedVisitor = wrappedVisitor;
         }

@@ -26,6 +26,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             SemanticModel semanticModel;
             readonly VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor;
             private readonly Stack<string> withBlockTempVariableNames;
+            private readonly CommentConvertingMethodBodyVisitor methodBodyVisitor;
 
             public bool IsIterator { get; set; }
 
@@ -33,6 +34,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 this.semanticModel = semanticModel;
                 this.nodesVisitor = nodesVisitor;
+                this.methodBodyVisitor = new CommentConvertingMethodBodyVisitor(this);
                 this.withBlockTempVariableNames = withBlockTempVariableNames;
             }
 

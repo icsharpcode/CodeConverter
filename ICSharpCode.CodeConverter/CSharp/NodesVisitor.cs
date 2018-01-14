@@ -43,12 +43,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
             private readonly Stack<string> withBlockTempVariableNames = new Stack<string>();
             readonly IDictionary<string, string> importedNamespaces;
-            private readonly CommentConvertingVisitor visitor;
+            private readonly CommentConvertingNodesVisitor visitor;
 
             public NodesVisitor(SemanticModel semanticModel)
             {
                 this.semanticModel = semanticModel;
-                this.visitor = new CommentConvertingVisitor(this);
+                this.visitor = new CommentConvertingNodesVisitor(this);
                 importedNamespaces = new Dictionary<string, string> {{VBasic.VisualBasicExtensions.RootNamespace(semanticModel.Compilation).ToString(), ""}};
                 this.createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
             }
