@@ -222,6 +222,31 @@ class TestClass
 		}
 
 		[Fact]
+        public void ExternalReferenceToOutParameter()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod(ByVal str As String)
+        Dim d = New Dictionary(Of string, string)
+        Dim s As String
+        d.TryGetValue(""a"", s)
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualBasic;
+
+class TestClass
+{
+    private void TestMethod(string str)
+    {
+        var d = new Dictionary<string, string>();
+        string s;
+        d.TryGetValue(""a"", out s);
+    }
+}");
+        }
+
+        [Fact]
 		public void ElvisOperatorExpression()
 		{
 			TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -595,5 +620,47 @@ End Sub", @"public void Linq103()
     }
 }");
 		}
+
+        [Fact]
+        public void PartiallyQualifiedName()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Public Function TestMethod(dir As String) As String
+         Return IO.Path.Combine(dir, ""file.txt"")
+    End Function
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualBasic;
+
+class TestClass
+{
+    public string TestMethod(string dir)
+    {
+        return System.IO.Path.Combine(dir, ""file.txt"");
+    }
+}");
+        }
+
+        [Fact]
+        public void UsingGlobalImport()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Public Function TestMethod() As String
+         Return vbCrLf
+    End Function
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualBasic;
+
+class TestClass
+{
+    public string TestMethod()
+    {
+        return Constants.vbCrLf;
+    }
+}");
+        }
 	}
 }

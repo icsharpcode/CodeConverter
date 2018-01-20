@@ -263,7 +263,7 @@ namespace CodeConverter.Tests
 
 		CSharpSyntaxNode Convert(VisualBasicSyntaxNode input, SemanticModel semanticModel, Document targetDocument)
 		{
-			return VisualBasicConverter.Convert(input, semanticModel, targetDocument);
+			return VisualBasicConverter.ConvertSingle((VisualBasicCompilation) semanticModel.Compilation, (VisualBasicSyntaxTree) input.SyntaxTree);
 		}
 	}
 }

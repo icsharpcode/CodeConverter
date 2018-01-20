@@ -532,6 +532,63 @@ class TestClass
 }");
 		}
 
+        [Fact]
+        public void NestedClass()
+        {
+            TestConversionVisualBasicToCSharp(@"Class ClA
+    Public Shared Sub MA()
+        ClA.ClassB.MB()
+        MyClassC.MC()
+    End Sub
+
+    Public Class ClassB
+        Public Shared Function MB() as ClassB
+            ClA.MA()
+            MyClassC.MC()
+            Return ClA.ClassB.MB()
+        End Function
+    End Class
+End Class
+
+Class MyClassC
+    Public Shared Sub MC()
+        ClA.MA()
+        ClA.ClassB.MB()
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualBasic;
+
+class ClA
+{
+    public static void MA()
+    {
+        ClA.ClassB.MB();
+        MyClassC.MC();
+    }
+
+    public class ClassB
+    {
+        public static ClassB MB()
+        {
+            ClA.MA();
+            MyClassC.MC();
+            return ClA.ClassB.MB();
+        }
+    }
+}
+
+class MyClassC
+{
+    public static void MC()
+    {
+        ClA.MA();
+        ClA.ClassB.MB();
+    }
+}");
+        }
+
 		[Fact(Skip = "Not implemented!")]
 		public void TestIndexer()
 		{
