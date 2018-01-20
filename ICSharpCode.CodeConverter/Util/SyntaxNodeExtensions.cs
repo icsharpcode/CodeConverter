@@ -806,7 +806,7 @@ namespace ICSharpCode.CodeConverter.Util
                 ? node.WithLeadingTrivia(ConvertTrivia(otherNode.GetLeadingTrivia()))
                 : node;
 
-            if (!otherNode.HasTrailingTrivia || ParentHasSameTrailingTrivia(otherNode)) return node;
+            if (!otherNode.HasTrailingTrivia) return node;
 
             var convertedTrivia = ConvertTrivia(otherNode.GetTrailingTrivia());
             return node.WithTrailingTrivia(convertedTrivia);
