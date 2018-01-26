@@ -231,16 +231,7 @@ namespace CodeConverter.Tests
 
         public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode)
         {
-            const string start = @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-";
-            if (expectedCsharpCode.StartsWith(start)) {
-                expectedCsharpCode = expectedCsharpCode.Substring(start.Length);
-            }
-            TestConversionVisualBasicToCSharpWithoutComments(string.Join("\n", AddLineNumberComments(visualBasicCode, "' ")), start + AddLineNumberComments(expectedCsharpCode, "// "));
+            TestConversionVisualBasicToCSharpWithoutComments(string.Join("\n", AddLineNumberComments(visualBasicCode, "' ")), AddLineNumberComments(expectedCsharpCode, "// "));
         }
 
         public void TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
@@ -276,14 +267,24 @@ using Microsoft.VisualBasic;
         {
             int skipped = 0;
             var lines = code.Split('\r'); // Don't split at very start
+            bool started = false;
+
             var newLines = lines.Select((s, i) => {
-                if (s.Trim() == "{" || s.Contains("Inherit") || s.Contains("Implements")) {
+
+                //Don't start until first line mentioning class
+                started |= s.IndexOf("class ", StringComparison.InvariantCultureIgnoreCase) + s.IndexOf("module ", StringComparison.InvariantCultureIgnoreCase) > -2;
+
+                //Avoid lines using implements
+                if (s.Trim() == "{" || s.Contains("Inherits") || s.Contains("Implements") || !started) {
                     skipped++;
                     return s;
                 }
+
+                //Try to indent based on next line
                 if (s.Trim() == "" && i > 0) {
                     s = new string(Enumerable.Repeat(' ', lines[i - 1].Trim('\n').Length).ToArray());
                 }
+
                 return s + singleLineCommentStart + (i - skipped).ToString();
             });
             return string.Join("\r", newLines);
