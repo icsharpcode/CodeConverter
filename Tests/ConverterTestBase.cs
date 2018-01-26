@@ -277,7 +277,7 @@ using Microsoft.VisualBasic;
             int skipped = 0;
             var lines = code.Split('\r'); // Don't split at very start
             var newLines = lines.Select((s, i) => {
-                if (s.Trim() == "{" || s.Trim().StartsWith("Inherits")) {
+                if (s.Trim() == "{" || s.Contains("Inherit") || s.Contains("Implements")) {
                     skipped++;
                     return s;
                 }
