@@ -3,6 +3,7 @@ using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -15,7 +16,6 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         public TriviaConverter TriviaConverter { get; }
         private readonly VisualBasicSyntaxVisitor<CSharpSyntaxNode> wrappedVisitor;
-        private static readonly SyntaxTrivia EndOfLine = SyntaxFactory.SyntaxTrivia(SyntaxKind.EndOfLineTrivia, Environment.NewLine);
 
         public CommentConvertingNodesVisitor(VisualBasicSyntaxVisitor<CSharpSyntaxNode> wrappedVisitor)
         {
@@ -25,6 +25,15 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)
         {
             var cSharpSyntaxNode = wrappedVisitor.Visit(node);
+            if (node is TypeStatementSyntax) {
+                return cSharpSyntaxNode;
+            }
+
+            if (node is TypeBlockSyntax typeBlockVbNode && cSharpSyntaxNode is BaseTypeDeclarationSyntax btCsNode) {
+                var beforeOpenBrace = btCsNode.OpenBraceToken.GetPreviousToken();
+                cSharpSyntaxNode = cSharpSyntaxNode.ReplaceToken(beforeOpenBrace,
+                    beforeOpenBrace.WithConvertedTriviaFrom(typeBlockVbNode.BlockStatement));
+            }
             return TriviaConverter.PortConvertedTrivia(node, cSharpSyntaxNode);
         }
     }

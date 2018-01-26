@@ -25,20 +25,32 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Where(tnp => descendantNodes.Select(f => f.FullSpan).Contains(tnp.Value.FullSpan))//TODO Check/fix perf
                 .ToList();
             foreach (var missedPort in missedPortsWhichAreChildren.ToList()) {
-                destination = destination.ReplaceNode(missedPort.Value,
-                missedPort.Value.WithTrailingTrivia(missedPort.Key.TrailingTrivia));
-                trailingPortsDelegatedToParent.Remove(missedPort.Key);
+                var missedPortValue = missedPort.Value;
+                var missedPortKey = missedPort.Key;
+                destination = destination.ReplaceNode(missedPortValue,
+                missedPortValue.WithTrailingTrivia(missedPortKey.TrailingTrivia));
+                MarkAsPorted(missedPort.Key);
             }
             
             if (!lastSourceToken.HasTrailingTrivia) return destination;
             if (lastSourceToken == sourceNode.Parent?.GetLastToken()) {
-                trailingPortsDelegatedToParent[lastSourceToken] = destination;
+                DelegateToParent(lastSourceToken, destination);
                 return destination;
             }
 
-            trailingPortsDelegatedToParent.Remove(lastSourceToken);
+            MarkAsPorted(lastSourceToken);
             var convertedTrivia = lastSourceToken.TrailingTrivia.ConvertTrivia();
             return destination.WithTrailingTrivia(convertedTrivia);
+        }
+
+        private void DelegateToParent<T>(SyntaxToken lastSourceToken, T destination) where T : SyntaxNode
+        {
+            trailingPortsDelegatedToParent[lastSourceToken] = destination;
+        }
+
+        public void MarkAsPorted(SyntaxToken lastSourceToken)
+        {
+            trailingPortsDelegatedToParent.Remove(lastSourceToken);
         }
     }
 }

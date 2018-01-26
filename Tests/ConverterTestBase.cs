@@ -235,6 +235,7 @@ namespace CodeConverter.Tests
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
+
 ";
             if (expectedCsharpCode.StartsWith(start)) {
                 expectedCsharpCode = expectedCsharpCode.Substring(start.Length);
@@ -276,11 +277,11 @@ using Microsoft.VisualBasic;
             int skipped = 0;
             var lines = code.Split('\r'); // Don't split at very start
             var newLines = lines.Select((s, i) => {
-                if (s.Trim() == "{" || i == 0 || s.IndexOf("class ", 0, StringComparison.InvariantCultureIgnoreCase) > -1) {
+                if (s.Trim() == "{" || s.Trim().StartsWith("Inherits")) {
                     skipped++;
                     return s;
                 }
-                if (s.Trim() == "") {
+                if (s.Trim() == "" && i > 0) {
                     s = new string(Enumerable.Repeat(' ', lines[i - 1].Trim('\n').Length).ToArray());
                 }
                 return s + singleLineCommentStart + (i - skipped).ToString();
