@@ -232,7 +232,7 @@ namespace CodeConverter.Tests
         public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode)
         {
             TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode);
-            //TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' "), AddLineNumberComments(expectedCsharpCode, "// "));
+            TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true));
         }
 
         public void TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
@@ -260,11 +260,14 @@ namespace CodeConverter.Tests
                     else
                         sb.Append(expectedCsharpCode[i]);
                 }
+                sb.AppendLine();
+                sb.AppendLine("vb:");
+                sb.AppendLine(visualBasicCode);
                 Assert.True(false, sb.ToString());
             }
         }
 
-        private static string AddLineNumberComments(string code, string singleLineCommentStart)
+        private static string AddLineNumberComments(string code, string singleLineCommentStart, bool isTarget)
         {
             int skipped = 0;
             var lines = code.Split('\r'); // Don't split at very start
@@ -278,8 +281,10 @@ namespace CodeConverter.Tests
                 //Don't start until first line mentioning class
                 started |= s.IndexOf("class ", StringComparison.InvariantCultureIgnoreCase) + s.IndexOf("module ", StringComparison.InvariantCultureIgnoreCase) > -2;
 
-                //Avoid all but last line of class statement - the layout changes significantly between languages and should be tested independently
-                if (!started || IsNonFinalPartOfCsClassStatement(prevLine, s, nextLine) || IsNonFinalPartOfVbClassStatement(prevLine, s, nextLine)) {
+                //Lines which don't map directly should be tested independently
+                if (!started ||
+                isTarget && HasNoSourceLine(prevLine, s, nextLine)
+                || !isTarget && HasNoTargetLine(prevLine, s, nextLine)) {
                     skipped++;
                     return s;
                 }
@@ -294,14 +299,17 @@ namespace CodeConverter.Tests
             return string.Join("\r", newLines);
         }
 
-        private static bool IsNonFinalPartOfCsClassStatement(string prevLine, string line, string nextLine)
+        private static bool HasNoSourceLine(string prevLine, string line, string nextLine)
         {
-            return line.Trim() == "{" /*|| prevLine.Contains("class ") || nextLine.Contains("class ")*/;
+            return line.Trim() == "{" 
+                || nextLine.Contains("where T");
         }
 
-        private static bool IsNonFinalPartOfVbClassStatement(string prevLine, string line, string nextLine)
+        private static bool HasNoTargetLine(string prevLine, string line, string nextLine)
         {
-            return (line.Contains("Class") || IsVbInheritsOrImplements(line)) && IsVbInheritsOrImplements(nextLine);
+            return IsVbInheritsOrImplements(nextLine)
+                //Allow a blank line in VB after these statements that doesn't appear in the C# since C# has braces to act as a separator
+                || string.IsNullOrWhiteSpace(line) && IsVbInheritsOrImplements(prevLine);
         }
 
         private static bool IsVbInheritsOrImplements(string line)
