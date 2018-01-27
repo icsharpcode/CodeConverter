@@ -3,12 +3,10 @@ using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+using VbSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using CsSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -24,20 +22,60 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
         public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)
         {
-            var cSharpSyntaxNode = wrappedVisitor.Visit(node);
-            if (node is TypeStatementSyntax) {
-                return cSharpSyntaxNode;
-            }
+            return TriviaConverter.PortConvertedTrivia(node, wrappedVisitor.Visit(node));
+        }
 
-            if (node is TypeBlockSyntax typeBlockVbNode && cSharpSyntaxNode is BaseTypeDeclarationSyntax btCsNode) {
-                var beforeOpenBrace = btCsNode.OpenBraceToken.GetPreviousToken();
-                cSharpSyntaxNode = cSharpSyntaxNode.ReplaceToken(beforeOpenBrace,
-                    beforeOpenBrace
-                    .WithConvertedTrailingTriviaFrom(typeBlockVbNode.BlockStatement)
-                    .WithConvertedTrailingTriviaFrom(typeBlockVbNode.Inherits.LastOrDefault())
-                    .WithConvertedTrailingTriviaFrom(typeBlockVbNode.Implements.LastOrDefault()));
-            }
+        public override CSharpSyntaxNode VisitModuleBlock(VbSyntax.ModuleBlockSyntax node)
+        {
+            return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
+        }
+
+        public override CSharpSyntaxNode VisitStructureBlock(VbSyntax.StructureBlockSyntax node)
+        {
+            return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
+        }
+
+        public override CSharpSyntaxNode VisitInterfaceBlock(VbSyntax.InterfaceBlockSyntax node)
+        {
+            return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
+        }
+
+        public override CSharpSyntaxNode VisitClassBlock(VbSyntax.ClassBlockSyntax node)
+        {
+            return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
+        }
+
+        public override CSharpSyntaxNode VisitSingleLineLambdaExpression(VbSyntax.SingleLineLambdaExpressionSyntax node)
+        {
+            return WithPortedTrivia<VbSyntax.LambdaExpressionSyntax, CsSyntax.LambdaExpressionSyntax>(node, PortSubOrFunctionHeaderTrailingTrivia);
+        }
+
+        public override CSharpSyntaxNode VisitMultiLineLambdaExpression(VbSyntax.MultiLineLambdaExpressionSyntax node)
+        {
+            return WithPortedTrivia<VbSyntax.LambdaExpressionSyntax, CsSyntax.LambdaExpressionSyntax>(node, PortSubOrFunctionHeaderTrailingTrivia);
+        }
+
+        private TDest WithPortedTrivia<TSource, TDest>(SyntaxNode node, Func<TSource, TDest, TDest> portExtraTrivia) where TSource : SyntaxNode where TDest : CSharpSyntaxNode
+        {
+            var cSharpSyntaxNode = portExtraTrivia((TSource)node, (TDest)wrappedVisitor.Visit(node));
             return TriviaConverter.PortConvertedTrivia(node, cSharpSyntaxNode);
+        }
+
+        private static CsSyntax.BaseTypeDeclarationSyntax WithTypeBlockTrivia(VbSyntax.TypeBlockSyntax typeBlockVbNode, CsSyntax.BaseTypeDeclarationSyntax btCsNode)
+        {
+                var beforeOpenBrace = btCsNode.OpenBraceToken.GetPreviousToken();
+                return btCsNode.ReplaceToken(beforeOpenBrace,
+                    beforeOpenBrace
+                        .WithConvertedTrailingTriviaFrom(typeBlockVbNode.BlockStatement)
+                        .WithConvertedTrailingTriviaFrom(typeBlockVbNode.Inherits.LastOrDefault())
+                        .WithConvertedTrailingTriviaFrom(typeBlockVbNode.Implements.LastOrDefault()));
+        }
+
+        private static CsSyntax.LambdaExpressionSyntax PortSubOrFunctionHeaderTrailingTrivia(VbSyntax.LambdaExpressionSyntax node, CsSyntax.LambdaExpressionSyntax csLambda)
+        {
+            var csLambdaArrowToken = csLambda.ArrowToken;
+            var withConvertedTrailingTriviaFrom = csLambdaArrowToken.WithConvertedTrailingTriviaFrom(node.SubOrFunctionHeader.ParameterList.CloseParenToken);
+            return csLambda.ReplaceToken(csLambdaArrowToken, withConvertedTrailingTriviaFrom);
         }
     }
 }
