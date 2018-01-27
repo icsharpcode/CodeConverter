@@ -231,7 +231,8 @@ namespace CodeConverter.Tests
 
         public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode)
         {
-            TestConversionVisualBasicToCSharpWithoutComments(string.Join("\n", AddLineNumberComments(visualBasicCode, "' ")), AddLineNumberComments(expectedCsharpCode, "// "));
+            TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode);
+            //TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' "), AddLineNumberComments(expectedCsharpCode, "// "));
         }
 
         public void TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
@@ -271,11 +272,14 @@ namespace CodeConverter.Tests
 
             var newLines = lines.Select((s, i) => {
 
+                var prevLine = i > 0 ? lines[i - 1] : "";
+                var nextLine = i < lines.Length - 1 ? lines[i + 1] : "";
+
                 //Don't start until first line mentioning class
                 started |= s.IndexOf("class ", StringComparison.InvariantCultureIgnoreCase) + s.IndexOf("module ", StringComparison.InvariantCultureIgnoreCase) > -2;
 
-                //Avoid lines using implements
-                if (s.Trim() == "{" || s.Contains("Inherits") || s.Contains("Implements") || !started) {
+                //Avoid all but last line of class statement - the layout changes significantly between languages and should be tested independently
+                if (!started || IsNonFinalPartOfCsClassStatement(prevLine, s, nextLine) || IsNonFinalPartOfVbClassStatement(prevLine, s, nextLine)) {
                     skipped++;
                     return s;
                 }
@@ -288,6 +292,21 @@ namespace CodeConverter.Tests
                 return s + singleLineCommentStart + (i - skipped).ToString();
             });
             return string.Join("\r", newLines);
+        }
+
+        private static bool IsNonFinalPartOfCsClassStatement(string prevLine, string line, string nextLine)
+        {
+            return line.Trim() == "{" /*|| prevLine.Contains("class ") || nextLine.Contains("class ")*/;
+        }
+
+        private static bool IsNonFinalPartOfVbClassStatement(string prevLine, string line, string nextLine)
+        {
+            return (line.Contains("Class") || IsVbInheritsOrImplements(line)) && IsVbInheritsOrImplements(nextLine);
+        }
+
+        private static bool IsVbInheritsOrImplements(string line)
+        {
+            return line.Contains("Inherits") || line.Contains("Implements");
         }
 
         VisualBasicSyntaxNode Convert(CSharpSyntaxNode input, SemanticModel semanticModel, Document targetDocument)
