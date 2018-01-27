@@ -610,6 +610,7 @@ class TestClass
     private void TestMethod(int a)
     {
         int b;
+
         if (a == 0)
             b = 0;
         else if (a == 1)
@@ -647,6 +648,7 @@ class TestClass
     {
         int b;
         b = 0;
+
         while (b == 0)
         {
             if (b == 2)
@@ -684,6 +686,7 @@ class TestClass
     {
         int b;
         b = 0;
+
         do
         {
             if (b == 2)
@@ -779,6 +782,7 @@ class TestClass
     {
         if (nullObject == null)
             throw new ArgumentNullException(nameof(nullObject));
+
         lock (nullObject)
             Console.WriteLine(nullObject);
     }
@@ -1153,6 +1157,7 @@ class TestClass
     {
         if (number < 0)
             yield break;
+
         for (int i = 0; i <= number - 1; i++)
             yield return i;
     }

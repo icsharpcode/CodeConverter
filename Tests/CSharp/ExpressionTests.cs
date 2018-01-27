@@ -433,6 +433,7 @@ class TestClass
                 return a / b;
             return 0;
         };
+
         var test3 = (a, b) => a % b;
         test(3);
     }

@@ -417,7 +417,8 @@ Friend Class TestClass2
 
     Public Overrides Sub CreateVirtualInstance()
     End Sub
-End Class", @"using System;
+End Class", @"
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
