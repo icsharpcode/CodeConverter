@@ -802,12 +802,19 @@ namespace ICSharpCode.CodeConverter.Util
         }
         public static SyntaxToken WithConvertedTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
         {
-            node = otherNode.HasLeadingTrivia
-                ? node.WithLeadingTrivia(ConvertTrivia(otherNode.GetLeadingTrivia()))
-                : node;
+            return node.WithConvertedLeadingTriviaFrom(otherNode).WithConvertedTrailingTriviaFrom(otherNode);
+        }
 
+        public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
+        {
+            if (!otherNode.HasLeadingTrivia) return node;
+            var convertedTrivia = ConvertTrivia(otherNode.GetLeadingTrivia());
+            return node.WithLeadingTrivia(convertedTrivia);
+        }
+
+        public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
+        {
             if (!otherNode.HasTrailingTrivia) return node;
-
             var convertedTrivia = ConvertTrivia(otherNode.GetTrailingTrivia());
             return node.WithTrailingTrivia(convertedTrivia);
         }
