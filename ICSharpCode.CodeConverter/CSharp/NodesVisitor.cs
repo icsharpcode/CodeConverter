@@ -1205,7 +1205,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var targetSymbolInfo = GetSymbolInfoInDocument(node);
 
                 var qualifiedName = targetSymbolInfo?.ToDisplayString(referenceSymbolFormat);
-                var sourceText = node.GetText().ToString().Trim();
+                var sourceText = node.WithoutTrivia().GetText().ToString().Trim();
                 if (qualifiedName == null || sourceText.Length >= qualifiedName.Length ||
                     !qualifiedName.EndsWith(sourceText, StringComparison.Ordinal)) return defaultNode;
 
