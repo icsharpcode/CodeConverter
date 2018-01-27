@@ -807,15 +807,25 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
         {
-            if (otherNode == null || !otherNode.HasLeadingTrivia) return node;
-            var convertedTrivia = ConvertTrivia(otherNode.GetLeadingTrivia());
+            return node.WithConvertedLeadingTriviaFrom(otherNode?.GetLastToken());
+        }
+
+        public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxToken? otherToken)
+        {
+            if (!otherToken.HasValue || !otherToken.Value.HasLeadingTrivia) return node;
+            var convertedTrivia = ConvertTrivia(otherToken.Value.LeadingTrivia);
             return node.WithLeadingTrivia(convertedTrivia);
         }
 
         public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
         {
-            if (otherNode == null || !otherNode.HasTrailingTrivia) return node;
-            var convertedTrivia = ConvertTrivia(otherNode.GetTrailingTrivia());
+            return node.WithConvertedTrailingTriviaFrom(otherNode?.GetLastToken());
+        }
+
+        public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxToken? otherToken)
+        {
+            if (!otherToken.HasValue || !otherToken.Value.HasTrailingTrivia) return node;
+            var convertedTrivia = ConvertTrivia(otherToken.Value.TrailingTrivia);
             return node.WithTrailingTrivia(convertedTrivia);
         }
 
