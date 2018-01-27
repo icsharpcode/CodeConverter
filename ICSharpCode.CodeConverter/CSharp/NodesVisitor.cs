@@ -159,27 +159,20 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitClassBlock(VBSyntax.ClassBlockSyntax node)
             {
-                var classStatement = (ClassDeclarationSyntax) node.ClassStatement.Accept(TriviaConvertingVisitor);
-                return classStatement
-                    .WithBaseList(ConvertInheritsAndImplements(node.Inherits, node.Implements))
-                    .WithMembers(SyntaxFactory.List(ConvertMembers(node.Members)));
-            }
-
-            public override CSharpSyntaxNode VisitClassStatement(VBSyntax.ClassStatementSyntax node)
-            {
-                var attributes = SyntaxFactory.List(node.AttributeLists.SelectMany(ConvertAttribute));
-                SplitTypeParameters(node.TypeParameterList, out var parameters, out var constraints);
-                var convertedIdentifier = ConvertIdentifier(node.Identifier, semanticModel);
+                var classStatement = node.ClassStatement;
+                var attributes = SyntaxFactory.List(classStatement.AttributeLists.SelectMany(ConvertAttribute));
+                SplitTypeParameters(classStatement.TypeParameterList, out var parameters, out var constraints);
+                var convertedIdentifier = ConvertIdentifier(classStatement.Identifier, semanticModel);
 
                 return SyntaxFactory.ClassDeclaration(
                     attributes,
-                    ConvertModifiers(node.Modifiers),
+                    ConvertModifiers(classStatement.Modifiers),
                     convertedIdentifier,
                     parameters,
-                    null,
+                    ConvertInheritsAndImplements(node.Inherits, node.Implements),
                     constraints,
-                    SyntaxFactory.List<MemberDeclarationSyntax>()
-                );
+                    SyntaxFactory.List(ConvertMembers(node.Members))
+                    );
             }
 
             private BaseListSyntax ConvertInheritsAndImplements(SyntaxList<VBSyntax.InheritsStatementSyntax> inherits, SyntaxList<VBSyntax.ImplementsStatementSyntax> implements)
