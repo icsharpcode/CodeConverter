@@ -32,7 +32,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (node is TypeBlockSyntax typeBlockVbNode && cSharpSyntaxNode is BaseTypeDeclarationSyntax btCsNode) {
                 var beforeOpenBrace = btCsNode.OpenBraceToken.GetPreviousToken();
                 cSharpSyntaxNode = cSharpSyntaxNode.ReplaceToken(beforeOpenBrace,
-                    beforeOpenBrace.WithConvertedTrailingTriviaFrom(typeBlockVbNode.BlockStatement));
+                    beforeOpenBrace
+                    .WithConvertedTrailingTriviaFrom(typeBlockVbNode.BlockStatement)
+                    .WithConvertedTrailingTriviaFrom(typeBlockVbNode.Inherits.LastOrDefault())
+                    .WithConvertedTrailingTriviaFrom(typeBlockVbNode.Implements.LastOrDefault()));
             }
             return TriviaConverter.PortConvertedTrivia(node, cSharpSyntaxNode);
         }
