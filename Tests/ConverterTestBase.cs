@@ -291,7 +291,7 @@ namespace CodeConverter.Tests
 
                 //Try to indent based on next line
                 if (s.Trim() == "" && i > 0) {
-                    s = new string(Enumerable.Repeat(' ', lines[i - 1].Trim('\n').Length).ToArray());
+                    s = s + new string(Enumerable.Repeat(' ', lines[i - 1].Trim('\n').Length).ToArray());
                 }
 
                 return s + singleLineCommentStart + (i - skipped).ToString();
