@@ -201,7 +201,17 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsWhitespaceOrEndOfLine(this SyntaxTrivia trivia)
         {
-            return trivia.Kind() == SyntaxKind.WhitespaceTrivia || trivia.Kind() == SyntaxKind.EndOfLineTrivia;
+            return trivia.IsEndOfLine() || trivia.IsWhitespace();
+        }
+
+        public static bool IsEndOfLine(this SyntaxTrivia x)
+        {
+            return x.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.EndOfLineTrivia) || x.IsKind(SyntaxKind.EndOfLineTrivia);
+        }
+
+        private static bool IsWhitespace(this SyntaxTrivia x)
+        {
+            return x.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.WhitespaceTrivia) || x.IsKind(SyntaxKind.WhitespaceTrivia);
         }
 
         public static SyntaxTrivia GetPreviousTrivia(
