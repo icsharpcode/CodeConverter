@@ -55,27 +55,32 @@ namespace ICSharpCode.CodeConverter.CSharp
             return WithPortedTrivia<VbSyntax.LambdaExpressionSyntax, CsSyntax.LambdaExpressionSyntax>(node, PortSubOrFunctionHeaderTrailingTrivia);
         }
 
+        public override CSharpSyntaxNode VisitCompilationUnit(VbSyntax.CompilationUnitSyntax node)
+        {
+            var cSharpSyntaxNode = base.VisitCompilationUnit(node);
+            TriviaConverter.ThrowIfPortsMissed(node, cSharpSyntaxNode);
+            return cSharpSyntaxNode;
+        }
+
         private TDest WithPortedTrivia<TSource, TDest>(SyntaxNode node, Func<TSource, TDest, TDest> portExtraTrivia) where TSource : SyntaxNode where TDest : CSharpSyntaxNode
         {
             var cSharpSyntaxNode = portExtraTrivia((TSource)node, (TDest)wrappedVisitor.Visit(node));
             return TriviaConverter.PortConvertedTrivia(node, cSharpSyntaxNode);
         }
 
-        private static CsSyntax.BaseTypeDeclarationSyntax WithTypeBlockTrivia(VbSyntax.TypeBlockSyntax typeBlockVbNode, CsSyntax.BaseTypeDeclarationSyntax btCsNode)
+        private CsSyntax.BaseTypeDeclarationSyntax WithTypeBlockTrivia(VbSyntax.TypeBlockSyntax sourceNode, CsSyntax.BaseTypeDeclarationSyntax destNode)
         {
-                var beforeOpenBrace = btCsNode.OpenBraceToken.GetPreviousToken();
-                return btCsNode.ReplaceToken(beforeOpenBrace,
-                    beforeOpenBrace
-                        .WithConvertedTrailingTriviaFrom(typeBlockVbNode.BlockStatement)
-                        .WithConvertedTrailingTriviaFrom(typeBlockVbNode.Inherits.LastOrDefault())
-                        .WithConvertedTrailingTriviaFrom(typeBlockVbNode.Implements.LastOrDefault()));
+            var beforeOpenBrace = destNode.OpenBraceToken.GetPreviousToken();
+            var withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.BlockStatement, beforeOpenBrace);
+            withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.Inherits, withAnnotation);
+            withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.Implements, withAnnotation);
+            return destNode.ReplaceToken(beforeOpenBrace, withAnnotation);
         }
 
-        private static CsSyntax.LambdaExpressionSyntax PortSubOrFunctionHeaderTrailingTrivia(VbSyntax.LambdaExpressionSyntax node, CsSyntax.LambdaExpressionSyntax csLambda)
+        private CsSyntax.LambdaExpressionSyntax PortSubOrFunctionHeaderTrailingTrivia(VbSyntax.LambdaExpressionSyntax sourceNode, CsSyntax.LambdaExpressionSyntax destNode)
         {
-            var csLambdaArrowToken = csLambda.ArrowToken;
-            var withConvertedTrailingTriviaFrom = csLambdaArrowToken.WithConvertedTrailingTriviaFrom(node.SubOrFunctionHeader.ParameterList.CloseParenToken);
-            return csLambda.ReplaceToken(csLambdaArrowToken, withConvertedTrailingTriviaFrom);
+            var withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.SubOrFunctionHeader.ParameterList.CloseParenToken, destNode.ArrowToken);
+            return destNode.ReplaceToken(destNode.ArrowToken, withAnnotation);
         }
     }
 }
