@@ -821,7 +821,12 @@ namespace ICSharpCode.CodeConverter.Util
         {
             if (!otherToken.HasValue || !otherToken.Value.HasTrailingTrivia) return node;
             var convertedTrivia = ConvertTrivia(otherToken.Value.TrailingTrivia);
-            return node.WithTrailingTrivia(convertedTrivia);
+            return node.WithTrailingTrivia(node.ImportantTrailingTrivia().Concat(convertedTrivia));
+        }
+
+        public static IEnumerable<SyntaxTrivia> ImportantTrailingTrivia(this SyntaxToken node)
+        {
+            return node.TrailingTrivia.Where(x => !x.IsKind(SyntaxKind.WhitespaceTrivia) && !x.IsKind(SyntaxKind.EndOfLineTrivia));
         }
 
         public static bool ParentHasSameTrailingTrivia(this SyntaxNode otherNode)
