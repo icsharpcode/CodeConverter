@@ -31,16 +31,47 @@ namespace ICSharpCode.CodeConverter.CSharp
             destination = sourceNode.HasLeadingTrivia
                 ? destination.WithLeadingTrivia(sourceNode.GetLeadingTrivia().ConvertTrivia())
                 : destination;
-
-            var parentLastSourceToken = sourceNode.Parent?.GetLastToken();
             
             if (sourceNode.HasTrailingTrivia) {
                 var lastDestToken = destination.GetLastToken();
                 destination = destination.ReplaceToken(lastDestToken, WithDelegateToParentAnnotation(sourceNode, lastDestToken));
             }
 
-            destination = WithTrailingTriviaConversions(destination, parentLastSourceToken);
-            return destination;
+            var containingSubModuleBlock = sourceNode.FirstAncestorOrSelf<StatementSyntax>(IsFirstLineOfBlockConstruct);
+            var hasVisitedContainingBlock = containingSubModuleBlock == null;
+            var firstLineOfBlockConstruct = sourceNode.ChildNodes().OfType<StatementSyntax>().FirstOrDefault(IsFirstLineOfBlockConstruct);
+            if (firstLineOfBlockConstruct != null) {
+                var endOfFirstLineConstructOrDefault = destination.ChildTokens().FirstOrDefault(t => t.IsKind(SyntaxKind.CloseParenToken, SyntaxKind.OpenBraceToken));
+                if (endOfFirstLineConstructOrDefault.IsKind(SyntaxKind.OpenBraceToken)) {
+                    endOfFirstLineConstructOrDefault = endOfFirstLineConstructOrDefault.GetPreviousToken();
+                }
+                if (endOfFirstLineConstructOrDefault != default(SyntaxToken)) {
+                    var withNewAnnotations = MoveChildTrailingEndOfLinesToToken(destination, endOfFirstLineConstructOrDefault);
+                    destination = destination.ReplaceToken(endOfFirstLineConstructOrDefault, withNewAnnotations);
+                }
+            }
+
+            return WithTrailingTriviaConversions(destination, sourceNode.Parent?.GetLastToken(), hasVisitedContainingBlock);
+        }
+
+        private SyntaxToken MoveChildTrailingEndOfLinesToToken<T>(T destination, SyntaxToken beforeOpenBraceToken)
+            where T : SyntaxNode
+        {
+            var conversionAnnotations = destination.GetAnnotatedTokens(TrailingTriviaConversionKind)
+                .TakeWhile(t => t.FullSpan.Start < beforeOpenBraceToken.FullSpan.Start)
+                .SelectMany(t => t.GetAnnotations(TrailingTriviaConversionKind).ToList())
+                .ToList();
+            foreach (var conversionAnnotation in conversionAnnotations) {
+                var conversionId = conversionAnnotation.Data;
+                var sourceSyntaxToken = annotationData[conversionId];
+
+                if (trailingTriviaConversionsBySource.TryGetValue(sourceSyntaxToken, out var latestReplacementId) &&
+                    latestReplacementId == conversionId
+                    && sourceSyntaxToken.TrailingTrivia.Any(t => t.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.EndOfLineTrivia))) {
+                    beforeOpenBraceToken = WithDelegateToParentAnnotation(sourceSyntaxToken, beforeOpenBraceToken);
+                }
+            }
+            return beforeOpenBraceToken;
         }
 
         /// <summary>
@@ -54,7 +85,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// trailing trivia isn't also its parent's trailing trivia.
         /// For (2) the ability to schedule replacements here allows the trivia porting to remain separate from the main transformation
         /// </remarks>
-        private T WithTrailingTriviaConversions<T>(T destination, SyntaxToken? parentLastSourceToken) where T : SyntaxNode
+        private T WithTrailingTriviaConversions<T>(T destination, SyntaxToken? parentLastToken, bool hasVisitedContainingBlock) where T : SyntaxNode
         {
             var destinationsWithConversions = destination.GetAnnotatedTokens(TrailingTriviaConversionKind);
             destination = destination.ReplaceTokens(destinationsWithConversions, (originalToken, updatedToken) =>
@@ -62,7 +93,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 foreach (var conversionAnnotation in updatedToken.GetAnnotations(TrailingTriviaConversionKind).ToList()) {
                     var conversionId = conversionAnnotation.Data;
                     var sourceSyntaxToken = annotationData[conversionId];
-                    if (parentLastSourceToken == sourceSyntaxToken) continue;
+                    if (parentLastToken == sourceSyntaxToken || !hasVisitedContainingBlock) {
+                        continue;
+                    };
 
                     // Only port trivia if this replacement hasn't been superseded by another 
                     if (trailingTriviaConversionsBySource.TryGetValue(sourceSyntaxToken, out var latestReplacementId) &&
@@ -71,13 +104,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                         trailingTriviaConversionsBySource.Remove(sourceSyntaxToken);
                     }
 
-                    // Remove annotations since it's either done, or obsolete.
+                    // Remove annotations since it's either done, or obsolete. So we don't have to keep iterating over it for no reason.
                     updatedToken = updatedToken.WithoutAnnotations(conversionAnnotation);
                     annotationData.Remove(conversionId);
                 }
                 return updatedToken;
             });
             return destination;
+        }
+
+        private static bool IsFirstLineOfBlockConstruct(StatementSyntax s)
+        {
+            return !(s is DeclarationStatementSyntax);
         }
 
         /// <summary>
@@ -90,7 +128,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             trailingTriviaConversionsBySource[lastSourceToken] = identifier;
 
             destination = destination.WithAdditionalAnnotations(new SyntaxAnnotation(TrailingTriviaConversionKind, identifier));
-            annotationData[identifier] = lastSourceToken;
+            annotationData.Add(identifier, lastSourceToken);
             return destination;
         }
 
