@@ -92,13 +92,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 foreach (var conversionAnnotation in updatedToken.GetAnnotations(TrailingTriviaConversionKind).ToList()) {
                     var conversionId = conversionAnnotation.Data;
-                    var sourceSyntaxToken = annotationData[conversionId];
-                    if (parentLastToken == sourceSyntaxToken || !hasVisitedContainingBlock) {
+                    var foundAnnotation = annotationData.TryGetValue(conversionId, out var sourceSyntaxToken);
+                    if (foundAnnotation && parentLastToken == sourceSyntaxToken
+                    || !hasVisitedContainingBlock) {
                         continue;
                     };
 
                     // Only port trivia if this replacement hasn't been superseded by another 
-                    if (trailingTriviaConversionsBySource.TryGetValue(sourceSyntaxToken, out var latestReplacementId) &&
+                    if (foundAnnotation && // BUG: Fix sometimes not finding annotation
+                        trailingTriviaConversionsBySource.TryGetValue(sourceSyntaxToken, out var latestReplacementId) &&
                         latestReplacementId == conversionId) {
                         updatedToken = updatedToken.WithConvertedTrailingTriviaFrom(sourceSyntaxToken);
                         trailingTriviaConversionsBySource.Remove(sourceSyntaxToken);
