@@ -778,7 +778,9 @@ class TestClass
     {
 
     }
-}", @"Class TestClass
+}", @"Imports System
+
+Class TestClass
     Public Event MyEvent As EventHandler
 
     Private Sub TestMethod(ByVal e As EventHandler)

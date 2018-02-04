@@ -214,7 +214,9 @@ End Namespace");
         public void ClassImplementsInterface()
         {
             TestConversionCSharpToVisualBasic("using System; class test : IComparable { }",
-@"Class test
+@"Imports System
+
+Class test
     Implements IComparable
 End Class");
         }
