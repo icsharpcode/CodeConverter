@@ -807,8 +807,14 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
         {
-            if (otherNode == null) return node;
-            var convertedTrivia = ConvertTrivia(otherNode.GetLeadingTrivia());
+            var firstToken = otherNode?.GetFirstToken();
+            return WithConvertedLeadingTriviaFrom(node, firstToken);
+        }
+
+        public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxToken? sourceToken)
+        {
+            if (sourceToken == null) return node;
+            var convertedTrivia = ConvertTrivia(sourceToken.Value.LeadingTrivia);
             return node.WithLeadingTrivia(convertedTrivia);
         }
 
