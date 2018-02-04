@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using VbSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CsSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -47,9 +48,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override CSharpSyntaxNode VisitCompilationUnit(VbSyntax.CompilationUnitSyntax node)
         {
-            var cSharpSyntaxNode = base.VisitCompilationUnit(node);
+            var cSharpSyntaxNode = (CsSyntax.CompilationUnitSyntax) base.VisitCompilationUnit(node);
             TriviaConverter.ThrowIfPortsMissed(node, cSharpSyntaxNode);
-            return cSharpSyntaxNode;
+            return cSharpSyntaxNode.WithEndOfFileToken(
+                cSharpSyntaxNode.EndOfFileToken.WithConvertedLeadingTriviaFrom(node.EndOfFileToken)
+            );
         }
 
         private TDest WithPortedTrivia<TSource, TDest>(SyntaxNode node, Func<TSource, TDest, TDest> portExtraTrivia) where TSource : SyntaxNode where TDest : CSharpSyntaxNode
