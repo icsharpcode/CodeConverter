@@ -45,16 +45,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
         }
 
-        public override CSharpSyntaxNode VisitSingleLineLambdaExpression(VbSyntax.SingleLineLambdaExpressionSyntax node)
-        {
-            return WithPortedTrivia<VbSyntax.LambdaExpressionSyntax, CsSyntax.LambdaExpressionSyntax>(node, PortSubOrFunctionHeaderTrailingTrivia);
-        }
-
-        public override CSharpSyntaxNode VisitMultiLineLambdaExpression(VbSyntax.MultiLineLambdaExpressionSyntax node)
-        {
-            return WithPortedTrivia<VbSyntax.LambdaExpressionSyntax, CsSyntax.LambdaExpressionSyntax>(node, PortSubOrFunctionHeaderTrailingTrivia);
-        }
-
         public override CSharpSyntaxNode VisitCompilationUnit(VbSyntax.CompilationUnitSyntax node)
         {
             var cSharpSyntaxNode = base.VisitCompilationUnit(node);
@@ -75,12 +65,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.Inherits, withAnnotation);
             withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.Implements, withAnnotation);
             return destNode.ReplaceToken(beforeOpenBrace, withAnnotation);
-        }
-
-        private CsSyntax.LambdaExpressionSyntax PortSubOrFunctionHeaderTrailingTrivia(VbSyntax.LambdaExpressionSyntax sourceNode, CsSyntax.LambdaExpressionSyntax destNode)
-        {
-            var withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.SubOrFunctionHeader.ParameterList.CloseParenToken, destNode.ArrowToken);
-            return destNode.ReplaceToken(destNode.ArrowToken, withAnnotation);
         }
     }
 }
