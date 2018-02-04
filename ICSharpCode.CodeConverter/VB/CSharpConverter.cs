@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -41,9 +42,10 @@ namespace ICSharpCode.CodeConverter.VB
                 throw new ArgumentNullException(nameof(references));
             var tree = CS.SyntaxFactory.ParseSyntaxTree(SourceText.From(text));
             var compilation = CS.CSharpCompilation.Create("Conversion", new[] { tree }, references);
-            try
-            {
-                return new ConversionResult(Convert((CS.CSharpSyntaxNode)tree.GetRoot(), compilation.GetSemanticModel(tree, true), null).NormalizeWhitespace().ToFullString());
+            try {
+                var visualBasicSyntaxNode = Convert((CS.CSharpSyntaxNode)tree.GetRoot(), compilation.GetSemanticModel(tree, true), null);
+                var formatted = Formatter.Format(visualBasicSyntaxNode, new AdhocWorkspace());
+                return new ConversionResult(formatted.ToFullString());
             }
             catch (Exception ex)
             {
