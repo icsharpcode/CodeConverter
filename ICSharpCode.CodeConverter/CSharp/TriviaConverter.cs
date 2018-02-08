@@ -145,11 +145,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return WithDelegateToParentAnnotation(unvisitedSourceStatementList.LastOrDefault(), destinationToken);
         }
 
-        public void ThrowIfPortsMissed(CompilationUnitSyntax sourceNode, CSharpSyntaxNode destination)
+        public bool IsAllTriviaConverted()
         {
-            if (trailingTriviaConversionsBySource.Any()) {
-                throw new Exception("Syntax or programmaing error: Some trivia coould not be ported");
-            }
+            return trailingTriviaConversionsBySource.Any(t => t.Key.TrailingTrivia.Any(x => !x.IsWhitespaceOrEndOfLine()));
         }
     }
 }

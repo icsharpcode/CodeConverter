@@ -18,11 +18,13 @@ namespace CodeConverter.Tests
 {
     public class ConverterTestBase
     {
+        private bool testCommentsByDefault = true;
+
         public void TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
         {
             var outputNode = CSharpConverter.ConvertText(csharpCode, DiagnosticTestBase.DefaultMetadataReferences);
 
-            var txt = outputNode.ConvertedCode;
+            var txt = outputNode.ConvertedCode ?? outputNode.GetExceptionsAsString();
             txt = Utils.HomogenizeEol(txt).TrimEnd();
             expectedVisualBasicCode = Utils.HomogenizeEol(expectedVisualBasicCode).TrimEnd();
             AssertCodeEqual(csharpCode, expectedVisualBasicCode, txt);
@@ -31,13 +33,13 @@ namespace CodeConverter.Tests
         public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode)
         {
             TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode);
-            TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true));
+            if (testCommentsByDefault) TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true));
         }
 
         public void TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
         {
             var outputNode = VisualBasicConverter.ConvertText(visualBasicCode, DiagnosticTestBase.DefaultMetadataReferences);
-            var txt = Utils.HomogenizeEol(outputNode.ConvertedCode).TrimEnd();
+            var txt = Utils.HomogenizeEol(outputNode.ConvertedCode ?? outputNode.GetExceptionsAsString()).TrimEnd();
             expectedCsharpCode = Utils.HomogenizeEol(expectedCsharpCode).TrimEnd();
             AssertCodeEqual(visualBasicCode, expectedCsharpCode, txt);
         }
@@ -100,14 +102,30 @@ namespace CodeConverter.Tests
         private static bool HasNoSourceLine(string prevLine, string line, string nextLine)
         {
             return line.Trim() == "{" 
-                || nextLine.Contains("where T");
+                || nextLine.Contains("where T")
+                || IsTwoLineCsIfStatement(line, nextLine);
+        }
+
+        /// <summary>
+        /// Comes from a one line if statement in VB
+        /// </summary>
+        private static bool IsTwoLineCsIfStatement(string line, string nextLine)
+        {
+            return line.Contains("if") && !nextLine.Trim().Equals("{");
         }
 
         private static bool HasNoTargetLine(string prevLine, string line, string nextLine)
         {
             return IsVbInheritsOrImplements(nextLine)
+                || line.Contains("End If") || line.Contains("Next")
+                || IsFirstOfMultiLineVbIfStatement(line)
                 //Allow a blank line in VB after these statements that doesn't appear in the C# since C# has braces to act as a separator
                 || string.IsNullOrWhiteSpace(line) && IsVbInheritsOrImplements(prevLine);
+        }
+
+        private static bool IsFirstOfMultiLineVbIfStatement(string line)
+        {
+            return line.Trim().StartsWith("If") && line.Trim().EndsWith("Then");
         }
 
         private static bool IsVbInheritsOrImplements(string line)

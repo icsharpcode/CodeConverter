@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using VbSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CsSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace ICSharpCode.CodeConverter.CSharp
@@ -49,10 +50,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override CSharpSyntaxNode VisitCompilationUnit(VbSyntax.CompilationUnitSyntax node)
         {
             var cSharpSyntaxNode = (CsSyntax.CompilationUnitSyntax) base.VisitCompilationUnit(node);
-            TriviaConverter.ThrowIfPortsMissed(node, cSharpSyntaxNode);
-            return cSharpSyntaxNode.WithEndOfFileToken(
-                cSharpSyntaxNode.EndOfFileToken.WithConvertedLeadingTriviaFrom(node.EndOfFileToken)
-            );
+            cSharpSyntaxNode = cSharpSyntaxNode.WithEndOfFileToken(
+                cSharpSyntaxNode.EndOfFileToken.WithConvertedLeadingTriviaFrom(node.EndOfFileToken));
+            ; 
+            return TriviaConverter.IsAllTriviaConverted() 
+                ? cSharpSyntaxNode 
+                : cSharpSyntaxNode.WithAppendedTrailingTrivia(SyntaxFactory.Comment("/* Some trivia (e.g. comments) could not be converted */"));
         }
 
         private TDest WithPortedTrivia<TSource, TDest>(SyntaxNode node, Func<TSource, TDest, TDest> portExtraTrivia) where TSource : SyntaxNode where TDest : CSharpSyntaxNode
