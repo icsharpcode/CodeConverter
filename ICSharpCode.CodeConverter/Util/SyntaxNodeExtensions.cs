@@ -818,6 +818,12 @@ namespace ICSharpCode.CodeConverter.Util
             return node.WithLeadingTrivia(convertedTrivia);
         }
 
+        public static T WithConvertedTrailingTriviaFromNode<T>(this T node, SyntaxToken otherToken) where T: SyntaxNode
+        {
+            var lastToken = node.GetLastToken();
+            return node.ReplaceToken(lastToken, lastToken.WithConvertedTrailingTriviaFrom(otherToken));
+        }
+
         public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
         {
             return node.WithConvertedTrailingTriviaFrom(otherNode?.GetLastToken());

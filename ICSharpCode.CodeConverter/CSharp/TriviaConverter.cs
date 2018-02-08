@@ -4,6 +4,7 @@ using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using CS = Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
@@ -37,8 +38,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 destination = destination.ReplaceToken(lastDestToken, WithDelegateToParentAnnotation(sourceNode, lastDestToken));
             }
 
-            var containingSubModuleBlock = sourceNode.FirstAncestorOrSelf<StatementSyntax>(IsFirstLineOfBlockConstruct);
-            var hasVisitedContainingBlock = containingSubModuleBlock == null;
+            if (!(destination is CS.Syntax.CompilationUnitSyntax)) return destination;
+            
             var firstLineOfBlockConstruct = sourceNode.ChildNodes().OfType<StatementSyntax>().FirstOrDefault(IsFirstLineOfBlockConstruct);
             if (firstLineOfBlockConstruct != null) {
                 var endOfFirstLineConstructOrDefault = destination.ChildTokens().FirstOrDefault(t => t.IsKind(SyntaxKind.CloseParenToken, SyntaxKind.OpenBraceToken));
@@ -51,7 +52,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            return WithTrailingTriviaConversions(destination, sourceNode.Parent?.GetLastToken(), hasVisitedContainingBlock);
+            foreach (var leafStatment in destination.DescendantNodesAndSelf().OfType<CS.Syntax.StatementSyntax>().Where(s => !s.DescendantNodes().OfType<CS.Syntax.StatementSyntax>().Any())) {
+                var endOfStatement = leafStatment.GetLastToken();
+                var withNewAnnotations = MoveChildTrailingEndOfLinesToToken(leafStatment, endOfStatement);
+                destination = destination.ReplaceToken(endOfStatement, withNewAnnotations);
+            }
+
+            return WithTrailingTriviaConversions(destination, sourceNode.Parent?.GetLastToken(), true);
+                
         }
 
         private SyntaxToken MoveChildTrailingEndOfLinesToToken<T>(T destination, SyntaxToken beforeOpenBraceToken)

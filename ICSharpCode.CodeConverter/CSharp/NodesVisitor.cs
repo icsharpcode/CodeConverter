@@ -691,15 +691,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.ParseTypeName(typeInfo.ToMinimalDisplayString(semanticModel, node.SpanStart)),
                         ConvertIdentifier(stmt.IdentifierName.Identifier, semanticModel)
                     );
+                    catcher = catcher.WithConvertedTrailingTriviaFromNode(node.CatchStatement.CatchKeyword);
                 }
 
                 var filter = (CatchFilterClauseSyntax)stmt.WhenClause?.Accept(TriviaConvertingVisitor);
 
-                return SyntaxFactory.CatchClause(
+                var catchClause = SyntaxFactory.CatchClause(
                     catcher,
                     filter,
                     SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())))
                 );
+                return catchClause.WithCatchKeyword(catchClause.CatchKeyword.WithConvertedTrailingTriviaFrom(node.CatchStatement.CatchKeyword));
             }
 
             public override CSharpSyntaxNode VisitCatchFilterClause(VBSyntax.CatchFilterClauseSyntax node)
@@ -709,7 +711,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitFinallyBlock(VBSyntax.FinallyBlockSyntax node)
             {
-                return SyntaxFactory.FinallyClause(SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor()))));
+                var finallyClause = SyntaxFactory.FinallyClause(SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor()))));
+                return finallyClause.WithFinallyKeyword(finallyClause.FinallyKeyword.WithConvertedTrailingTriviaFrom(node.FinallyStatement.FinallyKeyword));
             }
 
 
