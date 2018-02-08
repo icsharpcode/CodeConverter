@@ -169,7 +169,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> VisitSingleLineIfStatement(VBSyntax.SingleLineIfStatementSyntax node)
             {
-                var condition = (ExpressionSyntax)node.Condition.Accept(nodesVisitor);
+                var condition = (ExpressionSyntax)node.Condition.Accept(nodesVisitor).WithoutTrailingTrivia();
                 var block = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
                 ElseClauseSyntax elseClause = null;
 
@@ -177,7 +177,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var elseBlock = SyntaxFactory.Block(node.ElseClause.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
                     elseClause = SyntaxFactory.ElseClause(elseBlock.UnpackBlock());
                 }
-                return SingleStatement(SyntaxFactory.IfStatement(condition, block.UnpackBlock(), elseClause));
+                return SingleStatement(SyntaxFactory.IfStatement(condition, block.UnpackBlock().WithoutLeadingTrivia(), elseClause));
             }
 
             public override SyntaxList<StatementSyntax> VisitMultiLineIfBlock(VBSyntax.MultiLineIfBlockSyntax node)
@@ -189,15 +189,22 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (node.ElseBlock != null) {
                     var elseBlock = SyntaxFactory.Block(node.ElseBlock.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
                     elseClause = SyntaxFactory.ElseClause(elseBlock.UnpackBlock());
+                    elseClause = elseClause.WithElseKeyword(elseClause.ElseKeyword.WithConvertedTrailingTriviaFrom(node.ElseBlock.ElseStatement.ElseKeyword));
                 }
 
                 foreach (var elseIf in node.ElseIfBlocks.Reverse()) {
                     var elseBlock = SyntaxFactory.Block(elseIf.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
                     var ifStmt = SyntaxFactory.IfStatement((ExpressionSyntax)elseIf.ElseIfStatement.Condition.Accept(nodesVisitor), elseBlock.UnpackBlock(), elseClause);
+                    ifStmt = ifStmt
+                        .WithIfKeyword(ifStmt.IfKeyword.WithConvertedLeadingTriviaFrom(elseIf.ElseIfStatement.ElseIfKeyword))
+                        .WithCloseParenToken(ifStmt.CloseParenToken.WithConvertedTrailingTriviaFrom(elseIf.ElseIfStatement.ThenKeyword));
                     elseClause = SyntaxFactory.ElseClause(ifStmt);
                 }
 
-                return SingleStatement(SyntaxFactory.IfStatement(condition, block.UnpackBlock(), elseClause));
+                var ifStatementSyntax = SyntaxFactory.IfStatement(condition, block.UnpackBlock(), elseClause);
+                ifStatementSyntax = ifStatementSyntax.WithIfKeyword(ifStatementSyntax.IfKeyword.WithConvertedLeadingTriviaFrom(node.IfStatement.IfKeyword))
+                    .WithCloseParenToken(ifStatementSyntax.CloseParenToken.WithConvertedTrailingTriviaFrom(node.IfStatement.ThenKeyword));
+                return SingleStatement(ifStatementSyntax);
             }
 
             public override SyntaxList<StatementSyntax> VisitForBlock(VBSyntax.ForBlockSyntax node)
@@ -319,7 +326,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             var s = (VBSyntax.SimpleCaseClauseSyntax)c;
                             labels.Add(SyntaxFactory.CaseSwitchLabel((ExpressionSyntax)s.Value.Accept(nodesVisitor)));
                         } else if (c is VBSyntax.ElseCaseClauseSyntax) {
-                            labels.Add(SyntaxFactory.DefaultSwitchLabel());
+                            labels.Add(SyntaxFactory.DefaultSwitchLabel().WithTrailingTrivia());
                         } else return false;
                     }
                     var list = SingleStatement(SyntaxFactory.Block(block.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)).Concat(SyntaxFactory.BreakStatement())));
@@ -332,13 +339,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override SyntaxList<StatementSyntax> VisitTryBlock(VBSyntax.TryBlockSyntax node)
             {
                 var block = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
-                return SingleStatement(
-                    SyntaxFactory.TryStatement(
-                        block,
-                        SyntaxFactory.List(node.CatchBlocks.Select(c => (CatchClauseSyntax)c.Accept(nodesVisitor))),
-                        (FinallyClauseSyntax)node.FinallyBlock?.Accept(nodesVisitor)
-                    )
+                var tryStatement = SyntaxFactory.TryStatement(
+                    block,
+                    SyntaxFactory.List(node.CatchBlocks.Select(c => (CatchClauseSyntax)c.Accept(nodesVisitor))),
+                    (FinallyClauseSyntax)node.FinallyBlock?.Accept(nodesVisitor)
                 );
+                return SingleStatement(tryStatement);
             }
 
             public override SyntaxList<StatementSyntax> VisitSyncLockBlock(VBSyntax.SyncLockBlockSyntax node)
