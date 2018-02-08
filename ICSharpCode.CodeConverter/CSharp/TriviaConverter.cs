@@ -40,24 +40,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (!(destination is CS.Syntax.CompilationUnitSyntax)) return destination;
             
-            var firstLineOfBlockConstruct = sourceNode.ChildNodes().OfType<StatementSyntax>().FirstOrDefault(IsFirstLineOfBlockConstruct);
-            if (firstLineOfBlockConstruct != null) {
-                var endOfFirstLineConstructOrDefault = destination.ChildTokens().FirstOrDefault(t => t.IsKind(SyntaxKind.CloseParenToken, SyntaxKind.OpenBraceToken));
-                if (endOfFirstLineConstructOrDefault.IsKind(SyntaxKind.OpenBraceToken)) {
-                    endOfFirstLineConstructOrDefault = endOfFirstLineConstructOrDefault.GetPreviousToken();
-                }
-                if (endOfFirstLineConstructOrDefault != default(SyntaxToken)) {
-                    var withNewAnnotations = MoveChildTrailingEndOfLinesToToken(destination, endOfFirstLineConstructOrDefault);
-                    destination = destination.ReplaceToken(endOfFirstLineConstructOrDefault, withNewAnnotations);
-                }
-            }
-
-            foreach (var leafStatment in destination.DescendantNodesAndSelf().OfType<CS.Syntax.StatementSyntax>().Where(s => !s.DescendantNodes().OfType<CS.Syntax.StatementSyntax>().Any())) {
-                var endOfStatement = leafStatment.GetLastToken();
-                var withNewAnnotations = MoveChildTrailingEndOfLinesToToken(leafStatment, endOfStatement);
-                destination = destination.ReplaceToken(endOfStatement, withNewAnnotations);
-            }
-
             return WithTrailingTriviaConversions(destination, sourceNode.Parent?.GetLastToken(), true);
                 
         }
