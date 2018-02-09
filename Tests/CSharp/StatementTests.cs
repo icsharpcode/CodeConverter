@@ -7,7 +7,7 @@ namespace CodeConverter.Tests.CSharp
         [Fact]
         public void EmptyStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         If True Then
         End If
@@ -239,7 +239,7 @@ class TestClass
         [Fact]
         public void WithBlock()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         With New System.Text.StringBuilder
             .Capacity = 20
@@ -267,7 +267,7 @@ class TestClass
         [Fact]
         public void NestedWithBlock()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         With New System.Text.StringBuilder
             Dim withBlock as Integer = 3
@@ -586,7 +586,7 @@ the_beginning:
         [Fact]
         public void IfStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod(ByVal a As Integer)
         Dim b As Integer
 
@@ -664,7 +664,7 @@ class TestClass
         [Fact]
         public void DoWhileStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -703,7 +703,7 @@ class TestClass
         [Fact]
         public void ForEachStatementWithExplicitType()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         For Each val As Integer In values
             If val = 2 Then Continue For
@@ -733,7 +733,7 @@ class TestClass
         [Fact]
         public void ForEachStatementWithVar()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         For Each val In values
             If val = 2 Then Continue For
@@ -763,7 +763,7 @@ class TestClass
         [Fact]
         public void SyncLockStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod(ByVal nullObject As Object)
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
 
@@ -998,7 +998,7 @@ class TestClass
         [Fact]
         public void SelectCase1()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod(ByVal number As Integer)
         Select Case number
             Case 0, 1, 2
@@ -1047,7 +1047,7 @@ class TestClass
         [Fact]
         public void TryCatch()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Shared Function Log(ByVal message As String) As Boolean
         Console.WriteLine(message)
         Return False

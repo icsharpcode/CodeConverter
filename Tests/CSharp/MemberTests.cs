@@ -200,7 +200,7 @@ static class TestClass
         [Fact]
         public void TestProperty()
         {
-            TestConversionVisualBasicToCSharp(
+            TestConversionVisualBasicToCSharpWithoutComments(
 @"Class TestClass
     Public Property Test As Integer
 
@@ -479,7 +479,7 @@ class TestClass
         [Fact]
         public void FieldWithAttribute()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     <ThreadStatic>
     Private Shared First As Integer
 End Class", @"using System;
