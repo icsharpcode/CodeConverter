@@ -4,8 +4,10 @@ using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using StatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSyntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -34,35 +36,34 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : destination;
             
             if (sourceNode.HasTrailingTrivia) {
-                var lastDestToken = destination.GetLastToken();
-                destination = destination.ReplaceToken(lastDestToken, WithDelegateToParentAnnotation(sourceNode, lastDestToken));
+                destination = WithDelegateToParentAnnotation(sourceNode, destination);
             }
 
             if (!(destination is CS.Syntax.CompilationUnitSyntax)) return destination;
             
-            return WithTrailingTriviaConversions(destination, sourceNode.Parent?.GetLastToken(), true);
+            return WithTrailingTriviaConversions(destination);
                 
         }
 
-        private SyntaxToken MoveChildTrailingEndOfLinesToToken<T>(T destination, SyntaxToken beforeOpenBraceToken)
-            where T : SyntaxNode
-        {
-            var conversionAnnotations = destination.GetAnnotatedTokens(TrailingTriviaConversionKind)
-                .TakeWhile(t => t.FullSpan.Start < beforeOpenBraceToken.FullSpan.Start)
-                .SelectMany(t => t.GetAnnotations(TrailingTriviaConversionKind).ToList())
-                .ToList();
-            foreach (var conversionAnnotation in conversionAnnotations) {
-                var conversionId = conversionAnnotation.Data;
-                var sourceSyntaxToken = annotationData[conversionId];
+        //private SyntaxToken MoveChildTrailingEndOfLinesToToken<T>(T destination, SyntaxToken beforeOpenBraceToken)
+        //    where T : SyntaxNode
+        //{
+        //    var conversionAnnotations = destination.GetAnnotatedTokens(TrailingTriviaConversionKind)
+        //        .TakeWhile(t => t.FullSpan.Start < beforeOpenBraceToken.FullSpan.Start)
+        //        .SelectMany(t => t.GetAnnotations(TrailingTriviaConversionKind).ToList())
+        //        .ToList();
+        //    foreach (var conversionAnnotation in conversionAnnotations) {
+        //        var conversionId = conversionAnnotation.Data;
+        //        var sourceSyntaxToken = annotationData[conversionId];
 
-                if (trailingTriviaConversionsBySource.TryGetValue(sourceSyntaxToken, out var latestReplacementId) &&
-                    latestReplacementId == conversionId
-                    && sourceSyntaxToken.TrailingTrivia.Any(t => t.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.EndOfLineTrivia))) {
-                    beforeOpenBraceToken = WithDelegateToParentAnnotation(sourceSyntaxToken, beforeOpenBraceToken);
-                }
-            }
-            return beforeOpenBraceToken;
-        }
+        //        if (trailingTriviaConversionsBySource.TryGetValue(sourceSyntaxToken, out var latestReplacementId) &&
+        //            latestReplacementId == conversionId
+        //            && sourceSyntaxToken.TrailingTrivia.Any(t => t.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.EndOfLineTrivia))) {
+        //            beforeOpenBraceToken = WithDelegateToParentAnnotation(sourceSyntaxToken, beforeOpenBraceToken);
+        //        }
+        //    }
+        //    return beforeOpenBraceToken;
+        //}
 
         /// <summary>
         /// Trivia is attached to tokens, only port it when we're at the highest level for which it's the trailing trivia in the source
@@ -75,34 +76,81 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// trailing trivia isn't also its parent's trailing trivia.
         /// For (2) the ability to schedule replacements here allows the trivia porting to remain separate from the main transformation
         /// </remarks>
-        private T WithTrailingTriviaConversions<T>(T destination, SyntaxToken? parentLastToken, bool hasVisitedContainingBlock) where T : SyntaxNode
+        private T WithTrailingTriviaConversions<T>(T destination) where T : SyntaxNode
         {
-            var destinationsWithConversions = destination.GetAnnotatedTokens(TrailingTriviaConversionKind);
-            destination = destination.ReplaceTokens(destinationsWithConversions, (originalToken, updatedToken) =>
-            {
-                foreach (var conversionAnnotation in updatedToken.GetAnnotations(TrailingTriviaConversionKind).ToList()) {
-                    var conversionId = conversionAnnotation.Data;
-                    var foundAnnotation = annotationData.TryGetValue(conversionId, out var sourceSyntaxToken);
-                    if (foundAnnotation && parentLastToken == sourceSyntaxToken
-                    || !hasVisitedContainingBlock) {
-                        continue;
-                    };
+            var isStatement = IsContainer(destination);
+            if (isStatement) {
+                var destinationToken = GetFirstEndOfStatementToken(destination);
+                var nodeBeingUpdated = destination;
+                var descendantsToMoveTriviaFrom = destination.DescendantNodes(descendant =>
+                        descendant == nodeBeingUpdated || !IsContainer(descendant))
+                    .Where(d => !IsContainer(d) && d.HasAnnotations(TrailingTriviaConversionKind));
 
-                    // Only port trivia if this replacement hasn't been superseded by another 
-                    if (foundAnnotation && // BUG: Fix sometimes not finding annotation
-                        trailingTriviaConversionsBySource.TryGetValue(sourceSyntaxToken, out var latestReplacementId) &&
-                        latestReplacementId == conversionId) {
-                        updatedToken = updatedToken.WithConvertedTrailingTriviaFrom(sourceSyntaxToken);
-                        trailingTriviaConversionsBySource.Remove(sourceSyntaxToken);
-                    }
-
-                    // Remove annotations since it's either done, or obsolete. So we don't have to keep iterating over it for no reason.
-                    updatedToken = updatedToken.WithoutAnnotations(conversionAnnotation);
-                    annotationData.Remove(conversionId);
+                foreach (var descendant in descendantsToMoveTriviaFrom) {
+                    destination = MoveTriviaAndClearAnnotations(descendant, destination, destinationToken);
                 }
-                return updatedToken;
-            });
+            }
+
+            destination = MoveTriviaAndClearAnnotations(destination, destination, destination.GetLastToken());
+
+            var childNodes = destination.ChildNodes();
+            destination = destination.ReplaceNodes(childNodes, (_, updatedNode) => WithTrailingTriviaConversions(updatedNode));
+
             return destination;
+        }
+
+        private static SyntaxToken GetFirstEndOfStatementToken<T>(T destination) where T : SyntaxNode
+        {
+            var destinationToken = destination.ChildTokens().FirstOrDefault(t =>
+                t.IsKind(SyntaxKind.CloseParenToken, SyntaxKind.OpenBraceToken, SyntaxKind.SemicolonToken));
+            if (destinationToken.IsKind(SyntaxKind.OpenBraceToken)) {
+                destinationToken = destinationToken.GetPreviousToken();
+            }
+            return destinationToken;
+        }
+
+        private static bool IsContainer(SyntaxNode descendant)
+        {
+            return descendant is CS.Syntax.StatementSyntax || descendant is CS.Syntax.MemberDeclarationSyntax;
+        }
+
+        private T MoveTriviaAndClearAnnotations<T>(SyntaxNode moveFromNode, T updatedNode, SyntaxToken tokenToReplace) where T : SyntaxNode
+        {
+            foreach (var conversionAnnotation in moveFromNode.GetAnnotations(TrailingTriviaConversionKind).ToList()) {
+                updatedNode = MoveTriviaAndClearAnnotations(conversionAnnotation, updatedNode, tokenToReplace);
+            }
+            return updatedNode;
+        }
+
+        private T MoveTriviaAndClearAnnotations<T>(SyntaxAnnotation conversionAnnotation, T updatedNode,
+            SyntaxToken tokenToReplace) where T : SyntaxNode
+        {
+            var conversionId = conversionAnnotation.Data;
+
+            // Only port trivia if this replacement hasn't been superseded by another 
+            if (TryGetSourceSyntaxToken(conversionId, out var sourceSyntaxToken)) {
+                if (sourceSyntaxToken.GetAncestors<TypeStatementSyntax>().Any()) {
+                    var firstEndOfStatementToken = GetFirstEndOfStatementToken(updatedNode);
+                    updatedNode =
+                        updatedNode.ReplaceToken(firstEndOfStatementToken, firstEndOfStatementToken.WithConvertedTrailingTriviaFrom(sourceSyntaxToken));
+                } else {
+                    updatedNode =
+                        updatedNode.ReplaceToken(tokenToReplace, tokenToReplace.WithConvertedTrailingTriviaFrom(sourceSyntaxToken));
+                }
+                trailingTriviaConversionsBySource.Remove(sourceSyntaxToken);
+            }
+
+            // Remove annotations since it's either done, or obsolete. So we don't have to keep iterating over it for no reason.
+            updatedNode = updatedNode.WithoutAnnotations(conversionAnnotation);
+            annotationData.Remove(conversionId);
+            return updatedNode;
+        }
+
+        private bool TryGetSourceSyntaxToken(string conversionId, out SyntaxToken sourceSyntaxToken)
+        {
+            return annotationData.TryGetValue(conversionId, out sourceSyntaxToken) && // BUG: Fix sometimes not finding annotation
+                   trailingTriviaConversionsBySource.TryGetValue(sourceSyntaxToken, out var latestReplacementId) &&
+                   latestReplacementId == conversionId;
         }
 
         private static bool IsFirstLineOfBlockConstruct(StatementSyntax s)
@@ -114,7 +162,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// Because <paramref name="destination"/> is immutable, any changes (such as gaining a parent) a new version to be created.
         /// Adding an annotation allows tracking this node, since it will stay with it in any reincarnations.
         /// </summary>
-        public SyntaxToken WithDelegateToParentAnnotation(SyntaxToken lastSourceToken, SyntaxToken destination)
+        public TDest WithDelegateToParentAnnotation<TDest>(SyntaxToken lastSourceToken, TDest destination) where TDest : SyntaxNode
         {
             var identifier = lastSourceToken.GetHashCode() + "|" + destination.GetHashCode();
             trailingTriviaConversionsBySource[lastSourceToken] = identifier;
@@ -124,13 +172,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             return destination;
         }
 
-        public SyntaxToken WithDelegateToParentAnnotation(SyntaxNode unvisitedSourceStatement, SyntaxToken destinationToken)
+        public TDest WithDelegateToParentAnnotation<TDest>(SyntaxNode unvisitedSourceStatement, TDest destinationToken) where TDest : SyntaxNode
         {
             return unvisitedSourceStatement == null ? destinationToken
                 : WithDelegateToParentAnnotation(unvisitedSourceStatement.GetLastToken(), destinationToken);
         }
 
-        public SyntaxToken WithDelegateToParentAnnotation<T>(SyntaxList<T> unvisitedSourceStatementList, SyntaxToken destinationToken) where T: SyntaxNode
+        public TDest WithDelegateToParentAnnotation<TSource, TDest>(SyntaxList<TSource> unvisitedSourceStatementList, TDest destinationToken) where TSource: SyntaxNode where TDest: SyntaxNode
         {
             return WithDelegateToParentAnnotation(unvisitedSourceStatementList.LastOrDefault(), destinationToken);
         }

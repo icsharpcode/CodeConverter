@@ -27,50 +27,49 @@ namespace ICSharpCode.CodeConverter.CSharp
             return TriviaConverter.PortConvertedTrivia(node, wrappedVisitor.Visit(node));
         }
 
-        //public override CSharpSyntaxNode VisitModuleBlock(VbSyntax.ModuleBlockSyntax node)
-        //{
-        //    return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
-        //}
+        public override CSharpSyntaxNode VisitModuleBlock(VbSyntax.ModuleBlockSyntax node)
+        {
+            return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
+        }
 
-        //public override CSharpSyntaxNode VisitStructureBlock(VbSyntax.StructureBlockSyntax node)
-        //{
-        //    return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
-        //}
+        public override CSharpSyntaxNode VisitStructureBlock(VbSyntax.StructureBlockSyntax node)
+        {
+            return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
+        }
 
-        //public override CSharpSyntaxNode VisitInterfaceBlock(VbSyntax.InterfaceBlockSyntax node)
-        //{
-        //    return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
-        //}
+        public override CSharpSyntaxNode VisitInterfaceBlock(VbSyntax.InterfaceBlockSyntax node)
+        {
+            return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
+        }
 
-        //public override CSharpSyntaxNode VisitClassBlock(VbSyntax.ClassBlockSyntax node)
-        //{
-        //    return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
-        //}
+        public override CSharpSyntaxNode VisitClassBlock(VbSyntax.ClassBlockSyntax node)
+        {
+            return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
+        }
 
-        //public override CSharpSyntaxNode VisitCompilationUnit(VbSyntax.CompilationUnitSyntax node)
-        //{
-        //    var cSharpSyntaxNode = (CsSyntax.CompilationUnitSyntax) base.VisitCompilationUnit(node);
-        //    cSharpSyntaxNode = cSharpSyntaxNode.WithEndOfFileToken(
-        //        cSharpSyntaxNode.EndOfFileToken.WithConvertedLeadingTriviaFrom(node.EndOfFileToken));
-        //    ; 
-        //    return TriviaConverter.IsAllTriviaConverted() 
-        //        ? cSharpSyntaxNode 
-        //        : cSharpSyntaxNode.WithAppendedTrailingTrivia(SyntaxFactory.Comment("/* Some trivia (e.g. comments) could not be converted */"));
-        //}
+        public override CSharpSyntaxNode VisitCompilationUnit(VbSyntax.CompilationUnitSyntax node)
+        {
+            var cSharpSyntaxNode = (CsSyntax.CompilationUnitSyntax)base.VisitCompilationUnit(node);
+            cSharpSyntaxNode = cSharpSyntaxNode.WithEndOfFileToken(
+                cSharpSyntaxNode.EndOfFileToken.WithConvertedLeadingTriviaFrom(node.EndOfFileToken));
+            ;
+            return TriviaConverter.IsAllTriviaConverted()
+                ? cSharpSyntaxNode
+                : cSharpSyntaxNode.WithAppendedTrailingTrivia(SyntaxFactory.Comment("/* Some trivia (e.g. comments) could not be converted */"));
+        }
 
-        //private TDest WithPortedTrivia<TSource, TDest>(SyntaxNode node, Func<TSource, TDest, TDest> portExtraTrivia) where TSource : SyntaxNode where TDest : CSharpSyntaxNode
-        //{
-        //    var cSharpSyntaxNode = portExtraTrivia((TSource)node, (TDest)wrappedVisitor.Visit(node));
-        //    return TriviaConverter.PortConvertedTrivia(node, cSharpSyntaxNode);
-        //}
+        private TDest WithPortedTrivia<TSource, TDest>(SyntaxNode node, Func<TSource, TDest, TDest> portExtraTrivia) where TSource : SyntaxNode where TDest : CSharpSyntaxNode
+        {
+            var cSharpSyntaxNode = portExtraTrivia((TSource)node, (TDest)wrappedVisitor.Visit(node));
+            return TriviaConverter.PortConvertedTrivia(node, cSharpSyntaxNode);
+        }
 
-        //private CsSyntax.BaseTypeDeclarationSyntax WithTypeBlockTrivia(VbSyntax.TypeBlockSyntax sourceNode, CsSyntax.BaseTypeDeclarationSyntax destNode)
-        //{
-        //    var beforeOpenBrace = destNode.OpenBraceToken.GetPreviousToken();
-        //    var withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.BlockStatement, beforeOpenBrace);
-        //    withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.Inherits, withAnnotation);
-        //    withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.Implements, withAnnotation);
-        //    return destNode.ReplaceToken(beforeOpenBrace, withAnnotation);
-        //}
+        private CsSyntax.BaseTypeDeclarationSyntax WithTypeBlockTrivia(VbSyntax.TypeBlockSyntax sourceNode, CsSyntax.BaseTypeDeclarationSyntax destNode)
+        {
+            var withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.BlockStatement, destNode);
+            withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.Inherits, withAnnotation);
+            withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.Implements, withAnnotation);
+            return withAnnotation;
+        }
     }
 }
