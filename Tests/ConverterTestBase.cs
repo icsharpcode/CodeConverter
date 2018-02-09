@@ -70,7 +70,7 @@ namespace CodeConverter.Tests
         private static string AddLineNumberComments(string code, string singleLineCommentStart, bool isTarget)
         {
             int skipped = 0;
-            var lines = code.Split('\r'); // Don't split at very start
+            var lines = code.Replace("\r\n", "\n").Replace("\n", "\r\n").Split('\r'); // Don't split at very start
             bool started = false;
 
             var newLines = lines.Select((s, i) => {
