@@ -2,13 +2,13 @@
 
 namespace CodeConverter.Tests.VB
 {
-	public class MemberTests : ConverterTestBase
-	{
-		[Fact]
-		public void TestField()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+    public class MemberTests : ConverterTestBase
+    {
+        [Fact]
+        public void TestField()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     const int answer = 42;
     int value = 10;
@@ -18,13 +18,13 @@ namespace CodeConverter.Tests.VB
     Private value As Integer = 10
     ReadOnly v As Integer = 15
 End Class");
-		}
+        }
 
-		[Fact]
-		public void TestMethod()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+        [Fact]
+        public void TestMethod()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class, new where T2 : struct
     {
@@ -39,13 +39,13 @@ End Class");
         argument3 = Nothing
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void TestMethodWithReturnType()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+        [Fact]
+        public void TestMethodWithReturnType()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     public int TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class, new where T2 : struct
     {
@@ -56,13 +56,13 @@ End Class");
         Return 0
     End Function
 End Class");
-		}
+        }
 
-		[Fact]
-		public void TestStaticMethod()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+        [Fact]
+        public void TestStaticMethod()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     public static void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class, new where T2 : struct
     {
@@ -77,25 +77,25 @@ End Class");
         argument3 = Nothing
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void TestAbstractMethod()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+        [Fact]
+        public void TestAbstractMethod()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     public abstract void TestMethod();
 }", @"Class TestClass
     Public MustOverride Sub TestMethod()
 End Class");
-		}
+        }
 
-		[Fact]
-		public void TestSealedMethod()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+        [Fact]
+        public void TestSealedMethod()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     public sealed void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class, new where T2 : struct
     {
@@ -110,13 +110,13 @@ End Class");
         argument3 = Nothing
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void TestExtensionMethod()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"static class TestClass
+        [Fact]
+        public void TestExtensionMethod()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"static class TestClass
 {
     public static void TestMethod(this String str)
     {
@@ -128,13 +128,13 @@ Module TestClass
     Sub TestMethod(ByVal str As String)
     End Sub
 End Module");
-		}
+        }
 
-		[Fact]
-		public void TestExtensionMethodWithExistingImport()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"using System.Runtime.CompilerServices;
+        [Fact]
+        public void TestExtensionMethodWithExistingImport()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"using System.Runtime.CompilerServices;
 
 static class TestClass
 {
@@ -148,13 +148,13 @@ Module TestClass
     Sub TestMethod(ByVal str As String)
     End Sub
 End Module");
-		}
+        }
 
-		[Fact]
-		public void TestProperty()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+        [Fact]
+        public void TestProperty()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     public int Test { get; set; }
     public int Test2 {
@@ -185,13 +185,13 @@ End Module");
         End Set
     End Property
 End Class");
-		}
+        }
 
-		[Fact]
-		public void TestConstructor()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass<T, T2, T3> where T : class, new where T2 : struct
+        [Fact]
+        public void TestConstructor()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass<T, T2, T3> where T : class, new where T2 : struct
 {
     public TestClass(out T argument, ref T2 argument2, T3 argument3)
     {
@@ -200,13 +200,13 @@ End Class");
     Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void TestDestructor()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+        [Fact]
+        public void TestDestructor()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     ~TestClass()
     {
@@ -215,25 +215,25 @@ End Class");
     Protected Overrides Sub Finalize()
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void TestEvent()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+        [Fact]
+        public void TestEvent()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     public event EventHandler MyEvent;
 }", @"Class TestClass
     Public Event MyEvent As EventHandler
 End Class");
-		}
+        }
 
-		[Fact]
-		public void TestCustomEvent()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"using System;
+        [Fact]
+        public void TestCustomEvent()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"using System;
 
 class TestClass
 {
@@ -259,13 +259,13 @@ class TestClass
         End RemoveHandler
     End Event
 End Class");
-		}
+        }
 
-		[Fact]
-		public void TestIndexer()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+        [Fact]
+        public void TestIndexer()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     public int this[int index] { get; set; }
     public int this[string index] {
@@ -296,6 +296,6 @@ End Class");
         End Set
     End Property
 End Class");
-		}
-	}
+        }
+    }
 }

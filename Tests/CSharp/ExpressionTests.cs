@@ -2,12 +2,12 @@
 
 namespace CodeConverter.Tests.CSharp
 {
-	public class ExpressionTests : ConverterTestBase
-	{
-		[Fact(Skip = "Not implemented!")]
-		public void MultilineString()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+    public class ExpressionTests : ConverterTestBase
+    {
+        [Fact(Skip = "Not implemented!")]
+        public void MultilineString()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim x = ""Hello,
 World!""
@@ -25,12 +25,12 @@ class TestClass
 World!"";
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void DateKeyword()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void DateKeyword()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private DefaultDate as Date = Nothing
 End Class", @"using System;
 using System.Collections.Generic;
@@ -41,12 +41,12 @@ class TestClass
 {
     private System.DateTime DefaultDate = default(Date);
 }");
-		}
+        }
 
-		[Fact]
-		public void FullyTypeInferredEnumerableCreation()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void FullyTypeInferredEnumerableCreation()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim strings = { ""1"", ""2"" }
     End Sub
@@ -62,12 +62,12 @@ class TestClass
         var strings = new[] { ""1"", ""2"" };
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void EmptyArgumentLists()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void EmptyArgumentLists()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim str = (New ThreadStaticAttribute).ToString
     End Sub
@@ -83,12 +83,12 @@ class TestClass
         var str = (new ThreadStaticAttribute()).ToString();
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void StringConcatenationAssignment()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void StringConcatenationAssignment()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim str = ""Hello, ""
         str &= ""World""
@@ -106,12 +106,12 @@ class TestClass
         str += ""World"";
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void GetTypeExpression()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void GetTypeExpression()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim typ = GetType(String)
     End Sub
@@ -127,16 +127,16 @@ class TestClass
         var typ = typeof(string);
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void UsesSquareBracketsForIndexerButParenthesesForMethodInvocation()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void UsesSquareBracketsForIndexerButParenthesesForMethodInvocation()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Function TestMethod() As String()
         Dim s = ""1,2""
         Return s.Split(s(1))
-	End Function
+    End Function
 End Class", @"using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -150,12 +150,12 @@ class TestClass
         return s.Split(s[1]);
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void ConditionalExpression()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void ConditionalExpression()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = If((str = """"), True, False)
     End Sub
@@ -171,12 +171,12 @@ class TestClass
         bool result = (str == """") ? true : false;
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void NullCoalescingExpression()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void NullCoalescingExpression()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Console.WriteLine(If(str, ""<null>""))
     End Sub
@@ -192,12 +192,12 @@ class TestClass
         Console.WriteLine(str ?? ""<null>"");
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void MemberAccessAndInvocationExpression()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void MemberAccessAndInvocationExpression()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim length As Integer
         length = str.Length
@@ -219,9 +219,9 @@ class TestClass
         Console.ReadKey();
     }
 }");
-		}
+        }
 
-		[Fact]
+        [Fact]
         public void ExternalReferenceToOutParameter()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -247,9 +247,9 @@ class TestClass
         }
 
         [Fact]
-		public void ElvisOperatorExpression()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        public void ElvisOperatorExpression()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim length As Integer = If(str?.Length, -1)
         Console.WriteLine(length)
@@ -271,12 +271,12 @@ class TestClass
         string redirectUri = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri;
     }
 }");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void ObjectInitializerExpression()
-		{
-			TestConversionVisualBasicToCSharp(@"Class StudentName
+        [Fact(Skip = "Not implemented!")]
+        public void ObjectInitializerExpression()
+        {
+            TestConversionVisualBasicToCSharp(@"Class StudentName
     Public LastName, FirstName As String
 End Class
 
@@ -301,12 +301,12 @@ class TestClass
         };
     }
 }");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void ObjectInitializerExpression2()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact(Skip = "Not implemented!")]
+        public void ObjectInitializerExpression2()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 = New With {Key .FirstName = ""Craig"", Key .LastName = ""Playstead""}
     End Sub
@@ -321,12 +321,12 @@ class TestClass
         };
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void ThisMemberAccessExpression()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void ThisMemberAccessExpression()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private member As Integer
 
     Private Sub TestMethod()
@@ -346,12 +346,12 @@ class TestClass
         this.member = 0;
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void BaseMemberAccessExpression()
-		{
-			TestConversionVisualBasicToCSharp(@"Class BaseTestClass
+        [Fact]
+        public void BaseMemberAccessExpression()
+        {
+            TestConversionVisualBasicToCSharp(@"Class BaseTestClass
     Public member As Integer
 End Class
 
@@ -378,12 +378,12 @@ class TestClass : BaseTestClass
         base.member = 0;
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void DelegateExpression()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void DelegateExpression()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim test = Function(ByVal a As Integer) a * 2
         test(3)
@@ -401,12 +401,12 @@ class TestClass
         test(3);
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void LambdaBodyExpression()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void LambdaBodyExpression()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim test = Function(a) a * 2
         Dim test2 = Function(a, b)
@@ -437,12 +437,12 @@ class TestClass
         test(3);
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void Await()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void Await()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Function SomeAsyncMethod() As Task(Of Integer)
         Return Task.FromResult(0)
     End Function
@@ -469,12 +469,12 @@ class TestClass
         Console.WriteLine(result);
     }
 }");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void Linq1()
-		{
-			TestConversionVisualBasicToCSharp(@"Private Shared Sub SimpleQuery()
+        [Fact(Skip = "Not implemented!")]
+        public void Linq1()
+        {
+            TestConversionVisualBasicToCSharp(@"Private Shared Sub SimpleQuery()
     Dim numbers As Integer() = {7, 9, 5, 3, 6}
     Dim res = From n In numbers Where n > 5 Select n
 
@@ -482,7 +482,7 @@ class TestClass
         Console.WriteLine(n)
     Next
 End Sub",
-				@"static void SimpleQuery()
+                @"static void SimpleQuery()
 {
     int[] numbers = { 7, 9, 5, 3, 6 };
  
@@ -493,12 +493,12 @@ End Sub",
     foreach (var n in res)
         Console.WriteLine(n);
 }");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void Linq2()
-		{
-			TestConversionVisualBasicToCSharp(@"Public Shared Sub Linq40()
+        [Fact(Skip = "Not implemented!")]
+        public void Linq2()
+        {
+            TestConversionVisualBasicToCSharp(@"Public Shared Sub Linq40()
     Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
     Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g Select New With {Key .Remainder = g.Key, Key .Numbers = g}
 
@@ -510,7 +510,7 @@ End Sub",
         Next
     Next
 End Sub",
-				@"public static void Linq40() 
+                @"public static void Linq40() 
     { 
         int[] numbers = { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 }; 
       
@@ -528,12 +528,12 @@ End Sub",
             }
         }
     }");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void Linq3()
-		{
-			TestConversionVisualBasicToCSharp(@"Class Product
+        [Fact(Skip = "Not implemented!")]
+        public void Linq3()
+        {
+            TestConversionVisualBasicToCSharp(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -549,7 +549,7 @@ Class Test
         Next
     End Sub
 End Class",
-				@"class Product {
+                @"class Product {
     public string Category;
     public string ProductName;
 }
@@ -577,12 +577,12 @@ class Test {
         }
     }
 }");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void Linq4()
-		{
-			TestConversionVisualBasicToCSharp(@"Public Sub Linq103()
+        [Fact(Skip = "Not implemented!")]
+        public void Linq4()
+        {
+            TestConversionVisualBasicToCSharp(@"Public Sub Linq103()
     Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
     Dim products = GetProductList()
     Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {Key .Category = c, Key .Products = ps}
@@ -619,7 +619,7 @@ End Sub", @"public void Linq103()
         }
     }
 }");
-		}
+        }
 
         [Fact]
         public void PartiallyQualifiedName()
@@ -662,5 +662,5 @@ class TestClass
     }
 }");
         }
-	}
+    }
 }

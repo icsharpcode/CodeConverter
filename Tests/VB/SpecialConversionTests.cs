@@ -2,13 +2,13 @@
 
 namespace CodeConverter.Tests.VB
 {
-	public class SpecialConversionTests : ConverterTestBase
-	{
-		[Fact]
-		public void TestSimpleInlineAssign()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+    public class SpecialConversionTests : ConverterTestBase
+    {
+        [Fact]
+        public void TestSimpleInlineAssign()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     void TestMethod()
     {
@@ -27,13 +27,13 @@ namespace CodeConverter.Tests.VB
         Return value
     End Function
 End Class");
-		}
+        }
 
-		[Fact]
-		public void TestSimplePostIncrementAssign()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+        [Fact]
+        public void TestSimplePostIncrementAssign()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     void TestMethod()
     {
@@ -46,13 +46,13 @@ End Class");
         b = Math.Min(System.Threading.Interlocked.Increment(a), a - 1)
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void RaiseEvent()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+        [Fact]
+        public void RaiseEvent()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     event EventHandler MyEvent;
 
@@ -67,8 +67,8 @@ End Class");
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class");
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     void TestMethod()
     {
@@ -79,8 +79,8 @@ End Class");
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class");
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     void TestMethod()
     {
@@ -91,8 +91,8 @@ End Class");
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class");
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     void TestMethod()
     {
@@ -103,8 +103,8 @@ End Class");
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class");
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     void TestMethod()
     {
@@ -115,8 +115,8 @@ End Class");
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class");
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     void TestMethod()
     {
@@ -127,13 +127,13 @@ End Class");
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void IfStatementSimilarToRaiseEvent()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+        [Fact]
+        public void IfStatementSimilarToRaiseEvent()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     void TestMethod()
     {
@@ -144,9 +144,9 @@ End Class");
         If FullImage IsNot Nothing Then DrawImage()
     End Sub
 End Class");
-			// regression test:
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+            // regression test:
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     void TestMethod()
     {
@@ -157,9 +157,9 @@ End Class");
         If FullImage IsNot Nothing Then e.DrawImage()
     End Sub
 End Class");
-			// with braces:
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+            // with braces:
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     void TestMethod()
     {
@@ -172,8 +172,8 @@ End Class");
         End If
     End Sub
 End Class");
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     void TestMethod()
     {
@@ -186,9 +186,9 @@ End Class");
         End If
     End Sub
 End Class");
-			// another bug related to the IfStatement code:
-			TestConversionCSharpToVisualBasic(
-				@"class TestClass
+            // another bug related to the IfStatement code:
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
 {
     void TestMethod()
     {
@@ -204,6 +204,6 @@ End Class");
         End If
     End Sub
 End Class");
-		}
-	}
+        }
+    }
 }

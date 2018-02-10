@@ -2,12 +2,12 @@
 
 namespace CodeConverter.Tests.CSharp
 {
-	public class TypeCastTests : ConverterTestBase
-	{
-		[Fact]
-		public void CastObjectToInteger()
-		{
-			TestConversionVisualBasicToCSharp(
+    public class TypeCastTests : ConverterTestBase
+    {
+        [Fact]
+        public void CastObjectToInteger()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5
@@ -28,12 +28,12 @@ class Class1
     }
 }
 ");
-		}
+        }
 
-		[Fact]
-		public void CastObjectToString()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void CastObjectToString()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = ""Test""
@@ -54,12 +54,12 @@ class Class1
     }
 }
 ");
-		}
+        }
 
-		[Fact]
-		public void CastObjectToGenericList()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void CastObjectToGenericList()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = New System.Collections.Generic.List(Of Integer)()
@@ -79,12 +79,12 @@ class Class1
         System.Collections.Generic.List<int> l = (System.Collections.Generic.List<int>)o;
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void TryCastObjectToInteger()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void TryCastObjectToInteger()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5
@@ -104,12 +104,12 @@ class Class1
         System.Nullable<int> i = o as int;
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void TryCastObjectToGenericList()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void TryCastObjectToGenericList()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = New System.Collections.Generic.List(Of Integer)()
@@ -129,12 +129,12 @@ class Class1
         System.Collections.Generic.List<int> l = o as System.Collections.Generic.List<int>;
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void CastConstantNumberToLong()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void CastConstantNumberToLong()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5L
@@ -152,12 +152,12 @@ class Class1
         object o = 5L;
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void CastConstantNumberToFloat()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void CastConstantNumberToFloat()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5F
@@ -175,12 +175,12 @@ class Class1
         object o = 5F;
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void CastConstantNumberToDecimal()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void CastConstantNumberToDecimal()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5.0D
@@ -199,6 +199,6 @@ class Class1
     }
 }
 ");
-		}
-	}
+        }
+    }
 }

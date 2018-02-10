@@ -2,12 +2,12 @@
 
 namespace CodeConverter.Tests.CSharp
 {
-	public class MemberTests : ConverterTestBase
-	{
-		[Fact]
-		public void TestField()
-		{
-			TestConversionVisualBasicToCSharp(
+    public class MemberTests : ConverterTestBase
+    {
+        [Fact]
+        public void TestField()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Const answer As Integer = 42
     Private value As Integer = 10
@@ -23,12 +23,12 @@ class TestClass
     private int value = 10;
     private readonly int v = 15;
 }");
-		}
+        }
 
-		[Fact]
-		public void TestMethod()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void TestMethod()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
@@ -51,12 +51,12 @@ class TestClass
         argument3 = default(T3);
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void TestMethodWithReturnType()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void TestMethodWithReturnType()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Public Function TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) As Integer
         Return 0
@@ -75,12 +75,12 @@ class TestClass
         return 0;
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void TestStaticMethod()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void TestStaticMethod()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Public Shared Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
@@ -103,12 +103,12 @@ class TestClass
         argument3 = default(T3);
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void TestAbstractMethod()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void TestAbstractMethod()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Public MustOverride Sub TestMethod()
 End Class", @"using System;
@@ -120,12 +120,12 @@ class TestClass
 {
     public abstract void TestMethod();
 }");
-		}
+        }
 
-		[Fact]
-		public void TestSealedMethod()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void TestSealedMethod()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Public NotOverridable Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
@@ -148,12 +148,12 @@ class TestClass
         argument3 = default(T3);
     }
 }");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void TestExtensionMethod()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact(Skip = "Not implemented!")]
+        public void TestExtensionMethod()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Imports System.Runtime.CompilerServices
 
 Module TestClass
@@ -171,12 +171,12 @@ static class TestClass
     {
     }
 }");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void TestExtensionMethodWithExistingImport()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact(Skip = "Not implemented!")]
+        public void TestExtensionMethodWithExistingImport()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Imports System.Runtime.CompilerServices
 
 Module TestClass
@@ -195,12 +195,12 @@ static class TestClass
     {
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void TestProperty()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void TestProperty()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Public Property Test As Integer
 
@@ -252,12 +252,12 @@ class TestClass
         }
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void TestConstructor()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void TestConstructor()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
     Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
     End Sub
@@ -274,12 +274,12 @@ class TestClass<T, T2, T3>
     {
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void TestDestructor()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void TestDestructor()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Protected Overrides Sub Finalize()
     End Sub
@@ -294,12 +294,12 @@ class TestClass
     {
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void TestEvent()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact]
+        public void TestEvent()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Public Event MyEvent As EventHandler
 End Class", @"using System;
@@ -311,12 +311,12 @@ class TestClass
 {
     public event EventHandler MyEvent;
 }");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void TestCustomEvent()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact(Skip = "Not implemented!")]
+        public void TestCustomEvent()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Private backingField As EventHandler
 
@@ -346,13 +346,13 @@ class TestClass
         }
     }
 }");
-		}
+        }
 
 
-		[Fact]
-		public void SynthesizedBackingFieldAccess()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void SynthesizedBackingFieldAccess()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Shared Property First As Integer
 
     Private Second As Integer = _First
@@ -367,13 +367,13 @@ class TestClass
 
     private int Second = First;
 }");
-		}
+        }
 
 
-		[Fact]
-		public void PropertyInitializers()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void PropertyInitializers()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private ReadOnly Property First As New List(Of String)
     Private Property Second As Integer = 0
 End Class", @"using System;
@@ -386,12 +386,12 @@ class TestClass
     private List<string> First { get; } = new List<string>();
     private int Second { get; set; } = 0;
 }");
-		}
+        }
 
-		[Fact]
-		public void PartialFriendClassWithOverloads()
-		{
-			TestConversionVisualBasicToCSharp(@"
+        [Fact]
+        public void PartialFriendClassWithOverloads()
+        {
+            TestConversionVisualBasicToCSharp(@"
 Partial Friend MustInherit Class TestClass1
     Public Shared Sub CreateStatic()
     End Sub
@@ -458,12 +458,12 @@ internal class TestClass2 : TestClass1
     {
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void ClassWithGloballyQualifiedAttribute()
-		{
-			TestConversionVisualBasicToCSharp(@"<Global.System.Diagnostics.DebuggerDisplay(""Hello World"")>
+        [Fact]
+        public void ClassWithGloballyQualifiedAttribute()
+        {
+            TestConversionVisualBasicToCSharp(@"<Global.System.Diagnostics.DebuggerDisplay(""Hello World"")>
 Class TestClass
 End Class", @"using System;
 using System.Collections.Generic;
@@ -474,12 +474,12 @@ using Microsoft.VisualBasic;
 class TestClass
 {
 }");
-		}
+        }
 
-		[Fact]
-		public void FieldWithAttribute()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void FieldWithAttribute()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     <ThreadStatic>
     Private Shared First As Integer
 End Class", @"using System;
@@ -492,12 +492,12 @@ class TestClass
     [ThreadStatic]
     private static int First;
 }");
-		}
+        }
 
-		[Fact]
-		public void ParamArray()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void ParamArray()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub SomeBools(ParamArray anyName As Boolean())
     End Sub
 End Class", @"using System;
@@ -511,12 +511,12 @@ class TestClass
     {
     }
 }");
-		}
+        }
 
-		[Fact]
-		public void ParamNamedBool()
-		{
-			TestConversionVisualBasicToCSharp(@"Class TestClass
+        [Fact]
+        public void ParamNamedBool()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub SomeBools(ParamArray bool As Boolean())
     End Sub
 End Class", @"using System;
@@ -530,7 +530,7 @@ class TestClass
     {
     }
 }");
-		}
+        }
 
         [Fact]
         public void NestedClass()
@@ -589,10 +589,10 @@ class MyClassC
 }");
         }
 
-		[Fact(Skip = "Not implemented!")]
-		public void TestIndexer()
-		{
-			TestConversionVisualBasicToCSharp(
+        [Fact(Skip = "Not implemented!")]
+        public void TestIndexer()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Default Public Property Item(ByVal index As Integer) As Integer
 
@@ -629,6 +629,6 @@ class TestClass
         set { this.m_test3 = value; }
     }
 }");
-		}
-	}
+        }
+    }
 }

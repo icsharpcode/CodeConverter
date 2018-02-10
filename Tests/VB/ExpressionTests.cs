@@ -2,12 +2,12 @@
 
 namespace CodeConverter.Tests.VB
 {
-	public class ExpressionTests : ConverterTestBase
-	{
-		[Fact]
-		public void MultilineString()
-		{
-			TestConversionCSharpToVisualBasic(@"
+    public class ExpressionTests : ConverterTestBase
+    {
+        [Fact]
+        public void MultilineString()
+        {
+            TestConversionCSharpToVisualBasic(@"
 class TestClass
 {
     void TestMethod()
@@ -21,12 +21,12 @@ World!"";
 World!""
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ConditionalExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
+        [Fact]
+        public void ConditionalExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"
 class TestClass
 {
     void TestMethod(string str)
@@ -38,12 +38,12 @@ class TestClass
         Dim result As Boolean = If((str = """"), True, False)
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void NullCoalescingExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
+        [Fact]
+        public void NullCoalescingExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"
 class TestClass
 {
     void TestMethod(string str)
@@ -55,12 +55,12 @@ class TestClass
         Console.WriteLine(If(str, ""<null>""))
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void MemberAccessAndInvocationExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
+        [Fact]
+        public void MemberAccessAndInvocationExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"
 class TestClass
 {
     void TestMethod(string str)
@@ -78,12 +78,12 @@ class TestClass
         Console.ReadKey()
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ElvisOperatorExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
+        [Fact]
+        public void ElvisOperatorExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"
 class TestClass
 {
     void TestMethod(string str)
@@ -101,12 +101,12 @@ class TestClass
         Dim redirectUri As String = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri
     End Sub
 End Class");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void ObjectInitializerExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
+        [Fact(Skip = "Not implemented!")]
+        public void ObjectInitializerExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"
 class StudentName
 {
     public string LastName, FirstName;
@@ -131,12 +131,12 @@ Class TestClass
         Dim student2 As StudentName = New StudentName With {.FirstName = ""Craig"", .LastName = ""Playstead""}
     End Sub
 End Class");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void ObjectInitializerExpression2()
-		{
-			TestConversionCSharpToVisualBasic(@"
+        [Fact(Skip = "Not implemented!")]
+        public void ObjectInitializerExpression2()
+        {
+            TestConversionCSharpToVisualBasic(@"
 class TestClass
 {
     void TestMethod(string str)
@@ -151,12 +151,12 @@ class TestClass
         Dim student2 = New With {Key .FirstName = ""Craig"", Key .LastName = ""Playstead""}
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ThisMemberAccessExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
+        [Fact]
+        public void ThisMemberAccessExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"
 class TestClass
 {
     private int member;
@@ -172,12 +172,12 @@ class TestClass
         Me.member = 0
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void BaseMemberAccessExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
+        [Fact]
+        public void BaseMemberAccessExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"
 class BaseTestClass
 {
     public int member;
@@ -200,12 +200,12 @@ Class TestClass
         MyBase.member = 0
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void DelegateExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
+        [Fact]
+        public void DelegateExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"
 class TestClass 
 {
     void TestMethod()
@@ -220,12 +220,12 @@ class TestClass
         test(3)
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void LambdaBodyExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
+        [Fact]
+        public void LambdaBodyExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"
 class TestClass 
 {
     void TestMethod()
@@ -248,12 +248,12 @@ class TestClass
         test(3)
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void Await()
-		{
-			TestConversionCSharpToVisualBasic(@"
+        [Fact]
+        public void Await()
+        {
+            TestConversionCSharpToVisualBasic(@"
 class TestClass 
 {
     Task<int> SomeAsyncMethod()
@@ -276,12 +276,12 @@ class TestClass
         Console.WriteLine(result)
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void Linq1()
-		{
-			TestConversionCSharpToVisualBasic(@"static void SimpleQuery()
+        [Fact]
+        public void Linq1()
+        {
+            TestConversionCSharpToVisualBasic(@"static void SimpleQuery()
 {
     int[] numbers = { 7, 9, 5, 3, 6 };
  
@@ -300,12 +300,12 @@ End Class");
         Console.WriteLine(n)
     Next
 End Sub");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void Linq2()
-		{
-			TestConversionCSharpToVisualBasic(@"public static void Linq40() 
+        [Fact(Skip = "Not implemented!")]
+        public void Linq2()
+        {
+            TestConversionCSharpToVisualBasic(@"public static void Linq40() 
     { 
         int[] numbers = { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 }; 
       
@@ -335,12 +335,12 @@ End Sub");
         Next
     Next
 End Sub");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void Linq3()
-		{
-			TestConversionCSharpToVisualBasic(@"class Product {
+        [Fact(Skip = "Not implemented!")]
+        public void Linq3()
+        {
+            TestConversionCSharpToVisualBasic(@"class Product {
     public string Category;
     public string ProductName;
 }
@@ -384,12 +384,12 @@ Class Test
         Next
     End Sub
 End Class");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void Linq4()
-		{
-			TestConversionCSharpToVisualBasic(@"public void Linq103() 
+        [Fact(Skip = "Not implemented!")]
+        public void Linq4()
+        {
+            TestConversionCSharpToVisualBasic(@"public void Linq103() 
 { 
     string[] categories = new string[]{  
         ""Beverages"",  
@@ -426,6 +426,6 @@ End Class");
         Next
     Next
 End Sub");
-		}
-	}
+        }
+    }
 }

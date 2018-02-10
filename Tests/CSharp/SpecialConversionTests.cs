@@ -2,12 +2,12 @@
 
 namespace CodeConverter.Tests.CSharp
 {
-	public class SpecialConversionTests : ConverterTestBase
-	{
-		[Fact]
-		public void RaiseEvent()
-		{
-			TestConversionVisualBasicToCSharp(
+    public class SpecialConversionTests : ConverterTestBase
+    {
+        [Fact]
+        public void RaiseEvent()
+        {
+            TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Private Event MyEvent As EventHandler
 
@@ -28,6 +28,6 @@ class TestClass
         MyEvent?.Invoke(this, EventArgs.Empty);
     }
 }");
-		}
-	}
+        }
+    }
 }
