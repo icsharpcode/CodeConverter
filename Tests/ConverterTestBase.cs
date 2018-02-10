@@ -30,8 +30,15 @@ namespace CodeConverter.Tests
             AssertCodeEqual(csharpCode, expectedVisualBasicCode, txt);
         }
 
-        public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode)
+        public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool standaloneStatements = false)
         {
+            if (standaloneStatements) {
+                var indentedStatements = expectedCsharpCode.Replace("\n", "\n    ");
+                expectedCsharpCode =
+$@"{{
+    {indentedStatements}
+}}";
+            }
             TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode);
             if (testCommentsByDefault) TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true));
         }

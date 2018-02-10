@@ -66,6 +66,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)
             {
+                if (CreateMethodBodyVisitor().Visit(node).Any()) {
+                    throw new NotImplementedOrRequiresSurroundingMethodDeclaration(node.GetType() + " not implemented!");
+                }
                 throw new NotImplementedException(node.GetType() + " not implemented!");
             }
 

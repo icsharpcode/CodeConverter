@@ -45,12 +45,16 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static Dictionary<string, CSharpSyntaxNode> ConvertMultiple(VBasic.VisualBasicCompilation compilation, IEnumerable<VBasic.VisualBasicSyntaxTree> syntaxTrees)
         {
             var cSharpFirstPass = syntaxTrees.ToDictionary(tree => tree.FilePath ?? "unknown",
-                tree => {
-                    var visualBasicSyntaxVisitor = new NodesVisitor(compilation.GetSemanticModel(tree, true));
-                    return (CSharpSyntaxTree)SyntaxFactory.SyntaxTree(tree.GetRoot().Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor));
-                });
+                tree => ConvertCompilationTree(compilation, tree));
             var cSharpCompilation = CSharpCompilation.Create("Conversion", cSharpFirstPass.Values, compilation.References);
             return cSharpFirstPass.ToDictionary(cs => cs.Key, cs => new CompilationErrorFixer(cSharpCompilation, cs.Value).Fix());
+        }
+
+        private static CSharpSyntaxTree ConvertCompilationTree(VBasic.VisualBasicCompilation compilation, VBasic.VisualBasicSyntaxTree tree)
+        {
+            var visualBasicSyntaxVisitor = new NodesVisitor(compilation.GetSemanticModel(tree, true));
+            return (CSharpSyntaxTree) SyntaxFactory.SyntaxTree(tree.GetRoot()
+                .Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor));
         }
 
         public static ConversionResult ConvertText(string text, IReadOnlyCollection<MetadataReference> references)
@@ -59,22 +63,54 @@ namespace ICSharpCode.CodeConverter.CSharp
                 throw new ArgumentNullException(nameof(text));
             if (references == null)
                 throw new ArgumentNullException(nameof(references));
-            var tree = (VBasic.VisualBasicSyntaxTree) VBasic.SyntaxFactory.ParseSyntaxTree(SourceText.From(text));
 
-            var compilationOptions = new VBasic.VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                .WithRootNamespace("TestProject")
-                .WithGlobalImports(VBasic.GlobalImport.Parse("System", "System.Collections.Generic", "System.Linq", "Microsoft.VisualBasic"));
-            var compilation = VBasic.VisualBasicCompilation.Create("Conversion", new[] { tree }, references)
-                .WithOptions(compilationOptions);
             try {
-
-                var genericWorkspace = new AdhocWorkspace();
-                var cSharpSyntaxNode = ConvertSingle(compilation, tree);
-                var formatted = Formatter.Format(cSharpSyntaxNode, genericWorkspace);
-                return new ConversionResult(formatted.ToFullString());
+                var cSharpSyntaxNode = ConvertText(references, text);
+                var formattedNode = Formatter.Format(cSharpSyntaxNode, new AdhocWorkspace());
+                return new ConversionResult(formattedNode.ToFullString());
             } catch (Exception ex) {
                 return new ConversionResult(ex);
             }
+        }
+
+        private static SyntaxNode ConvertText(IReadOnlyCollection<MetadataReference> references, string text)
+        {
+            try
+            {
+                return ConvertFullTree(references, text);
+            }
+            catch (NotImplementedOrRequiresSurroundingMethodDeclaration) {
+                text =
+$@"Class SurroundingClass
+Sub SurroundingSub()
+{text}
+End Sub
+End Class";
+                return ConvertFullTree(references, text).DescendantNodes().OfType<MethodDeclarationSyntax>().First().Body;
+            }
+        }
+
+        private static SyntaxNode ConvertFullTree(IReadOnlyCollection<MetadataReference> references, string fullTreeText)
+        {
+            var tree = CreateTree(fullTreeText);
+            var compilation = CreateCompilationFromTree(tree, references);
+            return ConvertSingle(compilation, tree);
+        }
+
+        private static VBasic.VisualBasicSyntaxTree CreateTree(string text)
+        {
+            return (VBasic.VisualBasicSyntaxTree) VBasic.SyntaxFactory.ParseSyntaxTree(SourceText.From(text));
+        }
+
+        private static VBasic.VisualBasicCompilation CreateCompilationFromTree(VBasic.VisualBasicSyntaxTree tree, IEnumerable<MetadataReference> references)
+        {
+            var compilationOptions = new VBasic.VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithRootNamespace("TestProject")
+                .WithGlobalImports(VBasic.GlobalImport.Parse("System", "System.Collections.Generic", "System.Linq",
+                    "Microsoft.VisualBasic"));
+            var compilation = VBasic.VisualBasicCompilation.Create("Conversion", new[] {tree}, references)
+                .WithOptions(compilationOptions);
+            return compilation;
         }
 
         static Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(VBSyntax.VariableDeclaratorSyntax declarator, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, SemanticModel semanticModel)
