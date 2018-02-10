@@ -406,7 +406,7 @@ class TestClass
         [Fact]
         public void LambdaBodyExpression()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim test = Function(a) a * 2
         Dim test2 = Function(a, b)
@@ -433,6 +433,7 @@ class TestClass
                 return a / b;
             return 0;
         };
+
         var test3 = (a, b) => a % b;
         test(3);
     }

@@ -4,7 +4,10 @@ using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Formatting;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Formatting;
+using Microsoft.CodeAnalysis.Options;
 using Microsoft.CodeAnalysis.Text;
 using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankSpecifierSyntax;
 using ArrayTypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayTypeSyntax;
@@ -42,27 +45,39 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static Dictionary<string, CSharpSyntaxNode> ConvertMultiple(VBasic.VisualBasicCompilation compilation, IEnumerable<VBasic.VisualBasicSyntaxTree> syntaxTrees)
         {
             var cSharpFirstPass = syntaxTrees.ToDictionary(tree => tree.FilePath ?? "unknown",
-                tree => (CSharpSyntaxTree) SyntaxFactory.SyntaxTree(tree.GetRoot().Accept(new NodesVisitor(compilation.GetSemanticModel(tree, true)))));
+                tree => {
+                    var visualBasicSyntaxVisitor = new NodesVisitor(compilation.GetSemanticModel(tree, true));
+                    return (CSharpSyntaxTree)SyntaxFactory.SyntaxTree(tree.GetRoot().Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor));
+                });
             var cSharpCompilation = CSharpCompilation.Create("Conversion", cSharpFirstPass.Values, compilation.References);
             return cSharpFirstPass.ToDictionary(cs => cs.Key, cs => new CompilationErrorFixer(cSharpCompilation, cs.Value).Fix());
         }
 
-        public static ConversionResult ConvertText(string text, MetadataReference[] references)
+        public static ConversionResult ConvertText(string text, IReadOnlyCollection<MetadataReference> references)
         {
             if (text == null)
                 throw new ArgumentNullException(nameof(text));
             if (references == null)
                 throw new ArgumentNullException(nameof(references));
             var tree = (VBasic.VisualBasicSyntaxTree) VBasic.SyntaxFactory.ParseSyntaxTree(SourceText.From(text));
-            var compilation = VBasic.VisualBasicCompilation.Create("Conversion", new[] { tree }, references);
+
+            var compilationOptions = new VBasic.VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithRootNamespace("TestProject")
+                .WithGlobalImports(VBasic.GlobalImport.Parse("System", "System.Collections.Generic", "System.Linq", "Microsoft.VisualBasic"));
+            var compilation = VBasic.VisualBasicCompilation.Create("Conversion", new[] { tree }, references)
+                .WithOptions(compilationOptions);
             try {
-                return new ConversionResult(ConvertSingle(compilation, tree).NormalizeWhitespace().ToFullString());
+
+                var genericWorkspace = new AdhocWorkspace();
+                var cSharpSyntaxNode = ConvertSingle(compilation, tree);
+                var formatted = Formatter.Format(cSharpSyntaxNode, genericWorkspace);
+                return new ConversionResult(formatted.ToFullString());
             } catch (Exception ex) {
                 return new ConversionResult(ex);
             }
         }
 
-        static Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(VBSyntax.VariableDeclaratorSyntax declarator, NodesVisitor nodesVisitor, SemanticModel semanticModel)
+        static Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(VBSyntax.VariableDeclaratorSyntax declarator, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, SemanticModel semanticModel)
         {
             var rawType = (TypeSyntax)declarator.AsClause?.TypeSwitch(
                 (VBSyntax.SimpleAsClauseSyntax c) => c.Type,

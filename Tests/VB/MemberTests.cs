@@ -247,7 +247,9 @@ class TestClass
             this.backingField -= value;
         }
     }
-}", @"Class TestClass
+}", @"Imports System
+
+Class TestClass
     Private backingField As EventHandler
 
     Public Event MyEvent As EventHandler

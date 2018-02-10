@@ -94,9 +94,15 @@ namespace ICSharpCode.CodeConverter.Util
         public static string GetCommentText(this SyntaxTrivia trivia)
         {
             var commentText = trivia.ToString();
-            if (trivia.Kind() == SyntaxKind.SingleLineCommentTrivia) {
+            if (trivia.IsKind(SyntaxKind.SingleLineCommentTrivia)) {
                 if (commentText.StartsWith("//")) {
                     commentText = commentText.Substring(2);
+                }
+
+                return commentText.TrimStart(null);
+            } else if (trivia.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.CommentTrivia)) {
+                if (commentText.StartsWith("'")) {
+                    commentText = commentText.Substring(1);
                 }
 
                 return commentText.TrimStart(null);
@@ -122,6 +128,38 @@ namespace ICSharpCode.CodeConverter.Util
                     // If the '*' was intentional, sorry, it's gone.
                     if (trimmedLine.StartsWith("*")) {
                         trimmedLine = trimmedLine.TrimStart('*');
+                        trimmedLine = trimmedLine.TrimStart(null);
+                    }
+
+                    textBuilder.AppendLine(trimmedLine);
+                }
+
+                // remove last line break
+                textBuilder.Remove(textBuilder.Length - newLine.Length, newLine.Length);
+
+                return textBuilder.ToString();
+            } else if (trivia.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DocumentationCommentTrivia)) {
+                var textBuilder = new StringBuilder();
+
+                if (commentText.EndsWith("*/")) {
+                    commentText = commentText.TrimEnd('\'');
+                }
+
+                if (commentText.StartsWith("'''")) {
+                    commentText = commentText.TrimStart('\'');
+                }
+
+                commentText = commentText.Trim();
+
+                var newLine = Environment.NewLine;
+                var lines = commentText.Split(new[] { newLine }, StringSplitOptions.None);
+                foreach (var line in lines) {
+                    var trimmedLine = line.Trim();
+
+                    // Note: we trim leading '*' characters in multi-line comments.
+                    // If the '*' was intentional, sorry, it's gone.
+                    if (trimmedLine.StartsWith("'")) {
+                        trimmedLine = trimmedLine.TrimStart('\'');
                         trimmedLine = trimmedLine.TrimStart(null);
                     }
 
@@ -163,7 +201,17 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsWhitespaceOrEndOfLine(this SyntaxTrivia trivia)
         {
-            return trivia.Kind() == SyntaxKind.WhitespaceTrivia || trivia.Kind() == SyntaxKind.EndOfLineTrivia;
+            return trivia.IsEndOfLine() || trivia.IsWhitespace();
+        }
+
+        public static bool IsEndOfLine(this SyntaxTrivia x)
+        {
+            return x.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.EndOfLineTrivia) || x.IsKind(SyntaxKind.EndOfLineTrivia);
+        }
+
+        private static bool IsWhitespace(this SyntaxTrivia x)
+        {
+            return x.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.WhitespaceTrivia) || x.IsKind(SyntaxKind.WhitespaceTrivia);
         }
 
         public static SyntaxTrivia GetPreviousTrivia(

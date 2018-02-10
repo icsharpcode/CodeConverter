@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using System;
+using Xunit;
 
 namespace CodeConverter.Tests.CSharp
 {
@@ -13,8 +14,7 @@ namespace CodeConverter.Tests.CSharp
         Dim o As Object = 5
         Dim i As Integer = CInt(o)
     End Sub
-End Class
-", @"using System;
+End Class" + Environment.NewLine, @"using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
@@ -26,8 +26,7 @@ class Class1
         object o = 5;
         int i = System.Convert.ToInt32(o);
     }
-}
-");
+}" + Environment.NewLine);
         }
 
         [Fact]
@@ -39,8 +38,7 @@ class Class1
         Dim o As Object = ""Test""
         Dim s As String = CStr(o)
     End Sub
-End Class
-", @"using System;
+End Class" + Environment.NewLine, @"using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
@@ -52,8 +50,7 @@ class Class1
         object o = ""Test"";
         string s = System.Convert.ToString(o);
     }
-}
-");
+}" + Environment.NewLine);
         }
 
         [Fact]
@@ -65,8 +62,8 @@ class Class1
         Dim o As Object = New System.Collections.Generic.List(Of Integer)()
         Dim l As System.Collections.Generic.List(Of Integer) = CType(o, System.Collections.Generic.List(Of Integer))
     End Sub
-End Class
-", @"using System;
+End Class",
+@"using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
@@ -90,8 +87,8 @@ class Class1
         Dim o As Object = 5
         Dim i As System.Nullable(Of Integer) = TryCast(o, Integer)
     End Sub
-End Class
-", @"using System;
+End Class",
+@"using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
@@ -115,8 +112,8 @@ class Class1
         Dim o As Object = New System.Collections.Generic.List(Of Integer)()
         Dim l As System.Collections.Generic.List(Of Integer) = TryCast(o, System.Collections.Generic.List(Of Integer))
     End Sub
-End Class
-", @"using System;
+End Class",
+@"using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
@@ -139,8 +136,8 @@ class Class1
     Private Sub Test()
         Dim o As Object = 5L
     End Sub
-End Class
-", @"using System;
+End Class",
+@"using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
@@ -162,8 +159,8 @@ class Class1
     Private Sub Test()
         Dim o As Object = 5F
     End Sub
-End Class
-", @"using System;
+End Class",
+@"using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
@@ -181,12 +178,11 @@ class Class1
         public void CastConstantNumberToDecimal()
         {
             TestConversionVisualBasicToCSharp(
-@"Class Class1
+                @"Class Class1
     Private Sub Test()
         Dim o As Object = 5.0D
     End Sub
-End Class
-", @"using System;
+End Class" + Environment.NewLine, @"using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
@@ -197,8 +193,7 @@ class Class1
     {
         object o = 5.0M;
     }
-}
-");
+}" + Environment.NewLine);
         }
     }
 }

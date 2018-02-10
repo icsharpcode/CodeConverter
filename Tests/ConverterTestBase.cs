@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text;
 using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -15,255 +18,119 @@ namespace CodeConverter.Tests
 {
     public class ConverterTestBase
     {
-        void CSharpWorkspaceSetup(out TestWorkspace workspace, out Document doc, CSharpParseOptions parseOptions = null)
-        {
-            workspace = new TestWorkspace();
-            var projectId = ProjectId.CreateNewId();
-            var documentId = DocumentId.CreateNewId(projectId);
-            if (parseOptions == null) {
-                parseOptions = new CSharpParseOptions(
-                    Microsoft.CodeAnalysis.CSharp.LanguageVersion.CSharp6,
-                    DocumentationMode.Diagnose | DocumentationMode.Parse,
-                    SourceCodeKind.Regular,
-                    ImmutableArray.Create("DEBUG", "TEST")
-                );
-            }
-            workspace.Options.WithChangedOption(CSharpFormattingOptions.NewLinesForBracesInControlBlocks, false);
-            workspace.Open(ProjectInfo.Create(
-                projectId,
-                VersionStamp.Create(),
-                "TestProject",
-                "TestProject",
-                LanguageNames.CSharp,
-                null,
-                null,
-                new CSharpCompilationOptions(
-                    OutputKind.DynamicallyLinkedLibrary,
-                    false,
-                    "",
-                    "",
-                    "Script",
-                    new[] { "System", "System.Collections.Generic", "System.Linq" },
-                    OptimizationLevel.Debug,
-                    false,
-                    true
-                ),
-                parseOptions,
-                new[] {
-                    DocumentInfo.Create(
-                        documentId,
-                        "a.cs",
-                        null,
-                        SourceCodeKind.Regular
-                    )
-                },
-                null,
-                DiagnosticTestBase.DefaultMetadataReferences
-            )
-            );
-            doc = workspace.CurrentSolution.GetProject(projectId).GetDocument(documentId);
-        }
-
-        void CSharpWorkspaceSetup(string text, out TestWorkspace workspace, out Document doc, CSharpParseOptions parseOptions = null)
-        {
-            workspace = new TestWorkspace();
-            var projectId = ProjectId.CreateNewId();
-            var documentId = DocumentId.CreateNewId(projectId);
-            if (parseOptions == null) {
-                parseOptions = new CSharpParseOptions(
-                    Microsoft.CodeAnalysis.CSharp.LanguageVersion.CSharp6,
-                    DocumentationMode.Diagnose | DocumentationMode.Parse,
-                    SourceCodeKind.Regular,
-                    ImmutableArray.Create("DEBUG", "TEST")
-                );
-            }
-            workspace.Options.WithChangedOption(CSharpFormattingOptions.NewLinesForBracesInControlBlocks, false);
-            workspace.Open(ProjectInfo.Create(
-                projectId,
-                VersionStamp.Create(),
-                "TestProject",
-                "TestProject",
-                LanguageNames.CSharp,
-                null,
-                null,
-                new CSharpCompilationOptions(
-                    OutputKind.DynamicallyLinkedLibrary,
-                    false,
-                    "",
-                    "",
-                    "Script",
-                    new[] { "System", "System.Collections.Generic", "System.Linq" },
-                    OptimizationLevel.Debug,
-                    false,
-                    true
-                ),
-                parseOptions,
-                new[] {
-                    DocumentInfo.Create(
-                        documentId,
-                        "a.cs",
-                        null,
-                        SourceCodeKind.Regular,
-                        TextLoader.From(TextAndVersion.Create(SourceText.From(text), VersionStamp.Create()))
-                    )
-                },
-                null,
-                DiagnosticTestBase.DefaultMetadataReferences
-            )
-            );
-            doc = workspace.CurrentSolution.GetProject(projectId).GetDocument(documentId);
-        }
-
-        void VBWorkspaceSetup(out TestWorkspace workspace, out Document doc, VisualBasicParseOptions parseOptions = null)
-        {
-            workspace = new TestWorkspace();
-            var projectId = ProjectId.CreateNewId();
-            var documentId = DocumentId.CreateNewId(projectId);
-            if (parseOptions == null) {
-                parseOptions = new VisualBasicParseOptions(
-                    Microsoft.CodeAnalysis.VisualBasic.LanguageVersion.VisualBasic14,
-                    DocumentationMode.Diagnose | DocumentationMode.Parse,
-                    SourceCodeKind.Regular
-                );
-            }
-            workspace.Options.WithChangedOption(CSharpFormattingOptions.NewLinesForBracesInControlBlocks, false);
-            var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                .WithRootNamespace("TestProject")
-                .WithGlobalImports(GlobalImport.Parse("System", "System.Collections.Generic", "System.Linq", "Microsoft.VisualBasic"));
-            workspace.Open(ProjectInfo.Create(
-                projectId,
-                VersionStamp.Create(),
-                "TestProject",
-                "TestProject",
-                LanguageNames.VisualBasic,
-                null,
-                null,
-                compilationOptions,
-                parseOptions,
-                new[] {
-                    DocumentInfo.Create(
-                        documentId,
-                        "a.vb",
-                        null,
-                        SourceCodeKind.Regular
-                    )
-                },
-                null,
-                DiagnosticTestBase.DefaultMetadataReferences
-            )
-            );
-            doc = workspace.CurrentSolution.GetProject(projectId).GetDocument(documentId);
-        }
-
-        void VBWorkspaceSetup(string text, out TestWorkspace workspace, out Document doc, VisualBasicParseOptions parseOptions = null)
-        {
-            workspace = new TestWorkspace();
-            var projectId = ProjectId.CreateNewId();
-            var documentId = DocumentId.CreateNewId(projectId);
-            if (parseOptions == null) {
-                parseOptions = new VisualBasicParseOptions(
-                    Microsoft.CodeAnalysis.VisualBasic.LanguageVersion.VisualBasic14,
-                    DocumentationMode.Diagnose | DocumentationMode.Parse,
-                    SourceCodeKind.Regular
-                );
-            }
-            workspace.Options.WithChangedOption(CSharpFormattingOptions.NewLinesForBracesInControlBlocks, false);
-            var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                .WithRootNamespace("TestProject")
-                .WithGlobalImports(GlobalImport.Parse("System", "System.Collections.Generic", "System.Linq", "Microsoft.VisualBasic"));
-            workspace.Open(ProjectInfo.Create(
-                projectId,
-                VersionStamp.Create(),
-                "TestProject",
-                "TestProject",
-                LanguageNames.VisualBasic,
-                null,
-                null,
-                compilationOptions,
-                parseOptions,
-                new[] {
-                    DocumentInfo.Create(
-                        documentId,
-                        "a.vb",
-                        null,
-                        SourceCodeKind.Regular,
-                        TextLoader.From(TextAndVersion.Create(SourceText.From(text), VersionStamp.Create()))
-                    )
-                },
-                null,
-                DiagnosticTestBase.DefaultMetadataReferences
-            )
-            );
-            doc = workspace.CurrentSolution.GetProject(projectId).GetDocument(documentId);
-        }
+        private bool testCommentsByDefault = true;
 
         public void TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
         {
-            TestWorkspace csharpWorkspace, vbWorkspace;
-            Document inputDocument, outputDocument;
-            CSharpWorkspaceSetup(csharpCode, out csharpWorkspace, out inputDocument, csharpOptions);
-            VBWorkspaceSetup(out vbWorkspace, out outputDocument, vbOptions);
-            var outputNode = Convert((CSharpSyntaxNode)inputDocument.GetSyntaxRootAsync().GetAwaiter().GetResult(), inputDocument.GetSemanticModelAsync().GetAwaiter().GetResult(), outputDocument);
+            var outputNode = CSharpConverter.ConvertText(csharpCode, DiagnosticTestBase.DefaultMetadataReferences);
 
-            var txt = outputDocument.WithSyntaxRoot(Formatter.Format(outputNode, vbWorkspace)).GetTextAsync().GetAwaiter().GetResult().ToString();
+            var txt = outputNode.ConvertedCode ?? outputNode.GetExceptionsAsString();
             txt = Utils.HomogenizeEol(txt).TrimEnd();
             expectedVisualBasicCode = Utils.HomogenizeEol(expectedVisualBasicCode).TrimEnd();
-            if (expectedVisualBasicCode != txt) {
-                Console.WriteLine("expected:");
-                Console.WriteLine(expectedVisualBasicCode);
-                Console.WriteLine("got:");
-                Console.WriteLine(txt);
-                Console.WriteLine("diff:");
-                int l = Math.Max(expectedVisualBasicCode.Length, txt.Length);
-                StringBuilder diff = new StringBuilder(l);
-                for (int i = 0; i < l; i++) {
-                    if (i >= expectedVisualBasicCode.Length || i >= txt.Length || expectedVisualBasicCode[i] != txt[i])
-                        diff.Append('x');
-                    else
-                        diff.Append(expectedVisualBasicCode[i]);
-                }
-                Console.WriteLine(diff.ToString());
-                Assert.True(false);
-            }
+            AssertCodeEqual(csharpCode, expectedVisualBasicCode, txt);
         }
 
-        public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
+        public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode)
         {
-            TestWorkspace csharpWorkspace, vbWorkspace;
-            Document inputDocument, outputDocument;
-            VBWorkspaceSetup(visualBasicCode, out vbWorkspace, out inputDocument, vbOptions);
-            CSharpWorkspaceSetup(out csharpWorkspace, out outputDocument, csharpOptions);
-            var outputNode = Convert((VisualBasicSyntaxNode)inputDocument.GetSyntaxRootAsync().Result, inputDocument.GetSemanticModelAsync().Result, outputDocument);
+            TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode);
+            if (testCommentsByDefault) TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true));
+        }
 
-            var txt = outputDocument.WithSyntaxRoot(Formatter.Format(outputNode, vbWorkspace)).GetTextAsync().Result.ToString();
-            txt = Utils.HomogenizeEol(txt).TrimEnd();
+        public void TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
+        {
+            var outputNode = VisualBasicConverter.ConvertText(visualBasicCode, DiagnosticTestBase.DefaultMetadataReferences);
+            var txt = Utils.HomogenizeEol(outputNode.ConvertedCode ?? outputNode.GetExceptionsAsString()).TrimEnd();
             expectedCsharpCode = Utils.HomogenizeEol(expectedCsharpCode).TrimEnd();
-            if (expectedCsharpCode != txt) {
-                int l = Math.Max(expectedCsharpCode.Length, txt.Length);
+            AssertCodeEqual(visualBasicCode, expectedCsharpCode, txt);
+        }
+
+        private static void AssertCodeEqual(string originalSource, string expectedConversion, string actualConversion)
+        {
+            if (expectedConversion != actualConversion) {
+                int l = Math.Max(expectedConversion.Length, actualConversion.Length);
                 StringBuilder sb = new StringBuilder(l * 4);
                 sb.AppendLine("expected:");
-                sb.AppendLine(expectedCsharpCode);
+                sb.AppendLine(expectedConversion);
                 sb.AppendLine("got:");
-                sb.AppendLine(txt);
+                sb.AppendLine(actualConversion);
                 sb.AppendLine("diff:");
                 for (int i = 0; i < l; i++) {
-                    if (i >= expectedCsharpCode.Length || i >= txt.Length || expectedCsharpCode[i] != txt[i])
+                    if (i >= expectedConversion.Length || i >= actualConversion.Length || expectedConversion[i] != actualConversion[i])
                         sb.Append('x');
                     else
-                        sb.Append(expectedCsharpCode[i]);
+                        sb.Append(expectedConversion[i]);
                 }
+                sb.AppendLine();
+                sb.AppendLine("source:");
+                sb.AppendLine(originalSource);
                 Assert.True(false, sb.ToString());
             }
         }
 
-        VisualBasicSyntaxNode Convert(CSharpSyntaxNode input, SemanticModel semanticModel, Document targetDocument)
+        private static string AddLineNumberComments(string code, string singleLineCommentStart, bool isTarget)
         {
-            return CSharpConverter.Convert(input, semanticModel, targetDocument);
+            int skipped = 0;
+            var lines = Utils.HomogenizeEol(code).Split(new[]{Environment.NewLine}, StringSplitOptions.None);
+            bool started = false;
+
+            var newLines = lines.Select((s, i) => {
+
+                var prevLine = i > 0 ? lines[i - 1] : "";
+                var nextLine = i < lines.Length - 1 ? lines[i + 1] : "";
+
+                //Don't start until first line mentioning class
+                started |= s.IndexOf("class ", StringComparison.InvariantCultureIgnoreCase) + s.IndexOf("module ", StringComparison.InvariantCultureIgnoreCase) > -2;
+
+                //Lines which don't map directly should be tested independently
+                if (!started ||
+                isTarget && HasNoSourceLine(prevLine, s, nextLine)
+                || !isTarget && HasNoTargetLine(prevLine, s, nextLine)) {
+                    skipped++;
+                    return s;
+                }
+
+                //Try to indent based on next line
+                if (s.Trim() == "" && i > 0) {
+                    s = s + new string(Enumerable.Repeat(' ', lines[i - 1].Length).ToArray());
+                }
+
+                return s + singleLineCommentStart + (i - skipped).ToString();
+            });
+            return string.Join(Environment.NewLine, newLines);
         }
 
-        CSharpSyntaxNode Convert(VisualBasicSyntaxNode input, SemanticModel semanticModel, Document targetDocument)
+        private static bool HasNoSourceLine(string prevLine, string line, string nextLine)
         {
-            return VisualBasicConverter.ConvertSingle((VisualBasicCompilation) semanticModel.Compilation, (VisualBasicSyntaxTree) input.SyntaxTree);
+            return line.Trim() == "{" 
+                || nextLine.Contains("where T")
+                || IsTwoLineCsIfStatement(line, nextLine);
+        }
+
+        /// <summary>
+        /// Comes from a one line if statement in VB
+        /// </summary>
+        private static bool IsTwoLineCsIfStatement(string line, string nextLine)
+        {
+            return line.Contains("if") && !nextLine.Trim().Equals("{");
+        }
+
+        private static bool HasNoTargetLine(string prevLine, string line, string nextLine)
+        {
+            return IsVbInheritsOrImplements(nextLine)
+                || line.Contains("End If") || line.Contains("Next")
+                || IsFirstOfMultiLineVbIfStatement(line)
+                //Allow a blank line in VB after these statements that doesn't appear in the C# since C# has braces to act as a separator
+                || string.IsNullOrWhiteSpace(line) && IsVbInheritsOrImplements(prevLine);
+        }
+
+        private static bool IsFirstOfMultiLineVbIfStatement(string line)
+        {
+            return line.Trim().StartsWith("If") && line.Trim().EndsWith("Then");
+        }
+
+        private static bool IsVbInheritsOrImplements(string line)
+        {
+            return line.Contains("Inherits") || line.Contains("Implements");
         }
     }
 }

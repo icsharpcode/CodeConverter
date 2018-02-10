@@ -200,7 +200,7 @@ static class TestClass
         [Fact]
         public void TestProperty()
         {
-            TestConversionVisualBasicToCSharp(
+            TestConversionVisualBasicToCSharpWithoutComments(
 @"Class TestClass
     Public Property Test As Integer
 
@@ -245,7 +245,6 @@ class TestClass
         {
             return this.m_test3;
         }
-
         set
         {
             this.m_test3 = value;
@@ -418,7 +417,8 @@ Friend Class TestClass2
 
     Public Overrides Sub CreateVirtualInstance()
     End Sub
-End Class", @"using System;
+End Class", @"
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
@@ -479,7 +479,7 @@ class TestClass
         [Fact]
         public void FieldWithAttribute()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     <ThreadStatic>
     Private Shared First As Integer
 End Class", @"using System;

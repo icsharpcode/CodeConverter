@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using VBSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -798,6 +799,112 @@ namespace ICSharpCode.CodeConverter.Util
             IEnumerable<SyntaxTrivia> trailingTrivia) where T : SyntaxNode
         {
             return node.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(trailingTrivia);
+        }
+        public static SyntaxToken WithConvertedTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
+        {
+            return node.WithConvertedLeadingTriviaFrom(otherNode).WithConvertedTrailingTriviaFrom(otherNode);
+        }
+
+        public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
+        {
+            var firstToken = otherNode?.GetFirstToken();
+            return WithConvertedLeadingTriviaFrom(node, firstToken);
+        }
+
+        public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxToken? sourceToken)
+        {
+            if (sourceToken == null) return node;
+            var convertedTrivia = ConvertTrivia(sourceToken.Value.LeadingTrivia);
+            return node.WithLeadingTrivia(convertedTrivia);
+        }
+
+        public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
+        {
+            return node.WithConvertedTrailingTriviaFrom(otherNode?.GetLastToken());
+        }
+
+        public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxToken? otherToken)
+        {
+            if (!otherToken.HasValue || !otherToken.Value.HasTrailingTrivia) return node;
+            var convertedTrivia = ConvertTrivia(otherToken.Value.TrailingTrivia);
+            return node.WithTrailingTrivia(node.ImportantTrailingTrivia().Concat(convertedTrivia));
+        }
+
+        public static IEnumerable<SyntaxTrivia> ImportantTrailingTrivia(this SyntaxToken node)
+        {
+            return node.TrailingTrivia.Where(x => !x.IsKind(SyntaxKind.WhitespaceTrivia) && !x.IsKind(SyntaxKind.EndOfLineTrivia));
+        }
+
+        public static bool ParentHasSameTrailingTrivia(this SyntaxNode otherNode)
+        {
+            return otherNode.Parent.GetLastToken() == otherNode.GetLastToken();
+        }
+
+        public static IEnumerable<SyntaxTrivia> ConvertTrivia(this IReadOnlyCollection<SyntaxTrivia> triviaToConvert)
+        {
+            return triviaToConvert.Select(ConvertTrivia).Where(x => x != default(SyntaxTrivia));
+        }
+
+        private static SyntaxTrivia ConvertTrivia(SyntaxTrivia t)
+        {
+            if (t.IsKind(VBSyntaxKind.CommentTrivia))
+                return SyntaxFactory.SyntaxTrivia(SyntaxKind.SingleLineCommentTrivia, $"// {t.GetCommentText()}");
+            if (t.IsKind(VBSyntaxKind.DocumentationCommentTrivia)) {
+                var previousWhitespace = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None).ToString();
+                var commentTextLines = t.GetCommentText().Replace("\r\n", "\r").Split('\r');
+                var multiLine = commentTextLines.Count() > 1;
+                var outputCommentText = multiLine
+                    ? "/// " + string.Join($"\r\n{previousWhitespace}/// ", commentTextLines)
+                    : $"// {commentTextLines.Single()}";
+                return SyntaxFactory.SyntaxTrivia(SyntaxKind.SingleLineCommentTrivia,
+                    outputCommentText); //It's always single line...even when it has multiple lines
+            }
+
+            if (t.IsKind(VBSyntaxKind.WhitespaceTrivia)) {
+                return SyntaxFactory.SyntaxTrivia(SyntaxKind.WhitespaceTrivia, t.ToString());
+            }
+
+            if (t.IsKind(VBSyntaxKind.EndOfLineTrivia)) {
+                // Mapping one to one here leads to newlines appearing where the natural line-end was in VB.
+                // e.g. ToString\r\n()
+                // Because C Sharp needs those brackets. Handling each possible case of this is far more effort than it's worth.
+                return SyntaxFactory.SyntaxTrivia(SyntaxKind.EndOfLineTrivia, t.ToString());
+            }
+
+            //Each of these would need its own method to recreate for C# with the right structure probably so let's just warn about them for now.
+            var syntaxKinds = new Dictionary<VBSyntaxKind, SyntaxKind> {
+                {VBSyntaxKind.SkippedTokensTrivia, SyntaxKind.SkippedTokensTrivia},
+                {VBSyntaxKind.DisabledTextTrivia, SyntaxKind.DisabledTextTrivia},
+                {VBSyntaxKind.ConstDirectiveTrivia, SyntaxKind.DefineDirectiveTrivia}, // Just a guess
+                {VBSyntaxKind.IfDirectiveTrivia, SyntaxKind.IfDirectiveTrivia},
+                {VBSyntaxKind.ElseIfDirectiveTrivia, SyntaxKind.ElifDirectiveTrivia},
+                {VBSyntaxKind.ElseDirectiveTrivia, SyntaxKind.ElseDirectiveTrivia},
+                {VBSyntaxKind.EndIfDirectiveTrivia, SyntaxKind.EndIfDirectiveTrivia},
+                //{VBSyntaxKind.RegionDirectiveTrivia, SyntaxKind.RegionDirectiveTrivia}, Oh no I accidentally disabled regions :O ;)
+                //{VBSyntaxKind.EndRegionDirectiveTrivia, SyntaxKind.EndRegionDirectiveTrivia},
+                {VBSyntaxKind.EnableWarningDirectiveTrivia, SyntaxKind.WarningDirectiveTrivia},
+                {VBSyntaxKind.DisableWarningDirectiveTrivia, SyntaxKind.WarningDirectiveTrivia},
+                {VBSyntaxKind.ReferenceDirectiveTrivia, SyntaxKind.ReferenceDirectiveTrivia},
+                {VBSyntaxKind.BadDirectiveTrivia, SyntaxKind.BadDirectiveTrivia},
+                {VBSyntaxKind.ConflictMarkerTrivia, SyntaxKind.ConflictMarkerTrivia},
+                {VBSyntaxKind.ExternalSourceDirectiveTrivia, SyntaxKind.LoadDirectiveTrivia}, //Just a guess
+                {VBSyntaxKind.ExternalChecksumDirectiveTrivia, SyntaxKind.LineDirectiveTrivia}, // Even more random guess
+            };
+            var convertedKind = syntaxKinds.FirstOrNullable(kvp => t.IsKind(kvp.Key));
+            return convertedKind.HasValue
+                ? SyntaxFactory.Comment($"/* TODO ERROR: Skipped {convertedKind.Value.Key}")
+                : default(SyntaxTrivia);
+        }
+        public static T WithoutTrailingEndOfLineTrivia<T>(this T cSharpNode) where T : CSharpSyntaxNode
+        {
+            var lastDescendant = cSharpNode.DescendantNodesAndTokens().Last();
+            var triviaWithoutNewline = lastDescendant.GetTrailingTrivia().Where(t => !t.IsKind(SyntaxKind.EndOfLineTrivia));
+            if (lastDescendant.IsNode) {
+                return cSharpNode.ReplaceNode(lastDescendant.AsNode(),
+                    lastDescendant.AsNode().WithTrailingTrivia(triviaWithoutNewline));
+            }
+            return cSharpNode.ReplaceToken(lastDescendant.AsToken(),
+                lastDescendant.AsToken().WithTrailingTrivia(triviaWithoutNewline));
         }
 
         public static T WithOrderedTriviaFromSubTree<T>(

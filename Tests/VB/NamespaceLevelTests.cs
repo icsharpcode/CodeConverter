@@ -110,6 +110,22 @@ End Interface");
         }
 
         [Fact]
+        public void TestInterfaceWithTwoMembers()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"interface ITest : System.IDisposable
+{
+    void Test ();
+    void Test2 ();
+}", @"Interface ITest
+    Inherits System.IDisposable
+
+    Sub Test()
+    Sub Test2()
+End Interface");
+        }
+
+        [Fact]
         public void TestEnum()
         {
             TestConversionCSharpToVisualBasic(
@@ -198,7 +214,9 @@ End Namespace");
         public void ClassImplementsInterface()
         {
             TestConversionCSharpToVisualBasic("using System; class test : IComparable { }",
-@"Class test
+@"Imports System
+
+Class test
     Implements IComparable
 End Class");
         }
