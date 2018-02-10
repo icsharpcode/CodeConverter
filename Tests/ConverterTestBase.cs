@@ -70,7 +70,7 @@ namespace CodeConverter.Tests
         private static string AddLineNumberComments(string code, string singleLineCommentStart, bool isTarget)
         {
             int skipped = 0;
-            var lines = code.Replace("\r\n", "\n").Replace("\n", "\r\n").Split('\r'); // Don't split at very start
+            var lines = Utils.HomogenizeEol(code).Split(new[]{Environment.NewLine}, StringSplitOptions.None);
             bool started = false;
 
             var newLines = lines.Select((s, i) => {
@@ -91,12 +91,12 @@ namespace CodeConverter.Tests
 
                 //Try to indent based on next line
                 if (s.Trim() == "" && i > 0) {
-                    s = s + new string(Enumerable.Repeat(' ', lines[i - 1].Trim('\n').Length).ToArray());
+                    s = s + new string(Enumerable.Repeat(' ', lines[i - 1].Length).ToArray());
                 }
 
                 return s + singleLineCommentStart + (i - skipped).ToString();
             });
-            return string.Join("\r", newLines);
+            return string.Join(Environment.NewLine, newLines);
         }
 
         private static bool HasNoSourceLine(string prevLine, string line, string nextLine)
