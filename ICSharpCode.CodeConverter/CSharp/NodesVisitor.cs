@@ -425,7 +425,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 SyntaxKind blockKind;
                 bool isIterator = node.GetModifiers().Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
-                var body = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor(isIterator))));
+                var body = VisitStatements(node.Statements, isIterator);
                 var attributes = SyntaxFactory.List(node.AccessorStatement.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor)));
                 var modifiers = ConvertModifiers(node.AccessorStatement.Modifiers, TokenContext.Local);
 
@@ -453,7 +453,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 BaseMethodDeclarationSyntax block = (BaseMethodDeclarationSyntax)node.SubOrFunctionStatement.Accept(TriviaConvertingVisitor);
                 bool isIterator = node.SubOrFunctionStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
 
-                return block.WithBody(SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor(isIterator)))));
+                return block.WithBody(VisitStatements(node.Statements, isIterator));
+            }
+
+            private BlockSyntax VisitStatements(SyntaxList<VBSyntax.StatementSyntax> statements, bool isIterator)
+            {
+                return SyntaxFactory.Block(statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor(isIterator))));
             }
 
             public override CSharpSyntaxNode VisitMethodStatement(VBSyntax.MethodStatementSyntax node)
