@@ -84,6 +84,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             #region Attributes
 
+            private SyntaxList<AttributeListSyntax> ConvertAttributes(SyntaxList<VBSyntax.AttributeListSyntax> attributeListSyntaxs)
+            {
+                return SyntaxFactory.List(attributeListSyntaxs.SelectMany(ConvertAttribute));
+            }
+
             IEnumerable<AttributeListSyntax> ConvertAttribute(VBSyntax.AttributeListSyntax attributeList)
             {
                 return attributeList.Attributes.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor));
@@ -163,7 +168,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitClassBlock(VBSyntax.ClassBlockSyntax node)
             {
                 var classStatement = node.ClassStatement;
-                var attributes = SyntaxFactory.List(classStatement.AttributeLists.SelectMany(ConvertAttribute));
+                var attributes = ConvertAttributes(classStatement.AttributeLists);
                 SplitTypeParameters(classStatement.TypeParameterList, out var parameters, out var constraints);
                 var convertedIdentifier = ConvertIdentifier(classStatement.Identifier, semanticModel);
 
@@ -191,7 +196,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitModuleBlock(VBSyntax.ModuleBlockSyntax node)
             {
                 var stmt = node.ModuleStatement;
-                var attributes = SyntaxFactory.List(stmt.AttributeLists.SelectMany(ConvertAttribute));
+                var attributes = ConvertAttributes(stmt.AttributeLists);
                 var members = SyntaxFactory.List(ConvertMembers(node.Members));
 
                 TypeParameterListSyntax parameters;
@@ -212,7 +217,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitStructureBlock(VBSyntax.StructureBlockSyntax node)
             {
                 var stmt = node.StructureStatement;
-                var attributes = SyntaxFactory.List(stmt.AttributeLists.SelectMany(ConvertAttribute));
+                var attributes = ConvertAttributes(stmt.AttributeLists);
                 var members = SyntaxFactory.List(ConvertMembers(node.Members));
 
                 TypeParameterListSyntax parameters;
@@ -233,7 +238,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitInterfaceBlock(VBSyntax.InterfaceBlockSyntax node)
             {
                 var stmt = node.InterfaceStatement;
-                var attributes = SyntaxFactory.List(stmt.AttributeLists.SelectMany(ConvertAttribute));
+                var attributes = ConvertAttributes(stmt.AttributeLists);
                 var members = SyntaxFactory.List(ConvertMembers(node.Members));
 
                 TypeParameterListSyntax parameters;
@@ -281,7 +286,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitEnumMemberDeclaration(VBSyntax.EnumMemberDeclarationSyntax node)
             {
-                var attributes = SyntaxFactory.List(node.AttributeLists.SelectMany(ConvertAttribute));
+                var attributes = ConvertAttributes(node.AttributeLists);
                 return SyntaxFactory.EnumMemberDeclaration(
                     attributes,
                     ConvertIdentifier(node.Identifier, semanticModel),
@@ -426,7 +431,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxKind blockKind;
                 bool isIterator = node.GetModifiers().Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
                 var body = VisitStatements(node.Statements, isIterator);
-                var attributes = SyntaxFactory.List(node.AccessorStatement.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor)));
+                var attributes = ConvertAttributes(node.AccessorStatement.AttributeLists);
                 var modifiers = ConvertModifiers(node.AccessorStatement.Modifiers, TokenContext.Local);
 
                 switch (node.Kind()) {
