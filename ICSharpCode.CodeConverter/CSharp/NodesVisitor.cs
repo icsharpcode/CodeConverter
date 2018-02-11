@@ -655,6 +655,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var id = ConvertIdentifier(node.Identifier.Identifier, semanticModel);
                 var returnType = (TypeSyntax)node.AsClause?.Type.Accept(TriviaConvertingVisitor);
+                if (node?.Parent?.Parent?.IsKind(VBasic.SyntaxKind.FunctionStatement,
+                    VBasic.SyntaxKind.SubStatement) == true) {
+                    returnType = returnType ?? SyntaxFactory.ParseTypeName("object");
+                }
+
+                var rankSpecifiers = ConvertArrayRankSpecifierSyntaxes(node.Identifier.ArrayRankSpecifiers);
+                if (rankSpecifiers.Any()) {
+                    returnType = SyntaxFactory.ArrayType(returnType, rankSpecifiers);
+                }
+                
                 if (returnType != null && !SyntaxTokenExtensions.IsKind(node.Identifier.Nullable, SyntaxKind.None)) {
                     var arrayType = returnType as ArrayTypeSyntax;
                     if (arrayType == null) {
@@ -966,15 +976,25 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitArrayCreationExpression(VBSyntax.ArrayCreationExpressionSyntax node)
             {
                 IEnumerable<ExpressionSyntax> arguments;
-                if (node.ArrayBounds != null)
-                    arguments = node.ArrayBounds.Arguments.Select(a => IncreaseArrayUpperBoundExpression(((VBSyntax.SimpleArgumentSyntax)a).Expression));
-                else
+                if (node.ArrayBounds != null) {
+                    arguments = ConvertArrayBounds(node.ArrayBounds);
+                } else
                     arguments = Enumerable.Empty<ExpressionSyntax>();
-                var bounds = SyntaxFactory.List(node.RankSpecifiers.Select(r => (ArrayRankSpecifierSyntax)r.Accept(TriviaConvertingVisitor)));
+                var bounds = ConvertArrayRankSpecifierSyntaxes(node.RankSpecifiers);
                 return SyntaxFactory.ArrayCreationExpression(
                     SyntaxFactory.ArrayType((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor), bounds),
                     (InitializerExpressionSyntax)node.Initializer?.Accept(TriviaConvertingVisitor)
                 );
+            }
+
+            private SyntaxList<ArrayRankSpecifierSyntax> ConvertArrayRankSpecifierSyntaxes(SyntaxList<VBSyntax.ArrayRankSpecifierSyntax> arrayRankSpecifierSyntaxs)
+            {
+                return SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax)r.Accept(TriviaConvertingVisitor)));
+            }
+
+            private IEnumerable<ExpressionSyntax> ConvertArrayBounds(VBSyntax.ArgumentListSyntax argumentListSyntax)
+            {
+                return argumentListSyntax.Arguments.Select(a => IncreaseArrayUpperBoundExpression(((VBSyntax.SimpleArgumentSyntax)a).Expression));
             }
 
             public override CSharpSyntaxNode VisitCollectionInitializer(VBSyntax.CollectionInitializerSyntax node)

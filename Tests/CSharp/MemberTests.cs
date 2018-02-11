@@ -390,8 +390,8 @@ class TestClass
         [Fact]
         public void PartialFriendClassWithOverloads()
         {
-            TestConversionVisualBasicToCSharp(@"
-Partial Friend MustInherit Class TestClass1
+            TestConversionVisualBasicToCSharp(
+@"Partial Friend MustInherit Class TestClass1
     Public Shared Sub CreateStatic()
     End Sub
 
@@ -417,13 +417,8 @@ Friend Class TestClass2
 
     Public Overrides Sub CreateVirtualInstance()
     End Sub
-End Class", @"
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-internal abstract partial class TestClass1
+End Class", 
+@"internal abstract partial class TestClass1
 {
     public static void CreateStatic()
     {
@@ -527,6 +522,40 @@ using Microsoft.VisualBasic;
 class TestClass
 {
     private void SomeBools(params bool[] @bool)
+    {
+    }
+}");
+        }
+
+        [Fact]
+        public void MethodWithNameArrayParameter()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Class TestClass
+    Public Sub DoNothing(ByVal strs() As String)
+        Dim moreStrs() As String
+    End Sub
+End Class",
+@"class TestClass
+{
+    public void DoNothing(string[] strs)
+    {
+        string[] moreStrs;
+    }
+}");
+        }
+
+        [Fact]
+        public void UntypedParameters()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Class TestClass
+    Public Sub DoNothing(obj, objs())
+    End Sub
+End Class",
+@"class TestClass
+{
+    public void DoNothing(object obj, object[] objs)
     {
     }
 }");

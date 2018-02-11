@@ -38,6 +38,14 @@ namespace CodeConverter.Tests
 $@"{{
     {indentedStatements}
 }}";
+            } else if (!expectedCsharpCode.StartsWith("using System")) {
+                expectedCsharpCode = 
+@"using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualBasic;
+
+" + expectedCsharpCode;
             }
             TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode);
             if (testCommentsByDefault) TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true));
