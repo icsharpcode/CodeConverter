@@ -941,7 +941,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitAnonymousObjectCreationExpression(VBSyntax.AnonymousObjectCreationExpressionSyntax node)
             {
-                return base.VisitAnonymousObjectCreationExpression(node);
+                var memberDeclaratorSyntaxs = SyntaxFactory.SeparatedList(
+                    node.Initializer.Initializers.Select(initializer => initializer.Accept(TriviaConvertingVisitor)).Cast<AnonymousObjectMemberDeclaratorSyntax>());
+                return SyntaxFactory.AnonymousObjectCreationExpression(memberDeclaratorSyntaxs);
             }
 
             public override CSharpSyntaxNode VisitObjectCreationExpression(VBSyntax.ObjectCreationExpressionSyntax node)
@@ -977,6 +979,20 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return typeInfo.Type == null && (typeInfo.ConvertedType?.SpecialType == SpecialType.System_Collections_IEnumerable || typeInfo.ConvertedType?.IsKind(SymbolKind.ArrayType) == true)
                     ? (CSharpSyntaxNode)SyntaxFactory.ImplicitArrayCreationExpression(initializer)
                     : initializer;
+            }
+
+            public override CSharpSyntaxNode VisitNamedFieldInitializer(VBSyntax.NamedFieldInitializerSyntax node)
+            {
+                if (node?.Parent?.Parent is VBSyntax.AnonymousObjectCreationExpressionSyntax) {
+                    return SyntaxFactory.AnonymousObjectMemberDeclarator(
+                        SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(ConvertIdentifier(node.Name.Identifier, semanticModel))),
+                        (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
+                }
+
+                return SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                    (ExpressionSyntax)node.Name.Accept(TriviaConvertingVisitor),
+                    (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor)
+                );
             }
 
             public override CSharpSyntaxNode VisitObjectCollectionInitializer(VBSyntax.ObjectCollectionInitializerSyntax node)
