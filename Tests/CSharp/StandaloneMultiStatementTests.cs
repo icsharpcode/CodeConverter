@@ -2,7 +2,7 @@
 
 namespace CodeConverter.Tests.CSharp
 {
-    public class StandaloneExpressionTests : ConverterTestBase
+    public class StandaloneMultiStatementTests : ConverterTestBase
     {
         [Fact]
         public void Reassignment()
@@ -19,16 +19,18 @@ standaloneStatements: true);
         public void ObjectMemberInitializerSyntax()
         {
             TestConversionVisualBasicToCSharp(
-@"Dim obj as New NameValue With
+@"Dim obj as New AttributeUsageAttribute With
 {
-    .Name = ""Hello"",
-    .Value = ""World""
-}",
-@"NameValue obj = new NameValue
+    .AllowMultiple = True,
+    .Inherited = False
+}
+obj = Nothing",
+@"AttributeUsageAttribute obj = new AttributeUsageAttribute()
 {
-    Name = ""Hello"",
-    Value = ""World""
-};",
+    AllowMultiple = true,
+    Inherited = false
+};
+obj = null;",
                 standaloneStatements: true);
         }
 

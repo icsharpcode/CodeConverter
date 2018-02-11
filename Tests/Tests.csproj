@@ -191,7 +191,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConverterTestBase.cs" />
-    <Compile Include="CSharp\StandaloneExpressionTests.cs" />
+    <Compile Include="CSharp\StandaloneMultiStatementTests.cs" />
     <Compile Include="CSharp\ExpressionTests.cs" />
     <Compile Include="CSharp\MemberTests.cs" />
     <Compile Include="CSharp\NamespaceLevelTests.cs" />
