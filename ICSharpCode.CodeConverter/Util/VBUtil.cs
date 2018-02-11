@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -231,44 +232,14 @@ namespace ICSharpCode.CodeConverter.Util
             return false;
         }
 
-        public static bool IsKind(this SyntaxNode node, SyntaxKind kind1, SyntaxKind kind2)
+        public static bool IsKind(this SyntaxNode node, params SyntaxKind[] kinds)
         {
             if (node == null) {
                 return false;
             }
 
             var vbKind = node.Kind();
-            return vbKind == kind1 || vbKind == kind2;
-        }
-
-        public static bool IsKind(this SyntaxNode node, SyntaxKind kind1, SyntaxKind kind2, SyntaxKind kind3)
-        {
-            if (node == null) {
-                return false;
-            }
-
-            var vbKind = node.Kind();
-            return vbKind == kind1 || vbKind == kind2 || vbKind == kind3;
-        }
-
-        public static bool IsKind(this SyntaxNode node, SyntaxKind kind1, SyntaxKind kind2, SyntaxKind kind3, SyntaxKind kind4)
-        {
-            if (node == null) {
-                return false;
-            }
-
-            var vbKind = node.Kind();
-            return vbKind == kind1 || vbKind == kind2 || vbKind == kind3 || vbKind == kind4;
-        }
-
-        public static bool IsKind(this SyntaxNode node, SyntaxKind kind1, SyntaxKind kind2, SyntaxKind kind3, SyntaxKind kind4, SyntaxKind kind5)
-        {
-            if (node == null) {
-                return false;
-            }
-
-            var vbKind = node.Kind();
-            return vbKind == kind1 || vbKind == kind2 || vbKind == kind3 || vbKind == kind4 || vbKind == kind5;
+            return kinds.Any(k => vbKind == k);
         }
     }
 }
