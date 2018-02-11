@@ -939,6 +939,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.EqualsValueClause((ExpressionSyntax)node.Value.Accept(TriviaConvertingVisitor));
             }
 
+            public override CSharpSyntaxNode VisitObjectMemberInitializer(VBSyntax.ObjectMemberInitializerSyntax node)
+            {
+                var memberDeclaratorSyntaxs = SyntaxFactory.SeparatedList(
+                    node.Initializers.Select(initializer => initializer.Accept(TriviaConvertingVisitor)).Cast<ExpressionSyntax>());
+                return SyntaxFactory.InitializerExpression(SyntaxKind.ObjectInitializerExpression, memberDeclaratorSyntaxs);
+            }
+
             public override CSharpSyntaxNode VisitAnonymousObjectCreationExpression(VBSyntax.AnonymousObjectCreationExpressionSyntax node)
             {
                 var memberDeclaratorSyntaxs = SyntaxFactory.SeparatedList(
@@ -1222,7 +1229,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var identifier = SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier, semanticModel, node.GetAncestor<VBSyntax.AttributeSyntax>() != null));
 
-                return !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement) 
+                return !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer) 
                     ? QualifyNode(node, identifier) : identifier;
             }
 
