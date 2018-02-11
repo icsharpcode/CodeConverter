@@ -655,13 +655,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var id = ConvertIdentifier(node.Identifier.Identifier, semanticModel);
                 var returnType = (TypeSyntax)node.AsClause?.Type.Accept(TriviaConvertingVisitor);
-                if (node?.Parent?.Parent?.IsKind(VBasic.SyntaxKind.FunctionStatement,
+                if (node.Parent?.Parent?.IsKind(VBasic.SyntaxKind.FunctionStatement,
                     VBasic.SyntaxKind.SubStatement) == true) {
                     returnType = returnType ?? SyntaxFactory.ParseTypeName("object");
                 }
 
                 var rankSpecifiers = ConvertArrayRankSpecifierSyntaxes(node.Identifier.ArrayRankSpecifiers);
-                if (rankSpecifiers.Any()) {
+                if (rankSpecifiers.Any() && returnType != null) {
                     returnType = SyntaxFactory.ArrayType(returnType, rankSpecifiers);
                 }
                 
