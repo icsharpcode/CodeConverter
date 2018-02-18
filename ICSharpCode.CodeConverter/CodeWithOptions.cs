@@ -20,7 +20,7 @@ namespace ICSharpCode.CodeConverter
 
         public CodeWithOptions(string text)
         {
-            Text = text;
+            Text = text ?? throw new ArgumentNullException(nameof(text));
             FromLanguage = LanguageNames.CSharp;
             ToLanguage = LanguageNames.VisualBasic;
             FromLanguageVersion = 6;

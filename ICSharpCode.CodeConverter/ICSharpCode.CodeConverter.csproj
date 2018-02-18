@@ -35,4 +35,9 @@
   <ItemGroup Condition="'$(SignAssembly)'=='True'">
     <Compile Remove="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Esent.Interop">
+      <HintPath>..\packages\ManagedEsent.1.9.4\lib\net40\Esent.Interop.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>
