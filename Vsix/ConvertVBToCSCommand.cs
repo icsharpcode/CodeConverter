@@ -1,7 +1,9 @@
 ﻿using System;
 using System.ComponentModel.Design;
 using System.IO;
+using System.Linq;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Text;
 using Task = System.Threading.Tasks.Task;
 
 namespace CodeConverter.VsExtension
@@ -117,24 +119,24 @@ namespace CodeConverter.VsExtension
 
         async void CodeEditorMenuItemCallback(object sender, EventArgs e)
         {
-            string selectedText = codeConversion.GetVBSelectionInCurrentView().StreamSelectionSpan.GetText();
-            await ConvertVbDocument(codeConversion.GetCurrentVBViewHost().GetTextDocument().FilePath, selectedText);
+            var span = codeConversion.GetVBSelectionInCurrentView().SelectedSpans.First().Span;
+            await ConvertVbDocument(codeConversion.GetCurrentVBViewHost().GetTextDocument().FilePath, span);
         }
 
         async void ProjectItemMenuItemCallback(object sender, EventArgs e)
         {
             string itemPath = VisualStudioInteraction.GetSingleSelectedItemOrDefault()?.ItemPath;
-            await ConvertVbDocument(itemPath);
+            await ConvertVbDocument(itemPath, new Span(0,0));
         }
 
-        private async Task ConvertVbDocument(string documentPath, string selectionText = "")
+        private async Task ConvertVbDocument(string documentPath, Span selected)
         {
             var fileInfo = new FileInfo(documentPath);
             if (!CodeConversion.IsVBFileName(fileInfo.Name))
                 return;
 
             try {
-                await codeConversion.PerformVBToCSConversion(documentPath, selectionText);
+                await codeConversion.PerformVBToCSConversion(documentPath, selected);
             }
             catch (Exception ex) {
                 VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.VBToCSConversionTitle, ex);

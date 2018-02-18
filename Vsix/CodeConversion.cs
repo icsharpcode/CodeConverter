@@ -76,11 +76,11 @@ namespace CodeConverter.VsExtension
             return ICSharpCode.CodeConverter.CodeConverter.Convert(codeWithOptions);
         }
 
-        public async Task PerformVBToCSConversion(string documentFilePath, string selectionText)
+        public async Task PerformVBToCSConversion(string documentFilePath, Span selected)
         {
             string convertedText = null;
             try {
-                var result = await TryConvertingVBToCSCode(documentFilePath, selectionText);
+                var result = await TryConvertingVBToCSCode(documentFilePath, selected);
                 if (!result.Success) {
                     var newLines = Environment.NewLine + Environment.NewLine;
                     VsShellUtilities.ShowMessageBox(
@@ -114,24 +114,17 @@ namespace CodeConverter.VsExtension
             Clipboard.SetText(convertedText);
         }
 
-        async Task<ConversionResult> TryConvertingVBToCSCode(string documentPath, string selectionText)
+        async Task<ConversionResult> TryConvertingVBToCSCode(string documentPath, Span selected)
         {   
             //TODO Figure out when there are multiple document ids for a single file path
             var documentId = visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(documentPath).Single();
             var document = visualStudioWorkspace.CurrentSolution.GetDocument(documentId);
             var compilation = await document.Project.GetCompilationAsync();
-            var syntaxTree = await GetSyntaxTree(document, selectionText);
-            return VisualBasicConverter.ConvertSingle((VisualBasicCompilation)compilation, (VisualBasicSyntaxTree)syntaxTree);
-        }
+            var documentSyntaxTree = await document.GetSyntaxTreeAsync();
 
-        private static async Task<SyntaxTree> GetSyntaxTree(Document document, string selectionText)
-        {
-            if (string.IsNullOrWhiteSpace(selectionText)) {
-                return await document.GetSyntaxTreeAsync();
-            }
-            return SyntaxFactory.ParseSyntaxTree(SourceText.From(selectionText));
+            var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
+            return await VisualBasicConverter.ConvertSingle((VisualBasicCompilation)compilation, (VisualBasicSyntaxTree)documentSyntaxTree, selectedTextSpan);
         }
-
         void WriteStatusBarText(string text)
         {
             IVsStatusbar statusBar = (IVsStatusbar)serviceProvider.GetService(typeof(SVsStatusbar));

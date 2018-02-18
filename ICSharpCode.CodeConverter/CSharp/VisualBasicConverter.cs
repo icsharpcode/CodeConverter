@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Formatting;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
-using Microsoft.CodeAnalysis.Options;
 using Microsoft.CodeAnalysis.Text;
 using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankSpecifierSyntax;
 using ArrayTypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayTypeSyntax;
@@ -37,16 +36,34 @@ namespace ICSharpCode.CodeConverter.CSharp
             MemberInInterface
         }
 
-        public static ConversionResult ConvertSingle(VBasic.VisualBasicCompilation compilation, VBasic.VisualBasicSyntaxTree syntaxTree)
+        public static async Task<ConversionResult> ConvertSingle(VBasic.VisualBasicCompilation compilation, VBasic.VisualBasicSyntaxTree syntaxTree, TextSpan selected)
         {
+            var root = await syntaxTree.GetRootAsync();
+            if (selected.Length > 0) {
+                var annotatedSyntaxTree = GetSyntaxTreeWithAnnotatedSelection(selected, root);
+                compilation = compilation.ReplaceSyntaxTree(syntaxTree, annotatedSyntaxTree);
+                syntaxTree = (VBasic.VisualBasicSyntaxTree) annotatedSyntaxTree;
+            }
+
             try {
                 var cSharpSyntaxNode = ConvertSingleUnhandled(compilation, syntaxTree);
+                var annotatedNode = cSharpSyntaxNode.GetAnnotatedNodes(TriviaConverter.SelectedNodeAnnotationKind).SingleOrDefault();
+                if (annotatedNode != null) cSharpSyntaxNode = (CSharpSyntaxNode) annotatedNode;
                 var formattedNode = Formatter.Format(cSharpSyntaxNode, new AdhocWorkspace());
                 return new ConversionResult(formattedNode.ToFullString());
             } catch (Exception ex) {
                 return new ConversionResult(ex);
             }
         }
+
+        private static SyntaxTree GetSyntaxTreeWithAnnotatedSelection(TextSpan selected, SyntaxNode root)
+        {
+            var selectedNode = root.FindNode(selected);
+            var annotatatedNode = selectedNode.WithAdditionalAnnotations(new SyntaxAnnotation(TriviaConverter.SelectedNodeAnnotationKind));
+            var syntaxTree = root.ReplaceNode(selectedNode, annotatatedNode).SyntaxTree;
+            return syntaxTree;
+        }
+
 
         public static Dictionary<string, CSharpSyntaxNode> ConvertMultiple(VBasic.VisualBasicCompilation compilation, IEnumerable<VBasic.VisualBasicSyntaxTree> syntaxTrees)
         {
