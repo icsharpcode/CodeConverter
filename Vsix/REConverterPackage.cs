@@ -5,7 +5,11 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ComponentModelHost;
@@ -56,12 +60,39 @@ namespace CodeConverter.VsExtension
         /// </summary>
         public REConverterPackage()
         {
+            AppDomain.CurrentDomain.AssemblyResolve += LoadWithoutVersionForOurDependencies;
             // Inside this method you can place any initialization code that does not require
             // any Visual Studio service because at this point the package object is created but
             // not sited yet inside Visual Studio environment. The place to do all the other
             // initialization is the Initialize method.
         }
-        
+
+        private Assembly LoadWithoutVersionForOurDependencies(object sender, ResolveEventArgs args)
+        {
+            var requestedAssemblyName = new AssemblyName(args.Name);
+            if (requestedAssemblyName.Version != null && IsThisExtensionRequestingAssembly()) {
+                
+                return LoadAnyVersionOfAssembly(requestedAssemblyName);
+            }
+            return null;
+
+        }
+
+        private static Assembly LoadAnyVersionOfAssembly(AssemblyName assemblyName)
+        {
+            return Assembly.Load(new AssemblyName(assemblyName.Name){CultureName = assemblyName.CultureName});
+        }
+
+        private bool IsThisExtensionRequestingAssembly()
+        {
+            return GetPossibleRequestingAssemblies().Contains(GetType().Assembly);
+        }
+
+        private IEnumerable<Assembly> GetPossibleRequestingAssemblies()
+        {
+            return new StackTrace().GetFrames().Select(f => f.GetMethod().DeclaringType?.Assembly)
+                .SkipWhile(a => a == GetType().Assembly);
+        }
 
         /// <summary>
         /// Initialization of the package; this method is called right after the package is sited, so this is the place
