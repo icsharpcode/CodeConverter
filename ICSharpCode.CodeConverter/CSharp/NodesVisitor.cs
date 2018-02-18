@@ -111,7 +111,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 foreach (var importClause in importsClauses.OfType<VBSyntax.SimpleImportsClauseSyntax>()) {
                     importedNamespaces[importClause.Name.ToString()] = importClause.Alias != null ? importClause.Alias.Identifier.ToString() : "";
                 }
-                
+
                 var attributes = SyntaxFactory.List(node.Attributes.SelectMany(a => a.AttributeLists).SelectMany(ConvertAttribute));
                 var members = SyntaxFactory.List(node.Members.Select(m => (MemberDeclarationSyntax)m.Accept(TriviaConvertingVisitor)));
 
@@ -161,7 +161,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                             yield return additionalStatement;
                         }
                     }
-                    
                 }
             }
 
@@ -664,7 +663,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (rankSpecifiers.Any() && returnType != null) {
                     returnType = SyntaxFactory.ArrayType(returnType, rankSpecifiers);
                 }
-                
+
                 if (returnType != null && !SyntaxTokenExtensions.IsKind(node.Identifier.Nullable, SyntaxKind.None)) {
                     var arrayType = returnType as ArrayTypeSyntax;
                     if (arrayType == null) {

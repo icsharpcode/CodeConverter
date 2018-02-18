@@ -404,7 +404,7 @@ namespace ICSharpCode.CodeConverter.Util
                 });
 
                 // compute replacements for all nodes that will go in the same batch
-                // only spans that do not overlap go in the same batch.                
+                // only spans that do not overlap go in the same batch.
                 TextSpan previous = default(TextSpan);
                 foreach (var span in spans) {
                     // only add to replacement map if we don't intersect with the previous node. This taken with the sort order

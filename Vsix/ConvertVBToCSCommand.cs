@@ -95,7 +95,7 @@ namespace CodeConverter.VsExtension
         {
             var menuItem = sender as OleMenuCommand;
             if (menuItem != null) {
-                
+
                 menuItem.Visible = !codeConversion.GetVBSelectionInCurrentView()?.StreamSelectionSpan.IsEmpty ?? false;
             }
         }

@@ -65,7 +65,6 @@ namespace CodeConverter.VsExtension
         {
             var requestedAssemblyName = new AssemblyName(args.Name);
             if (requestedAssemblyName.Version != null && IsThisExtensionRequestingAssembly()) {
-                
                 return LoadAnyVersionOfAssembly(requestedAssemblyName);
             }
             return null;
