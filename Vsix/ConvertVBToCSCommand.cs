@@ -1,9 +1,12 @@
 ﻿using System;
 using System.ComponentModel.Design;
-using Microsoft.VisualStudio.Shell;
 using System.IO;
+using System.Linq;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Text;
+using Task = System.Threading.Tasks.Task;
 
-namespace RefactoringEssentials.VsExtension
+namespace CodeConverter.VsExtension
 {
     /// <summary>
     /// Command handler
@@ -23,6 +26,8 @@ namespace RefactoringEssentials.VsExtension
         /// VS Package that provides this command, not null.
         /// </summary>
         readonly REConverterPackage package;
+
+        private CodeConversion codeConversion;
 
         /// <summary>
         /// Gets the instance of the command.
@@ -62,6 +67,7 @@ namespace RefactoringEssentials.VsExtension
             }
 
             this.package = package;
+            codeConversion = new CodeConversion(package, package.VsWorkspace);
 
             OleMenuCommandService commandService = this.ServiceProvider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
             if (commandService != null) {
@@ -90,7 +96,7 @@ namespace RefactoringEssentials.VsExtension
             var menuItem = sender as OleMenuCommand;
             if (menuItem != null) {
 
-                menuItem.Visible = !CodeConversion.GetVBSelectionInCurrentView(ServiceProvider)?.StreamSelectionSpan.IsEmpty ?? false;
+                menuItem.Visible = !codeConversion.GetVBSelectionInCurrentView()?.StreamSelectionSpan.IsEmpty ?? false;
             }
         }
 
@@ -101,7 +107,7 @@ namespace RefactoringEssentials.VsExtension
                 menuItem.Visible = false;
                 menuItem.Enabled = false;
 
-                string itemPath = VisualStudioInteraction.GetSingleSelectedItemPath();
+                string itemPath = VisualStudioInteraction.GetSingleSelectedItemOrDefault()?.ItemPath;
                 var fileInfo = new FileInfo(itemPath);
                 if (!CodeConversion.IsVBFileName(fileInfo.Name))
                     return;
@@ -111,25 +117,28 @@ namespace RefactoringEssentials.VsExtension
             }
         }
 
-        void CodeEditorMenuItemCallback(object sender, EventArgs e)
+        async void CodeEditorMenuItemCallback(object sender, EventArgs e)
         {
-            string selectedText = CodeConversion.GetVBSelectionInCurrentView(ServiceProvider)?.StreamSelectionSpan.GetText();
-            CodeConversion.PerformVBToCSConversion(ServiceProvider, selectedText);
+            var span = codeConversion.GetVBSelectionInCurrentView().SelectedSpans.First().Span;
+            await ConvertVbDocument(codeConversion.GetCurrentVBViewHost().GetTextDocument().FilePath, span);
         }
 
         async void ProjectItemMenuItemCallback(object sender, EventArgs e)
         {
-            string itemPath = VisualStudioInteraction.GetSingleSelectedItemPath();
-            var fileInfo = new FileInfo(itemPath);
+            string itemPath = VisualStudioInteraction.GetSingleSelectedItemOrDefault()?.ItemPath;
+            await ConvertVbDocument(itemPath, new Span(0,0));
+        }
+
+        private async Task ConvertVbDocument(string documentPath, Span selected)
+        {
+            var fileInfo = new FileInfo(documentPath);
             if (!CodeConversion.IsVBFileName(fileInfo.Name))
                 return;
 
             try {
-                using (StreamReader reader = new StreamReader(itemPath)) {
-                    string csCode = await reader.ReadToEndAsync();
-                    CodeConversion.PerformVBToCSConversion(ServiceProvider, csCode);
-                }
-            } catch (Exception ex) {
+                await codeConversion.PerformVBToCSConversion(documentPath, selected);
+            }
+            catch (Exception ex) {
                 VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.VBToCSConversionTitle, ex);
             }
         }

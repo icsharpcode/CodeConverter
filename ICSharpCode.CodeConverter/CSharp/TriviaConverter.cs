@@ -10,6 +10,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     public class TriviaConverter
     {
+        public const string SelectedNodeAnnotationKind = "CodeConverter.SelectedNode";
         private static readonly string TrailingTriviaConversionKind = $"{nameof(TriviaConverter)}.TrailingTriviaConversion.Id";
 
         /// <summary>
@@ -37,6 +38,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 destination = destination.ReplaceToken(lastDestToken, WithDelegateToParentAnnotation(sourceNode, lastDestToken));
             }
 
+            destination = WithAnnotations(sourceNode, destination);
+
             var containingSubModuleBlock = sourceNode.FirstAncestorOrSelf<StatementSyntax>(IsFirstLineOfBlockConstruct);
             var hasVisitedContainingBlock = containingSubModuleBlock == null;
             var firstLineOfBlockConstruct = sourceNode.ChildNodes().OfType<StatementSyntax>().FirstOrDefault(IsFirstLineOfBlockConstruct);
@@ -52,6 +55,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return WithTrailingTriviaConversions(destination, sourceNode.Parent?.GetLastToken(), hasVisitedContainingBlock);
+        }
+
+        private static T WithAnnotations<T>(SyntaxNode sourceNode, T destination) where T : SyntaxNode
+        {
+            destination = sourceNode.CopyAnnotationsTo(destination);
+
+            var sourceChildAnnotations = new HashSet<SyntaxAnnotation>(sourceNode.ChildNodes()
+                .SelectMany(n => n.GetAnnotations(SelectedNodeAnnotationKind)));
+            foreach (var annotation in destination.ChildNodes().SelectMany(n => n.GetAnnotations(SelectedNodeAnnotationKind))) {
+                sourceChildAnnotations.Remove(annotation);
+            }
+            return destination.WithAdditionalAnnotations(sourceChildAnnotations);
         }
 
         private SyntaxToken MoveChildTrailingEndOfLinesToToken<T>(T destination, SyntaxToken beforeOpenBraceToken)

@@ -1,16 +1,16 @@
-﻿//------------------------------------------------------------------------------
-// <copyright file="ConvertCSToVBCommandPackage.cs" company="Company">
-//     Copyright (c) Company.  All rights reserved.
-// </copyright>
-//------------------------------------------------------------------------------
-
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.ComponentModelHost;
+using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;
 
-namespace RefactoringEssentials.VsExtension
+namespace CodeConverter.VsExtension
 {
     /// <summary>
     /// This is the class that implements the package exposed by this assembly.
@@ -37,6 +37,13 @@ namespace RefactoringEssentials.VsExtension
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     public sealed class REConverterPackage : Package
     {
+        public VisualStudioWorkspace VsWorkspace {
+            get {
+                var componentModel = (IComponentModel)GetGlobalService(typeof(SComponentModel));
+                return componentModel.GetService<VisualStudioWorkspace>();
+            }
+        }
+
         /// <summary>
         /// ConvertCSToVBCommandPackage GUID string.
         /// </summary>
@@ -47,10 +54,37 @@ namespace RefactoringEssentials.VsExtension
         /// </summary>
         public REConverterPackage()
         {
+            AppDomain.CurrentDomain.AssemblyResolve += LoadWithoutVersionForOurDependencies;
             // Inside this method you can place any initialization code that does not require
             // any Visual Studio service because at this point the package object is created but
             // not sited yet inside Visual Studio environment. The place to do all the other
             // initialization is the Initialize method.
+        }
+
+        private Assembly LoadWithoutVersionForOurDependencies(object sender, ResolveEventArgs args)
+        {
+            var requestedAssemblyName = new AssemblyName(args.Name);
+            if (requestedAssemblyName.Version != null && IsThisExtensionRequestingAssembly()) {
+                return LoadAnyVersionOfAssembly(requestedAssemblyName);
+            }
+            return null;
+
+        }
+
+        private static Assembly LoadAnyVersionOfAssembly(AssemblyName assemblyName)
+        {
+            return Assembly.Load(new AssemblyName(assemblyName.Name){CultureName = assemblyName.CultureName});
+        }
+
+        private bool IsThisExtensionRequestingAssembly()
+        {
+            return GetPossibleRequestingAssemblies().Contains(GetType().Assembly);
+        }
+
+        private IEnumerable<Assembly> GetPossibleRequestingAssemblies()
+        {
+            return new StackTrace().GetFrames().Select(f => f.GetMethod().DeclaringType?.Assembly)
+                .SkipWhile(a => a == GetType().Assembly);
         }
 
         /// <summary>

@@ -1,19 +1,35 @@
-﻿using Microsoft.VisualStudio.Shell;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
+using ICSharpCode.CodeConverter;
+using ICSharpCode.CodeConverter.CSharp;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis.VisualBasic;
+using Microsoft.VisualStudio.LanguageServices;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using System;
-using System.Windows;
-using ICSharpCode.CodeConverter;
+using Task = System.Threading.Tasks.Task;
 
-namespace RefactoringEssentials.VsExtension
+namespace CodeConverter.VsExtension
 {
-    static class CodeConversion
+    class CodeConversion
     {
+        private readonly IServiceProvider serviceProvider;
+        private readonly VisualStudioWorkspace visualStudioWorkspace;
         public static readonly string CSToVBConversionTitle = "Convert C# to VB:";
         public static readonly string VBToCSConversionTitle = "Convert VB to C#:";
 
-        public static void PerformCSToVBConversion(IServiceProvider serviceProvider, string inputCode)
+        public CodeConversion(IServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace)
+        {
+            this.serviceProvider = serviceProvider;
+            this.visualStudioWorkspace = visualStudioWorkspace;
+        }
+
+        public void PerformCSToVBConversion(string inputCode)
         {
             string convertedText = null;
             try {
@@ -46,25 +62,25 @@ namespace RefactoringEssentials.VsExtension
             //    OLEMSGBUTTON.OLEMSGBUTTON_OK,
             //    OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
 
-            WriteStatusBarText(serviceProvider, "Copied converted VB code to clipboard.");
+            WriteStatusBarText("Copied converted VB code to clipboard.");
 
             Clipboard.SetText(convertedText);
         }
 
-        static ConversionResult TryConvertingCSToVBCode(string inputCode)
+        ConversionResult TryConvertingCSToVBCode(string inputCode)
         {
             var codeWithOptions = new CodeWithOptions(inputCode)
                 .SetFromLanguage("C#")
                 .SetToLanguage("Visual Basic")
                 .WithDefaultReferences();
-            return CodeConverter.Convert(codeWithOptions);
+            return ICSharpCode.CodeConverter.CodeConverter.Convert(codeWithOptions);
         }
 
-        public static void PerformVBToCSConversion(IServiceProvider serviceProvider, string inputCode)
+        public async Task PerformVBToCSConversion(string documentFilePath, Span selected)
         {
             string convertedText = null;
             try {
-                var result = TryConvertingVBToCSCode(inputCode);
+                var result = await TryConvertingVBToCSCode(documentFilePath, selected);
                 if (!result.Success) {
                     var newLines = Environment.NewLine + Environment.NewLine;
                     VsShellUtilities.ShowMessageBox(
@@ -93,21 +109,23 @@ namespace RefactoringEssentials.VsExtension
             //    OLEMSGBUTTON.OLEMSGBUTTON_OK,
             //    OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
 
-            WriteStatusBarText(serviceProvider, "Copied converted C# code to clipboard.");
+            WriteStatusBarText("Copied converted C# code to clipboard.");
 
             Clipboard.SetText(convertedText);
         }
 
-        static ConversionResult TryConvertingVBToCSCode(string inputCode)
-        {
-            var codeWithOptions = new CodeWithOptions(inputCode)
-                .SetFromLanguage("Visual Basic", 14)
-                .SetToLanguage("C#", 6)
-                .WithDefaultReferences();
-            return CodeConverter.Convert(codeWithOptions);
-        }
+        async Task<ConversionResult> TryConvertingVBToCSCode(string documentPath, Span selected)
+        {   
+            //TODO Figure out when there are multiple document ids for a single file path
+            var documentId = visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(documentPath).Single();
+            var document = visualStudioWorkspace.CurrentSolution.GetDocument(documentId);
+            var compilation = await document.Project.GetCompilationAsync();
+            var documentSyntaxTree = await document.GetSyntaxTreeAsync();
 
-        static void WriteStatusBarText(IServiceProvider serviceProvider, string text)
+            var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
+            return await VisualBasicConverter.ConvertSingle((VisualBasicCompilation)compilation, (VisualBasicSyntaxTree)documentSyntaxTree, selectedTextSpan);
+        }
+        void WriteStatusBarText(string text)
         {
             IVsStatusbar statusBar = (IVsStatusbar)serviceProvider.GetService(typeof(SVsStatusbar));
             if (statusBar == null)
@@ -124,7 +142,7 @@ namespace RefactoringEssentials.VsExtension
             statusBar.FreezeOutput(1);
         }
 
-        static IWpfTextViewHost GetCurrentCSViewHost(IServiceProvider serviceProvider)
+        IWpfTextViewHost GetCurrentCSViewHost()
         {
             IWpfTextViewHost viewHost = VisualStudioInteraction.GetCurrentViewHost(serviceProvider);
             if (viewHost == null)
@@ -142,16 +160,16 @@ namespace RefactoringEssentials.VsExtension
             return fileName.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
         }
 
-        public static ITextSelection GetCSSelectionInCurrentView(IServiceProvider serviceProvider)
+        public ITextSelection GetCSSelectionInCurrentView()
         {
-            IWpfTextViewHost viewHost = GetCurrentCSViewHost(serviceProvider);
+            IWpfTextViewHost viewHost = GetCurrentCSViewHost();
             if (viewHost == null)
                 return null;
 
             return viewHost.TextView.Selection;
         }
 
-        static IWpfTextViewHost GetCurrentVBViewHost(IServiceProvider serviceProvider)
+        public IWpfTextViewHost GetCurrentVBViewHost()
         {
             IWpfTextViewHost viewHost = VisualStudioInteraction.GetCurrentViewHost(serviceProvider);
             if (viewHost == null)
@@ -169,9 +187,9 @@ namespace RefactoringEssentials.VsExtension
             return fileName.EndsWith(".vb", StringComparison.OrdinalIgnoreCase);
         }
 
-        public static ITextSelection GetVBSelectionInCurrentView(IServiceProvider serviceProvider)
+        public ITextSelection GetVBSelectionInCurrentView()
         {
-            IWpfTextViewHost viewHost = GetCurrentVBViewHost(serviceProvider);
+            IWpfTextViewHost viewHost = GetCurrentVBViewHost();
             if (viewHost == null)
                 return null;
 

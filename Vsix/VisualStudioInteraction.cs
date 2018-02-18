@@ -1,53 +1,50 @@
-﻿using Microsoft.VisualStudio;
+﻿using System;
+using System.Runtime.InteropServices;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
-using System;
-using System.Runtime.InteropServices;
 
-namespace RefactoringEssentials.VsExtension
+namespace CodeConverter.VsExtension
 {
     static class VisualStudioInteraction
     {
-        public static bool GetSingleSelectedItem(out IVsHierarchy hierarchy, out uint itemID)
+        public static VsDocument GetSingleSelectedItemOrDefault()
         {
-            hierarchy = null;
-            itemID = VSConstants.VSITEMID_NIL;
-            int hresult = VSConstants.S_OK;
-
             var monitorSelection = Package.GetGlobalService(typeof(SVsShellMonitorSelection)) as IVsMonitorSelection;
             var solution = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
-            if ((monitorSelection == null) || (solution == null))
-                return false;
 
-            IVsMultiItemSelect multiItemSelect = null;
+            if ((monitorSelection == null) || (solution == null))
+                return null;
+
             IntPtr hierarchyPtr = IntPtr.Zero;
             IntPtr selectionContainerPtr = IntPtr.Zero;
 
             try {
-                hresult = monitorSelection.GetCurrentSelection(out hierarchyPtr, out itemID, out multiItemSelect, out selectionContainerPtr);
+                var hresult = monitorSelection.GetCurrentSelection(out hierarchyPtr, out uint itemID, out var multiItemSelect, out selectionContainerPtr);
                 if (ErrorHandler.Failed(hresult) || (hierarchyPtr == IntPtr.Zero) || (itemID == VSConstants.VSITEMID_NIL))
-                    return false;
+                    return null;
 
                 if (multiItemSelect != null)
-                    return false;
+                    return null;
 
                 if (itemID == VSConstants.VSITEMID_ROOT)
-                    return false;
+                    return null;
 
-                hierarchy = Marshal.GetObjectForIUnknown(hierarchyPtr) as IVsHierarchy;
+                var hierarchy = Marshal.GetObjectForIUnknown(hierarchyPtr) as IVsHierarchy;
                 if (hierarchy == null)
-                    return false;
+                    return null;
 
                 Guid guidProjectID = Guid.Empty;
 
                 if (ErrorHandler.Failed(solution.GetGuidOfProject(hierarchy, out guidProjectID)))
-                    return false;
+                    return null;
 
-                return true;
+                return new VsDocument((IVsProject) hierarchy, guidProjectID, itemID);
             } finally {
                 if (selectionContainerPtr != IntPtr.Zero) {
                     Marshal.Release(selectionContainerPtr);
@@ -57,18 +54,6 @@ namespace RefactoringEssentials.VsExtension
                     Marshal.Release(hierarchyPtr);
                 }
             }
-        }
-
-        public static string GetSingleSelectedItemPath()
-        {
-            IVsHierarchy hierarchy = null;
-            uint itemID = VSConstants.VSITEMID_NIL;
-            if (!GetSingleSelectedItem(out hierarchy, out itemID))
-                return null;
-
-            string itemPath = null;
-            ((IVsProject)hierarchy).GetMkDocument(itemID, out itemPath);
-            return itemPath;
         }
 
         public static IWpfTextViewHost GetCurrentViewHost(IServiceProvider serviceProvider)
@@ -93,6 +78,11 @@ namespace RefactoringEssentials.VsExtension
             ITextDocument textDocument = null;
             viewHost.TextView.TextDataModel.DocumentBuffer.Properties.TryGetProperty(typeof(ITextDocument), out textDocument);
             return textDocument;
+        }
+
+        public static VisualStudioWorkspace GetWorkspace(IServiceProvider serviceProvider)
+        {
+            return (VisualStudioWorkspace) serviceProvider.GetService(typeof(VisualStudioWorkspace)); 
         }
 
         public static void ShowException(IServiceProvider serviceProvider, string title, Exception ex)
