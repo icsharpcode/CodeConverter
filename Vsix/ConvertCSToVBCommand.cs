@@ -59,11 +59,7 @@ namespace CodeConverter.VsExtension
         /// <param name="package">Owner package, not null.</param>
         ConvertCSToVBCommand(REConverterPackage package)
         {
-            if (package == null) {
-                throw new ArgumentNullException(nameof(package));
-            }
-
-            this.package = package;
+            this.package = package ?? throw new ArgumentNullException(nameof(package));
             codeConversion = new CodeConversion(package, package.VsWorkspace);
 
             OleMenuCommandService commandService = this.ServiceProvider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
