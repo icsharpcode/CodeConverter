@@ -1,92 +1,92 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
-	<Extern href="stdidcmd.h"/>
-	<Extern href="vsshlids.h"/>
+  <Extern href="stdidcmd.h"/>
+  <Extern href="vsshlids.h"/>
 
-	<Commands package="guidREConverterPackage">
-		<Groups>
-			<Group guid="guidREConverterCommandPackageCmdSet" id="REConverterMenuGroup" priority="0x0600">
-				<Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_EDIT"/>
-			</Group>
-			<Group guid="guidREConverterCommandPackageCmdSet" id="REConverterCtxMenuGroup" priority="0x0600">
-				<Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_CODEWIN"/>
-			</Group>
-			<Group guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectItemCtxMenuGroup" priority="0x0600">
-				<Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE"/>
-			</Group>
-		</Groups>
+  <Commands package="guidREConverterPackage">
+    <Groups>
+      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterMenuGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_EDIT"/>
+      </Group>
+      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterCtxMenuGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_CODEWIN"/>
+      </Group>
+      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectItemCtxMenuGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE"/>
+      </Group>
+    </Groups>
 
-		<Buttons>
-			<!-- C# to VB convertion commands -->
-			<Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBCommandId" priority="0x0100" type="Button">
-				<Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterMenuGroup" />
-				<CommandFlag>DefaultInvisible</CommandFlag>
-				<CommandFlag>DynamicVisibility</CommandFlag>
-				<Strings>
-					<ButtonText>Convert to VB and copy to clipboard</ButtonText>
-				</Strings>
-			</Button>
-			<Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBCtxCommandId" priority="0x0100" type="Button">
-				<Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterCtxMenuGroup" />
-				<CommandFlag>DefaultInvisible</CommandFlag>
-				<CommandFlag>DynamicVisibility</CommandFlag>
-				<Strings>
-					<ButtonText>Convert to VB and copy to clipboard</ButtonText>
-				</Strings>
-			</Button>
-			<Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBProjectItemCtxCommandId" priority="0x0100" type="Button">
-				<Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectItemCtxMenuGroup" />
-				<CommandFlag>DefaultInvisible</CommandFlag>
-				<CommandFlag>DynamicVisibility</CommandFlag>
-				<Strings>
-					<ButtonText>Convert to VB and copy to clipboard</ButtonText>
-				</Strings>
-			</Button>
+    <Buttons>
+      <!-- C# to VB convertion commands -->
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBCommandId" priority="0x0100" type="Button">
+        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterMenuGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Convert to VB and copy to clipboard</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBCtxCommandId" priority="0x0100" type="Button">
+        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterCtxMenuGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Convert to VB and copy to clipboard</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBProjectItemCtxCommandId" priority="0x0100" type="Button">
+        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectItemCtxMenuGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Convert to VB and copy to clipboard</ButtonText>
+        </Strings>
+      </Button>
 
-			<!-- VB to C# conversion commands -->
-			<Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSCommandId" priority="0x0100" type="Button">
-				<Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterMenuGroup" />
-				<CommandFlag>DefaultInvisible</CommandFlag>
-				<CommandFlag>DynamicVisibility</CommandFlag>
-				<Strings>
-					<ButtonText>Convert to C# and copy to clipboard</ButtonText>
-				</Strings>
-			</Button>
-			<Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSCtxCommandId" priority="0x0100" type="Button">
-				<Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterCtxMenuGroup" />
-				<CommandFlag>DefaultInvisible</CommandFlag>
-				<CommandFlag>DynamicVisibility</CommandFlag>
-				<Strings>
-					<ButtonText>Convert to C# and copy to clipboard</ButtonText>
-				</Strings>
-			</Button>
-			<Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSProjectItemCtxCommandId" priority="0x0100" type="Button">
-				<Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectItemCtxMenuGroup" />
-				<CommandFlag>DefaultInvisible</CommandFlag>
-				<CommandFlag>DynamicVisibility</CommandFlag>
-				<Strings>
-					<ButtonText>Convert to C# and copy to clipboard</ButtonText>
-				</Strings>
-			</Button>
-		</Buttons>
-	</Commands>
+      <!-- VB to C# conversion commands -->
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSCommandId" priority="0x0100" type="Button">
+        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterMenuGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Convert to C# and copy to clipboard</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSCtxCommandId" priority="0x0100" type="Button">
+        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterCtxMenuGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Convert to C# and copy to clipboard</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSProjectItemCtxCommandId" priority="0x0100" type="Button">
+        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectItemCtxMenuGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Convert to C# and copy to clipboard</ButtonText>
+        </Strings>
+      </Button>
+    </Buttons>
+  </Commands>
 
-	<Symbols>
-		<!-- This is the package guid. -->
-		<GuidSymbol name="guidREConverterPackage" value="{60378c8b-d75c-4fb2-aa2b-58609d67f886}" />
+  <Symbols>
+    <!-- This is the package guid. -->
+    <GuidSymbol name="guidREConverterPackage" value="{60378c8b-d75c-4fb2-aa2b-58609d67f886}" />
 
-		<!-- This is the guid used to group the menu commands together -->
-		<GuidSymbol name="guidREConverterCommandPackageCmdSet" value="{a3378a21-e939-40c9-9e4b-eb0cec7b7854}">
-			<IDSymbol name="REConverterMenuGroup" value="0x1020" />
-			<IDSymbol name="REConverterCtxMenuGroup" value="0x1021" />
-			<IDSymbol name="REConverterProjectItemCtxMenuGroup" value="0x1022" />
-			<IDSymbol name="ConvertCSToVBCommandId" value="0x0100" />
-			<IDSymbol name="ConvertCSToVBCtxCommandId" value="0x0101" />
-			<IDSymbol name="ConvertCSToVBProjectItemCtxCommandId" value="0x0102" />
-			<IDSymbol name="ConvertVBToCSCommandId" value="0x0200" />
-			<IDSymbol name="ConvertVBToCSCtxCommandId" value="0x0201" />
-			<IDSymbol name="ConvertVBToCSProjectItemCtxCommandId" value="0x0202" />
-		</GuidSymbol>
-	</Symbols>
+    <!-- This is the guid used to group the menu commands together -->
+    <GuidSymbol name="guidREConverterCommandPackageCmdSet" value="{a3378a21-e939-40c9-9e4b-eb0cec7b7854}">
+      <IDSymbol name="REConverterMenuGroup" value="0x1020" />
+      <IDSymbol name="REConverterCtxMenuGroup" value="0x1021" />
+      <IDSymbol name="REConverterProjectItemCtxMenuGroup" value="0x1022" />
+      <IDSymbol name="ConvertCSToVBCommandId" value="0x0100" />
+      <IDSymbol name="ConvertCSToVBCtxCommandId" value="0x0101" />
+      <IDSymbol name="ConvertCSToVBProjectItemCtxCommandId" value="0x0102" />
+      <IDSymbol name="ConvertVBToCSCommandId" value="0x0200" />
+      <IDSymbol name="ConvertVBToCSCtxCommandId" value="0x0201" />
+      <IDSymbol name="ConvertVBToCSProjectItemCtxCommandId" value="0x0202" />
+    </GuidSymbol>
+  </Symbols>
 </CommandTable>
