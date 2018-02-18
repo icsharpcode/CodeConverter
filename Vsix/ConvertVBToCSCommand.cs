@@ -1,12 +1,10 @@
 ﻿using System;
 using System.ComponentModel.Design;
-using Microsoft.VisualStudio.Shell;
 using System.IO;
-using System.Linq;
-using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
 
-namespace RefactoringEssentials.VsExtension
+namespace CodeConverter.VsExtension
 {
     /// <summary>
     /// Command handler

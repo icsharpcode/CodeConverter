@@ -1,9 +1,4 @@
-﻿using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Editor;
-using System;
-using System.Collections.Immutable;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -13,9 +8,13 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.VisualStudio.LanguageServices;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using Task = System.Threading.Tasks.Task;
 
-namespace RefactoringEssentials.VsExtension
+namespace CodeConverter.VsExtension
 {
     class CodeConversion
     {
@@ -74,7 +73,7 @@ namespace RefactoringEssentials.VsExtension
                 .SetFromLanguage("C#")
                 .SetToLanguage("Visual Basic")
                 .WithDefaultReferences();
-            return CodeConverter.Convert(codeWithOptions);
+            return ICSharpCode.CodeConverter.CodeConverter.Convert(codeWithOptions);
         }
 
         public async Task PerformVBToCSConversion(string documentFilePath, string selectionText)

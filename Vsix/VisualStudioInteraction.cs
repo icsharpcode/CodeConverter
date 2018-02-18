@@ -1,16 +1,15 @@
-﻿using Microsoft.VisualStudio;
+﻿using System;
+using System.Runtime.InteropServices;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
-using System;
-using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.LanguageServices;
 
-
-namespace RefactoringEssentials.VsExtension
+namespace CodeConverter.VsExtension
 {
     static class VisualStudioInteraction
     {
