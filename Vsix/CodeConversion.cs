@@ -84,7 +84,7 @@ namespace CodeConverter.VsExtension
         {
             var projectsByPath = visualStudioWorkspace.CurrentSolution.Projects.ToDictionary(p => p.FilePath, p => p);
             var projects = selectedProjects.Select(p => projectsByPath[p.FullName]);
-            await VisualBasicConverter.ConvertProjects(projects);
+            await ProjectConversion.ConvertProjects(projects);
 
 
             //var errors = new Dictionary<string, string>();
@@ -166,7 +166,7 @@ namespace CodeConverter.VsExtension
             var documentSyntaxTree = await document.GetSyntaxTreeAsync();
 
             var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
-            return await VisualBasicConverter.ConvertSingle((VisualBasicCompilation)compilation, (VisualBasicSyntaxTree)documentSyntaxTree, selectedTextSpan);
+            return await ProjectConversion.ConvertSingle((VisualBasicCompilation)compilation, (VisualBasicSyntaxTree)documentSyntaxTree, selectedTextSpan);
         }
         void WriteStatusBarText(string text)
         {

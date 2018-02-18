@@ -64,7 +64,7 @@ using Microsoft.VisualBasic;
         public void TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode, bool addUsings = true, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
         {
             if (addUsings) expectedCsharpCode = AddUsings(expectedCsharpCode, false);
-            var outputNode = VisualBasicConverter.ConvertText(visualBasicCode, DiagnosticTestBase.DefaultMetadataReferences);
+            var outputNode = ProjectConversion.ConvertText(visualBasicCode, DiagnosticTestBase.DefaultMetadataReferences);
             var txt = Utils.HomogenizeEol(outputNode.ConvertedCode ?? outputNode.GetExceptionsAsString()).TrimEnd();
             expectedCsharpCode = Utils.HomogenizeEol(expectedCsharpCode).TrimEnd();
             AssertCodeEqual(visualBasicCode, expectedCsharpCode, txt);

@@ -25,7 +25,7 @@ namespace ICSharpCode.CodeConverter
                 case "Visual Basic":
                     switch (code.ToLanguage) {
                         case "C#":
-                            return VisualBasicConverter.ConvertText(code.Text, code.References);
+                            return ProjectConversion.ConvertText(code.Text, code.References);
                     }
                     break;
 
