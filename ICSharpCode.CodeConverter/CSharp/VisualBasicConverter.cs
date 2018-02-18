@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Util;
@@ -64,6 +65,21 @@ namespace ICSharpCode.CodeConverter.CSharp
             return syntaxTree;
         }
 
+        public static async Task ConvertProjects(IEnumerable<Project> projects)
+        {
+            foreach (var project in projects) {
+                var compilation = await project.GetCompilationAsync();
+                var syntaxTrees = project.Documents
+                    .Where(d => Path.GetExtension(d.FilePath).Equals(".vb", StringComparison.OrdinalIgnoreCase))
+                    .Select(d => d.GetSyntaxTreeAsync().GetAwaiter().GetResult())
+                    .OfType<VBasic.VisualBasicSyntaxTree>();
+                foreach (var pathNodePair in ConvertMultiple((VBasic.VisualBasicCompilation)compilation, syntaxTrees)) {
+                    var formattedNode = Formatter.Format(pathNodePair.Value, new AdhocWorkspace());
+                    var path = Path.ChangeExtension(pathNodePair.Key, ".cs");
+                    File.WriteAllText(path, formattedNode.ToFullString());
+                }
+            }
+        }
 
         public static Dictionary<string, CSharpSyntaxNode> ConvertMultiple(VBasic.VisualBasicCompilation compilation, IEnumerable<VBasic.VisualBasicSyntaxTree> syntaxTrees)
         {

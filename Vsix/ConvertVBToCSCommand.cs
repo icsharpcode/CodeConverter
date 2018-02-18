@@ -130,6 +130,7 @@ namespace CodeConverter.VsExtension
                 menuItem.Enabled = true;
             }
         }
+
         private void SolutionOrProjectMenuItem_BeforeQueryStatus(object sender, EventArgs e)
         {
             var menuItem = sender as OleMenuCommand;

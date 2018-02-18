@@ -99,8 +99,8 @@
           <ButtonText>Convert to C# and write to adjacent files</ButtonText>
         </Strings>
       </Button>
-      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSProjectItemCtxCommandId" priority="0x0100" type="Button">
-        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectItemCtxMenuGroup" />
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSSolutionCtxCommandId" priority="0x0100" type="Button">
+        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionCtxMenuGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
@@ -119,6 +119,8 @@
       <IDSymbol name="REConverterMenuGroup" value="0x1020" />
       <IDSymbol name="REConverterCtxMenuGroup" value="0x1021" />
       <IDSymbol name="REConverterProjectItemCtxMenuGroup" value="0x1022" />
+      <IDSymbol name="REConverterProjectCtxMenuGroup" value="0x1023" />
+      <IDSymbol name="REConverterSolutionCtxMenuGroup" value="0x1024" />
       <IDSymbol name="ConvertCSToVBCommandId" value="0x0100" />
       <IDSymbol name="ConvertCSToVBCtxCommandId" value="0x0101" />
       <IDSymbol name="ConvertCSToVBProjectItemCtxCommandId" value="0x0102" />

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.Design;
 using System.IO;
+using System.Linq;
 using Microsoft.VisualStudio.Shell;
 
 namespace CodeConverter.VsExtension
@@ -86,14 +87,14 @@ namespace CodeConverter.VsExtension
 
                 // Command in project context menu
                 var projectCtxMenuCommandID = new CommandID(CommandSet, ProjectCtxMenuCommandId);
-                var projectCtxMenuItem = new OleMenuCommand(ProjectMenuItemCallback, projectCtxMenuCommandID);
-                projectCtxMenuItem.BeforeQueryStatus += ProjectMenuItem_BeforeQueryStatus;
+                var projectCtxMenuItem = new OleMenuCommand(SolutionOrProjectMenuItemCallback, projectCtxMenuCommandID);
+                projectCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatus;
                 commandService.AddCommand(projectCtxMenuItem);
 
                 // Command in solution context menu
                 var solutionCtxMenuCommandID = new CommandID(CommandSet, SolutionCtxMenuCommandId);
-                var solutionCtxMenuItem = new OleMenuCommand(SolutionMenuItemCallback, solutionCtxMenuCommandID);
-                solutionCtxMenuItem.BeforeQueryStatus += SolutionMenuItem_BeforeQueryStatus;
+                var solutionCtxMenuItem = new OleMenuCommand(SolutionOrProjectMenuItemCallback, solutionCtxMenuCommandID);
+                solutionCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatus;
                 commandService.AddCommand(solutionCtxMenuItem);
             }
         }
@@ -124,6 +125,14 @@ namespace CodeConverter.VsExtension
             }
         }
 
+        private void SolutionOrProjectMenuItem_BeforeQueryStatus(object sender, EventArgs e)
+        {
+            var menuItem = sender as OleMenuCommand;
+            if (menuItem != null) {
+                menuItem.Visible = menuItem.Enabled = VisualStudioInteraction.GetSelectedProjects(".csproj").Any();
+            }
+        }
+
         void CodeEditorMenuItemCallback(object sender, EventArgs e)
         {
             string selectedText = codeConversion.GetCSSelectionInCurrentView()?.StreamSelectionSpan.GetText();
@@ -144,6 +153,15 @@ namespace CodeConverter.VsExtension
                 }
             } catch (Exception ex) {
                 VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.CSToVBConversionTitle, ex);
+            }
+        }
+
+        private async void SolutionOrProjectMenuItemCallback(object sender, EventArgs e)
+        {
+            try {
+                await codeConversion.ConvertVBProjects(VisualStudioInteraction.GetSelectedProjects(".csproj"));
+            } catch (Exception ex) {
+                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.VBToCSConversionTitle, ex);
             }
         }
     }

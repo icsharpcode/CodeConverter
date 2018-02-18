@@ -82,37 +82,36 @@ namespace CodeConverter.VsExtension
 
         public async Task ConvertVBProjects(IReadOnlyCollection<Project> selectedProjects)
         {
-            var errors = new Dictionary<string, string>();
-            var selectedDocuments = selectedProjects.SelectMany(GetVBFilePaths).ToList();
-            foreach (var selectedDocument in selectedDocuments) {
-                try {
-                    var result = await TryConvertingVBToCSCode(selectedDocument, new Span(0,0));
-                    if (!result.Success) {
-                        errors.Add(selectedDocument, result.GetExceptionsAsString());
-                    }
+            var projectsByPath = visualStudioWorkspace.CurrentSolution.Projects.ToDictionary(p => p.FilePath, p => p);
+            var projects = selectedProjects.Select(p => projectsByPath[p.FullName]);
+            await VisualBasicConverter.ConvertProjects(projects);
 
-                    File.WriteAllText(Path.ChangeExtension(selectedDocument, ".cs"), result.ConvertedCode);
-                } catch (Exception ex) {
-                    errors.Add(selectedDocument, ex.ToString());
-                    return;
-                }
-            }
 
-            if (errors.Any()) {
-                var successes = errors.Count - selectedDocuments.Count;
-                var intro = successes > 0
-                    ? $"{successes}/{errors.Count} files converted" 
-                    : "Conversion failed";
-                ShowNonFatalError(intro + string.Join(Environment.NewLine + Environment.NewLine,
-                                      errors.Select(fileAndError =>
-                                          $"In {fileAndError.Key}:{Environment.NewLine}{fileAndError.Value}")));
-            }
-        }
+            //var errors = new Dictionary<string, string>();
+            //var selectedDocuments = selectedProjects.SelectMany(GetVBFilePaths).ToList();
+            //foreach (var selectedDocument in selectedDocuments) {
+            //    try {
+            //        var result = await TryConvertingVBToCSCode(selectedDocument, new TextSpan(0,0));
+            //        if (!result.Success) {
+            //            errors.Add(selectedDocument, result.GetExceptionsAsString());
+            //        }
 
-        private static IEnumerable<string> GetVBFilePaths(Project selectedProject)
-        {
-            return selectedProject.ProjectItems.OfType<ProjectItem>().Select(f => f.Document.FullName)
-                .Where(fn => fn.ToLowerInvariant().EndsWith(".vb"));
+            //        File.WriteAllText(Path.ChangeExtension(selectedDocument, ".cs"), result.ConvertedCode);
+            //    } catch (Exception ex) {
+            //        errors.Add(selectedDocument, ex.ToString());
+            //        return;
+            //    }
+            //}
+
+            //if (errors.Any()) {
+            //    var successes = errors.Count - selectedDocuments.Count;
+            //    var intro = successes > 0
+            //        ? $"{successes}/{errors.Count} files converted" 
+            //        : "Conversion failed";
+            //    ShowNonFatalError(intro + string.Join(Environment.NewLine + Environment.NewLine,
+            //                          errors.Select(fileAndError =>
+            //                              $"In {fileAndError.Key}:{Environment.NewLine}{fileAndError.Value}")));
+            //}
         }
 
         public async Task PerformVBToCSConversion(string documentFilePath, Span selected)
