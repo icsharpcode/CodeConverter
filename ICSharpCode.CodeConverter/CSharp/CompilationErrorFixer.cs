@@ -39,10 +39,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var refOrOutKeyword = GetRefKeyword(methodSymbol.Parameters[index]);
                     var currentSyntaxKind = nodeToReturn.Arguments[index].Kind();
                     if (!refOrOutKeyword.IsKind(currentSyntaxKind)) {
-                        nodeToReturn = nodeToReturn.ReplaceNode(argument,
-                            SyntaxFactory.Argument(argument.NameColon, refOrOutKeyword, argument.Expression)
-                                .WithLeadingTrivia(argument.GetLeadingTrivia())
-                                .WithTrailingTrivia(argument.GetTrailingTrivia()));
+                        nodeToReturn = nodeToReturn.ReplaceNode(argument, argument.WithRefOrOutKeyword(refOrOutKeyword));
                     }
                 }
             }
