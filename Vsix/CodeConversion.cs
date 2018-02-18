@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using EnvDTE;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.CodeAnalysis;
@@ -12,6 +15,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Project = EnvDTE.Project;
 using Task = System.Threading.Tasks.Task;
 
 namespace CodeConverter.VsExtension
@@ -76,20 +80,48 @@ namespace CodeConverter.VsExtension
             return ICSharpCode.CodeConverter.CodeConverter.Convert(codeWithOptions);
         }
 
+        public async Task ConvertVBProjects(IReadOnlyCollection<Project> selectedProjects)
+        {
+            var errors = new Dictionary<string, string>();
+            var selectedDocuments = selectedProjects.SelectMany(GetVBFilePaths).ToList();
+            foreach (var selectedDocument in selectedDocuments) {
+                try {
+                    var result = await TryConvertingVBToCSCode(selectedDocument, new Span(0,0));
+                    if (!result.Success) {
+                        errors.Add(selectedDocument, result.GetExceptionsAsString());
+                    }
+
+                    File.WriteAllText(Path.ChangeExtension(selectedDocument, ".cs"), result.ConvertedCode);
+                } catch (Exception ex) {
+                    errors.Add(selectedDocument, ex.ToString());
+                    return;
+                }
+            }
+
+            if (errors.Any()) {
+                var successes = errors.Count - selectedDocuments.Count;
+                var intro = successes > 0
+                    ? $"{successes}/{errors.Count} files converted" 
+                    : "Conversion failed";
+                ShowNonFatalError(intro + string.Join(Environment.NewLine + Environment.NewLine,
+                                      errors.Select(fileAndError =>
+                                          $"In {fileAndError.Key}:{Environment.NewLine}{fileAndError.Value}")));
+            }
+        }
+
+        private static IEnumerable<string> GetVBFilePaths(Project selectedProject)
+        {
+            return selectedProject.ProjectItems.OfType<ProjectItem>().Select(f => f.Document.FullName)
+                .Where(fn => fn.ToLowerInvariant().EndsWith(".vb"));
+        }
+
         public async Task PerformVBToCSConversion(string documentFilePath, Span selected)
         {
             string convertedText = null;
             try {
                 var result = await TryConvertingVBToCSCode(documentFilePath, selected);
                 if (!result.Success) {
-                    var newLines = Environment.NewLine + Environment.NewLine;
-                    VsShellUtilities.ShowMessageBox(
-                        serviceProvider,
-                        $"Selected VB code seems to have errors or to be incomplete:{newLines}{result.GetExceptionsAsString()}",
-                        VBToCSConversionTitle,
-                        OLEMSGICON.OLEMSGICON_WARNING,
-                        OLEMSGBUTTON.OLEMSGBUTTON_OK,
-                        OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+                    ShowNonFatalError(result.GetExceptionsAsString());
                     return;
                 }
 
@@ -112,6 +144,18 @@ namespace CodeConverter.VsExtension
             WriteStatusBarText("Copied converted C# code to clipboard.");
 
             Clipboard.SetText(convertedText);
+        }
+
+        private void ShowNonFatalError(string error)
+        {
+            var newLines = Environment.NewLine + Environment.NewLine;
+            VsShellUtilities.ShowMessageBox(
+                serviceProvider,
+                $"Selected VB code seems to have errors or to be incomplete:{newLines}{error}",
+                VBToCSConversionTitle,
+                OLEMSGICON.OLEMSGICON_WARNING,
+                OLEMSGBUTTON.OLEMSGBUTTON_OK,
+                OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
         }
 
         async Task<ConversionResult> TryConvertingVBToCSCode(string documentPath, Span selected)

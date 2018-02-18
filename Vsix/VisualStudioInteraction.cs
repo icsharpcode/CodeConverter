@@ -1,5 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
+using EnvDTE;
+using EnvDTE80;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.LanguageServices;
@@ -54,6 +58,20 @@ namespace CodeConverter.VsExtension
                     Marshal.Release(hierarchyPtr);
                 }
             }
+        }
+        private static IEnumerable<T> GetSelectedSolutionExplorerItems<T>() where T: class
+        {
+            var selectedItems = (IEnumerable<object>) Dte.ToolWindows.SolutionExplorer.SelectedItems;
+            return selectedItems.OfType<UIHierarchyItem>().Select(i => i.Object).OfType<T>();
+        }
+
+        private static DTE2 Dte => Package.GetGlobalService(typeof(DTE2)) as DTE2;
+
+
+        public static List<Project> GetSelectedProjects(string projectExtension)
+        {
+            var items = GetSelectedSolutionExplorerItems<Project>().Where(project => project.FullName.EndsWith(projectExtension, StringComparison.InvariantCultureIgnoreCase)).ToList();
+            return items;
         }
 
         public static IWpfTextViewHost GetCurrentViewHost(IServiceProvider serviceProvider)

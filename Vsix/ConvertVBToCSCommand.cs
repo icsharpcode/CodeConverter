@@ -16,6 +16,8 @@ namespace CodeConverter.VsExtension
         public const int MainMenuCommandId = 0x0200;
         public const int CtxMenuCommandId = 0x0201;
         public const int ProjectItemCtxMenuCommandId = 0x0202;
+        public const int ProjectCtxMenuCommandId = 0x0203;
+        public const int SolutionCtxMenuCommandId = 0x0204;
 
         /// <summary>
         /// Command menu group (command set GUID).
@@ -88,6 +90,18 @@ namespace CodeConverter.VsExtension
                 var projectItemCtxMenuItem = new OleMenuCommand(ProjectItemMenuItemCallback, projectItemCtxMenuCommandID);
                 projectItemCtxMenuItem.BeforeQueryStatus += ProjectItemMenuItem_BeforeQueryStatus;
                 commandService.AddCommand(projectItemCtxMenuItem);
+
+                // Command in project context menu
+                var projectCtxMenuCommandID = new CommandID(CommandSet, ProjectCtxMenuCommandId);
+                var projectCtxMenuItem = new OleMenuCommand(SolutionOrProjectMenuItemCallback, projectCtxMenuCommandID);
+                projectCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatus;
+                commandService.AddCommand(projectCtxMenuItem);
+
+                // Command in solution context menu
+                var solutionCtxMenuCommandID = new CommandID(CommandSet, SolutionCtxMenuCommandId);
+                var solutionCtxMenuItem = new OleMenuCommand(SolutionOrProjectMenuItemCallback, solutionCtxMenuCommandID);
+                solutionCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatus;
+                commandService.AddCommand(solutionCtxMenuItem);
             }
         }
 
@@ -116,17 +130,33 @@ namespace CodeConverter.VsExtension
                 menuItem.Enabled = true;
             }
         }
+        private void SolutionOrProjectMenuItem_BeforeQueryStatus(object sender, EventArgs e)
+        {
+            var menuItem = sender as OleMenuCommand;
+            if (menuItem != null) {
+                menuItem.Visible = menuItem.Enabled = VisualStudioInteraction.GetSelectedProjects(".vbproj").Any();
+            }
+        }
 
         async void CodeEditorMenuItemCallback(object sender, EventArgs e)
         {
             var span = codeConversion.GetVBSelectionInCurrentView().SelectedSpans.First().Span;
             await ConvertVbDocument(codeConversion.GetCurrentVBViewHost().GetTextDocument().FilePath, span);
         }
-
+        
         async void ProjectItemMenuItemCallback(object sender, EventArgs e)
         {
             string itemPath = VisualStudioInteraction.GetSingleSelectedItemOrDefault()?.ItemPath;
             await ConvertVbDocument(itemPath, new Span(0,0));
+        }
+
+        private async void SolutionOrProjectMenuItemCallback(object sender, EventArgs e)
+        {
+            try {
+                await codeConversion.ConvertVBProjects(VisualStudioInteraction.GetSelectedProjects(".vbproj"));
+            } catch (Exception ex) {
+                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.VBToCSConversionTitle, ex);
+            }
         }
 
         private async Task ConvertVbDocument(string documentPath, Span selected)

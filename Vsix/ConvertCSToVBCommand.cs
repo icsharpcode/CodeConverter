@@ -13,6 +13,8 @@ namespace CodeConverter.VsExtension
         public const int MainMenuCommandId = 0x0100;
         public const int CtxMenuCommandId = 0x0101;
         public const int ProjectItemCtxMenuCommandId = 0x0102;
+        public const int ProjectCtxMenuCommandId = 0x0103;
+        public const int SolutionCtxMenuCommandId = 0x0104;
 
         /// <summary>
         /// Command menu group (command set GUID).
@@ -81,6 +83,18 @@ namespace CodeConverter.VsExtension
                 var projectItemCtxMenuItem = new OleMenuCommand(ProjectItemMenuItemCallback, projectItemCtxMenuCommandID);
                 projectItemCtxMenuItem.BeforeQueryStatus += ProjectItemMenuItem_BeforeQueryStatus;
                 commandService.AddCommand(projectItemCtxMenuItem);
+
+                // Command in project context menu
+                var projectCtxMenuCommandID = new CommandID(CommandSet, ProjectCtxMenuCommandId);
+                var projectCtxMenuItem = new OleMenuCommand(ProjectMenuItemCallback, projectCtxMenuCommandID);
+                projectCtxMenuItem.BeforeQueryStatus += ProjectMenuItem_BeforeQueryStatus;
+                commandService.AddCommand(projectCtxMenuItem);
+
+                // Command in solution context menu
+                var solutionCtxMenuCommandID = new CommandID(CommandSet, SolutionCtxMenuCommandId);
+                var solutionCtxMenuItem = new OleMenuCommand(SolutionMenuItemCallback, solutionCtxMenuCommandID);
+                solutionCtxMenuItem.BeforeQueryStatus += SolutionMenuItem_BeforeQueryStatus;
+                commandService.AddCommand(solutionCtxMenuItem);
             }
         }
 
