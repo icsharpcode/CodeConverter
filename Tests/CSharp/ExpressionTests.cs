@@ -273,7 +273,7 @@ class TestClass
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact()]
         public void ObjectInitializerExpression()
         {
             TestConversionVisualBasicToCSharp(@"Class StudentName
@@ -284,8 +284,7 @@ Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 As StudentName = New StudentName With {.FirstName = ""Craig"", .LastName = ""Playstead""}
     End Sub
-End Class", @"
-class StudentName
+End Class", @"class StudentName
 {
     public string LastName, FirstName;
 }
@@ -294,31 +293,23 @@ class TestClass
 {
     private void TestMethod(string str)
     {
-        StudentName student2 = new StudentName
-        {
-            FirstName = ""Craig"",
-            LastName = ""Playstead"",
-        };
+        StudentName student2 = new StudentName() { FirstName = ""Craig"", LastName = ""Playstead"" };
     }
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact()]
         public void ObjectInitializerExpression2()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 = New With {Key .FirstName = ""Craig"", Key .LastName = ""Playstead""}
     End Sub
-End Class", @"
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod(string str)
     {
-        var student2 = new {
-            FirstName = ""Craig"",
-            LastName = ""Playstead"",
-        };
+        var student2 = new { FirstName = ""Craig"", LastName = ""Playstead"" };
     }
 }");
         }
@@ -472,7 +463,7 @@ class TestClass
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void Linq1()
         {
             TestConversionVisualBasicToCSharp(@"Private Shared Sub SimpleQuery()
@@ -483,20 +474,19 @@ class TestClass
         Console.WriteLine(n)
     Next
 End Sub",
-                @"static void SimpleQuery()
+                @"private static void SimpleQuery()
 {
-    int[] numbers = { 7, 9, 5, 3, 6 };
- 
+    int[] numbers = new[] { 7, 9, 5, 3, 6 };"/*TODO Remove need for new[]*/ + @"
     var res = from n in numbers
-                where n > 5
-                select n;
- 
+              where n > 5
+              select n;
+
     foreach (var n in res)
-        Console.WriteLine(n);
+        System.Console.WriteLine(n);
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void Linq2()
         {
             TestConversionVisualBasicToCSharp(@"Public Shared Sub Linq40()
@@ -511,30 +501,27 @@ End Sub",
         Next
     Next
 End Sub",
-                @"public static void Linq40() 
-    { 
-        int[] numbers = { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 }; 
-      
-        var numberGroups = 
-            from n in numbers 
-            group n by n % 5 into g 
-            select new { Remainder = g.Key, Numbers = g }; 
-      
-        foreach (var g in numberGroups) 
-        { 
-            Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:""); 
-            foreach (var n in g.Numbers)
-            {
-                Console.WriteLine(n);
-            }
-        }
-    }");
+                @"public static void Linq40()
+{
+    int[] numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };"/*TODO Remove need for new[]*/ + @"
+    var numberGroups = from n in numbers
+                       group n by n % 5 into g
+                       select new { Remainder = g.Key, Numbers = g };
+
+    foreach (var g in numberGroups)
+    {
+        System.Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"");
+
+        foreach (var n in g.Numbers)
+            System.Console.WriteLine(n);
+    }
+}");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact()]
         public void Linq3()
         {
-            TestConversionVisualBasicToCSharp(@"Class Product
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -550,37 +537,29 @@ Class Test
         Next
     End Sub
 End Class",
-                @"class Product {
+                @"class Product
+{
     public string Category;
     public string ProductName;
 }
 
-class Test {
-    public void Linq102() 
-    { 
-        string[] categories = new string[]{  
-            ""Beverages"",   
-            ""Condiments"",
-            ""Vegetables"",
-            ""Dairy Products"",
-            ""Seafood"" };
-
-            Product[] products = GetProductList();
-
-            var q =
-                from c in categories
+class Test
+{
+    public void Linq102()
+    {
+        string[] categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
+        Product[] products = GetProductList();
+        var q = from c in categories
                 join p in products on c equals p.Category
-                select new { Category = c, p.ProductName }; 
- 
-        foreach (var v in q) 
-        { 
-            Console.WriteLine($""{v.ProductName}: {v.Category}"");  
-        }
+                select new { Category = c, p.ProductName };
+
+        foreach (var v in q)
+            Console.WriteLine($""{v.ProductName}: {v.Category}"");
     }
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void Linq4()
         {
             TestConversionVisualBasicToCSharp(@"Public Sub Linq103()
@@ -595,29 +574,20 @@ class Test {
             Console.WriteLine(""   "" & p.ProductName)
         Next
     Next
-End Sub", @"public void Linq103() 
-{ 
-    string[] categories = new string[]{  
-        ""Beverages"",  
-        ""Condiments"",
-        ""Vegetables"",
-        ""Dairy Products"",
-        ""Seafood"" };
-
-        var products = GetProductList();
-
-        var q =
-            from c in categories
+End Sub", @"public void Linq103()
+{
+    string[] categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
+    var products = GetProductList();
+    var q = from c in categories
             join p in products on c equals p.Category into ps
-            select new { Category = c, Products = ps }; 
-  
-    foreach (var v in q) 
-    { 
-        Console.WriteLine(v.Category + "":""); 
-        foreach (var p in v.Products) 
-        { 
-            Console.WriteLine(""   "" + p.ProductName); 
-        }
+            select new { Category = c, Products = ps };
+
+    foreach (var v in q)
+    {
+        System.Console.WriteLine(v.Category + "":"");
+
+        foreach (var p in v.Products)
+            System.Console.WriteLine(""   "" + p.ProductName);
     }
 }");
         }
