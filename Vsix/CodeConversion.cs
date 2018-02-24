@@ -85,8 +85,8 @@ namespace CodeConverter.VsExtension
             var projectsByPath = visualStudioWorkspace.CurrentSolution.Projects.ToDictionary(p => p.FilePath, p => p);
             var projects = selectedProjects.Select(p => projectsByPath[p.FullName]);
             var convertedFiles = ProjectConversion.ConvertProjects(projects);
-            foreach (var convertedFile in convertedFiles) {
-
+            var solutionDir = Path.GetDirectoryName(visualStudioWorkspace.CurrentSolution.FilePath);
+            foreach (var convertedFile in convertedFiles.Where(f => f.SourcePathOrNull == null || f.SourcePathOrNull.StartsWith(solutionDir))) {
                 if (convertedFile.Success) {
                     var path = Path.ChangeExtension(convertedFile.SourcePathOrNull, ".cs");
                     File.WriteAllText(path, convertedFile.ConvertedCode);
