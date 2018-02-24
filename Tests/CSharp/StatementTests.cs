@@ -554,7 +554,7 @@ class TestClass
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact()]
         public void DeclarationStatements()
         {
             TestConversionVisualBasicToCSharp(
@@ -841,7 +841,7 @@ class TestClass
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact()]
         public void LabeledAndForStatement()
         {
             TestConversionVisualBasicToCSharp(@"Class GotoTest1
