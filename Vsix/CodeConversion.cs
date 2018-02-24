@@ -85,16 +85,18 @@ namespace CodeConverter.VsExtension
             var projectsByPath = visualStudioWorkspace.CurrentSolution.Projects.ToDictionary(p => p.FilePath, p => p);
             var projects = selectedProjects.Select(p => projectsByPath[p.FullName]);
             var convertedFiles = ProjectConversion.ConvertProjects(projects);
-            var solutionDir = Path.GetDirectoryName(visualStudioWorkspace.CurrentSolution.FilePath);
-            foreach (var convertedFile in convertedFiles.Where(f => f.SourcePathOrNull == null || f.SourcePathOrNull.StartsWith(solutionDir))) {
-                if (convertedFile.Success) {
+            var errors = new List<string>();
+            foreach (var convertedFile in convertedFiles) {
+                if (convertedFile.Success && convertedFile.SourcePathOrNull != null) {
                     var path = Path.ChangeExtension(convertedFile.SourcePathOrNull, ".cs");
                     File.WriteAllText(path, convertedFile.ConvertedCode);
                 } else {
-                    var errors = convertedFile.GetExceptionsAsString();
-                    var intro = "Errors during conversion:" + Environment.NewLine;
-                    ShowNonFatalError(intro + errors);
+                    errors.Add(convertedFile.GetExceptionsAsString());
                 }
+            }
+
+            if (errors.Any()) {
+                ShowNonFatalError(string.Join(Environment.NewLine, errors));
             }
         }
 
@@ -134,7 +136,7 @@ namespace CodeConverter.VsExtension
             var newLines = Environment.NewLine + Environment.NewLine;
             VsShellUtilities.ShowMessageBox(
                 serviceProvider,
-                $"Selected VB code seems to have errors or to be incomplete:{newLines}{error}",
+                $"Errors converting selected VB code (press Ctrl + C to copy whole error):{newLines}{error}",
                 VBToCSConversionTitle,
                 OLEMSGICON.OLEMSGICON_WARNING,
                 OLEMSGBUTTON.OLEMSGBUTTON_OK,

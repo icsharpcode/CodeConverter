@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -15,7 +16,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     public class ProjectConversion
     {
-        private const string NoFilePath = "unknown";
         private bool _methodBodyOnly;
         private VisualBasicCompilation _compilation;
         private IEnumerable<VisualBasicSyntaxTree> _syntaxTreesToConvert;
@@ -24,7 +24,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly Dictionary<string, SyntaxTree> _firstPassResults = new Dictionary<string, SyntaxTree>();
         private CSharpCompilation _cSharpCompilation;
 
-        private ProjectConversion(VisualBasicCompilation compilation) :this(compilation, compilation.SyntaxTrees.OfType<VisualBasicSyntaxTree>())
+        private ProjectConversion(VisualBasicCompilation compilation, string solutionDir)
+            : this(compilation, compilation.SyntaxTrees.OfType<VisualBasicSyntaxTree>().Where(t => t.FilePath.StartsWith(solutionDir)))
         {
         }
 
@@ -47,27 +48,35 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (selected.Length > 0) {
                 var annotatedSyntaxTree = GetSyntaxTreeWithAnnotatedSelection(selected, root);
                 compilation = compilation.ReplaceSyntaxTree(syntaxTree, annotatedSyntaxTree);
+                syntaxTree = (VisualBasicSyntaxTree) annotatedSyntaxTree;
             }
 
-            var conversion = new ProjectConversion(compilation);
+            var conversion = new ProjectConversion(compilation, new [] {syntaxTree});
             var converted = conversion.Convert();
-            
-            if (!converted.Any()) return new ConversionResult(conversion._errors.Single().Value);
+
+            if (!converted.Any()) {
+                var conversionError = conversion._errors.Single();
+                return new ConversionResult(conversionError.Value) { SourcePathOrNull = conversionError.Key };
+            }
             var resultPair = converted.Single();
             var resultNode = GetSelectedNode(resultPair.Value);
-            var sourcePathOrNull = resultPair.Key == NoFilePath ? null : resultPair.Key;
-            return new ConversionResult(resultNode.ToFullString()) { SourcePathOrNull = sourcePathOrNull };
+            return new ConversionResult(resultNode.ToFullString()) { SourcePathOrNull = resultPair.Key };
         }
 
         public static IEnumerable<ConversionResult> ConvertProjects(IEnumerable<Project> projects)
         {
+            var solutionDir = Path.GetDirectoryName(projects.First().Solution.FilePath);
             foreach (var project in projects) {
                 var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
-                var projectConversion = new ProjectConversion((VisualBasicCompilation)compilation);
+                var projectConversion = new ProjectConversion((VisualBasicCompilation)compilation, solutionDir);
                 foreach (var pathNodePair in projectConversion.Convert()) {
                     yield return new ConversionResult(pathNodePair.Value.ToFullString()) {SourcePathOrNull = pathNodePair.Key};
                 }
-                yield return new ConversionResult(projectConversion._errors.Values.ToArray());
+
+                foreach (var error in projectConversion._errors) {
+                    yield return new ConversionResult(error.Value) { SourcePathOrNull = error.Key };
+                }
+                
             }
 
         }
@@ -84,7 +93,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             foreach (var tree in _syntaxTreesToConvert)
             {
-                var treeFilePath = tree.FilePath ?? NoFilePath;
+                var treeFilePath = tree.FilePath ?? "";
                 try
                 {
                     SingleFirstPass(tree, treeFilePath);
