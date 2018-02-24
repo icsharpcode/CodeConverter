@@ -273,7 +273,7 @@ class TestClass
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact()]
         public void ObjectInitializerExpression()
         {
             TestConversionVisualBasicToCSharp(@"Class StudentName
@@ -284,8 +284,7 @@ Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 As StudentName = New StudentName With {.FirstName = ""Craig"", .LastName = ""Playstead""}
     End Sub
-End Class", @"
-class StudentName
+End Class", @"class StudentName
 {
     public string LastName, FirstName;
 }
@@ -294,31 +293,23 @@ class TestClass
 {
     private void TestMethod(string str)
     {
-        StudentName student2 = new StudentName
-        {
-            FirstName = ""Craig"",
-            LastName = ""Playstead"",
-        };
+        StudentName student2 = new StudentName() { FirstName = ""Craig"", LastName = ""Playstead"" };
     }
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact()]
         public void ObjectInitializerExpression2()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 = New With {Key .FirstName = ""Craig"", Key .LastName = ""Playstead""}
     End Sub
-End Class", @"
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod(string str)
     {
-        var student2 = new {
-            FirstName = ""Craig"",
-            LastName = ""Playstead"",
-        };
+        var student2 = new { FirstName = ""Craig"", LastName = ""Playstead"" };
     }
 }");
         }
