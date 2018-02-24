@@ -150,30 +150,23 @@ class TestClass
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void TestExtensionMethod()
         {
             TestConversionVisualBasicToCSharp(
-@"Imports System.Runtime.CompilerServices
-
-Module TestClass
-    <Extension()>
+@"Module TestClass
+    <System.Runtime.CompilerServices.Extension()>
     Sub TestMethod(ByVal str As String)
     End Sub
-End Module", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-static class TestClass
+End Module", @"static class TestClass
 {
-    public static void TestMethod(this String str)
+    public static void TestMethod(this string str)
     {
     }
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void TestExtensionMethodWithExistingImport()
         {
             TestConversionVisualBasicToCSharp(
@@ -191,7 +184,7 @@ using System.Runtime.CompilerServices;
 
 static class TestClass
 {
-    public static void TestMethod(this String str)
+    public static void TestMethod(this string str)
     {
     }
 }");

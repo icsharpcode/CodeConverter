@@ -145,6 +145,7 @@ using Microsoft.VisualBasic;
             return IsVbInheritsOrImplements(nextLine)
                 || line.Contains("End If") || line.Contains("Next")
                 || IsFirstOfMultiLineVbIfStatement(line)
+                || line.Contains("<Extension") || line.Contains("CompilerServices.Extension")
                 //Allow a blank line in VB after these statements that doesn't appear in the C# since C# has braces to act as a separator
                 || string.IsNullOrWhiteSpace(line) && IsVbInheritsOrImplements(prevLine);
         }

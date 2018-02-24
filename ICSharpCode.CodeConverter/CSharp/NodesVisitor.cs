@@ -91,7 +91,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             IEnumerable<AttributeListSyntax> ConvertAttribute(VBSyntax.AttributeListSyntax attributeList)
             {
-                return attributeList.Attributes.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor));
+                return attributeList.Attributes.Where(a => !IsExtensionAttribute(a)).Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor));
             }
 
             public override CSharpSyntaxNode VisitAttribute(VBSyntax.AttributeSyntax node)
@@ -464,17 +464,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 return SyntaxFactory.Block(statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor(isIterator))));
             }
-
+            
             public override CSharpSyntaxNode VisitMethodStatement(VBSyntax.MethodStatementSyntax node)
             {
-                var attributes = node.AttributeLists.SelectMany(ConvertAttribute);
+                var attributes = ConvertAttributes(node.AttributeLists);
                 bool hasBody = node.Parent is VBSyntax.MethodBlockBaseSyntax;
 
                 if ("Finalize".Equals(node.Identifier.ValueText, StringComparison.OrdinalIgnoreCase)
                     && node.Modifiers.Any(m => VBasic.VisualBasicExtensions.Kind(m) == VBasic.SyntaxKind.OverridesKeyword)) {
                     var decl = SyntaxFactory.DestructorDeclaration(
                         ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier)
-                    ).WithAttributeLists(SyntaxFactory.List(attributes));
+                    ).WithAttributeLists(attributes);
                     if (hasBody) return decl;
                     return decl.WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken));
                 } else {
@@ -486,7 +486,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SplitTypeParameters(node.TypeParameterList, out typeParameters, out constraints);
 
                     var decl = SyntaxFactory.MethodDeclaration(
-                        SyntaxFactory.List(attributes),
+                        attributes,
                         modifiers,
                         (TypeSyntax)node.AsClause?.Type.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)),
                         null,
@@ -500,6 +500,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                     if (hasBody) return decl;
                     return decl.WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken));
                 }
+            }
+            private bool HasExtensionAttribute(VBSyntax.AttributeListSyntax a)
+            {
+                return a.Attributes.Any(IsExtensionAttribute);
+            }
+
+            private bool IsExtensionAttribute(VBSyntax.AttributeSyntax a)
+            {
+                return semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()?.Equals("System.Runtime.CompilerServices.ExtensionAttribute") == true;
             }
 
             private TokenContext GetMethodOrPropertyContext(VBSyntax.StatementSyntax node)
@@ -644,10 +653,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitParameterList(VBSyntax.ParameterListSyntax node)
             {
+                var parameterSyntaxs = node.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor));
                 if (node.Parent is VBSyntax.PropertyStatementSyntax) {
-                    return SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(node.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor))));
+                    return SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(parameterSyntaxs));
                 }
-                return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(node.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor))));
+                return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameterSyntaxs));
             }
 
             public override CSharpSyntaxNode VisitParameter(VBSyntax.ParameterSyntax node)
@@ -682,6 +692,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (outAttributeIndex > -1) {
                     attributes.RemoveAt(outAttributeIndex);
                     modifiers = modifiers.Replace(SyntaxFactory.Token(SyntaxKind.RefKeyword), SyntaxFactory.Token(SyntaxKind.OutKeyword));
+                }
+
+                if (node.Parent.Parent is VBSyntax.MethodStatementSyntax mss && mss.AttributeLists.Any(HasExtensionAttribute)) {
+                    modifiers = modifiers.Insert(0, SyntaxFactory.Token(SyntaxKind.ThisKeyword));
                 }
                 return SyntaxFactory.Parameter(
                     SyntaxFactory.List(attributes),
