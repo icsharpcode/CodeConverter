@@ -962,6 +962,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.AnonymousObjectCreationExpression(memberDeclaratorSyntaxs);
             }
 
+            public override CSharpSyntaxNode VisitInferredFieldInitializer(VBSyntax.InferredFieldInitializerSyntax node)
+            {
+                return SyntaxFactory.AnonymousObjectMemberDeclarator((ExpressionSyntax) node.Expression.Accept(TriviaConvertingVisitor));
+            }
+
             public override CSharpSyntaxNode VisitObjectCreationExpression(VBSyntax.ObjectCreationExpressionSyntax node)
             {
                 return SyntaxFactory.ObjectCreationExpression(
@@ -1011,11 +1016,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var vbFromClause = node.Clauses.OfType<VBSyntax.FromClauseSyntax>().Single();
                 var fromClauseSyntax = ConvertFromClauseSyntax(vbFromClause);
+                var vbGroupClause = node.Clauses.OfType<VBSyntax.GroupByClauseSyntax>().SingleOrDefault();
                 var vbSelectClause = node.Clauses.OfType<VBSyntax.SelectClauseSyntax>().Single();
                 var selectClauseSyntax = ConvertSelectClauseSyntax(vbSelectClause);
-                var vbBodyClauses = node.Clauses.Except(new VBSyntax.QueryClauseSyntax[] {vbFromClause, vbSelectClause });
-                var queryClauseSyntaxs = SyntaxFactory.List(vbBodyClauses.Select(ConvertQueryBodyClause));
-                var queryBodySyntax = SyntaxFactory.QueryBody(queryClauseSyntaxs, selectClauseSyntax, null);
+                var alreadyConverted = new VBSyntax.QueryClauseSyntax[] { vbFromClause, vbGroupClause, vbSelectClause };
+                var vbBodyClauses = node.Clauses;
+                SelectOrGroupClauseSyntax selectOrGroup = null;
+                QueryContinuationSyntax queryContinuation = null;
+                var queryClauseSyntaxs = SyntaxFactory.List(vbBodyClauses.TakeWhile(x => x != vbGroupClause).Except(alreadyConverted).Select(ConvertQueryBodyClause));
+                var continuedClauses = SyntaxFactory.List(vbBodyClauses.SkipWhile(x => x != vbGroupClause).Skip(1).Except(alreadyConverted).Select(ConvertQueryBodyClause));
+                if (vbGroupClause != null) {
+                    selectOrGroup = ConvertGroupByClause(vbGroupClause);
+                    queryContinuation = SyntaxFactory.QueryContinuation(GetGroupIdentifier(vbGroupClause),
+                        SyntaxFactory.QueryBody(continuedClauses, selectClauseSyntax, null));
+                } else {
+                    selectOrGroup = selectClauseSyntax;
+                }
+
+                var queryBodySyntax = SyntaxFactory.QueryBody(queryClauseSyntaxs, selectOrGroup, queryContinuation);
                 return SyntaxFactory.QueryExpression(fromClauseSyntax, queryBodySyntax);
             }
 
@@ -1041,7 +1059,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return node.TypeSwitch<VBSyntax.QueryClauseSyntax, VBSyntax.JoinClauseSyntax, VBSyntax.LetClauseSyntax, VBSyntax.OrderByClauseSyntax, VBSyntax.WhereClauseSyntax, QueryClauseSyntax>(
                     //(VBSyntax.AggregateClauseSyntax ags) => null,
                     //(VBSyntax.DistinctClauseSyntax ds) => null,
-                    //(VBSyntax.GroupByClauseSyntax gs) => null,
                     ConvertJoinClause,
                     ConvertLetClause,
                     ConvertOrderByClause,
@@ -1049,6 +1066,19 @@ namespace ICSharpCode.CodeConverter.CSharp
                     //(VBSyntax.PartitionWhileClauseSyntax pws) => null, // TODO Convert to SkipWhile and TakeWhile methods (they don't exist in C#s query syntax)
                     ConvertWhereClause,
                     _ => throw new NotImplementedException($"Conversion for query clause with kind '{node.Kind()}' not implemented"));
+            }
+
+            private GroupClauseSyntax ConvertGroupByClause(VBSyntax.GroupByClauseSyntax gs)
+            {
+                if (gs == null) return null;
+                var item = (IdentifierNameSyntax) gs.Items.Single().Expression.Accept(TriviaConvertingVisitor);
+                var keyExpression = (ExpressionSyntax) gs.Keys.Single().Expression.Accept(TriviaConvertingVisitor);
+                return SyntaxFactory.GroupClause(item, keyExpression);
+            }
+
+            private SyntaxToken GetGroupIdentifier(VBSyntax.GroupByClauseSyntax gs)
+            {
+                return ConvertIdentifier(gs.AggregationVariables.Select(x => x.Aggregation).OfType<VBSyntax.FunctionAggregationSyntax>().First().FunctionName);
             }
 
             private SyntaxToken ConvertIdentifier(SyntaxToken identifierIdentifier, bool isAttribute = false)

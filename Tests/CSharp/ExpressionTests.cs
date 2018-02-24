@@ -486,7 +486,7 @@ End Sub",
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void Linq2()
         {
             TestConversionVisualBasicToCSharp(@"Public Shared Sub Linq40()
@@ -502,25 +502,26 @@ End Sub",
     Next
 End Sub",
                 @"public static void Linq40()
+{
+    int[] numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };"/*TODO Remove need for new[]*/ + @"
+    var numberGroups = from n in numbers
+                       group n by n % 5 into g
+                       select new { Remainder = g.Key, Numbers = g };
+
+    foreach (var g in numberGroups)
     {
-        int[] numbers = { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };
-        var numberGroups = from n in numbers
-                           group n by n % 5 into g
-                           select new { Remainder = g.Key, Numbers = g };
+        System.Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"");
 
-        foreach (var g in numberGroups)
-        {
-            System.Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"");
-            foreach (var n in g.Numbers)
-                System.Console.WriteLine(n);
-        }
-    }");
+        foreach (var n in g.Numbers)
+            System.Console.WriteLine(n);
+    }
+}");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact()]
         public void Linq3()
         {
-            TestConversionVisualBasicToCSharp(@"Class Product
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -536,12 +537,14 @@ Class Test
         Next
     End Sub
 End Class",
-                @"class Product {
+                @"class Product
+{
     public string Category;
     public string ProductName;
 }
 
-class Test {
+class Test
+{
     public void Linq102()
     {
         string[] categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };

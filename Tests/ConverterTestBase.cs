@@ -32,27 +32,38 @@ namespace CodeConverter.Tests
 
         public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool standaloneStatements = false)
         {
-            if (standaloneStatements) {
+            expectedCsharpCode = AddUsings(expectedCsharpCode, standaloneStatements);
+            TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode, false);
+            if (testCommentsByDefault) TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true), false);
+        }
+
+        private static string AddUsings(string expectedCsharpCode, bool standaloneStatements)
+        {
+            if (standaloneStatements)
+            {
                 var indentedStatements = expectedCsharpCode.Replace("\n", "\n    ");
                 expectedCsharpCode =
-$@"{{
+                    $@"{{
     {indentedStatements}
 }}";
-            } else if (!expectedCsharpCode.StartsWith("using System")) {
-                expectedCsharpCode = 
-@"using System;
+            }
+            else if (!expectedCsharpCode.StartsWith("using System"))
+            {
+                expectedCsharpCode =
+                    @"using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
 
 " + expectedCsharpCode;
             }
-            TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode);
-            if (testCommentsByDefault) TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true));
+
+            return expectedCsharpCode;
         }
 
-        public void TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
+        public void TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode, bool addUsings = true, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
         {
+            if (addUsings) expectedCsharpCode = AddUsings(expectedCsharpCode, false);
             var outputNode = VisualBasicConverter.ConvertText(visualBasicCode, DiagnosticTestBase.DefaultMetadataReferences);
             var txt = Utils.HomogenizeEol(outputNode.ConvertedCode ?? outputNode.GetExceptionsAsString()).TrimEnd();
             expectedCsharpCode = Utils.HomogenizeEol(expectedCsharpCode).TrimEnd();
