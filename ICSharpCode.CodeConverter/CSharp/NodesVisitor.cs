@@ -1038,9 +1038,68 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private QueryClauseSyntax ConvertQueryBodyClause(VBSyntax.QueryClauseSyntax node)
             {
-                return node.TypeSwitch(
-                    (VBSyntax.WhereClauseSyntax ws) => SyntaxFactory.WhereClause((ExpressionSyntax) ws.Condition.Accept(TriviaConvertingVisitor)),
+                return node.TypeSwitch<VBSyntax.QueryClauseSyntax, VBSyntax.JoinClauseSyntax, VBSyntax.LetClauseSyntax, VBSyntax.OrderByClauseSyntax, VBSyntax.WhereClauseSyntax, QueryClauseSyntax>(
+                    //(VBSyntax.AggregateClauseSyntax ags) => null,
+                    //(VBSyntax.DistinctClauseSyntax ds) => null,
+                    //(VBSyntax.GroupByClauseSyntax gs) => null,
+                    ConvertJoinClause,
+                    ConvertLetClause,
+                    ConvertOrderByClause,
+                    //(VBSyntax.PartitionClauseSyntax ps) => null, // TODO Convert to Skip and Take methods (they don't exist in C#s query syntax)
+                    //(VBSyntax.PartitionWhileClauseSyntax pws) => null, // TODO Convert to SkipWhile and TakeWhile methods (they don't exist in C#s query syntax)
+                    ConvertWhereClause,
                     _ => throw new NotImplementedException($"Conversion for query clause with kind '{node.Kind()}' not implemented"));
+            }
+
+            private QueryClauseSyntax ConvertWhereClause(VBSyntax.WhereClauseSyntax ws)
+            {
+                return SyntaxFactory.WhereClause((ExpressionSyntax) ws.Condition.Accept(TriviaConvertingVisitor));
+            }
+
+            private QueryClauseSyntax ConvertLetClause(VBSyntax.LetClauseSyntax ls)
+            {
+                var singleVariable = ls.Variables.Single();
+                return SyntaxFactory.LetClause(ConvertIdentifier(singleVariable.NameEquals.Identifier.Identifier, semanticModel), (ExpressionSyntax) singleVariable.Expression.Accept(TriviaConvertingVisitor));
+            }
+
+            private QueryClauseSyntax ConvertOrderByClause(VBSyntax.OrderByClauseSyntax os)
+            {
+                return SyntaxFactory.OrderByClause(SyntaxFactory.SeparatedList(os.Orderings.Select(o => (OrderingSyntax) o.Accept(TriviaConvertingVisitor))));
+            }
+
+            public override CSharpSyntaxNode VisitOrdering(VBSyntax.OrderingSyntax node)
+            {
+                return SyntaxFactory.Ordering(SyntaxKind.OrderByClause,
+                    (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
+                    ConvertToken(node.AscendingOrDescendingKeyword));
+            }
+
+            private QueryClauseSyntax ConvertJoinClause(VBSyntax.JoinClauseSyntax js)
+            {
+                var variable = js.JoinedVariables.Single();
+                var joinLhs = SingleExpression(js.JoinConditions.Select(c => c.Left.Accept(TriviaConvertingVisitor))
+                    .Cast<ExpressionSyntax>().ToList());
+                var joinRhs = SingleExpression(js.JoinConditions.Select(c => c.Right.Accept(TriviaConvertingVisitor))
+                    .Cast<ExpressionSyntax>().ToList());
+                var convertIdentifier = ConvertIdentifier(variable.Identifier.Identifier, semanticModel);
+                var expressionSyntax = (ExpressionSyntax) variable.Expression.Accept(TriviaConvertingVisitor);
+
+                JoinIntoClauseSyntax joinIntoClauseSyntax = null;
+                if (js is VBSyntax.GroupJoinClauseSyntax gjs) {
+                    joinIntoClauseSyntax = gjs.AggregationVariables
+                        .Where(a => a.Aggregation is VBSyntax.GroupAggregationSyntax)
+                        .Select(a => SyntaxFactory.JoinIntoClause(ConvertIdentifier(a.NameEquals.Identifier.Identifier, semanticModel)))
+                        .SingleOrDefault();
+                }
+                return SyntaxFactory.JoinClause(null, convertIdentifier, expressionSyntax, joinLhs, joinRhs, joinIntoClauseSyntax);
+            }
+
+            private ExpressionSyntax SingleExpression(IReadOnlyCollection<ExpressionSyntax> expressions)
+            {
+                if (expressions.Count == 1) return expressions.Single();
+                return SyntaxFactory.AnonymousObjectCreationExpression(SyntaxFactory.SeparatedList(expressions.Select((e, i) =>
+                    SyntaxFactory.AnonymousObjectMemberDeclarator(SyntaxFactory.NameEquals($"key{i}"), e)
+                )));
             }
 
             public override CSharpSyntaxNode VisitNamedFieldInitializer(VBSyntax.NamedFieldInitializerSyntax node)

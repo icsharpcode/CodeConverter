@@ -501,22 +501,18 @@ End Sub",
         Next
     Next
 End Sub",
-                @"public static void Linq40() 
-    { 
-        int[] numbers = { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 }; 
-      
-        var numberGroups = 
-            from n in numbers 
-            group n by n % 5 into g 
-            select new { Remainder = g.Key, Numbers = g }; 
-      
-        foreach (var g in numberGroups) 
-        { 
-            Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:""); 
+                @"public static void Linq40()
+    {
+        int[] numbers = { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };
+        var numberGroups = from n in numbers
+                           group n by n % 5 into g
+                           select new { Remainder = g.Key, Numbers = g };
+
+        foreach (var g in numberGroups)
+        {
+            System.Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"");
             foreach (var n in g.Numbers)
-            {
-                Console.WriteLine(n);
-            }
+                System.Console.WriteLine(n);
         }
     }");
         }
@@ -546,31 +542,21 @@ End Class",
 }
 
 class Test {
-    public void Linq102() 
-    { 
-        string[] categories = new string[]{  
-            ""Beverages"",   
-            ""Condiments"",
-            ""Vegetables"",
-            ""Dairy Products"",
-            ""Seafood"" };
-
-            Product[] products = GetProductList();
-
-            var q =
-                from c in categories
+    public void Linq102()
+    {
+        string[] categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
+        Product[] products = GetProductList();
+        var q = from c in categories
                 join p in products on c equals p.Category
-                select new { Category = c, p.ProductName }; 
- 
-        foreach (var v in q) 
-        { 
-            Console.WriteLine($""{v.ProductName}: {v.Category}"");  
-        }
+                select new { Category = c, p.ProductName };
+
+        foreach (var v in q)
+            Console.WriteLine($""{v.ProductName}: {v.Category}"");
     }
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void Linq4()
         {
             TestConversionVisualBasicToCSharp(@"Public Sub Linq103()
@@ -585,29 +571,20 @@ class Test {
             Console.WriteLine(""   "" & p.ProductName)
         Next
     Next
-End Sub", @"public void Linq103() 
-{ 
-    string[] categories = new string[]{  
-        ""Beverages"",  
-        ""Condiments"",
-        ""Vegetables"",
-        ""Dairy Products"",
-        ""Seafood"" };
-
-        var products = GetProductList();
-
-        var q =
-            from c in categories
+End Sub", @"public void Linq103()
+{
+    string[] categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
+    var products = GetProductList();
+    var q = from c in categories
             join p in products on c equals p.Category into ps
-            select new { Category = c, Products = ps }; 
-  
-    foreach (var v in q) 
-    { 
-        Console.WriteLine(v.Category + "":""); 
-        foreach (var p in v.Products) 
-        { 
-            Console.WriteLine(""   "" + p.ProductName); 
-        }
+            select new { Category = c, Products = ps };
+
+    foreach (var v in q)
+    {
+        System.Console.WriteLine(v.Category + "":"");
+
+        foreach (var p in v.Products)
+            System.Console.WriteLine(""   "" + p.ProductName);
     }
 }");
         }

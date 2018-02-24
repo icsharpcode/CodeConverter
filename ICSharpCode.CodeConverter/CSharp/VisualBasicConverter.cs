@@ -504,6 +504,10 @@ End Class";
                     return SyntaxKind.AssemblyKeyword;
                 case VBasic.SyntaxKind.AsyncKeyword:
                     return SyntaxKind.AsyncKeyword;
+                case VBasic.SyntaxKind.AscendingKeyword:
+                    return SyntaxKind.AscendingKeyword;
+                case VBasic.SyntaxKind.DescendingKeyword:
+                    return SyntaxKind.DescendingKeyword;
             }
             throw new NotSupportedException(t + " not supported!");
         }
