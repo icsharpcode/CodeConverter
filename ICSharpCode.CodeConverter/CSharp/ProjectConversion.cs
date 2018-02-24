@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -10,13 +9,13 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
-using Microsoft.Isam.Esent.Interop;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
     public class ProjectConversion
     {
+        private const string NoFilePath = "unknown";
         private bool _methodBodyOnly;
         private VisualBasicCompilation _compilation;
         private IEnumerable<VisualBasicSyntaxTree> _syntaxTreesToConvert;
@@ -50,25 +49,27 @@ namespace ICSharpCode.CodeConverter.CSharp
                 compilation = compilation.ReplaceSyntaxTree(syntaxTree, annotatedSyntaxTree);
             }
 
-            var projectConversion = new ProjectConversion(compilation);
-            var resultNode = projectConversion.Convert().Select(r => r.Value).SingleOrDefault();
-            if (resultNode == default(SyntaxNode)) return new ConversionResult(projectConversion._errors.Single().Value);
-
-            var annotatedNode = resultNode.GetAnnotatedNodes(TriviaConverter.SelectedNodeAnnotationKind).SingleOrDefault();
-            if (annotatedNode != null) resultNode = Formatter.Format(annotatedNode, AdhocWorkspace);
-
-            return new ConversionResult(resultNode.ToFullString());
+            var conversion = new ProjectConversion(compilation);
+            var converted = conversion.Convert();
+            
+            if (!converted.Any()) return new ConversionResult(conversion._errors.Single().Value);
+            var resultPair = converted.Single();
+            var resultNode = GetSelectedNode(resultPair.Value);
+            var sourcePathOrNull = resultPair.Key == NoFilePath ? null : resultPair.Key;
+            return new ConversionResult(resultNode.ToFullString()) { SourcePathOrNull = sourcePathOrNull };
         }
 
-        public static async Task ConvertProjects(IEnumerable<Project> projects)
+        public static IEnumerable<ConversionResult> ConvertProjects(IEnumerable<Project> projects)
         {
             foreach (var project in projects) {
-                var compilation = await project.GetCompilationAsync();
-                foreach (var pathNodePair in new ProjectConversion((VisualBasicCompilation)compilation).Convert()) {
-                    var path = Path.ChangeExtension(pathNodePair.Key, ".cs");
-                    File.WriteAllText(path, pathNodePair.Value.ToFullString());
+                var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
+                var projectConversion = new ProjectConversion((VisualBasicCompilation)compilation);
+                foreach (var pathNodePair in projectConversion.Convert()) {
+                    yield return new ConversionResult(pathNodePair.Value.ToFullString()) {SourcePathOrNull = pathNodePair.Key};
                 }
+                yield return new ConversionResult(projectConversion._errors.Values.ToArray());
             }
+
         }
 
         private Dictionary<string, SyntaxNode> Convert()
@@ -83,7 +84,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             foreach (var tree in _syntaxTreesToConvert)
             {
-                var treeFilePath = tree.FilePath ?? "unknown";
+                var treeFilePath = tree.FilePath ?? NoFilePath;
                 try
                 {
                     SingleFirstPass(tree, treeFilePath);
@@ -109,7 +110,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private void SingleFirstPass(VisualBasicSyntaxTree tree, string treeFilePath)
         {
-            var converted = VisualBasicConverter.ConvertCompilationTree((VisualBasicCompilation) _compilation, tree);
+            var converted = VisualBasicConverter.ConvertCompilationTree(_compilation, tree);
             _firstPassResults.Add(treeFilePath, SyntaxFactory.SyntaxTree(converted));
         }
 
@@ -136,6 +137,12 @@ End Class";
             var selectedNode = root.FindNode(selected);
             var annotatatedNode = selectedNode.WithAdditionalAnnotations(new SyntaxAnnotation(TriviaConverter.SelectedNodeAnnotationKind));
             return root.ReplaceNode(selectedNode, annotatatedNode).SyntaxTree;
+        }
+
+        private static SyntaxNode GetSelectedNode(SyntaxNode resultNode)
+        {
+            var annotatedNode = resultNode.GetAnnotatedNodes(TriviaConverter.SelectedNodeAnnotationKind).SingleOrDefault();
+            return annotatedNode == null ? resultNode : Formatter.Format(annotatedNode, AdhocWorkspace);
         }
 
         private static VisualBasicSyntaxTree CreateTree(string text)

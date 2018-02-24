@@ -9,6 +9,7 @@ namespace ICSharpCode.CodeConverter
         public bool Success { get; private set; }
         public string ConvertedCode { get; private set; }
         public IReadOnlyList<Exception> Exceptions { get; private set; }
+        public string SourcePathOrNull { get; set; }
 
         public ConversionResult(string convertedCode)
         {
