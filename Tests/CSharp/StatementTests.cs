@@ -554,10 +554,10 @@ class TestClass
 }");
         }
 
-        [Fact()]
+        [Fact]
         public void DeclarationStatements()
         {
-            TestConversionVisualBasicToCSharp(
+            TestConversionVisualBasicToCSharpWithoutComments(
 @"Class Test
     Private Sub TestMethod()
 the_beginning:
@@ -566,15 +566,12 @@ the_beginning:
         Dim text = ""This is my text!""
         GoTo the_beginning
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class Test {
+End Class", @"class Test
+{
     private void TestMethod()
     {
-the_beginning:
+    the_beginning:
+        ;
         int value = 1;
         const double myPIe = System.Math.PI;
         var text = ""This is my text!"";

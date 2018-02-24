@@ -272,6 +272,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                     ));
             }
 
+
+            public override SyntaxList<StatementSyntax> VisitLabelStatement(VBSyntax.LabelStatementSyntax node)
+            {
+                return SingleStatement(SyntaxFactory.LabeledStatement(node.LabelToken.Text, SyntaxFactory.EmptyStatement()));
+            }
+
+            public override SyntaxList<StatementSyntax> VisitGoToStatement(VBSyntax.GoToStatementSyntax node)
+            {
+                return SingleStatement(SyntaxFactory.GotoStatement(SyntaxKind.GotoStatement,
+                    SyntaxFactory.IdentifierName(node.Label.LabelToken.Text)));
+            }
+
             public override SyntaxList<StatementSyntax> VisitSelectBlock(VBSyntax.SelectBlockSyntax node)
             {
                 var expr = (ExpressionSyntax)node.SelectStatement.Expression.Accept(nodesVisitor);
