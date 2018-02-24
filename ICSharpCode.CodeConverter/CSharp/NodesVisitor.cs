@@ -1007,6 +1007,42 @@ namespace ICSharpCode.CodeConverter.CSharp
                     : initializer;
             }
 
+            public override CSharpSyntaxNode VisitQueryExpression(VBSyntax.QueryExpressionSyntax node)
+            {
+                var vbFromClause = node.Clauses.OfType<VBSyntax.FromClauseSyntax>().Single();
+                var fromClauseSyntax = ConvertFromClauseSyntax(vbFromClause);
+                var vbSelectClause = node.Clauses.OfType<VBSyntax.SelectClauseSyntax>().Single();
+                var selectClauseSyntax = ConvertSelectClauseSyntax(vbSelectClause);
+                var vbBodyClauses = node.Clauses.Except(new VBSyntax.QueryClauseSyntax[] {vbFromClause, vbSelectClause });
+                var queryClauseSyntaxs = SyntaxFactory.List(vbBodyClauses.Select(ConvertQueryBodyClause));
+                var queryBodySyntax = SyntaxFactory.QueryBody(queryClauseSyntaxs, selectClauseSyntax, null);
+                return SyntaxFactory.QueryExpression(fromClauseSyntax, queryBodySyntax);
+            }
+
+            private FromClauseSyntax ConvertFromClauseSyntax(VBSyntax.FromClauseSyntax vbFromClause)
+            {
+                var collectionRangeVariableSyntax = vbFromClause.Variables.Single();
+                var fromClauseSyntax = SyntaxFactory.FromClause(
+                    ConvertIdentifier(collectionRangeVariableSyntax.Identifier.Identifier, semanticModel),
+                    (ExpressionSyntax) collectionRangeVariableSyntax.Expression.Accept(TriviaConvertingVisitor));
+                return fromClauseSyntax;
+            }
+
+            private SelectClauseSyntax ConvertSelectClauseSyntax(VBSyntax.SelectClauseSyntax vbFromClause)
+            {
+                var collectionRangeVariableSyntax = vbFromClause.Variables.Single();
+                return SyntaxFactory.SelectClause(
+                    (ExpressionSyntax)collectionRangeVariableSyntax.Expression.Accept(TriviaConvertingVisitor)
+                );
+            }
+
+            private QueryClauseSyntax ConvertQueryBodyClause(VBSyntax.QueryClauseSyntax node)
+            {
+                return node.TypeSwitch(
+                    (VBSyntax.WhereClauseSyntax ws) => SyntaxFactory.WhereClause((ExpressionSyntax) ws.Condition.Accept(TriviaConvertingVisitor)),
+                    _ => throw new NotImplementedException($"Conversion for query clause with kind '{node.Kind()}' not implemented"));
+            }
+
             public override CSharpSyntaxNode VisitNamedFieldInitializer(VBSyntax.NamedFieldInitializerSyntax node)
             {
                 if (node?.Parent?.Parent is VBSyntax.AnonymousObjectCreationExpressionSyntax) {

@@ -463,7 +463,7 @@ class TestClass
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void Linq1()
         {
             TestConversionVisualBasicToCSharp(@"Private Shared Sub SimpleQuery()
@@ -474,16 +474,15 @@ class TestClass
         Console.WriteLine(n)
     Next
 End Sub",
-                @"static void SimpleQuery()
+                @"private static void SimpleQuery()
 {
-    int[] numbers = { 7, 9, 5, 3, 6 };
- 
+    int[] numbers = new[] { 7, 9, 5, 3, 6 };"/*TODO Remove need for new[]*/ + @"
     var res = from n in numbers
-                where n > 5
-                select n;
- 
+              where n > 5
+              select n;
+
     foreach (var n in res)
-        Console.WriteLine(n);
+        System.Console.WriteLine(n);
 }");
         }
 
