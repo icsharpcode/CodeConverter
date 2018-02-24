@@ -365,7 +365,7 @@ class TestClass
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void ArrayInitializationStatementWithLength()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -449,7 +449,7 @@ class TestClass
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void MultidimensionalArrayInitializationStatementWithLengths()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -512,7 +512,7 @@ class TestClass
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void JaggedArrayInitializationStatementWithType()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -533,7 +533,7 @@ class TestClass
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void JaggedArrayInitializationStatementWithLength()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -838,10 +838,10 @@ class TestClass
 }");
         }
 
-        [Fact()]
+        [Fact]
         public void LabeledAndForStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class GotoTest1
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class GotoTest1
     Private Shared Sub Main()
         Dim x As Integer = 200, y As Integer = 4
         Dim count As Integer = 0
@@ -883,46 +883,40 @@ using Microsoft.VisualBasic;
 
 class GotoTest1
 {
-    static void Main()
+    private static void Main()
     {
-        int x = 200, y = 4;
+        int x = 200;
+        int y = 4;
         int count = 0;
-        string[,] array = new string[x, y];
+        string[,] array = new string[x - 1 + 1, y - 1 + 1];
 
-        for (int i = 0; i < x; i++)
+        for (int i = 0; i <= x - 1; i++)
 
-            for (int j = 0; j < y; j++)
-                array[i, j] = (++count).ToString();
+            for (int j = 0; j <= y - 1; j++)
+                array[i, j] = (System.Threading.Interlocked.Increment(ref count)).ToString();
 
         Console.Write(""Enter the number to search for: "");
-
         string myNumber = Console.ReadLine();
 
-                for (int i = 0; i < x; i++)
-                {
-                    for (int j = 0; j < y; j++)
-                    {
-                        if (array[i, j].Equals(myNumber))
-                        {
-                            goto Found;
-                        }
-                    }
-                }
+        for (int i = 0; i <= x - 1; i++)
 
-            Console.WriteLine(""The number {0} was not found."", myNumber);
-            goto Finish;
+            for (int j = 0; j <= y - 1; j++)
 
-        Found:
-            Console.WriteLine(""The number {0} is found."", myNumber);
+                if (array[i, j].Equals(myNumber))
+                    goto Found;
 
-        Finish:
-            Console.WriteLine(""End of search."");
-
-
-            Console.WriteLine(""Press any key to exit."");
-            Console.ReadKey();
-        }
-    }");
+        Console.WriteLine(""The number {0} was not found."", myNumber);
+        goto Finish;
+    Found:
+        ;
+        Console.WriteLine(""The number {0} is found."", myNumber);
+    Finish:
+        ;
+        Console.WriteLine(""End of search."");
+        Console.WriteLine(""Press any key to exit."");
+        Console.ReadKey();
+    }
+}");
         }
 
         [Fact]

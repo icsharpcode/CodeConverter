@@ -979,12 +979,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitArrayCreationExpression(VBSyntax.ArrayCreationExpressionSyntax node)
             {
-                IEnumerable<ExpressionSyntax> arguments;
-                if (node.ArrayBounds != null) {
-                    arguments = ConvertArrayBounds(node.ArrayBounds);
-                } else
-                    arguments = Enumerable.Empty<ExpressionSyntax>();
                 var bounds = ConvertArrayRankSpecifierSyntaxes(node.RankSpecifiers);
+                if (node.ArrayBounds != null) {
+                    var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(ConvertArrayBounds(node.ArrayBounds)));
+                    bounds = bounds.Insert(0, arrayRankSpecifierSyntax);
+                }
                 return SyntaxFactory.ArrayCreationExpression(
                     SyntaxFactory.ArrayType((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor), bounds),
                     (InitializerExpressionSyntax)node.Initializer?.Accept(TriviaConvertingVisitor)
