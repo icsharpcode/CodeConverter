@@ -15,7 +15,6 @@ namespace CodeConverter.VsExtension
         public const int CtxMenuCommandId = 0x0101;
         public const int ProjectItemCtxMenuCommandId = 0x0102;
         public const int ProjectCtxMenuCommandId = 0x0103;
-        public const int SolutionCtxMenuCommandId = 0x0104;
 
         /// <summary>
         /// Command menu group (command set GUID).
@@ -90,12 +89,6 @@ namespace CodeConverter.VsExtension
                 var projectCtxMenuItem = new OleMenuCommand(SolutionOrProjectMenuItemCallback, projectCtxMenuCommandID);
                 projectCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatus;
                 commandService.AddCommand(projectCtxMenuItem);
-
-                // Command in solution context menu
-                var solutionCtxMenuCommandID = new CommandID(CommandSet, SolutionCtxMenuCommandId);
-                var solutionCtxMenuItem = new OleMenuCommand(SolutionOrProjectMenuItemCallback, solutionCtxMenuCommandID);
-                solutionCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatus;
-                commandService.AddCommand(solutionCtxMenuItem);
             }
         }
 
