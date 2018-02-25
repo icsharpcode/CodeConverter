@@ -15,7 +15,6 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
-using Constants = Microsoft.VisualStudio.OLE.Interop.Constants;
 
 namespace CodeConverter.VsExtension
 {
@@ -129,59 +128,6 @@ namespace CodeConverter.VsExtension
                 OLEMSGICON.OLEMSGICON_CRITICAL,
                 OLEMSGBUTTON.OLEMSGBUTTON_OK,
                 OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
-        }
-
-        /// <summary>
-        /// Identifies the internal object types.
-        /// </summary>
-        /// <param name="item">The item.</param>
-        [Conditional("DEBUG")]
-        public static void IdentifyInternalObjectTypes(UIHierarchyItem item)
-        {
-            if (item == null) {
-                Debug.WriteLine("No item provided.");
-
-                return;
-            }
-
-            if (item.Object == null) {
-                Debug.WriteLine("No item object is available.");
-
-                return;
-            }
-
-            // Loop through all the assemblies in the current app domain
-            Assembly[] loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-            // Loop through each assembly
-            for (Int32 index = 0; index < loadedAssemblies.Length; index++) {
-                // Assume that the assembly to check against is EnvDTE.dll
-                IdentifyInternalObjectTypes(item, loadedAssemblies[index]);
-            }
-        }
-
-        /// <summary>
-        /// Identifies the internal object types.
-        /// </summary>
-        /// <param name="item">The item.</param>
-        /// <param name="assemblyToCheck">The assembly to check.</param>
-        [Conditional("DEBUG")]
-        public static void IdentifyInternalObjectTypes(UIHierarchyItem item, Assembly assemblyToCheck)
-        {
-            try {
-                // Get the types that are publically available
-                Type[] exportedTypes = assemblyToCheck.GetExportedTypes();
-
-                // Loop through each type
-                for (Int32 index = 0; index < exportedTypes.Length; index++) {
-                    // Check if the object instance is of this type
-                    if (exportedTypes[index].IsInstanceOfType(item.Object)) {
-                        Debug.WriteLine(exportedTypes[index].FullName);
-                    }
-                }
-            } catch (Exception e) {
-                
-            }
         }
     }
 }
