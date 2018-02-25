@@ -29,9 +29,15 @@ namespace ICSharpCode.CodeConverter.VB
             Local
         }
 
-        public static VisualBasicSyntaxNode Convert(CS.CSharpSyntaxNode input, SemanticModel semanticModel, Document targetDocument)
+        public static VisualBasicSyntaxNode Convert(CS.CSharpSyntaxNode input, SemanticModel semanticModel)
         {
-            return input.Accept(new NodesVisitor(semanticModel, targetDocument));
+            return input.Accept(new NodesVisitor(semanticModel));
+        }
+
+        public static VisualBasicSyntaxNode ConvertCompilationTree(CS.CSharpCompilation compilation, CS.CSharpSyntaxTree tree)
+        {
+            var visualBasicSyntaxVisitor = new NodesVisitor(compilation.GetSemanticModel(tree, true));
+            return tree.GetRoot().Accept(visualBasicSyntaxVisitor);
         }
 
         public static ConversionResult ConvertText(string text, MetadataReference[] references)
@@ -43,7 +49,7 @@ namespace ICSharpCode.CodeConverter.VB
             var tree = CS.SyntaxFactory.ParseSyntaxTree(SourceText.From(text));
             var compilation = CS.CSharpCompilation.Create("Conversion", new[] { tree }, references);
             try {
-                var visualBasicSyntaxNode = Convert((CS.CSharpSyntaxNode)tree.GetRoot(), compilation.GetSemanticModel(tree, true), null);
+                var visualBasicSyntaxNode = Convert((CS.CSharpSyntaxNode)tree.GetRoot(), compilation.GetSemanticModel(tree, true));
                 var formatted = Formatter.Format(visualBasicSyntaxNode, new AdhocWorkspace());
                 return new ConversionResult(formatted.ToFullString());
             }

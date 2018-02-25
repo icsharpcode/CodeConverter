@@ -2,6 +2,7 @@
 using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
+using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
 using Task = System.Threading.Tasks.Task;
@@ -147,7 +148,7 @@ namespace CodeConverter.VsExtension
         private async void SolutionOrProjectMenuItemCallback(object sender, EventArgs e)
         {
             try {
-                codeConversion.ConvertVBProjects(VisualStudioInteraction.GetSelectedProjects(".vbproj"));
+                codeConversion.ConvertProjects<VBToCSConversion>(VisualStudioInteraction.GetSelectedProjects(".vbproj"));
             } catch (Exception ex) {
                 VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.VBToCSConversionTitle, ex);
             }

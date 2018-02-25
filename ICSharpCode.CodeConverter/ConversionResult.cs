@@ -18,7 +18,7 @@ namespace ICSharpCode.CodeConverter
 
         public ConversionResult(string convertedCode)
         {
-            Success = !String.IsNullOrWhiteSpace(convertedCode);
+            Success = true;
             ConvertedCode = convertedCode;
         }
 
@@ -34,12 +34,12 @@ namespace ICSharpCode.CodeConverter
                 return String.Empty;
 
             var builder = new StringBuilder();
+            if (SourcePathOrNull != null) {
+                builder.AppendLine($"In '{SourcePathOrNull}':");
+            }
             for (int i = 0; i < Exceptions.Count; i++) {
                 if (Exceptions.Count > 1) {
                     builder.AppendFormat("----- Exception {0} of {1} -----" + Environment.NewLine, i + 1, Exceptions.Count);
-                }
-                if (SourcePathOrNull != null) {
-                    builder.AppendLine($"In '{SourcePathOrNull}':");
                 }
                 builder.AppendLine(Exceptions[i].ToString());
             }

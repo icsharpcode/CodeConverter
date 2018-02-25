@@ -80,15 +80,16 @@ namespace CodeConverter.VsExtension
             return ICSharpCode.CodeConverter.CodeConverter.Convert(codeWithOptions);
         }
 
-        public void ConvertVBProjects(IReadOnlyCollection<Project> selectedProjects)
+        public void ConvertProjects<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects) where TLanguageConversion : ILanguageConversion, new()
         {
             var projectsByPath = visualStudioWorkspace.CurrentSolution.Projects.ToDictionary(p => p.FilePath, p => p);
             var projects = selectedProjects.Select(p => projectsByPath[p.FullName]);
-            var convertedFiles = ProjectConversion.ConvertProjects(projects);
+            var convertedFiles = ProjectConversion<TLanguageConversion>.ConvertProjects(projects);
             var errors = new List<string>();
             foreach (var convertedFile in convertedFiles) {
-                if (convertedFile.Success && convertedFile.SourcePathOrNull != null) {
-                    var path = Path.ChangeExtension(convertedFile.SourcePathOrNull, ".cs");
+                var sourcePath = convertedFile.SourcePathOrNull;
+                if (convertedFile.Success && sourcePath != null) {
+                    var path = ToggleExtension(sourcePath);
                     File.WriteAllText(path, convertedFile.ConvertedCode);
                 } else {
                     errors.Add(convertedFile.GetExceptionsAsString());
@@ -97,6 +98,25 @@ namespace CodeConverter.VsExtension
 
             if (errors.Any()) {
                 ShowNonFatalError(string.Join(Environment.NewLine, errors));
+            }
+        }
+
+        private static string ToggleExtension(string sourcePath)
+        {
+            var currentExtension = Path.GetExtension(sourcePath)?.ToLowerInvariant() ?? "";
+            return Path.ChangeExtension(sourcePath, ConvertExtension(currentExtension));
+        }
+
+        private static string ConvertExtension(string currentExtension)
+        {
+            switch (currentExtension)
+            {
+                case ".vb":
+                    return ".cs";
+                case ".cs":
+                    return ".vb";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(currentExtension), currentExtension, null);
             }
         }
 
@@ -155,7 +175,7 @@ namespace CodeConverter.VsExtension
             var documentSyntaxTree = await document.GetSyntaxTreeAsync();
 
             var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
-            return await ProjectConversion.ConvertSingle((VisualBasicCompilation)compilation, (VisualBasicSyntaxTree)documentSyntaxTree, selectedTextSpan);
+            return await ProjectConversion<VBToCSConversion>.ConvertSingle(compilation, documentSyntaxTree, selectedTextSpan);
         }
         void WriteStatusBarText(string text)
         {

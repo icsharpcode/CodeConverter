@@ -96,10 +96,9 @@ End Function";
                 return true;
             }
 
-            public NodesVisitor(SemanticModel semanticModel, Document targetDocument)
+            public NodesVisitor(SemanticModel semanticModel)
             {
                 this.semanticModel = semanticModel;
-                this.targetDocument = targetDocument;
                 this.options = (VisualBasicCompilationOptions)targetDocument?.Project.CompilationOptions;
             }
 
