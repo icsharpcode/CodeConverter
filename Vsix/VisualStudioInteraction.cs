@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -14,6 +15,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
+using Constants = Microsoft.VisualStudio.OLE.Interop.Constants;
 
 namespace CodeConverter.VsExtension
 {
@@ -68,6 +70,11 @@ namespace CodeConverter.VsExtension
 
             var returnType = typeof(T);
             return selectedItems.Select(item => item.Object).Where(returnType.IsInstanceOfType).Cast<T>();
+        }
+
+        public static Window OpenFile(FileInfo fileInfo)
+        {
+            return Dte.ItemOperations.OpenFile(fileInfo.FullName, EnvDTE.Constants.vsViewKindTextView);
         }
 
         private static DTE2 Dte => Package.GetGlobalService(typeof(DTE)) as DTE2;

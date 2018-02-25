@@ -129,6 +129,9 @@ namespace CodeConverter.VsExtension
             WriteStatusBarText("Copied converted C# code to clipboard.");
 
             Clipboard.SetText(convertedText);
+            var fi = new FileInfo(Path.ChangeExtension(documentFilePath, ".cs"));
+            File.WriteAllText(fi.FullName, convertedText);
+            VisualStudioInteraction.OpenFile(fi);
         }
 
         private void ShowNonFatalError(string error)
