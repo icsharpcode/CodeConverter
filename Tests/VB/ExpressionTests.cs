@@ -7,8 +7,7 @@ namespace CodeConverter.Tests.VB
         [Fact]
         public void MultilineString()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -26,8 +25,7 @@ End Class");
         [Fact]
         public void ConditionalExpression()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -43,8 +41,7 @@ End Class");
         [Fact]
         public void NullCoalescingExpression()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -60,8 +57,7 @@ End Class");
         [Fact]
         public void MemberAccessAndInvocationExpression()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -83,8 +79,7 @@ End Class");
         [Fact]
         public void ElvisOperatorExpression()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -136,8 +131,7 @@ End Class");
         [Fact(Skip = "Not implemented!")]
         public void ObjectInitializerExpression2()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -156,8 +150,7 @@ End Class");
         [Fact]
         public void ThisMemberAccessExpression()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     private int member;
 
@@ -177,8 +170,7 @@ End Class");
         [Fact]
         public void BaseMemberAccessExpression()
         {
-            TestConversionCSharpToVisualBasic(@"
-class BaseTestClass
+            TestConversionCSharpToVisualBasic(@"class BaseTestClass
 {
     public int member;
 }
@@ -205,8 +197,7 @@ End Class");
         [Fact]
         public void DelegateExpression()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass 
+            TestConversionCSharpToVisualBasic(@"class TestClass 
 {
     void TestMethod()
     {
@@ -225,8 +216,7 @@ End Class");
         [Fact]
         public void LambdaBodyExpression()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass 
+            TestConversionCSharpToVisualBasic(@"class TestClass 
 {
     void TestMethod()
     {
@@ -243,8 +233,8 @@ class TestClass
                         If b > 0 Then Return a / b
                         Return 0
                     End Function
-
         Dim test3 = Function(a, b) a Mod b
+
         test(3)
     End Sub
 End Class");
@@ -253,8 +243,7 @@ End Class");
         [Fact]
         public void Await()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass 
+            TestConversionCSharpToVisualBasic(@"class TestClass 
 {
     Task<int> SomeAsyncMethod()
     {
@@ -294,6 +283,7 @@ End Class");
 }",
 @"Private Shared Sub SimpleQuery()
     Dim numbers As Integer() = {7, 9, 5, 3, 6}
+
     Dim res = From n In numbers Where n > 5 Select n
 
     For Each n In res
