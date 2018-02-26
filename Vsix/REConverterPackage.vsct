@@ -15,7 +15,7 @@
       <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectItemCtxMenuGroup" priority="0x0600">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE"/>
       </Group>
-      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectCtxMenuGroup" priority="0x0600" />
+      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" priority="0x0600" />
     </Groups>
 
     <Buttons>
@@ -44,8 +44,8 @@
           <ButtonText>Convert to VB and copy to clipboard</ButtonText>
         </Strings>
       </Button>
-      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBProjectCtxCommandId" priority="0x0100" type="Button">
-        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectCtxMenuGroup" />
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBSolutionOrProjectCtxCommandId" priority="0x0100" type="Button">
+        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
@@ -78,8 +78,8 @@
           <ButtonText>Convert to C# and copy to clipboard</ButtonText>
         </Strings>
       </Button>
-      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSProjectCtxCommandId" priority="0x0100" type="Button">
-        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectCtxMenuGroup" />
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSSolutionOrProjectCtxCommandId" priority="0x0100" type="Button">
+        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
@@ -89,13 +89,13 @@
     </Buttons>
   </Commands>
   <CommandPlacements>
-    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectCtxMenuGroup">
+    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_PROJNODE"/>
     </CommandPlacement>
-    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectCtxMenuGroup">
+    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_XPROJ_MULTIPROJ"/>
     </CommandPlacement>
-    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectCtxMenuGroup">
+    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_SOLNNODE"/>
     </CommandPlacement>
   </CommandPlacements>
@@ -108,15 +108,15 @@
       <IDSymbol name="REConverterMenuGroup" value="0x1020" />
       <IDSymbol name="REConverterCtxMenuGroup" value="0x1021" />
       <IDSymbol name="REConverterProjectItemCtxMenuGroup" value="0x1022" />
-      <IDSymbol name="REConverterProjectCtxMenuGroup" value="0x1023" />
+      <IDSymbol name="REConverterSolutionOrProjectCtxMenuGroup" value="0x1023" />
       <IDSymbol name="ConvertCSToVBCommandId" value="0x0100" />
       <IDSymbol name="ConvertCSToVBCtxCommandId" value="0x0101" />
       <IDSymbol name="ConvertCSToVBProjectItemCtxCommandId" value="0x0102" />
-      <IDSymbol name="ConvertCSToVBProjectCtxCommandId" value="0x0103" />
+      <IDSymbol name="ConvertCSToVBSolutionOrProjectCtxCommandId" value="0x0103" />
       <IDSymbol name="ConvertVBToCSCommandId" value="0x0200" />
       <IDSymbol name="ConvertVBToCSCtxCommandId" value="0x0201" />
       <IDSymbol name="ConvertVBToCSProjectItemCtxCommandId" value="0x0202" />
-      <IDSymbol name="ConvertVBToCSProjectCtxCommandId" value="0x0203" />
+      <IDSymbol name="ConvertVBToCSSolutionOrProjectCtxCommandId" value="0x0203" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

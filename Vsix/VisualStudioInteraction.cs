@@ -76,6 +76,21 @@ namespace CodeConverter.VsExtension
             return Dte.ItemOperations.OpenFile(fileInfo.FullName, EnvDTE.Constants.vsViewKindTextView);
         }
 
+        public static Window NewTextWindow(string windowTitle, string windowContents)
+        {
+            var newTextWindow = Dte.ItemOperations.NewFile(Name: windowTitle, ViewKind: EnvDTE.Constants.vsViewKindTextView);
+            newTextWindow.AppendLine(windowContents);
+            return newTextWindow;
+        }
+
+        private static void AppendLine(this Window newTextWindow, string textToAppend)
+        {
+            var textSelection = (TextSelection) newTextWindow.Document.Selection;
+            textSelection.EndOfDocument();
+            textSelection.Text = Environment.NewLine + textToAppend;
+            textSelection.StartOfDocument();
+        }
+
         private static DTE2 Dte => Package.GetGlobalService(typeof(DTE)) as DTE2;
 
 

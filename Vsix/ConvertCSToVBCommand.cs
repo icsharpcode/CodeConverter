@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Text;
 
 namespace CodeConverter.VsExtension
 {
@@ -127,10 +128,10 @@ namespace CodeConverter.VsExtension
             }
         }
 
-        void CodeEditorMenuItemCallback(object sender, EventArgs e)
+        async void CodeEditorMenuItemCallback(object sender, EventArgs e)
         {
             string selectedText = codeConversion.GetCSSelectionInCurrentView()?.StreamSelectionSpan.GetText();
-            codeConversion.PerformCSToVBConversion(selectedText);
+            await codeConversion.PerformDocumentConversion<CSToVBConversion>(selectedText, new Span());
         }
 
         async void ProjectItemMenuItemCallback(object sender, EventArgs e)
@@ -143,19 +144,19 @@ namespace CodeConverter.VsExtension
             try {
                 using (StreamReader reader = new StreamReader(itemPath)) {
                     string csCode = await reader.ReadToEndAsync();
-                    codeConversion.PerformCSToVBConversion(csCode);
+                    await codeConversion.PerformDocumentConversion<CSToVBConversion>(csCode, new Span());
                 }
             } catch (Exception ex) {
-                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.CSToVBConversionTitle, ex);
+                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }
         }
 
         private void SolutionOrProjectMenuItemCallback(object sender, EventArgs e)
         {
             try {
-                codeConversion.ConvertProjects<CSToVBConversion>(VisualStudioInteraction.GetSelectedProjects(".csproj"));
+                codeConversion.PerformProjectConversion<CSToVBConversion>(VisualStudioInteraction.GetSelectedProjects(".csproj"));
             } catch (Exception ex) {
-                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.VBToCSConversionTitle, ex);
+                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }
         }
     }

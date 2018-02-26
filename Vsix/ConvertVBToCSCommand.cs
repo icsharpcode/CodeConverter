@@ -17,7 +17,7 @@ namespace CodeConverter.VsExtension
         public const int MainMenuCommandId = 0x0200;
         public const int CtxMenuCommandId = 0x0201;
         public const int ProjectItemCtxMenuCommandId = 0x0202;
-        public const int ProjectCtxMenuCommandId = 0x0203;
+        public const int SolutionOrProjectCtxMenuCommandId = 0x0203;
 
         /// <summary>
         /// Command menu group (command set GUID).
@@ -92,10 +92,10 @@ namespace CodeConverter.VsExtension
                 commandService.AddCommand(projectItemCtxMenuItem);
 
                 // Command in project context menu
-                var projectCtxMenuCommandID = new CommandID(CommandSet, ProjectCtxMenuCommandId);
-                var projectCtxMenuItem = new OleMenuCommand(SolutionOrProjectMenuItemCallback, projectCtxMenuCommandID);
-                projectCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatus;
-                commandService.AddCommand(projectCtxMenuItem);
+                var solutionOrProjectCtxMenuCommandID = new CommandID(CommandSet, SolutionOrProjectCtxMenuCommandId);
+                var solutionOrProjectCtxMenuItem = new OleMenuCommand(SolutionOrProjectMenuItemCallback, solutionOrProjectCtxMenuCommandID);
+                solutionOrProjectCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatus;
+                commandService.AddCommand(solutionOrProjectCtxMenuItem);
             }
         }
 
@@ -148,9 +148,9 @@ namespace CodeConverter.VsExtension
         private async void SolutionOrProjectMenuItemCallback(object sender, EventArgs e)
         {
             try {
-                codeConversion.ConvertProjects<VBToCSConversion>(VisualStudioInteraction.GetSelectedProjects(".vbproj"));
+                codeConversion.PerformProjectConversion<VBToCSConversion>(VisualStudioInteraction.GetSelectedProjects(".vbproj"));
             } catch (Exception ex) {
-                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.VBToCSConversionTitle, ex);
+                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }
         }
 
@@ -161,10 +161,10 @@ namespace CodeConverter.VsExtension
                 return;
 
             try {
-                await codeConversion.PerformVBToCSConversion(documentPath, selected);
+                await codeConversion.PerformDocumentConversion<VBToCSConversion>(documentPath, selected);
             }
             catch (Exception ex) {
-                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.VBToCSConversionTitle, ex);
+                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }
         }
     }
