@@ -834,7 +834,10 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static IEnumerable<SyntaxTrivia> ImportantTrailingTrivia(this SyntaxToken node)
         {
-            return node.TrailingTrivia.Where(x => !x.IsKind(SyntaxKind.WhitespaceTrivia) && !x.IsKind(SyntaxKind.EndOfLineTrivia));
+            return node.TrailingTrivia.Where(x => 
+                !x.IsKind(SyntaxKind.WhitespaceTrivia) && !x.IsKind(SyntaxKind.EndOfLineTrivia)
+                && !x.IsKind(CSSyntaxKind.WhitespaceTrivia) && !x.IsKind(CSSyntaxKind.EndOfLineTrivia)
+            );
         }
 
         public static bool ParentHasSameTrailingTrivia(this SyntaxNode otherNode)
@@ -889,8 +892,8 @@ namespace ICSharpCode.CodeConverter.Util
                 var commentTextLines = t.GetCommentText().Replace("\r\n", "\r").Split('\r');
                 var multiLine = commentTextLines.Count() > 1;
                 var outputCommentText = multiLine
-                    ? "/// " + string.Join($"\r\n{previousWhitespace}/// ", commentTextLines)
-                    : $"// {commentTextLines.Single()}";
+                    ? "''' " + string.Join($"\r\n{previousWhitespace}/// ", commentTextLines)
+                    : $"' {commentTextLines.Single()}";
                 return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.DocumentationCommentTrivia,
                     outputCommentText);
             }
