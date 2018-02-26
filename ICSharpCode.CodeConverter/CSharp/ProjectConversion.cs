@@ -42,9 +42,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public static async Task<ConversionResult> ConvertSingle(Compilation compilation, SyntaxTree syntaxTree, TextSpan selected)
         {
-            var root = await syntaxTree.GetRootAsync();
             if (selected.Length > 0) {
-                var annotatedSyntaxTree = GetSyntaxTreeWithAnnotatedSelection(root, selected);
+                var annotatedSyntaxTree = await GetSyntaxTreeWithAnnotatedSelection(syntaxTree, selected);
                 compilation = compilation.ReplaceSyntaxTree(syntaxTree, annotatedSyntaxTree);
                 syntaxTree = annotatedSyntaxTree;
             }
@@ -126,11 +125,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             Convert();
         }
 
-        private static SyntaxTree GetSyntaxTreeWithAnnotatedSelection(SyntaxNode root, TextSpan selected)
+        private static async Task<SyntaxTree> GetSyntaxTreeWithAnnotatedSelection(SyntaxTree syntaxTree, TextSpan selected)
         {
+            var root = await syntaxTree.GetRootAsync();
             var selectedNode = root.FindNode(selected);
             var annotatatedNode = selectedNode.WithAdditionalAnnotations(new SyntaxAnnotation(TriviaConverter.SelectedNodeAnnotationKind));
-            return root.ReplaceNode(selectedNode, annotatatedNode).SyntaxTree;
+            return root.ReplaceNode(selectedNode, annotatatedNode).SyntaxTree.WithFilePath(syntaxTree.FilePath);
         }
 
         private static SyntaxNode GetSelectedNode(SyntaxNode resultNode)
