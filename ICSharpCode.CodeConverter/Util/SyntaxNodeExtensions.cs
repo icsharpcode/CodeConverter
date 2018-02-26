@@ -892,7 +892,7 @@ namespace ICSharpCode.CodeConverter.Util
             };
             var convertedKind = syntaxKinds.FirstOrNullable(kvp => t.IsKind(kvp.Key));
             return convertedKind.HasValue
-                ? SyntaxFactory.Comment($"/* TODO ERROR: Skipped {convertedKind.Value.Key}")
+                ? SyntaxFactory.Comment($"/* TODO ERROR: Skipped {convertedKind.Value.Key} */")
                 : default(SyntaxTrivia);
         }
         public static T WithoutTrailingEndOfLineTrivia<T>(this T cSharpNode) where T : CSharpSyntaxNode
