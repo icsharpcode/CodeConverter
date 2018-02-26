@@ -73,7 +73,7 @@ namespace CodeConverter.VsExtension
         {
             if (files.Any()) {
                 VisualStudioInteraction.OpenFile(new FileInfo(files.First()));
-                
+                files[0] = files[0] + " (opened in adjacent code window)";
             }
 
             VisualStudioInteraction.NewTextWindow("Conversion result summary", GetConversionSummary(files, errors));
@@ -82,7 +82,7 @@ namespace CodeConverter.VsExtension
         private string GetConversionSummary(IReadOnlyCollection<string> files, IReadOnlyCollection<string> errors)
         {
             var solutionDir = Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
-            var relativeFilePaths = files.Select(fn => fn.Replace(solutionDir, "").Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            var relativeFilePaths = files.Select(fn => fn.Replace(solutionDir, "").Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)).OrderBy(s => s);
 
 
             var introSummary = "Code conversion failed";
