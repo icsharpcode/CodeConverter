@@ -1,5 +1,6 @@
 ﻿using System;
 using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
 
 namespace ICSharpCode.CodeConverter

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ICSharpCode.CodeConverter.CSharp
+namespace ICSharpCode.CodeConverter.Shared
 {
     internal class NotImplementedOrRequiresSurroundingMethodDeclaration : NotImplementedException
     {

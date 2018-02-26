@@ -4,11 +4,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
 
-namespace ICSharpCode.CodeConverter.CSharp
+namespace ICSharpCode.CodeConverter.Shared
 {
     public class ProjectConversion<TLanguageConversion> where TLanguageConversion : ILanguageConversion, new()
     {

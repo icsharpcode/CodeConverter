@@ -37,7 +37,7 @@ namespace ICSharpCode.CodeConverter.VB
         public static VisualBasicSyntaxNode ConvertCompilationTree(CS.CSharpCompilation compilation, CS.CSharpSyntaxTree tree)
         {
             var visualBasicSyntaxVisitor = new NodesVisitor(compilation.GetSemanticModel(tree, true));
-            return tree.GetRoot().Accept(visualBasicSyntaxVisitor);
+            return tree.GetRoot().Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
         }
 
         public static ConversionResult ConvertText(string text, MetadataReference[] references)
@@ -128,7 +128,7 @@ namespace ICSharpCode.CodeConverter.VB
             return token == SyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));
         }
 
-        static SeparatedSyntaxList<VariableDeclaratorSyntax> RemodelVariableDeclaration(CSS.VariableDeclarationSyntax declaration, NodesVisitor nodesVisitor)
+        static SeparatedSyntaxList<VariableDeclaratorSyntax> RemodelVariableDeclaration(CSS.VariableDeclarationSyntax declaration, CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode> nodesVisitor)
         {
             var type = (TypeSyntax)declaration.Type.Accept(nodesVisitor);
             var declaratorsWithoutInitializers = new List<CSS.VariableDeclaratorSyntax>();

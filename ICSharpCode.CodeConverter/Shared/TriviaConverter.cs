@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace ICSharpCode.CodeConverter.CSharp
+namespace ICSharpCode.CodeConverter.Shared
 {
     public class TriviaConverter
     {
@@ -40,9 +40,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             destination = WithAnnotations(sourceNode, destination);
 
-            var containingSubModuleBlock = sourceNode.FirstAncestorOrSelf<StatementSyntax>(IsFirstLineOfBlockConstruct);
-            var hasVisitedContainingBlock = containingSubModuleBlock == null;
-            var firstLineOfBlockConstruct = sourceNode.ChildNodes().OfType<StatementSyntax>().FirstOrDefault(IsFirstLineOfBlockConstruct);
+            var firstLineOfBlockConstruct = sourceNode.ChildNodes().OfType<VBSyntax.StatementSyntax>().FirstOrDefault(IsFirstLineOfBlockConstruct);
             if (firstLineOfBlockConstruct != null) {
                 var endOfFirstLineConstructOrDefault = destination.ChildTokens().FirstOrDefault(t => t.IsKind(SyntaxKind.CloseParenToken, SyntaxKind.OpenBraceToken));
                 if (endOfFirstLineConstructOrDefault.IsKind(SyntaxKind.OpenBraceToken)) {
@@ -54,7 +52,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
+            var hasVisitedContainingBlock = HasVisitedContainingBlock(sourceNode);
             return WithTrailingTriviaConversions(destination, sourceNode.Parent?.GetLastToken(), hasVisitedContainingBlock);
+        }
+
+        private static bool HasVisitedContainingBlock(SyntaxNode sourceNode)
+        {
+            var containingSubModuleBlock =
+                (SyntaxNode)sourceNode.FirstAncestorOrSelf<VBSyntax.StatementSyntax>(IsFirstLineOfBlockConstruct)
+                ?? sourceNode.FirstAncestorOrSelf<CSSyntax.StatementSyntax>();
+
+            return containingSubModuleBlock == null;
         }
 
         private static T WithAnnotations<T>(SyntaxNode sourceNode, T destination) where T : SyntaxNode
@@ -130,9 +138,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return destination;
         }
 
-        private static bool IsFirstLineOfBlockConstruct(StatementSyntax s)
+        private static bool IsFirstLineOfBlockConstruct(SyntaxNode s)
         {
-            return !(s is DeclarationStatementSyntax);
+            return !(s is VBSyntax.DeclarationStatementSyntax);
         }
 
         /// <summary>
