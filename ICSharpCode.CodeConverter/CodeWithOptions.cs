@@ -8,15 +8,19 @@ namespace ICSharpCode.CodeConverter
 {
     public class CodeWithOptions
     {
+        public static readonly IReadOnlyCollection<MetadataReference> DefaultMetadataReferences = new List<MetadataReference>(new[] {
+            MetadataReference.CreateFromFile(typeof(Action).GetAssemblyLocation()),
+            MetadataReference.CreateFromFile(typeof(System.ComponentModel.EditorBrowsableAttribute).GetAssemblyLocation()),
+            MetadataReference.CreateFromFile(typeof(Enumerable).GetAssemblyLocation())
+        });
+
         public string Text { get; private set; }
         public string FromLanguage { get; private set; }
         public int FromLanguageVersion { get; private set; }
         public string ToLanguage { get; private set; }
         public int ToLanguageVersion { get; private set; }
 
-        List<MetadataReference> references;
-
-        public MetadataReference[] References => references.ToArray();
+        public IReadOnlyCollection<MetadataReference> References { get; set; } = new List<MetadataReference>();
 
         public CodeWithOptions(string text)
         {
@@ -25,7 +29,6 @@ namespace ICSharpCode.CodeConverter
             ToLanguage = LanguageNames.VisualBasic;
             FromLanguageVersion = 6;
             ToLanguageVersion = 14;
-            references = new List<MetadataReference>();
         }
 
         public CodeWithOptions SetFromLanguage(string name = LanguageNames.CSharp, int version = 6)
@@ -44,11 +47,7 @@ namespace ICSharpCode.CodeConverter
 
         public CodeWithOptions WithDefaultReferences()
         {
-            references = new List<MetadataReference>(new[] {
-                MetadataReference.CreateFromFile(typeof(Action).GetAssemblyLocation()),
-                MetadataReference.CreateFromFile(typeof(System.ComponentModel.EditorBrowsableAttribute).GetAssemblyLocation()),
-                MetadataReference.CreateFromFile(typeof(Enumerable).GetAssemblyLocation())
-            });
+            References = DefaultMetadataReferences;
             return this;
         }
     }

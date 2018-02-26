@@ -132,13 +132,29 @@ namespace CodeConverter.VsExtension
         async Task<ConversionResult> ConvertDocumentUnhandled<TLanguageConversion>(string documentPath, Span selected) where TLanguageConversion : ILanguageConversion, new()
         {   
             //TODO Figure out when there are multiple document ids for a single file path
-            var documentId = _visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(documentPath).Single();
+            var documentId = _visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(documentPath).SingleOrDefault();
+            if (documentId == null) {
+                //If document doesn't belong to any project
+                return ConvertTextOnly<TLanguageConversion>(documentPath, selected);
+            }
             var document = _visualStudioWorkspace.CurrentSolution.GetDocument(documentId);
             var compilation = await document.Project.GetCompilationAsync();
             var documentSyntaxTree = await document.GetSyntaxTreeAsync();
 
             var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
             return await ProjectConversion<TLanguageConversion>.ConvertSingle(compilation, documentSyntaxTree, selectedTextSpan);
+        }
+
+        private static ConversionResult ConvertTextOnly<TLanguageConversion>(string documentPath, Span selected)
+            where TLanguageConversion : ILanguageConversion, new()
+        {
+            var documentText = File.ReadAllText(documentPath);
+            if (selected.Length > 0 && documentText.Length > selected.End)
+            {
+                documentText = documentText.Substring(selected.Start, selected.Length);
+            }
+
+            return ProjectConversion<TLanguageConversion>.ConvertText(documentText, CodeWithOptions.DefaultMetadataReferences);
         }
 
         private IEnumerable<ConversionResult> ConvertProjectUnhandled<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects)
