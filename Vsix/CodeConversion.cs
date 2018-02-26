@@ -72,12 +72,12 @@ namespace CodeConverter.VsExtension
 
         private void ShowFirstResultAndConversionSummary(List<string> files, List<string> errors)
         {
-            if (files.Any()) {
-                VisualStudioInteraction.OpenFile(new FileInfo(files.First()));
-                files[0] = files[0] + " (opened in adjacent code window)";
-            }
+            VisualStudioInteraction.OutputWindow.ShowMessageToUser(GetConversionSummary(files, errors));
 
-            VisualStudioInteraction.NewTextWindow("Conversion result summary", GetConversionSummary(files, errors));
+            if (files.Any()) {
+                VisualStudioInteraction.OpenFile(new FileInfo(files.First())).SelectAll();
+                files[0] = files[0] + " (opened in code window)";
+            }
         }
 
         private string GetConversionSummary(IReadOnlyCollection<string> files, IReadOnlyCollection<string> errors)
@@ -90,7 +90,7 @@ namespace CodeConverter.VsExtension
             var summaryOfSuccesses = "";
             if (files.Any()) {
                 introSummary = "Code conversion completed";
-                summaryOfSuccesses = "The following files have been written to disk (but are not part of the solution):"
+                summaryOfSuccesses = "The following files have been written to disk:"
                     + Environment.NewLine + "* " + string.Join(Environment.NewLine + "* ", relativeFilePaths);
             }
 
@@ -103,7 +103,7 @@ namespace CodeConverter.VsExtension
                        + Environment.NewLine
                        + string.Join(Environment.NewLine, errors);
             } else {
-                WriteStatusBarText(introSummary);
+                WriteStatusBarText(introSummary + " - see output window for details");
                 return introSummary
                        + Environment.NewLine
                        + summaryOfSuccesses;

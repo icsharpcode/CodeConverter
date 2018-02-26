@@ -18,7 +18,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 
 namespace CodeConverter.VsExtension
 {
-    static class VisualStudioInteraction
+    internal static class VisualStudioInteraction
     {
         public static VsDocument GetSingleSelectedItemOrDefault()
         {
@@ -76,23 +76,12 @@ namespace CodeConverter.VsExtension
             return Dte.ItemOperations.OpenFile(fileInfo.FullName, EnvDTE.Constants.vsViewKindTextView);
         }
 
-        public static Window NewTextWindow(string windowTitle, string windowContents)
+        public static void SelectAll(this Window window)
         {
-            var newTextWindow = Dte.ItemOperations.NewFile(Name: windowTitle, ViewKind: EnvDTE.Constants.vsViewKindTextView);
-            newTextWindow.AppendLine(windowContents);
-            return newTextWindow;
-        }
-
-        private static void AppendLine(this Window newTextWindow, string textToAppend)
-        {
-            var textSelection = (TextSelection) newTextWindow.Document.Selection;
-            textSelection.EndOfDocument();
-            textSelection.Text = Environment.NewLine + textToAppend;
-            textSelection.StartOfDocument();
+            ((TextSelection)window.Document.Selection).SelectAll();
         }
 
         private static DTE2 Dte => Package.GetGlobalService(typeof(DTE)) as DTE2;
-
 
         public static IReadOnlyCollection<Project> GetSelectedProjects(string projectExtension)
         {
@@ -143,6 +132,41 @@ namespace CodeConverter.VsExtension
                 OLEMSGICON.OLEMSGICON_CRITICAL,
                 OLEMSGBUTTON.OLEMSGBUTTON_OK,
                 OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+        }
+
+        public static class OutputWindow
+        {
+            private const string PaneName = "Code Converter";
+            private static readonly Guid PaneGuid = new Guid("44F575C6-36B5-4CDB-AAAE-E096E6A446BF");
+            private static readonly Lazy<IVsOutputWindowPane> _outputPane = new Lazy<IVsOutputWindowPane>(CreateOutputPane);
+            
+            private static IVsOutputWindow GetOutputWindow()
+            {
+                IServiceProvider serviceProvider = new ServiceProvider(Dte as Microsoft.VisualStudio.OLE.Interop.IServiceProvider);
+                return serviceProvider.GetService(typeof(SVsOutputWindow)) as IVsOutputWindow;
+            }
+            private static IVsOutputWindowPane CreateOutputPane()
+            {
+                Guid generalPaneGuid = PaneGuid;
+                IVsOutputWindowPane pane;
+                var outputWindow = GetOutputWindow();
+                outputWindow.GetPane(ref generalPaneGuid, out pane);
+
+                if (pane == null) {
+                    outputWindow.CreatePane(ref generalPaneGuid, PaneName, 1, 1);
+                    outputWindow.GetPane(ref generalPaneGuid, out pane);
+                }
+
+                return pane;
+            }
+
+            public static void ShowMessageToUser(string message)
+            {
+                Dte.Windows.Item(EnvDTE.Constants.vsWindowKindOutput).Visible = true;
+                var ourOutputPane = _outputPane.Value;
+                ourOutputPane.OutputString(message);
+                ourOutputPane.Activate();
+            }
         }
     }
 }

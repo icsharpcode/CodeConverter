@@ -7,7 +7,7 @@ All notable changes to the code converter will be documented here.
 ### Visual studio extension
 * Works reliably in VS2017
 * Instead of copy to clipboard, opens result as Visual Studio window for quick viewing
-* Opens conversion summary window to explain what's happened
+* Writes summary to output window to explain what's happened
 * Project context used for all conversions
 
 ### VB -> C# specific
