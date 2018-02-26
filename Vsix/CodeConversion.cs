@@ -165,45 +165,10 @@ namespace CodeConverter.VsExtension
             statusBar.SetText(text);
             statusBar.FreezeOutput(1);
         }
-
-        IWpfTextViewHost GetCurrentCSViewHost()
-        {
-            IWpfTextViewHost viewHost = VisualStudioInteraction.GetCurrentViewHost(_serviceProvider);
-            if (viewHost == null)
-                return null;
-
-            ITextDocument textDocument = viewHost.GetTextDocument();
-            if ((textDocument == null) || !IsCSFileName(textDocument.FilePath))
-                return null;
-
-            return viewHost;
-        }
-
+        
         public static bool IsCSFileName(string fileName)
         {
             return fileName.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
-        }
-
-        public ITextSelection GetCSSelectionInCurrentView()
-        {
-            IWpfTextViewHost viewHost = GetCurrentCSViewHost();
-            if (viewHost == null)
-                return null;
-
-            return viewHost.TextView.Selection;
-        }
-
-        public IWpfTextViewHost GetCurrentVBViewHost()
-        {
-            IWpfTextViewHost viewHost = VisualStudioInteraction.GetCurrentViewHost(_serviceProvider);
-            if (viewHost == null)
-                return null;
-
-            ITextDocument textDocument = viewHost.GetTextDocument();
-            if ((textDocument == null) || !IsVBFileName(textDocument.FilePath))
-                return null;
-
-            return viewHost;
         }
 
         public static bool IsVBFileName(string fileName)
@@ -211,13 +176,26 @@ namespace CodeConverter.VsExtension
             return fileName.EndsWith(".vb", StringComparison.OrdinalIgnoreCase);
         }
 
-        public ITextSelection GetVBSelectionInCurrentView()
+        public ITextSelection GetSelectionInCurrentView(Func<string, bool> predicate)
         {
-            IWpfTextViewHost viewHost = GetCurrentVBViewHost();
+            IWpfTextViewHost viewHost = GetCurrentViewHost(predicate);
             if (viewHost == null)
                 return null;
 
             return viewHost.TextView.Selection;
+        }
+
+        public IWpfTextViewHost GetCurrentViewHost(Func<string, bool> predicate)
+        {
+            IWpfTextViewHost viewHost = VisualStudioInteraction.GetCurrentViewHost(_serviceProvider);
+            if (viewHost == null)
+                return null;
+
+            ITextDocument textDocument = viewHost.GetTextDocument();
+            if (textDocument == null || !predicate(textDocument.FilePath))
+                return null;
+
+            return viewHost;
         }
     }
 }

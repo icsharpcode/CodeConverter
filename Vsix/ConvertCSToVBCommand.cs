@@ -2,9 +2,12 @@
 using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
-using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using OleMenuCommand = Microsoft.VisualStudio.Shell.OleMenuCommand;
+using OleMenuCommandService = Microsoft.VisualStudio.Shell.OleMenuCommandService;
 
 namespace CodeConverter.VsExtension
 {
@@ -16,7 +19,8 @@ namespace CodeConverter.VsExtension
         public const int MainMenuCommandId = 0x0100;
         public const int CtxMenuCommandId = 0x0101;
         public const int ProjectItemCtxMenuCommandId = 0x0102;
-        public const int ProjectCtxMenuCommandId = 0x0103;
+        public const int SolutionOrProjectCtxMenuCommandId = 0x0103;
+        private const string ProjectExtension = ".csproj";
 
         /// <summary>
         /// Command menu group (command set GUID).
@@ -28,6 +32,8 @@ namespace CodeConverter.VsExtension
         /// </summary>
         readonly REConverterPackage package;
 
+        private CodeConversion codeConversion;
+
         /// <summary>
         /// Gets the instance of the command.
         /// </summary>
@@ -35,8 +41,6 @@ namespace CodeConverter.VsExtension
             get;
             private set;
         }
-
-        private readonly CodeConversion codeConversion;
 
         /// <summary>
         /// Gets the service provider from the owner package.
@@ -87,10 +91,10 @@ namespace CodeConverter.VsExtension
                 commandService.AddCommand(projectItemCtxMenuItem);
 
                 // Command in project context menu
-                var projectCtxMenuCommandID = new CommandID(CommandSet, ProjectCtxMenuCommandId);
-                var projectCtxMenuItem = new OleMenuCommand(SolutionOrProjectMenuItemCallback, projectCtxMenuCommandID);
-                projectCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatus;
-                commandService.AddCommand(projectCtxMenuItem);
+                var solutionOrProjectCtxMenuCommandID = new CommandID(CommandSet, SolutionOrProjectCtxMenuCommandId);
+                var solutionOrProjectCtxMenuItem = new OleMenuCommand(SolutionOrProjectMenuItemCallback, solutionOrProjectCtxMenuCommandID);
+                solutionOrProjectCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatus;
+                commandService.AddCommand(solutionOrProjectCtxMenuItem);
             }
         }
 
@@ -99,7 +103,7 @@ namespace CodeConverter.VsExtension
             var menuItem = sender as OleMenuCommand;
             if (menuItem != null) {
 
-                menuItem.Visible = !codeConversion.GetCSSelectionInCurrentView()?.StreamSelectionSpan.IsEmpty ?? false;
+                menuItem.Visible = !codeConversion.GetSelectionInCurrentView(CodeConversion.IsCSFileName)?.StreamSelectionSpan.IsEmpty ?? false;
             }
         }
 
@@ -111,8 +115,7 @@ namespace CodeConverter.VsExtension
                 menuItem.Enabled = false;
 
                 string itemPath = VisualStudioInteraction.GetSingleSelectedItemOrDefault()?.ItemPath;
-                var fileInfo = new FileInfo(itemPath);
-                if (!CodeConversion.IsCSFileName(fileInfo.Name))
+                if (itemPath == null || !CodeConversion.IsCSFileName(itemPath))
                     return;
 
                 menuItem.Visible = true;
@@ -124,37 +127,38 @@ namespace CodeConverter.VsExtension
         {
             var menuItem = sender as OleMenuCommand;
             if (menuItem != null) {
-                menuItem.Visible = menuItem.Enabled = VisualStudioInteraction.GetSelectedProjects(".csproj").Any();
+                menuItem.Visible = menuItem.Enabled = VisualStudioInteraction.GetSelectedProjects(ProjectExtension).Any();
             }
         }
 
         async void CodeEditorMenuItemCallback(object sender, EventArgs e)
         {
-            string selectedText = codeConversion.GetCSSelectionInCurrentView()?.StreamSelectionSpan.GetText();
-            await codeConversion.PerformDocumentConversion<CSToVBConversion>(selectedText, new Span());
+            var span = codeConversion.GetSelectionInCurrentView(CodeConversion.IsCSFileName).SelectedSpans.First().Span;
+            await ConvertDocument(codeConversion.GetCurrentViewHost(CodeConversion.IsCSFileName).GetTextDocument().FilePath, span);
         }
 
         async void ProjectItemMenuItemCallback(object sender, EventArgs e)
         {
             string itemPath = VisualStudioInteraction.GetSingleSelectedItemOrDefault()?.ItemPath;
-            var fileInfo = new FileInfo(itemPath);
-            if (!CodeConversion.IsCSFileName(fileInfo.Name))
-                return;
+            await ConvertDocument(itemPath, new Span(0, 0));
+        }
 
+        private async void SolutionOrProjectMenuItemCallback(object sender, EventArgs e)
+        {
             try {
-                using (StreamReader reader = new StreamReader(itemPath)) {
-                    string csCode = await reader.ReadToEndAsync();
-                    await codeConversion.PerformDocumentConversion<CSToVBConversion>(csCode, new Span());
-                }
+                codeConversion.PerformProjectConversion<CSToVBConversion>(VisualStudioInteraction.GetSelectedProjects(ProjectExtension));
             } catch (Exception ex) {
                 VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }
         }
 
-        private void SolutionOrProjectMenuItemCallback(object sender, EventArgs e)
+        private async Task ConvertDocument(string documentPath, Span selected)
         {
+            if (documentPath == null || !CodeConversion.IsCSFileName(documentPath))
+                return;
+
             try {
-                codeConversion.PerformProjectConversion<CSToVBConversion>(VisualStudioInteraction.GetSelectedProjects(".csproj"));
+                await codeConversion.PerformDocumentConversion<CSToVBConversion>(documentPath, selected);
             } catch (Exception ex) {
                 VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }
