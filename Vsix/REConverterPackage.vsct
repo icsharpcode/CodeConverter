@@ -25,7 +25,7 @@
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Convert to VB and copy to clipboard</ButtonText>
+          <ButtonText>Convert to VB</ButtonText>
         </Strings>
       </Button>
       <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBCtxCommandId" priority="0x0100" type="Button">
@@ -33,7 +33,7 @@
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Convert to VB and copy to clipboard</ButtonText>
+          <ButtonText>Convert to VB</ButtonText>
         </Strings>
       </Button>
       <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBProjectItemCtxCommandId" priority="0x0100" type="Button">
@@ -41,7 +41,7 @@
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Convert to VB and copy to clipboard</ButtonText>
+          <ButtonText>Convert to VB</ButtonText>
         </Strings>
       </Button>
       <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBSolutionOrProjectCtxCommandId" priority="0x0100" type="Button">
@@ -49,7 +49,7 @@
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Convert to VB and write to adjacent files</ButtonText>
+          <ButtonText>Convert to VB</ButtonText>
         </Strings>
       </Button>
 
@@ -59,7 +59,7 @@
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Convert to C# and copy to clipboard</ButtonText>
+          <ButtonText>Convert to C#</ButtonText>
         </Strings>
       </Button>
       <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSCtxCommandId" priority="0x0100" type="Button">
@@ -67,7 +67,7 @@
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Convert to C# and copy to clipboard</ButtonText>
+          <ButtonText>Convert to C#</ButtonText>
         </Strings>
       </Button>
       <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSProjectItemCtxCommandId" priority="0x0100" type="Button">
@@ -75,7 +75,7 @@
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Convert to C# and copy to clipboard</ButtonText>
+          <ButtonText>Convert to C#</ButtonText>
         </Strings>
       </Button>
       <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSSolutionOrProjectCtxCommandId" priority="0x0100" type="Button">
@@ -83,7 +83,7 @@
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
-          <ButtonText>Convert to C# and write to adjacent files</ButtonText>
+          <ButtonText>Convert to C#</ButtonText>
         </Strings>
       </Button>
     </Buttons>
