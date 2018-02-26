@@ -29,7 +29,7 @@ namespace CodeConverter.Tests
 
         private static void TestConversionCSharpToVisualBasicWithoutComments(string csharpCode, string expectedVisualBasicCode)
         {
-            var outputNode = CSharpConverter.ConvertText(csharpCode, DiagnosticTestBase.DefaultMetadataReferences);
+            var outputNode = ProjectConversion<CSToVBConversion>.ConvertText(csharpCode, DiagnosticTestBase.DefaultMetadataReferences);
 
             var txt = outputNode.ConvertedCode ?? outputNode.GetExceptionsAsString();
             txt = Utils.HomogenizeEol(txt).TrimEnd();
