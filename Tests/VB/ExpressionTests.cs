@@ -233,8 +233,8 @@ End Class");
                         If b > 0 Then Return a / b
                         Return 0
                     End Function
-        Dim test3 = Function(a, b) a Mod b
 
+        Dim test3 = Function(a, b) a Mod b
         test(3)
     End Sub
 End Class");
@@ -283,7 +283,6 @@ End Class");
 }",
 @"Private Shared Sub SimpleQuery()
     Dim numbers As Integer() = {7, 9, 5, 3, 6}
-
     Dim res = From n In numbers Where n > 5 Select n
 
     For Each n In res

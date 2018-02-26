@@ -19,12 +19,12 @@ namespace CodeConverter.Tests
 {
     public class ConverterTestBase
     {
-        private bool testCommentsByDefault = true;
+        private bool testCSToVBCommentsByDefault = false;
 
         public void TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool standaloneStatements = false, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
         {
             TestConversionCSharpToVisualBasicWithoutComments(csharpCode, expectedVisualBasicCode);
-            if (testCommentsByDefault) TestConversionCSharpToVisualBasicWithoutComments(AddLineNumberComments(csharpCode, "// ", false), AddLineNumberComments(expectedVisualBasicCode, "' ", true));
+            if (testCSToVBCommentsByDefault) TestConversionCSharpToVisualBasicWithoutComments(AddLineNumberComments(csharpCode, "// ", false), AddLineNumberComments(expectedVisualBasicCode, "' ", true));
         }
 
         private static void TestConversionCSharpToVisualBasicWithoutComments(string csharpCode, string expectedVisualBasicCode)
@@ -41,7 +41,7 @@ namespace CodeConverter.Tests
         {
             expectedCsharpCode = AddCSUsings(expectedCsharpCode, standaloneStatements);
             TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode, false);
-            if (testCommentsByDefault) TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true), false);
+            TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true), false);
         }
 
         private static string AddCSUsings(string expectedCsharpCode, bool standaloneStatements)

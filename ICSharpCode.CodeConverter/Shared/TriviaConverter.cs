@@ -29,16 +29,19 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             if (destination == null || sourceNode == null) return destination;
 
+            destination = WithAnnotations(sourceNode, destination);
+
+            if (sourceNode is CSharpSyntaxNode) return destination;
+
             destination = sourceNode.HasLeadingTrivia
                 ? destination.WithLeadingTrivia(sourceNode.GetLeadingTrivia().ConvertTrivia())
                 : destination;
-            
+
             if (sourceNode.HasTrailingTrivia) {
                 var lastDestToken = destination.GetLastToken();
                 destination = destination.ReplaceToken(lastDestToken, WithDelegateToParentAnnotation(sourceNode, lastDestToken));
             }
 
-            destination = WithAnnotations(sourceNode, destination);
 
             var firstLineOfBlockConstruct = sourceNode.ChildNodes().OfType<VBSyntax.StatementSyntax>().FirstOrDefault(IsFirstLineOfBlockConstruct);
             if (firstLineOfBlockConstruct != null) {
