@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Util;
@@ -23,6 +24,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     public partial class VisualBasicConverter
     {
+        public static CSharpSyntaxNode ConvertCompilationTree(VBasic.VisualBasicCompilation compilation, VBasic.VisualBasicSyntaxTree tree)
+        {
+            var visualBasicSyntaxVisitor = new VisualBasicConverter.NodesVisitor(compilation.GetSemanticModel(tree, true));
+            return tree.GetRoot().Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
+        }
+
         enum TokenContext
         {
             Global,
@@ -34,111 +41,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             MemberInClass,
             MemberInStruct,
             MemberInInterface
-        }
-
-        public static async Task<ConversionResult> ConvertSingle(VBasic.VisualBasicCompilation compilation, VBasic.VisualBasicSyntaxTree syntaxTree, TextSpan selected)
-        {
-            var root = await syntaxTree.GetRootAsync();
-            if (selected.Length > 0) {
-                var annotatedSyntaxTree = GetSyntaxTreeWithAnnotatedSelection(selected, root);
-                compilation = compilation.ReplaceSyntaxTree(syntaxTree, annotatedSyntaxTree);
-                syntaxTree = (VBasic.VisualBasicSyntaxTree) annotatedSyntaxTree;
-            }
-
-            try {
-                var cSharpSyntaxNode = ConvertSingleUnhandled(compilation, syntaxTree);
-                var annotatedNode = cSharpSyntaxNode.GetAnnotatedNodes(TriviaConverter.SelectedNodeAnnotationKind).SingleOrDefault();
-                if (annotatedNode != null) cSharpSyntaxNode = (CSharpSyntaxNode) annotatedNode;
-                var formattedNode = Formatter.Format(cSharpSyntaxNode, new AdhocWorkspace());
-                return new ConversionResult(formattedNode.ToFullString());
-            } catch (Exception ex) {
-                return new ConversionResult(ex);
-            }
-        }
-
-        private static SyntaxTree GetSyntaxTreeWithAnnotatedSelection(TextSpan selected, SyntaxNode root)
-        {
-            var selectedNode = root.FindNode(selected);
-            var annotatatedNode = selectedNode.WithAdditionalAnnotations(new SyntaxAnnotation(TriviaConverter.SelectedNodeAnnotationKind));
-            var syntaxTree = root.ReplaceNode(selectedNode, annotatatedNode).SyntaxTree;
-            return syntaxTree;
-        }
-
-
-        public static Dictionary<string, CSharpSyntaxNode> ConvertMultiple(VBasic.VisualBasicCompilation compilation, IEnumerable<VBasic.VisualBasicSyntaxTree> syntaxTrees)
-        {
-            var cSharpFirstPass = syntaxTrees.ToDictionary(tree => tree.FilePath ?? "unknown",
-                tree => ConvertCompilationTree(compilation, tree));
-            var cSharpCompilation = CSharpCompilation.Create("Conversion", cSharpFirstPass.Values, compilation.References);
-            return cSharpFirstPass.ToDictionary(cs => cs.Key, cs => new CompilationErrorFixer(cSharpCompilation, cs.Value).Fix());
-        }
-
-        private static CSharpSyntaxNode ConvertSingleUnhandled(VBasic.VisualBasicCompilation compilation, VBasic.VisualBasicSyntaxTree syntaxTree)
-        {
-            return ConvertMultiple(compilation, new[] {syntaxTree}).Values.Single();
-        }
-
-        private static CSharpSyntaxTree ConvertCompilationTree(VBasic.VisualBasicCompilation compilation, VBasic.VisualBasicSyntaxTree tree)
-        {
-            var visualBasicSyntaxVisitor = new NodesVisitor(compilation.GetSemanticModel(tree, true));
-            return (CSharpSyntaxTree) SyntaxFactory.SyntaxTree(tree.GetRoot()
-                .Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor));
-        }
-
-        public static ConversionResult ConvertText(string text, IReadOnlyCollection<MetadataReference> references)
-        {
-            if (text == null)
-                throw new ArgumentNullException(nameof(text));
-            if (references == null)
-                throw new ArgumentNullException(nameof(references));
-
-            try {
-                var cSharpSyntaxNode = ConvertTextUnhandled(references, text);
-                var formattedNode = Formatter.Format(cSharpSyntaxNode, new AdhocWorkspace());
-                return new ConversionResult(formattedNode.ToFullString());
-            } catch (Exception ex) {
-                return new ConversionResult(ex);
-            }
-        }
-
-        private static SyntaxNode ConvertTextUnhandled(IReadOnlyCollection<MetadataReference> references, string text)
-        {
-            try
-            {
-                return ConvertFullTree(references, text);
-            }
-            catch (NotImplementedOrRequiresSurroundingMethodDeclaration) {
-                text =
-$@"Class SurroundingClass
-Sub SurroundingSub()
-{text}
-End Sub
-End Class";
-                return ConvertFullTree(references, text).DescendantNodes().OfType<MethodDeclarationSyntax>().First().Body;
-            }
-        }
-
-        private static SyntaxNode ConvertFullTree(IReadOnlyCollection<MetadataReference> references, string fullTreeText)
-        {
-            var tree = CreateTree(fullTreeText);
-            var compilation = CreateCompilationFromTree(tree, references);
-            return ConvertSingleUnhandled(compilation, tree);
-        }
-
-        private static VBasic.VisualBasicSyntaxTree CreateTree(string text)
-        {
-            return (VBasic.VisualBasicSyntaxTree) VBasic.SyntaxFactory.ParseSyntaxTree(SourceText.From(text));
-        }
-
-        private static VBasic.VisualBasicCompilation CreateCompilationFromTree(VBasic.VisualBasicSyntaxTree tree, IEnumerable<MetadataReference> references)
-        {
-            var compilationOptions = new VBasic.VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                .WithRootNamespace("TestProject")
-                .WithGlobalImports(VBasic.GlobalImport.Parse("System", "System.Collections.Generic", "System.Linq",
-                    "Microsoft.VisualBasic"));
-            var compilation = VBasic.VisualBasicCompilation.Create("Conversion", new[] {tree}, references)
-                .WithOptions(compilationOptions);
-            return compilation;
         }
 
         static Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(VBSyntax.VariableDeclaratorSyntax declarator, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, SemanticModel semanticModel)
@@ -229,7 +131,7 @@ End Class";
                 return SyntaxFactory.Identifier("@" + text);
             if (id.SyntaxTree == semanticModel.SyntaxTree) {
                 var symbol = semanticModel.GetSymbolInfo(id.Parent).Symbol;
-                if (symbol != null && !string.IsNullOrWhiteSpace(symbol.Name)) {
+                if (symbol != null && !String.IsNullOrWhiteSpace(symbol.Name)) {
                     if (symbol.IsConstructor() && isAttribute) {
                         text = symbol.ContainingType.Name;
                         if (text.EndsWith("Attribute", StringComparison.Ordinal))

@@ -29,28 +29,10 @@ namespace ICSharpCode.CodeConverter.VB
             Local
         }
 
-        public static VisualBasicSyntaxNode Convert(CS.CSharpSyntaxNode input, SemanticModel semanticModel, Document targetDocument)
+        public static VisualBasicSyntaxNode ConvertCompilationTree(CS.CSharpCompilation compilation, CS.CSharpSyntaxTree tree)
         {
-            return input.Accept(new NodesVisitor(semanticModel, targetDocument));
-        }
-
-        public static ConversionResult ConvertText(string text, MetadataReference[] references)
-        {
-            if (text == null)
-                throw new ArgumentNullException(nameof(text));
-            if (references == null)
-                throw new ArgumentNullException(nameof(references));
-            var tree = CS.SyntaxFactory.ParseSyntaxTree(SourceText.From(text));
-            var compilation = CS.CSharpCompilation.Create("Conversion", new[] { tree }, references);
-            try {
-                var visualBasicSyntaxNode = Convert((CS.CSharpSyntaxNode)tree.GetRoot(), compilation.GetSemanticModel(tree, true), null);
-                var formatted = Formatter.Format(visualBasicSyntaxNode, new AdhocWorkspace());
-                return new ConversionResult(formatted.ToFullString());
-            }
-            catch (Exception ex)
-            {
-                return new ConversionResult(ex);
-            }
+            var visualBasicSyntaxVisitor = new NodesVisitor(compilation.GetSemanticModel(tree, true));
+            return tree.GetRoot().Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
         }
 
         static IEnumerable<SyntaxToken> ConvertModifiersCore(IEnumerable<SyntaxToken> modifiers, TokenContext context)
@@ -122,7 +104,7 @@ namespace ICSharpCode.CodeConverter.VB
             return token == SyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));
         }
 
-        static SeparatedSyntaxList<VariableDeclaratorSyntax> RemodelVariableDeclaration(CSS.VariableDeclarationSyntax declaration, NodesVisitor nodesVisitor)
+        static SeparatedSyntaxList<VariableDeclaratorSyntax> RemodelVariableDeclaration(CSS.VariableDeclarationSyntax declaration, CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode> nodesVisitor)
         {
             var type = (TypeSyntax)declaration.Type.Accept(nodesVisitor);
             var declaratorsWithoutInitializers = new List<CSS.VariableDeclaratorSyntax>();

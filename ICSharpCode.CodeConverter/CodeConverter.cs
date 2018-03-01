@@ -1,5 +1,6 @@
 ﻿using System;
 using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
 
 namespace ICSharpCode.CodeConverter
@@ -19,13 +20,13 @@ namespace ICSharpCode.CodeConverter
                 case "C#":
                     switch (code.ToLanguage) {
                         case "Visual Basic":
-                            return CSharpConverter.ConvertText(code.Text, code.References);
+                            return ProjectConversion<CSToVBConversion>.ConvertText(code.Text, code.References);
                     }
                     break;
                 case "Visual Basic":
                     switch (code.ToLanguage) {
                         case "C#":
-                            return VisualBasicConverter.ConvertText(code.Text, code.References);
+                            return ProjectConversion<VBToCSConversion>.ConvertText(code.Text, code.References);
                     }
                     break;
 

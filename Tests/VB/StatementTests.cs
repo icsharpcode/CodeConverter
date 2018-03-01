@@ -7,8 +7,7 @@ namespace CodeConverter.Tests.VB
         [Fact]
         public void EmptyStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -37,8 +36,7 @@ End Class");
         [Fact]
         public void AssignmentStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -56,8 +54,7 @@ End Class");
         [Fact]
         public void AssignmentStatementInDeclaration()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -73,8 +70,7 @@ End Class");
         [Fact]
         public void AssignmentStatementInVarDeclaration()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -90,8 +86,7 @@ End Class");
         [Fact]
         public void ObjectInitializationStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -109,8 +104,7 @@ End Class");
         [Fact]
         public void ObjectInitializationStatementInDeclaration()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -126,8 +120,7 @@ End Class");
         [Fact]
         public void ObjectInitializationStatementInVarDeclaration()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -143,8 +136,7 @@ End Class");
         [Fact]
         public void ArrayDeclarationStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -160,8 +152,7 @@ End Class");
         [Fact]
         public void ArrayInitializationStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -177,8 +168,7 @@ End Class");
         [Fact]
         public void ArrayInitializationStatementInVarDeclaration()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -194,8 +184,7 @@ End Class");
         [Fact]
         public void ArrayInitializationStatementWithType()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -211,8 +200,7 @@ End Class");
         [Fact]
         public void ArrayInitializationStatementWithLength()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -228,8 +216,7 @@ End Class");
         [Fact]
         public void MultidimensionalArrayDeclarationStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -245,8 +232,7 @@ End Class");
         [Fact(Skip = "Not implemented!")]
         public void MultidimensionalArrayInitializationStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -262,8 +248,7 @@ End Class");
         [Fact(Skip = "Not implemented!")]
         public void MultidimensionalArrayInitializationStatementWithType()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -279,8 +264,7 @@ End Class");
         [Fact(Skip = "Not implemented!")]
         public void MultidimensionalArrayInitializationStatementWithLengths()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -296,8 +280,7 @@ End Class");
         [Fact]
         public void JaggedArrayDeclarationStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -313,8 +296,7 @@ End Class");
         [Fact]
         public void JaggedArrayInitializationStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -330,8 +312,7 @@ End Class");
         [Fact]
         public void JaggedArrayInitializationStatementWithType()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -347,8 +328,7 @@ End Class");
         [Fact]
         public void JaggedArrayInitializationStatementWithLength()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -388,8 +368,7 @@ End Class");
         [Fact]
         public void IfStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod (int a)
     {
@@ -424,8 +403,7 @@ End Class");
         [Fact]
         public void WhileStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -457,8 +435,7 @@ End Class");
         [Fact]
         public void DoWhileStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -491,8 +468,7 @@ End Class");
         [Fact]
         public void ForEachStatementWithExplicitType()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(int[] values)
     {
@@ -517,8 +493,7 @@ End Class");
         [Fact]
         public void ForEachStatementWithVar()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(int[] values)
     {
@@ -543,8 +518,7 @@ End Class");
         [Fact]
         public void SyncLockStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(object nullObject)
     {
@@ -568,8 +542,7 @@ End Class");
         [Fact]
         public void ForWithUnknownConditionAndSingleStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -591,8 +564,7 @@ End Class");
         [Fact]
         public void ForWithUnknownConditionAndBlock()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -615,8 +587,7 @@ End Class");
         [Fact]
         public void ForWithSingleStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -634,8 +605,7 @@ End Class");
         [Fact]
         public void ForWithBlock()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -655,8 +625,7 @@ End Class");
         [Fact]
         public void LabeledAndForStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class GotoTest1
+            TestConversionCSharpToVisualBasic(@"class GotoTest1
 {
     static void Main()
     {
@@ -738,8 +707,7 @@ End Class");
         [Fact]
         public void ThrowStatement()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(object nullObject)
     {
@@ -801,8 +769,7 @@ End Class");
         [Fact]
         public void SelectCase1()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(int number)
     {
@@ -851,8 +818,7 @@ End Class");
         [Fact]
         public void TryCatch()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     static bool Log(string message)
     {
@@ -921,8 +887,7 @@ End Class");
         [Fact]
         public void Yield()
         {
-            TestConversionCSharpToVisualBasic(@"
-class TestClass
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     IEnumerable<int> TestMethod(int number)
     {

@@ -1,5 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using EnvDTE;
+using EnvDTE80;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.LanguageServices;
@@ -11,7 +18,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 
 namespace CodeConverter.VsExtension
 {
-    static class VisualStudioInteraction
+    internal static class VisualStudioInteraction
     {
         public static VsDocument GetSingleSelectedItemOrDefault()
         {
@@ -55,6 +62,37 @@ namespace CodeConverter.VsExtension
                 }
             }
         }
+        private static IEnumerable<T> GetSelectedSolutionExplorerItems<T>() where T: class
+        {
+            var selectedObjects = (IEnumerable<object>) Dte.ToolWindows.SolutionExplorer.SelectedItems;
+            var selectedItems = selectedObjects.Cast<UIHierarchyItem>().ToList();
+
+            var returnType = typeof(T);
+            return selectedItems.Select(item => item.Object).Where(returnType.IsInstanceOfType).Cast<T>();
+        }
+
+        public static Window OpenFile(FileInfo fileInfo)
+        {
+            return Dte.ItemOperations.OpenFile(fileInfo.FullName, EnvDTE.Constants.vsViewKindTextView);
+        }
+
+        public static void SelectAll(this Window window)
+        {
+            ((TextSelection)window.Document.Selection).SelectAll();
+        }
+
+        private static DTE2 Dte => Package.GetGlobalService(typeof(DTE)) as DTE2;
+
+        public static IReadOnlyCollection<Project> GetSelectedProjects(string projectExtension)
+        {
+            var items = GetSelectedSolutionExplorerItems<Solution>()
+                .SelectMany(s => s.Projects.Cast<Project>())
+                .Concat(GetSelectedSolutionExplorerItems<Project>())
+                .Concat(GetSelectedSolutionExplorerItems<ProjectItem>().Where(p => p.SubProject != null).Select(p => p.SubProject))
+                .Where(project => project.FullName.EndsWith(projectExtension, StringComparison.InvariantCultureIgnoreCase))
+                .ToList();
+            return items;
+        }
 
         public static IWpfTextViewHost GetCurrentViewHost(IServiceProvider serviceProvider)
         {
@@ -94,6 +132,41 @@ namespace CodeConverter.VsExtension
                 OLEMSGICON.OLEMSGICON_CRITICAL,
                 OLEMSGBUTTON.OLEMSGBUTTON_OK,
                 OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+        }
+
+        public static class OutputWindow
+        {
+            private const string PaneName = "Code Converter";
+            private static readonly Guid PaneGuid = new Guid("44F575C6-36B5-4CDB-AAAE-E096E6A446BF");
+            private static readonly Lazy<IVsOutputWindowPane> _outputPane = new Lazy<IVsOutputWindowPane>(CreateOutputPane);
+            
+            private static IVsOutputWindow GetOutputWindow()
+            {
+                IServiceProvider serviceProvider = new ServiceProvider(Dte as Microsoft.VisualStudio.OLE.Interop.IServiceProvider);
+                return serviceProvider.GetService(typeof(SVsOutputWindow)) as IVsOutputWindow;
+            }
+            private static IVsOutputWindowPane CreateOutputPane()
+            {
+                Guid generalPaneGuid = PaneGuid;
+                IVsOutputWindowPane pane;
+                var outputWindow = GetOutputWindow();
+                outputWindow.GetPane(ref generalPaneGuid, out pane);
+
+                if (pane == null) {
+                    outputWindow.CreatePane(ref generalPaneGuid, PaneName, 1, 1);
+                    outputWindow.GetPane(ref generalPaneGuid, out pane);
+                }
+
+                return pane;
+            }
+
+            public static void ShowMessageToUser(string message)
+            {
+                Dte.Windows.Item(EnvDTE.Constants.vsWindowKindOutput).Visible = true;
+                var ourOutputPane = _outputPane.Value;
+                ourOutputPane.OutputString(message);
+                ourOutputPane.Activate();
+            }
         }
     }
 }

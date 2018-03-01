@@ -1,19 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using ArgumentListSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArgumentListSyntax;
-using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
-using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
-using IdentifierNameSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax;
-using LocalDeclarationStatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.LocalDeclarationStatementSyntax;
-using StatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax;
-using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
-using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
@@ -35,7 +27,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 this.semanticModel = semanticModel;
                 this.nodesVisitor = nodesVisitor;
                 this.withBlockTempVariableNames = withBlockTempVariableNames;
-                this.CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
+                CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
             }
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
@@ -56,7 +48,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     case VBasic.SyntaxKind.EndKeyword:
                         return "System.Environment.Exit(0);";
                     default:
-                        throw new NotImplementedException(CSharpExtensions.Kind(node.StopOrEndKeyword) + " not implemented!");
+                        throw new NotImplementedException(node.StopOrEndKeyword.Kind() + " not implemented!");
                 }
             }
 
@@ -135,7 +127,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         VBasic.VisualBasicSyntaxNode typeContainer = (VBasic.VisualBasicSyntaxNode)node.Ancestors().OfType<VBSyntax.LambdaExpressionSyntax>().FirstOrDefault()
                             ?? node.Ancestors().OfType<VBSyntax.MethodBlockSyntax>().FirstOrDefault();
                         var info = typeContainer.TypeSwitch(
-                            (VBSyntax.LambdaExpressionSyntax e) => ModelExtensions.GetTypeInfo(semanticModel, e).Type.GetReturnType(),
+                            (VBSyntax.LambdaExpressionSyntax e) => semanticModel.GetTypeInfo(e).Type.GetReturnType(),
                             (VBSyntax.MethodBlockSyntax e) => {
                                 var type = (TypeSyntax)e.SubOrFunctionStatement.AsClause?.Type.Accept(nodesVisitor) ?? SyntaxFactory.ParseTypeName("object");
                                 return semanticModel.GetSymbolInfo(type).Symbol.GetReturnType();
@@ -369,10 +361,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                         foreach (var declaration in SplitVariableDeclarations(v, nodesVisitor, semanticModel).Values.Reverse())
                             stmt = SyntaxFactory.UsingStatement(declaration, null, stmt);
                     return SingleStatement(stmt);
-                } else {
-                    var expr = (ExpressionSyntax)node.UsingStatement.Expression.Accept(nodesVisitor);
-                    return SingleStatement(SyntaxFactory.UsingStatement(null, expr, SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock()));
                 }
+
+                var expr = (ExpressionSyntax)node.UsingStatement.Expression.Accept(nodesVisitor);
+                return SingleStatement(SyntaxFactory.UsingStatement(null, expr, SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock()));
             }
 
             public override SyntaxList<StatementSyntax> VisitWhileBlock(VBSyntax.WhileBlockSyntax node)
@@ -392,11 +384,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                             (ExpressionSyntax)stmt.Condition.Accept(nodesVisitor),
                             SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock()
                         ));
-                    else
-                        return SingleStatement(SyntaxFactory.WhileStatement(
-                            SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, (ExpressionSyntax)stmt.Condition.Accept(nodesVisitor)),
-                            SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock()
-                        ));
+                    return SingleStatement(SyntaxFactory.WhileStatement(
+                        SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, (ExpressionSyntax)stmt.Condition.Accept(nodesVisitor)),
+                        SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock()
+                    ));
                 }
                 if (node.LoopStatement.WhileOrUntilClause != null) {
                     var stmt = node.LoopStatement.WhileOrUntilClause;
@@ -405,11 +396,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                             SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock(),
                             (ExpressionSyntax)stmt.Condition.Accept(nodesVisitor)
                         ));
-                    else
-                        return SingleStatement(SyntaxFactory.DoStatement(
-                            SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock(),
-                            SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, (ExpressionSyntax)stmt.Condition.Accept(nodesVisitor))
-                        ));
+                    return SingleStatement(SyntaxFactory.DoStatement(
+                        SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock(),
+                        SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, (ExpressionSyntax)stmt.Condition.Accept(nodesVisitor))
+                    ));
                 }
                 throw new NotSupportedException();
             }

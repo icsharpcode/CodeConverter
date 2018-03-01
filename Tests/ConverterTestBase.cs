@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
@@ -18,11 +19,17 @@ namespace CodeConverter.Tests
 {
     public class ConverterTestBase
     {
-        private bool testCommentsByDefault = true;
+        private bool testCSToVBCommentsByDefault = false;
 
-        public void TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
+        public void TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool standaloneStatements = false, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
         {
-            var outputNode = CSharpConverter.ConvertText(csharpCode, DiagnosticTestBase.DefaultMetadataReferences);
+            TestConversionCSharpToVisualBasicWithoutComments(csharpCode, expectedVisualBasicCode);
+            if (testCSToVBCommentsByDefault) TestConversionCSharpToVisualBasicWithoutComments(AddLineNumberComments(csharpCode, "// ", false), AddLineNumberComments(expectedVisualBasicCode, "' ", true));
+        }
+
+        private static void TestConversionCSharpToVisualBasicWithoutComments(string csharpCode, string expectedVisualBasicCode)
+        {
+            var outputNode = ProjectConversion<CSToVBConversion>.ConvertText(csharpCode, DiagnosticTestBase.DefaultMetadataReferences);
 
             var txt = outputNode.ConvertedCode ?? outputNode.GetExceptionsAsString();
             txt = Utils.HomogenizeEol(txt).TrimEnd();
@@ -32,12 +39,12 @@ namespace CodeConverter.Tests
 
         public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool standaloneStatements = false)
         {
-            expectedCsharpCode = AddUsings(expectedCsharpCode, standaloneStatements);
+            expectedCsharpCode = AddCSUsings(expectedCsharpCode, standaloneStatements);
             TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode, false);
-            if (testCommentsByDefault) TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true), false);
+            TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true), false);
         }
 
-        private static string AddUsings(string expectedCsharpCode, bool standaloneStatements)
+        private static string AddCSUsings(string expectedCsharpCode, bool standaloneStatements)
         {
             if (standaloneStatements)
             {
@@ -63,8 +70,8 @@ using Microsoft.VisualBasic;
 
         public void TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode, bool addUsings = true, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
         {
-            if (addUsings) expectedCsharpCode = AddUsings(expectedCsharpCode, false);
-            var outputNode = VisualBasicConverter.ConvertText(visualBasicCode, DiagnosticTestBase.DefaultMetadataReferences);
+            if (addUsings) expectedCsharpCode = AddCSUsings(expectedCsharpCode, false);
+            var outputNode = ProjectConversion<VBToCSConversion>.ConvertText(visualBasicCode, DiagnosticTestBase.DefaultMetadataReferences);
             var txt = Utils.HomogenizeEol(outputNode.ConvertedCode ?? outputNode.GetExceptionsAsString()).TrimEnd();
             expectedCsharpCode = Utils.HomogenizeEol(expectedCsharpCode).TrimEnd();
             AssertCodeEqual(visualBasicCode, expectedCsharpCode, txt);

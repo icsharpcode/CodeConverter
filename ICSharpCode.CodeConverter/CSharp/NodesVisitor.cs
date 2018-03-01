@@ -1,34 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
-using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Text;
-using ArgumentListSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArgumentListSyntax;
-using ArgumentSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArgumentSyntax;
-using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankSpecifierSyntax;
-using ArrayTypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayTypeSyntax;
-using AttributeListSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.AttributeListSyntax;
-using CatchFilterClauseSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.CatchFilterClauseSyntax;
-using EnumMemberDeclarationSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.EnumMemberDeclarationSyntax;
-using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
-using IdentifierNameSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax;
-using InterpolatedStringContentSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.InterpolatedStringContentSyntax;
-using NameSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.NameSyntax;
-using ParameterListSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ParameterListSyntax;
-using ParameterSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ParameterSyntax;
-using SimpleNameSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.SimpleNameSyntax;
-using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
-using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
-using TypeArgumentListSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeArgumentListSyntax;
-using TypeParameterConstraintClauseSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeParameterConstraintClauseSyntax;
-using TypeParameterListSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeParameterListSyntax;
-using TypeParameterSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeParameterSyntax;
-using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 
@@ -48,9 +25,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             public NodesVisitor(SemanticModel semanticModel)
             {
                 this.semanticModel = semanticModel;
-                this.TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
+                TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
                 importedNamespaces = new Dictionary<string, string> {{VBasic.VisualBasicExtensions.RootNamespace(semanticModel.Compilation).ToString(), ""}};
-                this.createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
+                createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
             }
 
             private static Dictionary<ITypeSymbol, string> CreateConvertMethodsLookupByReturnType(SemanticModel semanticModel)
@@ -58,7 +35,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var systemDotConvert = typeof(Convert).FullName;
                 var convertMethods = semanticModel.Compilation.GetTypeByMetadataName(systemDotConvert).GetMembers().Where(m =>
                     m.Name.StartsWith("To", StringComparison.Ordinal) && m.GetParameters().Length == 1);
-                var methodsByType = convertMethods.Where(m => m.Name != nameof(System.Convert.ToBase64String))
+                var methodsByType = convertMethods.Where(m => m.Name != nameof(Convert.ToBase64String))
                     .GroupBy(m => new { ReturnType = m.GetReturnType(), Name = $"{systemDotConvert}.{m.Name}" })
                     .ToDictionary(m => m.Key.ReturnType, m => m.Key.Name);
                 return methodsByType;
@@ -172,8 +149,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var convertedIdentifier = ConvertIdentifier(classStatement.Identifier);
 
                 return SyntaxFactory.ClassDeclaration(
-                    attributes,
-                    ConvertModifiers(classStatement.Modifiers),
+                    attributes, ConvertModifiers(classStatement.Modifiers),
                     convertedIdentifier,
                     parameters,
                     ConvertInheritsAndImplements(node.Inherits, node.Implements),
@@ -351,7 +327,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             unConvertableModifiers.Any()
                                 ? baseFieldDeclarationSyntax.WithAppendedTrailingTrivia(
                                     SyntaxFactory.Comment(
-                                        $"/* TODO ERROR didn't convert: {string.Join(",", unConvertableModifiers)} */"))
+                                        $"/* TODO ERROR didn't convert: {String.Join(",", unConvertableModifiers)} */"))
                                 : baseFieldDeclarationSyntax);
                     }
                 }
@@ -382,9 +358,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 AccessorListSyntax accessors = null;
                 if (!hasBody) {
-                    var accessorList = new List<AccessorDeclarationSyntax>
-                    {
-                        SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)),
+                    var accessorList = new List<AccessorDeclarationSyntax> {
+                        SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken))
                     };
                     if (!isReadonly) {
                         accessorList.Add(SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)));
@@ -574,14 +549,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     additionalDeclarations.Add(node, new MemberDeclarationSyntax[] { delegateDecl });
                     return eventDecl;
-                } else {
-                    return SyntaxFactory.EventFieldDeclaration(
-                        SyntaxFactory.List(attributes),
-                        modifiers,
-                        SyntaxFactory.VariableDeclaration((TypeSyntax)node.AsClause.Type.Accept(TriviaConvertingVisitor),
-                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)))
-                    );
                 }
+
+                return SyntaxFactory.EventFieldDeclaration(
+                    SyntaxFactory.List(attributes),
+                    modifiers,
+                    SyntaxFactory.VariableDeclaration((TypeSyntax)node.AsClause.Type.Accept(TriviaConvertingVisitor),
+                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)))
+                );
                 throw new NotSupportedException();
             }
 
@@ -593,8 +568,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.OperatorDeclaration(
                     SyntaxFactory.List(attributes),
                     modifiers,
-                    (TypeSyntax)block.AsClause?.Type.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)),
-                    ConvertToken(block.OperatorToken),
+                    (TypeSyntax)block.AsClause?.Type.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)), ConvertToken(block.OperatorToken),
                     (ParameterListSyntax)block.ParameterList.Accept(TriviaConvertingVisitor),
                     SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor()))),
                     null
@@ -867,15 +841,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 if (node.Expression.IsKind(VBasic.SyntaxKind.GlobalName)) {
                     return SyntaxFactory.AliasQualifiedName((IdentifierNameSyntax)left, simpleNameSyntax);
-                } else {
-                    var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, QualifyNode(node.Expression, left), simpleNameSyntax);
-                    if (semanticModel.GetSymbolInfo(node).Symbol is IMethodSymbol methodSymbol && methodSymbol.ReturnType.Equals(semanticModel.GetTypeInfo(node).ConvertedType)) {
-                        var visitMemberAccessExpression = SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax, SyntaxFactory.ArgumentList());
-                        return visitMemberAccessExpression;
-                    } else {
-                        return memberAccessExpressionSyntax;
-                    }
                 }
+
+                var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, QualifyNode(node.Expression, left), simpleNameSyntax);
+                if (semanticModel.GetSymbolInfo(node).Symbol is IMethodSymbol methodSymbol && methodSymbol.ReturnType.Equals(semanticModel.GetTypeInfo(node).ConvertedType)) {
+                    var visitMemberAccessExpression = SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax, SyntaxFactory.ArgumentList());
+                    return visitMemberAccessExpression;
+                }
+
+                return memberAccessExpressionSyntax;
             }
 
             public override CSharpSyntaxNode VisitConditionalAccessExpression(VBSyntax.ConditionalAccessExpressionSyntax node)
@@ -1207,8 +1181,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 );
                 if (node.IsKind(VBasic.SyntaxKind.TypeOfIsNotExpression))
                     return SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, expr);
-                else
-                    return expr;
+                return expr;
             }
 
             public override CSharpSyntaxNode VisitUnaryExpression(VBSyntax.UnaryExpressionSyntax node)

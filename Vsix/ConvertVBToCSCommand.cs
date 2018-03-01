@@ -2,9 +2,11 @@
 using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
-using Microsoft.VisualStudio.Shell;
+using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.VisualStudio.Text;
-using Task = System.Threading.Tasks.Task;
+using OleMenuCommand = Microsoft.VisualStudio.Shell.OleMenuCommand;
+using OleMenuCommandService = Microsoft.VisualStudio.Shell.OleMenuCommandService;
 
 namespace CodeConverter.VsExtension
 {
@@ -16,6 +18,8 @@ namespace CodeConverter.VsExtension
         public const int MainMenuCommandId = 0x0200;
         public const int CtxMenuCommandId = 0x0201;
         public const int ProjectItemCtxMenuCommandId = 0x0202;
+        public const int SolutionOrProjectCtxMenuCommandId = 0x0203;
+        private const string ProjectExtension = ".vbproj";
 
         /// <summary>
         /// Command menu group (command set GUID).
@@ -62,11 +66,7 @@ namespace CodeConverter.VsExtension
         /// <param name="package">Owner package, not null.</param>
         ConvertVBToCSCommand(REConverterPackage package)
         {
-            if (package == null) {
-                throw new ArgumentNullException(nameof(package));
-            }
-
-            this.package = package;
+            this.package = package ?? throw new ArgumentNullException(nameof(package));
             codeConversion = new CodeConversion(package, package.VsWorkspace);
 
             OleMenuCommandService commandService = this.ServiceProvider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
@@ -88,6 +88,12 @@ namespace CodeConverter.VsExtension
                 var projectItemCtxMenuItem = new OleMenuCommand(ProjectItemMenuItemCallback, projectItemCtxMenuCommandID);
                 projectItemCtxMenuItem.BeforeQueryStatus += ProjectItemMenuItem_BeforeQueryStatus;
                 commandService.AddCommand(projectItemCtxMenuItem);
+
+                // Command in project context menu
+                var solutionOrProjectCtxMenuCommandID = new CommandID(CommandSet, SolutionOrProjectCtxMenuCommandId);
+                var solutionOrProjectCtxMenuItem = new OleMenuCommand(SolutionOrProjectMenuItemCallback, solutionOrProjectCtxMenuCommandID);
+                solutionOrProjectCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatus;
+                commandService.AddCommand(solutionOrProjectCtxMenuItem);
             }
         }
 
@@ -96,7 +102,7 @@ namespace CodeConverter.VsExtension
             var menuItem = sender as OleMenuCommand;
             if (menuItem != null) {
 
-                menuItem.Visible = !codeConversion.GetVBSelectionInCurrentView()?.StreamSelectionSpan.IsEmpty ?? false;
+                menuItem.Visible = !codeConversion.GetSelectionInCurrentView(CodeConversion.IsVBFileName)?.StreamSelectionSpan.IsEmpty ?? false;
             }
         }
 
@@ -108,8 +114,7 @@ namespace CodeConverter.VsExtension
                 menuItem.Enabled = false;
 
                 string itemPath = VisualStudioInteraction.GetSingleSelectedItemOrDefault()?.ItemPath;
-                var fileInfo = new FileInfo(itemPath);
-                if (!CodeConversion.IsVBFileName(fileInfo.Name))
+                if (itemPath == null || !CodeConversion.IsVBFileName(itemPath))
                     return;
 
                 menuItem.Visible = true;
@@ -117,29 +122,45 @@ namespace CodeConverter.VsExtension
             }
         }
 
-        async void CodeEditorMenuItemCallback(object sender, EventArgs e)
+        private void SolutionOrProjectMenuItem_BeforeQueryStatus(object sender, EventArgs e)
         {
-            var span = codeConversion.GetVBSelectionInCurrentView().SelectedSpans.First().Span;
-            await ConvertVbDocument(codeConversion.GetCurrentVBViewHost().GetTextDocument().FilePath, span);
+            var menuItem = sender as OleMenuCommand;
+            if (menuItem != null) {
+                menuItem.Visible = menuItem.Enabled = VisualStudioInteraction.GetSelectedProjects(ProjectExtension).Any();
+            }
         }
 
+        async void CodeEditorMenuItemCallback(object sender, EventArgs e)
+        {
+            var span = codeConversion.GetSelectionInCurrentView(CodeConversion.IsVBFileName).SelectedSpans.First().Span;
+            await ConvertDocument(codeConversion.GetCurrentViewHost(CodeConversion.IsVBFileName).GetTextDocument().FilePath, span);
+        }
+        
         async void ProjectItemMenuItemCallback(object sender, EventArgs e)
         {
             string itemPath = VisualStudioInteraction.GetSingleSelectedItemOrDefault()?.ItemPath;
-            await ConvertVbDocument(itemPath, new Span(0,0));
+            await ConvertDocument(itemPath, new Span(0, 0));
         }
 
-        private async Task ConvertVbDocument(string documentPath, Span selected)
+        private async void SolutionOrProjectMenuItemCallback(object sender, EventArgs e)
         {
-            var fileInfo = new FileInfo(documentPath);
-            if (!CodeConversion.IsVBFileName(fileInfo.Name))
+            try {
+                codeConversion.PerformProjectConversion<VBToCSConversion>(VisualStudioInteraction.GetSelectedProjects(ProjectExtension));
+            } catch (Exception ex) {
+                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.ConverterTitle, ex);
+            }
+        }
+
+        private async Task ConvertDocument(string documentPath, Span selected)
+        {
+            if (documentPath == null || !CodeConversion.IsVBFileName(documentPath))
                 return;
 
             try {
-                await codeConversion.PerformVBToCSConversion(documentPath, selected);
+                await codeConversion.PerformDocumentConversion<VBToCSConversion>(documentPath, selected);
             }
             catch (Exception ex) {
-                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.VBToCSConversionTitle, ex);
+                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }
         }
     }

@@ -6,13 +6,19 @@ namespace ICSharpCode.CodeConverter
 {
     public class ConversionResult
     {
+        private string _sourcePathOrNull;
         public bool Success { get; private set; }
         public string ConvertedCode { get; private set; }
         public IReadOnlyList<Exception> Exceptions { get; private set; }
 
+        public string SourcePathOrNull {
+            get => _sourcePathOrNull;
+            set => _sourcePathOrNull = string.IsNullOrWhiteSpace(value) ? null : value;
+        }
+
         public ConversionResult(string convertedCode)
         {
-            Success = !string.IsNullOrWhiteSpace(convertedCode);
+            Success = true;
             ConvertedCode = convertedCode;
         }
 
@@ -25,11 +31,16 @@ namespace ICSharpCode.CodeConverter
         public string GetExceptionsAsString()
         {
             if (Exceptions == null || Exceptions.Count == 0)
-                return string.Empty;
+                return String.Empty;
 
             var builder = new StringBuilder();
+            if (SourcePathOrNull != null) {
+                builder.AppendLine($"In '{SourcePathOrNull}':");
+            }
             for (int i = 0; i < Exceptions.Count; i++) {
-                builder.AppendFormat("----- Exception {0} of {1} -----" + Environment.NewLine, i + 1, Exceptions.Count);
+                if (Exceptions.Count > 1) {
+                    builder.AppendFormat("----- Exception {0} of {1} -----" + Environment.NewLine, i + 1, Exceptions.Count);
+                }
                 builder.AppendLine(Exceptions[i].ToString());
             }
             return builder.ToString();

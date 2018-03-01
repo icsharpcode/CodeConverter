@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -15,16 +16,16 @@ namespace ICSharpCode.CodeConverter.CSharp
     public class CommentConvertingNodesVisitor : VisualBasicSyntaxVisitor<CSharpSyntaxNode>
     {
         public TriviaConverter TriviaConverter { get; }
-        private readonly VisualBasicSyntaxVisitor<CSharpSyntaxNode> wrappedVisitor;
+        private readonly VisualBasicSyntaxVisitor<CSharpSyntaxNode> _wrappedVisitor;
 
         public CommentConvertingNodesVisitor(VisualBasicSyntaxVisitor<CSharpSyntaxNode> wrappedVisitor)
         {
             TriviaConverter = new TriviaConverter();
-            this.wrappedVisitor = wrappedVisitor;
+            this._wrappedVisitor = wrappedVisitor;
         }
         public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)
         {
-            return TriviaConverter.PortConvertedTrivia(node, wrappedVisitor.Visit(node));
+            return TriviaConverter.PortConvertedTrivia(node, _wrappedVisitor.Visit(node));
         }
 
         public override CSharpSyntaxNode VisitModuleBlock(VbSyntax.ModuleBlockSyntax node)
@@ -60,7 +61,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private TDest WithPortedTrivia<TSource, TDest>(SyntaxNode node, Func<TSource, TDest, TDest> portExtraTrivia) where TSource : SyntaxNode where TDest : CSharpSyntaxNode
         {
-            var cSharpSyntaxNode = portExtraTrivia((TSource)node, (TDest)wrappedVisitor.Visit(node));
+            var cSharpSyntaxNode = portExtraTrivia((TSource)node, (TDest)_wrappedVisitor.Visit(node));
             return TriviaConverter.PortConvertedTrivia(node, cSharpSyntaxNode);
         }
 

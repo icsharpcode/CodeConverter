@@ -8,7 +8,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using VBSyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 using VBSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
+using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -832,7 +834,10 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static IEnumerable<SyntaxTrivia> ImportantTrailingTrivia(this SyntaxToken node)
         {
-            return node.TrailingTrivia.Where(x => !x.IsKind(SyntaxKind.WhitespaceTrivia) && !x.IsKind(SyntaxKind.EndOfLineTrivia));
+            return node.TrailingTrivia.Where(x => 
+                !x.IsKind(SyntaxKind.WhitespaceTrivia) && !x.IsKind(SyntaxKind.EndOfLineTrivia)
+                && !x.IsKind(CSSyntaxKind.WhitespaceTrivia) && !x.IsKind(CSSyntaxKind.EndOfLineTrivia)
+            );
         }
 
         public static bool ParentHasSameTrailingTrivia(this SyntaxNode otherNode)
@@ -842,10 +847,10 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static IEnumerable<SyntaxTrivia> ConvertTrivia(this IReadOnlyCollection<SyntaxTrivia> triviaToConvert)
         {
-            return triviaToConvert.Select(ConvertTrivia).Where(x => x != default(SyntaxTrivia));
+            return triviaToConvert.Select(t => t.Language == "Visual Basic" ? ConvertVBTrivia(t) : ConvertCSTrivia(t)).Where(x => x != default(SyntaxTrivia));
         }
 
-        private static SyntaxTrivia ConvertTrivia(SyntaxTrivia t)
+        private static SyntaxTrivia ConvertVBTrivia(SyntaxTrivia t)
         {
             if (t.IsKind(VBSyntaxKind.CommentTrivia))
                 return SyntaxFactory.SyntaxTrivia(SyntaxKind.SingleLineCommentTrivia, $"// {t.GetCommentText()}");
@@ -872,29 +877,44 @@ namespace ICSharpCode.CodeConverter.Util
             }
 
             //Each of these would need its own method to recreate for C# with the right structure probably so let's just warn about them for now.
-            var syntaxKinds = new Dictionary<VBSyntaxKind, SyntaxKind> {
-                {VBSyntaxKind.SkippedTokensTrivia, SyntaxKind.SkippedTokensTrivia},
-                {VBSyntaxKind.DisabledTextTrivia, SyntaxKind.DisabledTextTrivia},
-                {VBSyntaxKind.ConstDirectiveTrivia, SyntaxKind.DefineDirectiveTrivia}, // Just a guess
-                {VBSyntaxKind.IfDirectiveTrivia, SyntaxKind.IfDirectiveTrivia},
-                {VBSyntaxKind.ElseIfDirectiveTrivia, SyntaxKind.ElifDirectiveTrivia},
-                {VBSyntaxKind.ElseDirectiveTrivia, SyntaxKind.ElseDirectiveTrivia},
-                {VBSyntaxKind.EndIfDirectiveTrivia, SyntaxKind.EndIfDirectiveTrivia},
-                //{VBSyntaxKind.RegionDirectiveTrivia, SyntaxKind.RegionDirectiveTrivia}, Oh no I accidentally disabled regions :O ;)
-                //{VBSyntaxKind.EndRegionDirectiveTrivia, SyntaxKind.EndRegionDirectiveTrivia},
-                {VBSyntaxKind.EnableWarningDirectiveTrivia, SyntaxKind.WarningDirectiveTrivia},
-                {VBSyntaxKind.DisableWarningDirectiveTrivia, SyntaxKind.WarningDirectiveTrivia},
-                {VBSyntaxKind.ReferenceDirectiveTrivia, SyntaxKind.ReferenceDirectiveTrivia},
-                {VBSyntaxKind.BadDirectiveTrivia, SyntaxKind.BadDirectiveTrivia},
-                {VBSyntaxKind.ConflictMarkerTrivia, SyntaxKind.ConflictMarkerTrivia},
-                {VBSyntaxKind.ExternalSourceDirectiveTrivia, SyntaxKind.LoadDirectiveTrivia}, //Just a guess
-                {VBSyntaxKind.ExternalChecksumDirectiveTrivia, SyntaxKind.LineDirectiveTrivia}, // Even more random guess
-            };
-            var convertedKind = syntaxKinds.FirstOrNullable(kvp => t.IsKind(kvp.Key));
+            var convertedKind = VBToCSSyntaxKinds.FirstOrNullable(kvp => t.IsKind(kvp.Key));
             return convertedKind.HasValue
                 ? SyntaxFactory.Comment($"/* TODO ERROR: Skipped {convertedKind.Value.Key} */")
                 : default(SyntaxTrivia);
         }
+
+        private static SyntaxTrivia ConvertCSTrivia(SyntaxTrivia t)
+        {
+            if (t.IsKind(CSSyntaxKind.SingleLineCommentTrivia))
+                return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.CommentTrivia, $"' {t.GetCommentText()}");
+            if (t.IsKind(CSSyntaxKind.SingleLineCommentTrivia)) {
+                var previousWhitespace = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None).ToString();
+                var commentTextLines = t.GetCommentText().Replace("\r\n", "\r").Split('\r');
+                var multiLine = commentTextLines.Count() > 1;
+                var outputCommentText = multiLine
+                    ? "''' " + string.Join($"\r\n{previousWhitespace}/// ", commentTextLines)
+                    : $"' {commentTextLines.Single()}";
+                return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.DocumentationCommentTrivia,
+                    outputCommentText);
+            }
+
+            if (t.IsKind(CSSyntaxKind.WhitespaceTrivia)) {
+                return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.WhitespaceTrivia, t.ToString());
+            }
+
+            if (t.IsKind(CSSyntaxKind.EndOfLineTrivia)) {
+                // Mapping one to one here leads to newlines appearing where the natural line-end was in VB.
+                // e.g. ToString\r\n()
+                // Because C Sharp needs those brackets. Handling each possible case of this is far more effort than it's worth.
+                return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.EndOfLineTrivia, t.ToString());
+            }
+
+            var convertedKind = CSToVBSyntaxKinds.FirstOrNullable(kvp => t.IsKind(kvp.Key));
+            return convertedKind.HasValue
+                ? VBSyntaxFactory.CommentTrivia($"' TODO ERROR: Skipped {convertedKind.Value.Key}")
+                : default(SyntaxTrivia);
+        }
+
         public static T WithoutTrailingEndOfLineTrivia<T>(this T cSharpNode) where T : CSharpSyntaxNode
         {
             var lastDescendant = cSharpNode.DescendantNodesAndTokens().Last();
@@ -1232,6 +1252,30 @@ namespace ICSharpCode.CodeConverter.Util
         /// </summary>
         private static readonly Func<SyntaxTriviaList, int, SyntaxToken> s_findSkippedTokenBackward =
             (l, p) => FindTokenHelper.FindSkippedTokenBackward(GetSkippedTokens(l), p);
+
+        private static readonly Dictionary<VBSyntaxKind, SyntaxKind> VBToCSSyntaxKinds = new Dictionary<VBSyntaxKind, SyntaxKind> {
+            {VBSyntaxKind.SkippedTokensTrivia, SyntaxKind.SkippedTokensTrivia},
+            {VBSyntaxKind.DisabledTextTrivia, SyntaxKind.DisabledTextTrivia},
+            {VBSyntaxKind.ConstDirectiveTrivia, SyntaxKind.DefineDirectiveTrivia}, // Just a guess
+            {VBSyntaxKind.IfDirectiveTrivia, SyntaxKind.IfDirectiveTrivia},
+            {VBSyntaxKind.ElseIfDirectiveTrivia, SyntaxKind.ElifDirectiveTrivia},
+            {VBSyntaxKind.ElseDirectiveTrivia, SyntaxKind.ElseDirectiveTrivia},
+            {VBSyntaxKind.EndIfDirectiveTrivia, SyntaxKind.EndIfDirectiveTrivia},
+            //{VBSyntaxKind.RegionDirectiveTrivia, SyntaxKind.RegionDirectiveTrivia}, Oh no I accidentally disabled regions :O ;)
+            //{VBSyntaxKind.EndRegionDirectiveTrivia, SyntaxKind.EndRegionDirectiveTrivia},
+            {VBSyntaxKind.EnableWarningDirectiveTrivia, SyntaxKind.WarningDirectiveTrivia},
+            {VBSyntaxKind.DisableWarningDirectiveTrivia, SyntaxKind.WarningDirectiveTrivia},
+            {VBSyntaxKind.ReferenceDirectiveTrivia, SyntaxKind.ReferenceDirectiveTrivia},
+            {VBSyntaxKind.BadDirectiveTrivia, SyntaxKind.BadDirectiveTrivia},
+            {VBSyntaxKind.ConflictMarkerTrivia, SyntaxKind.ConflictMarkerTrivia},
+            {VBSyntaxKind.ExternalSourceDirectiveTrivia, SyntaxKind.LoadDirectiveTrivia}, //Just a guess
+            {VBSyntaxKind.ExternalChecksumDirectiveTrivia, SyntaxKind.LineDirectiveTrivia}, // Even more random guess
+        };
+
+        private static readonly Dictionary<SyntaxKind, VBSyntaxKind> CSToVBSyntaxKinds = 
+            VBToCSSyntaxKinds
+                .ToLookup(kvp => kvp.Value, kvp => kvp.Key)
+                .ToDictionary(g => g.Key, g => g.First());
 
         /// <summary>
         /// return only skipped tokens

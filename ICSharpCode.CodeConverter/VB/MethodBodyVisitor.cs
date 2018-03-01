@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic;
@@ -26,21 +28,25 @@ namespace ICSharpCode.CodeConverter.VB
         class MethodBodyVisitor : CS.CSharpSyntaxVisitor<SyntaxList<StatementSyntax>>
         {
             SemanticModel semanticModel;
-            NodesVisitor nodesVisitor;
+            CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode> nodesVisitor;
             Stack<BlockInfo> blockInfo = new Stack<BlockInfo>(); // currently only works with switch blocks
             int switchCount = 0;
-            public bool IsInterator { get; private set; }
+            public bool IsIterator { get; private set; }
 
             class BlockInfo
             {
                 public readonly List<VisualBasicSyntaxNode> GotoCaseExpressions = new List<VisualBasicSyntaxNode>();
             }
+            public CommentConvertingMethodBodyVisitor CommentConvertingVisitor { get; }
 
-            public MethodBodyVisitor(SemanticModel semanticModel, NodesVisitor nodesVisitor)
+            public MethodBodyVisitor(SemanticModel semanticModel,
+                CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode> nodesVisitor, TriviaConverter triviaConverter)
             {
                 this.semanticModel = semanticModel;
                 this.nodesVisitor = nodesVisitor;
+                CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
             }
+
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
             {
@@ -496,7 +502,7 @@ namespace ICSharpCode.CodeConverter.VB
 
             public override SyntaxList<StatementSyntax> VisitYieldStatement(CSS.YieldStatementSyntax node)
             {
-                IsInterator = true;
+                IsIterator = true;
                 StatementSyntax stmt;
                 if (node.Expression == null)
                     stmt = SyntaxFactory.ReturnStatement();
