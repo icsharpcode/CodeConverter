@@ -160,12 +160,15 @@ namespace CodeConverter.VsExtension
                 return pane;
             }
 
-            public static void ShowMessageToUser(string message)
+            public static void ForceShowOutputPane()
             {
                 Dte.Windows.Item(EnvDTE.Constants.vsWindowKindOutput).Visible = true;
-                var ourOutputPane = _outputPane.Value;
-                ourOutputPane.OutputString(message);
-                ourOutputPane.Activate();
+                _outputPane.Value.Activate();
+            }
+
+            public static void WriteToOutputWindow(string message)
+            {
+                _outputPane.Value.OutputString(message);
             }
         }
     }

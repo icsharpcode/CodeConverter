@@ -145,7 +145,8 @@ namespace CodeConverter.VsExtension
         private async void SolutionOrProjectMenuItemCallback(object sender, EventArgs e)
         {
             try {
-                codeConversion.PerformProjectConversion<VBToCSConversion>(VisualStudioInteraction.GetSelectedProjects(ProjectExtension));
+                var projects = VisualStudioInteraction.GetSelectedProjects(ProjectExtension);
+                codeConversion.PerformProjectConversion<VBToCSConversion>(projects);
             } catch (Exception ex) {
                 VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }

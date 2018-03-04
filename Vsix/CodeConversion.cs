@@ -21,6 +21,7 @@ namespace CodeConverter.VsExtension
         private readonly IServiceProvider _serviceProvider;
         private readonly VisualStudioWorkspace _visualStudioWorkspace;
         public static readonly string ConverterTitle = "Code converter";
+        private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine + "Writing converted files to disk:";
 
         public CodeConversion(IServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace)
         {
@@ -44,7 +45,12 @@ namespace CodeConverter.VsExtension
         {
             var files = new List<string>();
             var errors = new List<string>();
+            string longestFilePath = null;
             var longestFileLength = -1;
+
+            var solutionDir = Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
+            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(Intro);
+            VisualStudioInteraction.OutputWindow.ForceShowOutputPane();
 
             foreach (var convertedFile in convertedFiles)
             {
@@ -55,58 +61,69 @@ namespace CodeConverter.VsExtension
                     if (convertedFile.ConvertedCode.Length > longestFileLength)
                     {
                         longestFileLength = convertedFile.ConvertedCode.Length;
-                        files.Insert(0, path);
-                    } else {
-                        files.Add(path);
+                        longestFilePath = path;
                     }
 
+                    files.Add(path);
                     File.WriteAllText(path, convertedFile.ConvertedCode);
+                    LogCompleted(solutionDir, path);
                 }
                 else
                 {
                     errors.Add(convertedFile.GetExceptionsAsString());
+                    LogError(solutionDir, convertedFile);
                 }
             }
-            ShowFirstResultAndConversionSummary(files, errors);
+            
+            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(GetConversionSummary(files, errors));
+            VisualStudioInteraction.OutputWindow.ForceShowOutputPane();
+
+            if (longestFilePath != null) {
+                VisualStudioInteraction.OpenFile(new FileInfo(longestFilePath)).SelectAll();
+            }
         }
 
-        private void ShowFirstResultAndConversionSummary(List<string> files, List<string> errors)
+        private void LogError(string solutionDir, ConversionResult convertedFile)
         {
-            VisualStudioInteraction.OutputWindow.ShowMessageToUser(GetConversionSummary(files, errors));
+            var indentedException = convertedFile.GetExceptionsAsString().Replace(Environment.NewLine, Environment.NewLine + "    ");
+            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(
+                $"* Error processing {PathRelativeToSolutionDir(solutionDir, convertedFile.SourcePathOrNull ?? "")}{Environment.NewLine}    {indentedException}"
+            );
+        }
 
-            if (files.Any()) {
-                VisualStudioInteraction.OpenFile(new FileInfo(files.First())).SelectAll();
-            }
+        private static void LogCompleted(string solutionDir, string path)
+        {
+            var solutionFilename = PathRelativeToSolutionDir(solutionDir, path);
+            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(Environment.NewLine + $"* {solutionFilename}");
+        }
+
+        private static string PathRelativeToSolutionDir(string solutionDir, string path)
+        {
+            return path.Replace(solutionDir, "")
+                .Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
 
         private string GetConversionSummary(IReadOnlyCollection<string> files, IReadOnlyCollection<string> errors)
         {
-            var solutionDir = Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
-            var relativeFilePaths = files.Select(fn => fn.Replace(solutionDir, "").Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)).OrderBy(s => s);
-
-
-            var introSummary = "Code conversion failed";
-            var summaryOfSuccesses = "";
+            var oneLine = "Code conversion failed";
+            var successSummary = "";
             if (files.Any()) {
-                introSummary = "Code conversion completed";
-                summaryOfSuccesses = "The following files have been written to disk:"
-                    + Environment.NewLine + "* " + string.Join(Environment.NewLine + "* ", relativeFilePaths);
+                oneLine = "Code conversion completed";
+                successSummary = $"{files.Count} files have been written to disk.";
+                if (files.Count > 1) {
+                    successSummary += Environment.NewLine + "One file has been opened as an example, to see others in Visual Studio's solution explorer, you can use its 'Show All Files' button.";
+                }
             }
 
             if (errors.Any()) {
-                introSummary += " with errors";
-                WriteStatusBarText(introSummary);
-                return introSummary
-                       + Environment.NewLine + summaryOfSuccesses
-                       + Environment.NewLine 
-                       + Environment.NewLine
-                       + string.Join(Environment.NewLine, errors);
-            } else {
-                WriteStatusBarText(introSummary + " - see output window for details");
-                return introSummary
-                       + Environment.NewLine
-                       + summaryOfSuccesses;
+                oneLine += $" with {errors.Count} error" + (errors.Count == 1 ? "" : "s");
             }
+
+            WriteStatusBarText(oneLine + " - see output window");
+            return Environment.NewLine + Environment.NewLine
+                                       + oneLine
+                                       + Environment.NewLine + successSummary
+                                       + Environment.NewLine;
         }
 
         private static string ToggleExtension(string sourcePath)
@@ -148,12 +165,14 @@ namespace CodeConverter.VsExtension
             where TLanguageConversion : ILanguageConversion, new()
         {
             var documentText = File.ReadAllText(documentPath);
-            if (selected.Length > 0 && documentText.Length > selected.End)
+            if (selected.Length > 0 && documentText.Length >= selected.End)
             {
                 documentText = documentText.Substring(selected.Start, selected.Length);
             }
 
-            return ProjectConversion<TLanguageConversion>.ConvertText(documentText, CodeWithOptions.DefaultMetadataReferences);
+            var convertTextOnly = ProjectConversion<TLanguageConversion>.ConvertText(documentText, CodeWithOptions.DefaultMetadataReferences);
+            convertTextOnly.SourcePathOrNull = documentPath;
+            return convertTextOnly;
         }
 
         private IEnumerable<ConversionResult> ConvertProjectUnhandled<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects)
