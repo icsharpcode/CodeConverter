@@ -76,7 +76,6 @@ namespace CodeConverter.VsExtension
 
             if (files.Any()) {
                 VisualStudioInteraction.OpenFile(new FileInfo(files.First())).SelectAll();
-                files[0] = files[0] + " (opened in code window)";
             }
         }
 
