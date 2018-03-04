@@ -12,3 +12,6 @@ build:
 test:
   assemblies:
     - 'Tests\bin\%configuration%\CodeConverter.Tests.dll'
+
+artifacts:
+  - path: 'Vsix\bin\%configuration%\CodeConverter.VsExtension.vsix'
