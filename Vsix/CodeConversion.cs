@@ -29,10 +29,12 @@ namespace CodeConverter.VsExtension
             _visualStudioWorkspace = visualStudioWorkspace;
         }
         
-        public void PerformProjectConversion<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects) where TLanguageConversion : ILanguageConversion, new()
+        public async Task PerformProjectConversion<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects) where TLanguageConversion : ILanguageConversion, new()
         {
-            var convertedFiles = ConvertProjectUnhandled<TLanguageConversion>(selectedProjects);
-            WriteConvertedFilesAndShowSummary(convertedFiles);
+            await Task.Run(() => {
+                var convertedFiles = ConvertProjectUnhandled<TLanguageConversion>(selectedProjects);
+                WriteConvertedFilesAndShowSummary(convertedFiles);
+            });
         }
 
         public async Task PerformDocumentConversion<TLanguageConversion>(string documentFilePath, Span selected) where TLanguageConversion : ILanguageConversion, new()
