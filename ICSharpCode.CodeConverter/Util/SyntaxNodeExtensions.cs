@@ -857,12 +857,8 @@ namespace ICSharpCode.CodeConverter.Util
             if (t.IsKind(VBSyntaxKind.DocumentationCommentTrivia)) {
                 var previousWhitespace = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None).ToString();
                 var commentTextLines = t.GetCommentText().Replace("\r\n", "\r").Split('\r');
-                var multiLine = commentTextLines.Count() > 1;
-                var outputCommentText = multiLine
-                    ? "/// " + string.Join($"\r\n{previousWhitespace}/// ", commentTextLines)
-                    : $"// {commentTextLines.Single()}";
-                return SyntaxFactory.SyntaxTrivia(SyntaxKind.SingleLineCommentTrivia,
-                    outputCommentText); //It's always single line...even when it has multiple lines
+                var outputCommentText = "/// " + string.Join($"\r\n{previousWhitespace}/// ", commentTextLines) + Environment.NewLine;
+                return SyntaxFactory.SyntaxTrivia(SyntaxKind.SingleLineCommentTrivia, outputCommentText); //It's always single line...even when it has multiple lines
             }
 
             if (t.IsKind(VBSyntaxKind.WhitespaceTrivia)) {
