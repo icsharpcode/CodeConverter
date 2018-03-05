@@ -19,7 +19,8 @@ namespace CodeConverter.Tests.TestRunners
         /// </summary>
         private static readonly bool WriteNewCharacterization = false;
 
-        private bool _testCstoVBCommentsByDefault = false;
+        private bool _testCstoVBCommentsByDefault = true;
+
         private readonly string _rootNamespace;
 
         public ConverterTestBase(string rootNamespace = null)
