@@ -2,9 +2,10 @@
 
 All notable changes to the code converter will be documented here.
 
-## 5.6 - 27/02/2018
+## 5.6 - 05/03/2018
 
 ### Visual studio extension
+* New commands added to convert whole solution/project at once
 * Works reliably in VS2017
 * Instead of copy to clipboard, opens result as Visual Studio window for quick viewing
 * Writes summary to output window to explain what's happened
