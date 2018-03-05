@@ -86,7 +86,7 @@ namespace CodeConverter.VsExtension
         private void LogError(string solutionDir, ConversionResult convertedFile)
         {
             var indentedException = convertedFile.GetExceptionsAsString().Replace(Environment.NewLine, Environment.NewLine + "    ");
-            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(
+            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(Environment.NewLine + 
                 $"* Error processing {PathRelativeToSolutionDir(solutionDir, convertedFile.SourcePathOrNull ?? "")}{Environment.NewLine}    {indentedException}"
             );
         }
