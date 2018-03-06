@@ -106,6 +106,8 @@ namespace ICSharpCode.CodeConverter.Util
                     return SyntaxKind.LessThanEqualsToken;
                 case SyntaxKind.OrExpression:
                     return SyntaxKind.OrKeyword;
+                case SyntaxKind.ExclusiveOrExpression:
+                    return SyntaxKind.XorKeyword;
                 case SyntaxKind.OrElseExpression:
                     return SyntaxKind.OrElseKeyword;
                 case SyntaxKind.AndExpression:
@@ -139,7 +141,7 @@ namespace ICSharpCode.CodeConverter.Util
                 case SyntaxKind.NotExpression:
                     return SyntaxKind.NotKeyword;
             }
-            throw new ArgumentOutOfRangeException(nameof(op));
+            throw new ArgumentOutOfRangeException(nameof(op), op, null);
         }
 
         /// <summary>
