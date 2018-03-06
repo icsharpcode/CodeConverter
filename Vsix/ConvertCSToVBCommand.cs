@@ -147,7 +147,7 @@ namespace CodeConverter.VsExtension
         {
             try {
                 var projects = VisualStudioInteraction.GetSelectedProjects(ProjectExtension);
-                codeConversion.PerformProjectConversion<CSToVBConversion>(projects);
+                await codeConversion.PerformProjectConversion<CSToVBConversion>(projects);
             } catch (Exception ex) {
                 VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }

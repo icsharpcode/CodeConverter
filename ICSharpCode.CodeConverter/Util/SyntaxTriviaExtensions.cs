@@ -156,8 +156,8 @@ namespace ICSharpCode.CodeConverter.Util
                 foreach (var line in lines) {
                     var trimmedLine = line.Trim();
 
-                    // Note: we trim leading '*' characters in multi-line comments.
-                    // If the '*' was intentional, sorry, it's gone.
+                    // Note: we trim leading ' characters in multi-line comments.
+                    // If the ' was intentional, sorry, it's gone.
                     if (trimmedLine.StartsWith("'")) {
                         trimmedLine = trimmedLine.TrimStart('\'');
                         trimmedLine = trimmedLine.TrimStart(null);

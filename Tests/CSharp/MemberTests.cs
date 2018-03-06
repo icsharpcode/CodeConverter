@@ -54,6 +54,36 @@ class TestClass
         }
 
         [Fact]
+        public void TestMethodXmlDoc()
+        {
+            TestConversionVisualBasicToCSharp(
+                @"Class TestClass
+    ''' <summary>Xml doc</summary>
+    Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
+        argument = Nothing
+        argument2 = Nothing
+        argument3 = Nothing
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualBasic;
+
+class TestClass
+{
+    /// <summary>Xml doc</summary>
+    public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
+        where T : class, new()
+        where T2 : struct
+    {
+        argument = null;
+        argument2 = default(T2);
+        argument3 = default(T3);
+    }
+}");
+        }
+
+        [Fact]
         public void TestMethodWithReturnType()
         {
             TestConversionVisualBasicToCSharp(

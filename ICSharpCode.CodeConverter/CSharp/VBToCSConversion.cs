@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -18,7 +19,22 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public VBToCSConversion()
         {
-            _targetCompilation = new Lazy<CSharpCompilation>(() => CSharpCompilation.Create("Conversion", _firstPassResults, _sourceCompilation.References));
+            _targetCompilation = new Lazy<CSharpCompilation>(() => {
+                var references = _sourceCompilation.References.Select(ConvertReference);
+                return CSharpCompilation.Create("Conversion", _firstPassResults, references);
+            });
+        }
+
+        private MetadataReference ConvertReference(MetadataReference nonLanguageSpecificRef)
+        {
+            if (!(nonLanguageSpecificRef is CompilationReference cr)) return nonLanguageSpecificRef;
+
+            using (var stream = new MemoryStream())
+            {
+                cr.Compilation.Emit(stream);
+                return MetadataReference.CreateFromStream(stream);
+            }
+
         }
 
         public SyntaxTree SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)
