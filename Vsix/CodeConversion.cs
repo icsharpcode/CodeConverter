@@ -39,8 +39,10 @@ namespace CodeConverter.VsExtension
 
         public async Task PerformDocumentConversion<TLanguageConversion>(string documentFilePath, Span selected) where TLanguageConversion : ILanguageConversion, new()
         {
-            var result = await ConvertDocumentUnhandled<TLanguageConversion>(documentFilePath, selected);
-            WriteConvertedFilesAndShowSummary(new[] { result });
+            await Task.Run(async () => {
+                var result = await ConvertDocumentUnhandled<TLanguageConversion>(documentFilePath, selected);
+                WriteConvertedFilesAndShowSummary(new[] { result });
+            });
         }
 
         private void WriteConvertedFilesAndShowSummary(IEnumerable<ConversionResult> convertedFiles)
