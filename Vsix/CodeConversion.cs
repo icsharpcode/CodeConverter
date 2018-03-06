@@ -183,8 +183,8 @@ namespace CodeConverter.VsExtension
             where TLanguageConversion : ILanguageConversion, new()
         {
             var projectsByPath =
-                _visualStudioWorkspace.CurrentSolution.Projects.ToDictionary(p => p.FilePath, p => p);
-            var projects = selectedProjects.Select(p => projectsByPath[p.FullName]).ToList();
+                _visualStudioWorkspace.CurrentSolution.Projects.ToLookup(p => p.FilePath, p => p);
+            var projects = selectedProjects.Select(p => projectsByPath[p.FullName].First()).ToList();
             var convertedFiles = ProjectConversion<TLanguageConversion>.ConvertProjects(projects);
             return convertedFiles;
         }
