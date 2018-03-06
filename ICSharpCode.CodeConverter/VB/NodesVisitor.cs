@@ -532,7 +532,8 @@ End Function";
                 var attr = new List<AttributeListSyntax>();
 
                 foreach (var attrList in attributeLists) {
-                    if (SyntaxTokenExtensions.IsKind((SyntaxToken) attrList.Target?.Identifier, CS.SyntaxKind.ReturnKeyword) == true)
+                    var targetIdentifier = attrList.Target?.Identifier;
+                    if (targetIdentifier != null && SyntaxTokenExtensions.IsKind((SyntaxToken) targetIdentifier, CS.SyntaxKind.ReturnKeyword))
                         retAttr.Add((AttributeListSyntax)attrList.Accept(TriviaConvertingVisitor));
                     else
                         attr.Add((AttributeListSyntax)attrList.Accept(TriviaConvertingVisitor));
