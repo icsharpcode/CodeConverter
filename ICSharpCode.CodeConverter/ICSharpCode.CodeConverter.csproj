@@ -17,7 +17,7 @@
     <PackageProjectUrl>https://github.com/icsharpcode/CodeConverter/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/icsharpcode/CodeConverter/</RepositoryUrl>
     <PackageTags>Convert C# VB.NET Roslyn</PackageTags>
-    <PackageReleaseNotes>First standalone release of the Code Converter. Version increases from the joint Refactoring Essentials version number</PackageReleaseNotes>
+    <PackageReleaseNotes>See https://github.com/icsharpcode/CodeConverter/blob/master/CHANGELOG.md</PackageReleaseNotes>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DefineConstants>TRACE;DEBUG;NETSTANDARD1_3;NETSTANDARD1_3</DefineConstants>
