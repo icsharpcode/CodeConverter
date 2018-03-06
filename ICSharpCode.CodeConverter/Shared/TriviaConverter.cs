@@ -33,7 +33,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             if (sourceNode is CSharpSyntaxNode) return destination;
 
-            destination = sourceNode.HasLeadingTrivia
+            destination = sourceNode.HasLeadingTrivia && sourceNode.GetFirstToken() != sourceNode?.Parent?.GetFirstToken()
                 ? destination.WithLeadingTrivia(sourceNode.GetLeadingTrivia().ConvertTrivia())
                 : destination;
 
