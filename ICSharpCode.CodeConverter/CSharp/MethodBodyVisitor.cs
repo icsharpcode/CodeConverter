@@ -130,11 +130,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                             (VBSyntax.LambdaExpressionSyntax e) => semanticModel.GetTypeInfo(e).Type.GetReturnType(),
                             (VBSyntax.MethodBlockSyntax e) => {
                                 var type = (TypeSyntax)e.SubOrFunctionStatement.AsClause?.Type.Accept(nodesVisitor) ?? SyntaxFactory.ParseTypeName("object");
-                                return semanticModel.GetSymbolInfo(type).Symbol.GetReturnType();
+                                return semanticModel.GetSymbolInfo(type).Symbol?.GetReturnType();
                             }
                         );
                         ExpressionSyntax expr;
-                        if (info.IsReferenceType)
+                        if (info == null)
+                            expr = null;
+                        else if (info.IsReferenceType)
                             expr = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
                         else if (info.CanBeReferencedByName)
                             expr = SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(info.ToMinimalDisplayString(semanticModel, node.SpanStart)));
