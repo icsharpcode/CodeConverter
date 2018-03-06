@@ -134,9 +134,10 @@ using Microsoft.VisualBasic;
 
         private static bool HasNoSourceLine(string prevLine, string line, string nextLine)
         {
-            return line.Trim() == "{" 
-                || nextLine.Contains("where T")
-                || IsTwoLineCsIfStatement(line, nextLine);
+            return line.Trim() == "{"
+                   || nextLine.Contains("where T")
+                   || IsTwoLineCsIfStatement(line, nextLine)
+                   || line.TrimStart().StartsWith("//");
         }
 
         /// <summary>
@@ -153,6 +154,7 @@ using Microsoft.VisualBasic;
                 || line.Contains("End If") || line.Contains("Next")
                 || IsFirstOfMultiLineVbIfStatement(line)
                 || line.Contains("<Extension") || line.Contains("CompilerServices.Extension")
+                || line.TrimStart().StartsWith("'")
                 //Allow a blank line in VB after these statements that doesn't appear in the C# since C# has braces to act as a separator
                 || string.IsNullOrWhiteSpace(line) && IsVbInheritsOrImplements(prevLine);
         }
