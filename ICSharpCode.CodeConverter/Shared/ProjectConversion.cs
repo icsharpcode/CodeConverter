@@ -81,9 +81,24 @@ namespace ICSharpCode.CodeConverter.Shared
         private Dictionary<string, SyntaxNode> Convert()
         {
             FirstPass();
-            var secondPassByFilePath = _firstPassResults.ToDictionary(cs => cs.Key, SingleSecondPass);
+            var secondPassByFilePath = SecondPass();
             return secondPassByFilePath;
         }
+
+        private Dictionary<string, SyntaxNode> SecondPass()
+        {
+            var secondPassByFilePath = new Dictionary<string, SyntaxNode>();
+            foreach (var firstPassResult in _firstPassResults) {
+                var treeFilePath = firstPassResult.Key;
+                try {
+                    secondPassByFilePath.Add(treeFilePath, SingleSecondPass(firstPassResult));
+                }  catch (Exception e) {
+                    _errors.TryAdd(treeFilePath, e);
+                }
+            }
+            return secondPassByFilePath;
+        }
+
         private SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)
         {
             var secondPassNode = _languageConversion.SingleSecondPass(cs);
