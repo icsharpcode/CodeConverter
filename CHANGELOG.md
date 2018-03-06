@@ -1,6 +1,10 @@
 # Change Log
-
 All notable changes to the code converter will be documented here.
+
+## 5.6.1 06/03/2018
+* VSIX: Gets conversion off the UI thread to avoid it freezing
+* VB -> C#: VB projects referencing other VB projects no longer error
+* VB -> C#: XmlDoc comments now are correctly newline terminated
 
 ## 5.6 - 05/03/2018
 
