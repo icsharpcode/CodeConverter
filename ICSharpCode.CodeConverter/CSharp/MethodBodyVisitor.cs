@@ -32,7 +32,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
             {
-                throw new NotImplementedException(node.GetType() + " not implemented!");
+                var nodeString = node.ToString();
+                if (nodeString.Length > 15) {
+                    nodeString = nodeString.Substring(0, 12) + "...";
+                }
+                
+                throw new NotImplementedException(node.GetType() + $" not implemented - cannot convert {nodeString}");
             }
 
             public override SyntaxList<StatementSyntax> VisitStopOrEndStatement(VBSyntax.StopOrEndStatementSyntax node)
