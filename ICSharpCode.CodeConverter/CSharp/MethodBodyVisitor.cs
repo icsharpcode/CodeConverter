@@ -32,7 +32,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
             {
-                throw new NotImplementedException(node.GetType() + " not implemented!");
+                var nodeString = node.ToString();
+                if (nodeString.Length > 15) {
+                    nodeString = nodeString.Substring(0, 12) + "...";
+                }
+                
+                throw new NotImplementedException(node.GetType() + $" not implemented - cannot convert {nodeString}");
             }
 
             public override SyntaxList<StatementSyntax> VisitStopOrEndStatement(VBSyntax.StopOrEndStatementSyntax node)
@@ -169,9 +174,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 if (node.ElseClause != null) {
                     var elseBlock = SyntaxFactory.Block(node.ElseClause.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
-                    elseClause = SyntaxFactory.ElseClause(elseBlock.UnpackBlock());
+                    elseClause = SyntaxFactory.ElseClause(elseBlock.UnpackNonNestedBlock());
                 }
-                return SingleStatement(SyntaxFactory.IfStatement(condition, block.UnpackBlock(), elseClause));
+                return SingleStatement(SyntaxFactory.IfStatement(condition, block.UnpackNonNestedBlock(), elseClause));
             }
 
             public override SyntaxList<StatementSyntax> VisitMultiLineIfBlock(VBSyntax.MultiLineIfBlockSyntax node)
@@ -182,16 +187,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 if (node.ElseBlock != null) {
                     var elseBlock = SyntaxFactory.Block(node.ElseBlock.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
-                    elseClause = SyntaxFactory.ElseClause(elseBlock.UnpackBlock());
+                    elseClause = SyntaxFactory.ElseClause(elseBlock.UnpackPossiblyNestedBlock());// so that you get a neat "else if" at the end
                 }
 
                 foreach (var elseIf in node.ElseIfBlocks.Reverse()) {
                     var elseBlock = SyntaxFactory.Block(elseIf.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
-                    var ifStmt = SyntaxFactory.IfStatement((ExpressionSyntax)elseIf.ElseIfStatement.Condition.Accept(nodesVisitor), elseBlock.UnpackBlock(), elseClause);
+                    var ifStmt = SyntaxFactory.IfStatement((ExpressionSyntax)elseIf.ElseIfStatement.Condition.Accept(nodesVisitor), elseBlock.UnpackNonNestedBlock(), elseClause);
                     elseClause = SyntaxFactory.ElseClause(ifStmt);
                 }
 
-                return SingleStatement(SyntaxFactory.IfStatement(condition, block.UnpackBlock(), elseClause));
+                return SingleStatement(SyntaxFactory.IfStatement(condition, block.UnpackNonNestedBlock(), elseClause));
             }
 
             public override SyntaxList<StatementSyntax> VisitForBlock(VBSyntax.ForBlockSyntax node)
@@ -237,7 +242,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     declaration != null ? SyntaxFactory.SeparatedList<ExpressionSyntax>() : SyntaxFactory.SingletonSeparatedList(startValue),
                     condition,
                     SyntaxFactory.SingletonSeparatedList(step),
-                    block.UnpackBlock()));
+                    block.UnpackNonNestedBlock()));
             }
 
             public override SyntaxList<StatementSyntax> VisitForEachBlock(VBSyntax.ForEachBlockSyntax node)
@@ -262,7 +267,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         type,
                         id,
                         (ExpressionSyntax)stmt.Expression.Accept(nodesVisitor),
-                        block.UnpackBlock()
+                        block.UnpackNonNestedBlock()
                     ));
             }
 
@@ -351,14 +356,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 return SingleStatement(SyntaxFactory.LockStatement(
                     (ExpressionSyntax)node.SyncLockStatement.Expression.Accept(nodesVisitor),
-                    SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock()
+                    SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackNonNestedBlock()
                 ));
             }
 
             public override SyntaxList<StatementSyntax> VisitUsingBlock(VBSyntax.UsingBlockSyntax node)
             {
+                var statementSyntax = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
                 if (node.UsingStatement.Expression == null) {
-                    StatementSyntax stmt = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
+                    StatementSyntax stmt = statementSyntax;
                     foreach (var v in node.UsingStatement.Variables.Reverse())
                         foreach (var declaration in SplitVariableDeclarations(v, nodesVisitor, semanticModel).Values.Reverse())
                             stmt = SyntaxFactory.UsingStatement(declaration, null, stmt);
@@ -366,14 +372,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 var expr = (ExpressionSyntax)node.UsingStatement.Expression.Accept(nodesVisitor);
-                return SingleStatement(SyntaxFactory.UsingStatement(null, expr, SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock()));
+                var unpackPossiblyNestedBlock = statementSyntax.UnpackPossiblyNestedBlock(); // Allow reduced indentation for multiple usings in a row
+                return SingleStatement(SyntaxFactory.UsingStatement(null, expr, unpackPossiblyNestedBlock));
             }
 
             public override SyntaxList<StatementSyntax> VisitWhileBlock(VBSyntax.WhileBlockSyntax node)
             {
                 return SingleStatement(SyntaxFactory.WhileStatement(
                     (ExpressionSyntax)node.WhileStatement.Condition.Accept(nodesVisitor),
-                    SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock()
+                    SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackNonNestedBlock()
                 ));
             }
 
@@ -384,22 +391,22 @@ namespace ICSharpCode.CodeConverter.CSharp
                     if (SyntaxTokenExtensions.IsKind(stmt.WhileOrUntilKeyword, VBasic.SyntaxKind.WhileKeyword))
                         return SingleStatement(SyntaxFactory.WhileStatement(
                             (ExpressionSyntax)stmt.Condition.Accept(nodesVisitor),
-                            SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock()
+                            SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackNonNestedBlock()
                         ));
                     return SingleStatement(SyntaxFactory.WhileStatement(
                         SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, (ExpressionSyntax)stmt.Condition.Accept(nodesVisitor)),
-                        SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock()
+                        SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackNonNestedBlock()
                     ));
                 }
                 if (node.LoopStatement.WhileOrUntilClause != null) {
                     var stmt = node.LoopStatement.WhileOrUntilClause;
                     if (SyntaxTokenExtensions.IsKind(stmt.WhileOrUntilKeyword, VBasic.SyntaxKind.WhileKeyword))
                         return SingleStatement(SyntaxFactory.DoStatement(
-                            SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock(),
+                            SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackNonNestedBlock(),
                             (ExpressionSyntax)stmt.Condition.Accept(nodesVisitor)
                         ));
                     return SingleStatement(SyntaxFactory.DoStatement(
-                        SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackBlock(),
+                        SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackNonNestedBlock(),
                         SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, (ExpressionSyntax)stmt.Condition.Accept(nodesVisitor))
                     ));
                 }
@@ -420,9 +427,33 @@ namespace ICSharpCode.CodeConverter.CSharp
 
     static class Extensions
     {
-        public static StatementSyntax UnpackBlock(this BlockSyntax block)
+        /// <summary>
+        /// Returns the single statement in a block if it has no nested statements.
+        /// If it has nested statements, and the surrounding block was removed, it could be ambiguous, 
+        /// e.g. if (...) { if (...) return null; } else return "";
+        /// Unbundling the middle if statement would bind the else to it, rather than the outer if statement
+        /// </summary>
+        public static StatementSyntax UnpackNonNestedBlock(this BlockSyntax block)
+        {
+            return block.Statements.Count == 1 && !block.ContainsNestedStatements() ? block.Statements[0] : block;
+        }
+
+        /// <summary>
+        /// Only use this over <see cref="UnpackNonNestedBlock"/> in special cases where it will display more neatly and where you're sure nested statements don't introduce ambiguity
+        /// </summary>
+        public static StatementSyntax UnpackPossiblyNestedBlock(this BlockSyntax block)
         {
             return block.Statements.Count == 1 ? block.Statements[0] : block;
+        }
+
+        private static bool ContainsNestedStatements(this BlockSyntax block)
+        {
+            return block.Statements.Any(HasDescendantCSharpStatement);
+        }
+
+        private static bool HasDescendantCSharpStatement(this StatementSyntax c)
+        {
+            return c.DescendantNodes().OfType<StatementSyntax>().Any();
         }
     }
 }
