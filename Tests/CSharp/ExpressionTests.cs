@@ -593,6 +593,24 @@ End Sub", @"public void Linq103()
         }
 
         [Fact]
+        public void Linq5()
+        {
+            TestConversionVisualBasicToCSharp(@"Private Shared Function FindPicFilePath(picId As String) As String
+    For Each FileInfo As FileInfo In From FileInfo1 In AList Where FileInfo1.Name.Substring(0, 6) = picId
+        Return FileInfo.FullName
+    Next
+    Return String.Empty
+End Function", @"private static string FindPicFilePath(string picId)
+{
+    foreach (FileInfo FileInfo in from FileInfo1 in AList
+                                  where FileInfo1.Name.Substring(0, 6) == picId
+                                  select FileInfo1)
+        return FileInfo.FullName;
+    return string.Empty;
+}");
+        }
+
+        [Fact]
         public void PartiallyQualifiedName()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass

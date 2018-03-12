@@ -1004,8 +1004,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var vbFromClause = node.Clauses.OfType<VBSyntax.FromClauseSyntax>().Single();
                 var fromClauseSyntax = ConvertFromClauseSyntax(vbFromClause);
                 var vbGroupClause = node.Clauses.OfType<VBSyntax.GroupByClauseSyntax>().SingleOrDefault();
-                var vbSelectClause = node.Clauses.OfType<VBSyntax.SelectClauseSyntax>().Single();
-                var selectClauseSyntax = ConvertSelectClauseSyntax(vbSelectClause);
+                var vbSelectClause = node.Clauses.OfType<VBSyntax.SelectClauseSyntax>().SingleOrDefault();
+                var selectClauseSyntax = vbSelectClause != null
+                    ? ConvertSelectClauseSyntax(vbSelectClause)
+                    : CreateDefaultSelectClause(fromClauseSyntax);
                 var alreadyConverted = new VBSyntax.QueryClauseSyntax[] { vbFromClause, vbGroupClause, vbSelectClause };
                 var vbBodyClauses = node.Clauses;
                 SelectOrGroupClauseSyntax selectOrGroup = null;
@@ -1039,6 +1041,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.SelectClause(
                     (ExpressionSyntax)collectionRangeVariableSyntax.Expression.Accept(TriviaConvertingVisitor)
                 );
+            }
+
+            private static SelectClauseSyntax CreateDefaultSelectClause(FromClauseSyntax fromClauseSyntax)
+            {
+                return SyntaxFactory.SelectClause(SyntaxFactory.IdentifierName(fromClauseSyntax.Identifier));
             }
 
             private QueryClauseSyntax ConvertQueryBodyClause(VBSyntax.QueryClauseSyntax node)
