@@ -44,6 +44,19 @@ class TestClass
         }
 
         [Fact]
+        public void IsAndIsNotKeyword()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private bIs as Boolean = New Object Is New Object
+    Private bIsNot as Boolean = New Object IsNot New Object
+End Class", @"class TestClass
+{
+    private bool bIs = object.ReferenceEquals(new Object(), new Object())
+    private bool bIsNot = !object.ReferenceEquals(new Object(), new Object())
+}");
+        }
+
+        [Fact]
         public void FullyTypeInferredEnumerableCreation()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
