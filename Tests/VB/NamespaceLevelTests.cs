@@ -19,7 +19,8 @@ End Namespace");
         {
             TestConversionCSharpToVisualBasic(
                 @"[assembly: CLSCompliant(true)]",
-                @"<Assembly: CLSCompliant(True)>");
+                @"
+<Assembly: CLSCompliant(True)>");
         }
 
         [Fact]
