@@ -188,6 +188,21 @@ End Class");
         }
 
         [Fact]
+        public void TestPropertyWithAttribute()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class TestClass
+{
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    int value { get; set; }
+}", @"Class TestClass
+    <DatabaseGenerated(DatabaseGeneratedOption.None)>
+    Private Property value As Integer
+End Class
+");
+        }
+
+        [Fact]
         public void TestConstructor()
         {
             TestConversionCSharpToVisualBasic(
