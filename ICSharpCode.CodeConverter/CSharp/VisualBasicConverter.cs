@@ -333,6 +333,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBasic.SyntaxKind.MultiplyExpression:
                     return SyntaxKind.MultiplyExpression;
                 case VBasic.SyntaxKind.DivideExpression:
+                case VBasic.SyntaxKind.IntegerDivideExpression:
                     return SyntaxKind.DivideExpression;
                 case VBasic.SyntaxKind.ModuloExpression:
                     return SyntaxKind.ModuloExpression;
@@ -358,6 +359,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxKind.LessThanExpression;
                 case VBasic.SyntaxKind.LessThanOrEqualExpression:
                     return SyntaxKind.LessThanOrEqualExpression;
+                case VBasic.SyntaxKind.IsExpression:
+                    return SyntaxKind.EqualsExpression;
+                case VBasic.SyntaxKind.IsNotExpression:
+                    return SyntaxKind.NotEqualsExpression;
+                case VBasic.SyntaxKind.LeftShiftExpression:
+                    return SyntaxKind.LeftShiftExpression;
+                case VBasic.SyntaxKind.RightShiftExpression:
+                    return SyntaxKind.RightShiftExpression;
                 // assignment
                 case VBasic.SyntaxKind.SimpleAssignmentStatement:
                     return SyntaxKind.SimpleAssignmentExpression;
@@ -368,8 +377,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxKind.SubtractAssignmentExpression;
                 case VBasic.SyntaxKind.MultiplyAssignmentStatement:
                     return SyntaxKind.MultiplyAssignmentExpression;
+                case VBasic.SyntaxKind.IntegerDivideAssignmentStatement:
                 case VBasic.SyntaxKind.DivideAssignmentStatement:
                     return SyntaxKind.DivideAssignmentExpression;
+                case VBasic.SyntaxKind.LeftShiftAssignmentStatement:
+                    return SyntaxKind.LeftShiftAssignmentExpression;
+                case VBasic.SyntaxKind.RightShiftAssignmentStatement:
+                    return SyntaxKind.RightShiftAssignmentExpression;
                 // Casts
                 case VBasic.SyntaxKind.CObjKeyword:
                     return SyntaxKind.ObjectKeyword;

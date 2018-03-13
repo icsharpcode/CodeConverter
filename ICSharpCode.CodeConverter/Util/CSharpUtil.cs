@@ -98,6 +98,10 @@ namespace ICSharpCode.CodeConverter.Util
                     return SyntaxKind.SlashToken;
                 case SyntaxKind.ModuloExpression:
                     return SyntaxKind.PercentToken;
+                case SyntaxKind.LeftShiftExpression:
+                    return SyntaxKind.LessThanLessThanToken;
+                case SyntaxKind.RightShiftExpression:
+                    return SyntaxKind.GreaterThanGreaterThanToken;
                 // assignments
                 case SyntaxKind.SimpleAssignmentExpression:
                     return SyntaxKind.EqualsToken;
@@ -105,6 +109,10 @@ namespace ICSharpCode.CodeConverter.Util
                     return SyntaxKind.PlusEqualsToken;
                 case SyntaxKind.SubtractAssignmentExpression:
                     return SyntaxKind.MinusEqualsToken;
+                case SyntaxKind.LeftShiftAssignmentExpression:
+                    return SyntaxKind.LessThanLessThanEqualsToken;
+                case SyntaxKind.RightShiftAssignmentExpression:
+                    return SyntaxKind.GreaterThanGreaterThanEqualsToken;
                 // unary
                 case SyntaxKind.UnaryPlusExpression:
                     return SyntaxKind.PlusToken;
@@ -115,7 +123,7 @@ namespace ICSharpCode.CodeConverter.Util
                 case SyntaxKind.BitwiseNotExpression:
                     return SyntaxKind.TildeToken;
             }
-            throw new ArgumentOutOfRangeException(nameof(op));
+            throw new ArgumentOutOfRangeException(nameof(op), op, null);
         }
 
         /// <summary>

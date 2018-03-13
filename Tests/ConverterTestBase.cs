@@ -145,7 +145,7 @@ using Microsoft.VisualBasic;
         /// </summary>
         private static bool IsTwoLineCsIfStatement(string line, string nextLine)
         {
-            return line.Contains("if") && !nextLine.Trim().Equals("{");
+            return line.Contains("if ") && !nextLine.Trim().Equals("{");
         }
 
         private static bool HasNoTargetLine(string prevLine, string line, string nextLine)
@@ -161,7 +161,7 @@ using Microsoft.VisualBasic;
 
         private static bool IsFirstOfMultiLineVbIfStatement(string line)
         {
-            return line.Trim().StartsWith("If") && line.Trim().EndsWith("Then");
+            return line.Trim().StartsWith("If ") && line.Trim().EndsWith("Then");
         }
 
         private static bool IsVbInheritsOrImplements(string line)

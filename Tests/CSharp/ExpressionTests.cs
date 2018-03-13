@@ -44,6 +44,67 @@ class TestClass
         }
 
         [Fact]
+        public void BinaryOperatorsIsIsNotLeftShiftRightShift()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private bIs as Boolean = New Object Is New Object
+    Private bIsNot as Boolean = New Object IsNot New Object
+    Private bLeftShift as Integer = 1 << 3
+    Private bRightShift as Integer = 8 >> 3
+End Class", @"class TestClass
+{
+    private bool bIs = new object() == new object();
+    private bool bIsNot = new object() != new object();
+    private int bLeftShift = 1 << 3;
+    private int bRightShift = 8 >> 3;
+}");
+        }
+
+        [Fact]
+        public void ShiftAssignment()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Dim x = 1
+        x <<= 4
+        x >>= 3
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        var x = 1;
+        x <<= 4;
+        x >>= 3;
+    }
+}");
+        }
+
+        [Fact]
+        public void IntegerArithmetic()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Dim x = 6 Mod 5 \ 4 + 3 * 2
+        x += 1
+        x -= 2
+        x *= 3
+        x \= 4
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        var x = 6 % 5 / 4 + 3 * 2;
+        x += 1;
+        x -= 2;
+        x *= 3;
+        x /= 4;
+    }
+}");
+        }
+
+        [Fact]
         public void FullyTypeInferredEnumerableCreation()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
