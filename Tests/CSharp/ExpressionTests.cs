@@ -69,18 +69,37 @@ End Class", @"class TestClass
         x <<= 4
         x >>= 3
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
         var x = 1;
         x <<= 4;
         x >>= 3;
+    }
+}");
+        }
+
+        [Fact]
+        public void IntegerArithmetic()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Dim x = 6 Mod 5 \ 4 + 3 * 2
+        x += 1
+        x -= 2
+        x *= 3
+        x \= 4
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        var x = 6 % 5 / 4 + 3 * 2;
+        x += 1;
+        x -= 2;
+        x *= 3;
+        x /= 4;
     }
 }");
         }

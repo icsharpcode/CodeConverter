@@ -333,6 +333,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBasic.SyntaxKind.MultiplyExpression:
                     return SyntaxKind.MultiplyExpression;
                 case VBasic.SyntaxKind.DivideExpression:
+                case VBasic.SyntaxKind.IntegerDivideExpression:
                     return SyntaxKind.DivideExpression;
                 case VBasic.SyntaxKind.ModuloExpression:
                     return SyntaxKind.ModuloExpression;
@@ -376,6 +377,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxKind.SubtractAssignmentExpression;
                 case VBasic.SyntaxKind.MultiplyAssignmentStatement:
                     return SyntaxKind.MultiplyAssignmentExpression;
+                case VBasic.SyntaxKind.IntegerDivideAssignmentStatement:
                 case VBasic.SyntaxKind.DivideAssignmentStatement:
                     return SyntaxKind.DivideAssignmentExpression;
                 case VBasic.SyntaxKind.LeftShiftAssignmentStatement:
