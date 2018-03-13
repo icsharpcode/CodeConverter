@@ -105,6 +105,28 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void FloatingPointDivisionIsForced()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Dim x = 10 / 3
+        x /= 2
+        Dim y = 10.0 / 3
+        y /= 2
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        var x = 10 / (double)3;
+        x /= 2;
+        var y = 10.0 / 3;
+        y /= 2;
+    }
+}");
+        }
+
+        [Fact]
         public void FullyTypeInferredEnumerableCreation()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -482,7 +504,7 @@ class TestClass
         var test2 = (a, b) =>
         {
             if (b > 0)
-                return a / b;
+                return a / (double)b;
             return 0;
         };
 

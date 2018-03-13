@@ -80,9 +80,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return newDecls;
         }
 
-        static ExpressionSyntax Literal(object o) => GetLiteralExpression(o);
+        static ExpressionSyntax Literal(string valueText, object o) => GetLiteralExpression(valueText, o);
 
-        internal static ExpressionSyntax GetLiteralExpression(object value)
+        internal static ExpressionSyntax GetLiteralExpression(string valueText, object value)
         {
             if (value is bool)
                 return SyntaxFactory.LiteralExpression((bool)value ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression);
@@ -105,10 +105,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (value is float)
                 return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((float)value));
-            if (value is double)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((double)value));
-            if (value is decimal)
+            if (value is double) {
+                // Important to use value text, otherwise "10.0" gets coerced to and integer literal of 10 which can change semantics
+                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (double)value));
+            }
+            if (value is decimal) {
+                // Don't use value text - it has a "D" in VB, but an "M" in C#
                 return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((decimal)value));
+            }
 
             if (value is char)
                 return SyntaxFactory.LiteralExpression(SyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal((char)value));

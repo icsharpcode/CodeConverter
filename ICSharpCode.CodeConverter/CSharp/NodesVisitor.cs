@@ -782,13 +782,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (node.Token.Value == null) {
                     var type = semanticModel.GetTypeInfo(node).ConvertedType;
                     if (type == null) {
-                        return Literal(null)
+                        return Literal("null", null)
                             .WithTrailingTrivia(
                                 SyntaxFactory.Comment("/* TODO Change to default(_) if this is not a reference type */"));
                     }
-                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(type.ToMinimalDisplayString(semanticModel, node.SpanStart))) : Literal(null);
+                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(type.ToMinimalDisplayString(semanticModel, node.SpanStart))) : Literal("null", null);
                 }
-                return Literal(node.Token.Value);
+                return Literal(node.Token.Text, node.Token.Value);
             }
 
             public override CSharpSyntaxNode VisitInterpolatedStringExpression(VBSyntax.InterpolatedStringExpressionSyntax node)
@@ -1230,13 +1230,30 @@ namespace ICSharpCode.CodeConverter.CSharp
                         return SyntaxFactory.BinaryExpression(SyntaxKind.NotEqualsExpression, otherArgument, SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression));
                     }
                 }
+
                 var kind = ConvertToken(VBasic.VisualBasicExtensions.Kind(node), TokenContext.Local);
-                return SyntaxFactory.BinaryExpression(
-                    kind,
-                    (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor),
-                    SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind)),
-                    (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor)
-                );
+                var lhs = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
+                var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
+                var rhs = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
+
+                // VB DivideExpression "/" is always on doubles unless you use the "\" IntegerDivideExpression, so need to cast in C#
+                // Need the unconverted type, since the whole point is that it gets converted to a double by the operator
+                if (node.IsKind(VBasic.SyntaxKind.DivideExpression) && !HasOperandOfUnconvertedType(node, "System.Double")) {
+                    var doubleType = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword));
+                    rhs = SyntaxFactory.CastExpression(doubleType, rhs);
+                }
+                
+                return SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
+            }
+
+            private bool HasOperandOfUnconvertedType(VBSyntax.BinaryExpressionSyntax node, string operandType)
+            {
+                return new[] {node.Left, node.Right}.Any(e => UnconvertedIsType(e, operandType));
+            }
+
+            private bool UnconvertedIsType(VBSyntax.ExpressionSyntax e, string fullTypeName)
+            {
+                return semanticModel.GetTypeInfo(e).Type?.GetFullMetadataName() == fullTypeName;
             }
 
             public override CSharpSyntaxNode VisitInvocationExpression(VBSyntax.InvocationExpressionSyntax node)
