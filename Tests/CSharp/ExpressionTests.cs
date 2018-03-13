@@ -44,15 +44,19 @@ class TestClass
         }
 
         [Fact]
-        public void IsAndIsNotKeyword()
+        public void BinaryOperatorsIsIsNotLeftShiftRightShift()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private bIs as Boolean = New Object Is New Object
     Private bIsNot as Boolean = New Object IsNot New Object
+    Private bLeftShift as Integer = 1 << 3
+    Private bRightShift as Integer = 8 >> 3
 End Class", @"class TestClass
 {
-    private bool bIs = object.ReferenceEquals(new Object(), new Object())
-    private bool bIsNot = !object.ReferenceEquals(new Object(), new Object())
+    private bool bIs = new object() == new object();
+    private bool bIsNot = new object() != new object();
+    private int bLeftShift = 1 << 3;
+    private int bRightShift = 8 >> 3;
 }");
         }
 

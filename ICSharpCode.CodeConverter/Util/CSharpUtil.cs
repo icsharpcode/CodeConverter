@@ -98,6 +98,10 @@ namespace ICSharpCode.CodeConverter.Util
                     return SyntaxKind.SlashToken;
                 case SyntaxKind.ModuloExpression:
                     return SyntaxKind.PercentToken;
+                case SyntaxKind.LeftShiftExpression:
+                    return SyntaxKind.LessThanLessThanToken;
+                case SyntaxKind.RightShiftExpression:
+                    return SyntaxKind.GreaterThanGreaterThanToken;
                 // assignments
                 case SyntaxKind.SimpleAssignmentExpression:
                     return SyntaxKind.EqualsToken;

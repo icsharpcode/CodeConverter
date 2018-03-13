@@ -358,6 +358,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxKind.LessThanExpression;
                 case VBasic.SyntaxKind.LessThanOrEqualExpression:
                     return SyntaxKind.LessThanOrEqualExpression;
+                case VBasic.SyntaxKind.IsExpression:
+                    return SyntaxKind.EqualsExpression;
+                case VBasic.SyntaxKind.IsNotExpression:
+                    return SyntaxKind.NotEqualsExpression;
+                case VBasic.SyntaxKind.LeftShiftExpression:
+                    return SyntaxKind.LeftShiftExpression;
+                case VBasic.SyntaxKind.RightShiftExpression:
+                    return SyntaxKind.RightShiftExpression;
                 // assignment
                 case VBasic.SyntaxKind.SimpleAssignmentStatement:
                     return SyntaxKind.SimpleAssignmentExpression;
