@@ -633,5 +633,62 @@ class TestClass
     }
 }");
         }
+
+
+
+
+
+        [Fact]
+        public void IntegerDivideExpression()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Sub TestMethod(ByRef i As Integer)
+        Dim k as Integer
+        k = i \ 1000000
+    End Sub
+End Class"
+, @"class TestClass
+{
+    public void TestMethod(ref int i)
+    {
+        int k;
+        k = i / 1000000;
+    }
+}");
+        }
+
+
+
+
+        [Fact]
+        public void NarrowingWideningExpression()
+        {
+            //TestConversionVisualBasicToCSharp => Failing! because of cr/lf after "operator MyInt" in expected CS below:
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class MyInt
+    Public Shared Narrowing Operator CType(i As Integer) As MyInt
+            Return New MyInt()
+        End Operator
+        Public Shared Widening Operator CType(myInt As MyInt) As Integer
+            Return 1
+        End Operator
+    End Class"
+, @"public class MyInt
+{
+    public static explicit operator MyInt
+(int i)
+    {
+        return new MyInt();
+    }
+    public static implicit operator int
+(MyInt myInt)
+    {
+        return 1;
+    }
+}");
+        }
+
+
+
+
     }
 }

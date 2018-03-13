@@ -565,14 +565,31 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var block = node.OperatorStatement;
                 var attributes = block.AttributeLists.SelectMany(ConvertAttribute);
                 var modifiers = ConvertModifiers(block.Modifiers, TokenContext.Member);
-                return SyntaxFactory.OperatorDeclaration(
-                    SyntaxFactory.List(attributes),
-                    modifiers,
-                    (TypeSyntax)block.AsClause?.Type.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)), ConvertToken(block.OperatorToken),
-                    (ParameterListSyntax)block.ParameterList.Accept(TriviaConvertingVisitor),
-                    SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor()))),
-                    null
-                );
+                SyntaxToken? conversionOp = null;
+                conversionOp = modifiers.FirstOrNullable(t=>VisualBasicConverter.IsConversionOperator(t));
+                if (conversionOp.HasValue) {
+                    modifiers=modifiers.Remove(conversionOp.Value);
+                    return SyntaxFactory.ConversionOperatorDeclaration(
+                       SyntaxFactory.List(attributes),//attributes
+                       modifiers,//modifiers
+                       conversionOp.Value,//implicitOrExplicit
+                       (TypeSyntax)block.AsClause?.Type.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)),//type
+                       (ParameterListSyntax)block.ParameterList.Accept(TriviaConvertingVisitor),//parameterList
+                       SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor()))),//body
+                       null//expressionBody
+                   );
+                   
+                } else {
+                    return SyntaxFactory.OperatorDeclaration(
+                        SyntaxFactory.List(attributes),//attributes
+                        modifiers,//modifiers
+                        (TypeSyntax)block.AsClause?.Type.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)),//returnType
+                        ConvertToken(block.OperatorToken),//operatorToken
+                        (ParameterListSyntax)block.ParameterList.Accept(TriviaConvertingVisitor),//parameterList
+                        SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor()))),//body
+                        null//expressionBody
+                    );
+                }
             }
 
             private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(bool isIterator = false)
