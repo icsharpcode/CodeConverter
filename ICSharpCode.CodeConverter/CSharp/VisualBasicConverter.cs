@@ -378,6 +378,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxKind.MultiplyAssignmentExpression;
                 case VBasic.SyntaxKind.DivideAssignmentStatement:
                     return SyntaxKind.DivideAssignmentExpression;
+                case VBasic.SyntaxKind.LeftShiftAssignmentStatement:
+                    return SyntaxKind.LeftShiftAssignmentExpression;
+                case VBasic.SyntaxKind.RightShiftAssignmentStatement:
+                    return SyntaxKind.RightShiftAssignmentExpression;
                 // Casts
                 case VBasic.SyntaxKind.CObjKeyword:
                     return SyntaxKind.ObjectKeyword;

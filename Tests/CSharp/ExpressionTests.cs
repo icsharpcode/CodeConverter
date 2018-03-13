@@ -61,6 +61,31 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void ShiftAssignment()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Dim x = 1
+        x <<= 4
+        x >>= 3
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualBasic;
+
+class TestClass
+{
+    private void TestMethod()
+    {
+        var x = 1;
+        x <<= 4;
+        x >>= 3;
+    }
+}");
+        }
+
+        [Fact]
         public void FullyTypeInferredEnumerableCreation()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass

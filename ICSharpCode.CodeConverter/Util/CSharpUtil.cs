@@ -109,6 +109,10 @@ namespace ICSharpCode.CodeConverter.Util
                     return SyntaxKind.PlusEqualsToken;
                 case SyntaxKind.SubtractAssignmentExpression:
                     return SyntaxKind.MinusEqualsToken;
+                case SyntaxKind.LeftShiftAssignmentExpression:
+                    return SyntaxKind.LessThanLessThanEqualsToken;
+                case SyntaxKind.RightShiftAssignmentExpression:
+                    return SyntaxKind.GreaterThanGreaterThanEqualsToken;
                 // unary
                 case SyntaxKind.UnaryPlusExpression:
                     return SyntaxKind.PlusToken;
