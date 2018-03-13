@@ -115,7 +115,7 @@ namespace ICSharpCode.CodeConverter.Util
                 case SyntaxKind.BitwiseNotExpression:
                     return SyntaxKind.TildeToken;
             }
-            throw new ArgumentOutOfRangeException(nameof(op));
+            throw new ArgumentOutOfRangeException(nameof(op), op, null);
         }
 
         /// <summary>
