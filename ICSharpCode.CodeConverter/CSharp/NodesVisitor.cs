@@ -562,12 +562,17 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitOperatorBlock(VBSyntax.OperatorBlockSyntax node)
             {
-                var block = node.OperatorStatement;
-                var attributes = SyntaxFactory.List(block.AttributeLists.SelectMany(ConvertAttribute));
-                var returnType = (TypeSyntax)block.AsClause?.Type.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword));
-                var parameterList = (ParameterListSyntax)block.ParameterList.Accept(TriviaConvertingVisitor);
-                var body = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())));
-                var modifiers = ConvertModifiers(block.Modifiers, TokenContext.Member);
+                return node.BlockStatement.Accept(TriviaConvertingVisitor);
+            }
+
+            public override CSharpSyntaxNode VisitOperatorStatement(VBSyntax.OperatorStatementSyntax node)
+            {
+                var containingBlock = (VBSyntax.OperatorBlockSyntax) node.Parent;
+                var attributes = SyntaxFactory.List(node.AttributeLists.SelectMany(ConvertAttribute));
+                var returnType = (TypeSyntax)node.AsClause?.Type.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword));
+                var parameterList = (ParameterListSyntax)node.ParameterList.Accept(TriviaConvertingVisitor);
+                var body = SyntaxFactory.Block(containingBlock.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())));
+                var modifiers = ConvertModifiers(node.Modifiers, TokenContext.Member);
 
                 var conversionModifiers = modifiers.Where(IsConversionOperator).ToList();
                 var nonConversionModifiers = SyntaxFactory.TokenList(modifiers.Except(conversionModifiers));
@@ -578,7 +583,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 return SyntaxFactory.OperatorDeclaration(attributes, nonConversionModifiers, returnType,
-                    ConvertToken(block.OperatorToken), parameterList, body, null);
+                    ConvertToken(node.OperatorToken), parameterList, body, null);
             }
 
             private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(bool isIterator = false)

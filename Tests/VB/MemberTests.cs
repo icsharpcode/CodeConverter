@@ -126,13 +126,11 @@ End Class");
     End Class"
                 , @"public class MyInt
 {
-    public static explicit operator MyInt
-(int i)
+    public static explicit operator MyInt(int i)
     {
         return new MyInt();
     }
-    public static implicit operator int
-(MyInt myInt)
+    public static implicit operator int(MyInt myInt)
     {
         return 1;
     }
