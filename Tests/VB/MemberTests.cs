@@ -115,7 +115,6 @@ End Class");
         [Fact]
         public void NarrowingWideningExpression()
         {
-            //TestConversionVisualBasicToCSharp => Failing! because of cr/lf after "operator MyInt" in expected CS below:
             TestConversionVisualBasicToCSharpWithoutComments(@"Public Class MyInt
     Public Shared Narrowing Operator CType(i As Integer) As MyInt
             Return New MyInt()
