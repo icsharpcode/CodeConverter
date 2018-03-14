@@ -209,7 +209,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-
         static bool IsConversionOperator(SyntaxToken token)
         {
             bool isConvOp= token.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ExplicitKeyword, Microsoft.CodeAnalysis.CSharp.SyntaxKind.ImplicitKeyword)
