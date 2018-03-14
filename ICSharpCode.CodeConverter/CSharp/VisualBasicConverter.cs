@@ -209,6 +209,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
+        static bool IsConversionOperator(SyntaxToken token)
+        {
+            bool isConvOp= token.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ExplicitKeyword, Microsoft.CodeAnalysis.CSharp.SyntaxKind.ImplicitKeyword)
+                    ||token.IsKind(VBasic.SyntaxKind.NarrowingKeyword, VBasic.SyntaxKind.WideningKeyword);
+            return isConvOp;
+        }
+
         static bool IsVisibility(SyntaxToken token, TokenContext context)
         {
             return token.IsKind(VBasic.SyntaxKind.PublicKeyword, VBasic.SyntaxKind.FriendKeyword, VBasic.SyntaxKind.ProtectedKeyword, VBasic.SyntaxKind.PrivateKeyword)
@@ -419,6 +426,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxKind.DoubleKeyword;
                 case VBasic.SyntaxKind.CStrKeyword:
                     return SyntaxKind.StringKeyword;
+                // Converts 
+                case VBasic.SyntaxKind.NarrowingKeyword:
+                    return SyntaxKind.ExplicitKeyword;
+                case VBasic.SyntaxKind.WideningKeyword:
+                    return SyntaxKind.ImplicitKeyword;
                 //
                 case VBasic.SyntaxKind.AssemblyKeyword:
                     return SyntaxKind.AssemblyKeyword;
