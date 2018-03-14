@@ -621,6 +621,51 @@ class TestClass
         }
 
         [Fact]
+        public void NestedBlockStatementsKeepSameNesting()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+    Shared Function FindTextInCol(w As Worksheet, pTitleRow As Integer, startCol As Integer, needle As String) As Integer
+
+        For c As Integer = startCol To w.Cells.MaxDataColumn
+            If needle = """" Then
+                If String.IsNullOrWhiteSpace(w.Cells(pTitleRow, c).StringValue) Then
+                    Return c
+                End If
+            Else
+                If w.Cells(pTitleRow, c).StringValue = needle Then
+                    Return c
+                End If
+            End If
+        Next
+        Return -1
+    End Function
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualBasic;
+
+class TestClass
+{
+    public static int FindTextInCol(Worksheet w, int pTitleRow, int startCol, string needle)
+    {
+        for (int c = startCol; c <= w.Cells.MaxDataColumn; c++)
+        {
+            if (needle == """")
+            {
+                if (string.IsNullOrWhiteSpace(w.Cells(pTitleRow, c).StringValue))
+                    return c;
+            }
+            else if (w.Cells(pTitleRow, c).StringValue == needle)
+                return c;
+        }
+        return -1;
+    }
+}");
+        }
+
+
+
+        [Fact]
         public void WhileStatement()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -891,19 +936,22 @@ class GotoTest1
         string[,] array = new string[x - 1 + 1, y - 1 + 1];
 
         for (int i = 0; i <= x - 1; i++)
-
+        {
             for (int j = 0; j <= y - 1; j++)
                 array[i, j] = (System.Threading.Interlocked.Increment(ref count)).ToString();
+        }
 
         Console.Write(""Enter the number to search for: "");
         string myNumber = Console.ReadLine();
 
         for (int i = 0; i <= x - 1; i++)
-
+        {
             for (int j = 0; j <= y - 1; j++)
-
+            {
                 if (array[i, j].Equals(myNumber))
                     goto Found;
+            }
+        }
 
         Console.WriteLine(""The number {0} was not found."", myNumber);
         goto Finish;

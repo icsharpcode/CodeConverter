@@ -44,6 +44,89 @@ class TestClass
         }
 
         [Fact]
+        public void BinaryOperatorsIsIsNotLeftShiftRightShift()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private bIs as Boolean = New Object Is New Object
+    Private bIsNot as Boolean = New Object IsNot New Object
+    Private bLeftShift as Integer = 1 << 3
+    Private bRightShift as Integer = 8 >> 3
+End Class", @"class TestClass
+{
+    private bool bIs = new object() == new object();
+    private bool bIsNot = new object() != new object();
+    private int bLeftShift = 1 << 3;
+    private int bRightShift = 8 >> 3;
+}");
+        }
+
+        [Fact]
+        public void ShiftAssignment()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Dim x = 1
+        x <<= 4
+        x >>= 3
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        var x = 1;
+        x <<= 4;
+        x >>= 3;
+    }
+}");
+        }
+
+        [Fact]
+        public void IntegerArithmetic()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Dim x = 6 Mod 5 \ 4 + 3 * 2
+        x += 1
+        x -= 2
+        x *= 3
+        x \= 4
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        var x = 6 % 5 / 4 + 3 * 2;
+        x += 1;
+        x -= 2;
+        x *= 3;
+        x /= 4;
+    }
+}");
+        }
+
+        [Fact]
+        public void FloatingPointDivisionIsForced()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Dim x = 10 / 3
+        x /= 2
+        Dim y = 10.0 / 3
+        y /= 2
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        var x = 10 / (double)3;
+        x /= 2;
+        var y = 10.0 / 3;
+        y /= 2;
+    }
+}");
+        }
+
+        [Fact]
         public void FullyTypeInferredEnumerableCreation()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -421,7 +504,7 @@ class TestClass
         var test2 = (a, b) =>
         {
             if (b > 0)
-                return a / b;
+                return a / (double)b;
             return 0;
         };
 
@@ -589,6 +672,24 @@ End Sub", @"public void Linq103()
         foreach (var p in v.Products)
             System.Console.WriteLine(""   "" + p.ProductName);
     }
+}");
+        }
+
+        [Fact]
+        public void Linq5()
+        {
+            TestConversionVisualBasicToCSharp(@"Private Shared Function FindPicFilePath(picId As String) As String
+    For Each FileInfo As FileInfo In From FileInfo1 In AList Where FileInfo1.Name.Substring(0, 6) = picId
+        Return FileInfo.FullName
+    Next
+    Return String.Empty
+End Function", @"private static string FindPicFilePath(string picId)
+{
+    foreach (FileInfo FileInfo in from FileInfo1 in AList
+                                  where FileInfo1.Name.Substring(0, 6) == picId
+                                  select FileInfo1)
+        return FileInfo.FullName;
+    return string.Empty;
 }");
         }
 
