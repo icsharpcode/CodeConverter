@@ -735,32 +735,6 @@ class TestClass
 }");
         }
 
-
-
-
-
-        [Fact]
-        public void IntegerDivideExpression()
-        {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
-    Sub TestMethod(ByRef i As Integer)
-        Dim k as Integer
-        k = i \ 1000000
-    End Sub
-End Class"
-, @"class TestClass
-{
-    public void TestMethod(ref int i)
-    {
-        int k;
-        k = i / 1000000;
-    }
-}");
-        }
-
-
-
-
         [Fact]
         public void NarrowingWideningExpression()
         {
