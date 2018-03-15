@@ -311,6 +311,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxKind.ReadOnlyKeyword;
                 case VBasic.SyntaxKind.OverridesKeyword:
                     return SyntaxKind.OverrideKeyword;
+                //New isn't as restrictive as shadows, but it will behave the same for all existing programs
+                case VBasic.SyntaxKind.ShadowsKeyword:
                 case VBasic.SyntaxKind.OverloadsKeyword:
                     return SyntaxKind.NewKeyword;
                 case VBasic.SyntaxKind.OverridableKeyword:
