@@ -38,12 +38,7 @@ class Class1
         Dim o As Object = ""Test""
         Dim s As String = CStr(o)
     End Sub
-End Class" + Environment.NewLine, @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class Class1
+End Class" + Environment.NewLine, @"class Class1
 {
     private void Test()
     {
@@ -51,6 +46,25 @@ class Class1
         string s = System.Convert.ToString(o);
     }
 }" + Environment.NewLine);
+        }
+
+        [Fact]
+        public void DirectCastDoubleToInt()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Class Class1
+    Private Sub Test()
+        Dim q = 2.37
+        Dim j = DirectCast(q, Integer)
+    End Sub
+End Class", @"class Class1
+{
+    private void Test()
+    {
+        var q = 2.37;
+        var j = (int)q;
+    }
+}");
         }
 
         [Fact]

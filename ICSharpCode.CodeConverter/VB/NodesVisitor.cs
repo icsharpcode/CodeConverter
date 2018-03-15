@@ -1464,11 +1464,14 @@ End Function";
 
             VisualBasicSyntaxNode WrapTypedNameIfNecessary(ExpressionSyntax name, CSS.ExpressionSyntax originalName)
             {
-                if (originalName.Parent is CSS.NameSyntax || originalName.Parent is CSS.AttributeSyntax || originalName.Parent is CSS.MemberAccessExpressionSyntax || originalName.Parent is CSS.MemberBindingExpressionSyntax) return name;
-                if (originalName != null && originalName.Parent is CSS.InvocationExpressionSyntax)
+                if (originalName.Parent is CSS.NameSyntax
+                    || originalName.Parent is CSS.AttributeSyntax
+                    || originalName.Parent is CSS.MemberAccessExpressionSyntax
+                    || originalName.Parent is CSS.MemberBindingExpressionSyntax
+                    || originalName.Parent is CSS.InvocationExpressionSyntax)
                     return name;
 
-                var symbolInfo = ModelExtensions.GetSymbolInfo(semanticModel, originalName);
+                var symbolInfo = semanticModel.GetSymbolInfo(originalName);
                 var symbol = symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault();
                 if (symbol.IsKind(SymbolKind.Method))
                     return SyntaxFactory.AddressOfExpression(name);

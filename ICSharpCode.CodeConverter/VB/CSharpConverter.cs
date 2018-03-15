@@ -279,7 +279,7 @@ namespace ICSharpCode.CodeConverter.VB
                     // not supported
                     return SyntaxKind.None;
                 case CS.SyntaxKind.NewKeyword:
-                    return SyntaxKind.ShadowsKeyword;
+                    return SyntaxKind.OverloadsKeyword;
                 case CS.SyntaxKind.ParamsKeyword:
                     return SyntaxKind.ParamArrayKeyword;
                 // others
