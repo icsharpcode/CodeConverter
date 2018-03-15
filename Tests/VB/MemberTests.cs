@@ -113,7 +113,7 @@ End Class");
         }
 
         [Fact]
-        public void NarrowingWideningExpression()
+        public void TestNarrowingWideningConversionOperator()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Public Class MyInt
     Public Shared Narrowing Operator CType(i As Integer) As MyInt
