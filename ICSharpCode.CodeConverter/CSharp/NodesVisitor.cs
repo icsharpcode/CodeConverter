@@ -736,11 +736,21 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitCTypeExpression(VBSyntax.CTypeExpressionSyntax node)
             {
-                var expressionSyntax = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
                 var convertMethodForKeywordOrNull = GetConvertMethodForKeywordOrNull(node.Type);
+                return ConvertCastExpression(node, convertMethodForKeywordOrNull);
+            }
 
-                return convertMethodForKeywordOrNull != null ?
-                    SyntaxFactory.InvocationExpression(convertMethodForKeywordOrNull,
+            public override CSharpSyntaxNode VisitDirectCastExpression(VBSyntax.DirectCastExpressionSyntax node)
+            {
+                return ConvertCastExpression(node);
+            }
+
+            private CSharpSyntaxNode ConvertCastExpression(VBSyntax.CastExpressionSyntax node, ExpressionSyntax convertMethodOrNull = null)
+            {
+                var expressionSyntax = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
+
+                return convertMethodOrNull != null ?
+                    SyntaxFactory.InvocationExpression(convertMethodOrNull,
                         SyntaxFactory.ArgumentList(
                             SyntaxFactory.SingletonSeparatedList(
                                 SyntaxFactory.Argument(expressionSyntax)))
