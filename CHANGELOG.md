@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
-## 5.6.2 - Upcoming
+## 5.6.2 - 16/03/2018
 
 ### VB -> C#
 * Fix for change in logic when converting nested one-line if blocks
