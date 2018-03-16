@@ -1,6 +1,22 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
+## 5.6.2 - Upcoming
+
+### VB -> C#
+* Fix for change in logic when converting nested one-line if blocks
+* Fix for loss of precision in arithmetic when using `/` operator
+* Integer division and bit shifting now converted
+* `Is` and `IsNot` operators now converted
+* `Narrowing ` and `Widening` conversion operators now converted
+* Linq query syntax with no select clause now converted
+* `DirectCast` operator now converted
+* `Shadows` modifier now converted (to `new`)
+
+### C# -> VB
+* Newline now appears before each attribute list
+* Fix for `new` converting to `Shadows` - it now maps to `Overloads`
+
 ## 5.6.1 - 06/03/2018
 * VSIX: Gets conversion off the UI thread to avoid it freezing
 * VB -> C#: VB projects referencing other VB projects no longer error
@@ -15,7 +31,7 @@ All notable changes to the code converter will be documented here.
 * Writes summary to output window to explain what's happened
 * Project context used for all conversions
 
-### VB -> C# specific
+### VB -> C#
 * Query expression syntax converted in simple cases
 * Anonymous object creation converted
 * Object initializer syntax converted
