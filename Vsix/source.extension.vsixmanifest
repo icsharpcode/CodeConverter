@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="7e2a69d6-193b-4cdf-878d-3370d5931942" Version="5.6.1.0" Language="en-US" Publisher="IC#Code"/>
+        <Identity Id="7e2a69d6-193b-4cdf-878d-3370d5931942" Version="5.6.2.0" Language="en-US" Publisher="IC#Code"/>
         <DisplayName>Code Converter C# to/from VB.NET</DisplayName>
         <Description xml:space="preserve">Based on Roslyn, this converter allows you to convert C# code to VB.NET and vice versa</Description>
         <License>license.txt</License>

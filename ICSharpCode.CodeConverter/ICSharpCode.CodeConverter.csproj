@@ -8,9 +8,9 @@
     <Description>This Roslyn-based code converter was previously part of Refactoring Essentials. It has been teased out to be able to evolve separately and faster than the analyzers/refactorings. Conversion from C# to VB.NET, as well as from VB.NET to C# are included.</Description>
     <Product>Code Converter for C# to/from VB.NET</Product>
     <Copyright>Copyright (c) 2014-2018 AlphaSierraPapa</Copyright>
-    <AssemblyVersion>5.6.1.0</AssemblyVersion>
-    <FileVersion>5.6.1.0</FileVersion>
-    <Version>5.6.1</Version>
+    <AssemblyVersion>5.6.2.0</AssemblyVersion>
+    <FileVersion>5.6.2.0</FileVersion>
+    <Version>5.6.2</Version>
     <PackageId>ICSharpCode.CodeConverter</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseUrl>https://github.com/icsharpcode/CodeConverter/blob/master/LICENSE</PackageLicenseUrl>
