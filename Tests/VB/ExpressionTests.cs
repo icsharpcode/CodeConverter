@@ -199,6 +199,9 @@ End Class");
         {
             TestConversionCSharpToVisualBasic(@"class TestClass 
 {
+
+    private static Action<int> m_Event1 = delegate { };
+
     void TestMethod()
     {
         var test = delegate(int a) { return a * 2 };
@@ -206,6 +209,9 @@ End Class");
         test(3);
     }
 }", @"Class TestClass
+    Private Shared m_Event1 As Action(Of Integer) = Function()
+                                                    End Function
+
     Private Sub TestMethod()
         Dim test = Function(ByVal a As Integer) a * 2
         test(3)

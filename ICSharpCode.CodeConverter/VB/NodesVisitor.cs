@@ -1134,12 +1134,13 @@ End Function";
 
             public override VisualBasicSyntaxNode VisitAnonymousMethodExpression(CSS.AnonymousMethodExpressionSyntax node)
             {
-                return ConvertLambdaExpression(node, node.Block.Statements, node.ParameterList.Parameters, SyntaxFactory.TokenList(node.AsyncKeyword));
+                var parameterListParameters = node.ParameterList?.Parameters ?? Enumerable.Empty<CSS.ParameterSyntax>();// May have no parameter list
+                return ConvertLambdaExpression(node, node.Block.Statements, parameterListParameters, SyntaxFactory.TokenList(node.AsyncKeyword));
             }
 
             public override VisualBasicSyntaxNode VisitSimpleLambdaExpression(CSS.SimpleLambdaExpressionSyntax node)
             {
-                return ConvertLambdaExpression(node, node.Body, SyntaxFactory.SingletonSeparatedList(node.Parameter), SyntaxFactory.TokenList(node.AsyncKeyword));
+                return ConvertLambdaExpression(node, node.Body, new[] {node.Parameter}, SyntaxFactory.TokenList(node.AsyncKeyword));
             }
 
             public override VisualBasicSyntaxNode VisitParenthesizedLambdaExpression(CSS.ParenthesizedLambdaExpressionSyntax node)
@@ -1147,7 +1148,7 @@ End Function";
                 return ConvertLambdaExpression(node, node.Body, node.ParameterList.Parameters, SyntaxFactory.TokenList(node.AsyncKeyword));
             }
 
-            LambdaExpressionSyntax ConvertLambdaExpression(CSS.AnonymousFunctionExpressionSyntax node, object block, SeparatedSyntaxList<CSS.ParameterSyntax> parameters, SyntaxTokenList modifiers)
+            LambdaExpressionSyntax ConvertLambdaExpression(CSS.AnonymousFunctionExpressionSyntax node, object block, IEnumerable<CSS.ParameterSyntax> parameters, SyntaxTokenList modifiers)
             {
                 var symbol = ModelExtensions.GetSymbolInfo(semanticModel, node).Symbol as IMethodSymbol;
                 var parameterList = SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor))));
