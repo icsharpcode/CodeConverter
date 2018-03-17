@@ -4,10 +4,11 @@ Convert code from C# to VB.NET and vice versa using Roslyn
 
 ## Using the code converter
 
-Visual Studio Extension (recommended): [https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter)
+* **Visual Studio Extension (recommended): [https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter)**
 
-Online snippet converter: [https://roslyncodeconverter.azurewebsites.net](https://roslyncodeconverter.azurewebsites.net)
+* Online snippet converter: [https://roslyncodeconverter.azurewebsites.net](https://roslyncodeconverter.azurewebsites.net)
 
+* Extensions "nightly" developer builds (potentially less stable and more effort to update): https://ci.appveyor.com/project/icsharpcode/codeconverter/branch/master
 
 ## Developing against the Code Converter library (NuGet)
 
