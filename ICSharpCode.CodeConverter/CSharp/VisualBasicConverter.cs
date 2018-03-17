@@ -361,16 +361,21 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBasic.SyntaxKind.ExclusiveOrExpression:
                     return SyntaxKind.ExclusiveOrExpression;
                 case VBasic.SyntaxKind.EqualsExpression:
+                case VBasic.SyntaxKind.CaseEqualsClause:
                     return SyntaxKind.EqualsExpression;
                 case VBasic.SyntaxKind.NotEqualsExpression:
                     return SyntaxKind.NotEqualsExpression;
                 case VBasic.SyntaxKind.GreaterThanExpression:
+                case VBasic.SyntaxKind.CaseGreaterThanClause:
                     return SyntaxKind.GreaterThanExpression;
                 case VBasic.SyntaxKind.GreaterThanOrEqualExpression:
+                case VBasic.SyntaxKind.CaseGreaterThanOrEqualClause:
                     return SyntaxKind.GreaterThanOrEqualExpression;
                 case VBasic.SyntaxKind.LessThanExpression:
+                case VBasic.SyntaxKind.CaseLessThanClause:
                     return SyntaxKind.LessThanExpression;
                 case VBasic.SyntaxKind.LessThanOrEqualExpression:
+                case VBasic.SyntaxKind.CaseLessThanOrEqualClause:
                     return SyntaxKind.LessThanOrEqualExpression;
                 case VBasic.SyntaxKind.IsExpression:
                     return SyntaxKind.EqualsExpression;

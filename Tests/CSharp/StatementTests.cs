@@ -1116,6 +1116,49 @@ class TestClass
         }
 
         [Fact]
+        public void SelectCaseWithExpression()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass
+    Shared Function TimeAgo(daysAgo As Integer) As String
+        Select Case daysAgo
+            Case 0 To 3, 4, Is >= 5, Is < 6, Is <= 7
+                Return ""this week""
+            Case Is > 0
+                Return daysAgo \ 7 & "" weeks ago""
+            Case Else
+                Return ""in the future""
+        End Select
+    End Function
+End Class", @"public class TestClass
+{
+    public static string TimeAgo(int daysAgo)
+    {
+        switch (daysAgo)
+        {
+            case object _ when 0 <= daysAgo && daysAgo <= 3:
+            case 4:
+            case object _ when daysAgo >= 5:
+            case object _ when daysAgo < 6:
+            case object _ when daysAgo <= 7:
+                {
+                    return ""this week"";
+                }
+
+            case object _ when daysAgo > 0:
+                {
+                    return daysAgo / 7 + "" weeks ago"";
+                }
+
+            default:
+                {
+                    return ""in the future"";
+                }
+        }
+    }
+}");
+        }
+
+        [Fact]
         public void TryCatch()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
