@@ -243,7 +243,7 @@ class TestClass
     Private Sub TestMethod()
         With New System.Text.StringBuilder
             .Capacity = 20
-            .Length = 0
+            ?.Length = 0
         End With
     End Sub
 End Class", @"using System;
@@ -258,7 +258,39 @@ class TestClass
         {
             var withBlock = new System.Text.StringBuilder();
             withBlock.Capacity = 20;
-            withBlock.Length = 0;
+            withBlock?.Length = 0;
+        }
+    }
+}");
+        }
+
+        [Fact]
+        public void WithBlock2()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+    Private Sub Save()
+        Using cmd As SqlCommand = new SqlCommand()
+            With cmd
+            .ExecuteNonQuery()
+            ?.ExecuteNonQuery()
+            .ExecuteNonQuery
+            ?.ExecuteNonQuery
+            End With
+        End Using
+    End Sub
+End Class", @"class TestClass
+{
+    private void Save()
+    {
+        using (SqlCommand cmd = new SqlCommand())
+        {
+            {
+                var withBlock = cmd;
+                withBlock.ExecuteNonQuery();
+                withBlock?.ExecuteNonQuery();
+                withBlock.ExecuteNonQuery();
+                withBlock?.ExecuteNonQuery();
+            }
         }
     }
 }");

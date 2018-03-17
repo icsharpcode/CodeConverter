@@ -853,10 +853,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var left = (ExpressionSyntax)node.Expression?.Accept(TriviaConvertingVisitor);
                 if (left == null) {
-                    if (!node.Parent.Parent.IsKind(VBasic.SyntaxKind.WithBlock)) {
+                    if (IsSubPartOfConditionalAccess(node)) {
                         return SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
                     }
-
                     left = SyntaxFactory.IdentifierName(withBlockTempVariableNames.Peek());
                 }
 
@@ -873,9 +872,23 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return memberAccessExpressionSyntax;
             }
 
+            private static bool IsSubPartOfConditionalAccess(VBSyntax.MemberAccessExpressionSyntax node)
+            {
+                var firstPossiblyConditionalAncestor = node.Parent;
+                while (firstPossiblyConditionalAncestor != null &&
+                       firstPossiblyConditionalAncestor.IsKind(VBasic.SyntaxKind.InvocationExpression,
+                           VBasic.SyntaxKind.SimpleMemberAccessExpression))
+                {
+                    firstPossiblyConditionalAncestor = firstPossiblyConditionalAncestor.Parent;
+                }
+
+                return firstPossiblyConditionalAncestor?.IsKind(VBasic.SyntaxKind.ConditionalAccessExpression) == true;
+            }
+
             public override CSharpSyntaxNode VisitConditionalAccessExpression(VBSyntax.ConditionalAccessExpressionSyntax node)
             {
-                return SyntaxFactory.ConditionalAccessExpression((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor), (ExpressionSyntax)node.WhenNotNull.Accept(TriviaConvertingVisitor));
+                var leftExpression = (ExpressionSyntax)node.Expression?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.IdentifierName(withBlockTempVariableNames.Peek());
+                return SyntaxFactory.ConditionalAccessExpression(leftExpression, (ExpressionSyntax)node.WhenNotNull.Accept(TriviaConvertingVisitor));
             }
 
             public override CSharpSyntaxNode VisitArgumentList(VBSyntax.ArgumentListSyntax node)
@@ -1290,7 +1303,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 return SyntaxFactory.InvocationExpression(
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
-                    (ArgumentListSyntax)node.ArgumentList.Accept(TriviaConvertingVisitor)
+                    (ArgumentListSyntax)node.ArgumentList?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ArgumentList()
                 );
             }
 
