@@ -1022,6 +1022,33 @@ class TestClass
         }
 
         [Fact]
+        public void CallStatement()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Call (Sub() Console.Write(""Hello""))
+        Call (Sub() Console.Write(""Hello""))()
+        Call TestMethod
+        Call TestMethod()
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualBasic;
+
+class TestClass
+{
+    private void TestMethod()
+    {
+        (() => Console.Write(""Hello""))();
+        (() => Console.Write(""Hello""))();
+        TestMethod();
+        TestMethod();
+    }
+}");
+        }
+
+        [Fact]
         public void AddRemoveHandler()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass

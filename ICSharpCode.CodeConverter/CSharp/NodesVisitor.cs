@@ -1311,15 +1311,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitSingleLineLambdaExpression(VBSyntax.SingleLineLambdaExpressionSyntax node)
             {
                 CSharpSyntaxNode body;
-                if (node.Body is VBSyntax.ExpressionSyntax)
-                    body = node.Body.Accept(TriviaConvertingVisitor);
+                if (node.Body is VBSyntax.ExpressionStatementSyntax ess)
+                    body = ess.Expression.Accept(TriviaConvertingVisitor);
                 else {
-                    var stmt = node.Body.Accept(CreateMethodBodyVisitor());
-                    if (stmt.Count == 1)
-                        body = stmt[0];
-                    else {
-                        body = SyntaxFactory.Block(stmt);
-                    }
+                    body = node.Body.Accept(TriviaConvertingVisitor);
                 }
                 var param = (ParameterListSyntax)node.SubOrFunctionHeader.ParameterList.Accept(TriviaConvertingVisitor);
                 if (param.Parameters.Count == 1)

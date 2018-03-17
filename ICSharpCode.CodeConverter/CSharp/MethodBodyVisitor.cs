@@ -421,6 +421,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 throw new NotSupportedException();
             }
 
+            public override SyntaxList<StatementSyntax> VisitCallStatement(VBSyntax.CallStatementSyntax node)
+            {
+                return SingleStatement((ExpressionSyntax) node.Invocation.Accept(nodesVisitor));
+            }
+
             SyntaxList<StatementSyntax> SingleStatement(StatementSyntax statement)
             {
                 return SyntaxFactory.SingletonList(statement);
