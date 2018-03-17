@@ -286,10 +286,40 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override SyntaxList<StatementSyntax> VisitSelectBlock(VBSyntax.SelectBlockSyntax node)
             {
                 var expr = (ExpressionSyntax)node.SelectStatement.Expression.Accept(nodesVisitor);
-                SwitchStatementSyntax switchStatement;
-                if (ConvertToSwitch(expr, node.CaseBlocks, out switchStatement))
-                    return SingleStatement(switchStatement);
-                throw new NotSupportedException();
+                var exprWithoutTrivia = expr.WithoutTrivia().WithoutAnnotations();
+                var sections = new List<SwitchSectionSyntax>();
+                foreach (var block in node.CaseBlocks) {
+                    var labels = new List<SwitchLabelSyntax>();
+                    foreach (var c in block.CaseStatement.Cases) {
+                        if (c is VBSyntax.SimpleCaseClauseSyntax s) {
+                            labels.Add(SyntaxFactory.CaseSwitchLabel((ExpressionSyntax)s.Value.Accept(nodesVisitor)));
+                        } else if (c is VBSyntax.ElseCaseClauseSyntax) {
+                            labels.Add(SyntaxFactory.DefaultSwitchLabel());
+                        } else if (c is VBSyntax.RelationalCaseClauseSyntax relational) {
+                            var discardPatternMatch = SyntaxFactory.DeclarationPattern(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)), SyntaxFactory.DiscardDesignation());
+                            var operatorKind = VBasic.VisualBasicExtensions.Kind(relational);
+                            var cSharpSyntaxNode = SyntaxFactory.BinaryExpression(ConvertToken(operatorKind, TokenContext.Local), exprWithoutTrivia, (ExpressionSyntax) relational.Value.Accept(nodesVisitor));
+                            labels.Add(SyntaxFactory.CasePatternSwitchLabel(discardPatternMatch, SyntaxFactory.WhenClause(cSharpSyntaxNode), SyntaxFactory.Token(SyntaxKind.ColonToken)));
+                        } else if (c is VBSyntax.RangeCaseClauseSyntax range) {
+                            var discardPatternMatch = SyntaxFactory.DeclarationPattern(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)), SyntaxFactory.DiscardDesignation());
+                            var lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, (ExpressionSyntax) range.LowerBound.Accept(nodesVisitor), exprWithoutTrivia);
+                            var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, exprWithoutTrivia, (ExpressionSyntax) range.UpperBound.Accept(nodesVisitor));
+                            var withinBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LogicalAndExpression, lowerBoundCheck, upperBoundCheck);
+                            labels.Add(SyntaxFactory.CasePatternSwitchLabel(discardPatternMatch, SyntaxFactory.WhenClause(withinBounds), SyntaxFactory.Token(SyntaxKind.ColonToken)));
+                        } else throw new NotSupportedException(c.Kind().ToString());
+                    }
+
+                    var csBlockStatements = block.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)).ToList();
+                    if (csBlockStatements.LastOrDefault()
+                            ?.IsKind(SyntaxKind.ReturnStatement) != true) {
+                        csBlockStatements.Add(SyntaxFactory.BreakStatement());
+                    }
+                    var list = SingleStatement(SyntaxFactory.Block(csBlockStatements));
+                    sections.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), list));
+                }
+
+                var switchStatementSyntax = SyntaxFactory.SwitchStatement(expr, SyntaxFactory.List(sections));
+                return SingleStatement(switchStatementSyntax);
             }
 
             public override SyntaxList<StatementSyntax> VisitWithBlock(VBSyntax.WithBlockSyntax node)
@@ -316,28 +346,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var reservedNames = withBlockTempVariableNames.Concat(node.DescendantNodesAndSelf()
                     .SelectMany(syntaxNode => semanticModel.LookupSymbols(syntaxNode.SpanStart).Select(s => s.Name)));
                 return NameGenerator.EnsureUniqueness(variableNameBase, reservedNames, true);
-            }
-
-            private bool ConvertToSwitch(ExpressionSyntax expr, SyntaxList<VBSyntax.CaseBlockSyntax> caseBlocks, out SwitchStatementSyntax switchStatement)
-            {
-                switchStatement = null;
-
-                var sections = new List<SwitchSectionSyntax>();
-                foreach (var block in caseBlocks) {
-                    var labels = new List<SwitchLabelSyntax>();
-                    foreach (var c in block.CaseStatement.Cases) {
-                        if (c is VBSyntax.SimpleCaseClauseSyntax) {
-                            var s = (VBSyntax.SimpleCaseClauseSyntax)c;
-                            labels.Add(SyntaxFactory.CaseSwitchLabel((ExpressionSyntax)s.Value.Accept(nodesVisitor)));
-                        } else if (c is VBSyntax.ElseCaseClauseSyntax) {
-                            labels.Add(SyntaxFactory.DefaultSwitchLabel());
-                        } else return false;
-                    }
-                    var list = SingleStatement(SyntaxFactory.Block(block.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)).Concat(SyntaxFactory.BreakStatement())));
-                    sections.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), list));
-                }
-                switchStatement = SyntaxFactory.SwitchStatement(expr, SyntaxFactory.List(sections));
-                return true;
             }
 
             public override SyntaxList<StatementSyntax> VisitTryBlock(VBSyntax.TryBlockSyntax node)
@@ -411,6 +419,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                     ));
                 }
                 throw new NotSupportedException();
+            }
+
+            public override SyntaxList<StatementSyntax> VisitCallStatement(VBSyntax.CallStatementSyntax node)
+            {
+                return SingleStatement((ExpressionSyntax) node.Invocation.Accept(nodesVisitor));
             }
 
             SyntaxList<StatementSyntax> SingleStatement(StatementSyntax statement)

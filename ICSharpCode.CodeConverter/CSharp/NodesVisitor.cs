@@ -679,7 +679,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     modifiers = modifiers.Replace(SyntaxFactory.Token(SyntaxKind.RefKeyword), SyntaxFactory.Token(SyntaxKind.OutKeyword));
                 }
 
-                if (node.Parent.Parent is VBSyntax.MethodStatementSyntax mss && mss.AttributeLists.Any(HasExtensionAttribute)) {
+                if (node.Parent.Parent is VBSyntax.MethodStatementSyntax mss 
+                    && mss.AttributeLists.Any(HasExtensionAttribute) && node.Parent.ChildNodes().First() == node) {
                     modifiers = modifiers.Insert(0, SyntaxFactory.Token(SyntaxKind.ThisKeyword));
                 }
                 return SyntaxFactory.Parameter(
@@ -1310,15 +1311,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitSingleLineLambdaExpression(VBSyntax.SingleLineLambdaExpressionSyntax node)
             {
                 CSharpSyntaxNode body;
-                if (node.Body is VBSyntax.ExpressionSyntax)
-                    body = node.Body.Accept(TriviaConvertingVisitor);
+                if (node.Body is VBSyntax.ExpressionStatementSyntax ess)
+                    body = ess.Expression.Accept(TriviaConvertingVisitor);
                 else {
-                    var stmt = node.Body.Accept(CreateMethodBodyVisitor());
-                    if (stmt.Count == 1)
-                        body = stmt[0];
-                    else {
-                        body = SyntaxFactory.Block(stmt);
-                    }
+                    body = node.Body.Accept(TriviaConvertingVisitor);
                 }
                 var param = (ParameterListSyntax)node.SubOrFunctionHeader.ParameterList.Accept(TriviaConvertingVisitor);
                 if (param.Parameters.Count == 1)
