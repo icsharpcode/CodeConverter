@@ -90,6 +90,8 @@ namespace ICSharpCode.CodeConverter.Util
                     return SyntaxKind.AmpersandAmpersandToken;
                 case SyntaxKind.AddExpression:
                     return SyntaxKind.PlusToken;
+                case SyntaxKind.ExclusiveOrExpression:
+                    return SyntaxKind.CaretToken;
                 case SyntaxKind.SubtractExpression:
                     return SyntaxKind.MinusToken;
                 case SyntaxKind.MultiplyExpression:

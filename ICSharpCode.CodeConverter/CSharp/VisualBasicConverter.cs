@@ -348,6 +348,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBasic.SyntaxKind.DivideExpression:
                 case VBasic.SyntaxKind.IntegerDivideExpression:
                     return SyntaxKind.DivideExpression;
+                case VBasic.SyntaxKind.ExponentiateExpression:
+                    return SyntaxKind.CaretToken;
                 case VBasic.SyntaxKind.ModuloExpression:
                     return SyntaxKind.ModuloExpression;
                 case VBasic.SyntaxKind.AndAlsoExpression:
@@ -364,6 +366,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBasic.SyntaxKind.CaseEqualsClause:
                     return SyntaxKind.EqualsExpression;
                 case VBasic.SyntaxKind.NotEqualsExpression:
+                case VBasic.SyntaxKind.CaseNotEqualsClause:
                     return SyntaxKind.NotEqualsExpression;
                 case VBasic.SyntaxKind.GreaterThanExpression:
                 case VBasic.SyntaxKind.CaseGreaterThanClause:
@@ -398,6 +401,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBasic.SyntaxKind.IntegerDivideAssignmentStatement:
                 case VBasic.SyntaxKind.DivideAssignmentStatement:
                     return SyntaxKind.DivideAssignmentExpression;
+                case VBasic.SyntaxKind.ExponentiateAssignmentStatement:
+                    return SyntaxKind.CaretEqualsToken;
                 case VBasic.SyntaxKind.LeftShiftAssignmentStatement:
                     return SyntaxKind.LeftShiftAssignmentExpression;
                 case VBasic.SyntaxKind.RightShiftAssignmentStatement:
