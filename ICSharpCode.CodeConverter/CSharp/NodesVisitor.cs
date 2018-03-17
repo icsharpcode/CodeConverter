@@ -679,7 +679,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     modifiers = modifiers.Replace(SyntaxFactory.Token(SyntaxKind.RefKeyword), SyntaxFactory.Token(SyntaxKind.OutKeyword));
                 }
 
-                if (node.Parent.Parent is VBSyntax.MethodStatementSyntax mss && mss.AttributeLists.Any(HasExtensionAttribute)) {
+                if (node.Parent.Parent is VBSyntax.MethodStatementSyntax mss 
+                    && mss.AttributeLists.Any(HasExtensionAttribute) && node.Parent.ChildNodes().First() == node) {
                     modifiers = modifiers.Insert(0, SyntaxFactory.Token(SyntaxKind.ThisKeyword));
                 }
                 return SyntaxFactory.Parameter(
