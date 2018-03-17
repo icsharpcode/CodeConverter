@@ -654,7 +654,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     returnType = returnType ?? SyntaxFactory.ParseTypeName("object");
                 }
 
-                var rankSpecifiers = ConvertArrayRankSpecifierSyntaxes(node.Identifier.ArrayRankSpecifiers);
+                var rankSpecifiers = ConvertArrayRankSpecifierSyntaxes(node.Identifier.ArrayRankSpecifiers, node.Identifier.ArrayBounds, TriviaConvertingVisitor, semanticModel, false);
                 if (rankSpecifiers.Any() && returnType != null) {
                     returnType = SyntaxFactory.ArrayType(returnType, rankSpecifiers);
                 }
@@ -1002,25 +1002,31 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitArrayCreationExpression(VBSyntax.ArrayCreationExpressionSyntax node)
             {
-                var bounds = ConvertArrayRankSpecifierSyntaxes(node.RankSpecifiers);
-                if (node.ArrayBounds != null) {
-                    var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(ConvertArrayBounds(node.ArrayBounds)));
-                    bounds = bounds.Insert(0, arrayRankSpecifierSyntax);
-                }
+                var bounds = ConvertArrayRankSpecifierSyntaxes(node.RankSpecifiers, node.ArrayBounds, TriviaConvertingVisitor, semanticModel);
                 return SyntaxFactory.ArrayCreationExpression(
                     SyntaxFactory.ArrayType((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor), bounds),
                     (InitializerExpressionSyntax)node.Initializer?.Accept(TriviaConvertingVisitor)
                 );
             }
 
-            private SyntaxList<ArrayRankSpecifierSyntax> ConvertArrayRankSpecifierSyntaxes(SyntaxList<VBSyntax.ArrayRankSpecifierSyntax> arrayRankSpecifierSyntaxs)
+            internal static SyntaxList<ArrayRankSpecifierSyntax> ConvertArrayRankSpecifierSyntaxes(
+                SyntaxList<VBSyntax.ArrayRankSpecifierSyntax> arrayRankSpecifierSyntaxs,
+                VBSyntax.ArgumentListSyntax nodeArrayBounds, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> commentConvertingNodesVisitor, SemanticModel semanticModel, bool withSizes = true)
             {
-                return SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax)r.Accept(TriviaConvertingVisitor)));
-            }
+                var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax)r.Accept(commentConvertingNodesVisitor)));
 
-            private IEnumerable<ExpressionSyntax> ConvertArrayBounds(VBSyntax.ArgumentListSyntax argumentListSyntax)
-            {
-                return argumentListSyntax.Arguments.Select(a => IncreaseArrayUpperBoundExpression(((VBSyntax.SimpleArgumentSyntax)a).Expression));
+                if (nodeArrayBounds != null)
+                {
+                    var convertedArrayBounds = withSizes ?
+                        MethodBodyVisitor.ConvertArrayBounds(nodeArrayBounds, semanticModel, commentConvertingNodesVisitor)
+                        : nodeArrayBounds.Arguments.Select(s  => SyntaxFactory.OmittedArraySizeExpression());
+                    var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(
+                        SyntaxFactory.SeparatedList(
+                            convertedArrayBounds));
+                    bounds = bounds.Insert(0, arrayRankSpecifierSyntax);
+                }
+
+                return bounds;
             }
 
             public override CSharpSyntaxNode VisitCollectionInitializer(VBSyntax.CollectionInitializerSyntax node)
@@ -1183,17 +1189,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitObjectCollectionInitializer(VBSyntax.ObjectCollectionInitializerSyntax node)
             {
                 return node.Initializer.Accept(TriviaConvertingVisitor); //Dictionary initializer comes through here despite the FROM keyword not being in the source code
-            }
-
-            ExpressionSyntax IncreaseArrayUpperBoundExpression(VBSyntax.ExpressionSyntax expr)
-            {
-                var constant = semanticModel.GetConstantValue(expr);
-                if (constant.HasValue && constant.Value is int)
-                    return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((int)constant.Value + 1));
-
-                return SyntaxFactory.BinaryExpression(
-                    SyntaxKind.SubtractExpression,
-                    (ExpressionSyntax)expr.Accept(TriviaConvertingVisitor), SyntaxFactory.Token(SyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
             }
 
             public override CSharpSyntaxNode VisitBinaryConditionalExpression(VBSyntax.BinaryConditionalExpressionSyntax node)

@@ -435,6 +435,22 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ExpressionStatement(expression));
             }
+
+            public static IEnumerable<ExpressionSyntax> ConvertArrayBounds(VBSyntax.ArgumentListSyntax argumentListSyntax, SemanticModel model, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> commentConvertingNodesVisitor)
+            {
+                return argumentListSyntax.Arguments.Select(a => IncreaseArrayUpperBoundExpression(((VBSyntax.SimpleArgumentSyntax)a).Expression, model, commentConvertingNodesVisitor));
+            }
+
+            private static ExpressionSyntax IncreaseArrayUpperBoundExpression(VBSyntax.ExpressionSyntax expr, SemanticModel model, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> commentConvertingNodesVisitor)
+            {
+                var constant = model.GetConstantValue(expr);
+                if (constant.HasValue && constant.Value is int)
+                    return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((int)constant.Value + 1));
+
+                return SyntaxFactory.BinaryExpression(
+                    SyntaxKind.SubtractExpression,
+                    (ExpressionSyntax)expr.Accept(commentConvertingNodesVisitor), SyntaxFactory.Token(SyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+            }
         }
     }
 

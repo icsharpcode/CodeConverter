@@ -66,8 +66,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                     else
                         type = SyntaxFactory.NullableType(type);
                 }
-                if (name.ArrayRankSpecifiers.Count > 0)
-                    type = SyntaxFactory.ArrayType(type, SyntaxFactory.List(name.ArrayRankSpecifiers.Select(a => (ArrayRankSpecifierSyntax)a.Accept(nodesVisitor))));
+
+                var convertArrayRankSpecifierSyntaxes = NodesVisitor.ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds, nodesVisitor, semanticModel, false);
+                if (convertArrayRankSpecifierSyntaxes.Count > 0) {
+                    type = SyntaxFactory.ArrayType(type, convertArrayRankSpecifierSyntaxes);
+                }
+
                 VariableDeclarationSyntax decl;
                 var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier, semanticModel), null, initializer == null ? null : SyntaxFactory.EqualsValueClause(initializer));
                 string k = type.ToString();
