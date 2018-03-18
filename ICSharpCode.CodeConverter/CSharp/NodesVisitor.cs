@@ -804,13 +804,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (node.Token.Value == null) {
                     var type = semanticModel.GetTypeInfo(node).ConvertedType;
                     if (type == null) {
-                        return Literal("null", null)
+                        return Literal(null, "null")
                             .WithTrailingTrivia(
                                 SyntaxFactory.Comment("/* TODO Change to default(_) if this is not a reference type */"));
                     }
-                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(type.ToMinimalDisplayString(semanticModel, node.SpanStart))) : Literal("null", null);
+                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(type.ToMinimalDisplayString(semanticModel, node.SpanStart))) : Literal(null, "null");
                 }
-                return Literal(node.Token.Text, node.Token.Value);
+                return Literal(node.Token.Value, node.Token.Text);
             }
 
             public override CSharpSyntaxNode VisitInterpolatedStringExpression(VBSyntax.InterpolatedStringExpressionSyntax node)

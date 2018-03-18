@@ -204,6 +204,9 @@ class TestClass
         Erase numArray
         numArray2(1) = 1
         ReDim Preserve numArray(5), numArray2(5)
+        Dim y(6, 5) As Integer
+        y(2,3) = 1
+        ReDim Preserve y(6,8)
         Return numArray2
     End Function
 End Class", @"public class TestClass
@@ -221,6 +224,13 @@ End Class", @"public class TestClass
         numArray2 = new int[6];
         if (oldNumArray2 != null)
             Array.Copy(oldNumArray2, numArray2, Math.Min(6, oldNumArray2.Length));
+        int[,] y;"/* Missing " = new int[7,6]" is bug unrelated to this test */ + @"
+        y[2, 3] = 1;
+        var oldY = y;
+        y = new int[7, 9];
+        if (oldY != null)
+            for (var i = 0; i <= oldY.Length / oldY.GetLength(1) - 1; ++i)
+                Array.Copy(oldY, i * oldY.GetLength(1), y, i * y.GetLength(1), Math.Min(oldY.GetLength(1), y.GetLength(1)));
         return numArray2;
     }
 }");

@@ -84,7 +84,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return newDecls;
         }
 
-        static ExpressionSyntax Literal(string valueText, object o) => GetLiteralExpression(valueText, o);
+        static ExpressionSyntax Literal(object o, string valueText = null) => GetLiteralExpression(valueText ?? o.ToString(), o);
 
         internal static ExpressionSyntax GetLiteralExpression(string valueText, object value)
         {
