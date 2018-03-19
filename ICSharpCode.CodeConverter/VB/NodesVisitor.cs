@@ -36,6 +36,7 @@ using TypeParameterSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeParame
 using TypeSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax;
 using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using YieldStatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.YieldStatementSyntax;
+using static ICSharpCode.CodeConverter.VB.SyntaxKindExtensions;
 
 namespace ICSharpCode.CodeConverter.VB
 {
@@ -198,7 +199,7 @@ End Function";
                 ImportAliasClauseSyntax alias = null;
                 if (node.Alias != null) {
                     var name = node.Alias.Name;
-                    var id = ConvertIdentifier(name.Identifier);
+                    var id = CSharpConverter.ConvertIdentifier(name.Identifier);
                     alias = SyntaxFactory.ImportAliasClause(id);
                 }
                 ImportsClauseSyntax clause = SyntaxFactory.SimpleImportsClause(alias, (NameSyntax)node.Name.Accept(TriviaConvertingVisitor));
@@ -212,7 +213,7 @@ End Function";
             public override VisualBasicSyntaxNode VisitClassDeclaration(CSS.ClassDeclarationSyntax node)
             {
                 var members = node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor)).ToList();
-                var id = ConvertIdentifier(node.Identifier);
+                var id = CSharpConverter.ConvertIdentifier(node.Identifier);
 
                 List<InheritsStatementSyntax> inherits = new List<InheritsStatementSyntax>();
                 List<ImplementsStatementSyntax> implements = new List<ImplementsStatementSyntax>();
@@ -221,8 +222,7 @@ End Function";
                 if (node.Modifiers.Any(CS.SyntaxKind.StaticKeyword)) {
                     return SyntaxFactory.ModuleBlock(
                         SyntaxFactory.ModuleStatement(
-                            SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))),
-                            ConvertModifiers(node.Modifiers, TokenContext.InterfaceOrModule),
+                            SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.InterfaceOrModule),
                             id, (TypeParameterListSyntax)node.TypeParameterList?.Accept(TriviaConvertingVisitor)
                         ),
                         SyntaxFactory.List(inherits),
@@ -232,8 +232,7 @@ End Function";
                 } else {
                     return SyntaxFactory.ClassBlock(
                         SyntaxFactory.ClassStatement(
-                            SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))),
-                            ConvertModifiers(node.Modifiers),
+                            SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CSharpConverter.ConvertModifiers(node.Modifiers),
                             id, (TypeParameterListSyntax)node.TypeParameterList?.Accept(TriviaConvertingVisitor)
                         ),
                         SyntaxFactory.List(inherits),
@@ -254,9 +253,7 @@ End Function";
 
                 return SyntaxFactory.StructureBlock(
                     SyntaxFactory.StructureStatement(
-                        SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))),
-                        ConvertModifiers(node.Modifiers),
-                        ConvertIdentifier(node.Identifier),
+                        SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CSharpConverter.ConvertModifiers(node.Modifiers), CSharpConverter.ConvertIdentifier(node.Identifier),
                         (TypeParameterListSyntax)node.TypeParameterList?.Accept(TriviaConvertingVisitor)
                     ),
                     SyntaxFactory.List(inherits),
@@ -275,9 +272,7 @@ End Function";
 
                 return SyntaxFactory.InterfaceBlock(
                     SyntaxFactory.InterfaceStatement(
-                        SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))),
-                        ConvertModifiers(node.Modifiers, TokenContext.InterfaceOrModule),
-                        ConvertIdentifier(node.Identifier),
+                        SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.InterfaceOrModule), CSharpConverter.ConvertIdentifier(node.Identifier),
                         (TypeParameterListSyntax)node.TypeParameterList?.Accept(TriviaConvertingVisitor)
                     ),
                     SyntaxFactory.List(inherits),
@@ -292,9 +287,7 @@ End Function";
                 var baseType = (TypeSyntax)node.BaseList?.Types.Single().Accept(TriviaConvertingVisitor);
                 return SyntaxFactory.EnumBlock(
                     SyntaxFactory.EnumStatement(
-                        SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))),
-                        ConvertModifiers(node.Modifiers),
-                        ConvertIdentifier(node.Identifier),
+                        SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CSharpConverter.ConvertModifiers(node.Modifiers), CSharpConverter.ConvertIdentifier(node.Identifier),
                         baseType == null ? null : SyntaxFactory.SimpleAsClause(baseType)
                     ),
                     SyntaxFactory.List(members)
@@ -305,28 +298,25 @@ End Function";
             {
                 var initializer = (ExpressionSyntax)node.EqualsValue?.Value.Accept(TriviaConvertingVisitor);
                 return SyntaxFactory.EnumMemberDeclaration(
-                    SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))),
-                    ConvertIdentifier(node.Identifier),
+                    SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CSharpConverter.ConvertIdentifier(node.Identifier),
                     initializer == null ? null : SyntaxFactory.EqualsValue(initializer)
                 );
             }
 
             public override VisualBasicSyntaxNode VisitDelegateDeclaration(CSS.DelegateDeclarationSyntax node)
             {
-                var id = ConvertIdentifier(node.Identifier);
+                var id = CSharpConverter.ConvertIdentifier(node.Identifier);
                 var methodInfo = ModelExtensions.GetDeclaredSymbol(semanticModel, node) as INamedTypeSymbol;
                 if (methodInfo.DelegateInvokeMethod.GetReturnType()?.SpecialType == SpecialType.System_Void) {
                     return SyntaxFactory.DelegateSubStatement(
-                        SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))),
-                        ConvertModifiers(node.Modifiers),
+                        SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CSharpConverter.ConvertModifiers(node.Modifiers),
                         id, (TypeParameterListSyntax)node.TypeParameterList?.Accept(TriviaConvertingVisitor),
                         (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor),
                         null
                     );
                 } else {
                     return SyntaxFactory.DelegateFunctionStatement(
-                        SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))),
-                        ConvertModifiers(node.Modifiers),
+                        SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CSharpConverter.ConvertModifiers(node.Modifiers),
                         id, (TypeParameterListSyntax)node.TypeParameterList?.Accept(TriviaConvertingVisitor),
                         (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor),
                         SyntaxFactory.SimpleAsClause((TypeSyntax)node.ReturnType.Accept(TriviaConvertingVisitor))
@@ -340,13 +330,12 @@ End Function";
 
             public override VisualBasicSyntaxNode VisitFieldDeclaration(CSS.FieldDeclarationSyntax node)
             {
-                var modifiers = ConvertModifiers(node.Modifiers, TokenContext.VariableOrConst);
+                var modifiers = CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.VariableOrConst);
                 if (modifiers.Count == 0)
                     modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
                 return SyntaxFactory.FieldDeclaration(
                     SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))),
-                    modifiers,
-                    RemodelVariableDeclaration(node.Declaration, this)
+                    modifiers, CSharpConverter.RemodelVariableDeclaration(node.Declaration, this)
                 );
             }
 
@@ -354,8 +343,7 @@ End Function";
             {
                 return SyntaxFactory.ConstructorBlock(
                     SyntaxFactory.SubNewStatement(
-                        SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))),
-                        ConvertModifiers(node.Modifiers, TokenContext.Member),
+                        SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Member),
                         (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor)
                     ),
                     SyntaxFactory.List(node.Body.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())))
@@ -376,16 +364,16 @@ End Function";
                 );
             }
 
-            private CS.CSharpSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(MethodBodyVisitor methodBodyVisitor = null)
+            private CS.CSharpSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(CSharpConverter.MethodBodyVisitor methodBodyVisitor = null)
             {
-                var visitor = methodBodyVisitor ?? new MethodBodyVisitor(semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
+                var visitor = methodBodyVisitor ?? new CSharpConverter.MethodBodyVisitor(semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
                 return visitor.CommentConvertingVisitor;
             }
 
             public override VisualBasicSyntaxNode VisitMethodDeclaration(CSS.MethodDeclarationSyntax node)
             {
                 SyntaxList<StatementSyntax>? block = null;
-                var isIteratorState = new MethodBodyVisitor(semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
+                var isIteratorState = new CSharpConverter.MethodBodyVisitor(semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
                 var visitor = CreateMethodBodyVisitor(isIteratorState);
                 if (node.Body != null) {
                     block = SyntaxFactory.List(node.Body.Statements.SelectMany(s => s.Accept(visitor)));
@@ -398,12 +386,12 @@ End Function";
                 if (node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword))) {
                     block = SyntaxFactory.List<StatementSyntax>();
                 }
-                var id = ConvertIdentifier(node.Identifier);
+                var id = CSharpConverter.ConvertIdentifier(node.Identifier);
                 var methodInfo = ModelExtensions.GetDeclaredSymbol(semanticModel, node);
                 var containingType = methodInfo?.ContainingType;
                 var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor)));
                 var parameterList = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor);
-                var modifiers = ConvertModifiers(node.Modifiers, containingType?.IsInterfaceType() == true ? TokenContext.Local : TokenContext.Member);
+                var modifiers = CSharpConverter.ConvertModifiers(node.Modifiers, containingType?.IsInterfaceType() == true ? TokenContext.Local : TokenContext.Member);
                 if (isIteratorState.IsIterator)
                     modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.IteratorKeyword));
                 if (node.ParameterList.Parameters.Count > 0 && node.ParameterList.Parameters[0].Modifiers.Any(CS.SyntaxKind.ThisKeyword)) {
@@ -441,7 +429,7 @@ End Function";
 
             public override VisualBasicSyntaxNode VisitPropertyDeclaration(CSS.PropertyDeclarationSyntax node)
             {
-                var id = ConvertIdentifier(node.Identifier);
+                var id = CSharpConverter.ConvertIdentifier(node.Identifier);
                 SyntaxList<AttributeListSyntax> attributes, returnAttributes;
                 ConvertAndSplitAttributes(node.AttributeLists, out attributes, out returnAttributes);
                 bool isIterator = false;
@@ -462,7 +450,7 @@ End Function";
                         isIterator |= _isIterator;
                     }
                 }
-                var modifiers = ConvertModifiers(node.Modifiers, TokenContext.Member);
+                var modifiers = CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Member);
                 if (isIterator) modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.IteratorKeyword));
                 var stmt = SyntaxFactory.PropertyStatement(
                     attributes,
@@ -489,7 +477,7 @@ End Function";
                     accessors.Add(ConvertAccessor(a, out _isIterator));
                     isIterator |= _isIterator;
                 }
-                var modifiers = ConvertModifiers(node.Modifiers, TokenContext.Member).Insert(0, SyntaxFactory.Token(SyntaxKind.DefaultKeyword));
+                var modifiers = CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Member).Insert(0, SyntaxFactory.Token(SyntaxKind.DefaultKeyword));
                 if (isIterator) modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.IteratorKeyword));
                 var parameterList = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor);
                 var stmt = SyntaxFactory.PropertyStatement(
@@ -508,9 +496,7 @@ End Function";
                 SyntaxList<AttributeListSyntax> attributes, returnAttributes;
                 ConvertAndSplitAttributes(node.AttributeLists, out attributes, out returnAttributes);
                 var stmt = SyntaxFactory.EventStatement(
-                    attributes,
-                    ConvertModifiers(node.Modifiers, TokenContext.Member),
-                    ConvertIdentifier(node.Identifier), null,
+                    attributes, CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Member), CSharpConverter.ConvertIdentifier(node.Identifier), null,
                     SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)), null
                 );
                 if (node.AccessorList.Accessors.All(a => a.Body == null))
@@ -526,7 +512,7 @@ End Function";
                 var id = SyntaxFactory.Identifier(decl.Identifier.ValueText, SyntaxFacts.IsKeywordKind(VisualBasicExtensions.Kind(decl.Identifier)), decl.Identifier.GetIdentifierText(), TypeCharacter.None);
                 SyntaxList<AttributeListSyntax> attributes, returnAttributes;
                 ConvertAndSplitAttributes(node.AttributeLists, out attributes, out returnAttributes);
-                return SyntaxFactory.EventStatement(attributes, ConvertModifiers(node.Modifiers, TokenContext.Member), id, null, SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Declaration.Type.Accept(TriviaConvertingVisitor)), null);
+                return SyntaxFactory.EventStatement(attributes, CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Member), id, null, SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Declaration.Type.Accept(TriviaConvertingVisitor)), null);
             }
 
             private void ConvertAndSplitAttributes(SyntaxList<CSS.AttributeListSyntax> attributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes)
@@ -553,13 +539,13 @@ End Function";
                 SyntaxList<StatementSyntax> body = SyntaxFactory.List<StatementSyntax>();
                 isIterator = false;
                 if (node.Body != null) {
-                    var isIteratorState = new MethodBodyVisitor(semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
+                    var isIteratorState = new CSharpConverter.MethodBodyVisitor(semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
                     var visitor = CreateMethodBodyVisitor(isIteratorState);
                     body = SyntaxFactory.List(node.Body.Statements.SelectMany(s => s.Accept(visitor)));
                     isIterator = isIteratorState.IsIterator;
                 }
                 var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor)));
-                var modifiers = ConvertModifiers(node.Modifiers, TokenContext.Local);
+                var modifiers = CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Local);
                 var parent = (CSS.BasePropertyDeclarationSyntax)node.Parent.Parent;
                 ParameterSyntax valueParam;
 
@@ -607,8 +593,7 @@ End Function";
                 var body = SyntaxFactory.List(node.Body.Statements.SelectMany(s => s.Accept(visitor)));
                 var parameterList = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor);
                 var stmt = SyntaxFactory.OperatorStatement(
-                    attributes,
-                    ConvertModifiers(node.Modifiers, TokenContext.Member),
+                    attributes, CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Member),
                     SyntaxFactory.Token(ConvertOperatorDeclarationToken(CS.CSharpExtensions.Kind(node.OperatorToken))),
                     parameterList,
                     SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.ReturnType.Accept(TriviaConvertingVisitor))
@@ -644,14 +629,14 @@ End Function";
 
             public override VisualBasicSyntaxNode VisitParameter(CSS.ParameterSyntax node)
             {
-                var id = ConvertIdentifier(node.Identifier);
+                var id = CSharpConverter.ConvertIdentifier(node.Identifier);
                 var returnType = (TypeSyntax)node.Type?.Accept(TriviaConvertingVisitor);
                 EqualsValueSyntax @default = null;
                 if (node.Default != null) {
                     @default = SyntaxFactory.EqualsValue((ExpressionSyntax)node.Default?.Value.Accept(TriviaConvertingVisitor));
                 }
                 AttributeListSyntax[] newAttributes;
-                var modifiers = ConvertModifiers(node.Modifiers, TokenContext.Local);
+                var modifiers = CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Local);
                 if ((modifiers.Count == 0 && returnType != null) || node.Modifiers.Any(CS.SyntaxKind.ThisKeyword)) {
                     modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword));
                     newAttributes = new AttributeListSyntax[0];
@@ -694,7 +679,7 @@ End Function";
                         )
                     );
                 } else {
-                    return Literal(node.Token.Value);
+                    return CSharpConverter.Literal(node.Token.Value);
                 }
             }
 
@@ -725,13 +710,12 @@ End Function";
 
             public override VisualBasicSyntaxNode VisitPrefixUnaryExpression(CSS.PrefixUnaryExpressionSyntax node)
             {
-                var kind = ConvertToken(CS.CSharpExtensions.Kind(node), TokenContext.Local);
+                var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
                 if (node.Parent is CSS.ExpressionStatementSyntax) {
                     return SyntaxFactory.AssignmentStatement(
                         kind,
                         (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor),
-                        SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)),
-                        Literal(1)
+                        SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), CSharpConverter.Literal(1)
                     );
                 }
                 if (kind == SyntaxKind.AddAssignmentStatement || kind == SyntaxKind.SubtractAssignmentStatement) {
@@ -756,13 +740,11 @@ End Function";
 
             public override VisualBasicSyntaxNode VisitPostfixUnaryExpression(CSS.PostfixUnaryExpressionSyntax node)
             {
-                var kind = ConvertToken(CS.CSharpExtensions.Kind(node), TokenContext.Local);
+                var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
                 if (node.Parent is CSS.ExpressionStatementSyntax || node.Parent is CSS.ForStatementSyntax) {
-                    return SyntaxFactory.AssignmentStatement(
-                        ConvertToken(CS.CSharpExtensions.Kind(node), TokenContext.Local),
+                    return SyntaxFactory.AssignmentStatement(CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local),
                         (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor),
-                        SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)),
-                        Literal(1)
+                        SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), CSharpConverter.Literal(1)
                     );
                 } else {
                     string operatorName, minMax;
@@ -791,7 +773,7 @@ End Function";
                                             )
                                         )
                                     ),
-                                    SyntaxFactory.SimpleArgument(SyntaxFactory.BinaryExpression(op, (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor), SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(op)), Literal(1)))
+                                    SyntaxFactory.SimpleArgument(SyntaxFactory.BinaryExpression(op, (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor), SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(op)), CSharpConverter.Literal(1)))
                                 }
                             )
                         )
@@ -846,7 +828,7 @@ End Function";
 
             AssignmentStatementSyntax MakeAssignmentStatement(CSS.AssignmentExpressionSyntax node)
             {
-                var kind = ConvertToken(CS.CSharpExtensions.Kind(node), TokenContext.Local);
+                var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
                 if (node.IsKind(CS.SyntaxKind.AndAssignmentExpression, CS.SyntaxKind.OrAssignmentExpression, CS.SyntaxKind.ExclusiveOrAssignmentExpression, CS.SyntaxKind.ModuloAssignmentExpression)) {
                     return SyntaxFactory.SimpleAssignmentStatement(
                         (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor),
@@ -978,7 +960,7 @@ End Function";
                         otherArgument = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
                     }
                     if (otherArgument != null) {
-                        return SyntaxFactory.IsExpression(otherArgument, Literal(null));
+                        return SyntaxFactory.IsExpression(otherArgument, CSharpConverter.Literal(null));
                     }
                 }
                 if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.ExclamationEqualsToken)) {
@@ -990,10 +972,10 @@ End Function";
                         otherArgument = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
                     }
                     if (otherArgument != null) {
-                        return SyntaxFactory.IsNotExpression(otherArgument, Literal(null));
+                        return SyntaxFactory.IsNotExpression(otherArgument, CSharpConverter.Literal(null));
                     }
                 }
-                var kind = ConvertToken(CS.CSharpExtensions.Kind(node), TokenContext.Local);
+                var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
                 if (node.IsKind(CS.SyntaxKind.AddExpression) && (ModelExtensions.GetTypeInfo(semanticModel, node.Left).ConvertedType?.SpecialType == SpecialType.System_String
                     || ModelExtensions.GetTypeInfo(semanticModel, node.Right).ConvertedType?.SpecialType == SpecialType.System_String)) {
                     kind = SyntaxKind.ConcatenateExpression;
@@ -1172,9 +1154,9 @@ End Function";
                 var parameterList = SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor))));
                 LambdaHeaderSyntax header;
                 if (symbol.ReturnsVoid)
-                    header = SyntaxFactory.SubLambdaHeader(SyntaxFactory.List<AttributeListSyntax>(), ConvertModifiers(modifiers, TokenContext.Local), parameterList, null);
+                    header = SyntaxFactory.SubLambdaHeader(SyntaxFactory.List<AttributeListSyntax>(), CSharpConverter.ConvertModifiers(modifiers, TokenContext.Local), parameterList, null);
                 else
-                    header = SyntaxFactory.FunctionLambdaHeader(SyntaxFactory.List<AttributeListSyntax>(), ConvertModifiers(modifiers, TokenContext.Local), parameterList, null);
+                    header = SyntaxFactory.FunctionLambdaHeader(SyntaxFactory.List<AttributeListSyntax>(), CSharpConverter.ConvertModifiers(modifiers, TokenContext.Local), parameterList, null);
                 if (block is CSS.BlockSyntax)
                     block = ((CSS.BlockSyntax)block).Statements;
                 if (block is CS.CSharpSyntaxNode) {
@@ -1231,7 +1213,7 @@ End Function";
             public override VisualBasicSyntaxNode VisitFromClause(CSS.FromClauseSyntax node)
             {
                 return SyntaxFactory.FromClause(
-                    SyntaxFactory.CollectionRangeVariable(SyntaxFactory.ModifiedIdentifier(ConvertIdentifier(node.Identifier)),
+                    SyntaxFactory.CollectionRangeVariable(SyntaxFactory.ModifiedIdentifier(CSharpConverter.ConvertIdentifier(node.Identifier)),
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor))
                 );
             }
@@ -1259,7 +1241,7 @@ End Function";
                     yield return SyntaxFactory.GroupByClause(
                         SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ExpressionRangeVariable((ExpressionSyntax)group.GroupExpression.Accept(TriviaConvertingVisitor))),
                         SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ExpressionRangeVariable(SyntaxFactory.VariableNameEquals(SyntaxFactory.ModifiedIdentifier(GeneratePlaceholder("groupByKey"))), (ExpressionSyntax)group.ByExpression.Accept(TriviaConvertingVisitor))),
-                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.AggregationRangeVariable(SyntaxFactory.FunctionAggregation(ConvertIdentifier(body.Continuation.Identifier))))
+                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.AggregationRangeVariable(SyntaxFactory.FunctionAggregation(CSharpConverter.ConvertIdentifier(body.Continuation.Identifier))))
                     );
                     if (body.Continuation.Body != null) {
                         foreach (var clause in ConvertQueryBody(body.Continuation.Body))
@@ -1273,7 +1255,7 @@ End Function";
                 return SyntaxFactory.LetClause(
                     SyntaxFactory.SingletonSeparatedList(
                         SyntaxFactory.ExpressionRangeVariable(
-                            SyntaxFactory.VariableNameEquals(SyntaxFactory.ModifiedIdentifier(ConvertIdentifier(node.Identifier))),
+                            SyntaxFactory.VariableNameEquals(SyntaxFactory.ModifiedIdentifier(CSharpConverter.ConvertIdentifier(node.Identifier))),
                             (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor)
                         )
                     )
@@ -1284,13 +1266,13 @@ End Function";
             {
                 if (node.Into != null) {
                     return SyntaxFactory.GroupJoinClause(
-                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.CollectionRangeVariable(SyntaxFactory.ModifiedIdentifier(ConvertIdentifier(node.Identifier)), node.Type == null ? null : SyntaxFactory.SimpleAsClause((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)), (ExpressionSyntax)node.InExpression.Accept(TriviaConvertingVisitor))),
+                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.CollectionRangeVariable(SyntaxFactory.ModifiedIdentifier(CSharpConverter.ConvertIdentifier(node.Identifier)), node.Type == null ? null : SyntaxFactory.SimpleAsClause((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)), (ExpressionSyntax)node.InExpression.Accept(TriviaConvertingVisitor))),
                         SyntaxFactory.SingletonSeparatedList(SyntaxFactory.JoinCondition((ExpressionSyntax)node.LeftExpression.Accept(TriviaConvertingVisitor), (ExpressionSyntax)node.RightExpression.Accept(TriviaConvertingVisitor))),
-                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.AggregationRangeVariable(SyntaxFactory.VariableNameEquals(SyntaxFactory.ModifiedIdentifier(ConvertIdentifier(node.Into.Identifier))), SyntaxFactory.GroupAggregation()))
+                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.AggregationRangeVariable(SyntaxFactory.VariableNameEquals(SyntaxFactory.ModifiedIdentifier(CSharpConverter.ConvertIdentifier(node.Into.Identifier))), SyntaxFactory.GroupAggregation()))
                     );
                 } else {
                     return SyntaxFactory.SimpleJoinClause(
-                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.CollectionRangeVariable(SyntaxFactory.ModifiedIdentifier(ConvertIdentifier(node.Identifier)), node.Type == null ? null : SyntaxFactory.SimpleAsClause((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)), (ExpressionSyntax)node.InExpression.Accept(TriviaConvertingVisitor))),
+                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.CollectionRangeVariable(SyntaxFactory.ModifiedIdentifier(CSharpConverter.ConvertIdentifier(node.Identifier)), node.Type == null ? null : SyntaxFactory.SimpleAsClause((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)), (ExpressionSyntax)node.InExpression.Accept(TriviaConvertingVisitor))),
                         SyntaxFactory.SingletonSeparatedList(SyntaxFactory.JoinCondition((ExpressionSyntax)node.LeftExpression.Accept(TriviaConvertingVisitor), (ExpressionSyntax)node.RightExpression.Accept(TriviaConvertingVisitor)))
                     );
                 }
@@ -1363,7 +1345,7 @@ End Function";
                 }
                 // copy generic constraints
                 var clause = FindClauseForParameter(node);
-                return SyntaxFactory.TypeParameter(variance, ConvertIdentifier(node.Identifier), (TypeParameterConstraintClauseSyntax)clause?.Accept(TriviaConvertingVisitor));
+                return SyntaxFactory.TypeParameter(variance, CSharpConverter.ConvertIdentifier(node.Identifier), (TypeParameterConstraintClauseSyntax)clause?.Accept(TriviaConvertingVisitor));
             }
 
             public override VisualBasicSyntaxNode VisitTypeParameterConstraintClause(CSS.TypeParameterConstraintClauseSyntax node)
@@ -1439,7 +1421,7 @@ End Function";
 
             public override VisualBasicSyntaxNode VisitPredefinedType(CSS.PredefinedTypeSyntax node)
             {
-                return SyntaxFactory.PredefinedType(SyntaxFactory.Token(ConvertToken(CS.CSharpExtensions.Kind(node.Keyword))));
+                return SyntaxFactory.PredefinedType(SyntaxFactory.Token(CS.CSharpExtensions.Kind(node.Keyword).ConvertToken()));
             }
 
             public override VisualBasicSyntaxNode VisitNullableType(CSS.NullableTypeSyntax node)
@@ -1458,12 +1440,12 @@ End Function";
 
             public override VisualBasicSyntaxNode VisitIdentifierName(CSS.IdentifierNameSyntax node)
             {
-                return WrapTypedNameIfNecessary(SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier)), node);
+                return WrapTypedNameIfNecessary(SyntaxFactory.IdentifierName(CSharpConverter.ConvertIdentifier(node.Identifier)), node);
             }
 
             public override VisualBasicSyntaxNode VisitGenericName(CSS.GenericNameSyntax node)
             {
-                return WrapTypedNameIfNecessary(SyntaxFactory.GenericName(ConvertIdentifier(node.Identifier), (TypeArgumentListSyntax)node.TypeArgumentList.Accept(TriviaConvertingVisitor)), node);
+                return WrapTypedNameIfNecessary(SyntaxFactory.GenericName(CSharpConverter.ConvertIdentifier(node.Identifier), (TypeArgumentListSyntax)node.TypeArgumentList.Accept(TriviaConvertingVisitor)), node);
             }
 
             public override VisualBasicSyntaxNode VisitQualifiedName(CSS.QualifiedNameSyntax node)

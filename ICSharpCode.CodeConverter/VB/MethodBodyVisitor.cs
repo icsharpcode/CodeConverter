@@ -20,6 +20,7 @@ using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using TypeSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax;
 using UsingStatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.UsingStatementSyntax;
 using VariableDeclaratorSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax;
+using static ICSharpCode.CodeConverter.VB.SyntaxKindExtensions;
 
 namespace ICSharpCode.CodeConverter.VB
 {
@@ -55,13 +56,12 @@ namespace ICSharpCode.CodeConverter.VB
 
             public override SyntaxList<StatementSyntax> VisitLocalDeclarationStatement(CSS.LocalDeclarationStatementSyntax node)
             {
-                var modifiers = ConvertModifiers(node.Modifiers, TokenContext.Local);
+                var modifiers = CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Local);
                 if (modifiers.Count == 0)
                     modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.DimKeyword));
                 return SyntaxFactory.SingletonList<StatementSyntax>(
                     SyntaxFactory.LocalDeclarationStatement(
-                        modifiers,
-                        RemodelVariableDeclaration(node.Declaration, nodesVisitor)
+                        modifiers, CSharpConverter.RemodelVariableDeclaration(node.Declaration, nodesVisitor)
                     )
                 );
             }
@@ -274,7 +274,7 @@ namespace ICSharpCode.CodeConverter.VB
                 if (!ConvertForToSimpleForNext(node, out block)) {
                     var stmts = ConvertBlock(node.Statement)
                         .AddRange(node.Incrementors.Select(ConvertSingleExpression));
-                    var condition = node.Condition == null ? Literal(true) : (ExpressionSyntax)node.Condition.Accept(nodesVisitor);
+                    var condition = node.Condition == null ? CSharpConverter.Literal(true) : (ExpressionSyntax)node.Condition.Accept(nodesVisitor);
                     block = SyntaxFactory.WhileBlock(
                         SyntaxFactory.WhileStatement(condition),
                         stmts
@@ -337,13 +337,13 @@ namespace ICSharpCode.CodeConverter.VB
                     if (condition.IsKind(CS.SyntaxKind.GreaterThanOrEqualExpression))
                         end = (ExpressionSyntax)condition.Right.Accept(nodesVisitor);
                     else if (condition.IsKind(CS.SyntaxKind.GreaterThanExpression))
-                        end = SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression, (ExpressionSyntax)condition.Right.Accept(nodesVisitor), SyntaxFactory.Token(SyntaxKind.PlusToken), Literal(1));
+                        end = SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression, (ExpressionSyntax)condition.Right.Accept(nodesVisitor), SyntaxFactory.Token(SyntaxKind.PlusToken), CSharpConverter.Literal(1));
                     else return false;
                 } else {
                     if (condition.IsKind(CS.SyntaxKind.LessThanOrEqualExpression))
                         end = (ExpressionSyntax)condition.Right.Accept(nodesVisitor);
                     else if (condition.IsKind(CS.SyntaxKind.LessThanExpression))
-                        end = SyntaxFactory.BinaryExpression(SyntaxKind.SubtractExpression, (ExpressionSyntax)condition.Right.Accept(nodesVisitor), SyntaxFactory.Token(SyntaxKind.MinusToken), Literal(1));
+                        end = SyntaxFactory.BinaryExpression(SyntaxKind.SubtractExpression, (ExpressionSyntax)condition.Right.Accept(nodesVisitor), SyntaxFactory.Token(SyntaxKind.MinusToken), CSharpConverter.Literal(1));
                     else return false;
                 }
 
@@ -355,7 +355,7 @@ namespace ICSharpCode.CodeConverter.VB
                     if (start == null)
                         return false;
                     variable = SyntaxFactory.VariableDeclarator(
-                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(ConvertIdentifier(v.Identifier))),
+                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(CSharpConverter.ConvertIdentifier(v.Identifier))),
                         node.Declaration.Type.IsVar ? null : SyntaxFactory.SimpleAsClause((TypeSyntax)node.Declaration.Type.Accept(nodesVisitor)),
                         null
                     );
@@ -372,7 +372,7 @@ namespace ICSharpCode.CodeConverter.VB
                 }
 
                 block = SyntaxFactory.ForBlock(
-                    SyntaxFactory.ForStatement(variable, start, end, step == 1 ? null : SyntaxFactory.ForStepClause(Literal(step))),
+                    SyntaxFactory.ForStatement(variable, start, end, step == 1 ? null : SyntaxFactory.ForStepClause(CSharpConverter.Literal(step))),
                     ConvertBlock(node.Statement),
                     SyntaxFactory.NextStatement()
                 );
@@ -383,10 +383,10 @@ namespace ICSharpCode.CodeConverter.VB
             {
                 VisualBasicSyntaxNode variable;
                 if (node.Type.IsVar) {
-                    variable = SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier));
+                    variable = SyntaxFactory.IdentifierName(CSharpConverter.ConvertIdentifier(node.Identifier));
                 } else {
                     variable = SyntaxFactory.VariableDeclarator(
-                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(ConvertIdentifier(node.Identifier))),
+                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(CSharpConverter.ConvertIdentifier(node.Identifier))),
                         SyntaxFactory.SimpleAsClause((TypeSyntax)node.Type.Accept(nodesVisitor)),
                         null
                     );
@@ -425,7 +425,7 @@ namespace ICSharpCode.CodeConverter.VB
                     simpleTypeName = type.ToString();
                 return SyntaxFactory.CatchBlock(
                     SyntaxFactory.CatchStatement(
-                        SyntaxFactory.IdentifierName(SyntaxTokenExtensions.IsKind(catchClause.Declaration.Identifier, CS.SyntaxKind.None) ? SyntaxFactory.Identifier($"__unused{simpleTypeName}{index + 1}__") : ConvertIdentifier(catchClause.Declaration.Identifier)),
+                        SyntaxFactory.IdentifierName(SyntaxTokenExtensions.IsKind(catchClause.Declaration.Identifier, CS.SyntaxKind.None) ? SyntaxFactory.Identifier($"__unused{simpleTypeName}{index + 1}__") : CSharpConverter.ConvertIdentifier(catchClause.Declaration.Identifier)),
                         SyntaxFactory.SimpleAsClause(type),
                         catchClause.Filter == null ? null : SyntaxFactory.CatchFilterClause((ExpressionSyntax)catchClause.Filter.FilterExpression.Accept(nodesVisitor))
                     ), statements
@@ -441,7 +441,7 @@ namespace ICSharpCode.CodeConverter.VB
                         SyntaxFactory.SeparatedList<VariableDeclaratorSyntax>()
                     );
                 } else {
-                    stmt = SyntaxFactory.UsingStatement(null, RemodelVariableDeclaration(node.Declaration, nodesVisitor));
+                    stmt = SyntaxFactory.UsingStatement(null, CSharpConverter.RemodelVariableDeclaration(node.Declaration, nodesVisitor));
                 }
                 return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.UsingBlock(stmt, ConvertBlock(node.Statement)));
             }
@@ -456,7 +456,7 @@ namespace ICSharpCode.CodeConverter.VB
 
             public override SyntaxList<StatementSyntax> VisitLabeledStatement(CSS.LabeledStatementSyntax node)
             {
-                return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.LabelStatement(ConvertIdentifier(node.Identifier)))
+                return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.LabelStatement(CSharpConverter.ConvertIdentifier(node.Identifier)))
                     .AddRange(ConvertBlock(node.Statement));
             }
 
@@ -480,7 +480,7 @@ namespace ICSharpCode.CodeConverter.VB
                     blockInfo.Peek().GotoCaseExpressions.Add(labelExpression);
                     label = SyntaxFactory.Label(SyntaxKind.IdentifierLabel, MakeGotoSwitchLabel(labelExpression));
                 } else {
-                    label = SyntaxFactory.Label(SyntaxKind.IdentifierLabel, ConvertIdentifier(((CSS.IdentifierNameSyntax)node.Expression).Identifier));
+                    label = SyntaxFactory.Label(SyntaxKind.IdentifierLabel, CSharpConverter.ConvertIdentifier(((CSS.IdentifierNameSyntax)node.Expression).Identifier));
                 }
                 return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.GoToStatement(label));
             }

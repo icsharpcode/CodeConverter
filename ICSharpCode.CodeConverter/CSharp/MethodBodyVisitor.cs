@@ -11,6 +11,7 @@ using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using static ICSharpCode.CodeConverter.CSharp.SyntaxKindExtensions;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -57,12 +58,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> VisitLocalDeclarationStatement(VBSyntax.LocalDeclarationStatementSyntax node)
             {
-                var modifiers = ConvertModifiers(node.Modifiers, TokenContext.Local);
+                var modifiers = VisualBasicConverter.ConvertModifiers(node.Modifiers, TokenContext.Local);
 
                 var declarations = new List<LocalDeclarationStatementSyntax>();
 
                 foreach (var declarator in node.Declarators)
-                    foreach (var decl in SplitVariableDeclarations(declarator, nodesVisitor, semanticModel))
+                    foreach (var decl in VisualBasicConverter.SplitVariableDeclarations(declarator, nodesVisitor, semanticModel))
                         declarations.Add(SyntaxFactory.LocalDeclarationStatement(modifiers, decl.Value));
 
                 return SyntaxFactory.List<StatementSyntax>(declarations);
@@ -109,7 +110,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.ParseExpression($"{nameof(Math)}.{nameof(Math.Pow)}"),
                         ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
                 }
-                var kind = ConvertToken(node.Kind(), TokenContext.Local);
+                var kind = node.Kind().ConvertToken(TokenContext.Local);
                 return SingleStatement(SyntaxFactory.AssignmentExpression(kind, lhs, rhs));
             }
 
@@ -365,7 +366,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 ExpressionSyntax id;
                 if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                     var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
-                    declaration = SplitVariableDeclarations(v, nodesVisitor, semanticModel).Values.Single();
+                    declaration = VisualBasicConverter.SplitVariableDeclarations(v, nodesVisitor, semanticModel).Values.Single();
                     declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(declaration.Variables[0].WithInitializer(SyntaxFactory.EqualsValueClause(startValue))));
                     id = SyntaxFactory.IdentifierName(declaration.Variables[0].Identifier);
                 } else {
@@ -411,7 +412,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxToken id;
                 if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                     var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
-                    var declaration = SplitVariableDeclarations(v, nodesVisitor, semanticModel).Values.Single();
+                    var declaration = VisualBasicConverter.SplitVariableDeclarations(v, nodesVisitor, semanticModel).Values.Single();
                     type = declaration.Type;
                     id = declaration.Variables[0].Identifier;
                 } else {
@@ -456,7 +457,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         } else if (c is VBSyntax.RelationalCaseClauseSyntax relational) {
                             var discardPatternMatch = SyntaxFactory.DeclarationPattern(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)), SyntaxFactory.DiscardDesignation());
                             var operatorKind = VBasic.VisualBasicExtensions.Kind(relational);
-                            var cSharpSyntaxNode = SyntaxFactory.BinaryExpression(ConvertToken(operatorKind, TokenContext.Local), exprWithoutTrivia, (ExpressionSyntax) relational.Value.Accept(nodesVisitor));
+                            var cSharpSyntaxNode = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(TokenContext.Local), exprWithoutTrivia, (ExpressionSyntax) relational.Value.Accept(nodesVisitor));
                             labels.Add(SyntaxFactory.CasePatternSwitchLabel(discardPatternMatch, SyntaxFactory.WhenClause(cSharpSyntaxNode), SyntaxFactory.Token(SyntaxKind.ColonToken)));
                         } else if (c is VBSyntax.RangeCaseClauseSyntax range) {
                             var discardPatternMatch = SyntaxFactory.DeclarationPattern(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)), SyntaxFactory.DiscardDesignation());
@@ -544,7 +545,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (node.UsingStatement.Expression == null) {
                     StatementSyntax stmt = statementSyntax;
                     foreach (var v in node.UsingStatement.Variables.Reverse())
-                        foreach (var declaration in SplitVariableDeclarations(v, nodesVisitor, semanticModel).Values.Reverse())
+                        foreach (var declaration in VisualBasicConverter.SplitVariableDeclarations(v, nodesVisitor, semanticModel).Values.Reverse())
                             stmt = SyntaxFactory.UsingStatement(declaration, null, stmt);
                     return SingleStatement(stmt);
                 }

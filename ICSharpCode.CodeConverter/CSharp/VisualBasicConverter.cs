@@ -19,6 +19,7 @@ using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using static ICSharpCode.CodeConverter.CSharp.SyntaxKindExtensions;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -28,19 +29,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var visualBasicSyntaxVisitor = new VisualBasicConverter.NodesVisitor(compilation.GetSemanticModel(tree, true));
             return tree.GetRoot().Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
-        }
-
-        enum TokenContext
-        {
-            Global,
-            InterfaceOrModule,
-            Local,
-            Member,
-            VariableOrConst,
-            MemberInModule,
-            MemberInClass,
-            MemberInStruct,
-            MemberInInterface
         }
 
         static Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(VBSyntax.VariableDeclaratorSyntax declarator, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, SemanticModel semanticModel)
@@ -163,30 +151,30 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.Identifier(text);
         }
 
-        static SyntaxTokenList ConvertModifiers(IEnumerable<SyntaxToken> modifiers, TokenContext context = TokenContext.Global)
+        static SyntaxTokenList ConvertModifiers(IEnumerable<SyntaxToken> modifiers, TokenContext context = SyntaxKindExtensions.TokenContext.Global)
         {
             return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context));
         }
 
-        static SyntaxTokenList ConvertModifiers(SyntaxTokenList modifiers, TokenContext context = TokenContext.Global)
+        static SyntaxTokenList ConvertModifiers(SyntaxTokenList modifiers, TokenContext context = SyntaxKindExtensions.TokenContext.Global)
         {
             return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context).Where(t => CSharpExtensions.Kind(t) != SyntaxKind.None));
         }
 
-        static SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)
+        static SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = SyntaxKindExtensions.TokenContext.Global)
         {
             VBasic.SyntaxKind vbSyntaxKind = VBasic.VisualBasicExtensions.Kind(m);
             switch (vbSyntaxKind) {
                 case VBasic.SyntaxKind.DateKeyword:
                     return SyntaxFactory.Identifier("System.DateTime");
             }
-            var token = ConvertToken(vbSyntaxKind, context);
+            var token = SyntaxKindExtensions.ConvertToken(vbSyntaxKind, context);
             return token == SyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));
         }
 
         static IEnumerable<SyntaxToken> ConvertModifiersCore(IEnumerable<SyntaxToken> modifiers, TokenContext context)
         {
-            var contextsWithIdenticalDefaults = new[] { TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface };
+            var contextsWithIdenticalDefaults = new[] {SyntaxKindExtensions.TokenContext.Global, SyntaxKindExtensions.TokenContext.Local, SyntaxKindExtensions.TokenContext.InterfaceOrModule, SyntaxKindExtensions.TokenContext.MemberInInterface };
             if (!contextsWithIdenticalDefaults.Contains(context)) {
                 bool visibility = false;
                 foreach (var token in modifiers) {
@@ -202,7 +190,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var m = ConvertModifier(token, context);
                 if (m.HasValue) yield return m.Value;
             }
-            if (context == TokenContext.MemberInModule)
+            if (context == SyntaxKindExtensions.TokenContext.MemberInModule)
                 yield return SyntaxFactory.Token(SyntaxKind.StaticKeyword);
         }
 
@@ -216,7 +204,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return true;
                 case VBasic.SyntaxKind.ReadOnlyKeyword:
                 case VBasic.SyntaxKind.WriteOnlyKeyword:
-                    return context == TokenContext.Member;
+                    return context == SyntaxKindExtensions.TokenContext.Member;
                 default:
                     return false;
             }
@@ -232,244 +220,26 @@ namespace ICSharpCode.CodeConverter.CSharp
         static bool IsVisibility(SyntaxToken token, TokenContext context)
         {
             return token.IsKind(VBasic.SyntaxKind.PublicKeyword, VBasic.SyntaxKind.FriendKeyword, VBasic.SyntaxKind.ProtectedKeyword, VBasic.SyntaxKind.PrivateKeyword)
-                || (context == TokenContext.VariableOrConst && SyntaxTokenExtensions.IsKind(token, VBasic.SyntaxKind.ConstKeyword));
+                || (context == SyntaxKindExtensions.TokenContext.VariableOrConst && SyntaxTokenExtensions.IsKind(token, VBasic.SyntaxKind.ConstKeyword));
         }
 
         static SyntaxToken VisualBasicDefaultVisibility(TokenContext context)
         {
             switch (context) {
-                case TokenContext.Global:
-                case TokenContext.InterfaceOrModule:
+                case SyntaxKindExtensions.TokenContext.Global:
+                case SyntaxKindExtensions.TokenContext.InterfaceOrModule:
                     return SyntaxFactory.Token(SyntaxKind.InternalKeyword);
-                case TokenContext.Member:
-                case TokenContext.MemberInModule:
-                case TokenContext.MemberInClass:
-                case TokenContext.MemberInInterface:
-                case TokenContext.MemberInStruct:
+                case SyntaxKindExtensions.TokenContext.Member:
+                case SyntaxKindExtensions.TokenContext.MemberInModule:
+                case SyntaxKindExtensions.TokenContext.MemberInClass:
+                case SyntaxKindExtensions.TokenContext.MemberInInterface:
+                case SyntaxKindExtensions.TokenContext.MemberInStruct:
                     return SyntaxFactory.Token(SyntaxKind.PublicKeyword);
-                case TokenContext.Local:
-                case TokenContext.VariableOrConst:
+                case SyntaxKindExtensions.TokenContext.Local:
+                case SyntaxKindExtensions.TokenContext.VariableOrConst:
                     return SyntaxFactory.Token(SyntaxKind.PrivateKeyword);
             }
             throw new ArgumentOutOfRangeException(nameof(context), context, "Specified argument was out of the range of valid values.");
-        }
-
-        static SyntaxToken ConvertToken(SyntaxToken t, TokenContext context = TokenContext.Global)
-        {
-            VBasic.SyntaxKind vbSyntaxKind = VBasic.VisualBasicExtensions.Kind(t);
-            return SyntaxFactory.Token(ConvertToken(vbSyntaxKind, context));
-        }
-
-        static SyntaxKind ConvertToken(VBasic.SyntaxKind t, TokenContext context = TokenContext.Global)
-        {
-            switch (t) {
-                case VBasic.SyntaxKind.None:
-                    return SyntaxKind.None;
-                // built-in types
-                case VBasic.SyntaxKind.BooleanKeyword:
-                    return SyntaxKind.BoolKeyword;
-                case VBasic.SyntaxKind.ByteKeyword:
-                    return SyntaxKind.ByteKeyword;
-                case VBasic.SyntaxKind.SByteKeyword:
-                    return SyntaxKind.SByteKeyword;
-                case VBasic.SyntaxKind.ShortKeyword:
-                    return SyntaxKind.ShortKeyword;
-                case VBasic.SyntaxKind.UShortKeyword:
-                    return SyntaxKind.UShortKeyword;
-                case VBasic.SyntaxKind.IntegerKeyword:
-                    return SyntaxKind.IntKeyword;
-                case VBasic.SyntaxKind.UIntegerKeyword:
-                    return SyntaxKind.UIntKeyword;
-                case VBasic.SyntaxKind.LongKeyword:
-                    return SyntaxKind.LongKeyword;
-                case VBasic.SyntaxKind.ULongKeyword:
-                    return SyntaxKind.ULongKeyword;
-                case VBasic.SyntaxKind.DoubleKeyword:
-                    return SyntaxKind.DoubleKeyword;
-                case VBasic.SyntaxKind.SingleKeyword:
-                    return SyntaxKind.FloatKeyword;
-                case VBasic.SyntaxKind.DecimalKeyword:
-                    return SyntaxKind.DecimalKeyword;
-                case VBasic.SyntaxKind.StringKeyword:
-                    return SyntaxKind.StringKeyword;
-                case VBasic.SyntaxKind.CharKeyword:
-                    return SyntaxKind.CharKeyword;
-                case VBasic.SyntaxKind.ObjectKeyword:
-                    return SyntaxKind.ObjectKeyword;
-                // literals
-                case VBasic.SyntaxKind.NothingKeyword:
-                    return SyntaxKind.NullKeyword;
-                case VBasic.SyntaxKind.TrueKeyword:
-                    return SyntaxKind.TrueKeyword;
-                case VBasic.SyntaxKind.FalseKeyword:
-                    return SyntaxKind.FalseKeyword;
-                case VBasic.SyntaxKind.MeKeyword:
-                    return SyntaxKind.ThisKeyword;
-                case VBasic.SyntaxKind.MyBaseKeyword:
-                    return SyntaxKind.BaseKeyword;
-                // modifiers
-                case VBasic.SyntaxKind.PublicKeyword:
-                    return SyntaxKind.PublicKeyword;
-                case VBasic.SyntaxKind.FriendKeyword:
-                    return SyntaxKind.InternalKeyword;
-                case VBasic.SyntaxKind.ProtectedKeyword:
-                    return SyntaxKind.ProtectedKeyword;
-                case VBasic.SyntaxKind.PrivateKeyword:
-                    return SyntaxKind.PrivateKeyword;
-                case VBasic.SyntaxKind.ByRefKeyword:
-                    return SyntaxKind.RefKeyword;
-                case VBasic.SyntaxKind.ParamArrayKeyword:
-                    return SyntaxKind.ParamsKeyword;
-                case VBasic.SyntaxKind.ReadOnlyKeyword:
-                    return SyntaxKind.ReadOnlyKeyword;
-                case VBasic.SyntaxKind.OverridesKeyword:
-                    return SyntaxKind.OverrideKeyword;
-                //New isn't as restrictive as shadows, but it will behave the same for all existing programs
-                case VBasic.SyntaxKind.ShadowsKeyword:
-                case VBasic.SyntaxKind.OverloadsKeyword:
-                    return SyntaxKind.NewKeyword;
-                case VBasic.SyntaxKind.OverridableKeyword:
-                    return SyntaxKind.VirtualKeyword;
-                case VBasic.SyntaxKind.SharedKeyword:
-                    return SyntaxKind.StaticKeyword;
-                case VBasic.SyntaxKind.ConstKeyword:
-                    return SyntaxKind.ConstKeyword;
-                case VBasic.SyntaxKind.PartialKeyword:
-                    return SyntaxKind.PartialKeyword;
-                case VBasic.SyntaxKind.MustInheritKeyword:
-                    return SyntaxKind.AbstractKeyword;
-                case VBasic.SyntaxKind.MustOverrideKeyword:
-                    return SyntaxKind.AbstractKeyword;
-                case VBasic.SyntaxKind.NotOverridableKeyword:
-                case VBasic.SyntaxKind.NotInheritableKeyword:
-                    return SyntaxKind.SealedKeyword;
-                // unary operators
-                case VBasic.SyntaxKind.UnaryMinusExpression:
-                    return SyntaxKind.UnaryMinusExpression;
-                case VBasic.SyntaxKind.UnaryPlusExpression:
-                    return SyntaxKind.UnaryPlusExpression;
-                case VBasic.SyntaxKind.NotExpression:
-                    return SyntaxKind.LogicalNotExpression;
-                // binary operators
-                case VBasic.SyntaxKind.ConcatenateExpression:
-                case VBasic.SyntaxKind.AddExpression:
-                    return SyntaxKind.AddExpression;
-                case VBasic.SyntaxKind.SubtractExpression:
-                    return SyntaxKind.SubtractExpression;
-                case VBasic.SyntaxKind.MultiplyExpression:
-                    return SyntaxKind.MultiplyExpression;
-                case VBasic.SyntaxKind.DivideExpression:
-                case VBasic.SyntaxKind.IntegerDivideExpression:
-                    return SyntaxKind.DivideExpression;
-                case VBasic.SyntaxKind.ModuloExpression:
-                    return SyntaxKind.ModuloExpression;
-                case VBasic.SyntaxKind.AndAlsoExpression:
-                    return SyntaxKind.LogicalAndExpression;
-                case VBasic.SyntaxKind.OrElseExpression:
-                    return SyntaxKind.LogicalOrExpression;
-                case VBasic.SyntaxKind.OrExpression:
-                    return SyntaxKind.BitwiseOrExpression;
-                case VBasic.SyntaxKind.AndExpression:
-                    return SyntaxKind.BitwiseAndExpression;
-                case VBasic.SyntaxKind.ExclusiveOrExpression:
-                    return SyntaxKind.ExclusiveOrExpression;
-                case VBasic.SyntaxKind.EqualsExpression:
-                case VBasic.SyntaxKind.CaseEqualsClause:
-                    return SyntaxKind.EqualsExpression;
-                case VBasic.SyntaxKind.NotEqualsExpression:
-                case VBasic.SyntaxKind.CaseNotEqualsClause:
-                    return SyntaxKind.NotEqualsExpression;
-                case VBasic.SyntaxKind.GreaterThanExpression:
-                case VBasic.SyntaxKind.CaseGreaterThanClause:
-                    return SyntaxKind.GreaterThanExpression;
-                case VBasic.SyntaxKind.GreaterThanOrEqualExpression:
-                case VBasic.SyntaxKind.CaseGreaterThanOrEqualClause:
-                    return SyntaxKind.GreaterThanOrEqualExpression;
-                case VBasic.SyntaxKind.LessThanExpression:
-                case VBasic.SyntaxKind.CaseLessThanClause:
-                    return SyntaxKind.LessThanExpression;
-                case VBasic.SyntaxKind.LessThanOrEqualExpression:
-                case VBasic.SyntaxKind.CaseLessThanOrEqualClause:
-                    return SyntaxKind.LessThanOrEqualExpression;
-                case VBasic.SyntaxKind.IsExpression:
-                    return SyntaxKind.EqualsExpression;
-                case VBasic.SyntaxKind.IsNotExpression:
-                    return SyntaxKind.NotEqualsExpression;
-                case VBasic.SyntaxKind.LeftShiftExpression:
-                    return SyntaxKind.LeftShiftExpression;
-                case VBasic.SyntaxKind.RightShiftExpression:
-                    return SyntaxKind.RightShiftExpression;
-                // assignment
-                case VBasic.SyntaxKind.SimpleAssignmentStatement:
-                    return SyntaxKind.SimpleAssignmentExpression;
-                case VBasic.SyntaxKind.ConcatenateAssignmentStatement:
-                case VBasic.SyntaxKind.AddAssignmentStatement:
-                    return SyntaxKind.AddAssignmentExpression;
-                case VBasic.SyntaxKind.SubtractAssignmentStatement:
-                    return SyntaxKind.SubtractAssignmentExpression;
-                case VBasic.SyntaxKind.MultiplyAssignmentStatement:
-                    return SyntaxKind.MultiplyAssignmentExpression;
-                case VBasic.SyntaxKind.IntegerDivideAssignmentStatement:
-                case VBasic.SyntaxKind.DivideAssignmentStatement:
-                    return SyntaxKind.DivideAssignmentExpression;
-                case VBasic.SyntaxKind.LeftShiftAssignmentStatement:
-                    return SyntaxKind.LeftShiftAssignmentExpression;
-                case VBasic.SyntaxKind.RightShiftAssignmentStatement:
-                    return SyntaxKind.RightShiftAssignmentExpression;
-                // Casts
-                case VBasic.SyntaxKind.CObjKeyword:
-                    return SyntaxKind.ObjectKeyword;
-                case VBasic.SyntaxKind.CBoolKeyword:
-                    return SyntaxKind.BoolKeyword;
-                case VBasic.SyntaxKind.CCharKeyword:
-                    return SyntaxKind.CharKeyword;
-                case VBasic.SyntaxKind.CSByteKeyword:
-                    return SyntaxKind.SByteKeyword;
-                case VBasic.SyntaxKind.CByteKeyword:
-                    return SyntaxKind.ByteKeyword;
-                case VBasic.SyntaxKind.CShortKeyword:
-                    return SyntaxKind.ShortKeyword;
-                case VBasic.SyntaxKind.CUShortKeyword:
-                    return SyntaxKind.UShortKeyword;
-                case VBasic.SyntaxKind.CIntKeyword:
-                    return SyntaxKind.IntKeyword;
-                case VBasic.SyntaxKind.CUIntKeyword:
-                    return SyntaxKind.UIntKeyword;
-                case VBasic.SyntaxKind.CLngKeyword:
-                    return SyntaxKind.LongKeyword;
-                case VBasic.SyntaxKind.CULngKeyword:
-                    return SyntaxKind.ULongKeyword;
-                case VBasic.SyntaxKind.CDecKeyword:
-                    return SyntaxKind.DecimalKeyword;
-                case VBasic.SyntaxKind.CSngKeyword:
-                    return SyntaxKind.FloatKeyword;
-                case VBasic.SyntaxKind.CDblKeyword:
-                    return SyntaxKind.DoubleKeyword;
-                case VBasic.SyntaxKind.CStrKeyword:
-                    return SyntaxKind.StringKeyword;
-                // Converts 
-                case VBasic.SyntaxKind.NarrowingKeyword:
-                    return SyntaxKind.ExplicitKeyword;
-                case VBasic.SyntaxKind.WideningKeyword:
-                    return SyntaxKind.ImplicitKeyword;
-                //
-                case VBasic.SyntaxKind.AssemblyKeyword:
-                    return SyntaxKind.AssemblyKeyword;
-                case VBasic.SyntaxKind.AsyncKeyword:
-                    return SyntaxKind.AsyncKeyword;
-                case VBasic.SyntaxKind.AscendingKeyword:
-                    return SyntaxKind.AscendingKeyword;
-                case VBasic.SyntaxKind.DescendingKeyword:
-                    return SyntaxKind.DescendingKeyword;
-
-                // Not direct conversions
-
-                case VBasic.SyntaxKind.ExponentiateAssignmentStatement:
-                    return SyntaxKind.SimpleAssignmentExpression;
-                case VBasic.SyntaxKind.ExponentiateExpression:
-                    break;
-            }
-            throw new NotSupportedException(t + " not supported!");
         }
     }
 }
