@@ -1971,7 +1971,7 @@ namespace ICSharpCode.CodeConverter.Util
         /// </summary>
         /// <param name="specialType">The specialtype of this type.</param>
         /// <returns>The keyword kind for a given special type, or SyntaxKind.None if the type name is not a predefined type.</returns>
-        public static SyntaxKind GetPredefinedKeywordKind(SpecialType specialType)
+        public static SyntaxKind GetPredefinedKeywordKind(this SpecialType specialType)
         {
             switch (specialType) {
                 case SpecialType.System_Boolean:

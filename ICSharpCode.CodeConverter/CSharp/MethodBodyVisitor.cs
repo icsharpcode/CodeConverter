@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.CodeConverter.Shared;
@@ -6,6 +7,7 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
@@ -99,6 +101,159 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var kind = ConvertToken(node.Kind(), TokenContext.Local);
                 return SingleStatement(SyntaxFactory.AssignmentExpression(kind, (ExpressionSyntax)node.Left.Accept(nodesVisitor), (ExpressionSyntax)node.Right.Accept(nodesVisitor)));
+            }
+
+            public override SyntaxList<StatementSyntax> VisitEraseStatement(VBSyntax.EraseStatementSyntax node)
+            {
+                var eraseStatements = node.Expressions.Select<VBSyntax.ExpressionSyntax, StatementSyntax>(arrayExpression => {
+                    var lhs = arrayExpression.Accept(nodesVisitor);
+                    var rhs = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
+                    var assignmentExpressionSyntax =
+                        SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, (ExpressionSyntax)lhs,
+                            rhs);
+                    return SyntaxFactory.ExpressionStatement(assignmentExpressionSyntax);
+                });
+                return SyntaxFactory.List(eraseStatements);
+            }
+
+            public override SyntaxList<StatementSyntax> VisitReDimStatement(VBSyntax.ReDimStatementSyntax node)
+            {
+                return SyntaxFactory.List(node.Clauses.SelectMany(arrayExpression => arrayExpression.Accept(CommentConvertingVisitor)));
+            }
+
+            public override SyntaxList<StatementSyntax> VisitRedimClause(VBSyntax.RedimClauseSyntax node)
+            {
+                bool preserve = node.Parent is VBSyntax.ReDimStatementSyntax rdss && rdss.PreserveKeyword.IsKind(VBasic.SyntaxKind.PreserveKeyword);
+                
+                var csTargetArrayExpression = (ExpressionSyntax) node.Expression.Accept(nodesVisitor);
+                var convertedBounds = ConvertArrayBounds(node.ArrayBounds, semanticModel, nodesVisitor).ToList();
+
+                var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds, node.SpanStart);
+                if (!preserve) return SingleStatement(newArrayAssignment);
+                
+                var oldTargetName = GetUniqueVariableNameInScope(node, "old" + csTargetArrayExpression.ToString().ToPascalCase());
+                var oldArrayAssignment = CreateLocalVariableDeclarationAndAssignment(oldTargetName, csTargetArrayExpression);
+
+                var oldTargetExpression = SyntaxFactory.IdentifierName(oldTargetName);
+                var arrayCopyIfNotNull = CreateConditionalArrayCopy(oldTargetExpression, csTargetArrayExpression, convertedBounds);
+
+                return SyntaxFactory.List(new StatementSyntax[] {oldArrayAssignment, newArrayAssignment, arrayCopyIfNotNull});
+            }
+
+            /// <summary>
+            /// Cut down version of Microsoft.VisualBasic.CompilerServices.Utils.CopyArray
+            /// </summary>
+            private IfStatementSyntax CreateConditionalArrayCopy(IdentifierNameSyntax sourceArrayExpression,
+                ExpressionSyntax targetArrayExpression,
+                List<ExpressionSyntax> convertedBounds)
+            {
+                var sourceLength = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, sourceArrayExpression, SyntaxFactory.IdentifierName("Length"));
+                var arrayCopyStatement = convertedBounds.Count == 1 
+                    ? CreateArrayCopyWithMinOfLengths(sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds.Single()) 
+                    : CreateArrayCopy(sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds);
+
+                var oldTargetNotEqualToNull = SyntaxFactory.BinaryExpression(SyntaxKind.NotEqualsExpression, sourceArrayExpression,
+                    SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression));
+                return SyntaxFactory.IfStatement(oldTargetNotEqualToNull, arrayCopyStatement);
+            }
+
+            /// <summary>
+            /// Array copy for multiple array dimensions represented by <paramref name="convertedBounds"/>
+            /// </summary>
+            /// <remarks>
+            /// Exception cases will sometimes silently succeed in the converted code, 
+            ///  but existing VB code relying on the exception thrown from a multidimensional redim preserve on
+            ///  different rank arrays is hopefully rare enough that it's worth saving a few lines of code
+            /// </remarks>
+            private StatementSyntax CreateArrayCopy(IdentifierNameSyntax sourceArrayExpression,
+                MemberAccessExpressionSyntax sourceLength,
+                ExpressionSyntax targetArrayExpression, ICollection convertedBounds)
+            {
+                var lastSourceLengthArgs = CreateArgList(Literal(convertedBounds.Count - 1));
+                var sourceLastRankLength = SyntaxFactory.InvocationExpression(
+                    SyntaxFactory.ParseExpression($"{sourceArrayExpression.Identifier}.GetLength"), lastSourceLengthArgs);
+                var targetLastRankLength =
+                    SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression($"{targetArrayExpression}.GetLength"),
+                        lastSourceLengthArgs);
+                var length = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Math.Min"),
+                    CreateArgList(sourceLastRankLength, targetLastRankLength));
+
+                var loopVariableName = GetUniqueVariableNameInScope(sourceArrayExpression, "i");
+                var loopVariableIdentifier = SyntaxFactory.IdentifierName(loopVariableName);
+                var sourceStartForThisIteration =
+                    SyntaxFactory.BinaryExpression(SyntaxKind.MultiplyExpression, loopVariableIdentifier, sourceLastRankLength);
+                var targetStartForThisIteration =
+                    SyntaxFactory.BinaryExpression(SyntaxKind.MultiplyExpression, loopVariableIdentifier, targetLastRankLength);
+
+                var arrayCopy = CreateArrayCopyWithStartingPoints(sourceArrayExpression, sourceStartForThisIteration, targetArrayExpression,
+                    targetStartForThisIteration, length);
+
+                var sourceArrayCount = SyntaxFactory.BinaryExpression(SyntaxKind.SubtractExpression,
+                    SyntaxFactory.BinaryExpression(SyntaxKind.DivideExpression, sourceLength, sourceLastRankLength),
+                    Literal(1));
+
+                return CreateForZeroToValueLoop(loopVariableIdentifier, arrayCopy, sourceArrayCount);
+            }
+
+            private static ForStatementSyntax CreateForZeroToValueLoop(SimpleNameSyntax loopVariableIdentifier, StatementSyntax loopStatement, ExpressionSyntax inclusiveLoopUpperBound)
+            {
+                var loopVariableAssignment = CreateVariableDeclarationAndAssignment(loopVariableIdentifier.Identifier.Text, Literal(0));
+                var lessThanSourceBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression,
+                    loopVariableIdentifier, inclusiveLoopUpperBound);
+                var incrementors = SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(
+                    SyntaxFactory.PrefixUnaryExpression(SyntaxKind.PreIncrementExpression, loopVariableIdentifier));
+                var forStatementSyntax = SyntaxFactory.ForStatement(loopVariableAssignment,
+                    SyntaxFactory.SeparatedList<ExpressionSyntax>(),
+                    lessThanSourceBounds, incrementors, loopStatement);
+                return forStatementSyntax;
+            }
+
+            private static ExpressionStatementSyntax CreateArrayCopyWithMinOfLengths(
+                IdentifierNameSyntax sourceExpression, ExpressionSyntax sourceLength,
+                ExpressionSyntax targetExpression, ExpressionSyntax targetLength)
+            {
+                var minLength = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Math.Min"),
+                    CreateArgList(targetLength, sourceLength));
+                var copyArgList = CreateArgList(sourceExpression, targetExpression, minLength);
+                var arrayCopy = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Array.Copy"), copyArgList);
+                return SyntaxFactory.ExpressionStatement(arrayCopy);
+            }
+
+            private static ExpressionStatementSyntax CreateArrayCopyWithStartingPoints(
+                IdentifierNameSyntax sourceExpression, ExpressionSyntax sourceStart,
+                ExpressionSyntax targetExpression, ExpressionSyntax targetStart, ExpressionSyntax length)
+            {
+                var copyArgList = CreateArgList(sourceExpression, sourceStart, targetExpression, targetStart, length);
+                var arrayCopy = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Array.Copy"), copyArgList);
+                return SyntaxFactory.ExpressionStatement(arrayCopy);
+            }
+
+            private ExpressionStatementSyntax CreateNewArrayAssignment(VBSyntax.ExpressionSyntax vbArrayExpression,
+                ExpressionSyntax csArrayExpression, List<ExpressionSyntax> convertedBounds,
+                int nodeSpanStart)
+            {
+                var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(convertedBounds));
+                var convertedType = (IArrayTypeSymbol) semanticModel.GetTypeInfo(vbArrayExpression).ConvertedType;
+                var typeSyntax = GetTypeSyntaxFromTypeSymbol(convertedType.ElementType, nodeSpanStart);
+                var arrayCreation =
+                    SyntaxFactory.ArrayCreationExpression(SyntaxFactory.ArrayType(typeSyntax,
+                        SyntaxFactory.SingletonList(arrayRankSpecifierSyntax)));
+                var assignmentExpressionSyntax =
+                    SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, csArrayExpression, arrayCreation);
+                var newArrayAssignment = SyntaxFactory.ExpressionStatement(assignmentExpressionSyntax);
+                return newArrayAssignment;
+            }
+
+            private static ArgumentListSyntax CreateArgList(params ExpressionSyntax[] copyArgs)
+            {
+                return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(copyArgs.Select(SyntaxFactory.Argument)));
+            }
+
+            private TypeSyntax GetTypeSyntaxFromTypeSymbol(ITypeSymbol convertedType, int nodeSpanStart)
+            {
+                var predefinedKeywordKind = convertedType.SpecialType.GetPredefinedKeywordKind();
+                if (predefinedKeywordKind != SyntaxKind.None) return SyntaxFactory.PredefinedType(SyntaxFactory.Token(predefinedKeywordKind));
+                return SyntaxFactory.ParseTypeName(convertedType.ToMinimalDisplayString(semanticModel, nodeSpanStart));
             }
 
             public override SyntaxList<StatementSyntax> VisitThrowStatement(VBSyntax.ThrowStatementSyntax node)
@@ -327,18 +482,30 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var withExpression = (ExpressionSyntax)node.WithStatement.Expression.Accept(nodesVisitor);
                 withBlockTempVariableNames.Push(GetUniqueVariableNameInScope(node, "withBlock"));
                 try {
-                    var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(
-                        SyntaxFactory.Identifier(withBlockTempVariableNames.Peek()), null,
-                        SyntaxFactory.EqualsValueClause(withExpression));
-                    var declaration = SyntaxFactory.LocalDeclarationStatement(SyntaxFactory.VariableDeclaration(
-                        SyntaxFactory.IdentifierName("var"),
-                        SyntaxFactory.SingletonSeparatedList(variableDeclaratorSyntax)));
+                    var declaration = CreateLocalVariableDeclarationAndAssignment(withBlockTempVariableNames.Peek(), withExpression);
                     var statements = node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor));
 
                     return SingleStatement(SyntaxFactory.Block(new[] { declaration }.Concat(statements).ToArray()));
                 } finally {
                     withBlockTempVariableNames.Pop();
                 }
+            }
+
+            private LocalDeclarationStatementSyntax CreateLocalVariableDeclarationAndAssignment(string variableName, ExpressionSyntax initValue)
+            {
+                return SyntaxFactory.LocalDeclarationStatement(CreateVariableDeclarationAndAssignment(variableName, initValue));
+            }
+
+            private static VariableDeclarationSyntax CreateVariableDeclarationAndAssignment(string variableName,
+                ExpressionSyntax initValue)
+            {
+                var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(
+                    SyntaxFactory.Identifier(variableName), null,
+                    SyntaxFactory.EqualsValueClause(initValue));
+                var variableDeclarationSyntax = SyntaxFactory.VariableDeclaration(
+                    SyntaxFactory.IdentifierName("var"),
+                    SyntaxFactory.SingletonSeparatedList(variableDeclaratorSyntax));
+                return variableDeclarationSyntax;
             }
 
             private string GetUniqueVariableNameInScope(SyntaxNode node, string variableNameBase)
@@ -434,6 +601,22 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxList<StatementSyntax> SingleStatement(ExpressionSyntax expression)
             {
                 return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ExpressionStatement(expression));
+            }
+
+            public static IEnumerable<ExpressionSyntax> ConvertArrayBounds(VBSyntax.ArgumentListSyntax argumentListSyntax, SemanticModel model, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> commentConvertingNodesVisitor)
+            {
+                return argumentListSyntax.Arguments.Select(a => IncreaseArrayUpperBoundExpression(((VBSyntax.SimpleArgumentSyntax)a).Expression, model, commentConvertingNodesVisitor));
+            }
+
+            private static ExpressionSyntax IncreaseArrayUpperBoundExpression(VBSyntax.ExpressionSyntax expr, SemanticModel model, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> commentConvertingNodesVisitor)
+            {
+                var constant = model.GetConstantValue(expr);
+                if (constant.HasValue && constant.Value is int)
+                    return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((int)constant.Value + 1));
+
+                return SyntaxFactory.BinaryExpression(
+                    SyntaxKind.SubtractExpression,
+                    (ExpressionSyntax)expr.Accept(commentConvertingNodesVisitor), SyntaxFactory.Token(SyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
             }
         }
     }

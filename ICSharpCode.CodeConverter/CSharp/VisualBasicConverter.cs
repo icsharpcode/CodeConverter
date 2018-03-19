@@ -61,13 +61,26 @@ namespace ICSharpCode.CodeConverter.CSharp
             foreach (var name in declarator.Names) {
                 var type = rawType;
                 if (!SyntaxTokenExtensions.IsKind(name.Nullable, VBasic.SyntaxKind.None)) {
-                    if (type is ArrayTypeSyntax)
-                        type = ((ArrayTypeSyntax)type).WithElementType(SyntaxFactory.NullableType(((ArrayTypeSyntax)type).ElementType));
-                    else
+                    if (type is ArrayTypeSyntax) {
+                        type = ((ArrayTypeSyntax)type).WithElementType(
+                            SyntaxFactory.NullableType(((ArrayTypeSyntax)type).ElementType));
+                        initializer = null;
+                    } else
                         type = SyntaxFactory.NullableType(type);
                 }
-                if (name.ArrayRankSpecifiers.Count > 0)
-                    type = SyntaxFactory.ArrayType(type, SyntaxFactory.List(name.ArrayRankSpecifiers.Select(a => (ArrayRankSpecifierSyntax)a.Accept(nodesVisitor))));
+
+                var rankSpecifiers = NodesVisitor.ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds, nodesVisitor, semanticModel, false);
+                if (rankSpecifiers.Count > 0) {
+                    var rankSpecifiersWithSizes = NodesVisitor.ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds, nodesVisitor, semanticModel);
+                    if (!rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).OfType<OmittedArraySizeExpressionSyntax>().Any())
+                    {
+                        initializer =
+                            SyntaxFactory.ArrayCreationExpression(
+                                SyntaxFactory.ArrayType(type, rankSpecifiersWithSizes));
+                    }
+                    type = SyntaxFactory.ArrayType(type, rankSpecifiers);
+                }
+
                 VariableDeclarationSyntax decl;
                 var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier, semanticModel), null, initializer == null ? null : SyntaxFactory.EqualsValueClause(initializer));
                 string k = type.ToString();
@@ -80,7 +93,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return newDecls;
         }
 
-        static ExpressionSyntax Literal(string valueText, object o) => GetLiteralExpression(valueText, o);
+        static ExpressionSyntax Literal(object o, string valueText = null) => GetLiteralExpression(valueText ?? o.ToString(), o);
 
         internal static ExpressionSyntax GetLiteralExpression(string valueText, object value)
         {
