@@ -16,10 +16,11 @@ namespace ICSharpCode.CodeConverter
             set => _sourcePathOrNull = string.IsNullOrWhiteSpace(value) ? null : value;
         }
 
-        public ConversionResult(string convertedCode)
+        public ConversionResult(string convertedCode, params Exception[] exceptions)
         {
             Success = true;
             ConvertedCode = convertedCode;
+            Exceptions = exceptions;
         }
 
         public ConversionResult(params Exception[] exceptions)
