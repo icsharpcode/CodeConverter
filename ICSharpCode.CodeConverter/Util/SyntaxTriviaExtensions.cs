@@ -5,6 +5,9 @@ using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using CSharp = Microsoft.CodeAnalysis.CSharp;
+using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -13,6 +16,60 @@ namespace ICSharpCode.CodeConverter.Util
 #endif
     static class SyntaxTriviaExtensions
     {
+        /// <summary>
+        /// Look inside a trivia list for a skipped token that contains the given position.
+        /// </summary>
+        private static readonly Func<SyntaxTriviaList, int, SyntaxToken> s_findSkippedTokenBackward =
+            (l, p) => FindTokenHelper.FindSkippedTokenBackward(GetSkippedTokens(l), p);
+
+        /// <summary>
+        /// Look inside a trivia list for a skipped token that contains the given position.
+        /// </summary>
+        public static readonly Func<SyntaxTriviaList, int, SyntaxToken> s_findSkippedTokenForward =
+            (l, p) => FindTokenHelper.FindSkippedTokenForward(GetSkippedTokens(l), p);
+
+        /// <summary>
+        /// return only skipped tokens
+        /// </summary>
+        private static IEnumerable<SyntaxToken> GetSkippedTokens(SyntaxTriviaList list)
+        {
+            return list.Where(trivia => trivia.RawKind == (int)SyntaxKind.SkippedTokensTrivia)
+                .SelectMany(t => ((SkippedTokensTriviaSyntax)t.GetStructure()).Tokens);
+        }
+
+        private static readonly Dictionary<VBasic.SyntaxKind, SyntaxKind> VBToCSSyntaxKinds = new Dictionary<VBasic.SyntaxKind, SyntaxKind> {
+            {VBasic.SyntaxKind.SkippedTokensTrivia, SyntaxKind.SkippedTokensTrivia},
+            {VBasic.SyntaxKind.DisabledTextTrivia, SyntaxKind.DisabledTextTrivia},
+            {VBasic.SyntaxKind.ConstDirectiveTrivia, SyntaxKind.DefineDirectiveTrivia}, // Just a guess
+            {VBasic.SyntaxKind.IfDirectiveTrivia, SyntaxKind.IfDirectiveTrivia},
+            {VBasic.SyntaxKind.ElseIfDirectiveTrivia, SyntaxKind.ElifDirectiveTrivia},
+            {VBasic.SyntaxKind.ElseDirectiveTrivia, SyntaxKind.ElseDirectiveTrivia},
+            {VBasic.SyntaxKind.EndIfDirectiveTrivia, SyntaxKind.EndIfDirectiveTrivia},
+            //{VBSyntaxKind.RegionDirectiveTrivia, SyntaxKind.RegionDirectiveTrivia}, Oh no I accidentally disabled regions :O ;)
+            //{VBSyntaxKind.EndRegionDirectiveTrivia, SyntaxKind.EndRegionDirectiveTrivia},
+            {VBasic.SyntaxKind.EnableWarningDirectiveTrivia, SyntaxKind.WarningDirectiveTrivia},
+            {VBasic.SyntaxKind.DisableWarningDirectiveTrivia, SyntaxKind.WarningDirectiveTrivia},
+            {VBasic.SyntaxKind.ReferenceDirectiveTrivia, SyntaxKind.ReferenceDirectiveTrivia},
+            {VBasic.SyntaxKind.BadDirectiveTrivia, SyntaxKind.BadDirectiveTrivia},
+            {VBasic.SyntaxKind.ConflictMarkerTrivia, SyntaxKind.ConflictMarkerTrivia},
+            {VBasic.SyntaxKind.ExternalSourceDirectiveTrivia, SyntaxKind.LoadDirectiveTrivia}, //Just a guess
+            {VBasic.SyntaxKind.ExternalChecksumDirectiveTrivia, SyntaxKind.LineDirectiveTrivia}, // Even more random guess
+        };
+
+        private static readonly Dictionary<SyntaxKind, VBasic.SyntaxKind> CSToVBSyntaxKinds =
+            VBToCSSyntaxKinds
+                .ToLookup(kvp => kvp.Value, kvp => kvp.Key)
+                .ToDictionary(g => g.Key, g => g.First());
+
+        public static SyntaxKind? GetCSKind(this SyntaxTrivia t)
+        {
+            return VBToCSSyntaxKinds.TryGetValue(VBasic.VisualBasicExtensions.Kind(t), out var csKind) ? csKind : (SyntaxKind?)null;
+        }
+        public static VBasic.SyntaxKind? GetVBKind(this SyntaxTrivia t)
+        {
+            return CSToVBSyntaxKinds.TryGetValue(t.Kind(), out var vbKind) ? vbKind : (VBasic.SyntaxKind?) null;
+        }
+
         public static int Width(this SyntaxTrivia trivia)
         {
             return trivia.Span.Length;
@@ -100,7 +157,7 @@ namespace ICSharpCode.CodeConverter.Util
                 }
 
                 return commentText.TrimStart(null);
-            } else if (trivia.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.CommentTrivia)) {
+            } else if (trivia.IsKind(VBasic.SyntaxKind.CommentTrivia)) {
                 if (commentText.StartsWith("'")) {
                     commentText = commentText.Substring(1);
                 }
@@ -138,7 +195,7 @@ namespace ICSharpCode.CodeConverter.Util
                 textBuilder.Remove(textBuilder.Length - newLine.Length, newLine.Length);
 
                 return textBuilder.ToString();
-            } else if (trivia.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DocumentationCommentTrivia)) {
+            } else if (trivia.IsKind(VBasic.SyntaxKind.DocumentationCommentTrivia)) {
                 var textBuilder = new StringBuilder();
 
                 if (commentText.EndsWith("*/")) {
@@ -184,7 +241,7 @@ namespace ICSharpCode.CodeConverter.Util
                 trivia.Select(t => t.ToFullString()).Do((s) => sb.Append(s));
                 return sb.ToString();
             } else {
-                return string.Empty;
+                return String.Empty;
             }
         }
 
@@ -196,7 +253,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static SyntaxTriviaList AsTrivia(this string s)
         {
-            return SyntaxFactory.ParseLeadingTrivia(s ?? string.Empty);
+            return SyntaxFactory.ParseLeadingTrivia(s ?? String.Empty);
         }
 
         public static bool IsWhitespaceOrEndOfLine(this SyntaxTrivia trivia)
@@ -206,12 +263,12 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsEndOfLine(this SyntaxTrivia x)
         {
-            return x.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.EndOfLineTrivia) || x.IsKind(SyntaxKind.EndOfLineTrivia);
+            return x.IsKind(VBasic.SyntaxKind.EndOfLineTrivia) || x.IsKind(SyntaxKind.EndOfLineTrivia);
         }
 
         private static bool IsWhitespace(this SyntaxTrivia x)
         {
-            return x.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.WhitespaceTrivia) || x.IsKind(SyntaxKind.WhitespaceTrivia);
+            return x.IsKind(VBasic.SyntaxKind.WhitespaceTrivia) || x.IsKind(SyntaxKind.WhitespaceTrivia);
         }
 
         public static SyntaxTrivia GetPreviousTrivia(

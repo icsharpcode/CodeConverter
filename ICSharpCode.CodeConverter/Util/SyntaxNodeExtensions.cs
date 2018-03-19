@@ -874,9 +874,9 @@ namespace ICSharpCode.CodeConverter.Util
             }
 
             //Each of these would need its own method to recreate for C# with the right structure probably so let's just warn about them for now.
-            var convertedKind = VBToCSSyntaxKinds.FirstOrNullable(kvp => t.IsKind(kvp.Key));
+            var convertedKind = t.GetCSKind();
             return convertedKind.HasValue
-                ? SyntaxFactory.Comment($"/* TODO ERROR: Skipped {convertedKind.Value.Key} */")
+                ? SyntaxFactory.Comment($"/* TODO ERROR: Skipped {convertedKind.Value} */")
                 : default(SyntaxTrivia);
         }
 
@@ -906,9 +906,9 @@ namespace ICSharpCode.CodeConverter.Util
                 return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.EndOfLineTrivia, t.ToString());
             }
 
-            var convertedKind = CSToVBSyntaxKinds.FirstOrNullable(kvp => t.IsKind(kvp.Key));
+            var convertedKind = t.GetVBKind();
             return convertedKind.HasValue
-                ? VBSyntaxFactory.CommentTrivia($"' TODO ERROR: Skipped {convertedKind.Value.Key}")
+                ? VBSyntaxFactory.CommentTrivia($"' TODO ERROR: Skipped {convertedKind.Value}")
                 : default(SyntaxTrivia);
         }
 
@@ -1239,51 +1239,6 @@ namespace ICSharpCode.CodeConverter.Util
         }
 
         /// <summary>
-        /// Look inside a trivia list for a skipped token that contains the given position.
-        /// </summary>
-        private static readonly Func<SyntaxTriviaList, int, SyntaxToken> s_findSkippedTokenForward =
-            (l, p) => FindTokenHelper.FindSkippedTokenForward(GetSkippedTokens(l), p);
-
-        /// <summary>
-        /// Look inside a trivia list for a skipped token that contains the given position.
-        /// </summary>
-        private static readonly Func<SyntaxTriviaList, int, SyntaxToken> s_findSkippedTokenBackward =
-            (l, p) => FindTokenHelper.FindSkippedTokenBackward(GetSkippedTokens(l), p);
-
-        private static readonly Dictionary<VBSyntaxKind, SyntaxKind> VBToCSSyntaxKinds = new Dictionary<VBSyntaxKind, SyntaxKind> {
-            {VBSyntaxKind.SkippedTokensTrivia, SyntaxKind.SkippedTokensTrivia},
-            {VBSyntaxKind.DisabledTextTrivia, SyntaxKind.DisabledTextTrivia},
-            {VBSyntaxKind.ConstDirectiveTrivia, SyntaxKind.DefineDirectiveTrivia}, // Just a guess
-            {VBSyntaxKind.IfDirectiveTrivia, SyntaxKind.IfDirectiveTrivia},
-            {VBSyntaxKind.ElseIfDirectiveTrivia, SyntaxKind.ElifDirectiveTrivia},
-            {VBSyntaxKind.ElseDirectiveTrivia, SyntaxKind.ElseDirectiveTrivia},
-            {VBSyntaxKind.EndIfDirectiveTrivia, SyntaxKind.EndIfDirectiveTrivia},
-            //{VBSyntaxKind.RegionDirectiveTrivia, SyntaxKind.RegionDirectiveTrivia}, Oh no I accidentally disabled regions :O ;)
-            //{VBSyntaxKind.EndRegionDirectiveTrivia, SyntaxKind.EndRegionDirectiveTrivia},
-            {VBSyntaxKind.EnableWarningDirectiveTrivia, SyntaxKind.WarningDirectiveTrivia},
-            {VBSyntaxKind.DisableWarningDirectiveTrivia, SyntaxKind.WarningDirectiveTrivia},
-            {VBSyntaxKind.ReferenceDirectiveTrivia, SyntaxKind.ReferenceDirectiveTrivia},
-            {VBSyntaxKind.BadDirectiveTrivia, SyntaxKind.BadDirectiveTrivia},
-            {VBSyntaxKind.ConflictMarkerTrivia, SyntaxKind.ConflictMarkerTrivia},
-            {VBSyntaxKind.ExternalSourceDirectiveTrivia, SyntaxKind.LoadDirectiveTrivia}, //Just a guess
-            {VBSyntaxKind.ExternalChecksumDirectiveTrivia, SyntaxKind.LineDirectiveTrivia}, // Even more random guess
-        };
-
-        private static readonly Dictionary<SyntaxKind, VBSyntaxKind> CSToVBSyntaxKinds = 
-            VBToCSSyntaxKinds
-                .ToLookup(kvp => kvp.Value, kvp => kvp.Key)
-                .ToDictionary(g => g.Key, g => g.First());
-
-        /// <summary>
-        /// return only skipped tokens
-        /// </summary>
-        private static IEnumerable<SyntaxToken> GetSkippedTokens(SyntaxTriviaList list)
-        {
-            return list.Where(trivia => trivia.RawKind == (int)SyntaxKind.SkippedTokensTrivia)
-                .SelectMany(t => ((SkippedTokensTriviaSyntax)t.GetStructure()).Tokens);
-        }
-
-        /// <summary>
         /// If the position is inside of token, return that token; otherwise, return the token to the right.
         /// </summary>
         public static SyntaxToken FindTokenOnRightOfPosition(
@@ -1293,7 +1248,7 @@ namespace ICSharpCode.CodeConverter.Util
             bool includeDirectives = false,
             bool includeDocumentationComments = false)
         {
-            var skippedTokenFinder = includeSkipped ? s_findSkippedTokenForward : (Func<SyntaxTriviaList, int, SyntaxToken>)null;
+            var skippedTokenFinder = includeSkipped ? SyntaxTriviaExtensions.s_findSkippedTokenForward : (Func<SyntaxTriviaList, int, SyntaxToken>)null;
 
             return FindTokenHelper.FindTokenOnRightOfPosition<CompilationUnitSyntax>(
                 root, position, skippedTokenFinder, includeSkipped, includeDirectives, includeDocumentationComments);
@@ -1711,7 +1666,6 @@ namespace ICSharpCode.CodeConverter.Util
                 node.IsParentKind(SyntaxKind.ConstructorDeclaration) ||
                 node.IsParentKind(SyntaxKind.DelegateDeclaration);
         }
-
         public static string GetBriefNodeDescription(this SyntaxNode node)
         {
             var sb = new StringBuilder();
