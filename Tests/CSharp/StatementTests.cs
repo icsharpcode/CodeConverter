@@ -224,7 +224,7 @@ End Class", @"public class TestClass
         numArray2 = new int[6];
         if (oldNumArray2 != null)
             Array.Copy(oldNumArray2, numArray2, Math.Min(6, oldNumArray2.Length));
-        int[,] y;"/* Missing " = new int[7,6]" is bug unrelated to this test */ + @"
+        int[,] y = new int[7, 6];
         y[2, 3] = 1;
         var oldY = y;
         y = new int[7, 9];
