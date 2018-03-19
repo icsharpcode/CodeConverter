@@ -100,7 +100,7 @@ namespace ICSharpCode.CodeConverter.VB
                         elseBlock
                     );
                 } else {
-                    if (elseIfBlocks.Any() || !IsSimpleStatement(node.Statement)) {
+                    if (elseIfBlocks.Any() || elseBlock != null || !IsSimpleStatement(node.Statement)) {
                         stmt = SyntaxFactory.MultiLineIfBlock(
                              SyntaxFactory.IfStatement((ExpressionSyntax)node.Condition.Accept(nodesVisitor)).WithThenKeyword(SyntaxFactory.Token(SyntaxKind.ThenKeyword)),
                              ConvertBlock(node.Statement),
@@ -111,7 +111,7 @@ namespace ICSharpCode.CodeConverter.VB
                         stmt = SyntaxFactory.SingleLineIfStatement(
                             (ExpressionSyntax)node.Condition.Accept(nodesVisitor),
                             ConvertBlock(node.Statement),
-                            elseBlock == null ? null : SyntaxFactory.SingleLineElseClause(elseBlock.Statements)
+                            null
                         ).WithThenKeyword(SyntaxFactory.Token(SyntaxKind.ThenKeyword));
                     }
                 }

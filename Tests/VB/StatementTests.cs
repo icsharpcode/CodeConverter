@@ -366,6 +366,32 @@ End Class");
         }
 
         [Fact]
+        public void IfStatementWithoutBlock()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    void TestMethod (int a)
+    {
+        int b;
+        if (a == 0)
+            b = 0;
+        else
+            b = 3;
+    }
+}", @"Class TestClass
+    Private Sub TestMethod(ByVal a As Integer)
+        Dim b As Integer
+
+        If a = 0 Then
+            b = 0
+        Else
+            b = 3
+        End If
+    End Sub
+End Class");
+        }
+
+        [Fact]
         public void IfStatement()
         {
             TestConversionCSharpToVisualBasic(@"class TestClass
