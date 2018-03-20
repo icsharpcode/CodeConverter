@@ -21,6 +21,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             var syntaxNodes = wrappedVisitor.Visit(node);
             // Port trivia to the last statement in the list
+            if (!syntaxNodes.Any()) return syntaxNodes;
             var lastWithConvertedTrivia = triviaConverter.PortConvertedTrivia(node, syntaxNodes.LastOrDefault());
             return syntaxNodes.Replace(syntaxNodes.LastOrDefault(), lastWithConvertedTrivia);
         }

@@ -15,6 +15,7 @@ namespace CodeConverter.Tests.VB
         while (true) ;
         for (;;) ;
         do ; while (true);
+        ;
     }
 }", @"Class TestClass
     Private Sub TestMethod()

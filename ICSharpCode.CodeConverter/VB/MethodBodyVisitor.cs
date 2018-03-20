@@ -573,6 +573,10 @@ namespace ICSharpCode.CodeConverter.VB
                 }
                 return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ExitStatement(statementKind, SyntaxFactory.Token(keywordKind)));
             }
+            public override SyntaxList<StatementSyntax> VisitEmptyStatement(CSS.EmptyStatementSyntax node)
+            {
+                return SyntaxFactory.List<StatementSyntax>();
+            }
 
             public override SyntaxList<StatementSyntax> VisitCheckedStatement(CSS.CheckedStatementSyntax node)
             {
