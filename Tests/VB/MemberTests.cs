@@ -153,30 +153,6 @@ End Class");
         }
 
         [Fact]
-        public void TestNarrowingWideningConversionOperator()
-        {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class MyInt
-    Public Shared Narrowing Operator CType(i As Integer) As MyInt
-        Return New MyInt()
-    End Operator
-    Public Shared Widening Operator CType(myInt As MyInt) As Integer
-        Return 1
-    End Operator
-End Class"
-                , @"public class MyInt
-{
-    public static explicit operator MyInt(int i)
-    {
-        return new MyInt();
-    }
-    public static implicit operator int(MyInt myInt)
-    {
-        return 1;
-    }
-}");
-        }
-
-        [Fact]
         public void TestExtensionMethod()
         {
             TestConversionCSharpToVisualBasic(
