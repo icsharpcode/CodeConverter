@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
@@ -34,12 +35,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
             {
-                var nodeString = node.ToString();
-                if (nodeString.Length > 15) {
-                    nodeString = nodeString.Substring(0, 12) + "...";
-                }
-                
-                throw new NotImplementedException(node.GetType() + $" not implemented - cannot convert {nodeString}");
+                throw new NotImplementedException($"Cannot convert {node.GetType().Name} from {node.GetBriefNodeDescription()}");
             }
 
             public override SyntaxList<StatementSyntax> VisitStopOrEndStatement(VBSyntax.StopOrEndStatementSyntax node)

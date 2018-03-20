@@ -50,7 +50,7 @@ namespace ICSharpCode.CodeConverter.VB
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
             {
-                throw new NotImplementedException(node.GetType() + " not implemented!");
+                throw new NotImplementedException($"Cannot convert {node.GetType().Name} from {node.GetBriefNodeDescription()}");
             }
 
             public override SyntaxList<StatementSyntax> VisitLocalDeclarationStatement(CSS.LocalDeclarationStatementSyntax node)

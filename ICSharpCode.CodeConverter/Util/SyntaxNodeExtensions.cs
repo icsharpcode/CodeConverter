@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -857,7 +858,7 @@ namespace ICSharpCode.CodeConverter.Util
             if (t.IsKind(VBSyntaxKind.DocumentationCommentTrivia)) {
                 var previousWhitespace = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None).ToString();
                 var commentTextLines = t.GetCommentText().Replace("\r\n", "\r").Split('\r');
-                var outputCommentText = "/// " + string.Join($"\r\n{previousWhitespace}/// ", commentTextLines) + Environment.NewLine;
+                var outputCommentText = "/// " + String.Join($"\r\n{previousWhitespace}/// ", commentTextLines) + Environment.NewLine;
                 return SyntaxFactory.SyntaxTrivia(SyntaxKind.SingleLineCommentTrivia, outputCommentText); //It's always single line...even when it has multiple lines
             }
 
@@ -888,7 +889,7 @@ namespace ICSharpCode.CodeConverter.Util
                 var commentTextLines = t.GetCommentText().Replace("\r\n", "\r").Split('\r');
                 var multiLine = commentTextLines.Count() > 1;
                 var outputCommentText = multiLine
-                    ? "''' " + string.Join($"\r\n{previousWhitespace}/// ", commentTextLines)
+                    ? "''' " + String.Join($"\r\n{previousWhitespace}/// ", commentTextLines)
                     : $"' {commentTextLines.Single()}";
                 return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.DocumentationCommentTrivia,
                     outputCommentText);
@@ -1711,5 +1712,24 @@ namespace ICSharpCode.CodeConverter.Util
                 node.IsParentKind(SyntaxKind.DelegateDeclaration);
         }
 
+        public static string GetBriefNodeDescription(this SyntaxNode node)
+        {
+            var sb = new StringBuilder();
+            sb.Append($"'{node.ToString().Truncate()}' at character {node.SpanStart}");
+
+            if (node.Parent != null) {
+                var parentStr = node.Parent.ToString().Truncate(Math.Min(30, node.SpanStart - node.Parent.SpanStart), "");
+                sb.AppendLine();
+                sb.Append($" in '{parentStr}'");
+            }
+
+            return sb.ToString();
+        }
+
+        private static string Truncate(this string input, int maxLength = 30, string truncationIndicator = "...")
+        {
+            if (input.Length <= maxLength) return input;
+            return input.Substring(0, maxLength - truncationIndicator.Length) + truncationIndicator;
+        }
     }
 }

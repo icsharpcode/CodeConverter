@@ -107,10 +107,13 @@ End Function";
 
             public override VisualBasicSyntaxNode DefaultVisit(SyntaxNode node)
             {
+                var exceptionMessage = $"Cannot convert {node.GetType().Name} from {node.GetBriefNodeDescription()}";
+
                 if (CreateMethodBodyVisitor().Visit(node).Any()) {
-                    throw new NotImplementedOrRequiresSurroundingMethodDeclaration(node.GetType() + " not implemented!");
+                    throw new NotImplementedOrRequiresSurroundingMethodDeclaration(exceptionMessage);
                 }
-                throw new NotImplementedException(node.GetType() + " not implemented!");
+
+                throw new NotImplementedException(exceptionMessage);
             }
 
             public override VisualBasicSyntaxNode VisitCompilationUnit(CSS.CompilationUnitSyntax node)
