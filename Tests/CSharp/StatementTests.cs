@@ -481,7 +481,7 @@ class TestClass
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void MultidimensionalArrayInitializationStatement()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -497,7 +497,7 @@ class TestClass
 {
     private void TestMethod()
     {
-        int[,] b = { { 1, 2 }, { 3, 4 } };
+        int[,] b = new[] { { 1, 2 }, { 3, 4 } };
     }
 }");
         }

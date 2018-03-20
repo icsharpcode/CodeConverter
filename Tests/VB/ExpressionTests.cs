@@ -98,7 +98,7 @@ End Class");
 End Class");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void ObjectInitializerExpression()
         {
             TestConversionCSharpToVisualBasic(@"
@@ -111,8 +111,7 @@ class TestClass
 {
     void TestMethod(string str)
     {
-        StudentName student2 = new StudentName
-        {
+        StudentName student2 = new StudentName {
             FirstName = ""Craig"",
             LastName = ""Playstead"",
         };
@@ -123,12 +122,15 @@ End Class
 
 Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim student2 As StudentName = New StudentName With {.FirstName = ""Craig"", .LastName = ""Playstead""}
+        Dim student2 As StudentName = New StudentName With {
+            .FirstName = ""Craig"",
+            .LastName = ""Playstead""
+        }
     End Sub
 End Class");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void ObjectInitializerExpression2()
         {
             TestConversionCSharpToVisualBasic(@"class TestClass
@@ -142,7 +144,10 @@ End Class");
     }
 }", @"Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim student2 = New With {Key .FirstName = ""Craig"", Key .LastName = ""Playstead""}
+        Dim student2 = New With {Key
+            .FirstName = ""Craig"", Key
+            .LastName = ""Playstead""
+        }
     End Sub
 End Class");
         }
@@ -297,7 +302,7 @@ End Class");
 End Sub");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void Linq2()
         {
             TestConversionCSharpToVisualBasic(@"public static void Linq40() 
@@ -307,7 +312,10 @@ End Sub");
         var numberGroups = 
             from n in numbers 
             group n by n % 5 into g 
-            select new { Remainder = g.Key, Numbers = g }; 
+            select new { 
+                Remainder = g.Key,
+                Numbers = g
+            }; 
       
         foreach (var g in numberGroups) 
         { 
@@ -320,7 +328,10 @@ End Sub");
     }",
 @"Public Shared Sub Linq40()
     Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
-    Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g Select New With {Key .Remainder = g.Key, Key .Numbers = g}
+    Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g Select New With {Key
+        .Remainder = g.Key, Key
+        .Numbers = g
+    }
 
     For Each g In numberGroups
         Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"")
@@ -332,7 +343,7 @@ End Sub");
 End Sub");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void Linq3()
         {
             TestConversionCSharpToVisualBasic(@"class Product {
@@ -355,7 +366,9 @@ class Test {
             var q =
                 from c in categories
                 join p in products on c equals p.Category
-                select new { Category = c, p.ProductName }; 
+                select new {
+                    Category = c, p.ProductName
+                }; 
  
         foreach (var v in q) 
         { 
@@ -372,7 +385,9 @@ Class Test
     Public Sub Linq102()
         Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
         Dim products As Product() = GetProductList()
-        Dim q = From c In categories Join p In products On c Equals p.Category Select New With {Key .Category = c, p.ProductName}
+        Dim q = From c In categories Join p In products On c Equals p.Category Select New With {Key
+            .Category = c, p.ProductName
+        }
 
         For Each v In q
             Console.WriteLine($""{v.ProductName}: {v.Category}"")
@@ -381,7 +396,7 @@ Class Test
 End Class");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void Linq4()
         {
             TestConversionCSharpToVisualBasic(@"public void Linq103() 
@@ -398,7 +413,10 @@ End Class");
         var q =
             from c in categories
             join p in products on c equals p.Category into ps
-            select new { Category = c, Products = ps }; 
+            select new {
+                Category = c,
+                Products = ps
+            }; 
   
     foreach (var v in q) 
     { 
@@ -411,7 +429,10 @@ End Class");
 }", @"Public Sub Linq103()
     Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
     Dim products = GetProductList()
-    Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {Key .Category = c, Key .Products = ps}
+    Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {Key
+        .Category = c, Key
+        .Products = ps
+    }
 
     For Each v In q
         Console.WriteLine(v.Category & "":"")

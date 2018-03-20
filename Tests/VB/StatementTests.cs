@@ -230,50 +230,65 @@ End Class");
 End Class");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void MultidimensionalArrayInitializationStatement()
         {
             TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
-        int[,] b = { { 1, 2 }, { 3, 4 } };
+        int[,] b = {
+            {1, 2},
+            {3, 4}
+        };
     }
 }", @"Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer(,) = {{1, 2}, {3, 4}}
+        Dim b As Integer(,) = {
+        {1, 2},
+        {3, 4}}
     End Sub
 End Class");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void MultidimensionalArrayInitializationStatementWithType()
         {
             TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
-        int[,] b = new int[,] { { 1, 2 }, { 3, 4 } };
+        int[,] b = new int[,] {
+            {1, 2},
+            {3, 4}
+        };
     }
 }", @"Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer(,) = New Integer(,) {{1, 2}, {3, 4}}
+        Dim b As Integer(,) = New Integer(,) {
+        {1, 2},
+        {3, 4}}
     End Sub
 End Class");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void MultidimensionalArrayInitializationStatementWithLengths()
         {
             TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
-        int[,] b = new int[2, 2] { { 1, 2 }, { 3, 4 } };
+        int[,] b = new int[2, 2] {
+            {1, 2},
+            {3, 4}
+        }
     }
 }", @"Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer(,) = New Integer(1, 1) {{1, 2}, {3, 4}}
+        Dim b As Integer(,) = New Integer(1, 1) {
+        {1, 2},
+        {3, 4}}
     End Sub
 End Class");
         }
