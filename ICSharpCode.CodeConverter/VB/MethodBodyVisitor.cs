@@ -478,6 +478,24 @@ namespace ICSharpCode.CodeConverter.VB
                 return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.GoToStatement(label));
             }
 
+            /// <summary>
+            /// VB doesn't have a block construct, but all of its other constructs (e.g. if statements) create a block.
+            /// So we can use an always-true if statement to isolate the variables.
+            /// </summary>
+            public override SyntaxList<StatementSyntax> VisitBlock(CSS.BlockSyntax node)
+            {
+                var statements = ConvertBlock(node);
+                var ifStatement = SyntaxFactory.IfStatement(SyntaxFactory.Token(
+                        SyntaxKind.IfKeyword),
+                    SyntaxFactory.TrueLiteralExpression(SyntaxFactory.Token(SyntaxKind.TrueKeyword)),
+                    SyntaxFactory.Token(SyntaxKind.ThenKeyword)
+                );
+
+                var ifBlock = SyntaxFactory.MultiLineIfBlock(ifStatement, statements, SyntaxFactory.List<ElseIfBlockSyntax>(), null);
+
+                return SyntaxFactory.SingletonList<StatementSyntax>(ifBlock);
+            }
+
             SyntaxList<StatementSyntax> ConvertBlock(CSS.StatementSyntax node)
             {
                 if (node is CSS.BlockSyntax) {

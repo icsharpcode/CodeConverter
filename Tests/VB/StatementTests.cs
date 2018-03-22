@@ -443,6 +443,38 @@ End Class");
         }
 
         [Fact]
+        public void BlockStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    public static void TestMethod()
+    {
+        {
+            var x = 1;
+            Console.WriteLine(x);
+        }
+
+        {
+            var x = 2;
+            Console.WriteLine(x);
+        }
+    }
+}", @"Class TestClass
+    Public Shared Sub TestMethod()
+        If True Then
+            Dim x = 1
+            Console.WriteLine(x)
+        End If
+
+        If True Then
+            Dim x = 2
+            Console.WriteLine(x)
+        End If
+    End Sub
+End Class");
+        }
+
+        [Fact]
         public void WhileStatement()
         {
             TestConversionCSharpToVisualBasic(@"class TestClass
