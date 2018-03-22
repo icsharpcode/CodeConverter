@@ -80,8 +80,8 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static SyntaxNode SkipArgument(this SyntaxNode expression)
         {
-            if (expression is Microsoft.CodeAnalysis.CSharp.Syntax.ArgumentSyntax)
-                return ((Microsoft.CodeAnalysis.CSharp.Syntax.ArgumentSyntax)expression).Expression;
+            if (expression is ArgumentSyntax)
+                return ((ArgumentSyntax)expression).Expression;
             if (expression is Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentSyntax)
                 return ((Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentSyntax)expression).GetExpression();
             return expression;
@@ -365,6 +365,10 @@ namespace ICSharpCode.CodeConverter.Util
         //        {
         //            return node != null ? node.Parent : null;
         //        }
+        public static bool HasOperandOfUnconvertedType(this Microsoft.CodeAnalysis.VisualBasic.Syntax.AssignmentStatementSyntax node, string operandType, SemanticModel semanticModel)
+        {
+            return new[] { node.Left, node.Right }.Any(e => ExpressionSyntaxExtensions.UnconvertedIsType(e, operandType, semanticModel));
+        }
     }
 }
 

@@ -361,8 +361,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBasic.SyntaxKind.DivideExpression:
                 case VBasic.SyntaxKind.IntegerDivideExpression:
                     return SyntaxKind.DivideExpression;
-                case VBasic.SyntaxKind.ExponentiateExpression:
-                    return SyntaxKind.CaretToken;
                 case VBasic.SyntaxKind.ModuloExpression:
                     return SyntaxKind.ModuloExpression;
                 case VBasic.SyntaxKind.AndAlsoExpression:
@@ -414,8 +412,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBasic.SyntaxKind.IntegerDivideAssignmentStatement:
                 case VBasic.SyntaxKind.DivideAssignmentStatement:
                     return SyntaxKind.DivideAssignmentExpression;
-                case VBasic.SyntaxKind.ExponentiateAssignmentStatement:
-                    return SyntaxKind.CaretEqualsToken;
                 case VBasic.SyntaxKind.LeftShiftAssignmentStatement:
                     return SyntaxKind.LeftShiftAssignmentExpression;
                 case VBasic.SyntaxKind.RightShiftAssignmentStatement:
@@ -465,6 +461,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxKind.AscendingKeyword;
                 case VBasic.SyntaxKind.DescendingKeyword:
                     return SyntaxKind.DescendingKeyword;
+
+                // Not direct conversions
+
+                case VBasic.SyntaxKind.ExponentiateAssignmentStatement:
+                    return SyntaxKind.SimpleAssignmentExpression;
+                case VBasic.SyntaxKind.ExponentiateExpression:
+                    break;
             }
             throw new NotSupportedException(t + " not supported!");
         }

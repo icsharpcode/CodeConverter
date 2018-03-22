@@ -95,8 +95,22 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> VisitAssignmentStatement(VBSyntax.AssignmentStatementSyntax node)
             {
+                var lhs = (ExpressionSyntax)node.Left.Accept(nodesVisitor);
+                var rhs = (ExpressionSyntax)node.Right.Accept(nodesVisitor);
+                // e.g. VB DivideAssignmentExpression "/=" is always on doubles unless you use the "\=" IntegerDivideAssignmentExpression, so need to cast in C#
+                // Need the unconverted type, since the whole point is that it gets converted to a double by the operator
+                if (node.IsKind(VBasic.SyntaxKind.DivideAssignmentStatement) && !node.HasOperandOfUnconvertedType("System.Double", semanticModel)) {
+                    var doubleType = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword));
+                    rhs = SyntaxFactory.CastExpression(doubleType, rhs);
+                }
+
+                if (node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
+                    rhs = SyntaxFactory.InvocationExpression(
+                        SyntaxFactory.ParseExpression($"{nameof(Math)}.{nameof(Math.Pow)}"),
+                        ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
+                }
                 var kind = ConvertToken(node.Kind(), TokenContext.Local);
-                return SingleStatement(SyntaxFactory.AssignmentExpression(kind, (ExpressionSyntax)node.Left.Accept(nodesVisitor), (ExpressionSyntax)node.Right.Accept(nodesVisitor)));
+                return SingleStatement(SyntaxFactory.AssignmentExpression(kind, lhs, rhs));
             }
 
             public override SyntaxList<StatementSyntax> VisitEraseStatement(VBSyntax.EraseStatementSyntax node)
@@ -165,14 +179,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 MemberAccessExpressionSyntax sourceLength,
                 ExpressionSyntax targetArrayExpression, ICollection convertedBounds)
             {
-                var lastSourceLengthArgs = CreateArgList(Literal(convertedBounds.Count - 1));
+                var lastSourceLengthArgs = ExpressionSyntaxExtensions.CreateArgList(Literal(convertedBounds.Count - 1));
                 var sourceLastRankLength = SyntaxFactory.InvocationExpression(
                     SyntaxFactory.ParseExpression($"{sourceArrayExpression.Identifier}.GetLength"), lastSourceLengthArgs);
                 var targetLastRankLength =
                     SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression($"{targetArrayExpression}.GetLength"),
                         lastSourceLengthArgs);
-                var length = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Math.Min"),
-                    CreateArgList(sourceLastRankLength, targetLastRankLength));
+                var length = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Math.Min"), ExpressionSyntaxExtensions.CreateArgList(sourceLastRankLength, targetLastRankLength));
 
                 var loopVariableName = GetUniqueVariableNameInScope(sourceArrayExpression, "i");
                 var loopVariableIdentifier = SyntaxFactory.IdentifierName(loopVariableName);
@@ -208,9 +221,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 IdentifierNameSyntax sourceExpression, ExpressionSyntax sourceLength,
                 ExpressionSyntax targetExpression, ExpressionSyntax targetLength)
             {
-                var minLength = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Math.Min"),
-                    CreateArgList(targetLength, sourceLength));
-                var copyArgList = CreateArgList(sourceExpression, targetExpression, minLength);
+                var minLength = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Math.Min"), ExpressionSyntaxExtensions.CreateArgList(targetLength, sourceLength));
+                var copyArgList = ExpressionSyntaxExtensions.CreateArgList(sourceExpression, targetExpression, minLength);
                 var arrayCopy = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Array.Copy"), copyArgList);
                 return SyntaxFactory.ExpressionStatement(arrayCopy);
             }
@@ -219,7 +231,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 IdentifierNameSyntax sourceExpression, ExpressionSyntax sourceStart,
                 ExpressionSyntax targetExpression, ExpressionSyntax targetStart, ExpressionSyntax length)
             {
-                var copyArgList = CreateArgList(sourceExpression, sourceStart, targetExpression, targetStart, length);
+                var copyArgList = ExpressionSyntaxExtensions.CreateArgList(sourceExpression, sourceStart, targetExpression, targetStart, length);
                 var arrayCopy = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Array.Copy"), copyArgList);
                 return SyntaxFactory.ExpressionStatement(arrayCopy);
             }
@@ -238,11 +250,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, csArrayExpression, arrayCreation);
                 var newArrayAssignment = SyntaxFactory.ExpressionStatement(assignmentExpressionSyntax);
                 return newArrayAssignment;
-            }
-
-            private static ArgumentListSyntax CreateArgList(params ExpressionSyntax[] copyArgs)
-            {
-                return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(copyArgs.Select(SyntaxFactory.Argument)));
             }
 
             private TypeSyntax GetTypeSyntaxFromTypeSymbol(ITypeSymbol convertedType, int nodeSpanStart)

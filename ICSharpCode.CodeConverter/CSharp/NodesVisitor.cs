@@ -1264,29 +1264,26 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
 
-                var kind = ConvertToken(VBasic.VisualBasicExtensions.Kind(node), TokenContext.Local);
                 var lhs = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
-                var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
                 var rhs = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
 
-                // VB DivideExpression "/" is always on doubles unless you use the "\" IntegerDivideExpression, so need to cast in C#
+                // e.g. VB DivideExpression "/" is always on doubles unless you use the "\" IntegerDivideExpression, so need to cast in C#
                 // Need the unconverted type, since the whole point is that it gets converted to a double by the operator
-                if (node.IsKind(VBasic.SyntaxKind.DivideExpression) && !HasOperandOfUnconvertedType(node, "System.Double")) {
+                if (node.IsKind(VBasic.SyntaxKind.DivideExpression) && !node.HasOperandOfUnconvertedType("System.Double", semanticModel)) {
                     var doubleType = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword));
                     rhs = SyntaxFactory.CastExpression(doubleType, rhs);
                 }
-                
+
+                if (node.IsKind(VBasic.SyntaxKind.ExponentiateExpression,
+                    VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
+                    return SyntaxFactory.InvocationExpression(
+                        SyntaxFactory.ParseExpression($"{nameof(Math)}.{nameof(Math.Pow)}"),
+                        ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
+                }
+
+                var kind = ConvertToken(VBasic.VisualBasicExtensions.Kind(node), TokenContext.Local);
+                var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
                 return SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
-            }
-
-            private bool HasOperandOfUnconvertedType(VBSyntax.BinaryExpressionSyntax node, string operandType)
-            {
-                return new[] {node.Left, node.Right}.Any(e => UnconvertedIsType(e, operandType));
-            }
-
-            private bool UnconvertedIsType(VBSyntax.ExpressionSyntax e, string fullTypeName)
-            {
-                return semanticModel.GetTypeInfo(e).Type?.GetFullMetadataName() == fullTypeName;
             }
 
             public override CSharpSyntaxNode VisitInvocationExpression(VBSyntax.InvocationExpressionSyntax node)

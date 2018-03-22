@@ -2171,6 +2171,21 @@ namespace ICSharpCode.CodeConverter.Util
                     return OperatorPrecedence.None;
             }
         }
+
+        public static ArgumentListSyntax CreateArgList(params ExpressionSyntax[] copyArgs)
+        {
+            return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(copyArgs.Select(SyntaxFactory.Argument)));
+        }
+
+        public static bool HasOperandOfUnconvertedType(this Microsoft.CodeAnalysis.VisualBasic.Syntax.BinaryExpressionSyntax node, string operandType, SemanticModel semanticModel)
+        {
+            return new[] {node.Left, node.Right}.Any(e => UnconvertedIsType(e, operandType, semanticModel));
+        }
+
+        public static bool UnconvertedIsType(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax e, string fullTypeName, SemanticModel semanticModel)
+        {
+            return semanticModel.GetTypeInfo(e).Type?.GetFullMetadataName() == fullTypeName;
+        }
     }
 
     /// <summary>

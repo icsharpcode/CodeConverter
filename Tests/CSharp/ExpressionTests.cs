@@ -85,21 +85,23 @@ End Class", @"class TestClass
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
-        Dim x = 6 Mod 5 \ 4 + 3 * 2
+        Dim x = 7 ^ 6 Mod 5 \ 4 + 3 * 2
         x += 1
         x -= 2
         x *= 3
         x \= 4
+        x ^= 5
     End Sub
 End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var x = 6 % 5 / 4 + 3 * 2;
+        var x = Math.Pow(7, 6) % 5 / 4 + 3 * 2;
         x += 1;
         x -= 2;
         x *= 3;
         x /= 4;
+        x = Math.Pow(x, 5);
     }
 }");
         }
@@ -113,6 +115,8 @@ End Class", @"class TestClass
         x /= 2
         Dim y = 10.0 / 3
         y /= 2
+        Dim z As Integer = 8
+        z /= 3
     End Sub
 End Class", @"class TestClass
 {
@@ -122,6 +126,8 @@ End Class", @"class TestClass
         x /= 2;
         var y = 10.0 / 3;
         y /= 2;
+        int z = 8;
+        z /= (double)3;
     }
 }");
         }
