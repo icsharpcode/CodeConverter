@@ -228,9 +228,17 @@ class TestSubclass : TestClass
     <System.Runtime.CompilerServices.Extension()>
     Sub TestMethod(ByVal str As String)
     End Sub
+
+    <System.Runtime.CompilerServices.Extension()>
+    Sub TestMethod2Parameters(ByVal str As String, other As String)
+    End Sub
 End Module", @"static class TestClass
 {
     public static void TestMethod(this string str)
+    {
+    }
+
+    public static void TestMethod2Parameters(this string str, string other)
     {
     }
 }");

@@ -161,11 +161,19 @@ End Class");
     public static void TestMethod(this String str)
     {
     }
+
+    public static void TestMethod2Parameters(this String str, String other)
+    {
+    }
 }", @"Imports System.Runtime.CompilerServices
 
 Module TestClass
     <Extension()>
     Sub TestMethod(ByVal str As String)
+    End Sub
+
+    <Extension()>
+    Sub TestMethod2Parameters(ByVal str As String, ByVal other As String)
     End Sub
 End Module");
         }

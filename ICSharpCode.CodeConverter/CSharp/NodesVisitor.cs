@@ -97,7 +97,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 return SyntaxFactory.CompilationUnit(
                     SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
-                    SyntaxFactory.List(importsClauses.Select(c => (UsingDirectiveSyntax)c.Accept(TriviaConvertingVisitor))),
+                    SyntaxFactory.List(importsClauses.GroupBy(c => c.ToString()).Select(g => g.First()).Select(c => (UsingDirectiveSyntax)c.Accept(TriviaConvertingVisitor))),
                     attributes,
                     members
                 );

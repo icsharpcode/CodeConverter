@@ -80,7 +80,7 @@ End Function";
 
             IEnumerable<ImportsStatementSyntax> TidyImportsList(IEnumerable<ImportsStatementSyntax> allImports)
             {
-                foreach (var import in allImports)
+                foreach (var import in allImports.GroupBy(c => c.ToString()).Select(g => g.First()))
                     foreach (var clause in import.ImportsClauses) {
                         if (ImportIsNecessary(clause))
                             yield return SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList(clause));
