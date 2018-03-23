@@ -867,14 +867,28 @@ End Function";
 
             public override VisualBasicSyntaxNode VisitInvocationExpression(CSS.InvocationExpressionSyntax node)
             {
-                if (node.Expression.ToString() == "nameof") {
+                if (IsNameOfExpression(node)) {
                     var argument = node.ArgumentList.Arguments.Single().Expression;
-                    return SyntaxFactory.NameOfExpression((ExpressionSyntax)argument.Accept(TriviaConvertingVisitor));
+                    var convertedExpression = (ExpressionSyntax)argument.Accept(TriviaConvertingVisitor);
+                    if (convertedExpression is UnaryExpressionSyntax ues) {
+                        // Don't wrap nameof operand in "AddressOf" if it's a method
+                        convertedExpression = ues.Operand;
+                    }
+                    return SyntaxFactory.NameOfExpression(convertedExpression);
                 }
+
                 return SyntaxFactory.InvocationExpression(
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
                     (ArgumentListSyntax)node.ArgumentList.Accept(TriviaConvertingVisitor)
                 );
+            }
+
+            private bool IsNameOfExpression(CSS.InvocationExpressionSyntax node)
+            {
+                return node.Expression is CSS.IdentifierNameSyntax methodIdentifier
+                       && methodIdentifier?.Identifier.Text == "nameof"
+                       // nameof expressions don't have an associated method symbol, a method called nameof usually would
+                       && semanticModel.GetSymbolInfo(methodIdentifier).ExtractBestMatch() == null;
             }
 
             public override VisualBasicSyntaxNode VisitConditionalExpression(CSS.ConditionalExpressionSyntax node)
@@ -1474,13 +1488,6 @@ End Function";
                     || originalName.Parent is CSS.MemberBindingExpressionSyntax
                     || originalName.Parent is CSS.InvocationExpressionSyntax)
                     return name;
-
-                if (originalName.Parent is CSS.ArgumentSyntax parentArgument
-                    && parentArgument.Parent?.Parent is CSS.InvocationExpressionSyntax methodInvocation
-                    && methodInvocation.Expression is CSS.IdentifierNameSyntax methodIdentifier
-                    && methodIdentifier?.Identifier.Text == "nameof") {
-                    return name;
-                }
 
                 var symbolInfo = semanticModel.GetSymbolInfo(originalName);
                 var symbol = symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault();
