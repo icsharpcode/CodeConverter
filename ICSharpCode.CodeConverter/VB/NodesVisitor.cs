@@ -43,8 +43,8 @@ namespace ICSharpCode.CodeConverter.VB
     {
         class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         {
-            SemanticModel semanticModel;
-            VisualBasicCompilationOptions options;
+            readonly SemanticModel semanticModel;
+            readonly VisualBasicCompilationOptions options;
 
             readonly List<CSS.BaseTypeDeclarationSyntax> inlineAssignHelperMarkers = new List<CSS.BaseTypeDeclarationSyntax>();
             readonly List<ImportsStatementSyntax> allImports = new List<ImportsStatementSyntax>();
@@ -1475,11 +1475,17 @@ End Function";
                     || originalName.Parent is CSS.InvocationExpressionSyntax)
                     return name;
 
+                if (originalName.Parent is CSS.ArgumentSyntax parentArgument
+                    && parentArgument.Parent?.Parent is CSS.InvocationExpressionSyntax methodInvocation
+                    && methodInvocation.Expression is CSS.IdentifierNameSyntax methodIdentifier
+                    && methodIdentifier?.Identifier.Text == "nameof") {
+                    return name;
+                }
+
                 var symbolInfo = semanticModel.GetSymbolInfo(originalName);
                 var symbol = symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault();
                 if (symbol.IsKind(SymbolKind.Method))
                     return SyntaxFactory.AddressOfExpression(name);
-
 
                 return name;
             }

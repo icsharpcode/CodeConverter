@@ -38,6 +38,25 @@ End Class");
 End Class");
         }
 
+
+        [Fact]
+        public void NameOf()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    private string n = nameof(TestMethod);
+
+    private void TestMethod()
+    {
+    }
+}", @"Class TestClass
+    Private n As String = NameOf(TestMethod)
+
+    Private Sub TestMethod()
+    End Sub
+End Class");
+        }
+
         [Fact]
         public void NullCoalescingExpression()
         {

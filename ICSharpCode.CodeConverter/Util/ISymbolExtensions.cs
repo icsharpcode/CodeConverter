@@ -167,6 +167,17 @@ namespace ICSharpCode.CodeConverter.Util
                     throw new ArgumentOutOfRangeException();
             }
         }
+
+        public static ISymbol ExtractBestMatch(this SymbolInfo info)
+        {
+            if (info.Symbol == null && info.CandidateSymbols.Length == 0)
+                return null;
+            if (info.Symbol != null)
+                return info.Symbol;
+            if (info.CandidateSymbols.Length == 1)
+                return info.CandidateSymbols[0];
+            return null;
+        }
     }
 }
 

@@ -6,6 +6,7 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 
@@ -15,7 +16,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         class NodesVisitor : VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
         {
-            private SemanticModel semanticModel;
+            private readonly SemanticModel semanticModel;
             private readonly Dictionary<ITypeSymbol, string> createConvertMethodsLookupByReturnType;
             private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
             private readonly Stack<string> withBlockTempVariableNames = new Stack<string>();
@@ -910,9 +911,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (invocation is VBSyntax.ArrayCreationExpressionSyntax)
                     return node.Expression.Accept(TriviaConvertingVisitor);
                 var symbol = invocation.TypeSwitch(
-                    (VBSyntax.InvocationExpressionSyntax e) => ExtractMatch(semanticModel.GetSymbolInfo(e)),
-                    (VBSyntax.ObjectCreationExpressionSyntax e) => ExtractMatch(semanticModel.GetSymbolInfo(e)),
-                    (VBSyntax.RaiseEventStatementSyntax e) => ExtractMatch(semanticModel.GetSymbolInfo(e.Name)),
+                    (VBSyntax.InvocationExpressionSyntax e) => semanticModel.GetSymbolInfo(e).ExtractBestMatch(),
+                    (VBSyntax.ObjectCreationExpressionSyntax e) => semanticModel.GetSymbolInfo(e).ExtractBestMatch(),
+                    (VBSyntax.RaiseEventStatementSyntax e) => semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch(),
                     _ => { throw new NotSupportedException(); }
                 );
                 SyntaxToken token = default(SyntaxToken);
@@ -939,17 +940,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     token,
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor)
                 );
-            }
-
-            private ISymbol ExtractMatch(SymbolInfo info)
-            {
-                if (info.Symbol == null && info.CandidateSymbols.Length == 0)
-                    return null;
-                if (info.Symbol != null)
-                    return info.Symbol;
-                if (info.CandidateSymbols.Length == 1)
-                    return info.CandidateSymbols[0];
-                return null;
             }
 
             private AttributeArgumentSyntax ToAttributeArgument(VBSyntax.ArgumentSyntax arg)
@@ -1288,8 +1278,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitInvocationExpression(VBSyntax.InvocationExpressionSyntax node)
             {
-                var invocationSymbol = ExtractMatch(semanticModel.GetSymbolInfo(node));
-                var symbol = ExtractMatch(semanticModel.GetSymbolInfo(node.Expression));
+                var invocationSymbol = semanticModel.GetSymbolInfo(node).ExtractBestMatch();
+                var symbol = semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
                 if (invocationSymbol?.IsIndexer() == true || symbol?.GetReturnType()?.IsArrayType() == true && !(symbol is IMethodSymbol)) //The null case happens quite a bit - should try to fix
                 {
                     return SyntaxFactory.ElementAccessExpression(
