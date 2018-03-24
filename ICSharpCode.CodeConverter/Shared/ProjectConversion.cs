@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
@@ -13,9 +14,8 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     public class ProjectConversion<TLanguageConversion> where TLanguageConversion : ILanguageConversion, new()
     {
-        private bool _methodBodyOnly;
-        private Compilation _sourceCompilation;
-        private IEnumerable<SyntaxTree> _syntaxTreesToConvert;
+        private readonly Compilation _sourceCompilation;
+        private readonly IEnumerable<SyntaxTree> _syntaxTreesToConvert;
         private static readonly AdhocWorkspace AdhocWorkspace = new AdhocWorkspace();
         private readonly ConcurrentDictionary<string, Exception> _errors = new ConcurrentDictionary<string, Exception>();
         private readonly Dictionary<string, SyntaxTree> _firstPassResults = new Dictionary<string, SyntaxTree>();
@@ -57,8 +57,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 return new ConversionResult(conversionError.Value) { SourcePathOrNull = conversionError.Key };
             }
             var resultPair = converted.Single();
-            var resultNode = GetSelectedNode(resultPair.Value);
-            return new ConversionResult(resultNode.ToFullString()) { SourcePathOrNull = resultPair.Key };
+            return new ConversionResult(resultPair.Value.ToFullString()) { SourcePathOrNull = resultPair.Key };
         }
 
         public static IEnumerable<ConversionResult> ConvertProjects(IEnumerable<Project> projects)
@@ -74,7 +73,6 @@ namespace ICSharpCode.CodeConverter.Shared
                 foreach (var error in projectConversion._errors) {
                     yield return new ConversionResult(error.Value) { SourcePathOrNull = error.Key };
                 }
-                
             }
         }
 
@@ -102,8 +100,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)
         {
             var secondPassNode = _languageConversion.SingleSecondPass(cs);
-            if (_methodBodyOnly) secondPassNode = _languageConversion.RemoveSurroundingClassAndMethod(secondPassNode);
-            return Formatter.Format(secondPassNode, AdhocWorkspace);
+            return Format(secondPassNode, _firstPassResults.Count == 1);
         }
 
         private void FirstPass()
@@ -114,11 +111,6 @@ namespace ICSharpCode.CodeConverter.Shared
                 try {
                     SingleFirstPass(tree, treeFilePath);
                 }
-                catch (NotImplementedOrRequiresSurroundingMethodDeclaration)
-                    when (!_methodBodyOnly && _sourceCompilation.SyntaxTrees.Count() == 1)
-                {
-                    SingleFirstPassSurroundedByClassAndMethod(tree);
-                }
                 catch (Exception e)
                 {
                     _errors.TryAdd(treeFilePath, e);
@@ -128,31 +120,66 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private void SingleFirstPass(SyntaxTree tree, string treeFilePath)
         {
-            var convertedTree = _languageConversion.SingleFirstPass(_sourceCompilation, tree);
+            var sourceCompilation = _sourceCompilation;
+            var newTree = MakeFullCompilationUnit(tree);
+            if (newTree != tree) {
+                sourceCompilation = sourceCompilation.ReplaceSyntaxTree(tree, newTree);
+                tree = newTree;
+            }
+            var convertedTree = _languageConversion.SingleFirstPass(sourceCompilation, tree);
             _firstPassResults.Add(treeFilePath, convertedTree);
         }
 
-        private void SingleFirstPassSurroundedByClassAndMethod(SyntaxTree tree)
+        private SyntaxTree MakeFullCompilationUnit(SyntaxTree tree)
         {
-            var newTree = _languageConversion.CreateTree(_languageConversion.WithSurroundingClassAndMethod(tree.GetText().ToString()));
-            _methodBodyOnly = true;
-            _sourceCompilation = _sourceCompilation.AddSyntaxTrees(newTree);
-            _syntaxTreesToConvert = new[] {newTree};
-            Convert();
+            var root = tree.GetRoot();
+            var rootChildren = root.ChildNodes().ToList();
+            var requiresSurroundingClass = rootChildren.Where(_languageConversion.MustBeContainedByClass).Any();
+            var requiresSurroundingMethod = rootChildren.Where(_languageConversion.MustBeContainedByMethod).Any();
+
+            if (requiresSurroundingMethod || requiresSurroundingClass) {
+                var text = root.GetText().ToString();
+                if (requiresSurroundingMethod) text = _languageConversion.WithSurroundingMethod(text);
+                text = _languageConversion.WithSurroundingClass(text);
+
+                var fullCompilationUnit = _languageConversion.CreateTree(text).GetRoot();
+
+                var selectedNode = _languageConversion.GetSurroundedNode(fullCompilationUnit.DescendantNodes(), requiresSurroundingMethod);
+                tree = fullCompilationUnit.WithAnnotatedNode(selectedNode, TriviaConverter.SelectedNodeAnnotationKind, TriviaConverter.AnnotatedNodeIsParentData);
+            }
+
+            return tree;
         }
 
         private static async Task<SyntaxTree> GetSyntaxTreeWithAnnotatedSelection(SyntaxTree syntaxTree, TextSpan selected)
         {
             var root = await syntaxTree.GetRootAsync();
             var selectedNode = root.FindNode(selected);
-            var annotatatedNode = selectedNode.WithAdditionalAnnotations(new SyntaxAnnotation(TriviaConverter.SelectedNodeAnnotationKind));
-            return root.ReplaceNode(selectedNode, annotatatedNode).SyntaxTree.WithFilePath(syntaxTree.FilePath);
+            return root.WithAnnotatedNode(selectedNode, TriviaConverter.SelectedNodeAnnotationKind);
         }
 
-        private static SyntaxNode GetSelectedNode(SyntaxNode resultNode)
+        private SyntaxNode Format(SyntaxNode resultNode, bool mayHaveSelectedNode = false)
         {
-            var annotatedNode = resultNode.GetAnnotatedNodes(TriviaConverter.SelectedNodeAnnotationKind).SingleOrDefault();
-            return annotatedNode == null ? resultNode : Formatter.Format(annotatedNode, AdhocWorkspace);
+            SyntaxNode selectedNode = mayHaveSelectedNode ? GetSelectedNode(resultNode) : resultNode;
+            return Formatter.Format(selectedNode ?? resultNode, AdhocWorkspace);
+        }
+
+        private SyntaxNode GetSelectedNode(SyntaxNode resultNode)
+        {
+            var selectedNode = resultNode.GetAnnotatedNodes(TriviaConverter.SelectedNodeAnnotationKind)
+                .SingleOrDefault();
+            if (selectedNode != null)
+            {
+                var children = _languageConversion.FindSingleImportantChild(selectedNode);
+                if (selectedNode.GetAnnotations(TriviaConverter.SelectedNodeAnnotationKind)
+                        .Any(n => n.Data == TriviaConverter.AnnotatedNodeIsParentData)
+                    && children.Count == 1)
+                {
+                    selectedNode = children.Single();
+                }
+            }
+
+            return selectedNode ?? resultNode;
         }
     }
 }

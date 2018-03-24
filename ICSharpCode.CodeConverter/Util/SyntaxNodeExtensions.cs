@@ -1685,5 +1685,12 @@ namespace ICSharpCode.CodeConverter.Util
             if (input.Length <= maxLength) return input;
             return input.Substring(0, maxLength - truncationIndicator.Length) + truncationIndicator;
         }
+
+        public static SyntaxTree WithAnnotatedNode(this SyntaxNode root, SyntaxNode selectedNode, string annotationKind, string annotationData = "")
+        {
+            var annotatatedNode =
+                selectedNode.WithAdditionalAnnotations(new SyntaxAnnotation(annotationKind, annotationData));
+            return root.ReplaceNode(selectedNode, annotatatedNode).SyntaxTree.WithFilePath(root.SyntaxTree.FilePath);
+        }
     }
 }

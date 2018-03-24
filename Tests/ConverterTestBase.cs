@@ -37,9 +37,9 @@ namespace CodeConverter.Tests
             AssertCodeEqual(csharpCode, expectedVisualBasicCode, txt);
         }
 
-        public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool standaloneStatements = false)
+        public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool addUsings = true, bool standaloneStatements = false)
         {
-            expectedCsharpCode = AddCSUsings(expectedCsharpCode, standaloneStatements);
+            if (addUsings) expectedCsharpCode = AddCSUsings(expectedCsharpCode, standaloneStatements);
             TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode, false);
             TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true), false);
         }

@@ -7,9 +7,15 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         SyntaxTree SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree);
         SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs);
-        string WithSurroundingClassAndMethod(string text);
         SyntaxTree CreateTree(string text);
         Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references);
-        SyntaxNode RemoveSurroundingClassAndMethod(SyntaxNode secondPassNode);
+        List<SyntaxNode> FindSingleImportantChild(SyntaxNode annotatedNode);
+        bool MustBeContainedByMethod(SyntaxNode m);
+        bool MustBeContainedByClass(SyntaxNode m);
+        string WithSurroundingMethod(string text);
+        string WithSurroundingClass(string text);
+
+        SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
+            bool surroundedWithMethod);
     }
 }

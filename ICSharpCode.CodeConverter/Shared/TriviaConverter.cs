@@ -11,6 +11,7 @@ namespace ICSharpCode.CodeConverter.Shared
     public class TriviaConverter
     {
         public const string SelectedNodeAnnotationKind = "CodeConverter.SelectedNode";
+        public const string AnnotatedNodeIsParentData = "CodeConverter.SelectedNode.IsAllChildrenOfThisNode";
         private static readonly string TrailingTriviaConversionKind = $"{nameof(TriviaConverter)}.TrailingTriviaConversion.Id";
 
         /// <summary>
