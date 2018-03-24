@@ -110,6 +110,10 @@ namespace ICSharpCode.CodeConverter.Shared
                 var treeFilePath = tree.FilePath ?? "";
                 try {
                     SingleFirstPass(tree, treeFilePath);
+                    var errorAnnotations = tree.GetRoot().GetAnnotations(TriviaConverter.ConversionErrorAnnotationKind);
+                    _errors.TryAdd(treeFilePath,
+                        new NotImplementedException(string.Join(Environment.NewLine,
+                            errorAnnotations.Select(a => a.Data))));
                 }
                 catch (Exception e)
                 {

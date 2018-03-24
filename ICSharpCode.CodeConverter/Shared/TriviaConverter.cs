@@ -12,6 +12,7 @@ namespace ICSharpCode.CodeConverter.Shared
     {
         public const string SelectedNodeAnnotationKind = "CodeConverter.SelectedNode";
         public const string AnnotatedNodeIsParentData = "CodeConverter.SelectedNode.IsAllChildrenOfThisNode";
+        public const string ConversionErrorAnnotationKind = "CodeConverter.ConversionError";
         private static readonly string TrailingTriviaConversionKind = $"{nameof(TriviaConverter)}.TrailingTriviaConversion.Id";
 
         /// <summary>

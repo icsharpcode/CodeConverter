@@ -8,7 +8,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using static ICSharpCode.CodeConverter.CSharp.SyntaxKindExtensions;
@@ -36,7 +35,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
             {
-                throw new NotImplementedException($"Cannot convert {node.GetType().Name} from {node.GetBriefNodeDescription()}");
+                var bestEffortConversion = node.GetBestEffortConversionString(nodesVisitor.Visit, out var errorText);
+                var commentedText = "/* " + errorText + " */";
+                var errorComment = SyntaxFactory.ParseStatement(bestEffortConversion + ";")
+                    .WithTrailingTrivia(SyntaxFactory.Comment(commentedText))
+                    .WithAdditionalAnnotations(new SyntaxAnnotation(TriviaConverter.ConversionErrorAnnotationKind, errorText));
+                return SyntaxFactory.SingletonList(errorComment);
             }
 
             public override SyntaxList<StatementSyntax> VisitStopOrEndStatement(VBSyntax.StopOrEndStatementSyntax node)

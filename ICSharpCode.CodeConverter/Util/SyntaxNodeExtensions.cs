@@ -1690,5 +1690,24 @@ namespace ICSharpCode.CodeConverter.Util
                 selectedNode.WithAdditionalAnnotations(new SyntaxAnnotation(annotationKind, annotationData));
             return root.ReplaceNode(selectedNode, annotatatedNode).SyntaxTree.WithFilePath(root.SyntaxTree.FilePath);
         }
+
+        public static string GetBestEffortConversionString(this SyntaxNode node, Func<SyntaxNode, SyntaxNode> convert, out string commentText)
+        {
+            var originalSource = node.ToFullString();
+
+            var bestEffortConversion = new StringBuilder();
+            int offset = node.FullSpan.Start;
+            int originalLocation = 0;
+            foreach (var childNode in node.ChildNodes()) {
+                bestEffortConversion.Append(originalSource.Substring(originalLocation, childNode.FullSpan.Start - offset - originalLocation));
+                bestEffortConversion.Append(convert(childNode).ToFullString());
+                originalLocation = childNode.FullSpan.End - offset;
+            }
+            bestEffortConversion.Append(originalSource.Substring(originalLocation));
+
+            commentText =
+                $"CONVERSION ERROR: Cannot convert {node.GetType().Name}, Input: {Environment.NewLine}{originalSource}{Environment.NewLine}";
+            return bestEffortConversion.ToString();
+        }
     }
 }
