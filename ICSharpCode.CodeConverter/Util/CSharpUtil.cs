@@ -64,7 +64,6 @@ namespace ICSharpCode.CodeConverter.Util
             return SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, AddParensIfRequired(condition, false));
         }
 
-
         public static SyntaxKind GetExpressionOperatorTokenKind(SyntaxKind op)
         {
             switch (op) {

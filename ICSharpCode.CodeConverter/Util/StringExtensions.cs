@@ -213,7 +213,6 @@ namespace ICSharpCode.CodeConverter.Util
         //            builder.Add(alias.GetWithSingleAttributeSuffix(caseSensitive));
         //        }
 
-
         private static ImmutableArray<string> s_lazyNumerals;
 
         internal static string GetNumeral(int number)

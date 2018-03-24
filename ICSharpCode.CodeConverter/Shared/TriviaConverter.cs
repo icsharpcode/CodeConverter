@@ -43,7 +43,6 @@ namespace ICSharpCode.CodeConverter.Shared
                 destination = destination.ReplaceToken(lastDestToken, WithDelegateToParentAnnotation(sourceNode, lastDestToken));
             }
 
-
             var firstLineOfBlockConstruct = sourceNode.ChildNodes().OfType<VBSyntax.StatementSyntax>().FirstOrDefault(IsFirstLineOfBlockConstruct);
             if (firstLineOfBlockConstruct != null) {
                 var endOfFirstLineConstructOrDefault = destination.ChildTokens().FirstOrDefault(t => t.IsKind(SyntaxKind.CloseParenToken, SyntaxKind.OpenBraceToken));

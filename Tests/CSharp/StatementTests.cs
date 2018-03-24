@@ -770,8 +770,6 @@ class TestClass
 }");
         }
 
-
-
         [Fact]
         public void WhileStatement()
         {

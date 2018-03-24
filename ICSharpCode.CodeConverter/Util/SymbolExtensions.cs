@@ -220,7 +220,6 @@ namespace ICSharpCode.CodeConverter.Util
                 ((ITypeSymbol)symbol).TypeKind == TypeKind.Error;
         }
 
-
         public static bool IsIndexer(this ISymbol symbol)
         {
             return (symbol as IPropertySymbol)?.IsIndexer == true;
@@ -463,7 +462,6 @@ namespace ICSharpCode.CodeConverter.Util
             return symbol != null && symbol.ContainingSymbol is INamedTypeSymbol && symbol.ContainingType.TypeKind == TypeKind.Module;
         }
 
-
         public static bool IsConversion(this ISymbol symbol)
         {
             return (symbol as IMethodSymbol)?.MethodKind == MethodKind.Conversion;
@@ -473,7 +471,6 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return (symbol as IMethodSymbol)?.MethodKind == MethodKind.Ordinary;
         }
-
 
         public static bool IsNormalAnonymousType(this ISymbol symbol)
         {
@@ -489,7 +486,6 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return symbol is IPropertySymbol && symbol.ContainingType.IsNormalAnonymousType();
         }
-
 
         public static bool IsWriteableFieldOrProperty(this ISymbol symbol)
         {

@@ -387,7 +387,6 @@ namespace ICSharpCode.CodeConverter.Util
             }
         }
 
-
         public static IList<ITypeParameterSymbol> GetReferencedMethodTypeParameters(
             this ITypeSymbol type, IList<ITypeParameterSymbol> result = null)
         {
@@ -825,7 +824,6 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return type.IsValueType && type.TypeKind == TypeKind.Enum;
         }
-
 
         //public static async Task<ISymbol> FindApplicableAlias(this ITypeSymbol type, int position, SemanticModel semanticModel, CancellationToken cancellationToken)
         //{

@@ -80,8 +80,6 @@ End Sub";
 End Class";
         }
 
-
-
         public List<SyntaxNode> FindSingleImportantChild(SyntaxNode annotatedNode)
         {
             var children = annotatedNode.ChildNodes().ToList();

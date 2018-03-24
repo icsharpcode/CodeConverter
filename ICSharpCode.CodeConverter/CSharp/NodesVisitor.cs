@@ -356,7 +356,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
                 )?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ParseTypeName("var");
 
-
                 AccessorListSyntax accessors = null;
                 if (!hasBody) {
                     var accessorList = new List<AccessorDeclarationSyntax> {
@@ -598,7 +597,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var attributes = block.AttributeLists.SelectMany(ConvertAttribute);
                 var modifiers = VisualBasicConverter.ConvertModifiers(block.Modifiers, TokenContext.Member);
 
-
                 var ctor = (node.Statements.FirstOrDefault() as VBSyntax.ExpressionStatementSyntax)?.Expression as VBSyntax.InvocationExpressionSyntax;
                 var ctorExpression = ctor?.Expression as VBSyntax.MemberAccessExpressionSyntax;
                 var ctorArgs = (ArgumentListSyntax)ctor?.ArgumentList.Accept(TriviaConvertingVisitor);
@@ -753,7 +751,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 return SyntaxFactory.FinallyClause(SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor()))));
             }
-
 
             public override CSharpSyntaxNode VisitCTypeExpression(VBSyntax.CTypeExpressionSyntax node)
             {

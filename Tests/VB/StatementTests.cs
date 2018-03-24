@@ -736,7 +736,6 @@ End Class");
         Finish:
             Console.WriteLine(""End of search."");
 
-
             Console.WriteLine(""Press any key to exit."");
             Console.ReadKey();
         }

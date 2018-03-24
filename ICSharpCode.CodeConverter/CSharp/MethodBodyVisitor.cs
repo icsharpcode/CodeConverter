@@ -430,7 +430,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     ));
             }
 
-
             public override SyntaxList<StatementSyntax> VisitLabelStatement(VBSyntax.LabelStatementSyntax node)
             {
                 return SingleStatement(SyntaxFactory.LabeledStatement(node.LabelToken.Text, SyntaxFactory.EmptyStatement()));

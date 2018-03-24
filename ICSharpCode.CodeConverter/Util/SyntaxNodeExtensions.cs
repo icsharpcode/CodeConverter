@@ -512,7 +512,6 @@ namespace ICSharpCode.CodeConverter.Util
             return root;
         }
 
-
         public static bool IsKind(this SyntaxNode node, SyntaxKind kind1, SyntaxKind kind2)
         {
             if (node == null) {
@@ -1004,7 +1003,6 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return node.IsAnyLambda() || node.IsKind(SyntaxKind.AnonymousMethodExpression);
         }
-
 
         //        /// <summary>
         //        /// Breaks up the list of provided nodes, based on how they are interspersed with pp

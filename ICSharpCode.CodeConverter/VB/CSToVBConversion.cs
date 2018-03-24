@@ -56,7 +56,6 @@ namespace ICSharpCode.CodeConverter.VB
 }}";
         }
 
-
         public List<SyntaxNode> FindSingleImportantChild(SyntaxNode annotatedNode)
         {
             var children = annotatedNode.ChildNodes().ToList();
@@ -70,7 +69,6 @@ namespace ICSharpCode.CodeConverter.VB
             }
             return children;
         }
-
 
         public SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)
         {

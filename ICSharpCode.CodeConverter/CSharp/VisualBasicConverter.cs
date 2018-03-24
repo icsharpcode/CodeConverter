@@ -169,7 +169,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             // Octal or something unknown that can't be represented with C# literals
             return value.ToString();
         }
-
         static SyntaxToken ConvertIdentifier(SyntaxToken id, SemanticModel semanticModel, bool isAttribute = false)
         {
             string text = id.ValueText;

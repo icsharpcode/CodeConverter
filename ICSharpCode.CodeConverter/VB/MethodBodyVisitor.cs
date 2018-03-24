@@ -48,7 +48,6 @@ namespace ICSharpCode.CodeConverter.VB
                 CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
             }
 
-
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
             {
                 throw new NotImplementedException($"Cannot convert {node.GetType().Name} from {node.GetBriefNodeDescription()}");

@@ -34,7 +34,6 @@ obj = null;",
                 standaloneStatements: true);
         }
 
-
         [Fact]
         public void AnonymousObjectCreationExpressionSyntax()
         {

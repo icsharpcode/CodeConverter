@@ -420,7 +420,6 @@ class TestClass
 }");
         }
 
-
         [Fact]
         public void SynthesizedBackingFieldAccess()
         {
@@ -440,7 +439,6 @@ class TestClass
     private int Second = First;
 }");
         }
-
 
         [Fact]
         public void PropertyInitializers()
