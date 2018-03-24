@@ -91,10 +91,6 @@ namespace ICSharpCode.CodeConverter.VB
             {
                 var exceptionMessage = $"Cannot convert {node.GetType().Name} from {node.GetBriefNodeDescription()}";
 
-                if (CreateMethodBodyVisitor().Visit(node).Any()) {
-                    throw new NotImplementedOrRequiresSurroundingMethodDeclaration(exceptionMessage);
-                }
-
                 throw new NotImplementedException(exceptionMessage);
             }
 

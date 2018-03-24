@@ -47,11 +47,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)
             {
                 var exceptionMessage = $"Cannot convert {node.GetType().Name} from {node.GetBriefNodeDescription()}";
-
-                if (CreateMethodBodyVisitor().Visit(node).Any()) {
-                    throw new NotImplementedOrRequiresSurroundingMethodDeclaration(exceptionMessage);
-                }
-
+                
                 throw new NotImplementedException(exceptionMessage);
             }
 
