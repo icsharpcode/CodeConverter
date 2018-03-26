@@ -941,7 +941,8 @@ class TestClass
         [Fact]
         public void ForWithSingleStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            // Comment from "Next" gets pushed up to previous line
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim b, s As Integer()
         For i = 0 To [end]
@@ -967,7 +968,8 @@ class TestClass
         [Fact]
         public void ForWithBlock()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            // Comment from "Next" gets pushed up to previous line
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim b, s As Integer()
         For i = 0 To [end] - 1
@@ -1354,7 +1356,8 @@ class TestClass
         [Fact]
         public void Yield()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            // Comment from "Next" gets pushed up to previous line
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
         If number < 0 Then Return
 

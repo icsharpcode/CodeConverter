@@ -152,7 +152,7 @@ using Microsoft.VisualBasic;
         private static bool HasNoTargetLine(string prevLine, string line, string nextLine)
         {
             return IsVbInheritsOrImplements(nextLine)
-                || line.Contains("End If") || line.Contains("Next")
+                || line.Contains("End If")
                 || IsFirstOfMultiLineVbIfStatement(line)
                 || line.Contains("<Extension") || line.Contains("CompilerServices.Extension")
                 || line.TrimStart().StartsWith("'")
