@@ -38,6 +38,29 @@ End Class");
 End Class");
         }
 
+        [Fact]
+        public void ThrowExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    void TestMethod(string str)
+    {
+        bool result = (str == """") ? throw new Exception(""empty"") : false;
+    }
+}", @"Class TestClass
+    Private Sub TestMethod(ByVal str As String)
+        Dim result As Boolean = If((str = """"), CSharpImpl.__Throw(Of System.Boolean)(New Exception(""empty"")), False)
+    End Sub
+
+    Private Class CSharpImpl
+        <Obsolete(""Please refactor calling code to use normal throw statements"")>
+        Shared Function __Throw(Of T)(ByVal e As Exception) As T
+            Throw e
+        End Function
+    End Class
+End Class");
+        }
+
 
         [Fact]
         public void NameOf()

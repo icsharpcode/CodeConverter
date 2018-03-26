@@ -18,14 +18,16 @@ namespace CodeConverter.Tests.VB
 }", @"Class TestClass
     Private Sub TestMethod()
         Dim a, b As Integer
-        b = __InlineAssignHelper(a, 5)
+        b = CSharpImpl.__Assign(a, 5)
     End Sub
 
-    <Obsolete(""Please refactor code that uses this function, it is a simple work-around to simulate inline assignment in VB!"")>
-    Private Shared Function __InlineAssignHelper(Of T)(ByRef target As T, value As T) As T
-        target = value
-        Return value
-    End Function
+    Private Class CSharpImpl
+        <Obsolete(""Please refactor calling code to use normal Visual Basic assignment"")>
+        Shared Function __Assign(Of T)(ByRef target As T, value As T) As T
+            target = value
+            Return value
+        End Function
+    End Class
 End Class");
         }
 

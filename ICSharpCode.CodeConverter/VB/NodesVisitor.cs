@@ -50,33 +50,14 @@ namespace ICSharpCode.CodeConverter.VB
             readonly List<CSS.BaseTypeDeclarationSyntax> inlineAssignHelperMarkers = new List<CSS.BaseTypeDeclarationSyntax>();
             readonly List<ImportsStatementSyntax> allImports = new List<ImportsStatementSyntax>();
 
-            const string InlineAssignHelperCode = @"<Obsolete(""Please refactor code that uses this function, it is a simple work-around to simulate inline assignment in VB!"")>
-Private Shared Function __InlineAssignHelper(Of T)(ByRef target As T, value As T) As T
-target = value
-Return value
-End Function";
-
+            
             int placeholder = 1;
+            private readonly CSharpHelperMethodDefinition _cSharpHelperMethodDefinition;
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
 
             string GeneratePlaceholder(string v)
             {
                 return $"__{v}{placeholder++}__";
-            }
-
-            void MarkPatchInlineAssignHelper(CS.CSharpSyntaxNode node)
-            {
-                var parentDefinition = node.AncestorsAndSelf().OfType<CSS.BaseTypeDeclarationSyntax>().FirstOrDefault();
-                inlineAssignHelperMarkers.Add(parentDefinition);
-            }
-
-            IEnumerable<StatementSyntax> PatchInlineHelpers(CSS.BaseTypeDeclarationSyntax node)
-            {
-                if (inlineAssignHelperMarkers.Contains(node)) {
-                    inlineAssignHelperMarkers.Remove(node);
-                    yield return SyntaxFactory.ParseSyntaxTree(InlineAssignHelperCode)
-                        .GetRoot().ChildNodes().FirstOrDefault().NormalizeWhitespace() as StatementSyntax;
-                }
             }
 
             IEnumerable<ImportsStatementSyntax> TidyImportsList(IEnumerable<ImportsStatementSyntax> allImports)
@@ -104,6 +85,7 @@ End Function";
                 this.semanticModel = semanticModel;
                 TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
                 options = compilationOptions;
+                _cSharpHelperMethodDefinition = new CSharpHelperMethodDefinition();
             }
 
             public override VisualBasicSyntaxNode DefaultVisit(SyntaxNode node)
@@ -218,7 +200,7 @@ End Function";
                 List<InheritsStatementSyntax> inherits = new List<InheritsStatementSyntax>();
                 List<ImplementsStatementSyntax> implements = new List<ImplementsStatementSyntax>();
                 ConvertBaseList(node, inherits, implements);
-                members.AddRange(PatchInlineHelpers(node));
+                members.AddRange(_cSharpHelperMethodDefinition.GetExtraMembers());
                 if (node.Modifiers.Any(CS.SyntaxKind.StaticKeyword)) {
                     return SyntaxFactory.ModuleBlock(
                         SyntaxFactory.ModuleStatement(
@@ -249,7 +231,7 @@ End Function";
                 List<InheritsStatementSyntax> inherits = new List<InheritsStatementSyntax>();
                 List<ImplementsStatementSyntax> implements = new List<ImplementsStatementSyntax>();
                 ConvertBaseList(node, inherits, implements);
-                members.AddRange(PatchInlineHelpers(node));
+                members.AddRange(_cSharpHelperMethodDefinition.GetExtraMembers());
 
                 return SyntaxFactory.StructureBlock(
                     SyntaxFactory.StructureStatement(
@@ -812,9 +794,10 @@ End Function";
                         );
                     }
                 }
-                MarkPatchInlineAssignHelper(node);
+
+                _cSharpHelperMethodDefinition.AddInlineAssignMethod = true;
                 return SyntaxFactory.InvocationExpression(
-                    SyntaxFactory.IdentifierName("__InlineAssignHelper"),
+                    SyntaxFactory.IdentifierName(CSharpHelperMethodDefinition.QualifiedInlineAssignMethodName),
                     SyntaxFactory.ArgumentList(
                         SyntaxFactory.SeparatedList(
                             new ArgumentSyntax[] {
@@ -1312,6 +1295,16 @@ End Function";
                 }
                 var value = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
                 return SyntaxFactory.SimpleArgument(name, value);
+            }
+
+            public override VisualBasicSyntaxNode VisitThrowExpression(CSS.ThrowExpressionSyntax node)
+            {
+                _cSharpHelperMethodDefinition.AddThrowMethod = true;
+                var typeName = SyntaxFactory.ParseTypeName(semanticModel.GetTypeInfo(node.Parent).ConvertedType.GetFullMetadataName());
+                var convertedExceptionExpression = (ExpressionSyntax) node.Expression.Accept(TriviaConvertingVisitor);
+                var throwEx = SyntaxFactory.GenericName(CSharpHelperMethodDefinition.QualifiedThrowMethodName, SyntaxFactory.TypeArgumentList(typeName));
+                var argList = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList<ArgumentSyntax>(SyntaxFactory.SimpleArgument(convertedExceptionExpression)));
+                return SyntaxFactory.InvocationExpression(throwEx, argList);
             }
 
             #endregion
