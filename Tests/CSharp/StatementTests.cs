@@ -655,6 +655,39 @@ End Class", @"class Test
         }
 
         [Fact]
+        public void DeclareStatement()
+        {
+            TestConversionVisualBasicToCSharp(@"Imports System.Diagnostics
+
+Public Class AcmeClass
+    Private Declare Function SetForegroundWindow Lib ""user32"" (ByVal hwnd As Int32) As Long
+
+    Public Shared Sub Main()
+        For Each proc In Process.GetProcesses().Where(Function(p) Not String.IsNullOrEmpty(p.MainWindowTitle))
+            SetForegroundWindow(proc.MainWindowHandle.ToInt32())
+            Thread.Sleep(1000)
+        Next
+    End Sub
+End Class"
+                , @"using System.Diagnostics;
+
+public class AcmeClass
+{
+    [System.Runtime.InteropServices.DllImport(""user32"")]
+    private static extern long SetForegroundWindow(Int32 hwnd);
+
+    public static void Main()
+    {
+        foreach (var proc in Process.GetProcesses().Where(p => !string.IsNullOrEmpty(p.MainWindowTitle)))
+        {
+            SetForegroundWindow(proc.MainWindowHandle.ToInt32());
+            Thread.Sleep(1000);
+        }
+    }
+}");
+        }
+
+        [Fact]
         public void IfStatement()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
