@@ -32,7 +32,9 @@ End Class");
         argument2 = default(T2);
         argument3 = default(T3);
     }
-}", @"Class TestClass
+}", @"Imports System.Runtime.InteropServices
+
+Class TestClass
     Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
         argument2 = Nothing
@@ -51,7 +53,9 @@ End Class");
     {
         return 0;
     }
-}", @"Class TestClass
+}", @"Imports System.Runtime.InteropServices
+
+Class TestClass
     Public Function TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) As Integer
         Return 0
     End Function
@@ -70,7 +74,9 @@ End Class");
         argument2 = default(T2);
         argument3 = default(T3);
     }
-}", @"Class TestClass
+}", @"Imports System.Runtime.InteropServices
+
+Class TestClass
     Public Shared Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
         argument2 = Nothing
@@ -143,7 +149,9 @@ End Class");
         argument2 = default(T2);
         argument3 = default(T3);
     }
-}", @"Class TestClass
+}", @"Imports System.Runtime.InteropServices
+
+Class TestClass
     Public NotOverridable Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
         argument2 = Nothing
@@ -259,7 +267,9 @@ End Class
     public TestClass(out T argument, ref T2 argument2, T3 argument3)
     {
     }
-}", @"Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
+}", @"Imports System.Runtime.InteropServices
+
+Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
     Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
     End Sub
 End Class");

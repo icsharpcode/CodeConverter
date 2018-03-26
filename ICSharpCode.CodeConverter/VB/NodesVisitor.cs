@@ -663,6 +663,7 @@ End Function";
                             )
                         )
                     };
+                    allImports.Add(SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(SyntaxFactory.SimpleImportsClause(SyntaxFactory.ParseName("System.Runtime.InteropServices")))));
                 } else {
                     newAttributes = new AttributeListSyntax[0];
                 }

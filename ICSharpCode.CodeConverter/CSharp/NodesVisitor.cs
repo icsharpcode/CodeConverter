@@ -21,6 +21,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
             private readonly Stack<string> withBlockTempVariableNames = new Stack<string>();
             readonly IDictionary<string, string> importedNamespaces;
+            private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(SyntaxKind.SemicolonToken);
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
 
             public NodesVisitor(SemanticModel semanticModel)
@@ -363,10 +364,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 AccessorListSyntax accessors = null;
                 if (!hasBody) {
                     var accessorList = new List<AccessorDeclarationSyntax> {
-                        SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken))
+                        SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SemicolonToken)
                     };
                     if (!isReadonly) {
-                        accessorList.Add(SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)));
+                        accessorList.Add(SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration).WithSemicolonToken(SemicolonToken));
                     }
                     accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(accessorList));
                 } else {
@@ -455,7 +456,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier)
                     ).WithAttributeLists(attributes);
                     if (hasBody) return decl;
-                    return decl.WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken));
+                    return decl.WithSemicolonToken(SemicolonToken);
                 } else {
                     var tokenContext = GetMethodOrPropertyContext(node);
                     var modifiers = ConvertModifiers(node.Modifiers, tokenContext);
@@ -477,7 +478,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         null
                     );
                     if (hasBody) return decl;
-                    return decl.WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken));
+                    return decl.WithSemicolonToken(SemicolonToken);
                 }
             }
             private bool HasExtensionAttribute(VBSyntax.AttributeListSyntax a)
@@ -631,6 +632,26 @@ namespace ICSharpCode.CodeConverter.CSharp
                     ctorCall,
                     SyntaxFactory.Block(statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())))
                 );
+            }
+
+            public override CSharpSyntaxNode VisitDeclareStatement(VBSyntax.DeclareStatementSyntax node)
+            {
+                var dllImportAttributeName = SyntaxFactory.ParseName("System.Runtime.InteropServices.DllImport");
+                var dllImportLibLiteral = node.LibraryName.Accept(TriviaConvertingVisitor);
+
+                var attributeArguments = CreateAttributeArgumentList(SyntaxFactory.AttributeArgument((ExpressionSyntax) dllImportLibLiteral));
+                var dllImportAttributeList = SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Attribute(dllImportAttributeName, attributeArguments)));
+
+                var attributeLists = ConvertAttributes(node.AttributeLists).Add(dllImportAttributeList);
+
+                var modifiers = ConvertModifiers(node.Modifiers).Add(SyntaxFactory.Token(SyntaxKind.StaticKeyword)).Add(SyntaxFactory.Token(SyntaxKind.ExternKeyword));
+                var returnType = (TypeSyntax)node.AsClause?.Type.Accept(TriviaConvertingVisitor);
+                var parameterListSyntax = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor) ??
+                                          SyntaxFactory.ParameterList();
+
+                return SyntaxFactory.MethodDeclaration(attributeLists, modifiers, returnType, null,
+                    ConvertIdentifier(node.Identifier), null,
+                    parameterListSyntax, SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), null, null).WithSemicolonToken(SemicolonToken);
             }
 
             public override CSharpSyntaxNode VisitTypeParameterList(VBSyntax.TypeParameterListSyntax node)
@@ -869,7 +890,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, QualifyNode(node.Expression, left), simpleNameSyntax);
-                if (semanticModel.GetSymbolInfo(node).Symbol is IMethodSymbol methodSymbol && methodSymbol.ReturnType.Equals(semanticModel.GetTypeInfo(node).ConvertedType)) {
+                if (semanticModel.GetSymbolInfo(node).Symbol.IsKind(SymbolKind.Method) && node.Parent?.IsKind(VBasic.SyntaxKind.InvocationExpression) != true) {
                     var visitMemberAccessExpression = SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax, SyntaxFactory.ArgumentList());
                     return visitMemberAccessExpression;
                 }
@@ -899,9 +920,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitArgumentList(VBSyntax.ArgumentListSyntax node)
             {
                 if (node.Parent.IsKind(VBasic.SyntaxKind.Attribute)) {
-                    return SyntaxFactory.AttributeArgumentList(SyntaxFactory.SeparatedList(node.Arguments.Select(ToAttributeArgument)));
+                    return CreateAttributeArgumentList(node.Arguments.Select(ToAttributeArgument).ToArray());
                 }
                 return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(node.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor))));
+            }
+
+            private AttributeArgumentListSyntax CreateAttributeArgumentList(params AttributeArgumentSyntax[] attributeArgumentSyntaxs)
+            {
+                return SyntaxFactory.AttributeArgumentList(SyntaxFactory.SeparatedList(attributeArgumentSyntaxs));
             }
 
             public override CSharpSyntaxNode VisitSimpleArgument(VBSyntax.SimpleArgumentSyntax node)
@@ -1467,10 +1493,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var lhsSyntax = (NameSyntax)node.Left.Accept(TriviaConvertingVisitor);
                 var rhsSyntax = (SimpleNameSyntax)node.Right.Accept(TriviaConvertingVisitor);
 
-                var qualifiedName = node.Parent.IsKind(VBasic.SyntaxKind.NamespaceStatement)
-                    ? lhsSyntax
-                    : QualifyNode(node.Left, lhsSyntax);
-                return node.Left.IsKind(VBasic.SyntaxKind.GlobalName)
+                var partOfNamespaceDeclaration = node.Parent.IsKind(VBasic.SyntaxKind.NamespaceStatement);
+                var leftIsGlobal = node.Left.IsKind(VBasic.SyntaxKind.GlobalName);
+
+                ExpressionSyntax qualifiedName;
+                if (partOfNamespaceDeclaration) {
+                    if (leftIsGlobal) return rhsSyntax;
+                    qualifiedName = lhsSyntax;
+                } else {
+                    qualifiedName = QualifyNode(node.Left, lhsSyntax);
+                }
+
+                return leftIsGlobal
                     ? (CSharpSyntaxNode)SyntaxFactory.AliasQualifiedName((IdentifierNameSyntax)lhsSyntax, rhsSyntax)
                     : SyntaxFactory.QualifiedName((NameSyntax) qualifiedName, rhsSyntax);
             }

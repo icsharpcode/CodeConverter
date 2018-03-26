@@ -54,15 +54,15 @@ namespace CodeConverter.Tests
     {indentedStatements}
 }}";
             }
-            else if (!expectedCsharpCode.StartsWith("using System"))
-            {
+            else if (!expectedCsharpCode.StartsWith("using System;")) {
+                var possibleNewline = expectedCsharpCode.StartsWith("using ") ? "" : Environment.NewLine;
+
                 expectedCsharpCode =
                     @"using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
-
-" + expectedCsharpCode;
+" + possibleNewline + expectedCsharpCode;
             }
 
             return expectedCsharpCode;
@@ -137,7 +137,8 @@ using Microsoft.VisualBasic;
             return line.Trim() == "{"
                    || nextLine.Contains("where T")
                    || IsTwoLineCsIfStatement(line, nextLine)
-                   || line.TrimStart().StartsWith("//");
+                   || line.TrimStart().StartsWith("//")
+                   || line.Contains("DllImport");
         }
 
         /// <summary>
@@ -151,7 +152,7 @@ using Microsoft.VisualBasic;
         private static bool HasNoTargetLine(string prevLine, string line, string nextLine)
         {
             return IsVbInheritsOrImplements(nextLine)
-                || line.Contains("End If") || line.Contains("Next")
+                || line.Contains("End If")
                 || IsFirstOfMultiLineVbIfStatement(line)
                 || line.Contains("<Extension") || line.Contains("CompilerServices.Extension")
                 || line.TrimStart().StartsWith("'")

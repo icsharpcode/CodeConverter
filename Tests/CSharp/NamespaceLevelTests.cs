@@ -19,6 +19,20 @@ namespace Test
         }
 
         [Fact]
+        public void TestGlobalNamespace()
+        {
+            TestConversionVisualBasicToCSharp(@"Namespace Global.Test
+End Namespace", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualBasic;
+
+namespace Test
+{
+}");
+        }
+
+        [Fact]
         public void TestTopLevelAttribute()
         {
             TestConversionVisualBasicToCSharp(
