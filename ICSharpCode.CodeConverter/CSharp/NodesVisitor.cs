@@ -1467,10 +1467,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var lhsSyntax = (NameSyntax)node.Left.Accept(TriviaConvertingVisitor);
                 var rhsSyntax = (SimpleNameSyntax)node.Right.Accept(TriviaConvertingVisitor);
 
-                var qualifiedName = node.Parent.IsKind(VBasic.SyntaxKind.NamespaceStatement)
-                    ? lhsSyntax
-                    : QualifyNode(node.Left, lhsSyntax);
-                return node.Left.IsKind(VBasic.SyntaxKind.GlobalName)
+                var partOfNamespaceDeclaration = node.Parent.IsKind(VBasic.SyntaxKind.NamespaceStatement);
+                var leftIsGlobal = node.Left.IsKind(VBasic.SyntaxKind.GlobalName);
+
+                ExpressionSyntax qualifiedName;
+                if (partOfNamespaceDeclaration) {
+                    if (leftIsGlobal) return rhsSyntax;
+                    qualifiedName = lhsSyntax;
+                } else {
+                    qualifiedName = QualifyNode(node.Left, lhsSyntax);
+                }
+
+                return leftIsGlobal
                     ? (CSharpSyntaxNode)SyntaxFactory.AliasQualifiedName((IdentifierNameSyntax)lhsSyntax, rhsSyntax)
                     : SyntaxFactory.QualifiedName((NameSyntax) qualifiedName, rhsSyntax);
             }
