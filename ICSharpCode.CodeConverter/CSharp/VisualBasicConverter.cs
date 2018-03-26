@@ -136,7 +136,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (value == null)
                 return SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
 
-            return null;
+            throw new ArgumentOutOfRangeException(nameof(value), value, null);
         }
 
 
