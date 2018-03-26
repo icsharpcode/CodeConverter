@@ -34,6 +34,7 @@ class TestClass
         argument = Nothing
         argument2 = Nothing
         argument3 = Nothing
+        Console.WriteLine(Enumerable.Empty(Of String))
     End Sub
 End Class", @"using System;
 using System.Collections.Generic;
@@ -49,6 +50,7 @@ class TestClass
         argument = null;
         argument2 = default(T2);
         argument3 = default(T3);
+        Console.WriteLine(Enumerable.Empty<string>());
     }
 }");
         }
