@@ -642,13 +642,13 @@ End Class");
 {
     void TestMethod()
     {
-        for (i = 0; unknownCondition; i++) {
+        for (int i = 0; unknownCondition; i++) {
             b[i] = s[i];
         }
     }
 }", @"Class TestClass
     Private Sub TestMethod()
-        i = 0
+        Dim i As Integer = 0
 
         While unknownCondition
             b(i) = s(i)

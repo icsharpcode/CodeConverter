@@ -279,7 +279,14 @@ namespace ICSharpCode.CodeConverter.VB
                         SyntaxFactory.WhileStatement(condition),
                         stmts
                     );
-                    return SyntaxFactory.List(node.Initializers.Select(ConvertSingleExpression)).Add(block);
+
+                    var declarations = new List<StatementSyntax>();
+                    if (node.Declaration != null) {
+                        var syntaxTokenList = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.DimKeyword));
+                        declarations.Add(SyntaxFactory.LocalDeclarationStatement(syntaxTokenList, RemodelVariableDeclaration(node.Declaration, nodesVisitor)));
+                    }
+
+                    return SyntaxFactory.List(declarations.Concat(node.Initializers.Select(ConvertSingleExpression))).Add(block);
                 }
                 return SyntaxFactory.SingletonList(block);
             }
