@@ -61,9 +61,9 @@ namespace ICSharpCode.CodeConverter.Util
             }
         }
 
-        public static ArgumentListSyntax CreateArgList(params ExpressionSyntax[] copyArgs)
+        public static ArgumentListSyntax CreateArgList(params ExpressionSyntax[] args)
         {
-            return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(copyArgs.Select(SyntaxFactory.Argument)));
+            return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(args.Select(SyntaxFactory.Argument)));
         }
 
         public static bool HasOperandOfUnconvertedType(this Microsoft.CodeAnalysis.VisualBasic.Syntax.BinaryExpressionSyntax node, string operandType, SemanticModel semanticModel)
