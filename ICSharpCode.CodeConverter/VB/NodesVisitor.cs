@@ -1300,7 +1300,7 @@ namespace ICSharpCode.CodeConverter.VB
             public override VisualBasicSyntaxNode VisitThrowExpression(CSS.ThrowExpressionSyntax node)
             {
                 _cSharpHelperMethodDefinition.AddThrowMethod = true;
-                var typeName = SyntaxFactory.ParseTypeName(semanticModel.GetTypeInfo(node.Parent).ConvertedType.GetFullMetadataName());
+                var typeName = SyntaxFactory.ParseTypeName(semanticModel.GetTypeInfo(node.Parent).ConvertedType?.GetFullMetadataName() ?? "Object");
                 var convertedExceptionExpression = (ExpressionSyntax) node.Expression.Accept(TriviaConvertingVisitor);
                 var throwEx = SyntaxFactory.GenericName(CSharpHelperMethodDefinition.QualifiedThrowMethodName, SyntaxFactory.TypeArgumentList(typeName));
                 var argList = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList<ArgumentSyntax>(SyntaxFactory.SimpleArgument(convertedExceptionExpression)));
@@ -1462,13 +1462,33 @@ namespace ICSharpCode.CodeConverter.VB
                     || originalName.Parent is CSS.AttributeSyntax
                     || originalName.Parent is CSS.MemberAccessExpressionSyntax
                     || originalName.Parent is CSS.MemberBindingExpressionSyntax
-                    || originalName.Parent is CSS.InvocationExpressionSyntax)
+                    || originalName.Parent is CSS.InvocationExpressionSyntax
+                    || semanticModel.SyntaxTree != originalName.SyntaxTree)
                     return name;
 
                 var symbolInfo = semanticModel.GetSymbolInfo(originalName);
                 var symbol = symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault();
-                if (symbol.IsKind(SymbolKind.Method))
-                    return SyntaxFactory.AddressOfExpression(name);
+                if (symbol.IsKind(SymbolKind.Method)) {
+                    var addressOf = SyntaxFactory.AddressOfExpression(name);
+
+                    if (originalName.Parent is CSS.ArgumentSyntax nameArgument &&
+                        nameArgument.Parent?.Parent is CSS.InvocationExpressionSyntax ies) {
+                        var argIndex = ies.ArgumentList.Arguments.IndexOf(nameArgument);
+                        //TODO: Deal with named parameters
+                        var destinationType = semanticModel.GetSymbolInfo(ies.Expression).CandidateSymbols
+                            .Select(m => m.GetParameters()).Where(p => p.Length > argIndex).Select(p => p[argIndex].Type).FirstOrDefault();
+                        if (destinationType != null) {
+                            var toCreate = (TypeSyntax)
+                                CS.SyntaxFactory
+                                    .ParseTypeName(destinationType.ToMinimalDisplayString(semanticModel,
+                                        originalName.SpanStart))
+                                    .Accept(TriviaConvertingVisitor);
+                            return SyntaxFactory.ObjectCreationExpression(toCreate).WithArgumentList(ExpressionSyntaxExtensions.CreateArgList(addressOf));
+                        }
+                    }
+
+                    return addressOf;
+                }
 
                 return name;
             }

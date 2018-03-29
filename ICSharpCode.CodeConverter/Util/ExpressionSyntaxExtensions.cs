@@ -7,6 +7,8 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Options;
 using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.CodeAnalysis.Text;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -64,6 +66,11 @@ namespace ICSharpCode.CodeConverter.Util
         public static ArgumentListSyntax CreateArgList(params ExpressionSyntax[] args)
         {
             return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(args.Select(SyntaxFactory.Argument)));
+        }
+
+        public static VBSyntax.ArgumentListSyntax CreateArgList(params VBSyntax.ExpressionSyntax[] args)
+        {
+            return VBasic.SyntaxFactory.ArgumentList(VBasic.SyntaxFactory.SeparatedList(args.Select(e => (VBSyntax.ArgumentSyntax) VBasic.SyntaxFactory.SimpleArgument(e))));
         }
 
         public static bool HasOperandOfUnconvertedType(this Microsoft.CodeAnalysis.VisualBasic.Syntax.BinaryExpressionSyntax node, string operandType, SemanticModel semanticModel)
