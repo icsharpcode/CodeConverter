@@ -1,64 +1,59 @@
-﻿@using System.Diagnostics
+﻿@using System
+@using System.Diagnostics
 @using System.Reflection
 @using ICSharpCode.CodeConverter
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@Page.Title - Roslyn Code Converter</title>
-    @RenderSection("head", required: false)
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Code Converter | Progress Telerik</title>
+	@RenderSection("head", required: false)
 
-    <meta name="keywords" content="@Page.Keywords" />
-    <meta name="description" content="@Page.Description" />
-    <meta name="robots" content="index,follow">
-    <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon"/>
+	<meta name="keywords" content="@Page.Keywords" />
+	<meta name="description" content="@Page.Description" />
+	<meta name="robots" content="index,follow">
+	<link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
 
-    <link rel="stylesheet" href="~/Content/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/Content/site.css" />
+	<link rel="stylesheet" href="~/Content/bootstrap.min.css" />
+	<link rel="stylesheet" href="~/Content/site.css" />
 </head>
-<body>
-    <div class="navbar navbar-inverse navbar-fixed-top">
-        <div class="container">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a href="~/" class="navbar-brand">Code Converter</a>
-            </div>
-            <div class="navbar-collapse collapse">
-                <ul class="nav navbar-nav">
-                    <li><a href="~/">Home</a></li>
-                    <li><a href="~/Home/About">About</a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="container body-content">
-        @RenderBody()
-        <hr />
-        @{
-            var versionInfo = HttpContext.Current.Cache["AssemblyVersionInformation"];
-            if (null == versionInfo)
-            {
-                Assembly assembly = Assembly.GetAssembly(typeof(CodeConverter));
-                FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+<body class="d-flex flex-column">
+	<div class="navbar navbar-inverse">
+		<div class="navbar-header">
+			<a href="~/" class="navbar-brand"><img class="" src="~/Images/logo.svg" alt="Code Converter Logo" /></a>
+		</div>
+	</div>
+	<div class="body-content p-2 flex-100">
+		@RenderBody()
+		@{
+			var versionInfo = HttpContext.Current.Cache["AssemblyVersionInformation"];
+			if (null == versionInfo)
+			{
+				Assembly assembly = Assembly.GetAssembly(typeof(CodeConverter));
+				FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
 
-                versionInfo = fvi.FileVersion;
-                HttpContext.Current.Cache["AssemblyVersionInformation"] = versionInfo;
-            }
-            <footer>
-                <p>&copy; 2015-@DateTime.Now.Year - Code Converter by <a href="https://github.com/icsharpcode/CodeConverter/">https://github.com/icsharpcode/CodeConverter/</a> - Version @versionInfo</p>
-            </footer>
-        }
-        </div>
-
-        <script src="~/Scripts/jquery-2.2.2.min.js"></script>
-        <script src="~/Scripts/bootstrap.min.js"></script>
-
-        @RenderSection("scripts", required: false)
-    </body>
+				versionInfo = fvi.FileVersion;
+				HttpContext.Current.Cache["AssemblyVersionInformation"] = versionInfo;
+			}
+		}
+	</div>
+	<footer>
+		<div class="navbar navbar-inverse">
+			<ul class="nav  navbar-nav d-flex">
+				<li><a href="~/Home/About">About</a></li>
+				<li><a href="http://www.telerik.com/company/terms-of-use">Terms of Use</a></li>
+				<li><a href="http://www.telerik.com/company/privacy-policy">Privacy Policy</a></li>
+				<li><a href="http://www.telerik.com">Provided by Telerik</a></li>
+			</ul>
+		</div>
+		<p class="px-2">
+			Copyright  &copy; @DateTime.Now.Year, Progress Software Corporation and/or its subsidiaries or affiliates. All Rights Reserved.
+		</p>
+	</footer>
+	<script src="~/Scripts/jquery-2.2.2.min.js"></script>
+	<script src="~/Scripts/bootstrap.min.js"></script>
+	<script src="~/Scripts/file-saver.js"></script>
+	@RenderSection("scripts", required: false)
+</body>
 </html>

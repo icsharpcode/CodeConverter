@@ -16,6 +16,7 @@ namespace CodeConverterWebApp.Controllers
 		[ResponseType(typeof(ConvertResponse))]
 		public IHttpActionResult Post([FromBody]ConvertRequest todo)
 		{
+			System.Threading.Thread.Sleep(5000);
 			var languages = todo.requestedConversion.Split('2');
 
 			string fromLanguage = "C#";

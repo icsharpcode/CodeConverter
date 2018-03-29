@@ -1,76 +1,144 @@
 ﻿@{
-    Page.Title = "Home Page";
-    Page.Keywords = "free,Roslyn,code,converter,tool,conversion,class,module,c#,VB.NET,Visual Basic,csharp,cs,refactoring,open source,oss";
-    Page.Description = "Convert C# to VB.NET using the Roslyn Code Converter that is part of the Refactorings Essentials extension for Visual Studio";
+	Page.Keywords = "free,Roslyn,code,converter,tool,conversion,class,module,c#,VB.NET,Visual Basic,csharp,cs,refactoring,open source,oss";
+	Page.Description = "Convert C# to VB.NET using the Roslyn Code Converter that is part of the Refactorings Essentials extension for Visual Studio";
 }
 
 <script src="~/Scripts/angular.min.js"></script>
 
-<div class="row">
-    <div class="col-md-8">
-        <h1>Convert Code (C#, VB.NET)</h1>
-        <div ng-app="ccApp" ng-controller="ccController">
-
-            <div class="form-group">
-                <label>Input code</label>
-                <textarea class="form-control" ng-model="inputCode" rows="10" style="min-width: 100%"></textarea>
-            </div>
-            <div class="form-group">
-                <label>
-                    <input type="radio" ng-model="requestedConversion" value="cs2vbnet">
-                    C# to VB.NET
-                </label>
-                <label>
-                    <input type="radio" ng-model="requestedConversion" value="vbnet2cs">
-                    VB.NET to C#
-                </label>
-                &nbsp;
-                <button class="btn btn-default" ng-click="convert()">Convert Code</button>
-                <div class="spinner" ng-show="converterCallInflight"></div>
-            </div>
-            <div class="form-group">
-                <label>Converted code</label>
-                <textarea class="form-control" ng-model="convertedCode" rows="10" style="min-width: 100%"></textarea>
-            </div>
-
-            <p ng-show="showErrors" style="white-space: pre-wrap">Error message:<br />{{errorMessageOnResponse}}</p>
-        </div>
-    </div>
+<div ng-app="ccApp" ng-controller="ccController">
+	<div class="d-flex align-items-center">
+		<div class="flex-50 text-right"><span class="font-size-l" ng-bind="convertFrom"></span></div>
+		<div class="px-3">
+			<a class="btn btn-default btn-circle" ng-disabled="converterCallInflight" ng-click="converterCallInflight === false && toggle()"><img class="img-responsive" src="~/Images/change.svg" /></a>
+		</div>
+		<div class="flex-50"><span class="font-size-l" ng-bind="convertTo"></span></div>
+	</div>
+	<div class="row h-50">
+		<div class="col-md-6 p-2 pb-1 pr-md-1 py-md-2">
+			<div class="code-buttons code-buttons-left">
+			</div>
+			<textarea class="form-control pt-5" ng-model="inputCode" ng-keydown="keyDown($event)" rows="10"></textarea>
+		</div>
+		<div class="col-md-6 p-2 pt-1 pl-md-1 py-md-2" ng-hide="showErrors">
+			<div class="spinner" ng-show="converterCallInflight"></div>
+			<div class="code-buttons" ng-show="convertedCode">
+				<button class="btn btn-code btn-primary" ng-click="copy()">Copy to clipboard</button>
+				<button class="btn btn-code btn-primary" ng-click="download()">Download</button>
+			</div>
+			<textarea class="form-control pt-5" ng-model="convertedCode" ng-keydown="keyDown($event)" rows="10" disabled></textarea>
+		</div>
+		<div class="col-md-6 p-2 pt-1 pl-md-1 py-md-2 has-error ng-hide" ng-show="showErrors">
+			<div class="code-buttons">
+			</div>
+			<div class="form-control pt-5">
+				<div class="font-weight-bold mb-2 text-accent">Error converting code</div>
+				Error message:<br />
+				<div class="content" ng-bind="errorMessage">
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="d-flex justify-content-center">
+		@*<button class="btn btn-default" ng-click="upload()">Upload files</button>*@
+		<button class="btn btn-accent px-3" ng-disabled="converterCallInflight" ng-click="converterCallInflight === false && convert()">Convert Code</button>
+	</div>
 </div>
 
 <script>
-    var app = angular.module('ccApp', []);
+	var app = angular.module('ccApp', []);
 
-    app.controller('ccController', function ($scope, $http) {
-        $scope.inputCode = "public class Test {}";
-        $scope.convertedCode = "";
-        $scope.requestedConversion = "cs2vbnet";
-        $scope.errorMessageOnResponse = "";
-        $scope.showErrors = false;
-        $scope.converterCallInflight = false;
+	app.controller('ccController', function ($scope, $http) {
+		$scope.inputCode = "";
+		$scope.convertedCode = "";
+		$scope.errorMessage;
+		$scope.requestedConversion;
+		$scope.convertFrom;
+		$scope.convertTo;
+		$scope.showErrors = false;
+		$scope.converterCallInflight = false;
+		$scope.downloadUrl = "";
+		$scope.fileExtension = "";
 
-        $scope.convert = function () {
-            $scope.converterCallInflight = true;
-            $scope.convertedCode = "";
-            $scope.errorMessageOnResponse = "";
-            $scope.showErrors = false;
+		$scope.keyDown = function (e) {
+			if (e.keyCode == 9) {
+				e.preventDefault();
+				var start = e.target.selectionStart;
+				var end = e.target.selectionEnd;
 
-            var data = JSON.stringify({ code: $scope.inputCode, requestedConversion: $scope.requestedConversion });
+				// set textarea value to: text before caret + tab + text after caret
+				$(e.target).val($(e.target).val().substring(0, start)
+					+ "\t"
+					+ $(e.target).val().substring(end));
 
-            $http.post('/api/converter/', data)
-                .then(function successCallback(response) {
-                    $scope.converterCallInflight = false;
-                    $scope.convertedCode = response.data.convertedCode;
+				// put caret at right position again
+				e.target.selectionStart =
+					e.target.selectionEnd = start + 1;
+			}
+		}
 
-                    if (!response.data.conversionOk) {
-                        $scope.showErrors = true;
-                        $scope.errorMessageOnResponse = response.data.errorMessage;
-                    }
-                }, function errorCallback(response) {
-                    $scope.converterCallInflight = false;
-                    $scope.showErrors = true;
-                    $scope.errorMessageOnResponse = "Call to the server backend failed";
-                });
-        };
-    });
+		$scope.toggle = function () {
+			if (this.requestedConversion == "cs2vbnet") {
+				this.requestedConversion = "vbnet2cs";
+				this.convertFrom = "VB.NET";
+				this.convertTo = "C#";
+				this.fileExtension = "cs"
+			} else {
+				this.requestedConversion = "cs2vbnet";
+				this.convertFrom = "C#";
+				this.convertTo = "VB.NET";
+				this.fileExtension = "vb"
+			}
+
+			this.inputCode = this.convertedCode = "";
+			this.showErrors = false;
+		}
+
+		$scope.toggle();
+
+		$scope.copy = function () {
+
+			var textArea = document.createElement("textarea");
+			textArea.value = this.convertedCode;
+			document.body.appendChild(textArea);
+			textArea.focus();
+			textArea.select();
+
+			try {
+				var successful = document.execCommand('copy');
+			} catch (err) {
+			}
+
+			document.body.removeChild(textArea);
+			alert("Copied");
+		}
+
+		$scope.download = function () {
+			var blob = new Blob([this.convertedCode], { type: "text/plain;charset=utf-8" });
+			saveAs(blob, "Code." + this.fileExtension);
+		}
+
+		$scope.convert = function () {
+			$scope.converterCallInflight = true;
+			$scope.convertedCode = "";
+			$scope.errorMessage = "";
+			$scope.showErrors = false;
+
+			var data = JSON.stringify({ code: $scope.inputCode, requestedConversion: $scope.requestedConversion });
+
+			$http.post('/api/converter/', data)
+				.then(function successCallback(response) {
+					$scope.converterCallInflight = false;
+					$scope.convertedCode = response.data.convertedCode;
+
+					if (!response.data.conversionOk) {
+						$scope.showErrors = true;
+						$scope.errorMessage = response.data.errorMessage;
+					}
+				}, function errorCallback(response) {
+					$scope.converterCallInflight = false;
+					$scope.showErrors = true;
+					$scope.convertedCode = "Call to the server backend failed";
+				});
+		};
+	});
 </script>
