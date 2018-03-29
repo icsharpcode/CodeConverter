@@ -170,7 +170,7 @@ End Class");
     {
     }
 
-    public static void TestMethod2Parameters(this String str, String other)
+    public static void TestMethod2Parameters(this String str, Action<string> _)
     {
     }
 }", @"Imports System.Runtime.CompilerServices
@@ -181,7 +181,7 @@ Module TestClass
     End Sub
 
     <Extension()>
-    Sub TestMethod2Parameters(ByVal str As String, ByVal other As String)
+    Sub TestMethod2Parameters(ByVal str As String, ByVal __ As Action(Of String))
     End Sub
 End Module");
         }

@@ -136,10 +136,14 @@ namespace ICSharpCode.CodeConverter.VB
 
         static SyntaxToken ConvertIdentifier(SyntaxToken id)
         {
-            var keywordKind = SyntaxFacts.GetKeywordKind(id.ValueText);
+            var idText = id.ValueText;
+            // Underscore is a special character in VB lexer which continues lines - not sure where to find the whole set of other similar tokens if any
+            // Rather than a complicated contextual rename, just add an extra dash to all identifiers and hope this method is consistently used
+            if (idText.All(c => c == '_')) idText += "_";
+            var keywordKind = SyntaxFacts.GetKeywordKind(idText);
             if (keywordKind != SyntaxKind.None && !SyntaxFacts.IsPredefinedType(keywordKind))
-                return SyntaxFactory.Identifier("[" + id.ValueText + "]");
-            return SyntaxFactory.Identifier(id.ValueText);
+                return SyntaxFactory.Identifier("[" + idText + "]");
+            return SyntaxFactory.Identifier(idText);
         }
 
         static ExpressionSyntax Literal(object o) => GetLiteralExpression(o);
