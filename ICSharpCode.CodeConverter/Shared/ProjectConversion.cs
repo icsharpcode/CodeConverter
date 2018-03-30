@@ -114,7 +114,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 var treeFilePath = tree.FilePath ?? "";
                 try {
                     SingleFirstPass(tree, treeFilePath);
-                    var errorAnnotations = tree.GetRoot().GetAnnotations(TriviaConverter.ConversionErrorAnnotationKind);
+                    var errorAnnotations = tree.GetRoot().GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind);
                     _errors.TryAdd(treeFilePath,
                         new NotImplementedException(string.Join(Environment.NewLine,
                             errorAnnotations.Select(a => a.Data))));
@@ -153,7 +153,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 var fullCompilationUnit = _languageConversion.CreateTree(text).GetRoot();
 
                 var selectedNode = _languageConversion.GetSurroundedNode(fullCompilationUnit.DescendantNodes(), requiresSurroundingMethod);
-                tree = fullCompilationUnit.WithAnnotatedNode(selectedNode, TriviaConverter.SelectedNodeAnnotationKind, TriviaConverter.AnnotatedNodeIsParentData);
+                tree = fullCompilationUnit.WithAnnotatedNode(selectedNode, AnnotationConstants.SelectedNodeAnnotationKind, AnnotationConstants.AnnotatedNodeIsParentData);
             }
 
             return tree;
@@ -163,7 +163,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var root = await syntaxTree.GetRootAsync();
             var selectedNode = root.FindNode(selected);
-            return root.WithAnnotatedNode(selectedNode, TriviaConverter.SelectedNodeAnnotationKind);
+            return root.WithAnnotatedNode(selectedNode, AnnotationConstants.SelectedNodeAnnotationKind);
         }
 
         private SyntaxNode Format(SyntaxNode resultNode)
@@ -174,13 +174,13 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private SyntaxNode GetSelectedNode(SyntaxNode resultNode)
         {
-            var selectedNode = resultNode.GetAnnotatedNodes(TriviaConverter.SelectedNodeAnnotationKind)
+            var selectedNode = resultNode.GetAnnotatedNodes(AnnotationConstants.SelectedNodeAnnotationKind)
                 .SingleOrDefault();
             if (selectedNode != null)
             {
                 var children = _languageConversion.FindSingleImportantChild(selectedNode);
-                if (selectedNode.GetAnnotations(TriviaConverter.SelectedNodeAnnotationKind)
-                        .Any(n => n.Data == TriviaConverter.AnnotatedNodeIsParentData)
+                if (selectedNode.GetAnnotations(AnnotationConstants.SelectedNodeAnnotationKind)
+                        .Any(n => n.Data == AnnotationConstants.AnnotatedNodeIsParentData)
                     && children.Count == 1)
                 {
                     selectedNode = children.Single();

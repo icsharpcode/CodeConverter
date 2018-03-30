@@ -46,9 +46,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)
             {
-                var exceptionMessage = $"Cannot convert {node.GetType().Name} from {node.GetBriefNodeDescription()}";
-                
-                throw new NotImplementedException(exceptionMessage);
+                throw new NotImplementedException($"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
+                    .WithNodeInformation(node);
+            }
+
+            private Func<SyntaxNode, SyntaxNode> DelegateConversion(Func<SyntaxNode, SyntaxList<StatementSyntax>> convert)
+            {
+                return node => SyntaxFactory.Block(convert(node));
             }
 
             public override CSharpSyntaxNode VisitGetTypeExpression(VBSyntax.GetTypeExpressionSyntax node)

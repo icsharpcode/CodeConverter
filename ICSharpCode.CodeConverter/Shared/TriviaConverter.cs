@@ -10,9 +10,6 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     public class TriviaConverter
     {
-        public const string SelectedNodeAnnotationKind = "CodeConverter.SelectedNode";
-        public const string AnnotatedNodeIsParentData = "CodeConverter.SelectedNode.IsAllChildrenOfThisNode";
-        public const string ConversionErrorAnnotationKind = "CodeConverter.ConversionError";
         private static readonly string TrailingTriviaConversionKind = $"{nameof(TriviaConverter)}.TrailingTriviaConversion.Id";
 
         /// <summary>
@@ -74,8 +71,8 @@ namespace ICSharpCode.CodeConverter.Shared
             destination = sourceNode.CopyAnnotationsTo(destination);
 
             var sourceChildAnnotations = new HashSet<SyntaxAnnotation>(sourceNode.ChildNodes()
-                .SelectMany(n => n.GetAnnotations(SelectedNodeAnnotationKind)));
-            foreach (var annotation in destination.ChildNodes().SelectMany(n => n.GetAnnotations(SelectedNodeAnnotationKind))) {
+                .SelectMany(n => n.GetAnnotations(AnnotationConstants.SelectedNodeAnnotationKind)));
+            foreach (var annotation in destination.ChildNodes().SelectMany(n => n.GetAnnotations(AnnotationConstants.SelectedNodeAnnotationKind))) {
                 sourceChildAnnotations.Remove(annotation);
             }
             return destination.WithAdditionalAnnotations(sourceChildAnnotations);

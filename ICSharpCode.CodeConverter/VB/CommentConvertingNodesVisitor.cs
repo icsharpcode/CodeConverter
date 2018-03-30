@@ -16,21 +16,21 @@ namespace ICSharpCode.CodeConverter.VB
     public class CommentConvertingNodesVisitor : CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     {
         public TriviaConverter TriviaConverter { get; }
-        private readonly CSharpSyntaxVisitor<VisualBasicSyntaxNode> _wrappedVisitor;
+        private readonly CSharpSyntaxVisitor<VisualBasicSyntaxNode> wrappedVisitor;
 
         public CommentConvertingNodesVisitor(CSharpSyntaxVisitor<VisualBasicSyntaxNode> wrappedVisitor)
         {
             TriviaConverter = new TriviaConverter();
-            this._wrappedVisitor = wrappedVisitor;
+            this.wrappedVisitor = wrappedVisitor;
         }
         public override VisualBasicSyntaxNode DefaultVisit(SyntaxNode node)
         {
-            return TriviaConverter.PortConvertedTrivia(node, _wrappedVisitor.Visit(node));
+            return TriviaConverter.PortConvertedTrivia(node, wrappedVisitor.Visit(node));
         }
 
         public override VisualBasicSyntaxNode VisitAttributeList(CsSyntax.AttributeListSyntax node)
         {
-            var convertedNode = _wrappedVisitor.Visit(node)
+            var convertedNode = wrappedVisitor.Visit(node)
                 .WithPrependedLeadingTrivia(SyntaxFactory.EndOfLineTrivia(Environment.NewLine));
             return TriviaConverter.PortConvertedTrivia(node, convertedNode);
         }

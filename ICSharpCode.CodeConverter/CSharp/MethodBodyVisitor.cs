@@ -18,8 +18,8 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         class MethodBodyVisitor : VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>>
         {
-            SemanticModel semanticModel;
-            readonly VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor;
+            private readonly SemanticModel semanticModel;
+            private readonly VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor;
             private readonly Stack<string> withBlockTempVariableNames;
 
             public bool IsIterator { get; set; }
@@ -35,12 +35,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
             {
-                var bestEffortConversion = node.GetBestEffortConversionString(nodesVisitor.Visit, out var errorText);
-                var commentedText = "/* " + errorText + " */";
-                var errorComment = SyntaxFactory.ParseStatement(bestEffortConversion + ";")
-                    .WithTrailingTrivia(SyntaxFactory.Comment(commentedText))
-                    .WithAdditionalAnnotations(new SyntaxAnnotation(TriviaConverter.ConversionErrorAnnotationKind, errorText));
-                return SyntaxFactory.SingletonList(errorComment);
+                throw new NotImplementedException($"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
+                    .WithNodeInformation(node);
             }
 
             public override SyntaxList<StatementSyntax> VisitStopOrEndStatement(VBSyntax.StopOrEndStatementSyntax node)

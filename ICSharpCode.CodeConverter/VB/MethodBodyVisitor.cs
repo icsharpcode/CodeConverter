@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using ArgumentSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentSyntax;
@@ -50,13 +52,8 @@ namespace ICSharpCode.CodeConverter.VB
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
             {
-                var bestEffortConversion = node.GetBestEffortConversionString(nodesVisitor.Visit, out var errorText);
-                var commentedText = "/* " + errorText + " */";
-
-                var errorComment = SyntaxFactory.ParseExecutableStatement(bestEffortConversion.TrimEnd(';'))
-                    .WithTrailingTrivia(SyntaxFactory.CommentTrivia(commentedText))
-                    .WithAdditionalAnnotations(new SyntaxAnnotation(TriviaConverter.ConversionErrorAnnotationKind, errorText));
-                return SyntaxFactory.SingletonList(errorComment);
+                throw new NotImplementedException($"Conversion for {CS.CSharpExtensions.Kind(node)} not implemented, please report this issue")
+                    .WithNodeInformation(node);
             }
 
             public override SyntaxList<StatementSyntax> VisitLocalDeclarationStatement(CSS.LocalDeclarationStatementSyntax node)
@@ -497,27 +494,34 @@ namespace ICSharpCode.CodeConverter.VB
             public override SyntaxList<StatementSyntax> VisitBlock(CSS.BlockSyntax node)
             {
                 var statements = ConvertBlock(node);
+                var ifBlock = CreateBlock(statements);
+
+                return SyntaxFactory.SingletonList<StatementSyntax>(ifBlock);
+            }
+
+            public static MultiLineIfBlockSyntax CreateBlock(SyntaxList<StatementSyntax> statements)
+            {
                 var ifStatement = SyntaxFactory.IfStatement(SyntaxFactory.Token(
                         SyntaxKind.IfKeyword),
                     SyntaxFactory.TrueLiteralExpression(SyntaxFactory.Token(SyntaxKind.TrueKeyword)),
                     SyntaxFactory.Token(SyntaxKind.ThenKeyword)
                 );
 
-                var ifBlock = SyntaxFactory.MultiLineIfBlock(ifStatement, statements, SyntaxFactory.List<ElseIfBlockSyntax>(), null);
-
-                return SyntaxFactory.SingletonList<StatementSyntax>(ifBlock);
+                var ifBlock =
+                    SyntaxFactory.MultiLineIfBlock(ifStatement, statements, SyntaxFactory.List<ElseIfBlockSyntax>(), null);
+                return ifBlock;
             }
 
             SyntaxList<StatementSyntax> ConvertBlock(CSS.StatementSyntax node)
             {
                 if (node is CSS.BlockSyntax) {
                     var b = (CSS.BlockSyntax)node;
-                    return SyntaxFactory.List(b.Statements.Where(s => !(s is CSS.EmptyStatementSyntax)).SelectMany(s => s.Accept(this)));
+                    return SyntaxFactory.List(b.Statements.Where(s => !(s is CSS.EmptyStatementSyntax)).SelectMany(s => s.Accept(CommentConvertingVisitor)));
                 }
                 if (node is CSS.EmptyStatementSyntax) {
                     return SyntaxFactory.List<StatementSyntax>();
                 }
-                return node.Accept(this);
+                return node.Accept(CommentConvertingVisitor);
             }
 
             public override SyntaxList<StatementSyntax> VisitReturnStatement(CSS.ReturnStatementSyntax node)

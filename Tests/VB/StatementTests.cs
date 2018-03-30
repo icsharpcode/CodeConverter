@@ -507,6 +507,45 @@ End Class");
         }
 
         [Fact]
+        public void UnsafeStatements()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    void TestMethod()
+    {
+        int b;
+        b = 0;
+        while (b == 0)
+        {
+            if (b == 2)
+            {
+                unsafe
+                {
+                    int ab = 32;
+                    int* p = &ab;
+                    Console.WriteLine(""value of ab is {0}"", *p);
+                }
+            }
+            if (b == 3)
+                break;
+            b = 1;
+        }
+    }
+}", @"Class TestClass
+    Private Sub TestMethod()
+        Dim b As Integer
+        b = 0
+
+        While b = 0
+            If b = 2 Then Continue While
+            If b = 3 Then Exit While
+            b = 1
+        End While
+    End Sub
+End Class");
+        }
+
+        [Fact]
         public void DoWhileStatement()
         {
             TestConversionCSharpToVisualBasic(@"class TestClass

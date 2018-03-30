@@ -5,9 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
 using VBSyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 using VBSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
@@ -1664,26 +1666,6 @@ namespace ICSharpCode.CodeConverter.Util
                 node.IsParentKind(SyntaxKind.ConstructorDeclaration) ||
                 node.IsParentKind(SyntaxKind.DelegateDeclaration);
         }
-        public static string GetBriefNodeDescription(this SyntaxNode node)
-        {
-            var sb = new StringBuilder();
-            sb.Append($"'{node.ToString().Truncate()}' at character {node.SpanStart}");
-
-            if (node.Parent != null) {
-                var parentStr = node.Parent.ToString().Truncate(Math.Min(30, node.SpanStart - node.Parent.SpanStart), "");
-                sb.AppendLine();
-                sb.Append($" in '{parentStr}'");
-            }
-
-            return sb.ToString();
-        }
-
-        private static string Truncate(this string input, int maxLength = 30, string truncationIndicator = "...")
-        {
-            input = input.Replace(Environment.NewLine, " ").Replace("    ", " ").Replace("\t", " ");
-            if (input.Length <= maxLength) return input;
-            return input.Substring(0, maxLength - truncationIndicator.Length) + truncationIndicator;
-        }
 
         public static SyntaxTree WithAnnotatedNode(this SyntaxNode root, SyntaxNode selectedNode, string annotationKind, string annotationData = "")
         {
@@ -1692,23 +1674,79 @@ namespace ICSharpCode.CodeConverter.Util
             return root.ReplaceNode(selectedNode, annotatatedNode).SyntaxTree.WithFilePath(root.SyntaxTree.FilePath);
         }
 
-        public static string GetBestEffortConversionString(this SyntaxNode node, Func<SyntaxNode, SyntaxNode> convert, out string commentText)
+        public static string GetBriefNodeDescription(this SyntaxNode node)
         {
-            var originalSource = node.ToFullString();
+            var sb = new StringBuilder();
+            sb.Append($"'{node.ToString().Truncate()}' at character {node.SpanStart}");
+            return sb.ToString();
+        }
 
-            var bestEffortConversion = new StringBuilder();
+        public static string DescribeConversionError(this SyntaxNode node, Exception e, Func<SyntaxNode, IReadOnlyCollection<SyntaxNode>> convert)
+        {
+            return $"CONVERSION ERROR: Cannot convert {node.GetType().Name}, {e}{Environment.NewLine}{Environment.NewLine}" +
+                $"Input: {Environment.NewLine}{node.ToFullString()}{Environment.NewLine}" +
+                   $"Best effort conversion: {Environment.NewLine}{node.GetBestEffortChildConversion(convert)}";
+        }
+
+        private static string Truncate(this string input, int maxLength = 30, string truncationIndicator = "...")
+        {
+            input = input.Replace(Environment.NewLine, "\\r\\n").Replace("    ", " ").Replace("\t", " ");
+            if (input.Length <= maxLength) return input;
+            return input.Substring(0, maxLength - truncationIndicator.Length) + truncationIndicator;
+        }
+
+        public static string GetBestEffortChildConversion(this SyntaxNode node, Func<SyntaxNode, SyntaxNode> convert)
+        {
+            return new StringBuilder().AppendBestEffortChildConversion(node, convert).ToString();
+        }
+
+        private static StringBuilder AppendBestEffortChildConversion(this StringBuilder sb,
+            SyntaxNode node, Func<SyntaxNode, IReadOnlyCollection<SyntaxNode>> convert)
+        {
             int offset = node.FullSpan.Start;
             int originalLocation = 0;
-            foreach (var childNode in node.ChildNodes()) {
-                bestEffortConversion.Append(originalSource.Substring(originalLocation, childNode.FullSpan.Start - offset - originalLocation));
-                bestEffortConversion.Append(convert(childNode).ToFullString());
+            var nodeFullString = node.ToFullString();
+            foreach (var childNode in node.ChildNodes())
+            {
+                sb.Append(nodeFullString.Substring(originalLocation,
+                    childNode.FullSpan.Start - offset - originalLocation));
+
+                AppendConvertedNode(sb, convert, childNode);
+
                 originalLocation = childNode.FullSpan.End - offset;
             }
-            bestEffortConversion.Append(originalSource.Substring(originalLocation));
+            sb.Append(nodeFullString.Substring(originalLocation));
+            return sb;
+        }
 
-            commentText =
-                $"CONVERSION ERROR: Cannot convert {node.GetType().Name}, Input: {Environment.NewLine}{originalSource}{Environment.NewLine}";
-            return bestEffortConversion.ToString();
+        private static void AppendConvertedNode(StringBuilder sb, Func<SyntaxNode, IReadOnlyCollection<SyntaxNode>> convert, SyntaxNode childNode)
+        {
+            bool failedChildConversion = false;
+            try
+            {
+                failedChildConversion  = !childNode.TryConvert(convert, out var convertedNode);
+                sb.Append(convertedNode.NormalizeWhitespace().ToFullString());
+            }
+            catch (Exception)
+            {
+                failedChildConversion = true;
+            }
+
+            if (failedChildConversion) AppendBestEffortChildConversion(sb, childNode, convert);
+        }
+
+        public static bool TryConvert<TResult>(this SyntaxNode node, Func<SyntaxNode, IReadOnlyCollection<TResult>> convert, out IReadOnlyCollection<TResult> convertedNodes) where TResult : SyntaxNode
+        {
+            bool conversionSucceeded;
+            try {
+                convertedNodes = convert(node);
+                conversionSucceeded = convertedNodes.Any() && !convertedNodes.Any(n => n.HasAnnotations(AnnotationConstants.ConversionErrorAnnotationKind));
+            } catch (Exception) {
+                convertedNodes = null;
+                conversionSucceeded = false;
+            }
+
+            return conversionSucceeded;
         }
     }
 }

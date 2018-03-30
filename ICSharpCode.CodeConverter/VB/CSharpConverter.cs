@@ -98,7 +98,8 @@ namespace ICSharpCode.CodeConverter.VB
 
         static SeparatedSyntaxList<VariableDeclaratorSyntax> RemodelVariableDeclaration(CSS.VariableDeclarationSyntax declaration, CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode> nodesVisitor)
         {
-            var type = (TypeSyntax)declaration.Type.Accept(nodesVisitor);
+            var visualBasicSyntaxNode = declaration.Type.Accept(nodesVisitor);
+            var type = (TypeSyntax)visualBasicSyntaxNode;
             var declaratorsWithoutInitializers = new List<CSS.VariableDeclaratorSyntax>();
             var declarators = new List<VariableDeclaratorSyntax>();
 
