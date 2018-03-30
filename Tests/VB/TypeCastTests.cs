@@ -125,5 +125,19 @@ End Sub
 End Sub
 ");
         }
+
+        [Fact]
+        public void CastConstantNumberToCharacter()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"void Test()
+{
+    char CR = (char)0xD;
+}
+", @"Private Sub Test()
+    Dim CR As Char = ChrW(&HD)
+End Sub
+");
+        }
     }
 }

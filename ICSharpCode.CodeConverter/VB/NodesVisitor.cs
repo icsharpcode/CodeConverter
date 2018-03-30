@@ -978,15 +978,18 @@ namespace ICSharpCode.CodeConverter.VB
 
             public override VisualBasicSyntaxNode VisitCastExpression(CSS.CastExpressionSyntax node)
             {
-                var type = ModelExtensions.GetTypeInfo(semanticModel, node.Type).Type;
+                var sourceType = semanticModel.GetTypeInfo(node.Expression).Type;
+                var destType = semanticModel.GetTypeInfo(node.Type).Type;
                 var expr = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
-                switch (type.SpecialType) {
+                switch (destType.SpecialType) {
                     case SpecialType.System_Object:
                         return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CObjKeyword), expr);
                     case SpecialType.System_Boolean:
                         return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CBoolKeyword), expr);
                     case SpecialType.System_Char:
-                        return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CCharKeyword), expr);
+                        return sourceType?.IsNumericType() == true
+                            ? (VisualBasicSyntaxNode) SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("ChrW"), ExpressionSyntaxExtensions.CreateArgList(expr))
+                            : SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CCharKeyword), expr);
                     case SpecialType.System_SByte:
                         return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CSByteKeyword), expr);
                     case SpecialType.System_Byte:
