@@ -661,7 +661,7 @@ namespace ICSharpCode.CodeConverter.VB
                         )
                     );
                 } else {
-                    return CSharpConverter.Literal(node.Token.Value);
+                    return CSharpConverter.Literal(node.Token.Value, node.Token.Text);
                 }
             }
 

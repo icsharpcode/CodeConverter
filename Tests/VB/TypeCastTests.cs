@@ -107,7 +107,7 @@ End Sub
     object o = 5.0f;
 }
 ", @"Private Sub Test()
-    Dim o As Object = 5F
+    Dim o As Object = 5.0F
 End Sub
 ");
         }

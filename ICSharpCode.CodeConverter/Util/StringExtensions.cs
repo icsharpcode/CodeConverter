@@ -19,7 +19,7 @@ namespace ICSharpCode.CodeConverter.Util
             // Contract.ThrowIfNull(line);
 
             for (int i = 0; i < line.Length; i++) {
-                if (!char.IsWhiteSpace(line[i])) {
+                if (!Char.IsWhiteSpace(line[i])) {
                     return i;
                 }
             }
@@ -238,21 +238,21 @@ namespace ICSharpCode.CodeConverter.Util
                 throw new ArgumentNullException("separator");
             }
 
-            return string.Join(separator, source);
+            return String.Join(separator, source);
         }
 
         public static bool LooksLikeInterfaceName(this string name)
         {
-            return name.Length >= 3 && name[0] == 'I' && char.IsUpper(name[1]) && char.IsLower(name[2]);
+            return name.Length >= 3 && name[0] == 'I' && Char.IsUpper(name[1]) && Char.IsLower(name[2]);
         }
 
         public static bool LooksLikeTypeParameterName(this string name)
         {
-            return name.Length >= 3 && name[0] == 'T' && char.IsUpper(name[1]) && char.IsLower(name[2]);
+            return name.Length >= 3 && name[0] == 'T' && Char.IsUpper(name[1]) && Char.IsLower(name[2]);
         }
 
-        private static readonly Func<char, char> s_toLower = char.ToLower;
-        private static readonly Func<char, char> s_toUpper = char.ToUpper;
+        private static readonly Func<char, char> s_toLower = Char.ToLower;
+        private static readonly Func<char, char> s_toUpper = Char.ToUpper;
 
         public static string ToPascalCase(
             this string shortName,
@@ -275,7 +275,7 @@ namespace ICSharpCode.CodeConverter.Util
         {
             // Special case the common .net pattern of "IFoo" as a type name.  In this case we
             // want to generate "foo" as the parameter name.  
-            if (!string.IsNullOrEmpty(shortName)) {
+            if (!String.IsNullOrEmpty(shortName)) {
                 if (trimLeadingTypePrefix && (shortName.LooksLikeInterfaceName() || shortName.LooksLikeTypeParameterName())) {
                     return convert(shortName[1]) + shortName.Substring(2);
                 }
@@ -290,7 +290,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         internal static bool IsValidClrTypeName(this string name)
         {
-            return !string.IsNullOrEmpty(name) && name.IndexOf('\0') == -1;
+            return !String.IsNullOrEmpty(name) && name.IndexOf('\0') == -1;
         }
 
         /// <summary>
@@ -298,7 +298,7 @@ namespace ICSharpCode.CodeConverter.Util
         /// </summary>
         internal static bool IsValidClrNamespaceName(this string name)
         {
-            if (string.IsNullOrEmpty(name)) {
+            if (String.IsNullOrEmpty(name)) {
                 return false;
             }
 
@@ -364,14 +364,14 @@ namespace ICSharpCode.CodeConverter.Util
                 char c = str[i++];
 
                 // (high surrogate, low surrogate) makes a valid pair, anything else is invalid:
-                if (char.IsHighSurrogate(c)) {
-                    if (i < str.Length && char.IsLowSurrogate(str[i])) {
+                if (Char.IsHighSurrogate(c)) {
+                    if (i < str.Length && Char.IsLowSurrogate(str[i])) {
                         i++;
                     } else {
                         // high surrogate not followed by low surrogate
                         return false;
                     }
-                } else if (char.IsLowSurrogate(c)) {
+                } else if (Char.IsLowSurrogate(c)) {
                     // previous character wasn't a high surrogate
                     return false;
                 }
@@ -488,6 +488,11 @@ namespace ICSharpCode.CodeConverter.Util
         public static IdentifierNameSyntax ToIdentifierName(this string identifier)
         {
             return SyntaxFactory.IdentifierName(identifier.ToIdentifierToken());
+        }
+
+        public static string ReplaceEnd(this string originalContainingReplacement, KeyValuePair<string, string> replacement)
+        {
+            return originalContainingReplacement.Substring(0, originalContainingReplacement.Length - replacement.Key.Length) + replacement.Value;
         }
     }
 }

@@ -146,36 +146,10 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.Identifier(idText);
         }
 
-        static ExpressionSyntax Literal(object o) => GetLiteralExpression(o);
+        static ExpressionSyntax Literal(object o, string valueText = null) => GetLiteralExpression(o, valueText);
 
-        internal static ExpressionSyntax GetLiteralExpression(object value)
+        internal static ExpressionSyntax GetLiteralExpression(object value, string valueText = null)
         {
-            if (value is bool)
-                return (bool)value ? SyntaxFactory.TrueLiteralExpression(SyntaxFactory.Token(SyntaxKind.TrueKeyword)) : SyntaxFactory.FalseLiteralExpression(SyntaxFactory.Token(SyntaxKind.FalseKeyword));
-            if (value is byte)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((byte)value));
-            if (value is sbyte)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((sbyte)value));
-            if (value is short)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((short)value));
-            if (value is ushort)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((ushort)value));
-            if (value is int)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((int)value));
-            if (value is uint)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((uint)value));
-            if (value is long)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((long)value));
-            if (value is ulong)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((ulong)value));
-
-            if (value is float)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((float)value));
-            if (value is double)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((double)value));
-            if (value is decimal)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((decimal)value));
-
             if (value is char)
                 return SyntaxFactory.LiteralExpression(SyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal((char)value));
 
@@ -185,7 +159,73 @@ namespace ICSharpCode.CodeConverter.VB
             if (value == null)
                 return SyntaxFactory.NothingLiteralExpression(SyntaxFactory.Token(SyntaxKind.NothingKeyword));
 
-            return null;
+            if (value is bool)
+                return (bool)value ? SyntaxFactory.TrueLiteralExpression(SyntaxFactory.Token(SyntaxKind.TrueKeyword)) : SyntaxFactory.FalseLiteralExpression(SyntaxFactory.Token(SyntaxKind.FalseKeyword));
+
+
+            valueText = valueText != null ? ConvertNumericLiteralValueText(valueText) : value.ToString();
+
+            if (value is byte)
+                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (byte)value));
+            if (value is sbyte)
+                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (sbyte)value));
+            if (value is short)
+                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (short)value));
+            if (value is ushort)
+                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (ushort)value));
+            if (value is int)
+                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (int)value));
+            if (value is uint)
+                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (uint)value));
+            if (value is long)
+                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (long)value));
+            if (value is ulong)
+                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (ulong)value));
+
+            if (value is float)
+                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (float)value));
+            if (value is double)
+                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (double)value));
+            if (value is decimal)
+                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (decimal)value));
+
+            throw new ArgumentOutOfRangeException(nameof(value), value, null);
+        }
+
+
+        /// <summary>
+        ///  https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/data-types/type-characters
+        /// </summary>
+        private static string ConvertNumericLiteralValueText(string valueText)
+        {
+            var replacements = new Dictionary<string, string> {
+                {"U", "UI"},
+                {"UL", "UL"},
+                {"M", "D"},
+                {"F", "F"},
+                {"D", "R"},
+                {"L", "L"}, // Normalizes casing
+            };
+
+            // Be careful not to replace only the "L" in "UL" for example
+            var longestMatchingReplacement = replacements.Where(t => valueText.EndsWith(t.Key, StringComparison.OrdinalIgnoreCase))
+                .GroupBy(t => t.Key.Length).OrderByDescending(g => g.Key).FirstOrDefault()?.SingleOrDefault();
+
+            if (longestMatchingReplacement != null) {
+                valueText = valueText.ReplaceEnd(longestMatchingReplacement.Value);
+            }
+
+            if (valueText.Length <= 2) return valueText;
+
+            if (valueText.StartsWith("0x")) {
+                return "&H" + valueText.Substring(2).Replace("R", "D"); // Undo any accidental replacements that assumed this was a decimal;
+            }
+
+            if (valueText.StartsWith("0b")) {
+                return "&B" + valueText.Substring(2);
+            }
+
+            return valueText;
         }
     }
 }

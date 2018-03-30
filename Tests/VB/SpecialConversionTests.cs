@@ -266,5 +266,17 @@ Module TestClass
     End Class
 End Module");
         }
+
+        [Fact]
+        public void HexAndBinaryLiterals()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class Test
+{
+    public int CR = 0x0D * 0b1;
+}", @"Class Test
+    Public CR As Integer = &H0D * &B1
+End Class");
+        }
     }
 }
