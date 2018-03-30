@@ -55,7 +55,7 @@ End Class");
 }", @"Class TestClass
     Private Shared Function GetLength(node As Object) As Integer
         Dim s As String
-        If (CSharpImpl.__Assign(s, TryCast(node, String))) Then
+        If (CSharpImpl.__Assign(s, TryCast(node, String)) IsNot Nothing) Then
         Return s.Length
         End If
 
