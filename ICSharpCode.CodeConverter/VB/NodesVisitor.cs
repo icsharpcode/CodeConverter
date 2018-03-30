@@ -89,13 +89,13 @@ namespace ICSharpCode.CodeConverter.VB
 
             public override VisualBasicSyntaxNode DefaultVisit(SyntaxNode node)
             {
-                var exceptionMessage = $"Cannot convert {node.GetType().Name} from {node.GetBriefNodeDescription()}";
+                throw new NotImplementedException($"Conversion for {CS.CSharpExtensions.Kind(node)} not implemented, please report this issue")
+                    .WithNodeInformation(node);
+            }
 
-                if (CreateMethodBodyVisitor().Visit(node).Any()) {
-                    throw new NotImplementedOrRequiresSurroundingMethodDeclaration(exceptionMessage);
-                }
-
-                throw new NotImplementedException(exceptionMessage);
+            private Func<SyntaxNode, SyntaxNode> DelegateConversion(Func<SyntaxNode, SyntaxList<StatementSyntax>> convert)
+            {
+                return node => MethodBodyVisitor.CreateBlock(convert(node));
             }
 
             public override VisualBasicSyntaxNode VisitCompilationUnit(CSS.CompilationUnitSyntax node)

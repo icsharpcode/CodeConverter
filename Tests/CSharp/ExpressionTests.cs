@@ -602,8 +602,8 @@ End Sub",
               select n;
 
     foreach (var n in res)
-        System.Console.WriteLine(n);
-}");
+        Console.WriteLine(n);
+}", expectUsings: false);
         }
 
         [Fact]
@@ -630,12 +630,12 @@ End Sub",
 
     foreach (var g in numberGroups)
     {
-        System.Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"");
+        Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"");
 
         foreach (var n in g.Numbers)
-            System.Console.WriteLine(n);
+            Console.WriteLine(n);
     }
-}");
+}", expectUsings: false);
         }
 
         [Fact()]
@@ -704,12 +704,12 @@ End Sub", @"public void Linq103()
 
     foreach (var v in q)
     {
-        System.Console.WriteLine(v.Category + "":"");
+        Console.WriteLine(v.Category + "":"");
 
         foreach (var p in v.Products)
-            System.Console.WriteLine(""   "" + p.ProductName);
+            Console.WriteLine(""   "" + p.ProductName);
     }
-}");
+}", expectUsings: false);
         }
 
         [Fact]
@@ -727,7 +727,7 @@ End Function", @"private static string FindPicFilePath(string picId)
                                   select FileInfo1)
         return FileInfo.FullName;
     return string.Empty;
-}");
+}", expectUsings: false);
         }
 
         [Fact]

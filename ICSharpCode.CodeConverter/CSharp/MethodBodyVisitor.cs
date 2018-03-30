@@ -8,7 +8,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using static ICSharpCode.CodeConverter.CSharp.SyntaxKindExtensions;
@@ -19,8 +18,8 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         class MethodBodyVisitor : VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>>
         {
-            SemanticModel semanticModel;
-            readonly VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor;
+            private readonly SemanticModel semanticModel;
+            private readonly VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor;
             private readonly Stack<string> withBlockTempVariableNames;
 
             public bool IsIterator { get; set; }
@@ -36,7 +35,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
             {
-                throw new NotImplementedException($"Cannot convert {node.GetType().Name} from {node.GetBriefNodeDescription()}");
+                throw new NotImplementedException($"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
+                    .WithNodeInformation(node);
             }
 
             public override SyntaxList<StatementSyntax> VisitStopOrEndStatement(VBSyntax.StopOrEndStatementSyntax node)
@@ -429,7 +429,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                         block.UnpackNonNestedBlock()
                     ));
             }
-
 
             public override SyntaxList<StatementSyntax> VisitLabelStatement(VBSyntax.LabelStatementSyntax node)
             {

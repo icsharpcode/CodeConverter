@@ -46,7 +46,6 @@ namespace ICSharpCode.CodeConverter.Util
             return type.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
         }
 
-
         /// <summary>
         /// Returns true if the type is public and was tagged with
         /// [System.ComponentModel.ToolboxItem (true)]

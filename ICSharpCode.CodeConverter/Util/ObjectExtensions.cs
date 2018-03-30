@@ -8,7 +8,6 @@ namespace ICSharpCode.CodeConverter.Util
     static partial class ObjectExtensions
     {
 
-
         #region TypeSwitch on Action
 
         public static void TypeSwitch<TBaseType, TDerivedType1>(this TBaseType obj, Action<TDerivedType1> matchAction1, Action<TBaseType> defaultAction = null) where TDerivedType1 : TBaseType

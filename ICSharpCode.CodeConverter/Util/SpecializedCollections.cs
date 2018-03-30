@@ -514,7 +514,6 @@ namespace ICSharpCode.CodeConverter.Util
                 }
             }
 
-
         }
 
         private static partial class Singleton

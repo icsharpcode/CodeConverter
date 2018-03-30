@@ -56,26 +56,23 @@ namespace CodeConverter.VsExtension
             VisualStudioInteraction.OutputWindow.WriteToOutputWindow(Intro);
             VisualStudioInteraction.OutputWindow.ForceShowOutputPane();
 
-            foreach (var convertedFile in convertedFiles)
-            {
-                var sourcePath = convertedFile.SourcePathOrNull;
-                if (convertedFile.Success && sourcePath != null)
-                {
-                    var path = ToggleExtension(sourcePath);
-                    if (convertedFile.ConvertedCode.Length > longestFileLength)
-                    {
-                        longestFileLength = convertedFile.ConvertedCode.Length;
-                        longestFilePath = path;
+            foreach (var convertedFile in convertedFiles) {
+
+                var sourcePath = convertedFile.SourcePathOrNull ?? "";
+                var sourcePathRelativeToSolutionDir = PathRelativeToSolutionDir(solutionDir, sourcePath);
+                if (sourcePath != "") {
+                    if (!string.IsNullOrWhiteSpace(convertedFile.ConvertedCode)) {
+                        var path = ToggleExtension(sourcePath);
+                        if (convertedFile.ConvertedCode.Length > longestFileLength) {
+                            longestFileLength = convertedFile.ConvertedCode.Length;
+                            longestFilePath = path;
+                        }
+
+                        files.Add(path);
+                        File.WriteAllText(path, convertedFile.ConvertedCode);
                     }
 
-                    files.Add(path);
-                    File.WriteAllText(path, convertedFile.ConvertedCode);
-                    LogCompleted(solutionDir, path);
-                }
-                else
-                {
-                    errors.Add(convertedFile.GetExceptionsAsString());
-                    LogError(solutionDir, convertedFile);
+                    LogProgress(convertedFile, errors, sourcePathRelativeToSolutionDir);
                 }
             }
             
@@ -87,18 +84,27 @@ namespace CodeConverter.VsExtension
             }
         }
 
-        private void LogError(string solutionDir, ConversionResult convertedFile)
+        private void LogProgress(ConversionResult convertedFile, List<string> errors, string sourcePathRelativeToSolutionDir)
         {
-            var indentedException = convertedFile.GetExceptionsAsString().Replace(Environment.NewLine, Environment.NewLine + "    ");
-            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(Environment.NewLine + 
-                $"* Error processing {PathRelativeToSolutionDir(solutionDir, convertedFile.SourcePathOrNull ?? "")}{Environment.NewLine}    {indentedException}"
-            );
-        }
+            var exceptionsAsString = convertedFile.GetExceptionsAsString();
+            var indentedException = exceptionsAsString.Replace(Environment.NewLine, Environment.NewLine + "    ");
+            string output = Environment.NewLine + $"* {ToggleExtension(sourcePathRelativeToSolutionDir)}";
+            var containsErrors = !string.IsNullOrWhiteSpace(exceptionsAsString);
 
-        private static void LogCompleted(string solutionDir, string path)
-        {
-            var solutionFilename = PathRelativeToSolutionDir(solutionDir, path);
-            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(Environment.NewLine + $"* {solutionFilename}");
+            if (containsErrors) {
+                errors.Add(exceptionsAsString);
+            }
+
+            if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode))
+            {
+                output = Environment.NewLine +
+                         $"* Failure processing {sourcePathRelativeToSolutionDir}{Environment.NewLine}    {indentedException}";    
+            }
+            else if (containsErrors){
+                output += $" contains errors{Environment.NewLine}    {indentedException}";
+            }
+
+            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(output);
         }
 
         private static string PathRelativeToSolutionDir(string solutionDir, string path)

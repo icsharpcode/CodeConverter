@@ -5,9 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
 using VBSyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 using VBSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
@@ -512,7 +514,6 @@ namespace ICSharpCode.CodeConverter.Util
             return root;
         }
 
-
         public static bool IsKind(this SyntaxNode node, SyntaxKind kind1, SyntaxKind kind2)
         {
             if (node == null) {
@@ -1004,7 +1005,6 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return node.IsAnyLambda() || node.IsKind(SyntaxKind.AnonymousMethodExpression);
         }
-
 
         //        /// <summary>
         //        /// Breaks up the list of provided nodes, based on how they are interspersed with pp
@@ -1666,22 +1666,30 @@ namespace ICSharpCode.CodeConverter.Util
                 node.IsParentKind(SyntaxKind.ConstructorDeclaration) ||
                 node.IsParentKind(SyntaxKind.DelegateDeclaration);
         }
+
+        public static SyntaxTree WithAnnotatedNode(this SyntaxNode root, SyntaxNode selectedNode, string annotationKind, string annotationData = "")
+        {
+            var annotatatedNode =
+                selectedNode.WithAdditionalAnnotations(new SyntaxAnnotation(annotationKind, annotationData));
+            return root.ReplaceNode(selectedNode, annotatatedNode).SyntaxTree.WithFilePath(root.SyntaxTree.FilePath);
+        }
+
         public static string GetBriefNodeDescription(this SyntaxNode node)
         {
             var sb = new StringBuilder();
             sb.Append($"'{node.ToString().Truncate()}' at character {node.SpanStart}");
-
-            if (node.Parent != null) {
-                var parentStr = node.Parent.ToString().Truncate(Math.Min(30, node.SpanStart - node.Parent.SpanStart), "");
-                sb.AppendLine();
-                sb.Append($" in '{parentStr}'");
-            }
-
             return sb.ToString();
+        }
+
+        public static string DescribeConversionError(this SyntaxNode node, Exception e)
+        {
+            return $"CONVERSION ERROR: Cannot convert {node.GetType().Name}, {e}{Environment.NewLine}{Environment.NewLine}" +
+                $"Input: {Environment.NewLine}{node.ToFullString()}{Environment.NewLine}";
         }
 
         private static string Truncate(this string input, int maxLength = 30, string truncationIndicator = "...")
         {
+            input = input.Replace(Environment.NewLine, "\\r\\n").Replace("    ", " ").Replace("\t", " ");
             if (input.Length <= maxLength) return input;
             return input.Substring(0, maxLength - truncationIndicator.Length) + truncationIndicator;
         }

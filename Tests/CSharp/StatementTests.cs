@@ -770,8 +770,6 @@ class TestClass
 }");
         }
 
-
-
         [Fact]
         public void WhileStatement()
         {
@@ -812,6 +810,45 @@ class TestClass
 
         [Fact]
         public void DoWhileStatement()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+    Private Sub TestMethod()
+        Dim b As Integer
+        b = 0
+
+        Do
+            If b = 2 Then Continue Do
+            If b = 3 Then Exit Do
+            b = 1
+        Loop While b = 0
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualBasic;
+
+class TestClass
+{
+    private void TestMethod()
+    {
+        int b;
+        b = 0;
+
+        do
+        {
+            if (b == 2)
+                continue;
+            if (b == 3)
+                break;
+            b = 1;
+        }
+        while (b == 0);
+    }
+}");
+        }
+
+        [Fact]
+        public void IncompleteStatement()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()

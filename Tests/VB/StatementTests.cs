@@ -1,4 +1,6 @@
-﻿using Xunit;
+﻿using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.VB;
+using Xunit;
 
 namespace CodeConverter.Tests.VB
 {
@@ -507,6 +509,40 @@ End Class");
         }
 
         [Fact]
+        public void UnsafeStatements()
+        {
+            var convertedCode = ProjectConversion<CSToVBConversion>.ConvertText(@"class TestClass
+{
+    void TestMethod()
+    {
+        int b;
+        b = 0;
+        while (b == 0)
+        {
+            if (b == 2)
+            {
+                unsafe
+                {
+                    int ab = 32;
+                    int* p = &ab;
+                    Console.WriteLine(""value of ab is {0}"", *p);
+                }
+            }
+            if (b == 3)
+                break;
+            b = 1;
+        }
+    }
+}", DiagnosticTestBase.DefaultMetadataReferences).ConvertedCode;
+
+            Assert.Contains("CONVERSION ERROR", convertedCode);
+            Assert.Contains("unsafe", convertedCode);
+            Assert.Contains("UnsafeStatementSyntax", convertedCode);
+            Assert.Contains("If b = 2 Then", convertedCode);
+            Assert.Contains("End If", convertedCode);
+        }
+
+        [Fact]
         public void DoWhileStatement()
         {
             TestConversionCSharpToVisualBasic(@"class TestClass
@@ -735,7 +771,6 @@ End Class");
 
         Finish:
             Console.WriteLine(""End of search."");
-
 
             Console.WriteLine(""Press any key to exit."");
             Console.ReadKey();

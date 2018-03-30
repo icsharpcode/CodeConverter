@@ -205,6 +205,7 @@
     <Compile Include="VB\MemberTests.cs" />
     <Compile Include="VB\NamespaceLevelTests.cs" />
     <Compile Include="VB\SpecialConversionTests.cs" />
+    <Compile Include="VB\StandaloneMultiStatementTests.cs" />
     <Compile Include="VB\StatementTests.cs" />
     <Compile Include="VB\TypeCastTests.cs" />
   </ItemGroup>

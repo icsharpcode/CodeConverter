@@ -114,7 +114,6 @@ End Class");
 End Class");
         }
 
-
         [Fact]
         public void NameOf()
         {

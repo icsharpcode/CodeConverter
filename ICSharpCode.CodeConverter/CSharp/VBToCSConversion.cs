@@ -2,12 +2,16 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -34,7 +38,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 cr.Compilation.Emit(stream);
                 return MetadataReference.CreateFromStream(stream);
             }
-
         }
 
         public SyntaxTree SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)
@@ -46,23 +49,64 @@ namespace ICSharpCode.CodeConverter.CSharp
             return convertedTree;
         }
 
-        public SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)
+        public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
+            bool surroundedByMethod)
         {
-            return new CompilationErrorFixer(_targetCompilation.Value, (CSharpSyntaxTree)cs.Value).Fix();
+            return surroundedByMethod
+                ? descendantNodes.OfType<VBSyntax.MethodBlockBaseSyntax>().First<SyntaxNode>()
+                : descendantNodes.OfType<VBSyntax.TypeBlockSyntax>().First<SyntaxNode>();
         }
 
-        public string WithSurroundingClassAndMethod(string text)
+        public bool MustBeContainedByMethod(SyntaxNode node)
+        {
+            return node is VBSyntax.IncompleteMemberSyntax ||
+                   !(node is VBSyntax.DeclarationStatementSyntax) ||
+                   CouldBeFieldOrLocalVariableDeclaration(node);
+        }
+
+        private static bool CouldBeFieldOrLocalVariableDeclaration(SyntaxNode node)
+        {
+            return node is VBSyntax.FieldDeclarationSyntax f && f.Modifiers.All(m => m.IsKind(SyntaxKind.DimKeyword));
+        }
+
+        public bool MustBeContainedByClass(SyntaxNode node)
+        {
+            return node is VBSyntax.MethodBlockBaseSyntax || node is VBSyntax.MethodBaseSyntax ||
+                   node is VBSyntax.FieldDeclarationSyntax || node is VBSyntax.PropertyBlockSyntax ||
+                   node is VBSyntax.EventBlockSyntax;
+        }
+
+        public string WithSurroundingMethod(string text)
+        {
+            return $@"Sub SurroundingSub()
+{text}
+End Sub";
+        }
+
+        public string WithSurroundingClass(string text)
         {
             return $@"Class SurroundingClass
-Sub SurroundingSub()
 {text}
-End Sub
 End Class";
         }
 
-        public SyntaxNode RemoveSurroundingClassAndMethod(SyntaxNode secondPassNode)
+        public List<SyntaxNode> FindSingleImportantChild(SyntaxNode annotatedNode)
         {
-            return secondPassNode.DescendantNodes().OfType<MethodDeclarationSyntax>().First().Body;
+            var children = annotatedNode.ChildNodes().ToList();
+            if (children.Count > 1) {
+                switch (annotatedNode) {
+                    case CSSyntax.MethodDeclarationSyntax _:
+                        return annotatedNode.ChildNodes().OfType<CSSyntax.BlockSyntax>().ToList<SyntaxNode>();
+                    case CSSyntax.BaseTypeSyntax _:
+                        return annotatedNode.ChildNodes().OfType<CSSyntax.BlockSyntax>().ToList<SyntaxNode>();
+                }
+            }
+            return children;
+        }
+
+        public SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)
+        {
+            return new CompilationErrorFixer(_targetCompilation.Value, (CSharpSyntaxTree)cs.Value).Fix();
         }
 
         public SyntaxTree CreateTree(string text)

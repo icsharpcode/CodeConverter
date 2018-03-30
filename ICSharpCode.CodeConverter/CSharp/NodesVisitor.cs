@@ -46,13 +46,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)
             {
-                var exceptionMessage = $"Cannot convert {node.GetType().Name} from {node.GetBriefNodeDescription()}";
+                throw new NotImplementedException($"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
+                    .WithNodeInformation(node);
+            }
 
-                if (CreateMethodBodyVisitor().Visit(node).Any()) {
-                    throw new NotImplementedOrRequiresSurroundingMethodDeclaration(exceptionMessage);
-                }
-
-                throw new NotImplementedException(exceptionMessage);
+            private Func<SyntaxNode, SyntaxNode> DelegateConversion(Func<SyntaxNode, SyntaxList<StatementSyntax>> convert)
+            {
+                return node => SyntaxFactory.Block(convert(node));
             }
 
             public override CSharpSyntaxNode VisitGetTypeExpression(VBSyntax.GetTypeExpressionSyntax node)
@@ -356,7 +356,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
                 )?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ParseTypeName("var");
 
-
                 AccessorListSyntax accessors = null;
                 if (!hasBody) {
                     var accessorList = new List<AccessorDeclarationSyntax> {
@@ -598,7 +597,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var attributes = block.AttributeLists.SelectMany(ConvertAttribute);
                 var modifiers = VisualBasicConverter.ConvertModifiers(block.Modifiers, TokenContext.Member);
 
-
                 var ctor = (node.Statements.FirstOrDefault() as VBSyntax.ExpressionStatementSyntax)?.Expression as VBSyntax.InvocationExpressionSyntax;
                 var ctorExpression = ctor?.Expression as VBSyntax.MemberAccessExpressionSyntax;
                 var ctorArgs = (ArgumentListSyntax)ctor?.ArgumentList.Accept(TriviaConvertingVisitor);
@@ -753,7 +751,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 return SyntaxFactory.FinallyClause(SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor()))));
             }
-
 
             public override CSharpSyntaxNode VisitCTypeExpression(VBSyntax.CTypeExpressionSyntax node)
             {

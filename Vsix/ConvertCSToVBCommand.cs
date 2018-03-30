@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.VB;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using OleMenuCommand = Microsoft.VisualStudio.Shell.OleMenuCommand;

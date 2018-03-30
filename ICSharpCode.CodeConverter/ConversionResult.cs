@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace ICSharpCode.CodeConverter
@@ -9,23 +10,23 @@ namespace ICSharpCode.CodeConverter
         private string _sourcePathOrNull;
         public bool Success { get; private set; }
         public string ConvertedCode { get; private set; }
-        public IReadOnlyList<Exception> Exceptions { get; private set; }
+        public IReadOnlyList<string> Exceptions { get; internal set; }
 
         public string SourcePathOrNull {
             get => _sourcePathOrNull;
             set => _sourcePathOrNull = string.IsNullOrWhiteSpace(value) ? null : value;
         }
 
-        public ConversionResult(string convertedCode)
+        public ConversionResult(string convertedCode = null)
         {
-            Success = true;
+            Success = !string.IsNullOrWhiteSpace(convertedCode);
             ConvertedCode = convertedCode;
         }
 
         public ConversionResult(params Exception[] exceptions)
         {
             Success = exceptions.Length == 0;
-            Exceptions = exceptions;
+            Exceptions = exceptions.Select(e => e.ToString()).ToList();
         }
 
         public string GetExceptionsAsString()
@@ -34,14 +35,12 @@ namespace ICSharpCode.CodeConverter
                 return String.Empty;
 
             var builder = new StringBuilder();
-            if (SourcePathOrNull != null) {
-                builder.AppendLine($"In '{SourcePathOrNull}':");
-            }
+
             for (int i = 0; i < Exceptions.Count; i++) {
                 if (Exceptions.Count > 1) {
                     builder.AppendFormat("----- Exception {0} of {1} -----" + Environment.NewLine, i + 1, Exceptions.Count);
                 }
-                builder.AppendLine(Exceptions[i].ToString());
+                builder.AppendLine(Exceptions[i]);
             }
             return builder.ToString();
         }

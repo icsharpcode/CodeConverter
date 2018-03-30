@@ -249,25 +249,18 @@ struct MyType : System.IComparable<MyType>
         [Fact]
         public void TestDelegate()
         {
-            const string usings = @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-";
-
             TestConversionVisualBasicToCSharp(
                 @"Public Delegate Sub Test()",
-                usings + @"public delegate void Test();");
+                @"public delegate void Test();", expectUsings: false);
             TestConversionVisualBasicToCSharp(
                 @"Public Delegate Function Test() As Integer",
-                usings + @"public delegate int Test();");
+                @"public delegate int Test();", expectUsings: false);
             TestConversionVisualBasicToCSharp(
                 @"Public Delegate Sub Test(ByVal x As Integer)",
-                usings + @"public delegate void Test(int x);");
+                @"public delegate void Test(int x);", expectUsings: false);
             TestConversionVisualBasicToCSharp(
                 @"Public Delegate Sub Test(ByRef x As Integer)",
-                usings + @"public delegate void Test(ref int x);");
+                @"public delegate void Test(ref int x);", expectUsings: false);
         }
 
         [Fact]

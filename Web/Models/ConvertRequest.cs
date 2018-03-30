@@ -12,5 +12,4 @@ namespace CodeConverterWebApp.Models
         public string requestedConversion { get; set; }
     }
 
-
 }

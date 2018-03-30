@@ -1,14 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using ICSharpCode.CodeConverter.VB;
+using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBSyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 using CSSyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
-namespace ICSharpCode.CodeConverter.CSharp
+namespace ICSharpCode.CodeConverter.VB
 {
     public class CSToVBConversion : ILanguageConversion
     {
@@ -19,25 +22,65 @@ namespace ICSharpCode.CodeConverter.CSharp
             return convertedTree;
         }
 
-        public SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)
+        public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
+            bool surroundedWithMethod)
         {
-            return cs.Value.GetRoot();
+            return surroundedWithMethod
+                ? descendantNodes.OfType<CSSyntax.MethodDeclarationSyntax>().First<SyntaxNode>()
+                : descendantNodes.OfType<CSSyntax.BaseTypeDeclarationSyntax>().First<SyntaxNode>();
         }
 
-        public string WithSurroundingClassAndMethod(string text)
+        public bool MustBeContainedByMethod(SyntaxNode node)
         {
-            return $@"class SurroundingClass
-{{
-void SurroundingSub()
+            return node is CSSyntax.IncompleteMemberSyntax || 
+                   node is CSSyntax.StatementSyntax || 
+                   CouldBeFieldOrLocalVariableDeclaration(node); ;
+        }
+
+        public bool MustBeContainedByClass(SyntaxNode node)
+        {
+            return node is CSSyntax.BaseMethodDeclarationSyntax || node is CSSyntax.BaseFieldDeclarationSyntax ||
+                   node is CSSyntax.BasePropertyDeclarationSyntax;
+        }
+
+        private static bool CouldBeFieldOrLocalVariableDeclaration(SyntaxNode node)
+        {
+            return node is CSSyntax.FieldDeclarationSyntax f && f.Modifiers.All(m => m.IsKind(SyntaxKind.TypeVarKeyword));
+        }
+
+        public string WithSurroundingMethod(string text)
+        {
+            return $@"void SurroundingSub()
 {{
 {text}
-}}
 }}";
         }
 
-        public SyntaxNode RemoveSurroundingClassAndMethod(SyntaxNode secondPassNode)
+        public string WithSurroundingClass(string text)
         {
-            return secondPassNode.DescendantNodes().OfType<MethodBlockSyntax>().First();
+            return $@"class SurroundingClass
+{{
+{text}
+}}";
+        }
+
+        public List<SyntaxNode> FindSingleImportantChild(SyntaxNode annotatedNode)
+        {
+            var children = annotatedNode.ChildNodes().ToList();
+            if (children.Count > 1) {
+                switch (annotatedNode) {
+                    case VBSyntax.TypeBlockSyntax typeBlock:
+                        return typeBlock.Members.ToList<SyntaxNode>();
+                    case VBSyntax.MethodBlockBaseSyntax methodBlock:
+                        return methodBlock.Statements.ToList<SyntaxNode>();
+                }
+            }
+            return children;
+        }
+
+        public SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)
+        {
+            return cs.Value.GetRoot();
         }
 
         public SyntaxTree CreateTree(string text)
