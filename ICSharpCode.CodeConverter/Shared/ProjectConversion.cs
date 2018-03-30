@@ -142,8 +142,8 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var root = tree.GetRoot();
             var rootChildren = root.ChildNodes().ToList();
-            var requiresSurroundingClass = rootChildren.Where(_languageConversion.MustBeContainedByClass).Any();
-            var requiresSurroundingMethod = rootChildren.Where(_languageConversion.MustBeContainedByMethod).Any();
+            var requiresSurroundingClass = rootChildren.Any(_languageConversion.MustBeContainedByClass);
+            var requiresSurroundingMethod = rootChildren.All(_languageConversion.MustBeContainedByMethod);
 
             if (requiresSurroundingMethod || requiresSurroundingClass) {
                 var text = root.GetText().ToString();

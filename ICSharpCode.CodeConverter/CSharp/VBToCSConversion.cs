@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
@@ -56,14 +57,23 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : descendantNodes.OfType<VBSyntax.TypeBlockSyntax>().First<SyntaxNode>();
         }
 
-        public bool MustBeContainedByMethod(SyntaxNode m)
+        public bool MustBeContainedByMethod(SyntaxNode node)
         {
-            return !(m is VBSyntax.DeclarationStatementSyntax);
+            return node is VBSyntax.IncompleteMemberSyntax ||
+                   !(node is VBSyntax.DeclarationStatementSyntax) ||
+                   CouldBeFieldOrLocalVariableDeclaration(node);
         }
 
-        public bool MustBeContainedByClass(SyntaxNode m)
+        private static bool CouldBeFieldOrLocalVariableDeclaration(SyntaxNode node)
         {
-            return m is VBSyntax.MethodBlockBaseSyntax || m is VBSyntax.FieldDeclarationSyntax;
+            return node is VBSyntax.FieldDeclarationSyntax f && f.Modifiers.All(m => m.IsKind(SyntaxKind.DimKeyword));
+        }
+
+        public bool MustBeContainedByClass(SyntaxNode node)
+        {
+            return node is VBSyntax.MethodBlockBaseSyntax || node is VBSyntax.MethodBaseSyntax ||
+                   node is VBSyntax.FieldDeclarationSyntax || node is VBSyntax.PropertyBlockSyntax ||
+                   node is VBSyntax.EventBlockSyntax;
         }
 
         public string WithSurroundingMethod(string text)

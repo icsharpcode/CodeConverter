@@ -21,10 +21,25 @@ namespace CodeConverter.Tests
     {
         private bool testCSToVBCommentsByDefault = false;
 
-        public void TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool standaloneStatements = false, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
+        public void TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
         {
+            expectedVisualBasicCode = AddSurroundingMethodBlock(expectedVisualBasicCode, expectSurroundingMethodBlock);
+
             TestConversionCSharpToVisualBasicWithoutComments(csharpCode, expectedVisualBasicCode);
             if (testCSToVBCommentsByDefault) TestConversionCSharpToVisualBasicWithoutComments(AddLineNumberComments(csharpCode, "// ", false), AddLineNumberComments(expectedVisualBasicCode, "' ", true));
+        }
+
+        private static string AddSurroundingMethodBlock(string expectedVisualBasicCode, bool expectSurroundingBlock)
+        {
+            if (expectSurroundingBlock) {
+                var indentedStatements = expectedVisualBasicCode.Replace("\n", "\n    ");
+                expectedVisualBasicCode =
+$@"Private Sub SurroundingSub()
+    {indentedStatements}
+End Sub";
+            }
+
+            return expectedVisualBasicCode;
         }
 
         private static void TestConversionCSharpToVisualBasicWithoutComments(string csharpCode, string expectedVisualBasicCode)
@@ -37,9 +52,9 @@ namespace CodeConverter.Tests
             AssertCodeEqual(csharpCode, expectedVisualBasicCode, txt);
         }
 
-        public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool addUsings = true, bool standaloneStatements = false)
+        public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool expectUsings = true, bool expectSurroundingBlock = false)
         {
-            if (addUsings) expectedCsharpCode = AddCSUsings(expectedCsharpCode, standaloneStatements);
+            if (expectUsings) expectedCsharpCode = AddCSUsings(expectedCsharpCode, expectSurroundingBlock);
             TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode, false);
             TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true), false);
         }

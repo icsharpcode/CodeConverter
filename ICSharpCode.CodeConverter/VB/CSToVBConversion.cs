@@ -30,14 +30,22 @@ namespace ICSharpCode.CodeConverter.VB
                 : descendantNodes.OfType<CSSyntax.BaseTypeDeclarationSyntax>().First<SyntaxNode>();
         }
 
-        public bool MustBeContainedByMethod(SyntaxNode m)
+        public bool MustBeContainedByMethod(SyntaxNode node)
         {
-            return m is CSSyntax.StatementSyntax;
+            return node is CSSyntax.IncompleteMemberSyntax || 
+                   node is CSSyntax.StatementSyntax || 
+                   CouldBeFieldOrLocalVariableDeclaration(node); ;
         }
 
-        public bool MustBeContainedByClass(SyntaxNode m)
+        public bool MustBeContainedByClass(SyntaxNode node)
         {
-            return m is CSSyntax.BaseMethodDeclarationSyntax || m is CSSyntax.BaseFieldDeclarationSyntax;
+            return node is CSSyntax.BaseMethodDeclarationSyntax || node is CSSyntax.BaseFieldDeclarationSyntax ||
+                   node is CSSyntax.BasePropertyDeclarationSyntax;
+        }
+
+        private static bool CouldBeFieldOrLocalVariableDeclaration(SyntaxNode node)
+        {
+            return node is CSSyntax.FieldDeclarationSyntax f && f.Modifiers.All(m => m.IsKind(SyntaxKind.TypeVarKeyword));
         }
 
         public string WithSurroundingMethod(string text)

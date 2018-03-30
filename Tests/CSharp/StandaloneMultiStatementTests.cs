@@ -12,7 +12,7 @@ namespace CodeConverter.Tests.CSharp
 num = 5",
 @"int num = 4;
 num = 5;",
-standaloneStatements: true);
+expectSurroundingBlock: true);
         }
 
         [Fact]
@@ -31,7 +31,7 @@ obj = Nothing",
     Inherited = false
 };
 obj = null;",
-                standaloneStatements: true);
+                expectSurroundingBlock: true);
         }
 
         [Fact]
@@ -50,7 +50,62 @@ obj = Nothing",
     Value = ""World""
 };
 obj = null;",
-                standaloneStatements: true);
+                expectSurroundingBlock: true);
+        }
+
+        [Fact]
+        public void SingleAssigment()
+        {
+            TestConversionVisualBasicToCSharp(
+                @"Dim x = 3",
+                @"var x = 3;",
+                expectSurroundingBlock: true);
+        }
+
+        [Fact]
+        public void SingleFieldDeclaration()
+        {
+            TestConversionVisualBasicToCSharp(
+                @"Private x As Integer = 3",
+                @"private int x = 3;", expectUsings: false);
+        }
+
+        [Fact]
+        public void SingleEmptyClass()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Public Class Test
+End Class",
+@"public class Test
+{
+}");
+        }
+
+        [Fact]
+        public void SingleAbstractMethod()
+        {
+            TestConversionVisualBasicToCSharp(
+                @"Private MustOverride Sub abs()",
+                @"private abstract void abs();", expectUsings: false);
+        }
+
+        [Fact]
+        public void SingleEmptyNamespace()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Namespace nam
+End Namespace",
+@"namespace nam
+{
+}");
+        }
+
+        [Fact]
+        public void SingleUsing()
+        {
+            TestConversionVisualBasicToCSharp(
+                @"Imports s = System.String",
+                @"using s = System.String;");
         }
     }
 }
