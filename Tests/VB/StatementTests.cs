@@ -1,4 +1,6 @@
-﻿using Xunit;
+﻿using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.VB;
+using Xunit;
 
 namespace CodeConverter.Tests.VB
 {
@@ -509,7 +511,7 @@ End Class");
         [Fact]
         public void UnsafeStatements()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            var convertedCode = ProjectConversion<CSToVBConversion>.ConvertText(@"class TestClass
 {
     void TestMethod()
     {
@@ -531,18 +533,13 @@ End Class");
             b = 1;
         }
     }
-}", @"Class TestClass
-    Private Sub TestMethod()
-        Dim b As Integer
-        b = 0
+}", DiagnosticTestBase.DefaultMetadataReferences).ConvertedCode;
 
-        While b = 0
-            If b = 2 Then Continue While
-            If b = 3 Then Exit While
-            b = 1
-        End While
-    End Sub
-End Class");
+            Assert.Contains("CONVERSION ERROR", convertedCode);
+            Assert.Contains("unsafe", convertedCode);
+            Assert.Contains("UnsafeStatementSyntax", convertedCode);
+            Assert.Contains("If b = 2 Then", convertedCode);
+            Assert.Contains("End If", convertedCode);
         }
 
         [Fact]
