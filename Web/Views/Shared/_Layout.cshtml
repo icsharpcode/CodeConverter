@@ -21,7 +21,7 @@
 <body class="d-flex flex-column">
 	<div class="navbar navbar-inverse">
 		<div class="navbar-header">
-			<a href="~/" class="navbar-brand"><img class="" src="~/Images/logo.svg" alt="Code Converter Logo" /></a>
+			<a href="~/" class="navbar-brand"><img src="~/Images/logo.svg" alt="Code Converter Logo" /></a>
 		</div>
 	</div>
 	<div class="body-content p-2 flex-100">
@@ -38,18 +38,27 @@
 			}
 		}
 	</div>
-	<footer>
-		<div class="navbar navbar-inverse">
-			<ul class="nav  navbar-nav d-flex">
-				<li><a href="~/Home/About">About</a></li>
-				<li><a href="http://www.telerik.com/company/terms-of-use">Terms of Use</a></li>
-				<li><a href="http://www.telerik.com/company/privacy-policy">Privacy Policy</a></li>
-				<li><a href="http://www.telerik.com">Provided by Telerik</a></li>
-			</ul>
+	<footer class="font-size-s p-2 pt-3">
+		<div class="row mb-2">
+			<div class="col col-xs-12">
+				<a href="https://www.telerik.com">
+					<img class="logo-footer" src="~/Images/logo-telerik.svg" alt="Progress Telerik" />
+				</a>
+			</div>
 		</div>
-		<p class="px-2">
-			Copyright  &copy; @DateTime.Now.Year, Progress Software Corporation and/or its subsidiaries or affiliates. All Rights Reserved.
-		</p>
+		<div class="row">
+			<div class="col-md-8">
+				<p>Copyright &copy; @DateTime.Now.Year, Progress Software Corporation and/or its subsidiaries or affiliates. All Rights Reserved.</p>
+				<p>Progress, Telerik, and certain product names used herein are trademarks or registered trademarks of Progress Software Corporation and/or one of its subsidiaries or affiliates in the U.S. and/or other countries. See <a href="https://www.progress.com/legal/trademarks">Trademarks</a> for appropriate markings.</p>
+			</div>
+			<div class="col-md-4 text-center text-md-right">
+				<ul class="footer-list">
+					<li><a class="text-white" href="~/Home/About">About</a></li>
+					<li><a class="text-white" href="http://www.telerik.com/company/terms-of-use">Terms of Use</a></li>
+					<li><a class="text-white" href="http://www.telerik.com/company/privacy-policy">Privacy Policy</a></li>
+				</ul>
+			</div>
+		</div>
 	</footer>
 	<script src="~/Scripts/jquery-2.2.2.min.js"></script>
 	<script src="~/Scripts/bootstrap.min.js"></script>

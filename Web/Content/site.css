@@ -45,25 +45,25 @@ body {
 	}
 }
 
-	.spinner:before {
-		content: 'Loading…';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		width: 16px;
-		height: 16px;
-		margin-top: -10px;
-		margin-left: -10px;
-	}
+.spinner:before {
+	content: 'Loading…';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 16px;
+	height: 16px;
+	margin-top: -10px;
+	margin-left: -10px;
+}
 
-	.spinner:not(:required):before {
-		content: '';
-		border-radius: 50%;
-		border-top: 2px solid #03ade0;
-		border-right: 2px solid transparent;
-		animation: spinner .6s linear infinite;
-		-webkit-animation: spinner .6s linear infinite;
-	}
+.spinner:not(:required):before {
+	content: '';
+	border-radius: 50%;
+	border-top: 2px solid #03ade0;
+	border-right: 2px solid transparent;
+	animation: spinner .6s linear infinite;
+	-webkit-animation: spinner .6s linear infinite;
+}
 
 .btn-circle {
 	width: 50px;
@@ -140,6 +140,11 @@ body {
 	padding-bottom: 15px;
 }
 
+.py-3 {
+	padding-top: 25px;
+	padding-bottom: 25px;
+}
+
 .pl-2 {
 	padding-left: 15px;
 }
@@ -162,6 +167,10 @@ body {
 
 .pt-1 {
 	padding-top: 2px;
+}
+
+.pt-3 {
+	padding-top: 30px;
 }
 
 .mb-2 {
@@ -280,6 +289,18 @@ div.form-control {
 	font-size: large;
 }
 
+.font-size-s {
+	font-size: smaller;
+}
+
+.text-white {
+	color: white !important;
+}
+
+	.text-white:hover {
+		color: inherit !important;
+	}
+
 .mt-5 {
 	margin-top: 40px;
 }
@@ -293,12 +314,13 @@ div.form-control {
 }
 
 	.navbar-brand img {
-		width: 450px;
+		width: 320px;
 	}
 
 .navbar {
 	background: #2a2d33;
 	border-radius: 0;
+	min-height: inherit;
 }
 
 .font-weight-bold {
@@ -306,6 +328,9 @@ div.form-control {
 }
 
 @media (min-width: 768px) {
+	.navbar-brand img {
+		width: 450px;
+	}
 }
 
 @media (min-width: 992px) {
@@ -325,6 +350,10 @@ div.form-control {
 	.code-buttons {
 		top: 16px;
 		left: 3px;
+	}
+
+	.text-md-right {
+		text-align: right;
 	}
 }
 
@@ -358,6 +387,50 @@ footer {
 	color: #9d9d9d;
 }
 
+	footer a {
+		color: #7d7d7d;
+		font-weight: bold;
+	}
+
+		footer a:hover {
+			color: #646464;
+		}
+
+a:hover {
+	text-decoration: none;
+}
+
 .navbar {
 	border: 0;
 }
+
+.logo-footer {
+	width: 162px;
+	height: 24px;
+}
+
+.footer-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+	.footer-list > li {
+		display: inline-block;
+		margin-left: 5px;
+		padding-left: 5px;
+		border-left: 1px solid #ccc;
+	}
+
+		.footer-list > li:first-child {
+			border-left: none;
+		}
+
+		.footer-list > li > a {
+			margin-left: 5px;
+			margin-right: 4px;
+		}
+
+		.footer-list > li:last-child > a {
+			margin-right: 0;
+		}
