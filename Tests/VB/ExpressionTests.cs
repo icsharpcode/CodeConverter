@@ -38,6 +38,59 @@ End Class");
 End Class");
         }
 
+        [Fact(Skip = "https://github.com/icsharpcode/CodeConverter/issues/63")]
+        public void IfIsExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    private static int GetLength(object node)
+    {
+        if (node is string s)
+        {
+            return s.Length;
+        }
+
+        return -1;
+    }
+}", @"Class TestClass
+    Private Shared Function GetLength(node As Object) As Integer
+        Dim s As String
+        If (CSharpImpl.__Assign(s, TryCast(node, String))) Then
+        Return s.Length
+        End If
+
+        Return -1
+    End Function
+
+    Private Class CSharpImpl
+        <Obsolete(""Please refactor calling code to use normal Visual Basic assignment"")>
+        Shared Function __Assign(Of T)(ByRef target As T, value As T) As T
+            target = value
+            Return value
+        End Function
+    End Class
+End Class");
+        }
+
+        [Fact(Skip = "https://github.com/icsharpcode/CodeConverter/issues/62")]
+        public void DeclarationExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    private static bool Do()
+    {
+        var d = new Dictionary<string, string>();
+        return d.TryGetValue("""", out var output);
+    }
+}", @"Class TestClass
+    Private Shared Function [Do]() As Boolean
+        Dim output As String
+        Dim d = New Dictionary(Of String, String)()
+        Return d.TryGetValue("""", output)
+    End Function
+End Class");
+        }
+
         [Fact]
         public void ThrowExpression()
         {

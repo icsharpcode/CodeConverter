@@ -47,7 +47,6 @@ namespace ICSharpCode.CodeConverter.VB
             readonly SemanticModel semanticModel;
             readonly VisualBasicCompilationOptions options;
 
-            readonly List<CSS.BaseTypeDeclarationSyntax> inlineAssignHelperMarkers = new List<CSS.BaseTypeDeclarationSyntax>();
             readonly List<ImportsStatementSyntax> allImports = new List<ImportsStatementSyntax>();
 
             
