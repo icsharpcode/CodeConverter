@@ -48,6 +48,5 @@ namespace ICSharpCode.CodeConverter.VB
                 .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind,
                     exception.ToString()));
         }
-        }
     }
 }
