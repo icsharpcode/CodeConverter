@@ -434,3 +434,11 @@ a:hover {
 		.footer-list > li:last-child > a {
 			margin-right: 0;
 		}
+
+.m-0 {
+	margin: 0;
+}
+
+.mb-1 {
+	margin-bottom: 7.5px;
+}

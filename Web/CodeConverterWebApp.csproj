@@ -219,6 +219,7 @@
     <Content Include="Global.asax" />
     <Content Include="Images\change.svg" />
     <Content Include="Images\delete.svg" />
+    <Content Include="Images\logo-telerik.svg" />
     <Content Include="Images\logo.svg" />
     <Content Include="Images\refactoringessentials-logo.png" />
     <Content Include="robots.txt" />
