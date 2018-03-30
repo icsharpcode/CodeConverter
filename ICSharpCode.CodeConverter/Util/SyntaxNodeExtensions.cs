@@ -1680,7 +1680,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         private static string Truncate(this string input, int maxLength = 30, string truncationIndicator = "...")
         {
-            input = input.Replace(Environment.NewLine, " ");
+            input = input.Replace(Environment.NewLine, " ").Replace("    ", " ").Replace("\t", " ");
             if (input.Length <= maxLength) return input;
             return input.Substring(0, maxLength - truncationIndicator.Length) + truncationIndicator;
         }
