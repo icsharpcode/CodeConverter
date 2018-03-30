@@ -61,7 +61,7 @@ namespace CodeConverter.VsExtension
                 var sourcePath = convertedFile.SourcePathOrNull ?? "";
                 var sourcePathRelativeToSolutionDir = PathRelativeToSolutionDir(solutionDir, sourcePath);
                 if (sourcePath != "") {
-                    if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode)) {
+                    if (!string.IsNullOrWhiteSpace(convertedFile.ConvertedCode)) {
                         var path = ToggleExtension(sourcePath);
                         if (convertedFile.ConvertedCode.Length > longestFileLength) {
                             longestFileLength = convertedFile.ConvertedCode.Length;
@@ -89,14 +89,18 @@ namespace CodeConverter.VsExtension
             var exceptionsAsString = convertedFile.GetExceptionsAsString();
             var indentedException = exceptionsAsString.Replace(Environment.NewLine, Environment.NewLine + "    ");
             string output = Environment.NewLine + $"* {ToggleExtension(sourcePathRelativeToSolutionDir)}";
+            var containsErrors = !string.IsNullOrWhiteSpace(exceptionsAsString);
+
+            if (containsErrors) {
+                errors.Add(exceptionsAsString);
+            }
 
             if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode))
             {
-                errors.Add(exceptionsAsString);
                 output = Environment.NewLine +
                          $"* Failure processing {sourcePathRelativeToSolutionDir}{Environment.NewLine}    {indentedException}";    
             }
-            else {
+            else if (containsErrors){
                 output += $" contains errors{Environment.NewLine}    {indentedException}";
             }
 

@@ -17,7 +17,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly Compilation _sourceCompilation;
         private readonly IEnumerable<SyntaxTree> _syntaxTreesToConvert;
         private static readonly AdhocWorkspace AdhocWorkspace = new AdhocWorkspace();
-        private readonly ConcurrentDictionary<string, Exception> _errors = new ConcurrentDictionary<string, Exception>();
+        private readonly ConcurrentDictionary<string, string> _errors = new ConcurrentDictionary<string, string>();
         private readonly Dictionary<string, SyntaxTree> _firstPassResults = new Dictionary<string, SyntaxTree>();
         private readonly TLanguageConversion _languageConversion;
 
@@ -69,13 +69,13 @@ namespace ICSharpCode.CodeConverter.Shared
             {
                 var errors = projectConversion._errors.TryRemove(pathNodePair.Key, out var nonFatalException)
                     ? new[] {nonFatalException}
-                    : new Exception[0];
-                yield return new ConversionResult(pathNodePair.Value.ToFullString(), errors) { SourcePathOrNull = pathNodePair.Key };
+                    : new string[0];
+                yield return new ConversionResult(pathNodePair.Value.ToFullString()) { SourcePathOrNull = pathNodePair.Key, Exceptions = errors };
             }
 
             foreach (var error in projectConversion._errors)
             {
-                yield return new ConversionResult(error.Value) {SourcePathOrNull = error.Key};
+                yield return new ConversionResult {SourcePathOrNull = error.Key, Exceptions = new []{ error.Value } };
             }
         }
 
@@ -95,7 +95,7 @@ namespace ICSharpCode.CodeConverter.Shared
                     secondPassByFilePath.Add(treeFilePath, SingleSecondPass(firstPassResult));
                 }  catch (Exception e) {
                     secondPassByFilePath.Add(treeFilePath, Format(firstPassResult.Value.GetRoot()));
-                    _errors.TryAdd(treeFilePath, e);
+                    _errors.TryAdd(treeFilePath, e.ToString());
                 }
             }
             return secondPassByFilePath;
@@ -114,14 +114,16 @@ namespace ICSharpCode.CodeConverter.Shared
                 var treeFilePath = tree.FilePath ?? "";
                 try {
                     SingleFirstPass(tree, treeFilePath);
-                    var errorAnnotations = tree.GetRoot().GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind);
-                    _errors.TryAdd(treeFilePath,
-                        new NotImplementedException(string.Join(Environment.NewLine,
-                            errorAnnotations.Select(a => a.Data))));
+                    var errorAnnotations = tree.GetRoot().GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
+                    if (errorAnnotations.Any()) {
+                        _errors.TryAdd(treeFilePath,
+                            string.Join(Environment.NewLine, errorAnnotations.Select(a => a.Data))
+                        );
+                    }
                 }
                 catch (Exception e)
                 {
-                    _errors.TryAdd(treeFilePath, e);
+                    _errors.TryAdd(treeFilePath, e.ToString());
                 }
             }
         }
