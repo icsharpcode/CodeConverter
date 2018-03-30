@@ -276,6 +276,38 @@ End Class");
         }
 
         [Fact]
+        public void TestConstructorCallingBase()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"public class MyBaseClass
+{
+    public MyBaseClass(object o)
+    {
+    }
+}
+
+public sealed class MyClass 
+ : MyBaseClass 
+{
+	 public MyClass(object o)
+	  : base(o)
+	{
+	}
+}", @"Public Class MyBaseClass
+    Public Sub New(ByVal o As Object)
+    End Sub
+End Class
+
+Public NotInheritable Class [MyClass]
+    Inherits MyBaseClass
+
+    Public Sub New(ByVal o As Object)
+        MyBase.New(o)
+    End Sub
+End Class");
+        }
+
+        [Fact]
         public void TestDestructor()
         {
             TestConversionCSharpToVisualBasic(

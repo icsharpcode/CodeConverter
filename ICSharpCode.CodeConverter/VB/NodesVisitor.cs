@@ -323,13 +323,39 @@ namespace ICSharpCode.CodeConverter.VB
 
             public override VisualBasicSyntaxNode VisitConstructorDeclaration(CSS.ConstructorDeclarationSyntax node)
             {
+                var initializer = new[] { (StatementSyntax) node.Initializer?.Accept(TriviaConvertingVisitor)}.Where(x => x != null);
                 return SyntaxFactory.ConstructorBlock(
                     SyntaxFactory.SubNewStatement(
                         SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Member),
                         (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor)
                     ),
-                    SyntaxFactory.List(node.Body.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())))
+                    SyntaxFactory.List(initializer.Concat(node.Body.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor()))))
                 );
+            }
+
+            public override VisualBasicSyntaxNode VisitConstructorInitializer(CSS.ConstructorInitializerSyntax node)
+            {
+                var initializerExpression = GetInitializerExpression(node);
+                var newMethodCall = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                    initializerExpression, SyntaxFactory.Token(SyntaxKind.DotToken),
+                    SyntaxFactory.IdentifierName("New"));
+
+                return SyntaxFactory.ExpressionStatement(SyntaxFactory.InvocationExpression(newMethodCall, (ArgumentListSyntax) node.ArgumentList.Accept(TriviaConvertingVisitor)));
+            }
+
+            private static ExpressionSyntax GetInitializerExpression(CSS.ConstructorInitializerSyntax node)
+            {
+                if (node.IsKind(CS.SyntaxKind.BaseConstructorInitializer))
+                {
+                    return SyntaxFactory.MyBaseExpression();
+                }
+
+                if (node.IsKind(CS.SyntaxKind.ThisConstructorInitializer))
+                {
+                    return SyntaxFactory.MeExpression();
+                }
+
+                throw new ArgumentOutOfRangeException(nameof(node), node, $"{CS.CSharpExtensions.Kind(node)} unknown");
             }
 
             public override VisualBasicSyntaxNode VisitDestructorDeclaration(CSS.DestructorDeclarationSyntax node)
