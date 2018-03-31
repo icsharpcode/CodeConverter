@@ -20,6 +20,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly ConcurrentDictionary<string, string> _errors = new ConcurrentDictionary<string, string>();
         private readonly Dictionary<string, SyntaxTree> _firstPassResults = new Dictionary<string, SyntaxTree>();
         private readonly TLanguageConversion _languageConversion;
+        private readonly bool _handlePartialConversion;
 
         private ProjectConversion(Compilation sourceCompilation, string solutionDir)
             : this(sourceCompilation, sourceCompilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir)))
@@ -30,7 +31,8 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             _languageConversion = new TLanguageConversion();
             _sourceCompilation = sourceCompilation;
-            _syntaxTreesToConvert = syntaxTreesToConvert;
+            _syntaxTreesToConvert = syntaxTreesToConvert.ToList();
+            _handlePartialConversion = _syntaxTreesToConvert.Count() == 1;
         }
 
         public static ConversionResult ConvertText(string text, IReadOnlyCollection<MetadataReference> references)
@@ -142,6 +144,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private SyntaxTree MakeFullCompilationUnit(SyntaxTree tree)
         {
+            if (!_handlePartialConversion) return tree;
             var root = tree.GetRoot();
             var rootChildren = root.ChildNodes().ToList();
             var requiresSurroundingClass = rootChildren.Any(_languageConversion.MustBeContainedByClass);
@@ -170,7 +173,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private SyntaxNode Format(SyntaxNode resultNode)
         {
-            SyntaxNode selectedNode = _firstPassResults.Count == 1 ? GetSelectedNode(resultNode) : resultNode;
+            SyntaxNode selectedNode = _handlePartialConversion ? GetSelectedNode(resultNode) : resultNode;
             return Formatter.Format(selectedNode ?? resultNode, AdhocWorkspace);
         }
 
