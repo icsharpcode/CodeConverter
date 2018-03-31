@@ -185,8 +185,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     } else if (text.StartsWith("_", StringComparison.Ordinal) && symbol is IFieldSymbol fieldSymbol && fieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
 
                         text = fieldSymbol.AssociatedSymbol.Name;
-                    } else
-                        text = symbol.Name;
+                    }
                 }
             }
             return SyntaxFactory.Identifier(text);
