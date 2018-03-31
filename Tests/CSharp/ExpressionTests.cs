@@ -34,7 +34,7 @@ World!"";
     Private DefaultDate as Date = Nothing
 End Class", @"class TestClass
 {
-    private System.DateTime DefaultDate = default(Date);
+    private System.DateTime DefaultDate = default(DateTime);
 }");
         }
 
@@ -538,7 +538,7 @@ End Sub",
 
     foreach (var n in res)
         Console.WriteLine(n);
-}", expectUsings: false);
+}");
         }
 
         [Fact]
@@ -570,7 +570,7 @@ End Sub",
         foreach (var n in g.Numbers)
             Console.WriteLine(n);
     }
-}", expectUsings: false);
+}");
         }
 
         [Fact()]
@@ -647,7 +647,7 @@ End Sub", @"public void Linq103()
         foreach (var p in v.Products)
             Console.WriteLine(""   "" + p.ProductName);
     }
-}", expectUsings: false);
+}");
         }
 
         [Fact]
@@ -665,7 +665,7 @@ End Function", @"private static string FindPicFilePath(string picId)
                                   select FileInfo1)
         return FileInfo.FullName;
     return string.Empty;
-}", expectUsings: false);
+}");
         }
 
         [Fact]

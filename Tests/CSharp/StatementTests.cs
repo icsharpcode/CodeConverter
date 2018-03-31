@@ -256,7 +256,9 @@ End Class", @"class TestClass
         [Fact]
         public void WithBlock2()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Data.SqlClient
+
+Class TestClass
     Private Sub Save()
         Using cmd As SqlCommand = new SqlCommand()
             With cmd
@@ -267,7 +269,9 @@ End Class", @"class TestClass
             End With
         End Using
     End Sub
-End Class", @"class TestClass
+End Class", @"using System.Data.SqlClient;
+
+class TestClass
 {
     private void Save()
     {
@@ -615,15 +619,15 @@ End Class", @"class TestClass
         public void NestedBlockStatementsKeepSameNesting()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
-    Shared Function FindTextInCol(w As Worksheet, pTitleRow As Integer, startCol As Integer, needle As String) As Integer
+    Shared Function FindTextInCol(w As String, pTitleRow As Integer, startCol As Integer, needle As String) As Integer
 
-        For c As Integer = startCol To w.Cells.MaxDataColumn
+        For c As Integer = startCol To w.Length
             If needle = """" Then
-                If String.IsNullOrWhiteSpace(w.Cells(pTitleRow, c).StringValue) Then
+                If String.IsNullOrWhiteSpace(w(c).ToString) Then
                     Return c
                 End If
             Else
-                If w.Cells(pTitleRow, c).StringValue = needle Then
+                If w(c).ToString = needle Then
                     Return c
                 End If
             End If
@@ -632,16 +636,16 @@ End Class", @"class TestClass
     End Function
 End Class", @"class TestClass
 {
-    public static int FindTextInCol(Worksheet w, int pTitleRow, int startCol, string needle)
+    public static int FindTextInCol(string w, int pTitleRow, int startCol, string needle)
     {
-        for (int c = startCol; c <= w.Cells.MaxDataColumn; c++)
+        for (int c = startCol; c <= w.Length; c++)
         {
             if (needle == """")
             {
-                if (string.IsNullOrWhiteSpace(w.Cells(pTitleRow, c).StringValue))
+                if (string.IsNullOrWhiteSpace(w[c].ToString()))
                     return c;
             }
-            else if (w.Cells(pTitleRow, c).StringValue == needle)
+            else if (w[c].ToString() == needle)
                 return c;
         }
         return -1;

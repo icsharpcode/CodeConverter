@@ -10,6 +10,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal class CompilationErrorFixer
     {
+        private const string UnresolvedTypeOrNamespaceDiagnosticId = "CS0246";
+        private const string UnusedUsingDiagnosticId = "CS8019";
         private readonly CSharpSyntaxTree _syntaxTree;
         private readonly SemanticModel _semanticModel;
 
@@ -40,11 +42,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <remarks>These are tidied up so we can add as many GlobalImports as we want when building compilations</remarks>
         private CSharpSyntaxNode TidyUsings(CompilationUnitSyntax compilationUnitSyntax)
         {
-            var unusedUsings = _semanticModel.GetDiagnostics().ToList()
-                .Where(d => d.Id == "CS8019")
+            var diagnostics = _semanticModel.GetDiagnostics().ToList();
+            var unusedUsings = diagnostics
+                .Where(d => d.Id == UnusedUsingDiagnosticId)
                 .Select(d => compilationUnitSyntax.FindNode(d.Location.SourceSpan))
+                .OfType<UsingDirectiveSyntax>()
                 .ToList();
-            if (unusedUsings.Any()) {
+            if (diagnostics.All(d => d.Id != UnresolvedTypeOrNamespaceDiagnosticId) && unusedUsings.Any()) {
                 compilationUnitSyntax = compilationUnitSyntax.RemoveNodes(unusedUsings, SyntaxRemoveOptions.KeepNoTrivia);
             }
 

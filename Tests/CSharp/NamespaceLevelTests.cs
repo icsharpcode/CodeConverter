@@ -33,17 +33,34 @@ End Namespace", @"namespace Test
         }
 
         [Fact]
-        public void TestImports()
+        public void AliasedImports()
         {
             TestConversionVisualBasicToCSharp(
-                @"Imports SomeNamespace
-Imports VB = Microsoft.VisualBasic",
+                @"Imports tr = System.IO.TextReader
+
+Public Class Test
+    Private aliased As tr
+End Class",
+                @"using tr = System.IO.TextReader;
+
+public class Test
+{
+    private tr aliased;
+}");
+        }
+
+        [Fact]
+        public void UnaliasedImports()
+        {
+            TestConversionVisualBasicToCSharp(
+                @"Imports UnrecognizedNamespace",
                 @"using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Microsoft.VisualBasic;
-using SomeNamespace;
-using VB = Microsoft.VisualBasic;");
+using UnrecognizedNamespace;");
         }
 
         [Fact]
@@ -180,12 +197,7 @@ End Class", @"abstract class ClassA : System.EventArgs, System.IDisposable
 
     Private Sub Test()
     End Sub
-End Structure", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-struct MyType : System.IComparable<MyType>
+End Structure", @"struct MyType : System.IComparable<MyType>
 {
     private void Test()
     {
@@ -198,16 +210,16 @@ struct MyType : System.IComparable<MyType>
         {
             TestConversionVisualBasicToCSharp(
                 @"Public Delegate Sub Test()",
-                @"public delegate void Test();", expectUsings: false);
+                @"public delegate void Test();");
             TestConversionVisualBasicToCSharp(
                 @"Public Delegate Function Test() As Integer",
-                @"public delegate int Test();", expectUsings: false);
+                @"public delegate int Test();");
             TestConversionVisualBasicToCSharp(
                 @"Public Delegate Sub Test(ByVal x As Integer)",
-                @"public delegate void Test(int x);", expectUsings: false);
+                @"public delegate void Test(int x);");
             TestConversionVisualBasicToCSharp(
                 @"Public Delegate Sub Test(ByRef x As Integer)",
-                @"public delegate void Test(ref int x);", expectUsings: false);
+                @"public delegate void Test(ref int x);");
         }
 
         [Fact]
