@@ -118,7 +118,13 @@ End Class";
         {
             var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithRootNamespace("TestProject")
-                .WithGlobalImports(GlobalImport.Parse("System", "System.Collections.Generic", "System.Linq",
+
+                .WithGlobalImports(GlobalImport.Parse(
+                    "System",
+                    "System.Collections.Generic",
+                    "System.Linq",
+                    "System.Text",
+                    "System.Threading.Tasks",
                     "Microsoft.VisualBasic"));
             var compilation = VisualBasicCompilation.Create("Conversion", new[] {tree}, references)
                 .WithOptions(compilationOptions);

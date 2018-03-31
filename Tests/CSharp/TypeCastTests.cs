@@ -14,12 +14,7 @@ namespace CodeConverter.Tests.CSharp
         Dim o As Object = 5
         Dim i As Integer = CInt(o)
     End Sub
-End Class" + Environment.NewLine, @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class Class1
+End Class" + Environment.NewLine, @"class Class1
 {
     private void Test()
     {
@@ -77,12 +72,7 @@ End Class", @"class Class1
         Dim l As System.Collections.Generic.List(Of Integer) = CType(o, System.Collections.Generic.List(Of Integer))
     End Sub
 End Class",
-@"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class Class1
+@"class Class1
 {
     private void Test()
     {
@@ -102,12 +92,7 @@ class Class1
         Dim i As System.Nullable(Of Integer) = TryCast(o, Integer)
     End Sub
 End Class",
-@"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class Class1
+@"class Class1
 {
     private void Test()
     {
@@ -127,12 +112,7 @@ class Class1
         Dim l As System.Collections.Generic.List(Of Integer) = TryCast(o, System.Collections.Generic.List(Of Integer))
     End Sub
 End Class",
-@"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class Class1
+@"class Class1
 {
     private void Test()
     {
@@ -151,12 +131,7 @@ class Class1
         Dim o As Object = 5L
     End Sub
 End Class",
-@"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class Class1
+@"class Class1
 {
     private void Test()
     {
@@ -174,12 +149,7 @@ class Class1
         Dim o As Object = 5F
     End Sub
 End Class",
-@"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class Class1
+@"class Class1
 {
     private void Test()
     {
@@ -196,12 +166,7 @@ class Class1
     Private Sub Test()
         Dim o As Object = 5.0D
     End Sub
-End Class" + Environment.NewLine, @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class Class1
+End Class" + Environment.NewLine, @"class Class1
 {
     private void Test()
     {

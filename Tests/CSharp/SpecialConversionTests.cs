@@ -15,9 +15,6 @@ namespace CodeConverter.Tests.CSharp
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {

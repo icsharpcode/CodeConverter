@@ -12,12 +12,7 @@ namespace CodeConverter.Tests.CSharp
     Const answer As Integer = 42
     Private value As Integer = 10
     ReadOnly v As Integer = 15
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     const int answer = 42;
     private int value = 10;
@@ -37,9 +32,7 @@ class TestClass
         Console.WriteLine(Enumerable.Empty(Of String))
     End Sub
 End Class", @"using System;
-using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {
@@ -66,12 +59,7 @@ class TestClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     /// <summary>Xml doc</summary>
     public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
@@ -93,12 +81,7 @@ class TestClass
     Public Function TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) As Integer
         Return 0
     End Function
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     public int TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
@@ -119,12 +102,7 @@ class TestClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     public static void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
@@ -143,12 +121,7 @@ class TestClass
             TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Public MustOverride Sub TestMethod()
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     public abstract void TestMethod();
 }");
@@ -164,12 +137,7 @@ class TestClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     public sealed void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
@@ -256,12 +224,7 @@ Module TestClass
     <Extension()>
     Sub TestMethod(ByVal str As String)
     End Sub
-End Module", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-using System.Runtime.CompilerServices;
-
+End Module", @"
 static class TestClass
 {
     public static void TestMethod(this string str)
@@ -293,12 +256,7 @@ static class TestClass
             Me.m_test3 = value
         End Set
     End Property
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     public int Test { get; set; }
 
@@ -333,12 +291,7 @@ class TestClass
 @"Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
     Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass<T, T2, T3>
+End Class", @"class TestClass<T, T2, T3>
     where T : class, new()
     where T2 : struct
 {
@@ -355,12 +308,7 @@ class TestClass<T, T2, T3>
 @"Class TestClass
     Protected Overrides Sub Finalize()
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     ~TestClass()
     {
@@ -375,9 +323,6 @@ class TestClass
 @"Class TestClass
     Public Event MyEvent As EventHandler
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {
@@ -427,12 +372,7 @@ class TestClass
     Private Shared Property First As Integer
 
     Private Second As Integer = _First
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private static int First { get; set; }
 
@@ -446,10 +386,7 @@ class TestClass
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private ReadOnly Property First As New List(Of String)
     Private Property Second As Integer = 0
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
+End Class", @"using System.Collections.Generic;
 
 class TestClass
 {
@@ -714,12 +651,7 @@ End Class", @"public class AcmeClass" + /* not valid C# - to implement this you'
         {
             TestConversionVisualBasicToCSharp(@"<Global.System.Diagnostics.DebuggerDisplay(""Hello World"")>
 Class TestClass
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-[global::System.Diagnostics.DebuggerDisplay(""Hello World"")]
+End Class", @"[global::System.Diagnostics.DebuggerDisplay(""Hello World"")]
 class TestClass
 {
 }");
@@ -732,9 +664,6 @@ class TestClass
     <ThreadStatic>
     Private Shared First As Integer
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {
@@ -749,12 +678,7 @@ class TestClass
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub SomeBools(ParamArray anyName As Boolean())
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void SomeBools(params bool[] anyName)
     {
@@ -768,12 +692,7 @@ class TestClass
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub SomeBools(ParamArray bool As Boolean())
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void SomeBools(params bool[] @bool)
     {
@@ -838,12 +757,7 @@ Class MyClassC
         ClA.MA()
         ClA.ClassB.MB()
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class ClA
+End Class", @"class ClA
 {
     public static void MA()
     {

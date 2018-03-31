@@ -18,12 +18,7 @@ namespace CodeConverter.Tests.CSharp
         Do
         Loop While True
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -51,12 +46,7 @@ class TestClass
         Dim b As Integer
         b = 0
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -73,12 +63,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As Integer = 0
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -94,12 +79,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b = 0
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -116,12 +96,7 @@ class TestClass
         Dim b As String
         b = New String(""test"")
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -138,12 +113,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As String = New String(""test"")
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -159,12 +129,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b = New String(""test"")
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -180,12 +145,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As Integer()
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -209,7 +169,9 @@ class TestClass
         ReDim Preserve y(6,8)
         Return numArray2
     End Function
-End Class", @"public class TestClass
+End Class", @"using System;
+
+public class TestClass
 {
     public static int[] TestMethod(int[] numArray, int[] numArray2)
     {
@@ -243,12 +205,7 @@ End Class", @"public class TestClass
     Private Sub TestMethod()
         End
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -264,12 +221,7 @@ class TestClass
     Private Sub TestMethod()
         Stop
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -288,12 +240,7 @@ class TestClass
             ?.Length = 0
         End With
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -353,12 +300,7 @@ End Class", @"class TestClass
             .Length = withBlock
         End With
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -383,12 +325,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = {1, 2, 3}
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -404,12 +341,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b = {1, 2, 3}
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -425,12 +357,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer() {1, 2, 3}
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -446,12 +373,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer(2) {1, 2, 3}
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -467,12 +389,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,)
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -488,12 +405,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = {{1, 2}, {3, 4}}
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -509,12 +421,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = New Integer(,) {{1, 2}, {3, 4}}
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -530,12 +437,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = New Integer(1, 1) {{1, 2}, {3, 4}}
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -551,12 +453,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As Integer()()
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -572,12 +469,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -614,12 +506,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -669,7 +556,9 @@ Public Class AcmeClass
         Next
     End Sub
 End Class"
-                , @"using System.Diagnostics;
+                , @"using System;
+using System.Linq;
+using System.Diagnostics;
 
 public class AcmeClass
 {
@@ -704,12 +593,7 @@ public class AcmeClass
             b = 3
         End If
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod(int a)
     {
@@ -746,12 +630,7 @@ class TestClass
         Next
         Return -1
     End Function
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     public static int FindTextInCol(Worksheet w, int pTitleRow, int startCol, string needle)
     {
@@ -784,12 +663,7 @@ class TestClass
             b = 1
         End While
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -822,12 +696,7 @@ class TestClass
             b = 1
         Loop While b = 0
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -861,12 +730,7 @@ class TestClass
             b = 1
         Loop While b = 0
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -896,12 +760,7 @@ class TestClass
             If val = 3 Then Exit For
         Next
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod(int[] values)
     {
@@ -926,12 +785,7 @@ class TestClass
             If val = 3 Then Exit For
         Next
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod(int[] values)
     {
@@ -958,9 +812,6 @@ class TestClass
         End SyncLock
     End Sub
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {
@@ -986,12 +837,7 @@ class TestClass
             b(i) = s(i)
         Next
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -1013,12 +859,7 @@ class TestClass
             b(i) = s(i)
         Next
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -1068,9 +909,6 @@ Finish:
         Console.ReadKey()
     End Sub
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class GotoTest1
 {
@@ -1121,9 +959,6 @@ class GotoTest1
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
     End Sub
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {
@@ -1146,9 +981,6 @@ class TestClass
         Call TestMethod()
     End Sub
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {
@@ -1181,9 +1013,6 @@ class TestClass
     Private Sub MyHandler(ByVal sender As Object, ByVal e As EventArgs)
     End Sub
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {
@@ -1222,9 +1051,6 @@ class TestClass
         End Select
     End Sub
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {
@@ -1334,9 +1160,6 @@ End Class", @"public class TestClass
         End Try
     End Sub
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {
@@ -1402,10 +1225,7 @@ class TestClass
             Yield i
         Next
     End Function
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
+End Class", @"using System.Collections.Generic;
 
 class TestClass
 {
