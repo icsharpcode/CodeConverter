@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
@@ -6,32 +7,29 @@ namespace CodeConverter.Tests
 {
     public abstract class DiagnosticTestBase
     {
-        static MetadataReference _mscorlib;
-        static MetadataReference _systemAssembly;
-        static MetadataReference _systemXmlLinq;
-        static MetadataReference _systemCore;
-        private static MetadataReference _visualBasic;
-
         internal static MetadataReference[] DefaultMetadataReferences;
 
         static DiagnosticTestBase()
         {
             try {
-                _mscorlib = MetadataReference.CreateFromFile(typeof(Console).Assembly.Location);
-                _systemAssembly = MetadataReference.CreateFromFile(typeof(System.ComponentModel.BrowsableAttribute).Assembly.Location);
-                _systemXmlLinq = MetadataReference.CreateFromFile(typeof(System.Xml.Linq.XElement).Assembly.Location);
-                _systemCore = MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location);
-                _visualBasic = MetadataReference.CreateFromFile(typeof(Microsoft.VisualBasic.Constants).Assembly.Location);
-                DefaultMetadataReferences = new[] {
-                    _mscorlib,
-                    _systemAssembly,
-                    _systemCore,
-                    _systemXmlLinq,
-                    _visualBasic
-                };
+                DefaultMetadataReferences = GetRefs(
+                    typeof(System.Text.Encoding),
+                    typeof(System.ComponentModel.BrowsableAttribute),
+                    typeof(System.Dynamic.DynamicObject),
+                    typeof(System.Data.DataRow),
+                    typeof(System.Data.DataRowExtensions),
+                    typeof(System.Net.Http.HttpClient),
+                    typeof(System.Xml.XmlElement),
+                    typeof(System.Xml.Linq.XElement),
+                    typeof(Microsoft.VisualBasic.Constants)).ToArray();
             } catch (Exception e) {
                 Console.WriteLine(e);
             }
+        }
+
+        private static IEnumerable<MetadataReference> GetRefs(params Type[] types)
+        {
+            return types.Select(type => MetadataReference.CreateFromFile(type.Assembly.Location));
         }
     }
 }
