@@ -25,7 +25,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             _targetCompilation = new Lazy<CSharpCompilation>(() => {
                 var references = _sourceCompilation.References.Select(ConvertReference);
-                return CSharpCompilation.Create("Conversion", _firstPassResults, references);
+                return CSharpCompilation.Create("Conversion", _firstPassResults, references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
             });
         }
 
