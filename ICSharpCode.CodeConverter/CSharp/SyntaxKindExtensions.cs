@@ -217,6 +217,41 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxKind.ExplicitKeyword;
                 case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.WideningKeyword:
                     return SyntaxKind.ImplicitKeyword;
+                // Operator overloads
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.PlusToken:
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AmpersandToken:
+                    return SyntaxKind.PlusToken;  //Problematic clash if two operator overloads defined
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.MinusToken:
+                    return SyntaxKind.MinusToken;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NotKeyword:
+                    return SyntaxKind.ExclamationToken;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AsteriskToken:
+                    return SyntaxKind.AsteriskToken;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.SlashToken:
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.BackslashToken:
+                    return SyntaxKind.SlashToken;  //Problematic clash if two operator overloads defined
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.ModKeyword:
+                    return SyntaxKind.PercentToken;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.LessThanLessThanToken:
+                    return SyntaxKind.LessThanLessThanToken;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.GreaterThanGreaterThanToken:
+                    return SyntaxKind.GreaterThanGreaterThanToken;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.EqualsToken:
+                    return SyntaxKind.EqualsEqualsToken;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.LessThanGreaterThanToken:
+                    return SyntaxKind.ExclamationEqualsToken;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.GreaterThanToken:
+                    return SyntaxKind.GreaterThanToken;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.LessThanToken:
+                    return SyntaxKind.LessThanToken;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.GreaterThanEqualsToken:
+                    return SyntaxKind.GreaterThanEqualsToken;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.LessThanEqualsToken:
+                    return SyntaxKind.LessThanEqualsToken;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AndKeyword:
+                    return SyntaxKind.AmpersandToken;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.OrKeyword:
+                    return SyntaxKind.BarToken;
                 //
                 case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AssemblyKeyword:
                     return SyntaxKind.AssemblyKeyword;

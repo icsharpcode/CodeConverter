@@ -551,6 +551,165 @@ End Class"
         }
 
         [Fact]
+        public void OperatorOverloads()
+        {
+            // Note a couple map to the same thing in C# so occasionally the result won't compile. The user can manually decide what to do in such scenarios.
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class AcmeClass
+    Public Shared Operator +(i As Integer, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator &(s As String, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator -(i As Integer, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator Not(ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator *(i As Integer, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator /(i As Integer, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator \(i As Integer, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator Mod(s As String, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator <<(ac As AcmeClass, i As Integer) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator >>(ac As AcmeClass, i As Integer) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator =(s As String, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator <>(s As String, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator <(s As String, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator >(s As String, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator <=(s As String, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator >=(s As String, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator And(s As String, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator Or(s As String, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+End Class", @"public class AcmeClass
+{
+    public static AcmeClass operator +(int i, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator +(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator -(int i, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator !(AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator *(int i, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator /(int i, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator /(int i, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator %(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator <<(AcmeClass ac, int i)
+    {
+        return ac;
+    }
+    public static AcmeClass operator >>(AcmeClass ac, int i)
+    {
+        return ac;
+    }
+    public static AcmeClass operator ==(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator !=(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator <(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator >(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator <=(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator >=(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator &(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator |(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+}");
+        }
+
+        [Fact(Skip = "No obvious C# equivalent")]
+        public void OperatorOverloadsWithNoCSharpEquivalent()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class AcmeClass
+    Public Shared Operator ^(i As Integer, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+    Public Shared Operator Like(s As String, ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+End Class", @"public class AcmeClass" + /* not valid C# - to implement this you'd need to create a new method, and convert all callers to use it*/ @"
+{
+    public static AcmeClass operator ^(int i, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator Like(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+}");
+        }
+
+        [Fact]
         public void ClassWithGloballyQualifiedAttribute()
         {
             TestConversionVisualBasicToCSharp(@"<Global.System.Diagnostics.DebuggerDisplay(""Hello World"")>
