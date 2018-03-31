@@ -206,7 +206,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             VBasic.SyntaxKind vbSyntaxKind = VBasic.VisualBasicExtensions.Kind(m);
             switch (vbSyntaxKind) {
                 case VBasic.SyntaxKind.DateKeyword:
-                    return SyntaxFactory.Identifier("System.DateTime");
+                    return SyntaxFactory.Identifier("DateTime");
             }
             var token = SyntaxKindExtensions.ConvertToken(vbSyntaxKind, context);
             return token == SyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));

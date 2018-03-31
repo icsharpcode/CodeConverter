@@ -32,9 +32,11 @@ World!"";
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private DefaultDate as Date = Nothing
-End Class", @"class TestClass
+End Class", @"using System;
+
+class TestClass
 {
-    private System.DateTime DefaultDate = default(DateTime);
+    private DateTime DefaultDate = default(DateTime);
 }");
         }
 

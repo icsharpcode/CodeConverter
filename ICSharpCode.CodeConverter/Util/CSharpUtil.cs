@@ -251,7 +251,7 @@ namespace ICSharpCode.CodeConverter.Util
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
-            return SyntaxFactory.ParseTypeName(type.ToMinimalDisplayString(model, typeSyntax.SpanStart))
+            return SyntaxFactory.ParseTypeName(type.ToMinimalCSharpDisplayString(model, typeSyntax.SpanStart))
                 .WithLeadingTrivia(typeSyntax.GetLeadingTrivia())
                 .WithTrailingTrivia(typeSyntax.GetTrailingTrivia());
         }

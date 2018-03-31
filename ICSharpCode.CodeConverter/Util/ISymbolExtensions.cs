@@ -178,6 +178,20 @@ namespace ICSharpCode.CodeConverter.Util
                 return info.CandidateSymbols[0];
             return null;
         }
+
+        public static string ToMinimalCSharpDisplayString(this ISymbol symbol, SemanticModel vbSemanticModel, int position, SymbolDisplayFormat format = null)
+        {
+            var output = symbol.ToMinimalDisplayString(vbSemanticModel, position, format);
+            if (symbol is ITypeSymbol && output == "Date") return "DateTime";
+            return output;
+        }
+
+        public static string ToCSharpDisplayString(this ISymbol symbol, SymbolDisplayFormat format = null)
+        {
+            var output = symbol.ToDisplayString(format);
+            if (symbol is ITypeSymbol && output == "Date") return "DateTime";
+            return output;
+        }
     }
 }
 

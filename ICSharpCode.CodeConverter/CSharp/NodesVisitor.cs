@@ -728,7 +728,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 else {
                     var typeInfo = _semanticModel.GetTypeInfo(stmt.IdentifierName).Type;
                     catcher = SyntaxFactory.CatchDeclaration(
-                        SyntaxFactory.ParseTypeName(typeInfo.ToMinimalDisplayString(_semanticModel, node.SpanStart)),
+                        SyntaxFactory.ParseTypeName(typeInfo.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart)),
                         ConvertIdentifier(stmt.IdentifierName.Identifier)
                     );
                 }
@@ -825,7 +825,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             .WithTrailingTrivia(
                                 SyntaxFactory.Comment("/* TODO Change to default(_) if this is not a reference type */"));
                     }
-                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(type.ToMinimalDisplayString(_semanticModel, node.SpanStart))) : Literal(null);
+                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(type.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart))) : Literal(null);
                 }
                 return Literal(node.Token.Value, node.Token.Text);
             }
@@ -1340,7 +1340,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitPredefinedType(VBSyntax.PredefinedTypeSyntax node)
             {
                 if (SyntaxTokenExtensions.IsKind(node.Keyword, VBasic.SyntaxKind.DateKeyword)) {
-                    return SyntaxFactory.IdentifierName("System.DateTime");
+                    return SyntaxFactory.IdentifierName("DateTime");
                 }
                 return SyntaxFactory.PredefinedType(node.Keyword.ConvertToken());
             }
@@ -1431,18 +1431,18 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var targetSymbolInfo = GetSymbolInfoInDocument(node);
 
-                var qualifiedName = targetSymbolInfo?.ToDisplayString(referenceSymbolFormat);
+                var qualifiedName = targetSymbolInfo?.ToCSharpDisplayString(referenceSymbolFormat);
                 var sourceText = node.WithoutTrivia().GetText().ToString().Trim();
                 if (qualifiedName == null || sourceText.Length >= qualifiedName.Length ||
                     !qualifiedName.EndsWith(sourceText, StringComparison.Ordinal)) return defaultNode;
 
                 var typeBlockSyntax = node.GetAncestor<VBSyntax.TypeBlockSyntax>();
 
-                var typeOrNamespace = targetSymbolInfo.ContainingNamespace.ToDisplayString(referenceSymbolFormat);
+                var typeOrNamespace = targetSymbolInfo.ContainingNamespace.ToCSharpDisplayString(referenceSymbolFormat);
                 if (typeBlockSyntax != null) {
                     var declaredSymbol = _semanticModel.GetDeclaredSymbol(typeBlockSyntax);
                     var prefixes = GetSymbolQualification(declaredSymbol)
-                    .Where(x => x != null).Select(p => p.ToDisplayString(referenceSymbolFormat) + ".");
+                    .Where(x => x != null).Select(p => p.ToCSharpDisplayString(referenceSymbolFormat) + ".");
                     var firstMatch = prefixes.FirstOrDefault(p => qualifiedName.StartsWith(p));
                     if (firstMatch != null)
                     {
