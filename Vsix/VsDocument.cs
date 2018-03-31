@@ -5,21 +5,21 @@ namespace CodeConverter.VsExtension
 {
     class VsDocument
     {
-        private readonly IVsProject hierarchy;
-        private readonly uint itemId;
+        private readonly IVsProject _hierarchy;
+        private readonly uint _itemId;
         public Guid ProjectGuid { get; }
 
         public VsDocument(IVsProject hierarchy, Guid projectGuid, uint itemId)
         {
-            this.hierarchy = hierarchy;
+            this._hierarchy = hierarchy;
             ProjectGuid = projectGuid;
-            this.itemId = itemId;
+            this._itemId = itemId;
         }
 
         public string ItemPath {
             get {
                 string itemPath = null;
-                hierarchy.GetMkDocument(itemId, out itemPath);
+                _hierarchy.GetMkDocument(_itemId, out itemPath);
                 return itemPath;
             }
         }

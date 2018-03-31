@@ -29,9 +29,9 @@ namespace CodeConverter.VsExtension
         /// <summary>
         /// VS Package that provides this command, not null.
         /// </summary>
-        readonly REConverterPackage package;
+        readonly REConverterPackage _package;
 
-        private CodeConversion codeConversion;
+        private CodeConversion _codeConversion;
 
         /// <summary>
         /// Gets the instance of the command.
@@ -46,7 +46,7 @@ namespace CodeConverter.VsExtension
         /// </summary>
         IServiceProvider ServiceProvider {
             get {
-                return this.package;
+                return this._package;
             }
         }
 
@@ -66,32 +66,32 @@ namespace CodeConverter.VsExtension
         /// <param name="package">Owner package, not null.</param>
         ConvertVBToCSCommand(REConverterPackage package)
         {
-            this.package = package ?? throw new ArgumentNullException(nameof(package));
-            codeConversion = new CodeConversion(package, package.VsWorkspace);
+            this._package = package ?? throw new ArgumentNullException(nameof(package));
+            _codeConversion = new CodeConversion(package, package.VsWorkspace);
 
             OleMenuCommandService commandService = this.ServiceProvider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
             if (commandService != null) {
                 // Command in main menu
-                var menuCommandID = new CommandID(CommandSet, MainMenuCommandId);
-                var menuItem = new OleMenuCommand(CodeEditorMenuItemCallback, menuCommandID);
+                var menuCommandId = new CommandID(CommandSet, MainMenuCommandId);
+                var menuItem = new OleMenuCommand(CodeEditorMenuItemCallback, menuCommandId);
                 menuItem.BeforeQueryStatus += CodeEditorMenuItem_BeforeQueryStatus;
                 commandService.AddCommand(menuItem);
 
                 // Command in code editor's context menu
-                var ctxMenuCommandID = new CommandID(CommandSet, CtxMenuCommandId);
-                var ctxMenuItem = new OleMenuCommand(CodeEditorMenuItemCallback, ctxMenuCommandID);
+                var ctxMenuCommandId = new CommandID(CommandSet, CtxMenuCommandId);
+                var ctxMenuItem = new OleMenuCommand(CodeEditorMenuItemCallback, ctxMenuCommandId);
                 ctxMenuItem.BeforeQueryStatus += CodeEditorMenuItem_BeforeQueryStatus;
                 commandService.AddCommand(ctxMenuItem);
 
                 // Command in project item context menu
-                var projectItemCtxMenuCommandID = new CommandID(CommandSet, ProjectItemCtxMenuCommandId);
-                var projectItemCtxMenuItem = new OleMenuCommand(ProjectItemMenuItemCallback, projectItemCtxMenuCommandID);
+                var projectItemCtxMenuCommandId = new CommandID(CommandSet, ProjectItemCtxMenuCommandId);
+                var projectItemCtxMenuItem = new OleMenuCommand(ProjectItemMenuItemCallback, projectItemCtxMenuCommandId);
                 projectItemCtxMenuItem.BeforeQueryStatus += ProjectItemMenuItem_BeforeQueryStatus;
                 commandService.AddCommand(projectItemCtxMenuItem);
 
                 // Command in project context menu
-                var solutionOrProjectCtxMenuCommandID = new CommandID(CommandSet, SolutionOrProjectCtxMenuCommandId);
-                var solutionOrProjectCtxMenuItem = new OleMenuCommand(SolutionOrProjectMenuItemCallback, solutionOrProjectCtxMenuCommandID);
+                var solutionOrProjectCtxMenuCommandId = new CommandID(CommandSet, SolutionOrProjectCtxMenuCommandId);
+                var solutionOrProjectCtxMenuItem = new OleMenuCommand(SolutionOrProjectMenuItemCallback, solutionOrProjectCtxMenuCommandId);
                 solutionOrProjectCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatus;
                 commandService.AddCommand(solutionOrProjectCtxMenuItem);
             }
@@ -102,7 +102,7 @@ namespace CodeConverter.VsExtension
             var menuItem = sender as OleMenuCommand;
             if (menuItem != null) {
 
-                menuItem.Visible = !codeConversion.GetSelectionInCurrentView(CodeConversion.IsVBFileName)?.StreamSelectionSpan.IsEmpty ?? false;
+                menuItem.Visible = !_codeConversion.GetSelectionInCurrentView(CodeConversion.IsVBFileName)?.StreamSelectionSpan.IsEmpty ?? false;
             }
         }
 
@@ -132,8 +132,8 @@ namespace CodeConverter.VsExtension
 
         async void CodeEditorMenuItemCallback(object sender, EventArgs e)
         {
-            var span = codeConversion.GetSelectionInCurrentView(CodeConversion.IsVBFileName).SelectedSpans.First().Span;
-            await ConvertDocument(codeConversion.GetCurrentViewHost(CodeConversion.IsVBFileName).GetTextDocument().FilePath, span);
+            var span = _codeConversion.GetSelectionInCurrentView(CodeConversion.IsVBFileName).SelectedSpans.First().Span;
+            await ConvertDocument(_codeConversion.GetCurrentViewHost(CodeConversion.IsVBFileName).GetTextDocument().FilePath, span);
         }
         
         async void ProjectItemMenuItemCallback(object sender, EventArgs e)
@@ -146,7 +146,7 @@ namespace CodeConverter.VsExtension
         {
             try {
                 var projects = VisualStudioInteraction.GetSelectedProjects(ProjectExtension);
-                await codeConversion.PerformProjectConversion<VBToCSConversion>(projects);
+                await _codeConversion.PerformProjectConversion<VBToCSConversion>(projects);
             } catch (Exception ex) {
                 VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }
@@ -158,7 +158,7 @@ namespace CodeConverter.VsExtension
                 return;
 
             try {
-                await codeConversion.PerformDocumentConversion<VBToCSConversion>(documentPath, selected);
+                await _codeConversion.PerformDocumentConversion<VBToCSConversion>(documentPath, selected);
             }
             catch (Exception ex) {
                 VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.ConverterTitle, ex);

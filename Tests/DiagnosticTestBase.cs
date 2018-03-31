@@ -6,28 +6,28 @@ namespace CodeConverter.Tests
 {
     public abstract class DiagnosticTestBase
     {
-        static MetadataReference mscorlib;
-        static MetadataReference systemAssembly;
-        static MetadataReference systemXmlLinq;
-        static MetadataReference systemCore;
-        private static MetadataReference visualBasic;
+        static MetadataReference _mscorlib;
+        static MetadataReference _systemAssembly;
+        static MetadataReference _systemXmlLinq;
+        static MetadataReference _systemCore;
+        private static MetadataReference _visualBasic;
 
         internal static MetadataReference[] DefaultMetadataReferences;
 
         static DiagnosticTestBase()
         {
             try {
-                mscorlib = MetadataReference.CreateFromFile(typeof(Console).Assembly.Location);
-                systemAssembly = MetadataReference.CreateFromFile(typeof(System.ComponentModel.BrowsableAttribute).Assembly.Location);
-                systemXmlLinq = MetadataReference.CreateFromFile(typeof(System.Xml.Linq.XElement).Assembly.Location);
-                systemCore = MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location);
-                visualBasic = MetadataReference.CreateFromFile(typeof(Microsoft.VisualBasic.Constants).Assembly.Location);
+                _mscorlib = MetadataReference.CreateFromFile(typeof(Console).Assembly.Location);
+                _systemAssembly = MetadataReference.CreateFromFile(typeof(System.ComponentModel.BrowsableAttribute).Assembly.Location);
+                _systemXmlLinq = MetadataReference.CreateFromFile(typeof(System.Xml.Linq.XElement).Assembly.Location);
+                _systemCore = MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location);
+                _visualBasic = MetadataReference.CreateFromFile(typeof(Microsoft.VisualBasic.Constants).Assembly.Location);
                 DefaultMetadataReferences = new[] {
-                    mscorlib,
-                    systemAssembly,
-                    systemCore,
-                    systemXmlLinq,
-                    visualBasic
+                    _mscorlib,
+                    _systemAssembly,
+                    _systemCore,
+                    _systemXmlLinq,
+                    _visualBasic
                 };
             } catch (Exception e) {
                 Console.WriteLine(e);

@@ -17,20 +17,20 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         class NodesVisitor : VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
         {
-            private readonly SemanticModel semanticModel;
-            private readonly Dictionary<ITypeSymbol, string> createConvertMethodsLookupByReturnType;
-            private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
-            private readonly Stack<string> withBlockTempVariableNames = new Stack<string>();
-            readonly IDictionary<string, string> importedNamespaces;
+            private readonly SemanticModel _semanticModel;
+            private readonly Dictionary<ITypeSymbol, string> _createConvertMethodsLookupByReturnType;
+            private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
+            private readonly Stack<string> _withBlockTempVariableNames = new Stack<string>();
+            readonly IDictionary<string, string> _importedNamespaces;
             private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(SyntaxKind.SemicolonToken);
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
 
             public NodesVisitor(SemanticModel semanticModel)
             {
-                this.semanticModel = semanticModel;
+                this._semanticModel = semanticModel;
                 TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
-                importedNamespaces = new Dictionary<string, string> {{VBasic.VisualBasicExtensions.RootNamespace(semanticModel.Compilation).ToString(), ""}};
-                createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
+                _importedNamespaces = new Dictionary<string, string> {{VBasic.VisualBasicExtensions.RootNamespace(semanticModel.Compilation).ToString(), ""}};
+                _createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
             }
 
             private static Dictionary<ITypeSymbol, string> CreateConvertMethodsLookupByReturnType(SemanticModel semanticModel)
@@ -89,10 +89,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitCompilationUnit(VBSyntax.CompilationUnitSyntax node)
             {
-                var options = (VBasic.VisualBasicCompilationOptions)semanticModel.Compilation.Options;
+                var options = (VBasic.VisualBasicCompilationOptions)_semanticModel.Compilation.Options;
                 var importsClauses = options.GlobalImports.Select(gi => gi.Clause).Concat(node.Imports.SelectMany(imp => imp.ImportsClauses)).ToList();
                 foreach (var importClause in importsClauses.OfType<VBSyntax.SimpleImportsClauseSyntax>()) {
-                    importedNamespaces[importClause.Name.ToString()] = importClause.Alias != null ? importClause.Alias.Identifier.ToString() : "";
+                    _importedNamespaces[importClause.Name.ToString()] = importClause.Alias != null ? importClause.Alias.Identifier.ToString() : "";
                 }
 
                 var attributes = SyntaxFactory.List(node.Attributes.SelectMany(a => a.AttributeLists).SelectMany(ConvertAttribute));
@@ -126,7 +126,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 );
 
                 // Add this afterwards so we don't try to shorten the namespace declaration itself
-                importedNamespaces[namespaceDeclaration.Name.ToString()] = "";
+                _importedNamespaces[namespaceDeclaration.Name.ToString()] = "";
 
                 return namespaceDeclaration;
             }
@@ -138,8 +138,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 foreach (var member in members) {
                     yield return (MemberDeclarationSyntax)member.Accept(TriviaConvertingVisitor);
 
-                    if (additionalDeclarations.TryGetValue(member, out var additionalStatements)) {
-                        additionalDeclarations.Remove(member);
+                    if (_additionalDeclarations.TryGetValue(member, out var additionalStatements)) {
+                        _additionalDeclarations.Remove(member);
                         foreach (var additionalStatement in additionalStatements) {
                             yield return additionalStatement;
                         }
@@ -318,7 +318,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var declarations = new List<MemberDeclarationSyntax>(node.Declarators.Count);
 
                 foreach (var declarator in node.Declarators) {
-                    foreach (var decl in VisualBasicConverter.SplitVariableDeclarations(declarator, this, semanticModel).Values) {
+                    foreach (var decl in VisualBasicConverter.SplitVariableDeclarations(declarator, this, _semanticModel).Values) {
                         var baseFieldDeclarationSyntax = SyntaxFactory.FieldDeclaration(
                             SyntaxFactory.List(attributes),
                             convertedModifiers,
@@ -333,7 +333,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
 
-                additionalDeclarations.Add(node, declarations.Skip(1).ToArray());
+                _additionalDeclarations.Add(node, declarations.Skip(1).ToArray());
                 return declarations.First();
             }
 
@@ -483,12 +483,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private bool IsExtensionAttribute(VBSyntax.AttributeSyntax a)
             {
-                return semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()?.Equals("System.Runtime.CompilerServices.ExtensionAttribute") == true;
+                return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()?.Equals("System.Runtime.CompilerServices.ExtensionAttribute") == true;
             }
 
             private TokenContext GetMethodOrPropertyContext(VBSyntax.StatementSyntax node)
             {
-                var parentType = semanticModel.GetDeclaredSymbol(node).ContainingType;
+                var parentType = _semanticModel.GetDeclaredSymbol(node).ContainingType;
                 switch (parentType.TypeKind) {
                     case TypeKind.Module:
                         return TokenContext.MemberInModule;
@@ -547,7 +547,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)))
                     );
 
-                    additionalDeclarations.Add(node, new MemberDeclarationSyntax[] { delegateDecl });
+                    _additionalDeclarations.Add(node, new MemberDeclarationSyntax[] { delegateDecl });
                     return eventDecl;
                 }
 
@@ -587,7 +587,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(bool isIterator = false)
             {
-                var methodBodyVisitor = new VisualBasicConverter.MethodBodyVisitor(semanticModel, TriviaConvertingVisitor, withBlockTempVariableNames, TriviaConvertingVisitor.TriviaConverter) {IsIterator = isIterator};
+                var methodBodyVisitor = new VisualBasicConverter.MethodBodyVisitor(_semanticModel, TriviaConvertingVisitor, _withBlockTempVariableNames, TriviaConvertingVisitor.TriviaConverter) {IsIterator = isIterator};
                 return methodBodyVisitor.CommentConvertingVisitor;
             }
 
@@ -672,7 +672,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     returnType = returnType ?? SyntaxFactory.ParseTypeName("object");
                 }
 
-                var rankSpecifiers = ConvertArrayRankSpecifierSyntaxes(node.Identifier.ArrayRankSpecifiers, node.Identifier.ArrayBounds, TriviaConvertingVisitor, semanticModel, false);
+                var rankSpecifiers = ConvertArrayRankSpecifierSyntaxes(node.Identifier.ArrayRankSpecifiers, node.Identifier.ArrayBounds, TriviaConvertingVisitor, _semanticModel, false);
                 if (rankSpecifiers.Any() && returnType != null) {
                     returnType = SyntaxFactory.ArrayType(returnType, rankSpecifiers);
                 }
@@ -726,9 +726,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (stmt.IdentifierName == null)
                     catcher = null;
                 else {
-                    var typeInfo = semanticModel.GetTypeInfo(stmt.IdentifierName).Type;
+                    var typeInfo = _semanticModel.GetTypeInfo(stmt.IdentifierName).Type;
                     catcher = SyntaxFactory.CatchDeclaration(
-                        SyntaxFactory.ParseTypeName(typeInfo.ToMinimalDisplayString(semanticModel, node.SpanStart)),
+                        SyntaxFactory.ParseTypeName(typeInfo.ToMinimalDisplayString(_semanticModel, node.SpanStart)),
                         ConvertIdentifier(stmt.IdentifierName.Identifier)
                     );
                 }
@@ -802,8 +802,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private ExpressionSyntax GetConvertMethodForKeywordOrNull(SyntaxNode type)
             {
-                var convertedType = semanticModel.GetTypeInfo(type).ConvertedType;
-                return createConvertMethodsLookupByReturnType.TryGetValue(convertedType, out var convertMethodName)
+                var convertedType = _semanticModel.GetTypeInfo(type).ConvertedType;
+                return _createConvertMethodsLookupByReturnType.TryGetValue(convertedType, out var convertMethodName)
                     ? SyntaxFactory.ParseExpression(convertMethodName) : null;
             }
 
@@ -819,13 +819,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitLiteralExpression(VBSyntax.LiteralExpressionSyntax node)
             {
                 if (node.Token.Value == null) {
-                    var type = semanticModel.GetTypeInfo(node).ConvertedType;
+                    var type = _semanticModel.GetTypeInfo(node).ConvertedType;
                     if (type == null) {
                         return Literal(null)
                             .WithTrailingTrivia(
                                 SyntaxFactory.Comment("/* TODO Change to default(_) if this is not a reference type */"));
                     }
-                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(type.ToMinimalDisplayString(semanticModel, node.SpanStart))) : Literal(null);
+                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(type.ToMinimalDisplayString(_semanticModel, node.SpanStart))) : Literal(null);
                 }
                 return Literal(node.Token.Value, node.Token.Text);
             }
@@ -874,7 +874,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     if (IsSubPartOfConditionalAccess(node)) {
                         return SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
                     }
-                    left = SyntaxFactory.IdentifierName(withBlockTempVariableNames.Peek());
+                    left = SyntaxFactory.IdentifierName(_withBlockTempVariableNames.Peek());
                 }
 
                 if (node.Expression.IsKind(VBasic.SyntaxKind.GlobalName)) {
@@ -882,7 +882,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, QualifyNode(node.Expression, left), simpleNameSyntax);
-                if (semanticModel.GetSymbolInfo(node).Symbol.IsKind(SymbolKind.Method) && node.Parent?.IsKind(VBasic.SyntaxKind.InvocationExpression) != true) {
+                if (_semanticModel.GetSymbolInfo(node).Symbol.IsKind(SymbolKind.Method) && node.Parent?.IsKind(VBasic.SyntaxKind.InvocationExpression) != true) {
                     var visitMemberAccessExpression = SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax, SyntaxFactory.ArgumentList());
                     return visitMemberAccessExpression;
                 }
@@ -905,7 +905,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitConditionalAccessExpression(VBSyntax.ConditionalAccessExpressionSyntax node)
             {
-                var leftExpression = (ExpressionSyntax)node.Expression?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.IdentifierName(withBlockTempVariableNames.Peek());
+                var leftExpression = (ExpressionSyntax)node.Expression?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.IdentifierName(_withBlockTempVariableNames.Peek());
                 return SyntaxFactory.ConditionalAccessExpression(leftExpression, (ExpressionSyntax)node.WhenNotNull.Accept(TriviaConvertingVisitor));
             }
 
@@ -924,21 +924,21 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitSimpleArgument(VBSyntax.SimpleArgumentSyntax node)
             {
-                int argID = ((VBSyntax.ArgumentListSyntax)node.Parent).Arguments.IndexOf(node);
+                int argId = ((VBSyntax.ArgumentListSyntax)node.Parent).Arguments.IndexOf(node);
                 var invocation = node.Parent.Parent;
                 if (invocation is VBSyntax.ArrayCreationExpressionSyntax)
                     return node.Expression.Accept(TriviaConvertingVisitor);
                 var symbol = invocation.TypeSwitch(
-                    (VBSyntax.InvocationExpressionSyntax e) => semanticModel.GetSymbolInfo(e).ExtractBestMatch(),
-                    (VBSyntax.ObjectCreationExpressionSyntax e) => semanticModel.GetSymbolInfo(e).ExtractBestMatch(),
-                    (VBSyntax.RaiseEventStatementSyntax e) => semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch(),
+                    (VBSyntax.InvocationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch(),
+                    (VBSyntax.ObjectCreationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch(),
+                    (VBSyntax.RaiseEventStatementSyntax e) => _semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch(),
                     _ => { throw new NotSupportedException(); }
                 );
                 SyntaxToken token = default(SyntaxToken);
                 if (symbol != null) {
                     var parameterKinds = symbol.GetParameters().Select(param => param.RefKind).ToList();
                     //WARNING: If named parameters can reach here it won't work properly for them
-                    var refKind = argID >= parameterKinds.Count && symbol.IsParams() ? RefKind.None : parameterKinds[argID];
+                    var refKind = argId >= parameterKinds.Count && symbol.IsParams() ? RefKind.None : parameterKinds[argId];
                     switch (refKind) {
                         case RefKind.None:
                             token = default(SyntaxToken);
@@ -1013,7 +1013,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitArrayCreationExpression(VBSyntax.ArrayCreationExpressionSyntax node)
             {
-                var bounds = ConvertArrayRankSpecifierSyntaxes(node.RankSpecifiers, node.ArrayBounds, TriviaConvertingVisitor, semanticModel);
+                var bounds = ConvertArrayRankSpecifierSyntaxes(node.RankSpecifiers, node.ArrayBounds, TriviaConvertingVisitor, _semanticModel);
                 return SyntaxFactory.ArrayCreationExpression(
                     SyntaxFactory.ArrayType((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor), bounds),
                     (InitializerExpressionSyntax)node.Initializer?.Accept(TriviaConvertingVisitor)
@@ -1045,7 +1045,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (node.Initializers.Count == 0 && node.Parent is VBSyntax.ArrayCreationExpressionSyntax)
                     return null;
                 var initializer = SyntaxFactory.InitializerExpression(SyntaxKind.CollectionInitializerExpression, SyntaxFactory.SeparatedList(node.Initializers.Select(i => (ExpressionSyntax)i.Accept(TriviaConvertingVisitor))));
-                var typeInfo = semanticModel.GetTypeInfo(node);
+                var typeInfo = _semanticModel.GetTypeInfo(node);
                 return typeInfo.Type == null && (typeInfo.ConvertedType?.SpecialType == SpecialType.System_Collections_IEnumerable || typeInfo.ConvertedType?.IsKind(SymbolKind.ArrayType) == true)
                     ? (CSharpSyntaxNode)SyntaxFactory.ImplicitArrayCreationExpression(initializer)
                     : initializer;
@@ -1129,7 +1129,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private SyntaxToken ConvertIdentifier(SyntaxToken identifierIdentifier, bool isAttribute = false)
             {
-                return VisualBasicConverter.ConvertIdentifier(identifierIdentifier, semanticModel, isAttribute);
+                return VisualBasicConverter.ConvertIdentifier(identifierIdentifier, _semanticModel, isAttribute);
             }
 
             private QueryClauseSyntax ConvertWhereClause(VBSyntax.WhereClauseSyntax ws)
@@ -1276,7 +1276,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 // e.g. VB DivideExpression "/" is always on doubles unless you use the "\" IntegerDivideExpression, so need to cast in C#
                 // Need the unconverted type, since the whole point is that it gets converted to a double by the operator
-                if (node.IsKind(VBasic.SyntaxKind.DivideExpression) && !node.HasOperandOfUnconvertedType("System.Double", semanticModel)) {
+                if (node.IsKind(VBasic.SyntaxKind.DivideExpression) && !node.HasOperandOfUnconvertedType("System.Double", _semanticModel)) {
                     var doubleType = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword));
                     rhs = SyntaxFactory.CastExpression(doubleType, rhs);
                 }
@@ -1295,8 +1295,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitInvocationExpression(VBSyntax.InvocationExpressionSyntax node)
             {
-                var invocationSymbol = semanticModel.GetSymbolInfo(node).ExtractBestMatch();
-                var symbol = semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
+                var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch();
+                var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
                 if (invocationSymbol?.IsIndexer() == true || symbol?.GetReturnType()?.IsArrayType() == true && !(symbol is IMethodSymbol)) //The null case happens quite a bit - should try to fix
                 {
                     return SyntaxFactory.ElementAccessExpression(
@@ -1440,7 +1440,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var typeOrNamespace = targetSymbolInfo.ContainingNamespace.ToDisplayString(referenceSymbolFormat);
                 if (typeBlockSyntax != null) {
-                    var declaredSymbol = semanticModel.GetDeclaredSymbol(typeBlockSyntax);
+                    var declaredSymbol = _semanticModel.GetDeclaredSymbol(typeBlockSyntax);
                     var prefixes = GetSymbolQualification(declaredSymbol)
                     .Where(x => x != null).Select(p => p.ToDisplayString(referenceSymbolFormat) + ".");
                     var firstMatch = prefixes.FirstOrDefault(p => qualifiedName.StartsWith(p));
@@ -1449,7 +1449,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         // CSharp allows partial qualification within the current type's parent namespace
                         qualifiedName = qualifiedName.Substring(firstMatch.Length);
                     }
-                    else if (!targetSymbolInfo.IsNamespace() && importedNamespaces.ContainsKey(typeOrNamespace))
+                    else if (!targetSymbolInfo.IsNamespace() && _importedNamespaces.ContainsKey(typeOrNamespace))
                     {
                         // An import matches the entire namespace, which means it's not a partially qualified thing that would need extra help in CSharp
                         qualifiedName = qualifiedName.Substring(typeOrNamespace.Length + 1);
@@ -1476,7 +1476,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             /// <returns>The ISymbol if available in this document, otherwise null</returns>
             private ISymbol GetSymbolInfoInDocument(SyntaxNode node)
             {
-                return semanticModel.SyntaxTree == node.SyntaxTree ? semanticModel.GetSymbolInfo(node).Symbol : null;
+                return _semanticModel.SyntaxTree == node.SyntaxTree ? _semanticModel.GetSymbolInfo(node).Symbol : null;
             }
 
             public override CSharpSyntaxNode VisitQualifiedName(VBSyntax.QualifiedNameSyntax node)

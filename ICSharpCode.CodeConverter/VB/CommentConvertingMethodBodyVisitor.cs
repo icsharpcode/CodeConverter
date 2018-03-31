@@ -12,13 +12,13 @@ namespace ICSharpCode.CodeConverter.VB
 {
     public class CommentConvertingMethodBodyVisitor : CS.CSharpSyntaxVisitor<SyntaxList<VBSyntax.StatementSyntax>>
     {
-        private readonly CS.CSharpSyntaxVisitor<SyntaxList<VBSyntax.StatementSyntax>> wrappedVisitor;
-        private readonly TriviaConverter triviaConverter;
+        private readonly CS.CSharpSyntaxVisitor<SyntaxList<VBSyntax.StatementSyntax>> _wrappedVisitor;
+        private readonly TriviaConverter _triviaConverter;
 
         public CommentConvertingMethodBodyVisitor(CS.CSharpSyntaxVisitor<SyntaxList<VBSyntax.StatementSyntax>> wrappedVisitor, TriviaConverter triviaConverter)
         {
-            this.wrappedVisitor = wrappedVisitor;
-            this.triviaConverter = triviaConverter;
+            this._wrappedVisitor = wrappedVisitor;
+            this._triviaConverter = triviaConverter;
         }
 
         public override SyntaxList<VBSyntax.StatementSyntax> DefaultVisit(SyntaxNode node)
@@ -32,10 +32,10 @@ namespace ICSharpCode.CodeConverter.VB
 
         private SyntaxList<VBSyntax.StatementSyntax> ConvertWithTrivia(SyntaxNode node)
         {
-            var convertedNodes = wrappedVisitor.Visit(node);
+            var convertedNodes = _wrappedVisitor.Visit(node);
             if (!convertedNodes.Any()) return convertedNodes;
             // Port trivia to the last statement in the list
-            var lastWithConvertedTrivia = triviaConverter.PortConvertedTrivia(node, convertedNodes.LastOrDefault());
+            var lastWithConvertedTrivia = _triviaConverter.PortConvertedTrivia(node, convertedNodes.LastOrDefault());
             return convertedNodes.Replace(convertedNodes.LastOrDefault(), lastWithConvertedTrivia);
         }
 

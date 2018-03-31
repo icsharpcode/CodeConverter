@@ -30,7 +30,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private ProjectConversion(Compilation sourceCompilation, IEnumerable<SyntaxTree> syntaxTreesToConvert)
         {
             _languageConversion = new TLanguageConversion();
-            _sourceCompilation = sourceCompilation;
+            this._sourceCompilation = sourceCompilation;
             _syntaxTreesToConvert = syntaxTreesToConvert.ToList();
             _handlePartialConversion = _syntaxTreesToConvert.Count() == 1;
         }
@@ -132,13 +132,13 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private void SingleFirstPass(SyntaxTree tree, string treeFilePath)
         {
-            var sourceCompilation = _sourceCompilation;
+            var currentSourceCompilation = this._sourceCompilation;
             var newTree = MakeFullCompilationUnit(tree);
             if (newTree != tree) {
-                sourceCompilation = sourceCompilation.ReplaceSyntaxTree(tree, newTree);
+                currentSourceCompilation = currentSourceCompilation.ReplaceSyntaxTree(tree, newTree);
                 tree = newTree;
             }
-            var convertedTree = _languageConversion.SingleFirstPass(sourceCompilation, tree);
+            var convertedTree = _languageConversion.SingleFirstPass(currentSourceCompilation, tree);
             _firstPassResults.Add(treeFilePath, convertedTree);
         }
 

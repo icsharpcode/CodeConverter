@@ -14,14 +14,14 @@ namespace ICSharpCode.CodeConverter.VB
         public static string QualifiedInlineAssignMethodName { get; } = $"{CSharpImplClassName}.{InlineAssignMethodName}";
         public static string QualifiedThrowMethodName { get; } = $"{CSharpImplClassName}.{ThrowMethodName}";
 
-        private readonly string assignMethodDefinition =
+        private readonly string _assignMethodDefinition =
             $@"<Obsolete(""Please refactor calling code to use normal Visual Basic assignment"")>
 Shared Function {InlineAssignMethodName}(Of T)(ByRef target As T, value As T) As T
     target = value
     Return value
 End Function";
 
-        private readonly string throwMethodDefinition =
+        private readonly string _throwMethodDefinition =
             $@"<Obsolete(""Please refactor calling code to use normal throw statements"")>
 Shared Function {ThrowMethodName}(Of T)(ByVal e As Exception) As T
     Throw e
@@ -44,11 +44,11 @@ End Function";
         private IEnumerable<StatementSyntax> GetInlineHelperMethods()
         {
             if (AddInlineAssignMethod) {
-                yield return Parse(assignMethodDefinition);
+                yield return Parse(_assignMethodDefinition);
             }
 
             if (AddThrowMethod) {
-                yield return Parse(throwMethodDefinition);
+                yield return Parse(_throwMethodDefinition);
             }
         }
 

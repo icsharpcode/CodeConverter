@@ -8,18 +8,18 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal class CompilationErrorFixer
     {
-        private readonly CSharpSyntaxTree syntaxTree;
-        private readonly SemanticModel semanticModel;
+        private readonly CSharpSyntaxTree _syntaxTree;
+        private readonly SemanticModel _semanticModel;
 
         public CompilationErrorFixer(CSharpCompilation compilation, CSharpSyntaxTree syntaxTree)
         {
-            this.syntaxTree = syntaxTree;
-            this.semanticModel = compilation.GetSemanticModel(syntaxTree, true);
+            this._syntaxTree = syntaxTree;
+            this._semanticModel = compilation.GetSemanticModel(syntaxTree, true);
         }
 
         public CSharpSyntaxNode Fix()
         {
-            var syntaxNode = syntaxTree.GetRoot();
+            var syntaxNode = _syntaxTree.GetRoot();
             return syntaxNode.ReplaceNodes(syntaxNode.DescendantNodes(), ComputeReplacementNode);
         }
 
@@ -30,7 +30,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var invocationExpression = nodeToReturn.FirstAncestorOrSelf<InvocationExpressionSyntax>();
             if (invocationExpression == null) return potentiallyRewrittenNode;
 
-            var methodSymbol = semanticModel.GetSymbolInfo(invocationExpression).CandidateSymbols.OfType<IMethodSymbol>()
+            var methodSymbol = _semanticModel.GetSymbolInfo(invocationExpression).CandidateSymbols.OfType<IMethodSymbol>()
                 .FirstOrDefault(s => invocationExpression.ArgumentList.Arguments.Count == s.Parameters.Length);
             if (methodSymbol != null) {
                 //Won't work for named parameters

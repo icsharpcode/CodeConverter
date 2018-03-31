@@ -19,14 +19,14 @@ namespace CodeConverter.Tests
 {
     public class ConverterTestBase
     {
-        private bool testCSToVBCommentsByDefault = false;
+        private bool _testCstoVBCommentsByDefault = false;
 
         public void TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
         {
             expectedVisualBasicCode = AddSurroundingMethodBlock(expectedVisualBasicCode, expectSurroundingMethodBlock);
 
             TestConversionCSharpToVisualBasicWithoutComments(csharpCode, expectedVisualBasicCode);
-            if (testCSToVBCommentsByDefault) TestConversionCSharpToVisualBasicWithoutComments(AddLineNumberComments(csharpCode, "// ", false), AddLineNumberComments(expectedVisualBasicCode, "' ", true));
+            if (_testCstoVBCommentsByDefault) TestConversionCSharpToVisualBasicWithoutComments(AddLineNumberComments(csharpCode, "// ", false), AddLineNumberComments(expectedVisualBasicCode, "' ", true));
         }
 
         private static string AddSurroundingMethodBlock(string expectedVisualBasicCode, bool expectSurroundingBlock)
