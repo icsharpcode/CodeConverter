@@ -244,6 +244,32 @@ End Class");
         }
 
         [Fact]
+        public void TestPropertyWithExpressionBody()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"public class ConversionResult
+{
+    private string _sourcePathOrNull;
+    
+    public string SourcePathOrNull {
+        get => _sourcePathOrNull;
+        set => _sourcePathOrNull = string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+}", @"Public Class ConversionResult
+    Private _sourcePathOrNull As String
+
+    Public Property SourcePathOrNull As String
+        Get
+            Return _sourcePathOrNull
+        End Get
+        Set(ByVal value As String)
+            _sourcePathOrNull = If(String.IsNullOrWhiteSpace(value), Nothing, value)
+        End Set
+    End Property
+End Class");
+        }
+
+        [Fact]
         public void TestPropertyWithAttribute()
         {
             TestConversionCSharpToVisualBasic(
