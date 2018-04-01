@@ -196,7 +196,7 @@ namespace ICSharpCode.CodeConverter.VB
                 StatementSyntax stmt;
                 _blockInfo.Push(new BlockInfo());
                 try {
-                    var blocks = node.Sections.Select(ConvertSwitchSection).ToArray();
+                    var blocks = node.Sections.OrderBy(IsDefaultSwitchStatement).Select(ConvertSwitchSection).ToArray();
                     stmt = SyntaxFactory.SelectBlock(
                         SyntaxFactory.SelectStatement((ExpressionSyntax)node.Expression.Accept(_nodesVisitor)).WithCaseKeyword(SyntaxFactory.Token(SyntaxKind.CaseKeyword)),
                         SyntaxFactory.List(AddLabels(blocks, _blockInfo.Peek().GotoCaseExpressions))
@@ -223,9 +223,14 @@ namespace ICSharpCode.CodeConverter.VB
 
             CaseBlockSyntax ConvertSwitchSection(CSS.SwitchSectionSyntax section)
             {
-                if (section.Labels.OfType<CSS.DefaultSwitchLabelSyntax>().Any())
+                if (IsDefaultSwitchStatement(section))
                     return SyntaxFactory.CaseElseBlock(SyntaxFactory.CaseElseStatement(SyntaxFactory.ElseCaseClause()), ConvertSwitchSectionBlock(section));
                 return SyntaxFactory.CaseBlock(SyntaxFactory.CaseStatement(SyntaxFactory.SeparatedList(section.Labels.OfType<CSS.CaseSwitchLabelSyntax>().Select(ConvertSwitchLabel))), ConvertSwitchSectionBlock(section));
+            }
+
+            private static bool IsDefaultSwitchStatement(CSS.SwitchSectionSyntax c)
+            {
+                return c.Labels.OfType<CSS.DefaultSwitchLabelSyntax>().Any();
             }
 
             SyntaxList<StatementSyntax> ConvertSwitchSectionBlock(CSS.SwitchSectionSyntax section)

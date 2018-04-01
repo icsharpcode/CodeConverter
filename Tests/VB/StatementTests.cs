@@ -894,11 +894,11 @@ End Class");
             case 4:
                 Console.Write(""section 4"");
                 goto default;
-            case 5:
-                Console.Write(""section 5"");
-                break;
             default:
                 Console.Write(""default section"");
+                break;
+            case 5:
+                Console.Write(""section 5"");
                 break;
         }
     }
