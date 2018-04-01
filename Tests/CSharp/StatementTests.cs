@@ -435,17 +435,27 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void MultidimensionalArrayInitializationStatementWithLengths()
+        public void MultidimensionalArrayInitializationStatementWithAndWithoutLengths()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
+        Dim a As Integer(,) = New Integer(,) {{1, 2}, {3, 4}}
         Dim b As Integer(,) = New Integer(1, 1) {{1, 2}, {3, 4}}
+        Dim c as Integer(,,) = New Integer(,,) {{{1}}}
+        Dim d as Integer(,,) = New Integer(0, 0, 0) {{{1}}}
+        Dim e As Integer()(,) = New Integer()(,) {}
+        Dim f As Integer()(,) = New Integer(-1)(,) {}
     End Sub
 End Class", @"class TestClass
 {
     private void TestMethod()
     {
+        int[,] a = new int[,] { { 1, 2 }, { 3, 4 } };
         int[,] b = new int[2, 2] { { 1, 2 }, { 3, 4 } };
+        int[,,] c = new int[,,] { { { 1 } } };
+        int[,,] d = new int[1, 1, 1] { { { 1 } } };
+        int[][,] e = new int[][,] { };
+        int[][,] f = new int[0][,] { };
     }
 }");
         }
@@ -487,18 +497,13 @@ End Class", @"class TestClass
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer()() = New Integer()() {New Integer() {1, 2}, New Integer() {3, 4}}
+        Dim b = New Integer()() {New Integer() {1}}
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[][] b = new int[][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
+        var b = new int[][] { new int[] { 1 } };
     }
 }");
         }

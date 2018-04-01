@@ -1014,9 +1014,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitArrayCreationExpression(VBSyntax.ArrayCreationExpressionSyntax node)
             {
                 var bounds = ConvertArrayRankSpecifierSyntaxes(node.RankSpecifiers, node.ArrayBounds, TriviaConvertingVisitor, _semanticModel);
+                var allowInitializer = node.Initializer.Initializers.Any() || node.ArrayBounds == null ||
+                                       node.ArrayBounds.Arguments.All(b => b.IsOmitted || _semanticModel.GetConstantValue(b.GetExpression()).HasValue);
+                var initializerToConvert = allowInitializer ? node.Initializer : null;
                 return SyntaxFactory.ArrayCreationExpression(
                     SyntaxFactory.ArrayType((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor), bounds),
-                    (InitializerExpressionSyntax)node.Initializer?.Accept(TriviaConvertingVisitor)
+                    (InitializerExpressionSyntax)initializerToConvert?.Accept(TriviaConvertingVisitor)
                 );
             }
 
@@ -1026,11 +1029,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax)r.Accept(commentConvertingNodesVisitor)));
 
-                if (nodeArrayBounds != null)
-                {
-                    var convertedArrayBounds = withSizes ?
+                if (nodeArrayBounds != null) {
+                    var sizesSpecified = nodeArrayBounds.Arguments.Any(a => !a.IsOmitted);
+                    var rank = nodeArrayBounds.Arguments.Count;
+                    if (!sizesSpecified) rank += 1;
+
+                    var convertedArrayBounds = withSizes && sizesSpecified ?
                         MethodBodyVisitor.ConvertArrayBounds(nodeArrayBounds, semanticModel, commentConvertingNodesVisitor)
-                        : nodeArrayBounds.Arguments.Select(s  => SyntaxFactory.OmittedArraySizeExpression());
+                        : Enumerable.Repeat(SyntaxFactory.OmittedArraySizeExpression(), rank);
                     var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(
                         SyntaxFactory.SeparatedList(
                             convertedArrayBounds));
@@ -1042,11 +1048,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitCollectionInitializer(VBSyntax.CollectionInitializerSyntax node)
             {
-                if (node.Initializers.Count == 0 && node.Parent is VBSyntax.ArrayCreationExpressionSyntax)
-                    return null;
-                var initializer = SyntaxFactory.InitializerExpression(SyntaxKind.CollectionInitializerExpression, SyntaxFactory.SeparatedList(node.Initializers.Select(i => (ExpressionSyntax)i.Accept(TriviaConvertingVisitor))));
                 var typeInfo = _semanticModel.GetTypeInfo(node);
-                return typeInfo.Type == null && (typeInfo.ConvertedType?.SpecialType == SpecialType.System_Collections_IEnumerable || typeInfo.ConvertedType?.IsKind(SymbolKind.ArrayType) == true)
+                var isArrayType = typeInfo.ConvertedType?.IsKind(SymbolKind.ArrayType) == true;
+                var initializerType = isArrayType ? SyntaxKind.ArrayInitializerExpression : SyntaxKind.CollectionInitializerExpression;
+                var initializer = SyntaxFactory.InitializerExpression(initializerType, SyntaxFactory.SeparatedList(node.Initializers.Select(i => (ExpressionSyntax)i.Accept(TriviaConvertingVisitor))));
+                return typeInfo.Type == null && (typeInfo.ConvertedType?.SpecialType == SpecialType.System_Collections_IEnumerable || isArrayType)
                     ? (CSharpSyntaxNode)SyntaxFactory.ImplicitArrayCreationExpression(initializer)
                     : initializer;
             }
