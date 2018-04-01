@@ -33,13 +33,10 @@ World!"";
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private DefaultDate as Date = Nothing
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {
-    private System.DateTime DefaultDate = default(Date);
+    private DateTime DefaultDate = default(DateTime);
 }");
         }
 
@@ -92,7 +89,9 @@ End Class", @"class TestClass
         x \= 4
         x ^= 5
     End Sub
-End Class", @"class TestClass
+End Class", @"using System;
+
+class TestClass
 {
     private void TestMethod()
     {
@@ -139,12 +138,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim strings = { ""1"", ""2"" }
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -161,9 +155,6 @@ class TestClass
         Dim str = (New ThreadStaticAttribute).ToString
     End Sub
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {
@@ -182,12 +173,7 @@ class TestClass
         Dim str = ""Hello, ""
         str &= ""World""
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -204,12 +190,7 @@ class TestClass
     Private Sub TestMethod()
         Dim typ = GetType(String)
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -226,12 +207,7 @@ class TestClass
         Dim s = ""1,2""
         Return s.Split(s(1))
     End Function
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private string[] TestMethod()
     {
@@ -248,12 +224,7 @@ class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = If((str = """"), True, False)
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod(string str)
     {
@@ -270,9 +241,6 @@ class TestClass
         Console.WriteLine(If(str, ""<null>""))
     End Sub
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {
@@ -294,9 +262,6 @@ class TestClass
         Console.ReadKey()
     End Sub
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {
@@ -319,10 +284,7 @@ class TestClass
         Dim s As String
         d.TryGetValue(""a"", s)
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
+End Class", @"using System.Collections.Generic;
 
 class TestClass
 {
@@ -377,9 +339,6 @@ class TestClass
         Dim redirectUri As String = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri
     End Sub
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
 
 class TestClass
 {
@@ -443,12 +402,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Me.member = 0
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private int member;
 
@@ -472,12 +426,7 @@ Class TestClass
     Private Sub TestMethod()
         MyBase.member = 0
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class BaseTestClass
+End Class", @"class BaseTestClass
 {
     public int member;
 }
@@ -499,12 +448,7 @@ class TestClass : BaseTestClass
         Dim test = Function(ByVal a As Integer) a * 2
         test(3)
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -528,12 +472,7 @@ class TestClass
         Dim test3 = Function(a, b) a Mod b
         test(3)
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
@@ -564,9 +503,7 @@ class TestClass
         Console.WriteLine(result)
     End Sub
 End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
+using System.Threading.Tasks;
 
 class TestClass
 {
@@ -603,7 +540,7 @@ End Sub",
 
     foreach (var n in res)
         Console.WriteLine(n);
-}", expectUsings: false);
+}");
         }
 
         [Fact]
@@ -635,7 +572,7 @@ End Sub",
         foreach (var n in g.Numbers)
             Console.WriteLine(n);
     }
-}", expectUsings: false);
+}");
         }
 
         [Fact()]
@@ -657,7 +594,10 @@ Class Test
         Next
     End Sub
 End Class",
-                @"class Product
+                @"using System;
+using System.Linq;
+
+class Product
 {
     public string Category;
     public string ProductName;
@@ -709,7 +649,7 @@ End Sub", @"public void Linq103()
         foreach (var p in v.Products)
             Console.WriteLine(""   "" + p.ProductName);
     }
-}", expectUsings: false);
+}");
         }
 
         [Fact]
@@ -727,7 +667,7 @@ End Function", @"private static string FindPicFilePath(string picId)
                                   select FileInfo1)
         return FileInfo.FullName;
     return string.Empty;
-}", expectUsings: false);
+}");
         }
 
         [Fact]
@@ -737,12 +677,7 @@ End Function", @"private static string FindPicFilePath(string picId)
     Public Function TestMethod(dir As String) As String
          Return IO.Path.Combine(dir, ""file.txt"")
     End Function
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     public string TestMethod(string dir)
     {
@@ -758,10 +693,7 @@ class TestClass
     Public Function TestMethod() As String
          Return vbCrLf
     End Function
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
+End Class", @"using Microsoft.VisualBasic;
 
 class TestClass
 {

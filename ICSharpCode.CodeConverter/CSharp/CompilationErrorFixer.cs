@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -8,6 +10,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal class CompilationErrorFixer
     {
+        private const string UnresolvedTypeOrNamespaceDiagnosticId = "CS0246";
+        private const string UnusedUsingDiagnosticId = "CS8019";
         private readonly CSharpSyntaxTree _syntaxTree;
         private readonly SemanticModel _semanticModel;
 
@@ -20,30 +24,65 @@ namespace ICSharpCode.CodeConverter.CSharp
         public CSharpSyntaxNode Fix()
         {
             var syntaxNode = _syntaxTree.GetRoot();
-            return syntaxNode.ReplaceNodes(syntaxNode.DescendantNodes(), ComputeReplacementNode);
+            return syntaxNode.ReplaceNodes(syntaxNode.DescendantNodes(), ComputeReplacementNode)
+                .TypeSwitch(
+                    (CompilationUnitSyntax x) => TidyUsings(x),
+                    node => node
+                );
         }
 
         private SyntaxNode ComputeReplacementNode(SyntaxNode originalNode, SyntaxNode potentiallyRewrittenNode)
         {
-            if (!(potentiallyRewrittenNode is ArgumentListSyntax nodeToReturn)) return potentiallyRewrittenNode;
+            return potentiallyRewrittenNode.TypeSwitch(
+                (ArgumentListSyntax x) => FixOutParameters(x),
+                node => node
+            );
+        }
 
-            var invocationExpression = nodeToReturn.FirstAncestorOrSelf<InvocationExpressionSyntax>();
-            if (invocationExpression == null) return potentiallyRewrittenNode;
+        /// <remarks>These are tidied up so we can add as many GlobalImports as we want when building compilations</remarks>
+        private CSharpSyntaxNode TidyUsings(CompilationUnitSyntax compilationUnitSyntax)
+        {
+            var diagnostics = _semanticModel.GetDiagnostics().ToList();
+            var unusedUsings = diagnostics
+                .Where(d => d.Id == UnusedUsingDiagnosticId)
+                .Select(d => compilationUnitSyntax.FindNode(d.Location.SourceSpan))
+                .OfType<UsingDirectiveSyntax>()
+                .ToList();
+            if (diagnostics.All(d => d.Id != UnresolvedTypeOrNamespaceDiagnosticId) && unusedUsings.Any()) {
+                compilationUnitSyntax = compilationUnitSyntax.RemoveNodes(unusedUsings, SyntaxRemoveOptions.KeepNoTrivia);
+            }
+
+            return compilationUnitSyntax;
+        }
+
+        private SyntaxNode FixOutParameters(ArgumentListSyntax argumentListSyntax)
+        {
+            var invocationExpression = argumentListSyntax.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+            if (invocationExpression == null) {
+                return argumentListSyntax;
+            }
 
             var methodSymbol = _semanticModel.GetSymbolInfo(invocationExpression).CandidateSymbols.OfType<IMethodSymbol>()
-                .FirstOrDefault(s => invocationExpression.ArgumentList.Arguments.Count == s.Parameters.Length);
-            if (methodSymbol != null) {
+                .FirstOrDefault(s => argumentListSyntax.Arguments.Count == s.Parameters.Length);
+            if (methodSymbol != null)
+            {
                 //Won't work for named parameters
-                for (var index = 0; index < Math.Min(nodeToReturn.Arguments.Count, methodSymbol.Parameters.Length); index++) {
-                    var argument = nodeToReturn.Arguments[index];
+                for (var index = 0;
+                    index < Math.Min(argumentListSyntax.Arguments.Count, methodSymbol.Parameters.Length);
+                    index++)
+                {
+                    var argument = argumentListSyntax.Arguments[index];
                     var refOrOutKeyword = GetRefKeyword(methodSymbol.Parameters[index]);
-                    var currentSyntaxKind = nodeToReturn.Arguments[index].Kind();
-                    if (!refOrOutKeyword.IsKind(currentSyntaxKind)) {
-                        nodeToReturn = nodeToReturn.ReplaceNode(argument, argument.WithRefOrOutKeyword(refOrOutKeyword));
+                    var currentSyntaxKind = argumentListSyntax.Arguments[index].Kind();
+                    if (!refOrOutKeyword.IsKind(currentSyntaxKind))
+                    {
+                        argumentListSyntax =
+                            argumentListSyntax.ReplaceNode(argument, argument.WithRefOrOutKeyword(refOrOutKeyword));
                     }
                 }
             }
-            return nodeToReturn;
+
+            return argumentListSyntax;
         }
 
         private static SyntaxToken GetRefKeyword(IParameterSymbol formalParameter)

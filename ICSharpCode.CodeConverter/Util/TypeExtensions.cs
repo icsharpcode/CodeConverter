@@ -33,7 +33,7 @@ namespace ICSharpCode.CodeConverter.Util
         /// </summary>
         public static string GetFullName(this INamespaceSymbol ns)
         {
-            return ns.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
+            return ns.ToCSharpDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace ICSharpCode.CodeConverter.Util
         /// </summary>
         public static string GetFullName(this ITypeSymbol type)
         {
-            return type.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
+            return type.ToCSharpDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
         }
 
         /// <summary>

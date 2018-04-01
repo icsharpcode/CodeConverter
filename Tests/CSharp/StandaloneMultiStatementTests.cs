@@ -67,7 +67,7 @@ obj = null;",
         {
             TestConversionVisualBasicToCSharp(
                 @"Private x As Integer = 3",
-                @"private int x = 3;", expectUsings: false);
+                @"private int x = 3;");
         }
 
         [Fact]
@@ -86,7 +86,7 @@ End Class",
         {
             TestConversionVisualBasicToCSharp(
                 @"Private MustOverride Sub abs()",
-                @"private abstract void abs();", expectUsings: false);
+                @"private abstract void abs();");
         }
 
         [Fact]
@@ -101,11 +101,9 @@ End Namespace",
         }
 
         [Fact]
-        public void SingleUsing()
+        public void SingleUnusedUsingAliasTidiedAway()
         {
-            TestConversionVisualBasicToCSharp(
-                @"Imports s = System.String",
-                @"using s = System.String;");
+            TestConversionVisualBasicToCSharp(@"Imports tr = System.IO.TextReader", "");
         }
     }
 }

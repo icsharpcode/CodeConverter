@@ -257,7 +257,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var predefinedKeywordKind = convertedType.SpecialType.GetPredefinedKeywordKind();
                 if (predefinedKeywordKind != SyntaxKind.None) return SyntaxFactory.PredefinedType(SyntaxFactory.Token(predefinedKeywordKind));
-                return SyntaxFactory.ParseTypeName(convertedType.ToMinimalDisplayString(_semanticModel, nodeSpanStart));
+                return SyntaxFactory.ParseTypeName(convertedType.ToMinimalCSharpDisplayString(_semanticModel, nodeSpanStart));
             }
 
             public override SyntaxList<StatementSyntax> VisitThrowStatement(VBSyntax.ThrowStatementSyntax node)
@@ -303,7 +303,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         else if (info.IsReferenceType)
                             expr = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
                         else if (info.CanBeReferencedByName)
-                            expr = SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(info.ToMinimalDisplayString(_semanticModel, node.SpanStart)));
+                            expr = SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(info.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart)));
                         else
                             throw new NotSupportedException();
                         return SingleStatement(SyntaxFactory.ReturnStatement(expr));

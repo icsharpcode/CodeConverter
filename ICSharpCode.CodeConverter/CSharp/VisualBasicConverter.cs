@@ -185,8 +185,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     } else if (text.StartsWith("_", StringComparison.Ordinal) && symbol is IFieldSymbol fieldSymbol && fieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
 
                         text = fieldSymbol.AssociatedSymbol.Name;
-                    } else
-                        text = symbol.Name;
+                    }
                 }
             }
             return SyntaxFactory.Identifier(text);
@@ -207,7 +206,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             VBasic.SyntaxKind vbSyntaxKind = VBasic.VisualBasicExtensions.Kind(m);
             switch (vbSyntaxKind) {
                 case VBasic.SyntaxKind.DateKeyword:
-                    return SyntaxFactory.Identifier("System.DateTime");
+                    return SyntaxFactory.Identifier("DateTime");
             }
             var token = SyntaxKindExtensions.ConvertToken(vbSyntaxKind, context);
             return token == SyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));
