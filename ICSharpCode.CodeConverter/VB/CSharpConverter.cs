@@ -85,11 +85,6 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context));
         }
 
-        static SyntaxTokenList ConvertModifiers(SyntaxTokenList modifiers, TokenContext context = SyntaxKindExtensions.TokenContext.Global)
-        {
-            return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context));
-        }
-
         static SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = SyntaxKindExtensions.TokenContext.Global)
         {
             var token = SyntaxKindExtensions.ConvertToken(CS.CSharpExtensions.Kind(m), context);
