@@ -451,12 +451,19 @@ namespace ICSharpCode.CodeConverter.VB
                 ConvertAndSplitAttributes(node.AttributeLists, out var attributes, out var returnAttributes);
                 bool isIterator = false;
                 List<AccessorBlockSyntax> accessors = new List<AccessorBlockSyntax>();
-                foreach (var a in node.AccessorList?.Accessors) {
+                var csAccessors = node.AccessorList.Accessors;
+                foreach (var a in csAccessors) {
                     accessors.Add(ConvertAccessor(a, out var isAIterator));
                     isIterator |= isAIterator;
                 }
                 var modifiers = CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Member);
                 if (isIterator) modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.IteratorKeyword));
+                if (csAccessors.Count == 1) {
+                    var accessLimitation = csAccessors.Single().IsKind(CS.SyntaxKind.SetAccessorDeclaration)
+                        ? SyntaxKind.WriteOnlyKeyword
+                        : SyntaxKind.ReadOnlyKeyword;
+                    modifiers = modifiers.Add(SyntaxFactory.Token(accessLimitation));
+                }
                 var stmt = SyntaxFactory.PropertyStatement(
                     attributes,
                     modifiers,

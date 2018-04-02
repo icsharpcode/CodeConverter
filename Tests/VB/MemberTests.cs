@@ -224,7 +224,7 @@ End Module");
 }", @"Class TestClass
     Public Property Test As Integer
 
-    Public Property Test2 As Integer
+    Public ReadOnly Property Test2 As Integer
         Get
             Return 0
         End Get
@@ -264,6 +264,38 @@ End Class");
         End Get
         Set(ByVal value As String)
             _sourcePathOrNull = If(String.IsNullOrWhiteSpace(value), Nothing, value)
+        End Set
+    End Property
+End Class");
+        }
+
+        [Fact]
+        public void TestPropertyWithExpressionBodyThatCanBeStatement()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"public class ConversionResult
+{
+    private int _num;
+    
+    public string Num {
+        set => _num++;
+    }
+
+    public string Blanket {
+        set => throw new Exception();
+    }
+}", @"Public Class ConversionResult
+    Private _num As Integer
+
+    Public WriteOnly Property Num As String
+        Set(ByVal value As String)
+            _num += 1
+        End Set
+    End Property
+
+    Public WriteOnly Property Blanket As String
+        Set(ByVal value As String)
+            Throw New Exception()
         End Set
     End Property
 End Class");
