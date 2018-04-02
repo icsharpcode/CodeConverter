@@ -72,20 +72,24 @@ End Class");
 End Class");
         }
 
-        [Fact(Skip = "https://github.com/icsharpcode/CodeConverter/issues/62")]
+        [Fact]
         public void DeclarationExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            TestConversionCSharpToVisualBasic(@"using System.Collections.Generic;
+
+class TestClass
 {
     private static bool Do()
     {
         var d = new Dictionary<string, string>();
         return d.TryGetValue("""", out var output);
     }
-}", @"Class TestClass
+}", @"Imports System.Collections.Generic
+
+Class TestClass
     Private Shared Function [Do]() As Boolean
-        Dim output As String
         Dim d = New Dictionary(Of String, String)()
+        Dim output As string = Nothing" + /* Ideally string would have the first letter uppercased but that's out of scope for this test */ @"
         Return d.TryGetValue("""", output)
     End Function
 End Class");

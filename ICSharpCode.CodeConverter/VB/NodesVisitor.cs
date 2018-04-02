@@ -336,8 +336,7 @@ namespace ICSharpCode.CodeConverter.VB
                 CSS.ArrowExpressionClauseSyntax expressionBody, MethodBodyVisitor iteratorState = null)
             {
                 if (body != null) {
-                    return SyntaxFactory.List(body.Statements.SelectMany(s =>
-                        s.Accept(CreateMethodBodyVisitor(iteratorState))));
+                    return ConvertStatements(body.Statements, iteratorState);
                 }
 
                 if (expressionBody != null) {
@@ -359,9 +358,53 @@ namespace ICSharpCode.CodeConverter.VB
                 return SyntaxFactory.List(statements.SelectMany(s => ConvertStatement(s, methodBodyVisitor)));
             }
 
-            private SyntaxList<StatementSyntax> ConvertStatement(CSS.StatementSyntax s, CS.CSharpSyntaxVisitor<SyntaxList<StatementSyntax>> methodBodyVisitor)
+            private SyntaxList<StatementSyntax> ConvertStatement(CSS.StatementSyntax statement, CS.CSharpSyntaxVisitor<SyntaxList<StatementSyntax>> methodBodyVisitor)
             {
-                return s.Accept(methodBodyVisitor);
+                var declarationExpressions = statement.DescendantNodes().OfType<CSS.DeclarationExpressionSyntax>().ToList();
+                var convertedStatements = statement.Accept(methodBodyVisitor);
+                if (declarationExpressions.Any()) {
+                    convertedStatements = convertedStatements.Insert(0, ConvertToDeclarationStatement(declarationExpressions));
+                }
+
+                return convertedStatements;
+            }
+
+            private StatementSyntax ConvertToDeclarationStatement(List<CSS.DeclarationExpressionSyntax> des)
+            {
+                var declarators = SyntaxFactory.SeparatedList(des.Select(ConvertToVariableDeclarator));
+                return SyntaxFactory.LocalDeclarationStatement(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.DimKeyword)), declarators);
+            }
+
+            private VariableDeclaratorSyntax ConvertToVariableDeclarator(CSS.DeclarationExpressionSyntax des)
+            {
+                var id = ((IdentifierNameSyntax)des.Accept(TriviaConvertingVisitor)).Identifier;
+                var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
+                TypeSyntax typeSyntax;
+                if (des.Type.IsVar) {
+                    var typeSymbol = (ITypeSymbol) _semanticModel.GetSymbolInfo(des.Type).ExtractBestMatch();
+                    typeSyntax = typeSymbol.ToVbSyntax(_semanticModel, des.Type);
+                } else {
+                    typeSyntax = (TypeSyntax)des.Type.Accept(TriviaConvertingVisitor);
+                }
+                
+                var simpleAsClauseSyntax = SyntaxFactory.SimpleAsClause(typeSyntax);
+                var equalsValueSyntax = SyntaxFactory.EqualsValue(SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression, SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
+                return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
+            }
+
+            public override VisualBasicSyntaxNode VisitDeclarationExpression(CSS.DeclarationExpressionSyntax node)
+            {
+                return node.Designation.Accept(TriviaConvertingVisitor);
+            }
+
+            public override VisualBasicSyntaxNode VisitSingleVariableDesignation(CSS.SingleVariableDesignationSyntax node)
+            {
+                return SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier));
+            }
+
+            public override VisualBasicSyntaxNode VisitDiscardDesignation(CSS.DiscardDesignationSyntax node)
+            {
+                return SyntaxFactory.IdentifierName("__");
             }
 
             public override VisualBasicSyntaxNode VisitConstructorInitializer(CSS.ConstructorInitializerSyntax node)
@@ -891,6 +934,11 @@ namespace ICSharpCode.CodeConverter.VB
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
                     (ArgumentListSyntax)node.ArgumentList.Accept(TriviaConvertingVisitor)
                 );
+            }
+
+            public override VisualBasicSyntaxNode VisitParenthesizedVariableDesignation(CSS.ParenthesizedVariableDesignationSyntax node)
+            {
+                return base.VisitParenthesizedVariableDesignation(node);
             }
 
             private bool IsNameOfExpression(CSS.InvocationExpressionSyntax node)
@@ -1518,26 +1566,45 @@ namespace ICSharpCode.CodeConverter.VB
                 if (symbol.IsKind(SymbolKind.Method)) {
                     var addressOf = SyntaxFactory.AddressOfExpression(name);
 
-                    if (originalName.Parent is CSS.ArgumentSyntax nameArgument &&
-                        nameArgument.Parent?.Parent is CSS.InvocationExpressionSyntax ies) {
-                        var argIndex = ies.ArgumentList.Arguments.IndexOf(nameArgument);
-                        //TODO: Deal with named parameters
-                        var destinationType = _semanticModel.GetSymbolInfo(ies.Expression).CandidateSymbols
-                            .Select(m => m.GetParameters()).Where(p => p.Length > argIndex).Select(p => p[argIndex].Type).FirstOrDefault();
-                        if (destinationType != null) {
-                            var toCreate = (TypeSyntax)
-                                CS.SyntaxFactory
-                                    .ParseTypeName(destinationType.ToMinimalDisplayString(_semanticModel,
-                                        originalName.SpanStart))
-                                    .Accept(TriviaConvertingVisitor);
-                            return SyntaxFactory.ObjectCreationExpression(toCreate).WithArgumentList(ExpressionSyntaxExtensions.CreateArgList(addressOf));
-                        }
+                    var formalParameterTypeOrNull = GetOverloadedFormalParameterTypeOrNull(originalName);
+                    if (formalParameterTypeOrNull != null) {
+                        return SyntaxFactory.ObjectCreationExpression(formalParameterTypeOrNull)
+                            .WithArgumentList(ExpressionSyntaxExtensions.CreateArgList(addressOf));
                     }
 
                     return addressOf;
                 }
 
                 return name;
+            }
+
+            private TypeSyntax GetOverloadedFormalParameterTypeOrNull(CSS.ExpressionSyntax argumentChildExpression)
+            {
+                var y =_semanticModel.GetSymbolInfo(argumentChildExpression);
+
+                if (argumentChildExpression?.Parent is CSS.ArgumentSyntax nameArgument &&
+                    nameArgument.Parent?.Parent is CSS.InvocationExpressionSyntax ies)
+                {
+                    var argIndex = ies.ArgumentList.Arguments.IndexOf(nameArgument);
+                    //TODO: Deal with named parameters
+                    var symbolInfo = _semanticModel.GetSymbolInfo(ies.Expression);
+                    // We ignore symbolInfo.Symbol, since if there's an exact match it isn't overloaded
+                    var destinationType = symbolInfo.CandidateSymbols
+                        .Select(m => m.GetParameters()).Where(p => p.Length > argIndex).Select(p => p[argIndex].Type)
+                        .FirstOrDefault();
+
+                    if (destinationType != null)
+                    {
+                        var toCreate = (TypeSyntax)
+                            CS.SyntaxFactory
+                                .ParseTypeName(destinationType.ToMinimalDisplayString(_semanticModel,
+                                    argumentChildExpression.SpanStart))
+                                .Accept(TriviaConvertingVisitor);
+                        return toCreate;
+                    }
+                }
+
+                return null;
             }
 
             #endregion
