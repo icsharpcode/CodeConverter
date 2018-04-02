@@ -352,6 +352,18 @@ namespace ICSharpCode.CodeConverter.VB
                 return SyntaxFactory.List<StatementSyntax>();
             }
 
+            private SyntaxList<StatementSyntax> ConvertStatements(SyntaxList<CSS.StatementSyntax> statements,
+                MethodBodyVisitor iteratorState = null)
+            {
+                var methodBodyVisitor = CreateMethodBodyVisitor(iteratorState);
+                return SyntaxFactory.List(statements.SelectMany(s => ConvertStatement(s, methodBodyVisitor)));
+            }
+
+            private SyntaxList<StatementSyntax> ConvertStatement(CSS.StatementSyntax s, CS.CSharpSyntaxVisitor<SyntaxList<StatementSyntax>> methodBodyVisitor)
+            {
+                return s.Accept(methodBodyVisitor);
+            }
+
             public override VisualBasicSyntaxNode VisitConstructorInitializer(CSS.ConstructorInitializerSyntax node)
             {
                 var initializerExpression = GetInitializerExpression(node);
@@ -1192,7 +1204,7 @@ namespace ICSharpCode.CodeConverter.VB
                 if (!(body is CSS.BlockSyntax block)) {
                     return SyntaxFactory.SingleLineLambdaExpression(singleLineExpressionKind, header, body.Accept(TriviaConvertingVisitor));
                 }
-                var statements = SyntaxFactory.List(block.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())));
+                var statements = ConvertStatements(block.Statements);
 
                 if (statements.Count == 1 && UnpackExpressionFromStatement(statements[0], out var expression)) {
                     return SyntaxFactory.SingleLineLambdaExpression(singleLineExpressionKind, header, expression);
