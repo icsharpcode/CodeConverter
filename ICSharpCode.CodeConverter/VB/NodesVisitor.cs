@@ -718,7 +718,7 @@ namespace ICSharpCode.CodeConverter.VB
             public override VisualBasicSyntaxNode VisitPrefixUnaryExpression(CSS.PrefixUnaryExpressionSyntax node)
             {
                 var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
-                if (node.Parent is CSS.ExpressionStatementSyntax) {
+                if (IsReturnValueDiscarded(node)) {
                     return SyntaxFactory.AssignmentStatement(
                         kind,
                         (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor),
@@ -748,7 +748,7 @@ namespace ICSharpCode.CodeConverter.VB
             public override VisualBasicSyntaxNode VisitPostfixUnaryExpression(CSS.PostfixUnaryExpressionSyntax node)
             {
                 var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
-                if (node.Parent is CSS.ExpressionStatementSyntax || node.Parent is CSS.ForStatementSyntax) {
+                if (IsReturnValueDiscarded(node)) {
                     return SyntaxFactory.AssignmentStatement(CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local),
                         (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor),
                         SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), CSharpConverter.Literal(1)
@@ -790,8 +790,8 @@ namespace ICSharpCode.CodeConverter.VB
 
             public override VisualBasicSyntaxNode VisitAssignmentExpression(CSS.AssignmentExpressionSyntax node)
             {
-                if (node.Parent is CSS.ExpressionStatementSyntax || node.Parent.IsParentKind(CS.SyntaxKind.SetAccessorDeclaration)) {
-                    if (ModelExtensions.GetTypeInfo(_semanticModel, node.Right).ConvertedType.IsDelegateType()) {
+                if (IsReturnValueDiscarded(node)) {
+                    if (_semanticModel.GetTypeInfo(node.Right).ConvertedType.IsDelegateType()) {
                         if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.PlusEqualsToken)) {
                             return SyntaxFactory.AddHandlerStatement((ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor), (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor));
                         }
@@ -832,6 +832,13 @@ namespace ICSharpCode.CodeConverter.VB
                         )
                     )
                 );
+            }
+
+            private static bool IsReturnValueDiscarded(CSS.ExpressionSyntax node)
+            {
+                return node.Parent is CSS.ExpressionStatementSyntax
+                       || node.Parent is CSS.ForStatementSyntax
+                       || node.Parent.IsParentKind(CS.SyntaxKind.SetAccessorDeclaration);
             }
 
             AssignmentStatementSyntax MakeAssignmentStatement(CSS.AssignmentExpressionSyntax node)
@@ -1326,9 +1333,11 @@ namespace ICSharpCode.CodeConverter.VB
 
             public override VisualBasicSyntaxNode VisitThrowExpression(CSS.ThrowExpressionSyntax node)
             {
+                var convertedExceptionExpression = (ExpressionSyntax) node.Expression.Accept(TriviaConvertingVisitor);
+                if (IsReturnValueDiscarded(node)) return SyntaxFactory.ThrowStatement(convertedExceptionExpression);
+
                 _cSharpHelperMethodDefinition.AddThrowMethod = true;
                 var typeName = SyntaxFactory.ParseTypeName(_semanticModel.GetTypeInfo(node.Parent).ConvertedType?.GetFullMetadataName() ?? "Object");
-                var convertedExceptionExpression = (ExpressionSyntax) node.Expression.Accept(TriviaConvertingVisitor);
                 var throwEx = SyntaxFactory.GenericName(CSharpHelperMethodDefinition.QualifiedThrowMethodName, SyntaxFactory.TypeArgumentList(typeName));
                 var argList = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList<ArgumentSyntax>(SyntaxFactory.SimpleArgument(convertedExceptionExpression)));
                 return SyntaxFactory.InvocationExpression(throwEx, argList);
