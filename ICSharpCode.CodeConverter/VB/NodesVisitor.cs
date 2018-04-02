@@ -329,6 +329,22 @@ namespace ICSharpCode.CodeConverter.VB
             );
         }
 
+        public override VisualBasicSyntaxNode VisitIsPatternExpression(CSS.IsPatternExpressionSyntax node)
+        {
+            return node.Pattern.TypeSwitch(
+                (CSS.DeclarationPatternSyntax d) => {
+                    var left = (ExpressionSyntax) d.Designation.Accept(TriviaConvertingVisitor);
+                    ExpressionSyntax right = SyntaxFactory.TryCastExpression(
+                        (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
+                        (TypeSyntax)d.Type.Accept(TriviaConvertingVisitor));
+
+                    var tryCast = CreateInlineAssignmentExpression(left, right);
+                    var nothingExpression = SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression, SyntaxFactory.Token(SyntaxKind.NothingKeyword));
+                    return SyntaxFactory.IsNotExpression(tryCast, nothingExpression);
+                },
+                p => throw new ArgumentOutOfRangeException(nameof(p), p, null));
+        }
+
         public override VisualBasicSyntaxNode VisitDeclarationExpression(CSS.DeclarationExpressionSyntax node)
         {
             return node.Designation.Accept(TriviaConvertingVisitor);
@@ -677,6 +693,60 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.UnaryExpression(kind, SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor));
         }
 
+        public override VisualBasicSyntaxNode VisitAssignmentExpression(CSS.AssignmentExpressionSyntax node)
+        {
+            if (IsReturnValueDiscarded(node)) {
+                if (_semanticModel.GetTypeInfo(node.Right).ConvertedType.IsDelegateType()) {
+                    if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.PlusEqualsToken)) {
+                        return SyntaxFactory.AddHandlerStatement((ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor), (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor));
+                    }
+                    if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.MinusEqualsToken)) {
+                        return SyntaxFactory.RemoveHandlerStatement((ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor), (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor));
+                    }
+                }
+                return MakeAssignmentStatement(node);
+            }
+            if (node.Parent is CSS.ForStatementSyntax) {
+                return MakeAssignmentStatement(node);
+            }
+            if (node.Parent is CSS.InitializerExpressionSyntax) {
+                if (node.Left is CSS.ImplicitElementAccessSyntax) {
+                    return SyntaxFactory.CollectionInitializer(
+                        SyntaxFactory.SeparatedList(new[] {
+                            (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor),
+                            (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor)
+                        })
+                    );
+                } else {
+                    return SyntaxFactory.NamedFieldInitializer(
+                        (IdentifierNameSyntax)node.Left.Accept(TriviaConvertingVisitor),
+                        (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor)
+                    );
+                }
+            }
+
+            var left = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
+            var right = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
+            return CreateInlineAssignmentExpression(left, right);
+        }
+
+        private ExpressionSyntax CreateInlineAssignmentExpression(ExpressionSyntax left, ExpressionSyntax right)
+        {
+            _cSharpHelperMethodDefinition.AddInlineAssignMethod = true;
+            return SyntaxFactory.InvocationExpression(
+                SyntaxFactory.IdentifierName(CSharpHelperMethodDefinition.QualifiedInlineAssignMethodName),
+                SyntaxFactory.ArgumentList(
+                    SyntaxFactory.SeparatedList(
+                        new ArgumentSyntax[]
+                        {
+                            SyntaxFactory.SimpleArgument(left),
+                            SyntaxFactory.SimpleArgument(right)
+                        }
+                    )
+                )
+            );
+        }
+
         public override VisualBasicSyntaxNode VisitPostfixUnaryExpression(CSS.PostfixUnaryExpressionSyntax node)
         {
             var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
@@ -718,52 +788,6 @@ namespace ICSharpCode.CodeConverter.VB
                     )
                 );
             }
-        }
-
-        public override VisualBasicSyntaxNode VisitAssignmentExpression(CSS.AssignmentExpressionSyntax node)
-        {
-            if (IsReturnValueDiscarded(node)) {
-                if (_semanticModel.GetTypeInfo(node.Right).ConvertedType.IsDelegateType()) {
-                    if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.PlusEqualsToken)) {
-                        return SyntaxFactory.AddHandlerStatement((ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor), (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor));
-                    }
-                    if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.MinusEqualsToken)) {
-                        return SyntaxFactory.RemoveHandlerStatement((ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor), (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor));
-                    }
-                }
-                return MakeAssignmentStatement(node);
-            }
-            if (node.Parent is CSS.ForStatementSyntax) {
-                return MakeAssignmentStatement(node);
-            }
-            if (node.Parent is CSS.InitializerExpressionSyntax) {
-                if (node.Left is CSS.ImplicitElementAccessSyntax) {
-                    return SyntaxFactory.CollectionInitializer(
-                        SyntaxFactory.SeparatedList(new[] {
-                                (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor),
-                                (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor)
-                        })
-                    );
-                } else {
-                    return SyntaxFactory.NamedFieldInitializer(
-                        (IdentifierNameSyntax)node.Left.Accept(TriviaConvertingVisitor),
-                        (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor)
-                    );
-                }
-            }
-
-            _cSharpHelperMethodDefinition.AddInlineAssignMethod = true;
-            return SyntaxFactory.InvocationExpression(
-                SyntaxFactory.IdentifierName(CSharpHelperMethodDefinition.QualifiedInlineAssignMethodName),
-                SyntaxFactory.ArgumentList(
-                    SyntaxFactory.SeparatedList(
-                        new ArgumentSyntax[] {
-                                SyntaxFactory.SimpleArgument((ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor)),
-                                SyntaxFactory.SimpleArgument((ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor))
-                        }
-                    )
-                )
-            );
         }
 
         private static bool IsReturnValueDiscarded(CSS.ExpressionSyntax node)

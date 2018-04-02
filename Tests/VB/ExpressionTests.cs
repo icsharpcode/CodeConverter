@@ -38,8 +38,8 @@ End Class");
 End Class");
         }
 
-        [Fact(Skip = "https://github.com/icsharpcode/CodeConverter/issues/63")]
-        public void IfIsExpression()
+        [Fact]
+        public void IfIsPatternExpression()
         {
             TestConversionCSharpToVisualBasic(@"class TestClass
 {
@@ -53,10 +53,11 @@ End Class");
         return -1;
     }
 }", @"Class TestClass
-    Private Shared Function GetLength(node As Object) As Integer
-        Dim s As String
-        If (CSharpImpl.__Assign(s, TryCast(node, String)) IsNot Nothing) Then
-        Return s.Length
+    Private Shared Function GetLength(ByVal node As Object) As Integer
+        Dim s As String = Nothing
+
+        If CSharpImpl.__Assign(s, TryCast(node, String)) IsNot Nothing Then
+            Return s.Length
         End If
 
         Return -1

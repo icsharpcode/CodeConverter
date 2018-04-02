@@ -77,17 +77,21 @@ namespace ICSharpCode.CodeConverter.VB
         private SyntaxList<StatementSyntax> InsertRequiredDeclarations(
             SyntaxList<StatementSyntax> convertedStatements, CSharpSyntaxNode originaNode)
         {
-            var declarationExpressions = originaNode.DescendantNodes().OfType<DeclarationExpressionSyntax>().ToList();
-            if (declarationExpressions.Any()) {
-                convertedStatements = convertedStatements.Insert(0, ConvertToDeclarationStatement(declarationExpressions));
+            var descendantNodes = originaNode.DescendantNodes().ToList();
+            var declarationExpressions = descendantNodes.OfType<DeclarationExpressionSyntax>().ToList();
+            var isPatternExpressions = descendantNodes.OfType<IsPatternExpressionSyntax>().ToList();
+            if (declarationExpressions.Any() || isPatternExpressions.Any()) {
+                convertedStatements = convertedStatements.Insert(0, ConvertToDeclarationStatement(declarationExpressions, isPatternExpressions));
             }
 
             return convertedStatements;
         }
 
-        private StatementSyntax ConvertToDeclarationStatement(List<DeclarationExpressionSyntax> des)
+        private StatementSyntax ConvertToDeclarationStatement(List<DeclarationExpressionSyntax> des,
+            List<IsPatternExpressionSyntax> isPatternExpressions)
         {
-            var declarators = SyntaxFactory.SeparatedList(des.Select(ConvertToVariableDeclarator));
+            var declarators = SyntaxFactory.SeparatedList(des.Select(ConvertToVariableDeclarator)
+                .Concat(isPatternExpressions.Select(ConvertToVariableDeclarator)));
             return SyntaxFactory.LocalDeclarationStatement(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.DimKeyword)), declarators);
         }
 
@@ -106,6 +110,20 @@ namespace ICSharpCode.CodeConverter.VB
             var simpleAsClauseSyntax = SyntaxFactory.SimpleAsClause(typeSyntax);
             var equalsValueSyntax = SyntaxFactory.EqualsValue(SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression, SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
             return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
+        }
+        private VariableDeclaratorSyntax ConvertToVariableDeclarator(IsPatternExpressionSyntax node)
+        {
+            return node.Pattern.TypeSwitch(
+                (DeclarationPatternSyntax d) => {
+                    var id = ((IdentifierNameSyntax)d.Designation.Accept(_nodesVisitor)).Identifier;
+                    var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
+                    TypeSyntax right = (TypeSyntax)d.Type.Accept(_nodesVisitor);
+
+                    var simpleAsClauseSyntax = SyntaxFactory.SimpleAsClause(right);
+                    var equalsValueSyntax = SyntaxFactory.EqualsValue(SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression, SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
+                    return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
+                },
+                p => throw new ArgumentOutOfRangeException(nameof(p), p, null));
         }
 
         private CSharpSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(MethodBodyVisitor methodBodyVisitor = null)
