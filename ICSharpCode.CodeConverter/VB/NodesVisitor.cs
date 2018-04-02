@@ -328,8 +328,28 @@ namespace ICSharpCode.CodeConverter.VB
                         SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Member),
                         (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor)
                     ),
-                    SyntaxFactory.List(initializer.Concat(node.Body.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor()))))
+                    SyntaxFactory.List(initializer.Concat(ConvertBody(node.Body, node.ExpressionBody)))
                 );
+            }
+
+            private SyntaxList<StatementSyntax> ConvertBody(CSS.BlockSyntax body,
+                CSS.ArrowExpressionClauseSyntax expressionBody, MethodBodyVisitor iteratorState = null)
+            {
+                if (body != null) {
+                    return SyntaxFactory.List(body.Statements.SelectMany(s =>
+                        s.Accept(iteratorState ?? CreateMethodBodyVisitor())));
+                }
+
+                if (expressionBody != null) {
+                    var convertedBody = expressionBody.Expression.Accept(TriviaConvertingVisitor);
+                    if (convertedBody is ExpressionSyntax convertedBodyExpression) {
+                        convertedBody = SyntaxFactory.ReturnStatement(convertedBodyExpression);
+                    }
+
+                    return SyntaxFactory.SingletonList((StatementSyntax) convertedBody);
+                }
+
+                return SyntaxFactory.List<StatementSyntax>();
             }
 
             public override VisualBasicSyntaxNode VisitConstructorInitializer(CSS.ConstructorInitializerSyntax node)
@@ -367,7 +387,7 @@ namespace ICSharpCode.CodeConverter.VB
                         (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor),
                         null, null, null
                     ),
-                    SyntaxFactory.List(node.Body.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())))
+                    ConvertBody(node.Body, node.ExpressionBody)
                 );
             }
 
@@ -379,17 +399,8 @@ namespace ICSharpCode.CodeConverter.VB
 
             public override VisualBasicSyntaxNode VisitMethodDeclaration(CSS.MethodDeclarationSyntax node)
             {
-                SyntaxList<StatementSyntax>? block = null;
                 var isIteratorState = new CSharpConverter.MethodBodyVisitor(_semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
-                var visitor = CreateMethodBodyVisitor(isIteratorState);
-                if (node.Body != null) {
-                    block = SyntaxFactory.List(node.Body.Statements.SelectMany(s => s.Accept(visitor)));
-                }
-                if (node.ExpressionBody != null) {
-                    block = SyntaxFactory.SingletonList<StatementSyntax>(
-                        SyntaxFactory.ReturnStatement((ExpressionSyntax)node.ExpressionBody.Expression.Accept(TriviaConvertingVisitor))
-                    );
-                }
+                var block = ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
                 if (node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword))) {
                     block = SyntaxFactory.List<StatementSyntax>();
                 }
@@ -417,9 +428,9 @@ namespace ICSharpCode.CodeConverter.VB
                         parameterList,
                         null, null, null
                     );
-                    if (block == null)
+                    if (node.Body == null && node.ExpressionBody == null)
                         return stmt;
-                    return SyntaxFactory.SubBlock(stmt, block.Value);
+                    return SyntaxFactory.SubBlock(stmt, block);
                 } else {
                     var stmt = SyntaxFactory.FunctionStatement(
                         attributes,
@@ -428,36 +439,31 @@ namespace ICSharpCode.CodeConverter.VB
                         parameterList,
                         SyntaxFactory.SimpleAsClause((TypeSyntax)node.ReturnType.Accept(TriviaConvertingVisitor)), null, null
                     );
-                    if (block == null)
+                    if (node.Body == null && node.ExpressionBody == null)
                         return stmt;
-                    return SyntaxFactory.FunctionBlock(stmt, block.Value);
+                    return SyntaxFactory.FunctionBlock(stmt, block);
                 }
             }
 
             public override VisualBasicSyntaxNode VisitPropertyDeclaration(CSS.PropertyDeclarationSyntax node)
             {
                 var id = CSharpConverter.ConvertIdentifier(node.Identifier);
-                SyntaxList<AttributeListSyntax> attributes, returnAttributes;
-                ConvertAndSplitAttributes(node.AttributeLists, out attributes, out returnAttributes);
+                ConvertAndSplitAttributes(node.AttributeLists, out var attributes, out var returnAttributes);
                 bool isIterator = false;
                 List<AccessorBlockSyntax> accessors = new List<AccessorBlockSyntax>();
-                if (node.ExpressionBody != null) {
-                    accessors.Add(
-                        SyntaxFactory.AccessorBlock(
-                            SyntaxKind.GetAccessorBlock,
-                            SyntaxFactory.GetAccessorStatement(),
-                            SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ReturnStatement((ExpressionSyntax)node.ExpressionBody.Expression.Accept(TriviaConvertingVisitor))),
-                            SyntaxFactory.EndGetStatement()
-                        )
-                    );
-                } else {
-                    foreach (var a in node.AccessorList?.Accessors) {
-                        accessors.Add(ConvertAccessor(a, out var isAIterator));
-                        isIterator |= isAIterator;
-                    }
+                var csAccessors = node.AccessorList.Accessors;
+                foreach (var a in csAccessors) {
+                    accessors.Add(ConvertAccessor(a, out var isAIterator));
+                    isIterator |= isAIterator;
                 }
                 var modifiers = CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Member);
                 if (isIterator) modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.IteratorKeyword));
+                if (csAccessors.Count == 1) {
+                    var accessLimitation = csAccessors.Single().IsKind(CS.SyntaxKind.SetAccessorDeclaration)
+                        ? SyntaxKind.WriteOnlyKeyword
+                        : SyntaxKind.ReadOnlyKeyword;
+                    modifiers = modifiers.Add(SyntaxFactory.Token(accessLimitation));
+                }
                 var stmt = SyntaxFactory.PropertyStatement(
                     attributes,
                     modifiers,
@@ -466,7 +472,7 @@ namespace ICSharpCode.CodeConverter.VB
                     node.Initializer == null ? null : SyntaxFactory.EqualsValue((ExpressionSyntax)node.Initializer.Value.Accept(TriviaConvertingVisitor)), null
                 );
 
-                if (node.AccessorList?.Accessors.All(a => a.Body == null) == true)
+                if (HasNoAccessorBody(node.AccessorList))
                     return stmt;
                 return SyntaxFactory.PropertyBlock(stmt, SyntaxFactory.List(accessors));
             }
@@ -474,8 +480,7 @@ namespace ICSharpCode.CodeConverter.VB
             public override VisualBasicSyntaxNode VisitIndexerDeclaration(CSS.IndexerDeclarationSyntax node)
             {
                 var id = SyntaxFactory.Identifier("Item");
-                SyntaxList<AttributeListSyntax> attributes, returnAttributes;
-                ConvertAndSplitAttributes(node.AttributeLists, out attributes, out returnAttributes);
+                ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
                 bool isIterator = false;
                 List<AccessorBlockSyntax> accessors = new List<AccessorBlockSyntax>();
                 foreach (var a in node.AccessorList?.Accessors) {
@@ -491,23 +496,26 @@ namespace ICSharpCode.CodeConverter.VB
                     id, parameterList,
                     SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)), null, null
                 );
-                if (node.AccessorList.Accessors.All(a => a.Body == null))
+                if (HasNoAccessorBody(node.AccessorList))
                     return stmt;
                 return SyntaxFactory.PropertyBlock(stmt, SyntaxFactory.List(accessors));
             }
 
+            private static bool HasNoAccessorBody(CSS.AccessorListSyntax accessorListSyntaxOrNull)
+            {
+                return accessorListSyntaxOrNull?.Accessors.All(a => a.Body == null && a.ExpressionBody == null) == true;
+            }
+
             public override VisualBasicSyntaxNode VisitEventDeclaration(CSS.EventDeclarationSyntax node)
             {
-                SyntaxList<AttributeListSyntax> attributes, returnAttributes;
-                ConvertAndSplitAttributes(node.AttributeLists, out attributes, out returnAttributes);
+                ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
                 var stmt = SyntaxFactory.EventStatement(
                     attributes, CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Member), CSharpConverter.ConvertIdentifier(node.Identifier), null,
                     SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)), null
                 );
-                if (node.AccessorList.Accessors.All(a => a.Body == null))
+                if (HasNoAccessorBody(node.AccessorList))
                     return stmt;
-                bool unused;
-                var accessors = node.AccessorList?.Accessors.Select(a => ConvertAccessor(a, out unused)).ToArray();
+                var accessors = node.AccessorList?.Accessors.Select(a => ConvertAccessor(a, out bool unused)).ToArray();
                 return SyntaxFactory.EventBlock(stmt, SyntaxFactory.List(accessors));
             }
 
@@ -515,8 +523,7 @@ namespace ICSharpCode.CodeConverter.VB
             {
                 var decl = node.Declaration.Variables.Single();
                 var id = SyntaxFactory.Identifier(decl.Identifier.ValueText, SyntaxFacts.IsKeywordKind(VisualBasicExtensions.Kind(decl.Identifier)), decl.Identifier.GetIdentifierText(), TypeCharacter.None);
-                SyntaxList<AttributeListSyntax> attributes, returnAttributes;
-                ConvertAndSplitAttributes(node.AttributeLists, out attributes, out returnAttributes);
+                ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
                 return SyntaxFactory.EventStatement(attributes, CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Member), id, null, SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Declaration.Type.Accept(TriviaConvertingVisitor)), null);
             }
 
@@ -543,12 +550,9 @@ namespace ICSharpCode.CodeConverter.VB
                 EndBlockStatementSyntax endStmt;
                 SyntaxList<StatementSyntax> body = SyntaxFactory.List<StatementSyntax>();
                 isIterator = false;
-                if (node.Body != null) {
-                    var isIteratorState = new CSharpConverter.MethodBodyVisitor(_semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
-                    var visitor = CreateMethodBodyVisitor(isIteratorState);
-                    body = SyntaxFactory.List(node.Body.Statements.SelectMany(s => s.Accept(visitor)));
-                    isIterator = isIteratorState.IsIterator;
-                }
+                var isIteratorState = new CSharpConverter.MethodBodyVisitor(_semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
+                body = ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
+                isIterator = isIteratorState.IsIterator;
                 var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor)));
                 var modifiers = CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Local);
                 var parent = (CSS.BasePropertyDeclarationSyntax)node.Parent.Parent;
@@ -592,10 +596,8 @@ namespace ICSharpCode.CodeConverter.VB
 
             public override VisualBasicSyntaxNode VisitOperatorDeclaration(CSS.OperatorDeclarationSyntax node)
             {
-                SyntaxList<AttributeListSyntax> attributes, returnAttributes;
-                ConvertAndSplitAttributes(node.AttributeLists, out attributes, out returnAttributes);
-                var visitor = CreateMethodBodyVisitor();
-                var body = SyntaxFactory.List(node.Body.Statements.SelectMany(s => s.Accept(visitor)));
+                ConvertAndSplitAttributes(node.AttributeLists, out var attributes, out var returnAttributes);
+                var body = ConvertBody(node.Body, node.ExpressionBody);
                 var parameterList = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor);
                 var stmt = SyntaxFactory.OperatorStatement(
                     attributes, CSharpConverter.ConvertModifiers(node.Modifiers, TokenContext.Member),
@@ -716,7 +718,7 @@ namespace ICSharpCode.CodeConverter.VB
             public override VisualBasicSyntaxNode VisitPrefixUnaryExpression(CSS.PrefixUnaryExpressionSyntax node)
             {
                 var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
-                if (node.Parent is CSS.ExpressionStatementSyntax) {
+                if (IsReturnValueDiscarded(node)) {
                     return SyntaxFactory.AssignmentStatement(
                         kind,
                         (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor),
@@ -746,7 +748,7 @@ namespace ICSharpCode.CodeConverter.VB
             public override VisualBasicSyntaxNode VisitPostfixUnaryExpression(CSS.PostfixUnaryExpressionSyntax node)
             {
                 var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
-                if (node.Parent is CSS.ExpressionStatementSyntax || node.Parent is CSS.ForStatementSyntax) {
+                if (IsReturnValueDiscarded(node)) {
                     return SyntaxFactory.AssignmentStatement(CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local),
                         (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor),
                         SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), CSharpConverter.Literal(1)
@@ -788,8 +790,8 @@ namespace ICSharpCode.CodeConverter.VB
 
             public override VisualBasicSyntaxNode VisitAssignmentExpression(CSS.AssignmentExpressionSyntax node)
             {
-                if (node.Parent is CSS.ExpressionStatementSyntax) {
-                    if (ModelExtensions.GetTypeInfo(_semanticModel, node.Right).ConvertedType.IsDelegateType()) {
+                if (IsReturnValueDiscarded(node)) {
+                    if (_semanticModel.GetTypeInfo(node.Right).ConvertedType.IsDelegateType()) {
                         if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.PlusEqualsToken)) {
                             return SyntaxFactory.AddHandlerStatement((ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor), (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor));
                         }
@@ -830,6 +832,13 @@ namespace ICSharpCode.CodeConverter.VB
                         )
                     )
                 );
+            }
+
+            private static bool IsReturnValueDiscarded(CSS.ExpressionSyntax node)
+            {
+                return node.Parent is CSS.ExpressionStatementSyntax
+                       || node.Parent is CSS.ForStatementSyntax
+                       || node.Parent.IsParentKind(CS.SyntaxKind.SetAccessorDeclaration);
             }
 
             AssignmentStatementSyntax MakeAssignmentStatement(CSS.AssignmentExpressionSyntax node)
@@ -1176,8 +1185,7 @@ namespace ICSharpCode.CodeConverter.VB
                     throw new NotSupportedException();
                 var statements = SyntaxFactory.List(((SyntaxList<CSS.StatementSyntax>)block).SelectMany(s => s.Accept(CreateMethodBodyVisitor())));
 
-                ExpressionSyntax expression;
-                if (statements.Count == 1 && UnpackExpressionFromStatement(statements[0], out expression)) {
+                if (statements.Count == 1 && UnpackExpressionFromStatement(statements[0], out ExpressionSyntax expression)) {
                     var syntaxKind = symbol.ReturnsVoid ? SyntaxKind.SingleLineSubLambdaExpression : SyntaxKind.SingleLineFunctionLambdaExpression;
                     return SyntaxFactory.SingleLineLambdaExpression(syntaxKind, header, expression);
                 }
@@ -1325,9 +1333,11 @@ namespace ICSharpCode.CodeConverter.VB
 
             public override VisualBasicSyntaxNode VisitThrowExpression(CSS.ThrowExpressionSyntax node)
             {
+                var convertedExceptionExpression = (ExpressionSyntax) node.Expression.Accept(TriviaConvertingVisitor);
+                if (IsReturnValueDiscarded(node)) return SyntaxFactory.ThrowStatement(convertedExceptionExpression);
+
                 _cSharpHelperMethodDefinition.AddThrowMethod = true;
                 var typeName = SyntaxFactory.ParseTypeName(_semanticModel.GetTypeInfo(node.Parent).ConvertedType?.GetFullMetadataName() ?? "Object");
-                var convertedExceptionExpression = (ExpressionSyntax) node.Expression.Accept(TriviaConvertingVisitor);
                 var throwEx = SyntaxFactory.GenericName(CSharpHelperMethodDefinition.QualifiedThrowMethodName, SyntaxFactory.TypeArgumentList(typeName));
                 var argList = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList<ArgumentSyntax>(SyntaxFactory.SimpleArgument(convertedExceptionExpression)));
                 return SyntaxFactory.InvocationExpression(throwEx, argList);
