@@ -48,6 +48,15 @@
 </div>
 
 <script>
+	 @functions{
+        public string TokenHeaderValue()
+        {
+            string cookieToken, formToken;
+            AntiForgery.GetTokens(null, out cookieToken, out formToken);
+            return cookieToken + ":" + formToken;
+        }
+    }
+
 	var app = angular.module('ccApp', []);
 
 	app.controller('ccController', function ($scope, $http) {
@@ -135,20 +144,27 @@
 
 			var data = JSON.stringify({ code: $scope.inputCode, requestedConversion: $scope.requestedConversion });
 
-			$http.post('/api/converter/', data)
-				.then(function successCallback(response) {
-					$scope.converterCallInflight = false;
-					$scope.convertedCode = response.data.convertedCode;
+			$http({
+				method: "POST",
+				url: "/api/converter/",
+				headers: {
+					"RequestVerificationToken": "@TokenHeaderValue()"
+				},
+				data: data
 
-					if (!response.data.conversionOk) {
-						$scope.showErrors = true;
-						$scope.errorMessage = response.data.errorMessage;
-					}
-				}, function errorCallback(response) {
-					$scope.converterCallInflight = false;
+			}).then(function successCallback(response) {
+				$scope.converterCallInflight = false;
+				$scope.convertedCode = response.data.convertedCode;
+
+				if (!response.data.conversionOk) {
 					$scope.showErrors = true;
-					$scope.errorMessage = "Call to the server backend failed";
-				});
+					$scope.errorMessage = response.data.errorMessage;
+				}
+			}, function errorCallback(response) {
+				$scope.converterCallInflight = false;
+				$scope.showErrors = true;
+				$scope.errorMessage = response.data.ExceptionMessage;
+			});
 		};
 	});
 </script>
