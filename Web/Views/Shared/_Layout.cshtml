@@ -6,18 +6,7 @@
 <html>
 <head>
 	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>Code Converter | Progress Telerik</title>
-	@RenderSection("head", required: false)
-
-	<meta name="keywords" content="@Page.Keywords" />
-	<meta name="description" content="@Page.Description" />
-	<meta name="robots" content="index,follow">
-	<link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
-
-	<link rel="stylesheet" href="~/Content/bootstrap.min.css" />
-	<link rel="stylesheet" href="~/Content/site.css" />
-
+	
 	<!-- Page hiding snippet (recommended) -->
 	<style>
 		.async-hide {
@@ -32,8 +21,39 @@
 		})(window, document.documentElement, 'async-hide', 'dataLayer', 4000, { 'GTM-PQP63L': true });
 	</script>
 
+	<!-- Google Tag Manager -->
+	<script>
+		(function (w, d, s, l, i) {
+			w[l] = w[l] || []; w[l].push({
+				'gtm.start':
+				new Date().getTime(), event: 'gtm.js'
+			}); var f = d.getElementsByTagName(s)[0],
+				j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+					'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+		})(window, document, 'script', 'dataLayer', 'GTM-6X92');</script>
+	<!-- End Google Tag Manager -->
+
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Code Converter | Progress Telerik</title>
+	@RenderSection("head", required: false)
+
+	<meta name="keywords" content="code converter, csharp to vb, vb to csharp, c#, vb.net" />
+	<meta name="description" content="C# to VB and VB to C# code converter" />
+	<meta name="robots" content="index,follow">
+	<link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+
+	<link rel="stylesheet" href="~/Content/bootstrap.min.css" />
+	<link rel="stylesheet" href="~/Content/site.css" />
 </head>
 <body class="d-flex flex-column">
+	<!-- Google Tag Manager (noscript) -->
+	<noscript>
+		<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-6X92"
+				height="0" width="0" style="display:none;visibility:hidden"></iframe>
+	</noscript>
+	<!-- End Google Tag Manager (noscript) -->
+
 	<div class="navbar navbar-inverse">
 		<div class="navbar-header">
 			<a href="~/" class="navbar-brand"><img src="~/Images/logo.svg" alt="Code Converter Logo" /></a>
