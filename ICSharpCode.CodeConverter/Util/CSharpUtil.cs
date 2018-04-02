@@ -2,6 +2,7 @@ using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -247,13 +248,21 @@ namespace ICSharpCode.CodeConverter.Util
             throw new NotSupportedException();
         }
 
-        public static TypeSyntax ToSyntax(this ITypeSymbol type, SemanticModel model, TypeSyntax typeSyntax)
+        public static TypeSyntax ToCsSyntax(this ITypeSymbol type, SemanticModel model, VBasic.Syntax.TypeSyntax typeSyntax)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
             return SyntaxFactory.ParseTypeName(type.ToMinimalCSharpDisplayString(model, typeSyntax.SpanStart))
-                .WithLeadingTrivia(typeSyntax.GetLeadingTrivia())
-                .WithTrailingTrivia(typeSyntax.GetTrailingTrivia());
+                .WithLeadingTrivia(typeSyntax.GetLeadingTrivia().ConvertTrivia())
+                .WithTrailingTrivia(typeSyntax.GetTrailingTrivia().ConvertTrivia());
+        }
+        public static VBasic.Syntax.TypeSyntax ToVbSyntax(this ITypeSymbol type, SemanticModel model, TypeSyntax typeSyntax)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            return VBasic.SyntaxFactory.ParseTypeName(type.ToMinimalDisplayString(model, typeSyntax.SpanStart))
+                .WithLeadingTrivia(typeSyntax.GetLeadingTrivia().ConvertTrivia())
+                .WithTrailingTrivia(typeSyntax.GetTrailingTrivia().ConvertTrivia());
         }
     }
 }
