@@ -20,10 +20,13 @@
 			<textarea class="form-control pt-5" ng-model="inputCode" ng-keydown="keyDown($event)" rows="10"></textarea>
 		</div>
 		<div class="col-md-6 p-2 pt-1 pl-md-1 py-md-2" ng-hide="showErrors">
-			<div class="spinner" ng-show="converterCallInflight"></div>
-			<div class="code-buttons" ng-show="convertedCode">
+			<div class="spinner ng-hide" ng-show="converterCallInflight"></div>
+			<div class="code-buttons ng-hide" ng-show="convertedCode">
 				<button class="btn btn-code btn-primary" ng-click="copy()">Copy to clipboard</button>
 				<button class="btn btn-code btn-primary" ng-click="download()">Download</button>
+			</div>
+			<div class="alert alert-success ng-hide py-1" ng-show="showCopiedLabel">
+				Copied!
 			</div>
 			<textarea class="form-control pt-5" ng-model="convertedCode" ng-keydown="keyDown($event)" rows="10" disabled></textarea>
 		</div>
@@ -58,6 +61,7 @@
 		$scope.converterCallInflight = false;
 		$scope.downloadUrl = "";
 		$scope.fileExtension = "";
+		$scope.showCopiedLabel = false;
 
 		$scope.keyDown = function (e) {
 			if (e.keyCode == 9) {
@@ -109,7 +113,13 @@
 			}
 
 			document.body.removeChild(textArea);
-			alert("Copied");
+			this.showCopiedLabel = true;
+			var that = this;
+			setTimeout(function () {
+				$scope.$apply(function () {
+					that.showCopiedLabel = false;
+				});
+			}, 1000);
 		}
 
 		$scope.download = function () {
@@ -137,7 +147,7 @@
 				}, function errorCallback(response) {
 					$scope.converterCallInflight = false;
 					$scope.showErrors = true;
-					$scope.convertedCode = "Call to the server backend failed";
+					$scope.errorMessage = "Call to the server backend failed";
 				});
 		};
 	});
