@@ -337,7 +337,7 @@ namespace ICSharpCode.CodeConverter.VB
             {
                 if (body != null) {
                     return SyntaxFactory.List(body.Statements.SelectMany(s =>
-                        s.Accept(iteratorState ?? CreateMethodBodyVisitor())));
+                        s.Accept(CreateMethodBodyVisitor(iteratorState))));
                 }
 
                 if (expressionBody != null) {
