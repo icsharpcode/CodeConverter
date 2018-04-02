@@ -1171,32 +1171,34 @@ namespace ICSharpCode.CodeConverter.VB
                 var symbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
                 var parameterList = SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor))));
                 LambdaHeaderSyntax header;
-                if (symbol.ReturnsVoid)
-                    header = SyntaxFactory.SubLambdaHeader(SyntaxFactory.List<AttributeListSyntax>(), CSharpConverter.ConvertModifiers(modifiers, TokenContext.Local), parameterList, null);
-                else
-                    header = SyntaxFactory.FunctionLambdaHeader(SyntaxFactory.List<AttributeListSyntax>(), CSharpConverter.ConvertModifiers(modifiers, TokenContext.Local), parameterList, null);
+                EndBlockStatementSyntax endBlock;
+                SyntaxKind multiLineExpressionKind;
+                SyntaxKind singleLineExpressionKind;
+                if (symbol.ReturnsVoid) {
+                    header = SyntaxFactory.SubLambdaHeader(SyntaxFactory.List<AttributeListSyntax>(),
+                        ConvertModifiers(modifiers, TokenContext.Local), parameterList, null);
+                    endBlock = SyntaxFactory.EndBlockStatement(SyntaxKind.EndSubStatement,
+                        SyntaxFactory.Token(SyntaxKind.SubKeyword));
+                    multiLineExpressionKind = SyntaxKind.MultiLineSubLambdaExpression;
+                    singleLineExpressionKind = SyntaxKind.SingleLineSubLambdaExpression;
+                } else {
+                    header = SyntaxFactory.FunctionLambdaHeader(SyntaxFactory.List<AttributeListSyntax>(),
+                        ConvertModifiers(modifiers, TokenContext.Local), parameterList, null);
+                    endBlock = SyntaxFactory.EndBlockStatement(SyntaxKind.EndFunctionStatement, SyntaxFactory.Token(SyntaxKind.FunctionKeyword));
+                    multiLineExpressionKind = SyntaxKind.MultiLineFunctionLambdaExpression;
+                    singleLineExpressionKind = SyntaxKind.SingleLineFunctionLambdaExpression;
+                }
 
                 if (!(body is CSS.BlockSyntax block)) {
-                    var syntaxKind = symbol.ReturnsVoid ? SyntaxKind.SingleLineSubLambdaExpression : SyntaxKind.SingleLineFunctionLambdaExpression;
-                    return SyntaxFactory.SingleLineLambdaExpression(syntaxKind, header, body.Accept(TriviaConvertingVisitor));
+                    return SyntaxFactory.SingleLineLambdaExpression(singleLineExpressionKind, header, body.Accept(TriviaConvertingVisitor));
                 }
                 var statements = SyntaxFactory.List(block.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())));
 
-                if (statements.Count == 1 && UnpackExpressionFromStatement(statements[0], out ExpressionSyntax expression)) {
-                    var syntaxKind = symbol.ReturnsVoid ? SyntaxKind.SingleLineSubLambdaExpression : SyntaxKind.SingleLineFunctionLambdaExpression;
-                    return SyntaxFactory.SingleLineLambdaExpression(syntaxKind, header, expression);
+                if (statements.Count == 1 && UnpackExpressionFromStatement(statements[0], out var expression)) {
+                    return SyntaxFactory.SingleLineLambdaExpression(singleLineExpressionKind, header, expression);
                 }
 
-                EndBlockStatementSyntax endBlock;
-                SyntaxKind expressionKind;
-                if (symbol.ReturnsVoid) {
-                    endBlock = SyntaxFactory.EndBlockStatement(SyntaxKind.EndSubStatement, SyntaxFactory.Token(SyntaxKind.SubKeyword));
-                    expressionKind = SyntaxKind.MultiLineSubLambdaExpression;
-                } else {
-                    endBlock = SyntaxFactory.EndBlockStatement(SyntaxKind.EndFunctionStatement, SyntaxFactory.Token(SyntaxKind.FunctionKeyword));
-                    expressionKind = SyntaxKind.MultiLineFunctionLambdaExpression;
-                }
-                return SyntaxFactory.MultiLineLambdaExpression(expressionKind, header, statements, endBlock);
+                return SyntaxFactory.MultiLineLambdaExpression(multiLineExpressionKind, header, statements, endBlock);
             }
 
             public override VisualBasicSyntaxNode VisitAwaitExpression(CSS.AwaitExpressionSyntax node)
