@@ -64,7 +64,7 @@ namespace ICSharpCode.CodeConverter.VB
                 modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.DimKeyword));
             return SyntaxFactory.SingletonList<StatementSyntax>(
                 SyntaxFactory.LocalDeclarationStatement(
-                    modifiers, _commonConversions.RemodelVariableDeclaration(node.Declaration, _nodesVisitor)
+                    modifiers, _commonConversions.RemodelVariableDeclaration(node.Declaration)
                 )
             );
         }
@@ -291,7 +291,7 @@ namespace ICSharpCode.CodeConverter.VB
                 var declarations = new List<StatementSyntax>();
                 if (node.Declaration != null) {
                     var syntaxTokenList = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.DimKeyword));
-                    declarations.Add(SyntaxFactory.LocalDeclarationStatement(syntaxTokenList, _commonConversions.RemodelVariableDeclaration(node.Declaration, _nodesVisitor)));
+                    declarations.Add(SyntaxFactory.LocalDeclarationStatement(syntaxTokenList, _commonConversions.RemodelVariableDeclaration(node.Declaration)));
                 }
 
                 return SyntaxFactory.List(declarations.Concat(node.Initializers.Select(ConvertSingleExpression))).Add(block);
@@ -449,7 +449,7 @@ namespace ICSharpCode.CodeConverter.VB
                     SyntaxFactory.SeparatedList<VariableDeclaratorSyntax>()
                 );
             } else {
-                stmt = SyntaxFactory.UsingStatement(null, _commonConversions.RemodelVariableDeclaration(node.Declaration, _nodesVisitor));
+                stmt = SyntaxFactory.UsingStatement(null, _commonConversions.RemodelVariableDeclaration(node.Declaration));
             }
             return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.UsingBlock(stmt, ConvertBlock(node.Statement)));
         }

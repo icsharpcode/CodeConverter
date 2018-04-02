@@ -78,8 +78,8 @@ namespace ICSharpCode.CodeConverter.VB
         public NodesVisitor(SemanticModel semanticModel, VisualBasicCompilationOptions compilationOptions = null)
         {
             _semanticModel = semanticModel;
-            _commonConversions = new CommonConversions(semanticModel, this);
             TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
+            _commonConversions = new CommonConversions(semanticModel, this, TriviaConvertingVisitor.TriviaConverter);
             _options = compilationOptions;
             _cSharpHelperMethodDefinition = new CSharpHelperMethodDefinition();
         }
@@ -313,7 +313,7 @@ namespace ICSharpCode.CodeConverter.VB
                 modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
             return SyntaxFactory.FieldDeclaration(
                 SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))),
-                modifiers, _commonConversions.RemodelVariableDeclaration(node.Declaration, this)
+                modifiers, _commonConversions.RemodelVariableDeclaration(node.Declaration)
             );
         }
 
@@ -452,7 +452,7 @@ namespace ICSharpCode.CodeConverter.VB
                 modifiers,
                 id, null,
                 SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)),
-                node.Initializer == null ? null : SyntaxFactory.EqualsValue((ExpressionSyntax)node.Initializer.Value.Accept(TriviaConvertingVisitor)), null
+                node.Initializer == null ? null : SyntaxFactory.EqualsValue((ExpressionSyntax) _commonConversions.ConvertTopLevelExpression(node.Initializer.Value)), null
             );
 
             if (HasNoAccessorBody(node.AccessorList))
