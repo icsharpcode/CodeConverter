@@ -1153,7 +1153,7 @@ namespace ICSharpCode.CodeConverter.VB
             public override VisualBasicSyntaxNode VisitAnonymousMethodExpression(CSS.AnonymousMethodExpressionSyntax node)
             {
                 var parameterListParameters = node.ParameterList?.Parameters ?? Enumerable.Empty<CSS.ParameterSyntax>();// May have no parameter list
-                return ConvertLambdaExpression(node, node.Block.Statements, parameterListParameters, SyntaxFactory.TokenList(node.AsyncKeyword));
+                return ConvertLambdaExpression(node, node.Block, parameterListParameters, SyntaxFactory.TokenList(node.AsyncKeyword));
             }
 
             public override VisualBasicSyntaxNode VisitSimpleLambdaExpression(CSS.SimpleLambdaExpressionSyntax node)
@@ -1166,24 +1166,21 @@ namespace ICSharpCode.CodeConverter.VB
                 return ConvertLambdaExpression(node, node.Body, node.ParameterList.Parameters, SyntaxFactory.TokenList(node.AsyncKeyword));
             }
 
-            LambdaExpressionSyntax ConvertLambdaExpression(CSS.AnonymousFunctionExpressionSyntax node, object block, IEnumerable<CSS.ParameterSyntax> parameters, SyntaxTokenList modifiers)
+            LambdaExpressionSyntax ConvertLambdaExpression(CSS.AnonymousFunctionExpressionSyntax node, CS.CSharpSyntaxNode body, IEnumerable<CSS.ParameterSyntax> parameters, SyntaxTokenList modifiers)
             {
-                var symbol = ModelExtensions.GetSymbolInfo(_semanticModel, node).Symbol as IMethodSymbol;
+                var symbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
                 var parameterList = SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor))));
                 LambdaHeaderSyntax header;
                 if (symbol.ReturnsVoid)
                     header = SyntaxFactory.SubLambdaHeader(SyntaxFactory.List<AttributeListSyntax>(), CSharpConverter.ConvertModifiers(modifiers, TokenContext.Local), parameterList, null);
                 else
                     header = SyntaxFactory.FunctionLambdaHeader(SyntaxFactory.List<AttributeListSyntax>(), CSharpConverter.ConvertModifiers(modifiers, TokenContext.Local), parameterList, null);
-                if (block is CSS.BlockSyntax)
-                    block = ((CSS.BlockSyntax)block).Statements;
-                if (block is CS.CSharpSyntaxNode) {
+
+                if (!(body is CSS.BlockSyntax block)) {
                     var syntaxKind = symbol.ReturnsVoid ? SyntaxKind.SingleLineSubLambdaExpression : SyntaxKind.SingleLineFunctionLambdaExpression;
-                    return SyntaxFactory.SingleLineLambdaExpression(syntaxKind, header, ((CS.CSharpSyntaxNode)block).Accept(TriviaConvertingVisitor));
+                    return SyntaxFactory.SingleLineLambdaExpression(syntaxKind, header, body.Accept(TriviaConvertingVisitor));
                 }
-                if (!(block is SyntaxList<CSS.StatementSyntax>))
-                    throw new NotSupportedException();
-                var statements = SyntaxFactory.List(((SyntaxList<CSS.StatementSyntax>)block).SelectMany(s => s.Accept(CreateMethodBodyVisitor())));
+                var statements = SyntaxFactory.List(block.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())));
 
                 if (statements.Count == 1 && UnpackExpressionFromStatement(statements[0], out ExpressionSyntax expression)) {
                     var syntaxKind = symbol.ReturnsVoid ? SyntaxKind.SingleLineSubLambdaExpression : SyntaxKind.SingleLineFunctionLambdaExpression;
