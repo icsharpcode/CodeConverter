@@ -357,18 +357,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public VisualBasicSyntaxNode ConvertTopLevelExpression(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax topLevelExpression)
         {
-            var convertedExpression = (ExpressionSyntax) topLevelExpression.Accept(_nodesVisitor);
-
-            var statements = InsertRequiredDeclarations(
-                SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ReturnStatement(convertedExpression)),
-                topLevelExpression);
-            if (statements.Count == 1 && UnpackExpressionFromStatement(statements[0], out var expression)) {
-                return expression;
-            }
-
-            var header = CreateFunctionHeader(SyntaxFactory.TokenList(), SyntaxFactory.ParameterList(), out var endBlock, out var multiLineExpressionKind);
-            var lambda = SyntaxFactory.MultiLineLambdaExpression(multiLineExpressionKind, header, statements, endBlock);
-            return SyntaxFactory.InvocationExpression(lambda, SyntaxFactory.ArgumentList());
+            return topLevelExpression.Accept(_nodesVisitor);
         }
 
         private static ModifiedIdentifierSyntax ExtractIdentifier(Microsoft.CodeAnalysis.CSharp.Syntax.VariableDeclaratorSyntax v)
