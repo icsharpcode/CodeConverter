@@ -116,7 +116,7 @@ End Class";
             return cSharpSyntaxNode;
         }
 
-        public string GetNonFatalWarningsOrNull()
+        public string GetWarningsOrNull()
         {
             var finalCompilation = CreateCompilation(_secondPassResults);
             var targetErrors = GetDiagnostics(finalCompilation);

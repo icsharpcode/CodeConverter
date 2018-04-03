@@ -1683,7 +1683,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static string DescribeConversionError(this SyntaxNode node, Exception e)
         {
-            return $"CONVERSION ERROR: Cannot convert {node.GetType().Name}, {e}{Environment.NewLine}{Environment.NewLine}" +
+            return $"Cannot convert {node.GetType().Name}, {e}{Environment.NewLine}{Environment.NewLine}" +
                 $"Input: {Environment.NewLine}{node.ToFullString()}{Environment.NewLine}";
         }
 

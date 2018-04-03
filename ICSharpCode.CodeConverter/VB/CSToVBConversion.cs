@@ -83,7 +83,7 @@ namespace ICSharpCode.CodeConverter.VB
             return cs.Value.GetRoot();
         }
 
-        public string GetNonFatalWarningsOrNull()
+        public string GetWarningsOrNull()
         {
             return null;
         }

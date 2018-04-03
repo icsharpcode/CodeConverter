@@ -14,7 +14,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public override string ToString()
         {
-            return $"{Message} in {ExceptionCause.GetBriefNodeDescription()}{Environment.NewLine}{StackTrace}";
+            return $"CONVERSION ERROR: {Message} in {ExceptionCause.GetBriefNodeDescription()}{Environment.NewLine}{StackTrace}";
         }
     }
 }

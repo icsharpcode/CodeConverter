@@ -14,6 +14,7 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     public class ProjectConversion<TLanguageConversion> where TLanguageConversion : ILanguageConversion, new()
     {
+        private readonly string _solutionDir;
         private readonly Compilation _sourceCompilation;
         private readonly IEnumerable<SyntaxTree> _syntaxTreesToConvert;
         private static readonly AdhocWorkspace AdhocWorkspace = new AdhocWorkspace();
@@ -25,6 +26,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private ProjectConversion(Compilation sourceCompilation, string solutionDir)
             : this(sourceCompilation, sourceCompilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir)))
         {
+            _solutionDir = solutionDir;
         }
 
         private ProjectConversion(Compilation sourceCompilation, IEnumerable<SyntaxTree> syntaxTreesToConvert)
@@ -53,7 +55,8 @@ namespace ICSharpCode.CodeConverter.Shared
 
             var conversion = new ProjectConversion<TLanguageConversion>(compilation, new [] {syntaxTree});
             var conversionResults = ConvertProject(conversion).ToList();
-            var codeResult = conversionResults.Single(x => !string.IsNullOrWhiteSpace(x.ConvertedCode));
+            var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode)) 
+                             ?? conversionResults.First();
             codeResult.Exceptions = conversionResults.SelectMany(x => x.Exceptions).ToArray();
             return codeResult;
         }
@@ -88,6 +91,9 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             FirstPass();
             var secondPassByFilePath = SecondPass();
+#if DEBUG && false
+            AddProjectWarnings();
+#endif
             return secondPassByFilePath;
         }
 
@@ -103,11 +109,17 @@ namespace ICSharpCode.CodeConverter.Shared
                     _errors.TryAdd(treeFilePath, e.ToString());
                 }
             }
-            var nonFatalWarningsOrNull = _languageConversion.GetNonFatalWarningsOrNull();
-            if (!string.IsNullOrWhiteSpace(nonFatalWarningsOrNull)) {
-                _errors.TryAdd("", nonFatalWarningsOrNull);
-            }
             return secondPassByFilePath;
+        }
+
+        private void AddProjectWarnings()
+        {
+            var nonFatalWarningsOrNull = _languageConversion.GetWarningsOrNull();
+            if (!string.IsNullOrWhiteSpace(nonFatalWarningsOrNull))
+            {
+                var warningsDescription = Path.Combine(_solutionDir ?? "", _sourceCompilation.AssemblyName, "ConversionWarnings.txt");
+                _errors.TryAdd(warningsDescription, nonFatalWarningsOrNull);
+            }
         }
 
         private SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)

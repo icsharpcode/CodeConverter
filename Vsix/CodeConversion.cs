@@ -150,6 +150,8 @@ namespace CodeConverter.VsExtension
                     return ".cs";
                 case ".cs":
                     return ".vb";
+                case ".txt":
+                    return ".txt";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(currentExtension), currentExtension, null);
             }
