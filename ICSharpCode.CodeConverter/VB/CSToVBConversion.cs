@@ -83,6 +83,11 @@ namespace ICSharpCode.CodeConverter.VB
             return cs.Value.GetRoot();
         }
 
+        public string GetNonFatalWarningsOrNull()
+        {
+            return null;
+        }
+
         public SyntaxTree CreateTree(string text)
         {
             return CSSyntaxFactory.ParseSyntaxTree(SourceText.From(text));

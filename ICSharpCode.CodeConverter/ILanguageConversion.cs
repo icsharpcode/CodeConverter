@@ -7,6 +7,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         SyntaxTree SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree);
         SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs);
+        string GetNonFatalWarningsOrNull();
         SyntaxTree CreateTree(string text);
         Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references);
         List<SyntaxNode> FindSingleImportantChild(SyntaxNode annotatedNode);

@@ -52,7 +52,10 @@ namespace ICSharpCode.CodeConverter.Shared
             }
 
             var conversion = new ProjectConversion<TLanguageConversion>(compilation, new [] {syntaxTree});
-            return ConvertProject(conversion).Single();
+            var conversionResults = ConvertProject(conversion).ToList();
+            var codeResult = conversionResults.Single(x => !string.IsNullOrWhiteSpace(x.ConvertedCode));
+            codeResult.Exceptions = conversionResults.SelectMany(x => x.Exceptions).ToArray();
+            return codeResult;
         }
 
         public static IEnumerable<ConversionResult> ConvertProjects(IReadOnlyCollection<Project> projects)
@@ -99,6 +102,10 @@ namespace ICSharpCode.CodeConverter.Shared
                     secondPassByFilePath.Add(treeFilePath, Format(firstPassResult.Value.GetRoot()));
                     _errors.TryAdd(treeFilePath, e.ToString());
                 }
+            }
+            var nonFatalWarningsOrNull = _languageConversion.GetNonFatalWarningsOrNull();
+            if (!string.IsNullOrWhiteSpace(nonFatalWarningsOrNull)) {
+                _errors.TryAdd("", nonFatalWarningsOrNull);
             }
             return secondPassByFilePath;
         }

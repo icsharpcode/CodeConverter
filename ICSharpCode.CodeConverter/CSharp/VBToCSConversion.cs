@@ -19,14 +19,19 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private Compilation _sourceCompilation;
         private readonly List<SyntaxTree> _firstPassResults = new List<SyntaxTree>();
+        private readonly List<SyntaxTree> _secondPassResults = new List<SyntaxTree>();
         private readonly Lazy<CSharpCompilation> _targetCompilation;
 
         public VBToCSConversion()
         {
-            _targetCompilation = new Lazy<CSharpCompilation>(() => {
-                var references = _sourceCompilation.References.Select(ConvertReference);
-                return CSharpCompilation.Create("Conversion", _firstPassResults, references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-            });
+            _targetCompilation = new Lazy<CSharpCompilation>(() => CreateCompilation(_firstPassResults));
+        }
+
+        private CSharpCompilation CreateCompilation(List<SyntaxTree> csTrees)
+        {
+            var references = _sourceCompilation.References.Select(ConvertReference);
+            return CSharpCompilation.Create("Conversion", csTrees, references,
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         }
 
         private MetadataReference ConvertReference(MetadataReference nonLanguageSpecificRef)
@@ -106,7 +111,25 @@ End Class";
 
         public SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)
         {
-            return new CompilationErrorFixer(_targetCompilation.Value, (CSharpSyntaxTree)cs.Value).Fix();
+            var cSharpSyntaxNode = new CompilationErrorFixer(_targetCompilation.Value, (CSharpSyntaxTree)cs.Value).Fix();
+            _secondPassResults.Add(cSharpSyntaxNode.SyntaxTree);
+            return cSharpSyntaxNode;
+        }
+
+        public string GetNonFatalWarningsOrNull()
+        {
+            var finalCompilation = CreateCompilation(_secondPassResults);
+            var targetErrors = GetDiagnostics(finalCompilation);
+            return targetErrors.Any() ? $"{targetErrors.Count} resulting compilation errors:{Environment.NewLine}{string.Join(Environment.NewLine, targetErrors)}" : null;
+        }
+
+        private static List<string> GetDiagnostics(Compilation compilation)
+        {
+            var diagnostics = compilation.GetDiagnostics()
+                .Where(d => d.Severity == DiagnosticSeverity.Error)
+                .Select(d => $"{d.Id}: {d.GetMessage()}")
+                .ToList();
+            return diagnostics;
         }
 
         public SyntaxTree CreateTree(string text)
