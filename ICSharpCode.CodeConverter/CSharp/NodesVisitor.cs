@@ -1156,8 +1156,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitOrdering(VBSyntax.OrderingSyntax node)
             {
-                return SyntaxFactory.Ordering(SyntaxKind.OrderByClause,
-                    (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor), node.AscendingOrDescendingKeyword.ConvertToken());
+                var convertToken = node.Kind().ConvertToken();
+                var expressionSyntax = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
+                var ascendingOrDescendingKeyword = node.AscendingOrDescendingKeyword.ConvertToken();
+                return SyntaxFactory.Ordering(convertToken, expressionSyntax, ascendingOrDescendingKeyword);
             }
 
             private QueryClauseSyntax ConvertJoinClause(VBSyntax.JoinClauseSyntax js)

@@ -257,6 +257,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxKind.AssemblyKeyword;
                 case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AsyncKeyword:
                     return SyntaxKind.AsyncKeyword;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AscendingOrdering:
+                    return SyntaxKind.AscendingOrdering;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DescendingOrdering:
+                    return SyntaxKind.DescendingOrdering;
                 case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AscendingKeyword:
                     return SyntaxKind.AscendingKeyword;
                 case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DescendingKeyword:
