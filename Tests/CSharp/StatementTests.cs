@@ -692,6 +692,40 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void SimpleDoStatement()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+    Private Sub TestMethod()
+        Dim b As Integer
+        b = 0
+
+        Do
+            If b = 2 Then Continue Do
+            If b = 3 Then Exit Do
+            b = 1
+        Loop
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        int b;
+        b = 0;
+
+        do
+        {
+            if (b == 2)
+                continue;
+            if (b == 3)
+                break;
+            b = 1;
+        }
+        while (true);
+    }
+}");
+        }
+
+        [Fact]
         public void DoWhileStatement()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass

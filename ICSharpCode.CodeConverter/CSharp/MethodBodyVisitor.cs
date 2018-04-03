@@ -564,31 +564,37 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> VisitDoLoopBlock(VBSyntax.DoLoopBlockSyntax node)
             {
+                var statements = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackNonNestedBlock();
+
                 if (node.DoStatement.WhileOrUntilClause != null) {
                     var stmt = node.DoStatement.WhileOrUntilClause;
                     if (SyntaxTokenExtensions.IsKind(stmt.WhileOrUntilKeyword, VBasic.SyntaxKind.WhileKeyword))
                         return SingleStatement(SyntaxFactory.WhileStatement(
                             (ExpressionSyntax)stmt.Condition.Accept(_nodesVisitor),
-                            SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackNonNestedBlock()
+                            statements
                         ));
                     return SingleStatement(SyntaxFactory.WhileStatement(
                         SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, (ExpressionSyntax)stmt.Condition.Accept(_nodesVisitor)),
-                        SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackNonNestedBlock()
+                        statements
                     ));
                 }
-                if (node.LoopStatement.WhileOrUntilClause != null) {
-                    var stmt = node.LoopStatement.WhileOrUntilClause;
-                    if (SyntaxTokenExtensions.IsKind(stmt.WhileOrUntilKeyword, VBasic.SyntaxKind.WhileKeyword))
-                        return SingleStatement(SyntaxFactory.DoStatement(
-                            SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackNonNestedBlock(),
-                            (ExpressionSyntax)stmt.Condition.Accept(_nodesVisitor)
-                        ));
-                    return SingleStatement(SyntaxFactory.DoStatement(
-                        SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackNonNestedBlock(),
-                        SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, (ExpressionSyntax)stmt.Condition.Accept(_nodesVisitor))
-                    ));
+                
+                var whileOrUntilStmt = node.LoopStatement.WhileOrUntilClause;
+                ExpressionSyntax conditionExpression;
+                bool isUntilStmt;
+                if (whileOrUntilStmt != null) {
+                    conditionExpression = (ExpressionSyntax)whileOrUntilStmt.Condition.Accept(_nodesVisitor);
+                    isUntilStmt = SyntaxTokenExtensions.IsKind(whileOrUntilStmt.WhileOrUntilKeyword, VBasic.SyntaxKind.UntilKeyword);
+                } else {
+                    conditionExpression = SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
+                    isUntilStmt = false;
                 }
-                throw new NotSupportedException();
+
+                if (isUntilStmt) {
+                    conditionExpression = SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, conditionExpression);
+                }
+
+                return SingleStatement(SyntaxFactory.DoStatement(statements, conditionExpression));
             }
 
             public override SyntaxList<StatementSyntax> VisitCallStatement(VBSyntax.CallStatementSyntax node)
