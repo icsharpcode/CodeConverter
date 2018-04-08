@@ -86,11 +86,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         internal static ExpressionSyntax GetLiteralExpression(object value, string valueText = null)
         {
             if (value is string s) {
-                var worthBeingAVerbatimString = s.IndexOfAny(new[] { '\r', '\n', '\\' }) > -1;
-                if (worthBeingAVerbatimString) {
-                    var valueWithReplacements = s.Replace("\"", "\"\"");
-                    valueText = $"@\"{valueWithReplacements}\"";
-                }
+                valueText = GetStringValueText(s, valueText);
                 return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
                     SyntaxFactory.Literal(valueText, s));
             }
@@ -134,6 +130,23 @@ namespace ICSharpCode.CodeConverter.CSharp
 
 
             throw new ArgumentOutOfRangeException(nameof(value), value, null);
+        }
+
+        internal static string GetStringValueText(string s1, string valueText)
+        {
+            var worthBeingAVerbatimString = IsWorthBeingAVerbatimString(s1);
+            if (worthBeingAVerbatimString)
+            {
+                var valueWithReplacements = s1.Replace("\"", "\"\"");
+                valueText = $"@\"{valueWithReplacements}\"";
+            }
+
+            return valueText;
+        }
+
+        internal static bool IsWorthBeingAVerbatimString(string s1)
+        {
+            return s1.IndexOfAny(new[] {'\r', '\n', '\\'}) > -1;
         }
 
         /// <summary>

@@ -12,12 +12,16 @@ namespace CodeConverter.Tests.CSharp
     Private Sub TestMethod()
         Dim x = ""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!""
+        Dim y = $""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
+World!""
     End Sub
 End Class", @"class TestClass
 {
     private void TestMethod()
     {
         var x = @""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
+World!"";
+        var y = $@""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!"";
     }
 }");
