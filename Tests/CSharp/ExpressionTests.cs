@@ -4,24 +4,20 @@ namespace CodeConverter.Tests.CSharp
 {
     public class ExpressionTests : ConverterTestBase
     {
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void MultilineString()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            // Don't auto-test comments, otherwise it tries to put a comment in the middle of the string, which obviously isn't a valid place for it
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
-        Dim x = ""Hello,
+        Dim x = ""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!""
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var x = @""Hello,
+        var x = @""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!"";
     }
 }");

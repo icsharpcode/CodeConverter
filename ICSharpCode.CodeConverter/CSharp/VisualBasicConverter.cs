@@ -85,8 +85,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         internal static ExpressionSyntax GetLiteralExpression(object value, string valueText = null)
         {
-            if (value is string)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal((string)value));
+            if (value is string s) {
+                var worthBeingAVerbatimString = s.IndexOfAny(new[] { '\r', '\n', '\\' }) > -1;
+                if (worthBeingAVerbatimString) {
+                    var valueWithReplacements = s.Replace("\"", "\"\"");
+                    valueText = $"@\"{valueWithReplacements}\"";
+                }
+                return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
+                    SyntaxFactory.Literal(valueText, s));
+            }
+
             if (value == null)
                 return SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
             if (value is bool)
