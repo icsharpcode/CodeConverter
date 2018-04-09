@@ -1,6 +1,42 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
+#5.6.3 - 09/04/2018
+
+* Improve support for sub-class snippets through the website
+* Best effort conversion with errors as comments inline
+* Tidy up duplicate import/using statements
+
+### VB -> C#
+* Using statements and array initialization improvements
+* Convert select case expressions
+* Fix for multi-parameter extension methods
+* Convert single line void delegates 
+* Fix array initialization incorrect conversion bugs
+* Convert operator overloads
+* Overestimate when a method should be invoked with no parameters
+* Remove global namespace in conversion
+* Add Imports System.Runtime.InteropServices when convering an out parameter
+* Support Erase and Redim Preserve
+* Convert select case expressions
+* Extend support for converting with blocks
+
+### C# -> VB
+* Convert C# 7.0 features: "is pattern", throw and declaration expressions
+* Convert expression bodies
+* Fix to ensure Case Else always comes last in a Select statement
+* Convert base class constructor call
+* Fix convert char from integer cast
+* Convert hex literals to hex literals (rather than just integers)
+* Fix to avoid using "_" as a parameter name
+* Fix for loop variable missing declaration and initialization
+* Convert declare to extern
+* Fix to improve accuracy of adding AddressOf
+* Convert block syntax
+* Convert empty statement
+* Fix to avoid single line if-else statement's conversion causing compilation error
+* Fix to avoid delegate with no parameters throwing NullReferenceException
+
 ## 5.6.2 - 16/03/2018
 
 ### VB -> C#
