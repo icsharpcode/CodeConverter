@@ -791,9 +791,18 @@ class MyClassC
         {
             TestConversionVisualBasicToCSharp(
 @"Class TestClass
-    Default Public Property Item(ByVal index As Integer) As Integer
+    private _Items As Integer()
 
-    Default Public Property Item(ByVal index As String) As Integer
+    Default Public Property Item(ByVal index As Integer) As Integer
+        Get
+            Return _Items(index)
+        End Get
+        Set(ByVal value As Integer)
+            _Items(index) = value
+        End Set
+    End Property
+
+    Default Public ReadOnly Property Item(ByVal index As String) As Integer
         Get
             Return 0
         End Get
@@ -809,19 +818,25 @@ class MyClassC
             Me.m_test3 = value
         End Set
     End Property
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
+End Class", @"class TestClass
 {
-    public int this[int index] { get; set; }
-    public int this[string index] {
+    private int[] _items;
+
+    public int this[int index]
+    {
+        get { return _items[index]; }
+        set { _items[index] = value; }
+    }
+
+    public int this[string index]
+    {
         get { return 0; }
     }
-    int m_test3;
-    public int this[double index] {
+
+    private int m_test3;
+
+    public int this[double index]
+    {
         get { return this.m_test3; }
         set { this.m_test3 = value; }
     }
