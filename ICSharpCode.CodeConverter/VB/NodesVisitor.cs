@@ -457,12 +457,8 @@ namespace ICSharpCode.CodeConverter.VB
             }
             var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Member);
             if (isIterator) modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.IteratorKeyword));
-            if (csAccessors.Count == 1) {
-                var accessLimitation = csAccessors.Single().IsKind(CS.SyntaxKind.SetAccessorDeclaration)
-                    ? SyntaxKind.WriteOnlyKeyword
-                    : SyntaxKind.ReadOnlyKeyword;
-                modifiers = modifiers.Add(SyntaxFactory.Token(accessLimitation));
-            }
+            var accessLimitationTokens = GetAccessLimitationTokens(csAccessors);
+            modifiers = modifiers.AddRange(accessLimitationTokens);
             var stmt = SyntaxFactory.PropertyStatement(
                 attributes,
                 modifiers,
@@ -482,12 +478,15 @@ namespace ICSharpCode.CodeConverter.VB
             ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
             bool isIterator = false;
             List<AccessorBlockSyntax> accessors = new List<AccessorBlockSyntax>();
-            foreach (var a in node.AccessorList?.Accessors) {
+            var csAccessors = node.AccessorList.Accessors;
+            foreach (var a in csAccessors) {
                 accessors.Add(_commonConversions.ConvertAccessor(a, out var isAIterator));
                 isIterator |= isAIterator;
             }
             var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Member).Insert(0, SyntaxFactory.Token(SyntaxKind.DefaultKeyword));
             if (isIterator) modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.IteratorKeyword));
+            var accessLimitationTokens = GetAccessLimitationTokens(csAccessors);
+            modifiers = modifiers.AddRange(accessLimitationTokens);
             var parameterList = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor);
             var stmt = SyntaxFactory.PropertyStatement(
                 attributes,
@@ -498,6 +497,16 @@ namespace ICSharpCode.CodeConverter.VB
             if (HasNoAccessorBody(node.AccessorList))
                 return stmt;
             return SyntaxFactory.PropertyBlock(stmt, SyntaxFactory.List(accessors));
+        }
+
+        private static SyntaxToken[] GetAccessLimitationTokens(SyntaxList<CSS.AccessorDeclarationSyntax> csAccessors)
+        {
+            if (csAccessors.Count != 1) return new SyntaxToken[0];
+
+            var accessLimitation = csAccessors.Single().IsKind(CS.SyntaxKind.SetAccessorDeclaration)
+                ? SyntaxKind.WriteOnlyKeyword
+                : SyntaxKind.ReadOnlyKeyword;
+            return new[] {SyntaxFactory.Token(accessLimitation)};
         }
 
         private static bool HasNoAccessorBody(CSS.AccessorListSyntax accessorListSyntaxOrNull)

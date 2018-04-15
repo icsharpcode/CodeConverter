@@ -432,19 +432,54 @@ End Class");
             TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
-    public int this[int index] { get; set; }
-    public int this[string index] {
-        get { return 0; }
+    private int[] _Items;
+
+    public int this[int index]
+    {
+        get
+        {
+            return _Items[index];
+        }
+        set
+        {
+            _Items[index] = value;
+        }
     }
-    int m_test3;
-    public int this[double index] {
-        get { return this.m_test3; }
-        set { this.m_test3 = value; }
+
+    public int this[string index]
+    {
+        get
+        {
+            return 0;
+        }
+    }
+
+    private int m_test3;
+
+    public int this[double index]
+    {
+        get
+        {
+            return this.m_test3;
+        }
+        set
+        {
+            this.m_test3 = value;
+        }
     }
 }", @"Class TestClass
-    Default Public Property Item(ByVal index As Integer) As Integer
+    Private _Items As Integer()
 
-    Default Public Property Item(ByVal index As String) As Integer
+    Default Public Property Item(ByVal index As Integer) As Integer
+        Get
+            Return _Items(index)
+        End Get
+        Set(ByVal value As Integer)
+            _Items(index) = value
+        End Set
+    End Property
+
+    Default Public ReadOnly Property Item(ByVal index As String) As Integer
         Get
             Return 0
         End Get

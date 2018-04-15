@@ -791,7 +791,7 @@ class MyClassC
         {   // BUG: Comments aren't properly transferred to the property statement because the line ends in a square bracket
             TestConversionVisualBasicToCSharpWithoutComments(
 @"Class TestClass
-    private _Items As Integer()
+    Private _Items As Integer()
 
     Default Public Property Item(ByVal index As Integer) As Integer
         Get
