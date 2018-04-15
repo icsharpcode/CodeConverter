@@ -421,10 +421,28 @@ namespace ICSharpCode.CodeConverter.CSharp
                     case VBasic.SyntaxKind.RemoveHandlerAccessorBlock:
                         blockKind = SyntaxKind.RemoveAccessorDeclaration;
                         break;
+                    case VBasic.SyntaxKind.RaiseEventAccessorBlock:
+                        blockKind = SyntaxKind.MethodDeclaration;
+                        break;
                     default:
-                        throw new NotSupportedException();
+                        throw new NotSupportedException(node.Kind().ToString());
+                }
+
+                if (blockKind == SyntaxKind.MethodDeclaration) {
+                    var parameterListSyntax = (ParameterListSyntax) node.AccessorStatement.ParameterList.Accept(TriviaConvertingVisitor);
+                    var eventStatement = ((VBSyntax.EventBlockSyntax)node.Parent).EventStatement;
+                    var eventName = ConvertIdentifier(eventStatement.Identifier).ValueText;
+                    return SyntaxFactory.MethodDeclaration(attributes, modifiers,
+                        SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)), null,
+                        SyntaxFactory.Identifier($"On{eventName}"), null,
+                        parameterListSyntax, SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), body, null);
                 }
                 return SyntaxFactory.AccessorDeclaration(blockKind, attributes, modifiers, body);
+            }
+
+            public override CSharpSyntaxNode VisitAccessorStatement(VBSyntax.AccessorStatementSyntax node)
+            {
+                return SyntaxFactory.AccessorDeclaration(node.Kind().ConvertToken(), null);
             }
 
             public override CSharpSyntaxNode VisitMethodBlock(VBSyntax.MethodBlockSyntax node)
@@ -511,13 +529,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var rawType = (TypeSyntax)block.AsClause?.Type.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ParseTypeName("var");
 
+                var convertedAccessors = node.Accessors.Select(a => a.Accept(TriviaConvertingVisitor)).ToList();
+                _additionalDeclarations.Add(node, convertedAccessors.OfType<MemberDeclarationSyntax>().ToArray());
                 return SyntaxFactory.EventDeclaration(
                     SyntaxFactory.List(attributes),
                     modifiers,
                     rawType,
                     null,
                     ConvertIdentifier(block.Identifier),
-                    SyntaxFactory.AccessorList(SyntaxFactory.List(node.Accessors.Select(a => (AccessorDeclarationSyntax)a.Accept(TriviaConvertingVisitor))))
+                    SyntaxFactory.AccessorList(SyntaxFactory.List(convertedAccessors.OfType<AccessorDeclarationSyntax>()))
                 );
             }
 
@@ -559,6 +579,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 );
                 throw new NotSupportedException();
             }
+
+
 
             public override CSharpSyntaxNode VisitOperatorBlock(VBSyntax.OperatorBlockSyntax node)
             {

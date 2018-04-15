@@ -330,41 +330,6 @@ class TestClass
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
-        public void TestCustomEvent()
-        {
-            TestConversionVisualBasicToCSharp(
-@"Class TestClass
-    Private backingField As EventHandler
-
-    Public Event MyEvent As EventHandler
-        AddHandler(ByVal value As EventHandler)
-            AddHandler Me.backingField, value
-        End AddHandler
-        RemoveHandler(ByVal value As EventHandler)
-            RemoveHandler Me.backingField, value
-        End RemoveHandler
-    End Event
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualBasic;
-
-class TestClass
-{
-    EventHandler backingField;
-
-    public event EventHandler MyEvent {
-        add {
-            this.backingField += value;
-        }
-        remove {
-            this.backingField -= value;
-        }
-    }
-}");
-        }
-
         [Fact]
         public void SynthesizedBackingFieldAccess()
         {

@@ -314,14 +314,22 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> VisitRaiseEventStatement(VBSyntax.RaiseEventStatementSyntax node)
             {
+                var argumentListSyntax = (ArgumentListSyntax)node.ArgumentList.Accept(_nodesVisitor);
+
+                var symbolInfo = _semanticModel.GetSymbolInfo(node.Name).ExtractBestMatch() as IEventSymbol;
+                if (symbolInfo?.RaiseMethod != null) {
+                    return SingleStatement(SyntaxFactory.InvocationExpression(
+                        SyntaxFactory.IdentifierName($"On{symbolInfo.Name}"),
+                        argumentListSyntax));
+                }
+
+                var memberBindingExpressionSyntax = SyntaxFactory.MemberBindingExpression(SyntaxFactory.IdentifierName("Invoke"));
+                var conditionalAccessExpressionSyntax = SyntaxFactory.ConditionalAccessExpression(
+                    (NameSyntax)node.Name.Accept(_nodesVisitor),
+                    SyntaxFactory.InvocationExpression(memberBindingExpressionSyntax, argumentListSyntax)
+                );
                 return SingleStatement(
-                    SyntaxFactory.ConditionalAccessExpression(
-                        (ExpressionSyntax)node.Name.Accept(_nodesVisitor),
-                        SyntaxFactory.InvocationExpression(
-                            SyntaxFactory.MemberBindingExpression(SyntaxFactory.IdentifierName("Invoke")),
-                            (ArgumentListSyntax)node.ArgumentList.Accept(_nodesVisitor)
-                        )
-                    )
+                    conditionalAccessExpressionSyntax
                 );
             }
 

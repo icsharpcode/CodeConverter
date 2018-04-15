@@ -181,6 +181,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxKind.LeftShiftAssignmentExpression;
                 case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.RightShiftAssignmentStatement:
                     return SyntaxKind.RightShiftAssignmentExpression;
+                // statements
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AddHandlerAccessorStatement:
+                    return SyntaxKind.AddAccessorDeclaration;
+                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.RemoveHandlerAccessorStatement:
+                    return SyntaxKind.RemoveAccessorDeclaration;
                 // Casts
                 case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.CObjKeyword:
                     return SyntaxKind.ObjectKeyword;
