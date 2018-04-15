@@ -217,6 +217,13 @@ namespace ICSharpCode.CodeConverter.VB
             SyntaxList<StatementSyntax> statements;
             if (body is BlockSyntax block) {
                 statements = ConvertStatements(block.Statements);
+
+            } else if (body.Kind() == Microsoft.CodeAnalysis.CSharp.SyntaxKind.ThrowExpression) {
+                var csThrowExpression = (ThrowExpressionSyntax)body;
+                var vbThrowExpression = (ExpressionSyntax)csThrowExpression.Expression.Accept(_nodesVisitor);
+                var vbThrowStatement = SyntaxFactory.ThrowStatement(SyntaxFactory.Token(SyntaxKind.ThrowKeyword), vbThrowExpression);
+
+                return SyntaxFactory.MultiLineFunctionLambdaExpression(header, SyntaxFactory.SingletonList<StatementSyntax>(vbThrowStatement), endBlock);
             } else {
                 statements = InsertRequiredDeclarations(
                     SyntaxFactory.SingletonList<StatementSyntax>(

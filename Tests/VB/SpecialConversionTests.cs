@@ -255,15 +255,10 @@ Module TestClass
     End Function
 
     Function Convert(ByVal node As Object) As Object
-        Return node.TypeSwitch(New Func(Of String, Object)(AddressOf ConvertString), New Func(Of Integer, Object)(AddressOf ConvertInt), Function(__) CSharpImpl.__Throw(Of Object)(New NotImplementedException($""Conversion for '{node.[GetType]()}' not implemented"")))
+        Return node.TypeSwitch(New Func(Of String, Object)(AddressOf ConvertString), New Func(Of Integer, Object)(AddressOf ConvertInt), Function(__)
+                                                                                                                                             Throw New NotImplementedException($""Conversion for '{node.[GetType]()}' not implemented"")
+                                                                                                                                         End Function)
     End Function
-
-    Private Class CSharpImpl
-        <Obsolete(""Please refactor calling code to use normal throw statements"")>
-        Shared Function __Throw(Of T)(ByVal e As Exception) As T
-            Throw e
-        End Function
-    End Class
 End Module");
         }
 
