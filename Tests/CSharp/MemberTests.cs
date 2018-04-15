@@ -786,10 +786,10 @@ class MyClassC
 }");
         }
 
-        [Fact(Skip = "Not implemented!")]
+        [Fact]
         public void TestIndexer()
-        {
-            TestConversionVisualBasicToCSharp(
+        {   // BUG: Comments aren't properly transferred to the property statement because the line ends in a square bracket
+            TestConversionVisualBasicToCSharpWithoutComments(
 @"Class TestClass
     private _Items As Integer()
 
@@ -820,25 +820,40 @@ class MyClassC
     End Property
 End Class", @"class TestClass
 {
-    private int[] _items;
+    private int[] _Items;
 
     public int this[int index]
     {
-        get { return _items[index]; }
-        set { _items[index] = value; }
+        get
+        {
+            return _Items[index];
+        }
+        set
+        {
+            _Items[index] = value;
+        }
     }
 
     public int this[string index]
     {
-        get { return 0; }
+        get
+        {
+            return 0;
+        }
     }
 
     private int m_test3;
 
     public int this[double index]
     {
-        get { return this.m_test3; }
-        set { this.m_test3 = value; }
+        get
+        {
+            return this.m_test3;
+        }
+        set
+        {
+            this.m_test3 = value;
+        }
     }
 }");
         }

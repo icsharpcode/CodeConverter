@@ -342,9 +342,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 bool hasBody = node.Parent is VBSyntax.PropertyBlockSyntax;
                 var attributes = node.AttributeLists.SelectMany(ConvertAttribute);
                 var isReadonly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.ReadOnlyKeyword));
-                var convertibleModifiers = node.Modifiers.Where(m => !SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.ReadOnlyKeyword));
+                var convertibleModifiers = node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword, VBasic.SyntaxKind.DefaultKeyword));
                 var modifiers = VisualBasicConverter.ConvertModifiers(convertibleModifiers, GetMethodOrPropertyContext(node));
-                var isIndexer = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.DefaultKeyword)) && node.Identifier.ValueText.Equals("Items", StringComparison.OrdinalIgnoreCase);
+                var isIndexer = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.DefaultKeyword));
 
                 var initializer = (EqualsValueClauseSyntax)node.Initializer?.Accept(TriviaConvertingVisitor);
                 var rawType = (TypeSyntax)node.AsClause?.TypeSwitch(
