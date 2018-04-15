@@ -102,12 +102,15 @@ namespace ICSharpCode.CodeConverter.VB
             TypeSyntax typeSyntax;
             if (des.Type.IsVar) {
                 var typeSymbol = (ITypeSymbol)ModelExtensions.GetSymbolInfo(_semanticModel, des.Type).ExtractBestMatch();
-                typeSyntax = typeSymbol.ToVbSyntax(_semanticModel, des.Type);
+                if (typeSymbol == null)
+                    typeSyntax = null;
+                else
+                    typeSyntax = typeSymbol.ToVbSyntax(_semanticModel, des.Type);
             } else {
                 typeSyntax = (TypeSyntax)des.Type.Accept(_nodesVisitor);
             }
 
-            var simpleAsClauseSyntax = SyntaxFactory.SimpleAsClause(typeSyntax);
+            var simpleAsClauseSyntax = typeSyntax != null ? SyntaxFactory.SimpleAsClause(typeSyntax) : null;
             var equalsValueSyntax = SyntaxFactory.EqualsValue(SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression, SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
             return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
         }
