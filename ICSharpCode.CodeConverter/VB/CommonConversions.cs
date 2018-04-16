@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using AttributeListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.AttributeListSyntax;
 using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
+using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using ExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax;
 using IdentifierNameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.IdentifierNameSyntax;
 using LambdaExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.LambdaExpressionSyntax;
@@ -396,11 +397,34 @@ namespace ICSharpCode.CodeConverter.VB
             // Underscore is a special character in VB lexer which continues lines - not sure where to find the whole set of other similar tokens if any
             // Rather than a complicated contextual rename, just add an extra dash to all identifiers and hope this method is consistently used
             if (idText.All(c => c == '_')) idText += "_";
-            var keywordKind = SyntaxFacts.GetKeywordKind(idText);
-            if (keywordKind != SyntaxKind.None && !SyntaxFacts.IsPredefinedType(keywordKind))
+            
+            if (IsKeywordThatNeedsEscaped(id))
                 return SyntaxFactory.Identifier("[" + idText + "]");
             return SyntaxFactory.Identifier(idText);
         }
+
+        private static bool IsKeywordThatNeedsEscaped(SyntaxToken id)
+        {
+            var keywordKind = SyntaxFacts.GetKeywordKind(id.ValueText);
+
+            if (keywordKind == SyntaxKind.None) return false;
+            if (!SyntaxFacts.IsPredefinedType(keywordKind)) return true;
+
+            return id.IsKind(CSSyntaxKind.CatchDeclaration,
+                             CSSyntaxKind.ClassDeclaration,
+                             CSSyntaxKind.EnumDeclaration,
+                             CSSyntaxKind.EnumMemberDeclaration,
+                             CSSyntaxKind.EventDeclaration,
+                             CSSyntaxKind.EventFieldDeclaration,
+                             CSSyntaxKind.FieldDeclaration,
+                             CSSyntaxKind.InterfaceDeclaration,
+                             CSSyntaxKind.MethodDeclaration,
+                             CSSyntaxKind.PropertyDeclaration,
+                             CSSyntaxKind.NamespaceDeclaration,
+                             CSSyntaxKind.StructDeclaration,
+                             CSSyntaxKind.VariableDeclaration);
+        }
+
 
         public static ExpressionSyntax Literal(object o, string valueText = null) => GetLiteralExpression(o, valueText);
 
