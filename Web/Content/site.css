@@ -122,7 +122,7 @@ body {
 	text-transform: uppercase;
 	font-size: smaller;
 	padding-top: 3px;
-	padding-bottom: 3px;
+	padding-bottom: 1px;
 }
 
 .px-2 {
@@ -277,6 +277,7 @@ textarea.form-control[disabled] {
 }
 
 textarea, div.form-control .content {
+	font-family: Courier,Serif;
 	resize: none;
 	white-space: pre-wrap;
 	cursor: text;
@@ -305,6 +306,11 @@ div.form-control {
 	.text-white:hover {
 		color: inherit !important;
 	}
+
+
+.mt-3 {
+	margin-top: 25px !important;
+} 
 
 .mt-5 {
 	margin-top: 40px;
@@ -359,6 +365,10 @@ div.form-control {
 
 	.text-md-right {
 		text-align: right;
+	}
+
+	.mt-md-0 {
+		margin-top: 0 !important;
 	}
 }
 
