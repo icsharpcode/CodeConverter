@@ -15,7 +15,7 @@ Adds context menu items to convert projects/files between VB.NET and C#.
 * Actively developed: User feedback helps us continuously strive for a more accurate conversion.
 
 <p>
-<img title="Selected text can be converted" alt="Selected text conversion context menu" src="https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/vbToCsSelection.png" />
+<img title="Selected text can be converted" alt="Selected text conversion context menu" src="https://github.com/icsharpcode/CodeConverter/raw/master/.github/img/vbToCsSelection.png" />
 </p>
 
 ## Contributing
@@ -37,8 +37,8 @@ made it super-hard to co-evolve the code converter bits. That is why we teased t
 
 ## More screenshots
 <p float="left">
-  <img src="https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/solution.png" width="49%" />
-  <img src="https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/vbToCsFile.png" width="49%" /> 
-  <img src="https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/vbToCsProject.png" width="49%" /> 
-  <img src="https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/csToVbProject.png" width="49%" /> 
+  <img src="https://github.com/icsharpcode/CodeConverter/raw/master/.github/img/solution.png" width="49%" />
+  <img src="https://github.com/icsharpcode/CodeConverter/raw/master/.github/img/vbToCsFile.png" width="49%" /> 
+  <img src="https://github.com/icsharpcode/CodeConverter/raw/master/.github/img/vbToCsProject.png" width="49%" /> 
+  <img src="https://github.com/icsharpcode/CodeConverter/raw/master/.github/img/csToVbProject.png" width="49%" /> 
 </p>
