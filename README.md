@@ -3,7 +3,6 @@
 Convert code from C# to VB.NET and vice versa using Roslyn
 
 ## Visual Studio Extension
-
 Adds context menu items to convert projects/files between VB.NET and C#.
 
 [Download from Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter)
@@ -15,19 +14,14 @@ Adds context menu items to convert projects/files between VB.NET and C#.
 * Integrated: Uses the Output window to show conversion progress / summary.
 * Actively developed: User feedback helps us continuously strive for a more accurate conversion.
 
-### Examples
-
-![Selected text conversion context menu](https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/vbToCsSelection.png "Selected text can be converted")
-
-<p float="left">
-  <img src="https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/solution.png" width="49%" />
-  <img src="https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/vbToCsFile.png" width="49%" /> 
-  <img src="https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/vbToCsProject.png" width="49%" /> 
-  <img src="https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/csToVbProject.png" width="49%" /> 
+<p>
+<img title="Selected text can be converted" alt="Selected text conversion context menu" src="https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/vbToCsSelection.png" />
 </p>
 
-## Other ways to use the converter
+## Contributing
+Let us know what needs improving. If you want to get involved in writing the code yourself, even better! We've already had code contributions from several first time GitHub contributors, so don't be shy! The first step is usually to raise an issue against the repo to give room for discussion.
 
+## Other ways to use the converter
 * Extension "nightly" developer builds (potentially less stable and more effort to update): https://ci.appveyor.com/project/icsharpcode/codeconverter/branch/master
 
 * Online snippet converter: [https://roslyncodeconverter.azurewebsites.net](https://roslyncodeconverter.azurewebsites.net) (less accurate due to lack of project context)
@@ -37,8 +31,14 @@ Adds context menu items to convert projects/files between VB.NET and C#.
   * Check out the [CodeConversion class](https://github.com/icsharpcode/CodeConverter/blob/master/Vsix/CodeConversion.cs#L188) in the VSIX project.
   * Or check out the [ConverterController](https://github.com/icsharpcode/CodeConverter/blob/master/Web/Controllers/ConverterController.cs) for a more web-focused API.
 
-
 ##  History
-
 This was previously part of [Refactoring Essentials](https://github.com/icsharpcode/RefactoringEssentials). However, because of the way analyzers are tied to Visual Studio and Roslyn versions
 made it super-hard to co-evolve the code converter bits. That is why we teased the converters out and they are now a self-contained entity.
+
+## More screenshots
+<p float="left">
+  <img src="https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/solution.png" width="49%" />
+  <img src="https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/vbToCsFile.png" width="49%" /> 
+  <img src="https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/vbToCsProject.png" width="49%" /> 
+  <img src="https://github.com/icsharpcode/CodeConverter/raw/project-description/.github/img/csToVbProject.png" width="49%" /> 
+</p>
