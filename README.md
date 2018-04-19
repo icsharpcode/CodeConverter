@@ -10,7 +10,7 @@ Adds context menu items to convert projects/files between VB.NET and C#.
 * Flexible: Convert a small selection, or a whole solution in one go, in either direction.
 * Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
 * Safe: Conversion runs entirely locally - your code doesn't leave your machine.
-* Completely free and open source: Check out [GitHub](https://github.com/icsharpcode/CodeConverter#code-converter-).
+* Completely free and open source [GitHub](https://github.com/icsharpcode/CodeConverter#code-converter-) project
 * Integrated: Uses the Output window to show conversion progress / summary.
 * Actively developed: User feedback helps us continuously strive for a more accurate conversion.
 
