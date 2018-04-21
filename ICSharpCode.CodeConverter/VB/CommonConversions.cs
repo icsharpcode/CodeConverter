@@ -411,6 +411,7 @@ namespace ICSharpCode.CodeConverter.VB
             // List of the kinds that end in declaration and can have names attached
             return id.IsKind(CSSyntaxKind.CatchDeclaration,
                              CSSyntaxKind.ClassDeclaration,
+                             CSSyntaxKind.DelegateDeclaration,
                              CSSyntaxKind.EnumDeclaration,
                              CSSyntaxKind.EnumMemberDeclaration,
                              CSSyntaxKind.EventDeclaration,
