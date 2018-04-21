@@ -18,5 +18,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
             bool surroundedWithMethod);
+        IReadOnlyCollection<(string, string)> GetProjectTypeGuidMappings();
+        IEnumerable<(string, string)> GetProjectFileReplacementRegexes();
     }
 }

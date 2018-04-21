@@ -513,7 +513,7 @@ End Class");
         [Fact]
         public void UnsafeStatements()
         {
-            var convertedCode = ProjectConversion<CSToVBConversion>.ConvertText(@"class TestClass
+            var convertedCode = ProjectConversion.ConvertText<CSToVBConversion>(@"class TestClass
 {
     void TestMethod()
     {

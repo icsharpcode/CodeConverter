@@ -5,9 +5,7 @@ using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Xunit;
 
@@ -16,7 +14,6 @@ namespace CodeConverter.Tests
     public class ConverterTestBase
     {
         private bool _testCstoVBCommentsByDefault = false;
-
         public void TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
         {
             expectedVisualBasicCode = AddSurroundingMethodBlock(expectedVisualBasicCode, expectSurroundingMethodBlock);
@@ -64,15 +61,8 @@ End Sub";
         private static void AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode) where TLanguageConversion : ILanguageConversion, new()
         {
             var outputNode =
-                ProjectConversion<TLanguageConversion>.ConvertText(inputCode, CodeWithOptions.DefaultMetadataReferences);
+                ProjectConversion.ConvertText<TLanguageConversion>(inputCode, CodeWithOptions.DefaultMetadataReferences);
             AssertConvertedCodeResultEquals(outputNode, expectedConvertedCode, inputCode);
-        }
-
-        public void ConvertAllProjectsToCSharp(string solutionFilename)
-        {
-            var workspace = MSBuildWorkspace.Create();
-            var solution = workspace.OpenSolutionAsync(solutionFilename).GetAwaiter().GetResult();
-            Console.WriteLine(ProjectConversion<VBToCSConversion>.ConvertProjects(solution.Projects.Where(p => p.Language == LanguageNames.VisualBasic).ToArray()).Count());
         }
 
         private static void AssertConvertedCodeResultEquals(ConversionResult conversionResult,

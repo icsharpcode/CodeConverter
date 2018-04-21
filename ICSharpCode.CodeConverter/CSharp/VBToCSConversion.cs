@@ -62,6 +62,20 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : descendantNodes.OfType<VBSyntax.TypeBlockSyntax>().First<SyntaxNode>();
         }
 
+        public IReadOnlyCollection<(string, string)> GetProjectTypeGuidMappings()
+        {
+            return ProjectTypeGuids.VbToCsTypeGuids;
+        }
+
+        public IEnumerable<(string, string)> GetProjectFileReplacementRegexes()
+        {
+            return new[] {
+                ("\\\\Microsoft.VisualBasic.targets", "\\Microsoft.CSharp.targets"),
+                (".vb\"", ".cs\""),
+                (".vb<", ".cs<")
+            };
+        }
+
         public bool MustBeContainedByMethod(SyntaxNode node)
         {
             return node is VBSyntax.IncompleteMemberSyntax ||

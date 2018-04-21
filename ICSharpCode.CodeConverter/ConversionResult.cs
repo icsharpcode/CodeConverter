@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using ICSharpCode.CodeConverter.Shared;
 
 namespace ICSharpCode.CodeConverter
 {
     public class ConversionResult
     {
         private string _sourcePathOrNull;
+        private string _targetPathOrNull;
         public bool Success { get; private set; }
         public string ConvertedCode { get; private set; }
         public IReadOnlyList<string> Exceptions { get; internal set; }
@@ -15,6 +17,11 @@ namespace ICSharpCode.CodeConverter
         public string SourcePathOrNull {
             get => _sourcePathOrNull;
             set => _sourcePathOrNull = string.IsNullOrWhiteSpace(value) ? null : value;
+        }
+
+        public string TargetPathOrNull {
+            get => _targetPathOrNull ?? (SourcePathOrNull != null ? PathConverter.TogglePathExtension(SourcePathOrNull) : null);
+            set => _targetPathOrNull = value;
         }
 
         public ConversionResult(string convertedCode = null)

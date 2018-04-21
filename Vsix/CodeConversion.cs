@@ -170,7 +170,7 @@ namespace CodeConverter.VsExtension
             var documentSyntaxTree = await document.GetSyntaxTreeAsync();
 
             var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
-            return await ProjectConversion<TLanguageConversion>.ConvertSingle(compilation, documentSyntaxTree, selectedTextSpan);
+            return await ProjectConversion.ConvertSingle(compilation, documentSyntaxTree, selectedTextSpan, new TLanguageConversion());
         }
 
         private static ConversionResult ConvertTextOnly<TLanguageConversion>(string documentPath, Span selected)
@@ -182,7 +182,7 @@ namespace CodeConverter.VsExtension
                 documentText = documentText.Substring(selected.Start, selected.Length);
             }
 
-            var convertTextOnly = ProjectConversion<TLanguageConversion>.ConvertText(documentText, CodeWithOptions.DefaultMetadataReferences);
+            var convertTextOnly = ProjectConversion.ConvertText<TLanguageConversion>(documentText, CodeWithOptions.DefaultMetadataReferences);
             convertTextOnly.SourcePathOrNull = documentPath;
             return convertTextOnly;
         }
@@ -193,7 +193,7 @@ namespace CodeConverter.VsExtension
             var projectsByPath =
                 _visualStudioWorkspace.CurrentSolution.Projects.ToLookup(p => p.FilePath, p => p);
             var projects = selectedProjects.Select(p => projectsByPath[p.FullName].First()).ToList();
-            var convertedFiles = ProjectConversion<TLanguageConversion>.ConvertProjects(projects);
+            var convertedFiles = SolutionConverter.CreateFor<TLanguageConversion>(projects).Convert();
             return convertedFiles;
         }
 
