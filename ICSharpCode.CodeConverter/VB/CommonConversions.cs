@@ -398,18 +398,17 @@ namespace ICSharpCode.CodeConverter.VB
             // Rather than a complicated contextual rename, just add an extra dash to all identifiers and hope this method is consistently used
             if (idText.All(c => c == '_')) idText += "_";
             
-            if (IsKeywordThatNeedsEscaped(id))
-                return SyntaxFactory.Identifier("[" + idText + "]");
-            return SyntaxFactory.Identifier(idText);
+            return KeywordRequiresEscaping(id) ? SyntaxFactory.Identifier($"[{idText}]") : SyntaxFactory.Identifier(idText);
         }
 
-        private static bool IsKeywordThatNeedsEscaped(SyntaxToken id)
+        private static bool KeywordRequiresEscaping(SyntaxToken id)
         {
             var keywordKind = SyntaxFacts.GetKeywordKind(id.ValueText);
 
             if (keywordKind == SyntaxKind.None) return false;
             if (!SyntaxFacts.IsPredefinedType(keywordKind)) return true;
 
+            // List of the kinds that end in declaration and can have names attached
             return id.IsKind(CSSyntaxKind.CatchDeclaration,
                              CSSyntaxKind.ClassDeclaration,
                              CSSyntaxKind.EnumDeclaration,
