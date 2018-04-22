@@ -1090,10 +1090,8 @@ namespace ICSharpCode.CodeConverter.VB
                    );
                 }
 
-                return SyntaxFactory.ObjectCollectionInitializer(
-                    SyntaxFactory.CollectionInitializer(
-                        SyntaxFactory.SeparatedList(expressions.OfType<ExpressionSyntax>())
-                    )
+                return SyntaxFactory.CollectionInitializer(
+                    SyntaxFactory.SeparatedList(expressions.OfType<ExpressionSyntax>())
                 );
             }
             if (node.IsKind(CS.SyntaxKind.ArrayInitializerExpression))

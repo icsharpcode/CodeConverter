@@ -252,6 +252,35 @@ End Class");
         }
 
         [Fact]
+        public void ObjectInitializerExpression3()
+        {
+            TestConversionCSharpToVisualBasic(@"using System.Collections.Generic;
+
+internal class SomeSettings
+{
+    public IList<object> Converters { get; set; }
+}
+
+internal class Converter
+{
+    public static readonly SomeSettings Settings = new SomeSettings
+    {
+        Converters = {},
+    };
+}", @"Imports System.Collections.Generic
+
+Friend Class SomeSettings
+    Public Property Converters As IList(Of Object)
+End Class
+
+Friend Class Converter
+    Public Shared ReadOnly Settings As SomeSettings = New SomeSettings With {
+        .Converters = {}
+    }
+End Class");
+        }
+
+        [Fact]
         public void ThisMemberAccessExpression()
         {
             TestConversionCSharpToVisualBasic(@"class TestClass
