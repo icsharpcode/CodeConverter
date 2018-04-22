@@ -200,7 +200,6 @@
     <Compile Include="CSharp\SpecialConversionTests.cs" />
     <Compile Include="CSharp\StatementTests.cs" />
     <Compile Include="CSharp\TypeCastTests.cs" />
-    <Compile Include="DiagnosticTestBase.cs" />
     <Compile Include="UnicodeNewline.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="VB\ExpressionTests.cs" />

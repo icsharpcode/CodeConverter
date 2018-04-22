@@ -34,6 +34,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="2.6.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="2.6.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="2.6.1" />
+    <PackageReference Include="Microsoft.VisualBasic" Version="10.2.0" />
   </ItemGroup>
   <!-- The InternalVisibleTo fails when building with signing -->
   <ItemGroup Condition="'$(SignAssembly)'=='True'">

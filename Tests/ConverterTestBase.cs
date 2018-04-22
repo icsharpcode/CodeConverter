@@ -62,7 +62,7 @@ End Sub";
         private static void AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode) where TLanguageConversion : ILanguageConversion, new()
         {
             var outputNode =
-                ProjectConversion<TLanguageConversion>.ConvertText(inputCode, DiagnosticTestBase.DefaultMetadataReferences);
+                ProjectConversion<TLanguageConversion>.ConvertText(inputCode, CodeWithOptions.DefaultMetadataReferences);
             AssertConvertedCodeResultEquals(outputNode, expectedConvertedCode, inputCode);
         }
 
