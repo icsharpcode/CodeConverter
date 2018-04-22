@@ -331,23 +331,30 @@ class TestClass
         [Fact]
         public void ElvisOperatorExpression()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
-    Private Sub TestMethod(ByVal str As String)
+            TestConversionVisualBasicToCSharp(@"Class TestClass3
+    Private Class Rec
+        Public ReadOnly Property Prop As New Rec
+    End Class
+    Private Function TestMethod(ByVal str As String) As Rec
         Dim length As Integer = If(str?.Length, -1)
         Console.WriteLine(length)
         Console.ReadKey()
-        Dim redirectUri As String = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri
-    End Sub
+        Return New Rec()?.Prop?.Prop?.Prop
+    End Function
 End Class", @"using System;
 
-class TestClass
+class TestClass3
 {
-    private void TestMethod(string str)
+    private class Rec
+    {
+        public Rec Prop { get; } = new Rec();
+    }
+    private Rec TestMethod(string str)
     {
         int length = str?.Length ?? -1;
         Console.WriteLine(length);
         Console.ReadKey();
-        string redirectUri = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri;
+        return new Rec()?.Prop?.Prop?.Prop;
     }
 }");
         }
