@@ -567,8 +567,8 @@ Public Class AcmeClass
     End Sub
 End Class"
                 , @"using System;
-using System.Linq;
 using System.Diagnostics;
+using System.Linq;
 
 public class AcmeClass
 {
