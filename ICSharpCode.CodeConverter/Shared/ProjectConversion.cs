@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
@@ -22,6 +23,17 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly Dictionary<string, SyntaxTree> _firstPassResults = new Dictionary<string, SyntaxTree>();
         private readonly TLanguageConversion _languageConversion;
         private readonly bool _handlePartialConversion;
+
+        private static readonly IReadOnlyCollection<(string, string)> VbToCsTypeGuidReplacements = new [] {
+            ("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}", "{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}"), // Standard project
+            ("{CB4CE8C6-1BDB-4DC7-A4D3-65A1999772F8}", "{20D4826A-C6FA-45DB-90F4-C717570B9F32}"), // Legacy (2003) Smart Device
+            ("{68B1623D-7FB9-47D8-8664-7ECEA3297D4F}", "{4D628B5B-2FBC-4AA6-8C16-197242AEB884}"), // Smart Device
+            ("{D59BE175-2ED0-4C54-BE3D-CDAA9F3214C8}", "{14822709-B5A1-4724-98CA-57A101D1B079}"), // Workflow
+            ("{593B0543-81F6-4436-BA1E-4747859CAAE2}", "{EC05E597-79D4-47f3-ADA0-324C4F7C7484}"), // SharePoint
+            ("{DB03555F-0C8B-43BE-9FF9-57896B3C5E56}", "{C089C8C0-30E0-4E22-80C0-CE093F111A43}") // Store App Windows Phone 8.1 Silverlight
+        };
+
+        private static IReadOnlyCollection<(string, string)> CsToVbTypeGuidReplacements => VbToCsTypeGuidReplacements.Select((vbCs, i) => (vbCs.Item2, vbCs.Item1)).ToArray();
 
         private ProjectConversion(Compilation sourceCompilation, string solutionDir)
             : this(sourceCompilation, sourceCompilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir)))
@@ -63,12 +75,112 @@ namespace ICSharpCode.CodeConverter.Shared
 
         public static IEnumerable<ConversionResult> ConvertProjects(IReadOnlyCollection<Project> projects)
         {
-            var solutionDir = Path.GetDirectoryName(projects.First().Solution.FilePath);
+            var solutionFilePath = projects.First().Solution.FilePath;
+            var solutionDir = Path.GetDirectoryName(solutionFilePath);
+            IReadOnlyCollection<(string, string)> replacements = CreateNewSolution(solutionFilePath, projects);
+
             foreach (var project in projects) {
+                CreateNewProjFile(project, replacements);
                 var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
                 var projectConversion = new ProjectConversion<TLanguageConversion>(compilation, solutionDir);
                 foreach (var conversionResult in ConvertProject(projectConversion)) yield return conversionResult;
             }
+        }
+
+        private static void CreateNewProjFile(Project project,
+            IReadOnlyCollection<(string, string)> replacements)
+        {
+            switch (project.Language)
+            {
+                case LanguageNames.VisualBasic:
+                    replacements = replacements
+                        .Concat(new[] {("\\\\Microsoft.VisualBasic.targets", "\\Microsoft.CSharp.targets")})
+                        .Concat(new[] {(".vb\"", ".cs\""), (".vb<", ".cs<")})
+                        .ToList();
+                    break;
+                case LanguageNames.CSharp:
+                    replacements = replacements
+                        .Concat(new[] { ("\\\\Microsoft.CSharp.targets", "\\Microsoft.VisualBasic.targets") })
+                        .Concat(new[] { (".cs\"", ".vb\""), (".cs<", ".vb<") })
+                        .ToList();
+                    break;
+            }
+
+            var newProjectPath = TogglePathExtension(project.FilePath);
+            var newProjectText = File.ReadAllText(project.FilePath);
+            foreach (var (oldValue, newValue) in replacements) {
+                newProjectText = Regex.Replace(newProjectText, oldValue, newValue, RegexOptions.IgnoreCase);
+            }
+            File.WriteAllText(newProjectPath, newProjectText);
+        }
+
+        private static string TogglePathExtension(string filePath)
+        {
+            var originalExtension = Path.GetExtension(filePath);
+            return Path.ChangeExtension(filePath, GetConvertedExtension(originalExtension));
+        }
+
+        private static string GetConvertedExtension(string originalExtension)
+        {
+            switch (originalExtension)
+            {
+                case ".csproj":
+                    return ".vbproj";
+                case ".vbproj":
+                    return ".csproj";
+                case ".cs":
+                    return ".vb";
+                case ".vb":
+                    return ".cs";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(originalExtension), originalExtension, null);
+            }
+        }
+
+        private static IReadOnlyCollection<(string, string)> CreateNewSolution(string solutionFilePath, IReadOnlyCollection<Project> projects)
+        {
+            var contents = File.ReadAllText(solutionFilePath);
+            var replacements = new List<(string, string)>();
+            foreach (var project in projects) {
+                var projFilename = Path.GetFileName(project.FilePath);
+                var newProjFilename = TogglePathExtension(projFilename);
+                replacements.Add((projFilename, newProjFilename));
+                replacements.Add(GetProjectGuidReplacement(projFilename, contents));
+            }
+
+            var projectTypeReplacements = projects.SelectMany(GetProjectTypeReplacement).ToList();
+            foreach (var (oldValue, newValue) in replacements.Concat(projectTypeReplacements)) {
+                contents = Regex.Replace(contents, oldValue, newValue, RegexOptions.IgnoreCase);
+            }
+            File.WriteAllText(Path.ChangeExtension(solutionFilePath, ".converted.sln"), contents);
+            return replacements;
+        }
+
+        private static (string, string) GetProjectGuidReplacement(string projFilename, string contents)
+        {
+            var projGuidRegex = new Regex(projFilename + @""", ""({[0-9A-Fa-f\-]{32,36}})("")");
+            var projGuidMatch = projGuidRegex.Match(contents);
+            var oldGuid = projGuidMatch.Groups[1].Value;
+            var newGuid = GetDeterministicGuidFrom(new Guid(oldGuid));
+            var projectGuidReplacement = (oldGuid, newGuid.ToString("B").ToUpperInvariant());
+            return projectGuidReplacement;
+        }
+
+        private static IEnumerable<(string, string)> GetProjectTypeReplacement(Project project)
+        {
+            var vbToCsTypeGuidReplacements = project.Language == LanguageNames.VisualBasic
+                ? VbToCsTypeGuidReplacements
+                : CsToVbTypeGuidReplacements;
+            //TODO: Allow arbitrary amounts of whitespace in case hand-edited
+            return vbToCsTypeGuidReplacements.Select((sourceGuid, targetGuid) => ($"Project(\"{sourceGuid}\") = \"{project.Name}\"", $"Project(\"{targetGuid}\") = \"{project.Name}\""));
+        }
+
+        public static Guid GetDeterministicGuidFrom(Guid guidToConvert)
+        {
+            var codeConverterStaticGuid = new Guid("{B224816B-CC58-4FF1-8258-CA7E629734A0}");
+            var deterministicNewBytes = codeConverterStaticGuid.ToByteArray().Zip(guidToConvert.ToByteArray(),
+                    (fromFirst, fromSecond) => (byte)(fromFirst ^ fromSecond));
+            return new Guid(deterministicNewBytes.ToArray());
         }
 
         private static IEnumerable<ConversionResult> ConvertProject(ProjectConversion<TLanguageConversion> projectConversion)

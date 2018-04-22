@@ -5,7 +5,9 @@ using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Xunit;
 
@@ -64,6 +66,13 @@ End Sub";
             var outputNode =
                 ProjectConversion<TLanguageConversion>.ConvertText(inputCode, DiagnosticTestBase.DefaultMetadataReferences);
             AssertConvertedCodeResultEquals(outputNode, expectedConvertedCode, inputCode);
+        }
+
+        public void ConvertAllProjectsToCSharp(string solutionFilename)
+        {
+            var workspace = MSBuildWorkspace.Create();
+            var solution = workspace.OpenSolutionAsync(solutionFilename).GetAwaiter().GetResult();
+            Console.WriteLine(ProjectConversion<VBToCSConversion>.ConvertProjects(solution.Projects.Where(p => p.Language == LanguageNames.VisualBasic).ToArray()).Count());
         }
 
         private static void AssertConvertedCodeResultEquals(ConversionResult conversionResult,

@@ -343,7 +343,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var attributes = node.AttributeLists.SelectMany(ConvertAttribute);
                 var isReadonly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.ReadOnlyKeyword));
                 var convertibleModifiers = node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword, VBasic.SyntaxKind.DefaultKeyword));
-                var modifiers = VisualBasicConverter.ConvertModifiers(convertibleModifiers, GetMethodOrPropertyContext(node));
+                var modifiers = VisualBasicConverter.ConvertModifiers(convertibleModifiers, GetMemberContext(node));
                 var isIndexer = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.DefaultKeyword));
 
                 var initializer = (EqualsValueClauseSyntax)node.Initializer?.Accept(TriviaConvertingVisitor);
@@ -471,7 +471,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     if (hasBody) return decl;
                     return decl.WithSemicolonToken(SemicolonToken);
                 } else {
-                    var tokenContext = GetMethodOrPropertyContext(node);
+                    var tokenContext = GetMemberContext(node);
                     var modifiers = VisualBasicConverter.ConvertModifiers(node.Modifiers, tokenContext);
 
                     TypeParameterListSyntax typeParameters;
@@ -504,9 +504,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()?.Equals("System.Runtime.CompilerServices.ExtensionAttribute") == true;
             }
 
-            private TokenContext GetMethodOrPropertyContext(VBSyntax.StatementSyntax node)
+            private TokenContext GetMemberContext(VBSyntax.StatementSyntax member)
             {
-                var parentType = _semanticModel.GetDeclaredSymbol(node).ContainingType;
+                var parentType = _semanticModel.GetDeclaredSymbol(member).ContainingType;
                 switch (parentType.TypeKind) {
                     case TypeKind.Module:
                         return TokenContext.MemberInModule;
@@ -517,7 +517,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     case TypeKind.Struct:
                         return TokenContext.MemberInStruct;
                     default:
-                        throw new ArgumentOutOfRangeException(nameof(node));
+                        throw new ArgumentOutOfRangeException(nameof(member));
                 }
             }
 
