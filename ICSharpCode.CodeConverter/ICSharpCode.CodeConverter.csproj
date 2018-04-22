@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>ICSharpCode.CodeConverter</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter</RootNamespace>
     <PackageTargetFallback>portable-net45+win8</PackageTargetFallback>
