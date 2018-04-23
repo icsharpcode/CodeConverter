@@ -122,7 +122,7 @@ body {
 	text-transform: uppercase;
 	font-size: smaller;
 	padding-top: 3px;
-	padding-bottom: 1px;
+	padding-bottom: 3px;
 }
 
 .px-2 {
@@ -338,6 +338,10 @@ div.form-control {
 	font-weight: bold;
 }
 
+.d-none {
+	display: none;
+}
+
 @media (min-width: 768px) {
 	.navbar-brand img {
 		width: 450px;
@@ -370,6 +374,14 @@ div.form-control {
 	.mt-md-0 {
 		margin-top: 0 !important;
 	}
+
+	.d-md-flex {
+		display: flex;
+	}
+
+	.d-md-none {
+		display: none;
+	}
 }
 
 @media (min-width: 1200px) {
@@ -383,10 +395,6 @@ div.form-control {
 	left: 16px;
 	top: 16px;
 	right: 16px;
-}
-
-.d-none {
-	display: none;
 }
 
 .flex-column {
