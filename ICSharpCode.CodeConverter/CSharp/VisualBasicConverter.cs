@@ -138,10 +138,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (worthBeingAVerbatimString)
             {
                 var valueWithReplacements = s1.Replace("\"", "\"\"");
-                valueText = $"@\"{valueWithReplacements}\"";
-            }
+                return $"@\"{valueWithReplacements}\"";
+            } 
 
-            return valueText;
+            return "\"" + valueText.Substring(1, valueText.Length - 2).Replace("\"\"", "\\\"") + "\"";
         }
 
         internal static bool IsWorthBeingAVerbatimString(string s1)

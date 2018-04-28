@@ -15,6 +15,7 @@ namespace ICSharpCode.CodeConverter
             typeof(System.Dynamic.DynamicObject),
             typeof(System.Data.DataRow),
             typeof(System.Net.Http.HttpClient),
+            typeof(System.Web.HttpUtility),
             typeof(System.Xml.XmlElement),
             typeof(System.Xml.Linq.XElement),
             typeof(Microsoft.VisualBasic.Constants)).ToArray();

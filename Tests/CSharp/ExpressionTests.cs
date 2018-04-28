@@ -26,6 +26,65 @@ World!"";
     }
 }");
         }
+        [Fact]
+        public void Quotes()
+        {
+            // Don't auto-test comments, otherwise it tries to put a comment in the middle of the string, which obviously isn't a valid place for it
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+    Shared Function GetTextFeedInput(pStream As String, pTitle As String, pText As String) As String
+        Return ""{"" & AccessKey() & "",""""streamName"""": """""" & pStream & """""",""""point"""": ["" & GetTitleTextPair(pTitle, pText) & ""]}""
+    End Function
+
+    Shared Function AccessKey() As String
+        Return """"""accessKey"""": """"8iaiHNZpNbBkYHHGbMNiHhAp4uPPyQke""""""
+    End Function
+
+    Shared Function GetNameValuePair(pName As String, pValue As Integer) As String
+        Return (""{""""name"""": """""" & pName & """""", """"value"""": """""" & pValue & """"""}"")
+    End Function
+
+    Shared Function GetNameValuePair(pName As String, pValue As String) As String
+        Return (""{""""name"""": """""" & pName & """""", """"value"""": """""" & pValue & """"""}"")
+    End Function
+
+    Shared Function GetTitleTextPair(pName As String, pValue As String) As String
+        Return (""{""""title"""": """""" & pName & """""", """"msg"""": """""" & pValue & """"""}"")
+    End Function
+    Shared Function GetDeltaPoint(pDelta As Integer) As String
+        Return (""{""""delta"""": """""" & pDelta & """"""}"")
+    End Function
+End Class", @"class TestClass
+{
+    public static string GetTextFeedInput(string pStream, string pTitle, string pText)
+    {
+        return ""{"" + AccessKey() + "",\""streamName\"": \"""" + pStream + ""\"",\""point\"": ["" + GetTitleTextPair(pTitle, pText) + ""]}"";
+    }
+
+    public static string AccessKey()
+    {
+        return ""\""accessKey\"": \""8iaiHNZpNbBkYHHGbMNiHhAp4uPPyQke\"""";
+    }
+
+    public static string GetNameValuePair(string pName, int pValue)
+    {
+        return (""{\""name\"": \"""" + pName + ""\"", \""value\"": \"""" + pValue + ""\""}"");
+    }
+
+    public static string GetNameValuePair(string pName, string pValue)
+    {
+        return (""{\""name\"": \"""" + pName + ""\"", \""value\"": \"""" + pValue + ""\""}"");
+    }
+
+    public static string GetTitleTextPair(string pName, string pValue)
+    {
+        return (""{\""title\"": \"""" + pName + ""\"", \""msg\"": \"""" + pValue + ""\""}"");
+    }
+    public static string GetDeltaPoint(int pDelta)
+    {
+        return (""{\""delta\"": \"""" + pDelta + ""\""}"");
+    }
+}");
+        }
 
         [Fact]
         public void DateKeyword()
@@ -331,23 +390,30 @@ class TestClass
         [Fact]
         public void ElvisOperatorExpression()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
-    Private Sub TestMethod(ByVal str As String)
+            TestConversionVisualBasicToCSharp(@"Class TestClass3
+    Private Class Rec
+        Public ReadOnly Property Prop As New Rec
+    End Class
+    Private Function TestMethod(ByVal str As String) As Rec
         Dim length As Integer = If(str?.Length, -1)
         Console.WriteLine(length)
         Console.ReadKey()
-        Dim redirectUri As String = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri
-    End Sub
+        Return New Rec()?.Prop?.Prop?.Prop
+    End Function
 End Class", @"using System;
 
-class TestClass
+class TestClass3
 {
-    private void TestMethod(string str)
+    private class Rec
+    {
+        public Rec Prop { get; } = new Rec();
+    }
+    private Rec TestMethod(string str)
     {
         int length = str?.Length ?? -1;
         Console.WriteLine(length);
         Console.ReadKey();
-        string redirectUri = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri;
+        return new Rec()?.Prop?.Prop?.Prop;
     }
 }");
         }
@@ -445,14 +511,16 @@ class TestClass : BaseTestClass
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
-        Dim test = Function(ByVal a As Integer) a * 2
+        Dim test As Func(Of Integer, Integer) = Function(ByVal a As Integer) a * 2
         test(3)
     End Sub
-End Class", @"class TestClass
+End Class", @"using System;
+
+class TestClass
 {
     private void TestMethod()
     {
-        var test = int a => a * 2;
+        Func<int, int> test = int a => a * 2;
         test(3);
     }
 }");
@@ -463,28 +531,30 @@ End Class", @"class TestClass
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
-        Dim test = Function(a) a * 2
-        Dim test2 = Function(a, b)
-                        If b > 0 Then Return a / b
-                        Return 0
-                    End Function
+        Dim test As Func(Of Integer, Integer) = Function(a) a * 2
+        Dim test2 As Func(Of Integer, Integer, Double) = Function(a, b)
+            If b > 0 Then Return a / b
+            Return 0
+        End Function
 
-        Dim test3 = Function(a, b) a Mod b
+        Dim test3 As Func(Of Integer, Integer, Integer) = Function(a, b) a Mod b
         test(3)
     End Sub
-End Class", @"class TestClass
+End Class", @"using System;
+
+class TestClass
 {
     private void TestMethod()
     {
-        var test = a => a * 2;
-        var test2 = (a, b) =>
+        Func<int, int> test = a => a * 2;
+        Func<int, int, double> test2 = (a, b) =>
         {
             if (b > 0)
                 return a / (double)b;
             return 0;
         };
 
-        var test3 = (a, b) => a % b;
+        Func<int, int, int> test3 = (a, b) => a % b;
         test(3);
     }
 }");
