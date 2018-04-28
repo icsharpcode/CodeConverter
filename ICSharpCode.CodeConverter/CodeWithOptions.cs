@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 
@@ -8,11 +9,20 @@ namespace ICSharpCode.CodeConverter
 {
     public class CodeWithOptions
     {
-        public static readonly IReadOnlyCollection<MetadataReference> DefaultMetadataReferences = new List<MetadataReference>(new[] {
-            MetadataReference.CreateFromFile(typeof(Action).GetAssemblyLocation()),
-            MetadataReference.CreateFromFile(typeof(System.ComponentModel.EditorBrowsableAttribute).GetAssemblyLocation()),
-            MetadataReference.CreateFromFile(typeof(Enumerable).GetAssemblyLocation())
-        });
+        public static readonly IReadOnlyCollection<MetadataReference> DefaultMetadataReferences = GetRefs(
+            typeof(System.Text.Encoding),
+            typeof(System.ComponentModel.BrowsableAttribute),
+            typeof(System.Dynamic.DynamicObject),
+            typeof(System.Data.DataRow),
+            typeof(System.Net.Http.HttpClient),
+            typeof(System.Xml.XmlElement),
+            typeof(System.Xml.Linq.XElement),
+            typeof(Microsoft.VisualBasic.Constants)).ToArray();
+
+        private static IEnumerable<MetadataReference> GetRefs(params Type[] types)
+        {
+            return types.Select(type => MetadataReference.CreateFromFile(type.Assembly.Location));
+        }
 
         public string Text { get; private set; }
         public string FromLanguage { get; private set; }

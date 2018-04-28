@@ -1,5 +1,7 @@
-﻿using ICSharpCode.CodeConverter.Shared;
+﻿using ICSharpCode.CodeConverter;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
+using Microsoft.CodeAnalysis;
 using Xunit;
 
 namespace CodeConverter.Tests.VB
@@ -533,7 +535,7 @@ End Class");
             b = 1;
         }
     }
-}", DiagnosticTestBase.DefaultMetadataReferences).ConvertedCode;
+}", CodeWithOptions.DefaultMetadataReferences).ConvertedCode;
 
             Assert.Contains("CONVERSION ERROR", convertedCode);
             Assert.Contains("unsafe", convertedCode);

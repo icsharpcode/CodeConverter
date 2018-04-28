@@ -141,11 +141,16 @@ End Class";
         {
             var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithRootNamespace("TestProject")
-
                 .WithGlobalImports(GlobalImport.Parse(
                     "System",
                     "System.Collections.Generic",
+                    "System.Diagnostics",
+                    "System.Globalization",
+                    "System.IO",
                     "System.Linq",
+                    "System.Reflection",
+                    "System.Runtime.CompilerServices",
+                    "System.Security",
                     "System.Text",
                     "System.Threading.Tasks",
                     "Microsoft.VisualBasic"));
