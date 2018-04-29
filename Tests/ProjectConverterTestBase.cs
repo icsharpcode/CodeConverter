@@ -22,7 +22,7 @@ namespace CodeConverter.Tests
         /// Turn it on to manually check the output loads in VS.
         /// Commit only the modified files.
         /// </summary>
-        private bool _writeNewCharacterization = true;
+        private bool _writeNewCharacterization = false;
 
         public void ConvertProjectsWhere<TLanguageConversion>(Func<Project, bool> shouldConvertProject, [CallerMemberName] string testName = "") where TLanguageConversion : ILanguageConversion, new()
         {
