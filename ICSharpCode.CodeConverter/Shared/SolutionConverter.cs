@@ -46,7 +46,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private IEnumerable<ConversionResult> ConvertProjects()
         {
-            var projectFileReplacementRegexes = _languageConversion.GetProjectFileReplacementRegexes();
+            var projectFileReplacementRegexes = _languageConversion.GetProjectFileReplacementRegexes().Concat(_languageConversion.GetProjectTypeGuidMappings());
             return _projectsToConvert.SelectMany(project => ConvertProject(projectFileReplacementRegexes, project));
         }
 
