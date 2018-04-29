@@ -309,6 +309,36 @@ class TestClass
     }
 }");
         }
+        [Fact]
+        public void OmmittedArgumentInInvocation()
+        {
+            TestConversionVisualBasicToCSharp(@"Imports System
+
+Public Module MyExtensions
+    public sub NewColumn(type As Type , Optional strV1 As String = nothing, optional code As String = ""code"")
+    End sub
+
+    public Sub CallNewColumn()
+        NewColumn(GetType(MyExtensions))
+        NewColumn(Nothing, , ""otherCode"")
+        NewColumn(Nothing, ""fred"")
+    End Sub
+End Module", @"using System;
+
+public static class MyExtensions
+{
+    public static void NewColumn(Type type, string strV1 = null, string code = ""code"")
+    {
+    }
+
+    public static void CallNewColumn()
+    {
+        NewColumn(typeof(MyExtensions));
+        NewColumn(null, code: ""otherCode"");
+        NewColumn(null, ""fred"");
+    }
+}");
+        }
 
         [Fact]
         public void MemberAccessAndInvocationExpression()

@@ -938,7 +938,40 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (node.Parent.IsKind(VBasic.SyntaxKind.Attribute)) {
                     return CreateAttributeArgumentList(node.Arguments.Select(ToAttributeArgument).ToArray());
                 }
-                return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(node.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor))));
+                var argumentSyntaxs = ConvertArguments(node);
+                return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(argumentSyntaxs));
+            }
+
+            private IEnumerable<ArgumentSyntax> ConvertArguments(VBSyntax.ArgumentListSyntax node)
+            {
+                ISymbol invocationSymbolForForcedNames = null;
+                var argumentSyntaxs = node.Arguments.Select((a, i) =>
+                {
+                    if (a.IsOmitted)
+                    {
+                        invocationSymbolForForcedNames = GetInvocationSymbol(node.Parent);
+                        if (invocationSymbolForForcedNames != null)
+                        {
+                            return null;
+                        }
+
+                        var nullLiteral = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression)
+                            .WithTrailingTrivia(
+                                SyntaxFactory.Comment("/* Conversion error: Set to default value for this argument */"));
+                        return SyntaxFactory.Argument(nullLiteral);
+                    }
+
+                    var argumentSyntax = (ArgumentSyntax) a.Accept(TriviaConvertingVisitor);
+
+                    if (invocationSymbolForForcedNames != null)
+                    {
+                        var elementAtOrDefault = invocationSymbolForForcedNames.GetParameters().ElementAt(i).Name;
+                        return argumentSyntax.WithNameColon(SyntaxFactory.NameColon(elementAtOrDefault));
+                    }
+
+                    return argumentSyntax;
+                }).Where(a => a != null);
+                return argumentSyntaxs;
             }
 
             private AttributeArgumentListSyntax CreateAttributeArgumentList(params AttributeArgumentSyntax[] attributeArgumentSyntaxs)
@@ -952,12 +985,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var invocation = node.Parent.Parent;
                 if (invocation is VBSyntax.ArrayCreationExpressionSyntax)
                     return node.Expression.Accept(TriviaConvertingVisitor);
-                var symbol = invocation.TypeSwitch(
-                    (VBSyntax.InvocationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch(),
-                    (VBSyntax.ObjectCreationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch(),
-                    (VBSyntax.RaiseEventStatementSyntax e) => _semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch(),
-                    _ => { throw new NotSupportedException(); }
-                );
+                var symbol = GetInvocationSymbol(invocation);
                 SyntaxToken token = default(SyntaxToken);
                 if (symbol != null) {
                     var parameterKinds = symbol.GetParameters().Select(param => param.RefKind).ToList();
@@ -982,6 +1010,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                     token,
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor)
                 );
+            }
+
+            private ISymbol GetInvocationSymbol(SyntaxNode invocation)
+            {
+                var symbol = invocation.TypeSwitch(
+                    (VBSyntax.InvocationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch(),
+                    (VBSyntax.ObjectCreationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch(),
+                    (VBSyntax.RaiseEventStatementSyntax e) => _semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch(),
+                    _ => { throw new NotSupportedException(); }
+                );
+                return symbol;
             }
 
             private AttributeArgumentSyntax ToAttributeArgument(VBSyntax.ArgumentSyntax arg)
