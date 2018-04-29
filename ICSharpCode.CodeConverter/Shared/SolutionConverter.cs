@@ -86,23 +86,19 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var projectTypeGuidMappings = _languageConversion.GetProjectTypeGuidMappings();
             var projectTypeReplacements = _projectsToConvert.SelectMany(project => GetProjectTypeReplacement(project, projectTypeGuidMappings)).ToList();
-            string convertedSolutionContents = _sourceSolutionContents;
-            foreach (var (oldValue, newValue) in _projectReferenceReplacements.Concat(projectTypeReplacements))
-            {
-                convertedSolutionContents = Regex.Replace(convertedSolutionContents, oldValue, newValue, RegexOptions.IgnoreCase);
-            }
-
+            
+            var convertedSolutionContents = ApplyReplacements(_sourceSolutionContents, _projectReferenceReplacements.Concat(projectTypeReplacements));
             return new ConversionResult(convertedSolutionContents) {
                 SourcePathOrNull = _solutionFilePath,
                 TargetPathOrNull = _solutionFilePath
             };
         }
 
-        private static ConversionResult ConversionResultFromReplacements(string projectFilePath, IEnumerable<(string, string)> replacements)
+        private static ConversionResult ConversionResultFromReplacements(string filePath, IEnumerable<(string, string)> replacements)
         {
-            var newProjectText = File.ReadAllText(projectFilePath);
+            var newProjectText = File.ReadAllText(filePath);
             newProjectText = ApplyReplacements(newProjectText, replacements);
-            return new ConversionResult(newProjectText) {SourcePathOrNull = projectFilePath};
+            return new ConversionResult(newProjectText) {SourcePathOrNull = filePath};
         }
 
         private static string ApplyReplacements(string originalText, IEnumerable<(string, string)> replacements)
