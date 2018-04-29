@@ -18,10 +18,11 @@ namespace CodeConverter.Tests
     public class ProjectConverterTestBase
     {
         /// <summary>
-        /// Only commit the results of this if you've verified the new conversion is correct.
-        /// Copying the whole conversion result (not just the sln and proj files) over the source project should yield a compiling solution.
+        /// Leave this set to false when committing.
+        /// Turn it on to manually check the output loads in VS.
+        /// Commit only the modified files.
         /// </summary>
-        private bool _writeNewCharacterization = false;
+        private bool _writeNewCharacterization = true;
 
         public void ConvertProjectsWhere<TLanguageConversion>(Func<Project, bool> shouldConvertProject, [CallerMemberName] string testName = "") where TLanguageConversion : ILanguageConversion, new()
         {
@@ -46,9 +47,10 @@ namespace CodeConverter.Tests
                     }
                 } catch (Exception e) when (_writeNewCharacterization) {
                     Console.Error.WriteLine(e);
-                    foreach (var conversionResult in conversionResults
-                        .Where(f => f.Key.EndsWith("proj") || f.Key.EndsWith(".sln"))
-                    ) {
+                    if (expectedResultDirectory.Exists) expectedResultDirectory.Delete(true);
+                    FileSystem.CopyDirectory(solutionDir, expectedResultDirectory.FullName);
+
+                    foreach (var conversionResult in conversionResults) {
                         var expectedFilePath =
                             conversionResult.Key.Replace(solutionDir, expectedResultDirectory.FullName);
                         Directory.CreateDirectory(Path.GetDirectoryName(expectedFilePath));
