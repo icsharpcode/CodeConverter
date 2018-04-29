@@ -22,6 +22,7 @@ namespace CodeConverter.VsExtension
         private readonly VisualStudioWorkspace _visualStudioWorkspace;
         public static readonly string ConverterTitle = "Code converter";
         private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine + "Writing converted files to disk:";
+        private string SolutionDir => Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
 
         public CodeConversion(IServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace)
         {
@@ -52,27 +53,28 @@ namespace CodeConverter.VsExtension
             string longestFilePath = null;
             var longestFileLength = -1;
 
-            var solutionDir = Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
             VisualStudioInteraction.OutputWindow.WriteToOutputWindow(Intro);
             VisualStudioInteraction.OutputWindow.ForceShowOutputPane();
 
             foreach (var convertedFile in convertedFiles) {
 
-                var sourcePath = convertedFile.SourcePathOrNull ?? "";
-                var sourcePathRelativeToSolutionDir = PathRelativeToSolutionDir(solutionDir, sourcePath);
-                if (sourcePath != "") {
+                var sourcePath = convertedFile.SourcePathOrNull;
+                if (sourcePath != null) {
                     if (!string.IsNullOrWhiteSpace(convertedFile.ConvertedCode)) {
-                        var path = ToggleExtension(sourcePath);
+                        var path = convertedFile.TargetPathOrNull;
                         if (convertedFile.ConvertedCode.Length > longestFileLength) {
                             longestFileLength = convertedFile.ConvertedCode.Length;
                             longestFilePath = path;
                         }
 
                         files.Add(path);
+                        if (string.Equals(convertedFile.SourcePathOrNull, convertedFile.TargetPathOrNull, StringComparison.OrdinalIgnoreCase)) {
+                            File.Copy(convertedFile.SourcePathOrNull, convertedFile.SourcePathOrNull + ".bak", true);
+                        }
                         File.WriteAllText(path, convertedFile.ConvertedCode);
                     }
 
-                    LogProgress(convertedFile, errors, sourcePathRelativeToSolutionDir);
+                    LogProgress(convertedFile, errors);
                 }
             }
             
@@ -84,11 +86,12 @@ namespace CodeConverter.VsExtension
             }
         }
 
-        private void LogProgress(ConversionResult convertedFile, List<string> errors, string sourcePathRelativeToSolutionDir)
+        private void LogProgress(ConversionResult convertedFile, List<string> errors)
         {
             var exceptionsAsString = convertedFile.GetExceptionsAsString();
             var indentedException = exceptionsAsString.Replace(Environment.NewLine, Environment.NewLine + "    ");
-            string output = Environment.NewLine + $"* {ToggleExtension(sourcePathRelativeToSolutionDir)}";
+            var targetPathRelativeToSolutionDir = PathRelativeToSolutionDir(SolutionDir, convertedFile.TargetPathOrNull ?? "unknown");
+            string output = Environment.NewLine + $"* {targetPathRelativeToSolutionDir}";
             var containsErrors = !string.IsNullOrWhiteSpace(exceptionsAsString);
 
             if (containsErrors) {
@@ -97,6 +100,7 @@ namespace CodeConverter.VsExtension
 
             if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode))
             {
+                var sourcePathRelativeToSolutionDir = PathRelativeToSolutionDir(SolutionDir, convertedFile.SourcePathOrNull ?? "unknown");
                 output = Environment.NewLine +
                          $"* Failure processing {sourcePathRelativeToSolutionDir}{Environment.NewLine}    {indentedException}";    
             }
@@ -134,27 +138,6 @@ namespace CodeConverter.VsExtension
                                        + oneLine
                                        + Environment.NewLine + successSummary
                                        + Environment.NewLine;
-        }
-
-        private static string ToggleExtension(string sourcePath)
-        {
-            var currentExtension = Path.GetExtension(sourcePath)?.ToLowerInvariant() ?? "";
-            return Path.ChangeExtension(sourcePath, ConvertExtension(currentExtension));
-        }
-
-        private static string ConvertExtension(string currentExtension)
-        {
-            switch (currentExtension)
-            {
-                case ".vb":
-                    return ".cs";
-                case ".cs":
-                    return ".vb";
-                case ".txt":
-                    return ".txt";
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(currentExtension), currentExtension, null);
-            }
         }
 
         async Task<ConversionResult> ConvertDocumentUnhandled<TLanguageConversion>(string documentPath, Span selected) where TLanguageConversion : ILanguageConversion, new()

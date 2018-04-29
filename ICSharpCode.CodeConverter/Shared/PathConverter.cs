@@ -23,6 +23,8 @@ namespace ICSharpCode.CodeConverter.Shared
                     return ".vb";
                 case ".vb":
                     return ".cs";
+                case ".txt":
+                    return ".txt";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(originalExtension), originalExtension, null);
             }
