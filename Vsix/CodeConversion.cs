@@ -72,15 +72,15 @@ namespace CodeConverter.VsExtension
             foreach (var convertedFile in convertedFiles) {
                 if (convertedFile.SourcePathOrNull == null) continue;
 
-                LogProgress(convertedFile, errors);
-                if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode)) continue;
-
-                files.Add(convertedFile.TargetPathOrNull);
-
                 if (WillOverwriteSource(convertedFile)) {
                     filesToOverwrite.Add(convertedFile);
                     continue;
                 }
+
+                LogProgress(convertedFile, errors);
+                if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode)) continue;
+
+                files.Add(convertedFile.TargetPathOrNull);
 
                 if (convertedFile.ConvertedCode.Length > longestFileLength) {
                     longestFileLength = convertedFile.ConvertedCode.Length;
@@ -112,10 +112,15 @@ namespace CodeConverter.VsExtension
 
             if (shouldOverwriteSolutionAndProjectFiles)
             {
+                var titleMessage = options.CreateBackups ? "Creating backups and overwriting files:" : "Overwriting files:" + "";
+                VisualStudioInteraction.OutputWindow.WriteToOutputWindow(titleMessage);
                 foreach (var fileToOverwrite in filesToOverwrite)
                 {
                     if (options.CreateBackups) File.Copy(fileToOverwrite.SourcePathOrNull, fileToOverwrite.SourcePathOrNull + ".bak", true);
                     File.WriteAllText(fileToOverwrite.TargetPathOrNull, fileToOverwrite.ConvertedCode);
+
+                    var targetPathRelativeToSolutionDir = PathRelativeToSolutionDir(fileToOverwrite.TargetPathOrNull);
+                    VisualStudioInteraction.OutputWindow.WriteToOutputWindow(Environment.NewLine + $"* {targetPathRelativeToSolutionDir}");
                 }
             }
         }
