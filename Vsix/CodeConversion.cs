@@ -49,6 +49,7 @@ namespace CodeConverter.VsExtension
         private void WriteConvertedFilesAndShowSummary(IEnumerable<ConversionResult> convertedFiles)
         {
             var files = new List<string>();
+            var filesToOverwrite = new List<ConversionResult>();
             var errors = new List<string>();
             string longestFilePath = null;
             var longestFileLength = -1;
@@ -57,40 +58,60 @@ namespace CodeConverter.VsExtension
             VisualStudioInteraction.OutputWindow.ForceShowOutputPane();
 
             foreach (var convertedFile in convertedFiles) {
+                if (convertedFile.SourcePathOrNull == null) continue;
 
-                var sourcePath = convertedFile.SourcePathOrNull;
-                if (sourcePath != null) {
-                    if (!string.IsNullOrWhiteSpace(convertedFile.ConvertedCode)) {
-                        var path = convertedFile.TargetPathOrNull;
-                        if (convertedFile.ConvertedCode.Length > longestFileLength) {
-                            longestFileLength = convertedFile.ConvertedCode.Length;
-                            longestFilePath = path;
-                        }
+                LogProgress(convertedFile, errors);
+                if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode)) continue;
 
-                        files.Add(path);
-                        if (string.Equals(convertedFile.SourcePathOrNull, convertedFile.TargetPathOrNull, StringComparison.OrdinalIgnoreCase)) {
-                            File.Copy(convertedFile.SourcePathOrNull, convertedFile.SourcePathOrNull + ".bak", true);
-                        }
-                        File.WriteAllText(path, convertedFile.ConvertedCode);
-                    }
+                files.Add(convertedFile.TargetPathOrNull);
 
-                    LogProgress(convertedFile, errors);
+                if (WillOverwriteSource(convertedFile)) {
+                    filesToOverwrite.Add(convertedFile);
+                    continue;
                 }
+
+                if (convertedFile.ConvertedCode.Length > longestFileLength) {
+                    longestFileLength = convertedFile.ConvertedCode.Length;
+                    longestFilePath = convertedFile.TargetPathOrNull;
+                }
+                File.WriteAllText(convertedFile.TargetPathOrNull, convertedFile.ConvertedCode);
             }
-            
-            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(GetConversionSummary(files, errors));
+
+            var conversionSummary = GetConversionSummary(files, errors);
+            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(conversionSummary);
             VisualStudioInteraction.OutputWindow.ForceShowOutputPane();
 
             if (longestFilePath != null) {
                 VisualStudioInteraction.OpenFile(new FileInfo(longestFilePath)).SelectAll();
             }
+
+            var pathsToOverwrite = string.Join(Environment.NewLine + "* ", filesToOverwrite.Select(f => PathRelativeToSolutionDir(f.SourcePathOrNull)));
+            var shouldOverwriteSolutionAndProjectFiles = filesToOverwrite.Any() && VisualStudioInteraction.ShowOkCancelMessageBox(_serviceProvider,
+                "Overwrite solution and referencing projects?",
+$@"The current solution file and any referencing projects will be overwritten to reference the new project(s):
+* {pathsToOverwrite}
+
+The old contents will be copied to 'currentFilename.bak'.
+Please 'Reload All' when Visual Studio prompts you.", files.Count > errors.Count);
+
+            if (shouldOverwriteSolutionAndProjectFiles) {
+                foreach (var fileToOverwrite in filesToOverwrite) {
+                    File.Copy(fileToOverwrite.SourcePathOrNull, fileToOverwrite.SourcePathOrNull + ".bak", true);
+                    File.WriteAllText(fileToOverwrite.TargetPathOrNull, fileToOverwrite.ConvertedCode);
+                }
+            }
+        }
+
+        private static bool WillOverwriteSource(ConversionResult convertedFile)
+        {
+            return string.Equals(convertedFile.SourcePathOrNull, convertedFile.TargetPathOrNull, StringComparison.OrdinalIgnoreCase);
         }
 
         private void LogProgress(ConversionResult convertedFile, List<string> errors)
         {
             var exceptionsAsString = convertedFile.GetExceptionsAsString();
             var indentedException = exceptionsAsString.Replace(Environment.NewLine, Environment.NewLine + "    ");
-            var targetPathRelativeToSolutionDir = PathRelativeToSolutionDir(SolutionDir, convertedFile.TargetPathOrNull ?? "unknown");
+            var targetPathRelativeToSolutionDir = PathRelativeToSolutionDir(convertedFile.TargetPathOrNull ?? "unknown");
             string output = Environment.NewLine + $"* {targetPathRelativeToSolutionDir}";
             var containsErrors = !string.IsNullOrWhiteSpace(exceptionsAsString);
 
@@ -100,7 +121,7 @@ namespace CodeConverter.VsExtension
 
             if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode))
             {
-                var sourcePathRelativeToSolutionDir = PathRelativeToSolutionDir(SolutionDir, convertedFile.SourcePathOrNull ?? "unknown");
+                var sourcePathRelativeToSolutionDir = PathRelativeToSolutionDir(convertedFile.SourcePathOrNull ?? "unknown");
                 output = Environment.NewLine +
                          $"* Failure processing {sourcePathRelativeToSolutionDir}{Environment.NewLine}    {indentedException}";    
             }
@@ -111,9 +132,9 @@ namespace CodeConverter.VsExtension
             VisualStudioInteraction.OutputWindow.WriteToOutputWindow(output);
         }
 
-        private static string PathRelativeToSolutionDir(string solutionDir, string path)
+        private string PathRelativeToSolutionDir(string path)
         {
-            return path.Replace(solutionDir, "")
+            return path.Replace(SolutionDir, "")
                 .Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
 
