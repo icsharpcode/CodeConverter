@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
@@ -18,14 +19,17 @@ namespace CodeConverter.VsExtension
 {
     class CodeConversion
     {
+        public Func<ConverterOptionsPage> GetOptions { get; }
         private readonly IServiceProvider _serviceProvider;
         private readonly VisualStudioWorkspace _visualStudioWorkspace;
         public static readonly string ConverterTitle = "Code converter";
         private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine + "Writing converted files to disk:";
         private string SolutionDir => Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
 
-        public CodeConversion(IServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace)
+        public CodeConversion(IServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace,
+            Func<ConverterOptionsPage> getOptions)
         {
+            GetOptions = getOptions;
             _serviceProvider = serviceProvider;
             _visualStudioWorkspace = visualStudioWorkspace;
         }
@@ -40,10 +44,18 @@ namespace CodeConverter.VsExtension
 
         public async Task PerformDocumentConversion<TLanguageConversion>(string documentFilePath, Span selected) where TLanguageConversion : ILanguageConversion, new()
         {
-            await Task.Run(async () => {
+            var conversionResult = await Task.Run(async () => {
                 var result = await ConvertDocumentUnhandled<TLanguageConversion>(documentFilePath, selected);
                 WriteConvertedFilesAndShowSummary(new[] { result });
+                return result;
             });
+
+            if (GetOptions().CopyResultToClipboardForSingleDocument) {
+                Clipboard.SetText(conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString());
+                VisualStudioInteraction.OutputWindow.WriteToOutputWindow("Conversion result copied to clipboard.");
+                VisualStudioInteraction.ShowMessageBox(_serviceProvider, "Conversion result copied to clipboard.", conversionResult.GetExceptionsAsString(), false);
+            }
+
         }
 
         private void WriteConvertedFilesAndShowSummary(IEnumerable<ConversionResult> convertedFiles)
@@ -77,29 +89,46 @@ namespace CodeConverter.VsExtension
                 File.WriteAllText(convertedFile.TargetPathOrNull, convertedFile.ConvertedCode);
             }
 
+            FinalizeConversion(files, errors, longestFilePath, filesToOverwrite);
+        }
+
+        private void FinalizeConversion(List<string> files, List<string> errors, string longestFilePath, List<ConversionResult> filesToOverwrite)
+        {
+            var options = GetOptions();
             var conversionSummary = GetConversionSummary(files, errors);
             VisualStudioInteraction.OutputWindow.WriteToOutputWindow(conversionSummary);
             VisualStudioInteraction.OutputWindow.ForceShowOutputPane();
 
-            if (longestFilePath != null) {
+            if (longestFilePath != null)
+            {
                 VisualStudioInteraction.OpenFile(new FileInfo(longestFilePath)).SelectAll();
             }
 
-            var pathsToOverwrite = string.Join(Environment.NewLine + "* ", filesToOverwrite.Select(f => PathRelativeToSolutionDir(f.SourcePathOrNull)));
-            var shouldOverwriteSolutionAndProjectFiles = filesToOverwrite.Any() && VisualStudioInteraction.ShowOkCancelMessageBox(_serviceProvider,
-                "Overwrite solution and referencing projects?",
-$@"The current solution file and any referencing projects will be overwritten to reference the new project(s):
-* {pathsToOverwrite}
+            var pathsToOverwrite = string.Join(Environment.NewLine + "* ",
+                filesToOverwrite.Select(f => PathRelativeToSolutionDir(f.SourcePathOrNull)));
+            var shouldOverwriteSolutionAndProjectFiles =
+                filesToOverwrite.Any() &&
+                (options.AlwaysOverwriteFiles || UserHasConfirmedOverwrite(files, errors, pathsToOverwrite));
 
-The old contents will be copied to 'currentFilename.bak'.
-Please 'Reload All' when Visual Studio prompts you.", files.Count > errors.Count);
-
-            if (shouldOverwriteSolutionAndProjectFiles) {
-                foreach (var fileToOverwrite in filesToOverwrite) {
-                    File.Copy(fileToOverwrite.SourcePathOrNull, fileToOverwrite.SourcePathOrNull + ".bak", true);
+            if (shouldOverwriteSolutionAndProjectFiles)
+            {
+                foreach (var fileToOverwrite in filesToOverwrite)
+                {
+                    if (options.CreateBackups) File.Copy(fileToOverwrite.SourcePathOrNull, fileToOverwrite.SourcePathOrNull + ".bak", true);
                     File.WriteAllText(fileToOverwrite.TargetPathOrNull, fileToOverwrite.ConvertedCode);
                 }
             }
+        }
+
+        private bool UserHasConfirmedOverwrite(List<string> files, List<string> errors, string pathsToOverwrite)
+        {
+            return VisualStudioInteraction.ShowMessageBox(_serviceProvider,
+                "Overwrite solution and referencing projects?",
+                $@"The current solution file and any referencing projects will be overwritten to reference the new project(s):
+* {pathsToOverwrite}
+
+The old contents will be copied to 'currentFilename.bak'.
+Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors.Count);
         }
 
         private static bool WillOverwriteSource(ConversionResult convertedFile)

@@ -135,7 +135,7 @@ namespace CodeConverter.VsExtension
         }
 
         /// <returns>true iff the user answers "OK"</returns>
-        public static bool ShowOkCancelMessageBox(IServiceProvider serviceProvider, string title, string msg, bool defaultOk)
+        public static bool ShowMessageBox(IServiceProvider serviceProvider, string title, string msg, bool showCancelButton, bool defaultOk = true)
         {
             var answeredOk = 1;
             return VsShellUtilities.ShowMessageBox(
@@ -143,8 +143,8 @@ namespace CodeConverter.VsExtension
                 msg,
                 title,
                 OLEMSGICON.OLEMSGICON_INFO,
-                OLEMSGBUTTON.OLEMSGBUTTON_OKCANCEL,
-                defaultOk ? OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST : OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_SECOND) == answeredOk;
+                showCancelButton ? OLEMSGBUTTON.OLEMSGBUTTON_OKCANCEL : OLEMSGBUTTON.OLEMSGBUTTON_OK,
+                defaultOk || !showCancelButton ? OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST : OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_SECOND) == answeredOk;
         }
 
         public static class OutputWindow

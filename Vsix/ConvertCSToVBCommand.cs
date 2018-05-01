@@ -69,7 +69,7 @@ namespace CodeConverter.VsExtension
         ConvertCSToVBCommand(REConverterPackage package)
         {
             this._package = package ?? throw new ArgumentNullException(nameof(package));
-            _codeConversion = new CodeConversion(package, package.VsWorkspace);
+            _codeConversion = new CodeConversion(package, package.VsWorkspace, () => package.Options);
 
             OleMenuCommandService commandService = this.ServiceProvider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
             if (commandService != null) {
