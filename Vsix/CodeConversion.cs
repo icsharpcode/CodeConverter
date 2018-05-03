@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
@@ -18,13 +19,17 @@ namespace CodeConverter.VsExtension
 {
     class CodeConversion
     {
+        public Func<ConverterOptionsPage> GetOptions { get; }
         private readonly IServiceProvider _serviceProvider;
         private readonly VisualStudioWorkspace _visualStudioWorkspace;
         public static readonly string ConverterTitle = "Code converter";
         private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine + "Writing converted files to disk:";
+        private string SolutionDir => Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
 
-        public CodeConversion(IServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace)
+        public CodeConversion(IServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace,
+            Func<ConverterOptionsPage> getOptions)
         {
+            GetOptions = getOptions;
             _serviceProvider = serviceProvider;
             _visualStudioWorkspace = visualStudioWorkspace;
         }
@@ -39,56 +44,109 @@ namespace CodeConverter.VsExtension
 
         public async Task PerformDocumentConversion<TLanguageConversion>(string documentFilePath, Span selected) where TLanguageConversion : ILanguageConversion, new()
         {
-            await Task.Run(async () => {
+            var conversionResult = await Task.Run(async () => {
                 var result = await ConvertDocumentUnhandled<TLanguageConversion>(documentFilePath, selected);
                 WriteConvertedFilesAndShowSummary(new[] { result });
+                return result;
             });
+
+            if (GetOptions().CopyResultToClipboardForSingleDocument) {
+                Clipboard.SetText(conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString());
+                VisualStudioInteraction.OutputWindow.WriteToOutputWindow("Conversion result copied to clipboard.");
+                VisualStudioInteraction.ShowMessageBox(_serviceProvider, "Conversion result copied to clipboard.", conversionResult.GetExceptionsAsString(), false);
+            }
+
         }
 
         private void WriteConvertedFilesAndShowSummary(IEnumerable<ConversionResult> convertedFiles)
         {
             var files = new List<string>();
+            var filesToOverwrite = new List<ConversionResult>();
             var errors = new List<string>();
             string longestFilePath = null;
             var longestFileLength = -1;
 
-            var solutionDir = Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
             VisualStudioInteraction.OutputWindow.WriteToOutputWindow(Intro);
             VisualStudioInteraction.OutputWindow.ForceShowOutputPane();
 
             foreach (var convertedFile in convertedFiles) {
+                if (convertedFile.SourcePathOrNull == null) continue;
 
-                var sourcePath = convertedFile.SourcePathOrNull ?? "";
-                var sourcePathRelativeToSolutionDir = PathRelativeToSolutionDir(solutionDir, sourcePath);
-                if (sourcePath != "") {
-                    if (!string.IsNullOrWhiteSpace(convertedFile.ConvertedCode)) {
-                        var path = ToggleExtension(sourcePath);
-                        if (convertedFile.ConvertedCode.Length > longestFileLength) {
-                            longestFileLength = convertedFile.ConvertedCode.Length;
-                            longestFilePath = path;
-                        }
-
-                        files.Add(path);
-                        File.WriteAllText(path, convertedFile.ConvertedCode);
-                    }
-
-                    LogProgress(convertedFile, errors, sourcePathRelativeToSolutionDir);
+                if (WillOverwriteSource(convertedFile)) {
+                    filesToOverwrite.Add(convertedFile);
+                    continue;
                 }
+
+                LogProgress(convertedFile, errors);
+                if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode)) continue;
+
+                files.Add(convertedFile.TargetPathOrNull);
+
+                if (convertedFile.ConvertedCode.Length > longestFileLength) {
+                    longestFileLength = convertedFile.ConvertedCode.Length;
+                    longestFilePath = convertedFile.TargetPathOrNull;
+                }
+                File.WriteAllText(convertedFile.TargetPathOrNull, convertedFile.ConvertedCode);
             }
-            
-            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(GetConversionSummary(files, errors));
+
+            FinalizeConversion(files, errors, longestFilePath, filesToOverwrite);
+        }
+
+        private void FinalizeConversion(List<string> files, List<string> errors, string longestFilePath, List<ConversionResult> filesToOverwrite)
+        {
+            var options = GetOptions();
+            var conversionSummary = GetConversionSummary(files, errors);
+            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(conversionSummary);
             VisualStudioInteraction.OutputWindow.ForceShowOutputPane();
 
-            if (longestFilePath != null) {
+            if (longestFilePath != null)
+            {
                 VisualStudioInteraction.OpenFile(new FileInfo(longestFilePath)).SelectAll();
+            }
+
+            var pathsToOverwrite = string.Join(Environment.NewLine + "* ",
+                filesToOverwrite.Select(f => PathRelativeToSolutionDir(f.SourcePathOrNull)));
+            var shouldOverwriteSolutionAndProjectFiles =
+                filesToOverwrite.Any() &&
+                (options.AlwaysOverwriteFiles || UserHasConfirmedOverwrite(files, errors, pathsToOverwrite));
+
+            if (shouldOverwriteSolutionAndProjectFiles)
+            {
+                var titleMessage = options.CreateBackups ? "Creating backups and overwriting files:" : "Overwriting files:" + "";
+                VisualStudioInteraction.OutputWindow.WriteToOutputWindow(titleMessage);
+                foreach (var fileToOverwrite in filesToOverwrite)
+                {
+                    if (options.CreateBackups) File.Copy(fileToOverwrite.SourcePathOrNull, fileToOverwrite.SourcePathOrNull + ".bak", true);
+                    File.WriteAllText(fileToOverwrite.TargetPathOrNull, fileToOverwrite.ConvertedCode);
+
+                    var targetPathRelativeToSolutionDir = PathRelativeToSolutionDir(fileToOverwrite.TargetPathOrNull);
+                    VisualStudioInteraction.OutputWindow.WriteToOutputWindow(Environment.NewLine + $"* {targetPathRelativeToSolutionDir}");
+                }
             }
         }
 
-        private void LogProgress(ConversionResult convertedFile, List<string> errors, string sourcePathRelativeToSolutionDir)
+        private bool UserHasConfirmedOverwrite(List<string> files, List<string> errors, string pathsToOverwrite)
+        {
+            return VisualStudioInteraction.ShowMessageBox(_serviceProvider,
+                "Overwrite solution and referencing projects?",
+                $@"The current solution file and any referencing projects will be overwritten to reference the new project(s):
+* {pathsToOverwrite}
+
+The old contents will be copied to 'currentFilename.bak'.
+Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors.Count);
+        }
+
+        private static bool WillOverwriteSource(ConversionResult convertedFile)
+        {
+            return string.Equals(convertedFile.SourcePathOrNull, convertedFile.TargetPathOrNull, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void LogProgress(ConversionResult convertedFile, List<string> errors)
         {
             var exceptionsAsString = convertedFile.GetExceptionsAsString();
             var indentedException = exceptionsAsString.Replace(Environment.NewLine, Environment.NewLine + "    ");
-            string output = Environment.NewLine + $"* {ToggleExtension(sourcePathRelativeToSolutionDir)}";
+            var targetPathRelativeToSolutionDir = PathRelativeToSolutionDir(convertedFile.TargetPathOrNull ?? "unknown");
+            string output = Environment.NewLine + $"* {targetPathRelativeToSolutionDir}";
             var containsErrors = !string.IsNullOrWhiteSpace(exceptionsAsString);
 
             if (containsErrors) {
@@ -97,6 +155,7 @@ namespace CodeConverter.VsExtension
 
             if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode))
             {
+                var sourcePathRelativeToSolutionDir = PathRelativeToSolutionDir(convertedFile.SourcePathOrNull ?? "unknown");
                 output = Environment.NewLine +
                          $"* Failure processing {sourcePathRelativeToSolutionDir}{Environment.NewLine}    {indentedException}";    
             }
@@ -107,9 +166,9 @@ namespace CodeConverter.VsExtension
             VisualStudioInteraction.OutputWindow.WriteToOutputWindow(output);
         }
 
-        private static string PathRelativeToSolutionDir(string solutionDir, string path)
+        private string PathRelativeToSolutionDir(string path)
         {
-            return path.Replace(solutionDir, "")
+            return path.Replace(SolutionDir, "")
                 .Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
 
@@ -136,27 +195,6 @@ namespace CodeConverter.VsExtension
                                        + Environment.NewLine;
         }
 
-        private static string ToggleExtension(string sourcePath)
-        {
-            var currentExtension = Path.GetExtension(sourcePath)?.ToLowerInvariant() ?? "";
-            return Path.ChangeExtension(sourcePath, ConvertExtension(currentExtension));
-        }
-
-        private static string ConvertExtension(string currentExtension)
-        {
-            switch (currentExtension)
-            {
-                case ".vb":
-                    return ".cs";
-                case ".cs":
-                    return ".vb";
-                case ".txt":
-                    return ".txt";
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(currentExtension), currentExtension, null);
-            }
-        }
-
         async Task<ConversionResult> ConvertDocumentUnhandled<TLanguageConversion>(string documentPath, Span selected) where TLanguageConversion : ILanguageConversion, new()
         {   
             //TODO Figure out when there are multiple document ids for a single file path
@@ -170,7 +208,7 @@ namespace CodeConverter.VsExtension
             var documentSyntaxTree = await document.GetSyntaxTreeAsync();
 
             var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
-            return await ProjectConversion<TLanguageConversion>.ConvertSingle(compilation, documentSyntaxTree, selectedTextSpan);
+            return await ProjectConversion.ConvertSingle(compilation, documentSyntaxTree, selectedTextSpan, new TLanguageConversion());
         }
 
         private static ConversionResult ConvertTextOnly<TLanguageConversion>(string documentPath, Span selected)
@@ -182,7 +220,7 @@ namespace CodeConverter.VsExtension
                 documentText = documentText.Substring(selected.Start, selected.Length);
             }
 
-            var convertTextOnly = ProjectConversion<TLanguageConversion>.ConvertText(documentText, CodeWithOptions.DefaultMetadataReferences);
+            var convertTextOnly = ProjectConversion.ConvertText<TLanguageConversion>(documentText, CodeWithOptions.DefaultMetadataReferences);
             convertTextOnly.SourcePathOrNull = documentPath;
             return convertTextOnly;
         }
@@ -193,7 +231,7 @@ namespace CodeConverter.VsExtension
             var projectsByPath =
                 _visualStudioWorkspace.CurrentSolution.Projects.ToLookup(p => p.FilePath, p => p);
             var projects = selectedProjects.Select(p => projectsByPath[p.FullName].First()).ToList();
-            var convertedFiles = ProjectConversion<TLanguageConversion>.ConvertProjects(projects);
+            var convertedFiles = SolutionConverter.CreateFor<TLanguageConversion>(projects).Convert();
             return convertedFiles;
         }
 

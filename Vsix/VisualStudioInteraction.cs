@@ -134,6 +134,19 @@ namespace CodeConverter.VsExtension
                 OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
         }
 
+        /// <returns>true iff the user answers "OK"</returns>
+        public static bool ShowMessageBox(IServiceProvider serviceProvider, string title, string msg, bool showCancelButton, bool defaultOk = true)
+        {
+            var answeredOk = 1;
+            return VsShellUtilities.ShowMessageBox(
+                serviceProvider,
+                msg,
+                title,
+                OLEMSGICON.OLEMSGICON_INFO,
+                showCancelButton ? OLEMSGBUTTON.OLEMSGBUTTON_OKCANCEL : OLEMSGBUTTON.OLEMSGBUTTON_OK,
+                defaultOk || !showCancelButton ? OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST : OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_SECOND) == answeredOk;
+        }
+
         public static class OutputWindow
         {
             private const string PaneName = "Code Converter";

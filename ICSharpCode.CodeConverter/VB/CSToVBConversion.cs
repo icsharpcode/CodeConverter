@@ -30,6 +30,20 @@ namespace ICSharpCode.CodeConverter.VB
                 : descendantNodes.OfType<CSSyntax.BaseTypeDeclarationSyntax>().First<SyntaxNode>();
         }
 
+        public IReadOnlyCollection<(string, string)> GetProjectTypeGuidMappings()
+        {
+            return ProjectTypeGuids.VbToCsTypeGuids.Select((vbCs, i) => (vbCs.Item2, vbCs.Item1)).ToArray();
+        }
+
+        public IEnumerable<(string, string)> GetProjectFileReplacementRegexes()
+        {
+            return new[] {
+                ("\\\\Microsoft.CSharp.targets", "\\Microsoft.VisualBasic.targets"),
+                (".cs\"", ".vb\""),
+                (".cs<", ".vb<")
+            };
+        }
+
         public bool MustBeContainedByMethod(SyntaxNode node)
         {
             return node is CSSyntax.IncompleteMemberSyntax || 

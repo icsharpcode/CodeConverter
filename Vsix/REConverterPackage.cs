@@ -32,6 +32,8 @@ namespace CodeConverter.VsExtension
     [PackageRegistration(UseManagedResourcesOnly = true)]
     [InstalledProductRegistration("#110", "#112", "1.0")] // Info on this package for Help/About
     [ProvideMenuResource("Menus.ctmenu", 1)]
+    [ProvideOptionPage(typeof(ConverterOptionsPage),
+        "Code Converter", "General", 0, 0, true)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExistsAndFullyLoaded_string)]
     [Guid(REConverterPackage.PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
@@ -86,6 +88,8 @@ namespace CodeConverter.VsExtension
             return new StackTrace().GetFrames().Select(f => f.GetMethod().DeclaringType?.Assembly)
                 .SkipWhile(a => a == GetType().Assembly);
         }
+
+        public ConverterOptionsPage Options => (ConverterOptionsPage)GetDialogPage(typeof(ConverterOptionsPage));
 
         /// <summary>
         /// Initialization of the package; this method is called right after the package is sited, so this is the place
