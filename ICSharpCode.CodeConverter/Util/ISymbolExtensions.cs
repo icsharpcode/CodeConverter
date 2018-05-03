@@ -192,6 +192,16 @@ namespace ICSharpCode.CodeConverter.Util
             if (symbol is ITypeSymbol && output == "Date") return "DateTime";
             return output;
         }
+
+        public static bool IsPartialImplementation(this ISymbol declaredSymbol)
+        {
+            return declaredSymbol is IMethodSymbol ms && ms.PartialDefinitionPart != null;
+        }
+
+        public static bool IsPartialDefinition(this ISymbol declaredSymbol)
+        {
+            return declaredSymbol is IMethodSymbol ms && ms.PartialImplementationPart != null;
+        }
     }
 }
 

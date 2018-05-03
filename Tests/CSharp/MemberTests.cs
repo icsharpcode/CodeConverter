@@ -700,6 +700,37 @@ End Class",
         }
 
         [Fact]
+        public void PartialClass()
+        {
+            // Can't auto test comments when there are already manual comments used
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Partial Class TestClass
+    Private Sub DoNothing()
+        Console.WriteLine(""Hello"")
+    End Sub
+End Class
+
+Class TestClass ' VB doesn't require partial here (when just a single class omits it)
+    Partial Private Sub DoNothing()
+    End Sub
+End Class",
+@"using System;
+
+partial class TestClass
+{
+    partial void DoNothing()
+    {
+        Console.WriteLine(""Hello"");
+    }
+}
+
+partial class TestClass // VB doesn't require partial here (when just a single class omits it)
+{
+    partial void DoNothing();
+}");
+        }
+
+        [Fact]
         public void NestedClass()
         {
             TestConversionVisualBasicToCSharp(@"Class ClA

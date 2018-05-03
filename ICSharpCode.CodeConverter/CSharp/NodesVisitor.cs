@@ -10,6 +10,7 @@ using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using static ICSharpCode.CodeConverter.CSharp.SyntaxKindExtensions;
+using SyntaxToken = Microsoft.CodeAnalysis.SyntaxToken;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -155,7 +156,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var convertedIdentifier = ConvertIdentifier(classStatement.Identifier);
 
                 return SyntaxFactory.ClassDeclaration(
-                    attributes, VisualBasicConverter.ConvertModifiers(classStatement.Modifiers),
+                    attributes, ConvertTypeBlockModifiers(classStatement, TokenContext.Global),
                     convertedIdentifier,
                     parameters,
                     ConvertInheritsAndImplements(node.Inherits, node.Implements),
@@ -185,7 +186,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SplitTypeParameters(stmt.TypeParameterList, out parameters, out constraints);
 
                 return SyntaxFactory.ClassDeclaration(
-                    attributes, VisualBasicConverter.ConvertModifiers(stmt.Modifiers, TokenContext.InterfaceOrModule).Add(SyntaxFactory.Token(SyntaxKind.StaticKeyword)),
+                    attributes, ConvertTypeBlockModifiers(stmt, TokenContext.InterfaceOrModule).Add(SyntaxFactory.Token(SyntaxKind.StaticKeyword)),
                     ConvertIdentifier(stmt.Identifier),
                     parameters,
                     ConvertInheritsAndImplements(node.Inherits, node.Implements),
@@ -205,7 +206,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SplitTypeParameters(stmt.TypeParameterList, out parameters, out constraints);
 
                 return SyntaxFactory.StructDeclaration(
-                    attributes, VisualBasicConverter.ConvertModifiers(stmt.Modifiers, TokenContext.Global),
+                    attributes, ConvertTypeBlockModifiers(stmt, TokenContext.Global),
                     ConvertIdentifier(stmt.Identifier),
                     parameters,
                     ConvertInheritsAndImplements(node.Inherits, node.Implements),
@@ -225,13 +226,32 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SplitTypeParameters(stmt.TypeParameterList, out parameters, out constraints);
 
                 return SyntaxFactory.InterfaceDeclaration(
-                    attributes, VisualBasicConverter.ConvertModifiers(stmt.Modifiers, TokenContext.InterfaceOrModule),
+                    attributes, ConvertTypeBlockModifiers(stmt, TokenContext.InterfaceOrModule),
                     ConvertIdentifier(stmt.Identifier),
                     parameters,
                     ConvertInheritsAndImplements(node.Inherits, node.Implements),
                     constraints,
                     members
                 );
+            }
+
+            private SyntaxTokenList ConvertTypeBlockModifiers(VBSyntax.TypeStatementSyntax stmt, TokenContext interfaceOrModule)
+            {
+                var extraModifiers = IsPartialType(stmt) && !HasPartialKeyword(stmt.Modifiers)
+                    ? new[] {SyntaxFactory.Token(SyntaxKind.PartialKeyword)}
+                    : new SyntaxToken[0];
+                return ConvertModifiers(stmt.Modifiers, interfaceOrModule).AddRange(extraModifiers);
+            }
+
+            private static bool HasPartialKeyword(SyntaxTokenList modifiers)
+            {
+                return modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.PartialKeyword));
+            }
+
+            private bool IsPartialType(VBSyntax.DeclarationStatementSyntax stmt)
+            {
+                var declaredSymbol = _semanticModel.GetDeclaredSymbol(stmt);
+                return declaredSymbol.GetDeclarations().Count() > 1;
             }
 
             public override CSharpSyntaxNode VisitEnumBlock(VBSyntax.EnumBlockSyntax node)
@@ -449,8 +469,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 BaseMethodDeclarationSyntax block = (BaseMethodDeclarationSyntax)node.SubOrFunctionStatement.Accept(TriviaConvertingVisitor);
                 bool isIterator = node.SubOrFunctionStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
-
-                return block.WithBody(VisitStatements(node.Statements, isIterator));
+                return _semanticModel.GetDeclaredSymbol(node).IsPartialDefinition() ? block
+                    : block.WithBody(VisitStatements(node.Statements, isIterator));
             }
 
             private BlockSyntax VisitStatements(SyntaxList<VBSyntax.StatementSyntax> statements, bool isIterator)
@@ -472,15 +492,24 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return decl.WithSemicolonToken(SemicolonToken);
                 } else {
                     var tokenContext = GetMemberContext(node);
-                    var modifiers = VisualBasicConverter.ConvertModifiers(node.Modifiers, tokenContext);
+                    var convertedModifiers = ConvertModifiers(node.Modifiers, tokenContext);
 
-                    TypeParameterListSyntax typeParameters;
-                    SyntaxList<TypeParameterConstraintClauseSyntax> constraints;
-                    SplitTypeParameters(node.TypeParameterList, out typeParameters, out constraints);
+                    var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
+                    var isPartialDefinition = declaredSymbol.IsPartialDefinition();
+                    if (declaredSymbol.IsPartialImplementation() || isPartialDefinition) {
+                        var privateModifier = convertedModifiers.SingleOrDefault(m => m.IsKind(SyntaxKind.PrivateKeyword));
+                        if (privateModifier != default(SyntaxToken)) {
+                            convertedModifiers = convertedModifiers.Remove(privateModifier);
+                        }
+                        if (!HasPartialKeyword(node.Modifiers)) {
+                            convertedModifiers = convertedModifiers.Add(SyntaxFactory.Token(SyntaxKind.PartialKeyword));
+                        }
+                    }
+                    SplitTypeParameters(node.TypeParameterList, out var typeParameters, out var constraints);
 
                     var decl = SyntaxFactory.MethodDeclaration(
                         attributes,
-                        modifiers,
+                        convertedModifiers,
                         (TypeSyntax)node.AsClause?.Type?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)),
                         null,
                         ConvertIdentifier(node.Identifier),
@@ -490,7 +519,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         null,
                         null
                     );
-                    if (hasBody) return decl;
+                    if (hasBody && !isPartialDefinition) return decl;
                     return decl.WithSemicolonToken(SemicolonToken);
                 }
             }
