@@ -19,7 +19,7 @@ Adds context menu items to convert projects/files between VB.NET and C#.
 </p>
 
 ## Contributing
-Let us know what needs improving. If you want to get involved in writing the code yourself, even better! We've already had code contributions from several first time GitHub contributors, so don't be shy! The first step is usually to raise an issue against the repo to give room for discussion.
+Let us know what needs improving. If you want to get involved in writing the code yourself, even better! We've already had code contributions from several first time GitHub contributors, so don't be shy! See [Contributing.md](https://github.com/icsharpcode/CodeConverter/blob/master/.github/CONTRIBUTING.md) for more info.
 
 ## Other ways to use the converter
 * Extension "nightly" developer builds (potentially less stable and more effort to update): https://ci.appveyor.com/project/icsharpcode/codeconverter/branch/master
