@@ -48,8 +48,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Select(d => compilationUnitSyntax.FindNode(d.Location.SourceSpan))
                 .OfType<UsingDirectiveSyntax>()
                 .ToList();
-            if (diagnostics.All(d => d.Id != UnresolvedTypeOrNamespaceDiagnosticId) && unusedUsings.Any()) {
-                compilationUnitSyntax = compilationUnitSyntax.RemoveNodes(unusedUsings, SyntaxRemoveOptions.KeepNoTrivia);
+
+            var nodesWithUnresolvedTypes = diagnostics
+                .Where(d => d.Id == UnresolvedTypeOrNamespaceDiagnosticId && d.Location.IsInSource)
+                .Select(d => compilationUnitSyntax.FindNode(d.Location.SourceSpan))
+                .ToLookup(d => d.GetAncestor<UsingDirectiveSyntax>());
+            unusedUsings = unusedUsings.Except(nodesWithUnresolvedTypes.Select(g => g.Key)).ToList();
+
+            if (!nodesWithUnresolvedTypes[null].Any() && unusedUsings.Any()) {
+                compilationUnitSyntax =
+                    compilationUnitSyntax.RemoveNodes(unusedUsings, SyntaxRemoveOptions.KeepNoTrivia);
             }
 
             return compilationUnitSyntax;

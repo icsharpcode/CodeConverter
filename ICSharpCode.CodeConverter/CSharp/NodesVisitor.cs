@@ -1549,7 +1549,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         // CSharp allows partial qualification within the current type's parent namespace
                         qualifiedName = qualifiedName.Substring(firstMatch.Length);
                     }
-                    else if (!targetSymbolInfo.IsNamespace() && _importedNamespaces.ContainsKey(typeOrNamespace))
+                    else if (!targetSymbolInfo.IsNamespace() && _importedNamespaces.ContainsKey(typeOrNamespace) && qualifiedName.StartsWith(typeOrNamespace))
                     {
                         // An import matches the entire namespace, which means it's not a partially qualified thing that would need extra help in CSharp
                         qualifiedName = qualifiedName.Substring(typeOrNamespace.Length + 1);
