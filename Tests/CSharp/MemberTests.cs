@@ -331,6 +331,105 @@ class TestClass
         }
 
         [Fact]
+        public void TestHandlesWithEvents()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Class MyEventClass
+    Public Event TestEvent()
+
+    Sub RaiseEvents()
+        RaiseEvent TestEvent()
+    End Sub
+End Class
+
+Module Module1
+    WithEvents EventClassInstance, EventClassInstance2 As New MyEventClass
+
+    Sub PrintTestMessage2() Handles EventClassInstance.TestEvent, EventClassInstance2.TestEvent
+    End Sub
+    Sub PrintTestMessage3() Handles EventClassInstance.TestEvent
+    End Sub
+End Module", @"using System.Runtime.CompilerServices;
+
+internal class MyEventClass
+{
+    public event TestEventEventHandler TestEvent;
+
+    public void RaiseEvents()
+    {
+        TestEvent?.Invoke();
+    }
+
+    public delegate void TestEventEventHandler();
+}
+
+internal sealed class Module1
+{
+    private static MyEventClass _EventClassInstance;
+    private static MyEventClass _EventClassInstance2;
+
+    static Module1()
+    {
+        EventClassInstance = new MyEventClass();
+        EventClassInstance2 = new MyEventClass();
+    }
+
+    private static MyEventClass EventClassInstance
+    {
+        get
+        {
+            return _EventClassInstance;
+        }
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        set
+        {
+            MyEventClass oldEventClassInstance = _EventClassInstance;
+            if (oldEventClassInstance != null)
+            {
+                oldEventClassInstance.TestEvent -= PrintTestMessage2;
+                oldEventClassInstance.TestEvent -= PrintTestMessage3;
+            }
+
+            _EventClassInstance = value;
+            MyEventClass newEventClassInstance = _EventClassInstance;
+            if (newEventClassInstance != null)
+            {
+                newEventClassInstance.TestEvent += PrintTestMessage2;
+                newEventClassInstance.TestEvent += PrintTestMessage3;
+            }
+        }
+    }
+
+    private static MyEventClass EventClassInstance2
+    {
+        get
+        {
+            return _EventClassInstance2;
+        }
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        set
+        {
+            MyEventClass eventClassInstance1 = _EventClassInstance2;
+            if (eventClassInstance1 != null)
+                eventClassInstance1.TestEvent -= PrintTestMessage2;
+            _EventClassInstance2 = value;
+            MyEventClass eventClassInstance2 = _EventClassInstance2;
+            if (eventClassInstance2 != null)
+                eventClassInstance2.TestEvent += PrintTestMessage2;
+        }
+    }
+
+    public static void PrintTestMessage2()
+    {
+    }
+
+    public static void PrintTestMessage3()
+    {
+    }
+}");
+        }
+
+        [Fact]
         public void SynthesizedBackingFieldAccess()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass

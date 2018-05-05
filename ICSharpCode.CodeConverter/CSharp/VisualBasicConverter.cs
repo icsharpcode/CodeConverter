@@ -47,38 +47,52 @@ namespace ICSharpCode.CodeConverter.CSharp
             var newDecls = new Dictionary<string, VariableDeclarationSyntax>();
 
             foreach (var name in declarator.Names) {
-                var type = rawType;
-                if (!SyntaxTokenExtensions.IsKind(name.Nullable, VBasic.SyntaxKind.None)) {
-                    if (type is ArrayTypeSyntax) {
-                        type = ((ArrayTypeSyntax)type).WithElementType(
-                            SyntaxFactory.NullableType(((ArrayTypeSyntax)type).ElementType));
-                        initializer = null;
-                    } else
-                        type = SyntaxFactory.NullableType(type);
-                }
-
-                var rankSpecifiers = NodesVisitor.ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds, nodesVisitor, semanticModel, false);
-                if (rankSpecifiers.Count > 0) {
-                    var rankSpecifiersWithSizes = NodesVisitor.ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds, nodesVisitor, semanticModel);
-                    if (!rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).OfType<OmittedArraySizeExpressionSyntax>().Any())
-                    {
-                        initializer =
-                            SyntaxFactory.ArrayCreationExpression(
-                                SyntaxFactory.ArrayType(type, rankSpecifiersWithSizes));
-                    }
-                    type = SyntaxFactory.ArrayType(type, rankSpecifiers);
-                }
-
-                VariableDeclarationSyntax decl;
-                var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier, semanticModel), null, initializer == null ? null : SyntaxFactory.EqualsValueClause(initializer));
+                var (type, adjustedInitializer) = AdjustFromName(nodesVisitor, semanticModel, rawType, name, initializer);
+                initializer = adjustedInitializer;
+                var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier, semanticModel), null, adjustedInitializer == null ? null : SyntaxFactory.EqualsValueClause(adjustedInitializer));
                 string k = type.ToString();
-                if (newDecls.TryGetValue(k, out decl))
+                if (newDecls.TryGetValue(k, out var decl))
                     newDecls[k] = decl.AddVariables(v);
                 else
                     newDecls[k] = SyntaxFactory.VariableDeclaration(type, SyntaxFactory.SingletonSeparatedList(v));
             }
 
             return newDecls;
+        }
+
+        private static (TypeSyntax, ExpressionSyntax) AdjustFromName(VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, SemanticModel semanticModel, TypeSyntax rawType,
+            VBSyntax.ModifiedIdentifierSyntax name, ExpressionSyntax initializer)
+        {
+            var type = rawType;
+            if (!SyntaxTokenExtensions.IsKind(name.Nullable, VBasic.SyntaxKind.None))
+            {
+                if (type is ArrayTypeSyntax)
+                {
+                    type = ((ArrayTypeSyntax) type).WithElementType(
+                        SyntaxFactory.NullableType(((ArrayTypeSyntax) type).ElementType));
+                    initializer = null;
+                }
+                else
+                    type = SyntaxFactory.NullableType(type);
+            }
+
+            var rankSpecifiers = NodesVisitor.ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds,
+                nodesVisitor, semanticModel, false);
+            if (rankSpecifiers.Count > 0)
+            {
+                var rankSpecifiersWithSizes = NodesVisitor.ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers,
+                    name.ArrayBounds, nodesVisitor, semanticModel);
+                if (!rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).OfType<OmittedArraySizeExpressionSyntax>().Any())
+                {
+                    initializer =
+                        SyntaxFactory.ArrayCreationExpression(
+                            SyntaxFactory.ArrayType(type, rankSpecifiersWithSizes));
+                }
+
+                type = SyntaxFactory.ArrayType(type, rankSpecifiers);
+            }
+
+            return (type, initializer);
         }
 
         static ExpressionSyntax Literal(object o, string valueText = null) => GetLiteralExpression(o, valueText);
