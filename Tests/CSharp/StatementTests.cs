@@ -1170,6 +1170,73 @@ End Class", @"public class TestClass
         }
 
         [Fact]
+        public void SelectCaseWithExpression2()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass2
+    Function CanDoWork(Something As Object) As Boolean
+        Select Case True
+            Case Today.DayOfWeek = DayOfWeek.Saturday Or Today.DayOfWeek = DayOfWeek.Sunday
+                ' we do not work on weekends
+                Return False
+            Case Not IsSqlAlive()
+                ' Database unavailable
+                Return False
+            Case TypeOf Something Is Integer
+                ' Do something with the Integer
+                Return True
+            Case Else
+                ' Do something else 
+                Return False
+        End Select
+    End Function
+
+    Private Function IsSqlAlive() As Boolean
+        ' Do something to test SQL Server
+        Return True
+    End Function
+End Class", @"using System;
+
+public class TestClass2
+{
+    public bool CanDoWork(object Something)
+    {
+        switch (true)
+        {
+            case object _ when DateTime.Today.DayOfWeek == DayOfWeek.Saturday | DateTime.Today.DayOfWeek == DayOfWeek.Sunday:
+                {
+                    // we do not work on weekends
+                    return false;
+                }
+
+            case object _ when !IsSqlAlive():
+                {
+                    // Database unavailable
+                    return false;
+                }
+
+            case object _ when Something is int:
+                {
+                    // Do something with the Integer
+                    return true;
+                }
+
+            default:
+                {
+                    // Do something else 
+                    return false;
+                }
+        }
+    }
+
+    private bool IsSqlAlive()
+    {
+        // Do something to test SQL Server
+        return true;
+    }
+}");
+        }
+
+        [Fact]
         public void TryCatch()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
