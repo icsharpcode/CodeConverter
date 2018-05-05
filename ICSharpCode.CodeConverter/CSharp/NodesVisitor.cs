@@ -1151,15 +1151,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitQueryExpression(VBSyntax.QueryExpressionSyntax node)
             {
-                var vbFromClause = node.Clauses.OfType<VBSyntax.FromClauseSyntax>().Single();
+                var vbBodyClauses = node.Clauses;
+                var vbFromClause = vbBodyClauses.OfType<VBSyntax.FromClauseSyntax>().Single();
                 var fromClauseSyntax = ConvertFromClauseSyntax(vbFromClause);
-                var vbGroupClause = node.Clauses.OfType<VBSyntax.GroupByClauseSyntax>().SingleOrDefault();
-                var vbSelectClause = node.Clauses.OfType<VBSyntax.SelectClauseSyntax>().SingleOrDefault();
+                var vbGroupClause = vbBodyClauses.OfType<VBSyntax.GroupByClauseSyntax>().SingleOrDefault();
+                var vbSelectClause = vbBodyClauses.OfType<VBSyntax.SelectClauseSyntax>().SingleOrDefault();
                 var selectClauseSyntax = vbSelectClause != null
                     ? ConvertSelectClauseSyntax(vbSelectClause)
                     : CreateDefaultSelectClause(fromClauseSyntax);
                 var alreadyConverted = new VBSyntax.QueryClauseSyntax[] { vbFromClause, vbGroupClause, vbSelectClause };
-                var vbBodyClauses = node.Clauses;
                 SelectOrGroupClauseSyntax selectOrGroup = null;
                 QueryContinuationSyntax queryContinuation = null;
                 var queryClauseSyntaxs = SyntaxFactory.List(vbBodyClauses.TakeWhile(x => x != vbGroupClause).Except(alreadyConverted).Select(ConvertQueryBodyClause));
