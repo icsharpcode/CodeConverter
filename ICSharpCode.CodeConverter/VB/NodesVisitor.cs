@@ -79,7 +79,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             _semanticModel = semanticModel;
             TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
-            _commonConversions = new CommonConversions(semanticModel, this, TriviaConvertingVisitor.TriviaConverter);
+            _commonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
             _options = compilationOptions;
             _cSharpHelperMethodDefinition = new CSharpHelperMethodDefinition();
         }
