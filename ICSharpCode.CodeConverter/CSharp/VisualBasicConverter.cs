@@ -33,16 +33,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         static Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(VBSyntax.VariableDeclaratorSyntax declarator, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, SemanticModel semanticModel)
         {
-            var rawType = (TypeSyntax)declarator.AsClause?.TypeSwitch(
-                (VBSyntax.SimpleAsClauseSyntax c) => c.Type,
-                (VBSyntax.AsNewClauseSyntax c) => VBasic.SyntaxExtensions.Type(c.NewExpression),
-                _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
-            )?.Accept(nodesVisitor) ?? SyntaxFactory.ParseTypeName("var");
-
-            var initializer = (ExpressionSyntax)declarator.AsClause?.TypeSwitch(
-                (VBSyntax.SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
-                (VBSyntax.AsNewClauseSyntax c) => c.NewExpression
-            )?.Accept(nodesVisitor) ?? (ExpressionSyntax)declarator.Initializer?.Value.Accept(nodesVisitor);
+            var rawType = ConvertDeclaratorType(nodesVisitor, declarator);
+            var initializer = ConvertInitializer(nodesVisitor, declarator);
 
             var newDecls = new Dictionary<string, VariableDeclarationSyntax>();
 
@@ -57,6 +49,26 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return newDecls;
+        }
+
+        private static TypeSyntax ConvertDeclaratorType(VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
+            VBSyntax.VariableDeclaratorSyntax declarator)
+        {
+            return (TypeSyntax) declarator.AsClause?.TypeSwitch(
+                       (VBSyntax.SimpleAsClauseSyntax c) => c.Type,
+                       (VBSyntax.AsNewClauseSyntax c) => VBasic.SyntaxExtensions.Type(c.NewExpression),
+                       _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
+                   )?.Accept(nodesVisitor) ?? SyntaxFactory.ParseTypeName("var");
+        }
+
+        private static ExpressionSyntax ConvertInitializer(
+            VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
+            VBSyntax.VariableDeclaratorSyntax declarator)
+        {
+            return (ExpressionSyntax)declarator.AsClause?.TypeSwitch(
+                       (VBSyntax.SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
+                       (VBSyntax.AsNewClauseSyntax c) => c.NewExpression
+                   )?.Accept(nodesVisitor) ?? (ExpressionSyntax)declarator.Initializer?.Value.Accept(nodesVisitor);
         }
 
         private static (TypeSyntax, ExpressionSyntax) AdjustFromName(VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, SemanticModel semanticModel, TypeSyntax rawType,
