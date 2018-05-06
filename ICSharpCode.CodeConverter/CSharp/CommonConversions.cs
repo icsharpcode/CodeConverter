@@ -5,30 +5,36 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.VisualBasic;
 using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
+using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using SyntaxFacts = Microsoft.CodeAnalysis.CSharp.SyntaxFacts;
+using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
     internal class CommonConversions
     {
         private readonly SemanticModel _semanticModel;
+        private readonly VisualBasicSyntaxVisitor<CSharpSyntaxNode> _nodesVisitor;
 
-        public CommonConversions(SemanticModel semanticModel)
+        public CommonConversions(SemanticModel semanticModel, VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor)
         {
             _semanticModel = semanticModel;
+            _nodesVisitor = nodesVisitor;
         }
 
         public Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(
-            Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax declarator, Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
+            Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax declarator,
             bool isWithEvents = false)
         {
-            var rawType = ConvertDeclaratorType(nodesVisitor, declarator);
-            var initializer = ConvertInitializer(nodesVisitor, declarator);
+            var rawType = ConvertDeclaratorType(declarator);
+            var initializer = ConvertInitializer(declarator);
 
             var newDecls = new Dictionary<string, VariableDeclarationSyntax>();
 
             foreach (var name in declarator.Names) {
-                var (type, adjustedInitializer) = AdjustFromName(nodesVisitor, rawType, name, initializer);
+                var (type, adjustedInitializer) = AdjustFromName(rawType, name, initializer);
                 var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier), null, adjustedInitializer == null ? null : SyntaxFactory.EqualsValueClause(adjustedInitializer));
                 string k = type.ToString();
                 if (newDecls.TryGetValue(k, out var decl))
@@ -40,26 +46,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             return newDecls;
         }
 
-        private TypeSyntax ConvertDeclaratorType(Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
-            Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax declarator)
+        private TypeSyntax ConvertDeclaratorType(Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax declarator)
         {
             return (TypeSyntax) declarator.AsClause?.TypeSwitch(
                        (Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleAsClauseSyntax c) => c.Type,
                        (Microsoft.CodeAnalysis.VisualBasic.Syntax.AsNewClauseSyntax c) => Microsoft.CodeAnalysis.VisualBasic.SyntaxExtensions.Type(c.NewExpression),
                        _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
-                   )?.Accept(nodesVisitor) ?? SyntaxFactory.ParseTypeName("var");
+                   )?.Accept(_nodesVisitor) ?? SyntaxFactory.ParseTypeName("var");
         }
 
-        private ExpressionSyntax ConvertInitializer(Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
-            Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax declarator)
+        private ExpressionSyntax ConvertInitializer(Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax declarator)
         {
             return (ExpressionSyntax)declarator.AsClause?.TypeSwitch(
                        (Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
                        (Microsoft.CodeAnalysis.VisualBasic.Syntax.AsNewClauseSyntax c) => c.NewExpression
-                   )?.Accept(nodesVisitor) ?? (ExpressionSyntax)declarator.Initializer?.Value.Accept(nodesVisitor);
+                   )?.Accept(_nodesVisitor) ?? (ExpressionSyntax)declarator.Initializer?.Value.Accept(_nodesVisitor);
         }
 
-        private (TypeSyntax, ExpressionSyntax) AdjustFromName(Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, TypeSyntax rawType,
+        private (TypeSyntax, ExpressionSyntax) AdjustFromName(TypeSyntax rawType,
             Microsoft.CodeAnalysis.VisualBasic.Syntax.ModifiedIdentifierSyntax name, ExpressionSyntax initializer)
         {
             var type = rawType;
@@ -75,12 +79,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                     type = SyntaxFactory.NullableType(type);
             }
 
-            var rankSpecifiers = ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds,
-                nodesVisitor, false);
+            var rankSpecifiers = ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds, false);
             if (rankSpecifiers.Count > 0)
             {
                 var rankSpecifiersWithSizes = ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers,
-                    name.ArrayBounds, nodesVisitor);
+                    name.ArrayBounds);
                 if (!rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).OfType<OmittedArraySizeExpressionSyntax>().Any())
                 {
                     initializer =
@@ -319,16 +322,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         internal SyntaxList<ArrayRankSpecifierSyntax> ConvertArrayRankSpecifierSyntaxes(
             SyntaxList<Microsoft.CodeAnalysis.VisualBasic.Syntax.ArrayRankSpecifierSyntax> arrayRankSpecifierSyntaxs,
-            Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax nodeArrayBounds, Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> commentConvertingNodesVisitor, bool withSizes = true)
+            Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
         {
-            var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax)r.Accept(commentConvertingNodesVisitor)));
+            var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax)r.Accept(_nodesVisitor)));
 
             if (nodeArrayBounds != null) {
                 var sizesSpecified = nodeArrayBounds.Arguments.Any(a => !a.IsOmitted);
                 var rank = nodeArrayBounds.Arguments.Count;
                 if (!sizesSpecified) rank += 1;
 
-                var convertedArrayBounds = withSizes && sizesSpecified ? ConvertArrayBounds(nodeArrayBounds, commentConvertingNodesVisitor)
+                var convertedArrayBounds = withSizes && sizesSpecified ? ConvertArrayBounds(nodeArrayBounds)
                     : Enumerable.Repeat(SyntaxFactory.OmittedArraySizeExpression(), rank);
                 var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(
                     SyntaxFactory.SeparatedList(
@@ -339,12 +342,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             return bounds;
         }
 
-        public IEnumerable<ExpressionSyntax> ConvertArrayBounds(Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax argumentListSyntax, Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> commentConvertingNodesVisitor)
+        public IEnumerable<ExpressionSyntax> ConvertArrayBounds(Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax argumentListSyntax)
         {
-            return argumentListSyntax.Arguments.Select(a => IncreaseArrayUpperBoundExpression(((Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleArgumentSyntax)a).Expression, commentConvertingNodesVisitor));
+            return argumentListSyntax.Arguments.Select(a => IncreaseArrayUpperBoundExpression(((Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleArgumentSyntax)a).Expression));
         }
 
-        private ExpressionSyntax IncreaseArrayUpperBoundExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax expr, Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> commentConvertingNodesVisitor)
+        private ExpressionSyntax IncreaseArrayUpperBoundExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax expr)
         {
             var constant = _semanticModel.GetConstantValue(expr);
             if (constant.HasValue && constant.Value is int)
@@ -352,7 +355,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return SyntaxFactory.BinaryExpression(
                 SyntaxKind.SubtractExpression,
-                (ExpressionSyntax)expr.Accept(commentConvertingNodesVisitor), SyntaxFactory.Token(SyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+                (ExpressionSyntax)expr.Accept(_nodesVisitor), SyntaxFactory.Token(SyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
         }
     }
 }

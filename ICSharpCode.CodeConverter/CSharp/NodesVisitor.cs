@@ -34,7 +34,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
                 _importedNamespaces = new Dictionary<string, string> {{VBasic.VisualBasicExtensions.RootNamespace(semanticModel.Compilation).ToString(), ""}};
                 _createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
-                CommonConversions = new CommonConversions(semanticModel);
+                CommonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor);
             }
 
             private static Dictionary<ITypeSymbol, string> CreateConvertMethodsLookupByReturnType(SemanticModel semanticModel)
@@ -342,7 +342,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var declarations = new List<MemberDeclarationSyntax>(node.Declarators.Count);
 
                 foreach (var declarator in node.Declarators) {
-                    foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator, this, isWithEvents).Values) {
+                    foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator, isWithEvents).Values) {
                         var baseFieldDeclarationSyntax = SyntaxFactory.FieldDeclaration(
                             SyntaxFactory.List(attributes),
                             convertedModifiers,
@@ -728,7 +728,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     returnType = returnType ?? SyntaxFactory.ParseTypeName("object");
                 }
 
-                var rankSpecifiers = CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.Identifier.ArrayRankSpecifiers, node.Identifier.ArrayBounds, TriviaConvertingVisitor, false);
+                var rankSpecifiers = CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.Identifier.ArrayRankSpecifiers, node.Identifier.ArrayBounds, false);
                 if (rankSpecifiers.Any() && returnType != null) {
                     returnType = SyntaxFactory.ArrayType(returnType, rankSpecifiers);
                 }
@@ -1110,7 +1110,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitArrayCreationExpression(VBSyntax.ArrayCreationExpressionSyntax node)
             {
-                var bounds = CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.RankSpecifiers, node.ArrayBounds, TriviaConvertingVisitor);
+                var bounds = CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.RankSpecifiers, node.ArrayBounds);
                 var allowInitializer = node.Initializer.Initializers.Any() || node.ArrayBounds == null ||
                                        node.ArrayBounds.Arguments.All(b => b.IsOmitted || _semanticModel.GetConstantValue(b.GetExpression()).HasValue);
                 var initializerToConvert = allowInitializer ? node.Initializer : null;
