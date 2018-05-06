@@ -48,7 +48,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             foreach (var name in declarator.Names) {
                 var (type, adjustedInitializer) = AdjustFromName(nodesVisitor, semanticModel, rawType, name, initializer);
-                initializer = adjustedInitializer;
                 var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier, semanticModel), null, adjustedInitializer == null ? null : SyntaxFactory.EqualsValueClause(adjustedInitializer));
                 string k = type.ToString();
                 if (newDecls.TryGetValue(k, out var decl))
