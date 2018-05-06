@@ -6,10 +6,18 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.VisualBasic;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using ArgumentListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax;
+using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankSpecifierSyntax;
+using ArrayTypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayTypeSyntax;
 using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
+using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxFacts = Microsoft.CodeAnalysis.CSharp.SyntaxFacts;
-using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
+using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
+using VariableDeclaratorSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax;
+using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -25,7 +33,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(
-            Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax declarator,
+            VariableDeclaratorSyntax declarator,
             bool isWithEvents = false)
         {
             var rawType = ConvertDeclaratorType(declarator);
@@ -46,28 +54,28 @@ namespace ICSharpCode.CodeConverter.CSharp
             return newDecls;
         }
 
-        private TypeSyntax ConvertDeclaratorType(Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax declarator)
+        private TypeSyntax ConvertDeclaratorType(VariableDeclaratorSyntax declarator)
         {
             return (TypeSyntax) declarator.AsClause?.TypeSwitch(
-                       (Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleAsClauseSyntax c) => c.Type,
-                       (Microsoft.CodeAnalysis.VisualBasic.Syntax.AsNewClauseSyntax c) => Microsoft.CodeAnalysis.VisualBasic.SyntaxExtensions.Type(c.NewExpression),
+                       (SimpleAsClauseSyntax c) => c.Type,
+                       (AsNewClauseSyntax c) => c.NewExpression.Type(),
                        _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
                    )?.Accept(_nodesVisitor) ?? SyntaxFactory.ParseTypeName("var");
         }
 
-        private ExpressionSyntax ConvertInitializer(Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax declarator)
+        private ExpressionSyntax ConvertInitializer(VariableDeclaratorSyntax declarator)
         {
             return (ExpressionSyntax)declarator.AsClause?.TypeSwitch(
-                       (Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
-                       (Microsoft.CodeAnalysis.VisualBasic.Syntax.AsNewClauseSyntax c) => c.NewExpression
+                       (SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
+                       (AsNewClauseSyntax c) => c.NewExpression
                    )?.Accept(_nodesVisitor) ?? (ExpressionSyntax)declarator.Initializer?.Value.Accept(_nodesVisitor);
         }
 
         private (TypeSyntax, ExpressionSyntax) AdjustFromName(TypeSyntax rawType,
-            Microsoft.CodeAnalysis.VisualBasic.Syntax.ModifiedIdentifierSyntax name, ExpressionSyntax initializer)
+            ModifiedIdentifierSyntax name, ExpressionSyntax initializer)
         {
             var type = rawType;
-            if (!SyntaxTokenExtensions.IsKind(name.Nullable, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.None))
+            if (!SyntaxTokenExtensions.IsKind(name.Nullable, SyntaxKind.None))
             {
                 if (type is ArrayTypeSyntax)
                 {
@@ -103,46 +111,46 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             if (value is string s) {
                 valueText = GetStringValueText(s, valueText);
-                return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StringLiteralExpression,
                     SyntaxFactory.Literal(valueText, s));
             }
 
             if (value == null)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NullLiteralExpression);
             if (value is bool)
-                return SyntaxFactory.LiteralExpression((bool)value ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression);
+                return SyntaxFactory.LiteralExpression((bool)value ? Microsoft.CodeAnalysis.CSharp.SyntaxKind.TrueLiteralExpression : Microsoft.CodeAnalysis.CSharp.SyntaxKind.FalseLiteralExpression);
 
             valueText = valueText != null ? ConvertNumericLiteralValueText(valueText, value) : value.ToString();
 
             if (value is byte)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (byte)value));
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (byte)value));
             if (value is sbyte)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (sbyte)value));
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (sbyte)value));
             if (value is short)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (short)value));
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (short)value));
             if (value is ushort)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (ushort)value));
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (ushort)value));
             if (value is int)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (int)value));
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (int)value));
             if (value is uint)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (uint)value));
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (uint)value));
             if (value is long)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (long)value));
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (long)value));
             if (value is ulong)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (ulong)value));
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (ulong)value));
 
             if (value is float)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (float)value));
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (float)value));
             if (value is double) {
                 // Important to use value text, otherwise "10.0" gets coerced to and integer literal of 10 which can change semantics
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (double)value));
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (double)value));
             }
             if (value is decimal) {
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (decimal)value));
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (decimal)value));
             }
 
             if (value is char)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal((char)value));
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal((char)value));
 
 
             throw new ArgumentOutOfRangeException(nameof(value), value, null);
@@ -181,7 +189,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 {"D", "M"},
                 {"R", "D"},
                 {"F", "F"}, // Normalizes casing
-                {"L", "L"}, // Normalizes casing
+                {"L", "L"} // Normalizes casing
             };
             // Be careful not to replace only the "S" in "US" for example
             var longestMatchingReplacement = replacements.Where(t => valueText.EndsWith(t.Key, StringComparison.OrdinalIgnoreCase))
@@ -211,7 +219,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             string text = prefix + id.ValueText;
             var keywordKind = SyntaxFacts.GetKeywordKind(text);
-            if (keywordKind != SyntaxKind.None)
+            if (keywordKind != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None)
                 return SyntaxFactory.Identifier("@" + text);
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
                 var symbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol;
@@ -231,23 +239,23 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public SyntaxTokenList ConvertModifiers(IEnumerable<SyntaxToken> modifiers, SyntaxKindExtensions.TokenContext context = SyntaxKindExtensions.TokenContext.Global)
         {
-            return SyntaxFactory.TokenList((IEnumerable<SyntaxToken>) ConvertModifiersCore(modifiers, context));
+            return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context));
         }
 
         public SyntaxTokenList ConvertModifiers(SyntaxTokenList modifiers, SyntaxKindExtensions.TokenContext context = SyntaxKindExtensions.TokenContext.Global)
         {
-            return SyntaxFactory.TokenList(Enumerable.Where<SyntaxToken>(ConvertModifiersCore(modifiers, context), t => CSharpExtensions.Kind(t) != SyntaxKind.None));
+            return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context).Where(t => CSharpExtensions.Kind(t) != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None));
         }
 
         private SyntaxToken? ConvertModifier(SyntaxToken m, SyntaxKindExtensions.TokenContext context = SyntaxKindExtensions.TokenContext.Global)
         {
-            Microsoft.CodeAnalysis.VisualBasic.SyntaxKind vbSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions.Kind(m);
+            SyntaxKind vbSyntaxKind = VisualBasicExtensions.Kind(m);
             switch (vbSyntaxKind) {
-                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DateKeyword:
+                case SyntaxKind.DateKeyword:
                     return SyntaxFactory.Identifier("DateTime");
             }
-            var token = SyntaxKindExtensions.ConvertToken(vbSyntaxKind, context);
-            return token == SyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));
+            var token = vbSyntaxKind.ConvertToken(context);
+            return token == Microsoft.CodeAnalysis.CSharp.SyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));
         }
 
         private IEnumerable<SyntaxToken> ConvertModifiersCore(IEnumerable<SyntaxToken> modifiers, SyntaxKindExtensions.TokenContext context)
@@ -264,24 +272,24 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (!visibility)
                     yield return VisualBasicDefaultVisibility(context);
             }
-            foreach (var token in modifiers.Where(m => !IgnoreInContext(m, context)).OrderBy(m => SyntaxTokenExtensions.IsKind(m, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.PartialKeyword))) {
+            foreach (var token in modifiers.Where(m => !IgnoreInContext(m, context)).OrderBy(m => SyntaxTokenExtensions.IsKind(m, SyntaxKind.PartialKeyword))) {
                 var m = ConvertModifier(token, context);
                 if (m.HasValue) yield return m.Value;
             }
             if (context == SyntaxKindExtensions.TokenContext.MemberInModule)
-                yield return SyntaxFactory.Token(SyntaxKind.StaticKeyword);
+                yield return SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
         }
 
         private bool IgnoreInContext(SyntaxToken m, SyntaxKindExtensions.TokenContext context)
         {
-            switch (Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions.Kind(m)) {
-                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.OptionalKeyword:
-                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.ByValKeyword:
-                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IteratorKeyword:
-                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DimKeyword:
+            switch (VisualBasicExtensions.Kind(m)) {
+                case SyntaxKind.OptionalKeyword:
+                case SyntaxKind.ByValKeyword:
+                case SyntaxKind.IteratorKeyword:
+                case SyntaxKind.DimKeyword:
                     return true;
-                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.ReadOnlyKeyword:
-                case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.WriteOnlyKeyword:
+                case SyntaxKind.ReadOnlyKeyword:
+                case SyntaxKind.WriteOnlyKeyword:
                     return context == SyntaxKindExtensions.TokenContext.Member;
                 default:
                     return false;
@@ -290,15 +298,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public bool IsConversionOperator(SyntaxToken token)
         {
-            bool isConvOp= token.IsKind(SyntaxKind.ExplicitKeyword, SyntaxKind.ImplicitKeyword)
-                           ||token.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NarrowingKeyword, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.WideningKeyword);
+            bool isConvOp= token.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ExplicitKeyword, Microsoft.CodeAnalysis.CSharp.SyntaxKind.ImplicitKeyword)
+                           ||token.IsKind(SyntaxKind.NarrowingKeyword, SyntaxKind.WideningKeyword);
             return isConvOp;
         }
 
         private bool IsVisibility(SyntaxToken token, SyntaxKindExtensions.TokenContext context)
         {
-            return token.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.PublicKeyword, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.FriendKeyword, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.ProtectedKeyword, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.PrivateKeyword)
-                   || (context == SyntaxKindExtensions.TokenContext.VariableOrConst && SyntaxTokenExtensions.IsKind(token, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.ConstKeyword));
+            return token.IsKind(SyntaxKind.PublicKeyword, SyntaxKind.FriendKeyword, SyntaxKind.ProtectedKeyword, SyntaxKind.PrivateKeyword)
+                   || (context == SyntaxKindExtensions.TokenContext.VariableOrConst && SyntaxTokenExtensions.IsKind(token, SyntaxKind.ConstKeyword));
         }
 
         private SyntaxToken VisualBasicDefaultVisibility(SyntaxKindExtensions.TokenContext context)
@@ -306,23 +314,23 @@ namespace ICSharpCode.CodeConverter.CSharp
             switch (context) {
                 case SyntaxKindExtensions.TokenContext.Global:
                 case SyntaxKindExtensions.TokenContext.InterfaceOrModule:
-                    return SyntaxFactory.Token(SyntaxKind.InternalKeyword);
+                    return SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.InternalKeyword);
                 case SyntaxKindExtensions.TokenContext.Member:
                 case SyntaxKindExtensions.TokenContext.MemberInModule:
                 case SyntaxKindExtensions.TokenContext.MemberInClass:
                 case SyntaxKindExtensions.TokenContext.MemberInInterface:
                 case SyntaxKindExtensions.TokenContext.MemberInStruct:
-                    return SyntaxFactory.Token(SyntaxKind.PublicKeyword);
+                    return SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PublicKeyword);
                 case SyntaxKindExtensions.TokenContext.Local:
                 case SyntaxKindExtensions.TokenContext.VariableOrConst:
-                    return SyntaxFactory.Token(SyntaxKind.PrivateKeyword);
+                    return SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword);
             }
             throw new ArgumentOutOfRangeException(nameof(context), context, "Specified argument was out of the range of valid values.");
         }
 
         internal SyntaxList<ArrayRankSpecifierSyntax> ConvertArrayRankSpecifierSyntaxes(
             SyntaxList<Microsoft.CodeAnalysis.VisualBasic.Syntax.ArrayRankSpecifierSyntax> arrayRankSpecifierSyntaxs,
-            Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
+            ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
         {
             var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax)r.Accept(_nodesVisitor)));
 
@@ -342,20 +350,20 @@ namespace ICSharpCode.CodeConverter.CSharp
             return bounds;
         }
 
-        public IEnumerable<ExpressionSyntax> ConvertArrayBounds(Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax argumentListSyntax)
+        public IEnumerable<ExpressionSyntax> ConvertArrayBounds(ArgumentListSyntax argumentListSyntax)
         {
-            return argumentListSyntax.Arguments.Select(a => IncreaseArrayUpperBoundExpression(((Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleArgumentSyntax)a).Expression));
+            return argumentListSyntax.Arguments.Select(a => IncreaseArrayUpperBoundExpression(((SimpleArgumentSyntax)a).Expression));
         }
 
         private ExpressionSyntax IncreaseArrayUpperBoundExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax expr)
         {
             var constant = _semanticModel.GetConstantValue(expr);
             if (constant.HasValue && constant.Value is int)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((int)constant.Value + 1));
+                return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((int)constant.Value + 1));
 
             return SyntaxFactory.BinaryExpression(
-                SyntaxKind.SubtractExpression,
-                (ExpressionSyntax)expr.Accept(_nodesVisitor), SyntaxFactory.Token(SyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+                Microsoft.CodeAnalysis.CSharp.SyntaxKind.SubtractExpression,
+                (ExpressionSyntax)expr.Accept(_nodesVisitor), SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
         }
     }
 }
