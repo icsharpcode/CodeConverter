@@ -215,9 +215,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             // Octal or something unknown that can't be represented with C# literals
             return value.ToString();
         }
-        static SyntaxToken ConvertIdentifier(SyntaxToken id, SemanticModel semanticModel, bool isAttribute = false)
+        static SyntaxToken ConvertIdentifier(SyntaxToken id, SemanticModel semanticModel, bool isAttribute = false, string prefix = "")
         {
-            string text = id.ValueText;
+            string text = prefix + id.ValueText;
             var keywordKind = SyntaxFacts.GetKeywordKind(text);
             if (keywordKind != SyntaxKind.None)
                 return SyntaxFactory.Identifier("@" + text);
