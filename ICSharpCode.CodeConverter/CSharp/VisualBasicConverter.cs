@@ -31,7 +31,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             return tree.GetRoot().Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
         }
 
-        static Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(VBSyntax.VariableDeclaratorSyntax declarator, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, SemanticModel semanticModel)
+        static Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(
+            VBSyntax.VariableDeclaratorSyntax declarator,
+            VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, SemanticModel semanticModel,
+            bool isWithEvents = false)
         {
             var rawType = ConvertDeclaratorType(nodesVisitor, declarator);
             var initializer = ConvertInitializer(nodesVisitor, declarator);
