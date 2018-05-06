@@ -25,12 +25,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             public bool IsIterator { get; set; }
             public VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CommentConvertingVisitor { get; }
 
+            private CommonConversions CommonConversions { get; }
+
             public MethodBodyVisitor(SemanticModel semanticModel, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, Stack<string> withBlockTempVariableNames, TriviaConverter triviaConverter)
             {
                 this._semanticModel = semanticModel;
                 this._nodesVisitor = nodesVisitor;
                 this._withBlockTempVariableNames = withBlockTempVariableNames;
                 CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
+                CommonConversions = new CommonConversions(semanticModel);
             }
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
@@ -63,7 +66,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var declarations = new List<LocalDeclarationStatementSyntax>();
 
                 foreach (var declarator in node.Declarators)
-                    foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator, _nodesVisitor, _semanticModel))
+                    foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator, _nodesVisitor))
                         declarations.Add(SyntaxFactory.LocalDeclarationStatement(modifiers, decl.Value));
 
                 return SyntaxFactory.List<StatementSyntax>(declarations);
@@ -137,7 +140,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 bool preserve = node.Parent is VBSyntax.ReDimStatementSyntax rdss && rdss.PreserveKeyword.IsKind(VBasic.SyntaxKind.PreserveKeyword);
                 
                 var csTargetArrayExpression = (ExpressionSyntax) node.Expression.Accept(_nodesVisitor);
-                var convertedBounds = CommonConversions.ConvertArrayBounds(node.ArrayBounds, _semanticModel, _nodesVisitor).ToList();
+                var convertedBounds = CommonConversions.ConvertArrayBounds(node.ArrayBounds, _nodesVisitor).ToList();
 
                 var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds, node.SpanStart);
                 if (!preserve) return SingleStatement(newArrayAssignment);
@@ -204,7 +207,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return CreateForZeroToValueLoop(loopVariableIdentifier, arrayCopy, sourceArrayCount);
             }
 
-            private static ForStatementSyntax CreateForZeroToValueLoop(SimpleNameSyntax loopVariableIdentifier, StatementSyntax loopStatement, ExpressionSyntax inclusiveLoopUpperBound)
+            private ForStatementSyntax CreateForZeroToValueLoop(SimpleNameSyntax loopVariableIdentifier, StatementSyntax loopStatement, ExpressionSyntax inclusiveLoopUpperBound)
             {
                 var loopVariableAssignment = CreateVariableDeclarationAndAssignment(loopVariableIdentifier.Identifier.Text, CommonConversions.Literal(0));
                 var lessThanSourceBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression,
@@ -373,7 +376,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 ExpressionSyntax id;
                 if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                     var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
-                    declaration = CommonConversions.SplitVariableDeclarations(v, _nodesVisitor, _semanticModel).Values.Single();
+                    declaration = CommonConversions.SplitVariableDeclarations(v, _nodesVisitor).Values.Single();
                     declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(declaration.Variables[0].WithInitializer(SyntaxFactory.EqualsValueClause(startValue))));
                     id = SyntaxFactory.IdentifierName(declaration.Variables[0].Identifier);
                 } else {
@@ -419,7 +422,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxToken id;
                 if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                     var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
-                    var declaration = CommonConversions.SplitVariableDeclarations(v, _nodesVisitor, _semanticModel).Values.Single();
+                    var declaration = CommonConversions.SplitVariableDeclarations(v, _nodesVisitor).Values.Single();
                     type = declaration.Type;
                     id = declaration.Variables[0].Identifier;
                 } else {
@@ -566,7 +569,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (node.UsingStatement.Expression == null) {
                     StatementSyntax stmt = statementSyntax;
                     foreach (var v in node.UsingStatement.Variables.Reverse())
-                        foreach (var declaration in CommonConversions.SplitVariableDeclarations(v, _nodesVisitor, _semanticModel).Values.Reverse())
+                        foreach (var declaration in CommonConversions.SplitVariableDeclarations(v, _nodesVisitor).Values.Reverse())
                             stmt = SyntaxFactory.UsingStatement(declaration, null, stmt);
                     return SingleStatement(stmt);
                 }
