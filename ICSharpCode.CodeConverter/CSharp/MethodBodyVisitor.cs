@@ -25,12 +25,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             public bool IsIterator { get; set; }
             public VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CommentConvertingVisitor { get; }
 
+            private CommonConversions CommonConversions { get; }
+
             public MethodBodyVisitor(SemanticModel semanticModel, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, Stack<string> withBlockTempVariableNames, TriviaConverter triviaConverter)
             {
                 this._semanticModel = semanticModel;
                 this._nodesVisitor = nodesVisitor;
                 this._withBlockTempVariableNames = withBlockTempVariableNames;
                 CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
+                CommonConversions = new CommonConversions(semanticModel, _nodesVisitor);
             }
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
@@ -58,12 +61,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> VisitLocalDeclarationStatement(VBSyntax.LocalDeclarationStatementSyntax node)
             {
-                var modifiers = VisualBasicConverter.ConvertModifiers(node.Modifiers, TokenContext.Local);
+                var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Local);
 
                 var declarations = new List<LocalDeclarationStatementSyntax>();
 
                 foreach (var declarator in node.Declarators)
-                    foreach (var decl in VisualBasicConverter.SplitVariableDeclarations(declarator, _nodesVisitor, _semanticModel))
+                    foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator))
                         declarations.Add(SyntaxFactory.LocalDeclarationStatement(modifiers, decl.Value));
 
                 return SyntaxFactory.List<StatementSyntax>(declarations);
@@ -137,7 +140,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 bool preserve = node.Parent is VBSyntax.ReDimStatementSyntax rdss && rdss.PreserveKeyword.IsKind(VBasic.SyntaxKind.PreserveKeyword);
                 
                 var csTargetArrayExpression = (ExpressionSyntax) node.Expression.Accept(_nodesVisitor);
-                var convertedBounds = ConvertArrayBounds(node.ArrayBounds, _semanticModel, _nodesVisitor).ToList();
+                var convertedBounds = CommonConversions.ConvertArrayBounds(node.ArrayBounds).ToList();
 
                 var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds, node.SpanStart);
                 if (!preserve) return SingleStatement(newArrayAssignment);
@@ -180,7 +183,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 MemberAccessExpressionSyntax sourceLength,
                 ExpressionSyntax targetArrayExpression, ICollection convertedBounds)
             {
-                var lastSourceLengthArgs = ExpressionSyntaxExtensions.CreateArgList(Literal(convertedBounds.Count - 1));
+                var lastSourceLengthArgs = ExpressionSyntaxExtensions.CreateArgList(CommonConversions.Literal(convertedBounds.Count - 1));
                 var sourceLastRankLength = SyntaxFactory.InvocationExpression(
                     SyntaxFactory.ParseExpression($"{sourceArrayExpression.Identifier}.GetLength"), lastSourceLengthArgs);
                 var targetLastRankLength =
@@ -199,15 +202,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                     targetStartForThisIteration, length);
 
                 var sourceArrayCount = SyntaxFactory.BinaryExpression(SyntaxKind.SubtractExpression,
-                    SyntaxFactory.BinaryExpression(SyntaxKind.DivideExpression, sourceLength, sourceLastRankLength),
-                    Literal(1));
+                    SyntaxFactory.BinaryExpression(SyntaxKind.DivideExpression, sourceLength, sourceLastRankLength), CommonConversions.Literal(1));
 
                 return CreateForZeroToValueLoop(loopVariableIdentifier, arrayCopy, sourceArrayCount);
             }
 
-            private static ForStatementSyntax CreateForZeroToValueLoop(SimpleNameSyntax loopVariableIdentifier, StatementSyntax loopStatement, ExpressionSyntax inclusiveLoopUpperBound)
+            private ForStatementSyntax CreateForZeroToValueLoop(SimpleNameSyntax loopVariableIdentifier, StatementSyntax loopStatement, ExpressionSyntax inclusiveLoopUpperBound)
             {
-                var loopVariableAssignment = CreateVariableDeclarationAndAssignment(loopVariableIdentifier.Identifier.Text, Literal(0));
+                var loopVariableAssignment = CreateVariableDeclarationAndAssignment(loopVariableIdentifier.Identifier.Text, CommonConversions.Literal(0));
                 var lessThanSourceBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression,
                     loopVariableIdentifier, inclusiveLoopUpperBound);
                 var incrementors = SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(
@@ -374,7 +376,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 ExpressionSyntax id;
                 if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                     var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
-                    declaration = VisualBasicConverter.SplitVariableDeclarations(v, _nodesVisitor, _semanticModel).Values.Single();
+                    declaration = CommonConversions.SplitVariableDeclarations(v).Values.Single();
                     declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(declaration.Variables[0].WithInitializer(SyntaxFactory.EqualsValueClause(startValue))));
                     id = SyntaxFactory.IdentifierName(declaration.Variables[0].Identifier);
                 } else {
@@ -420,7 +422,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxToken id;
                 if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                     var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
-                    var declaration = VisualBasicConverter.SplitVariableDeclarations(v, _nodesVisitor, _semanticModel).Values.Single();
+                    var declaration = CommonConversions.SplitVariableDeclarations(v).Values.Single();
                     type = declaration.Type;
                     id = declaration.Variables[0].Identifier;
                 } else {
@@ -567,7 +569,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (node.UsingStatement.Expression == null) {
                     StatementSyntax stmt = statementSyntax;
                     foreach (var v in node.UsingStatement.Variables.Reverse())
-                        foreach (var declaration in VisualBasicConverter.SplitVariableDeclarations(v, _nodesVisitor, _semanticModel).Values.Reverse())
+                        foreach (var declaration in CommonConversions.SplitVariableDeclarations(v).Values.Reverse())
                             stmt = SyntaxFactory.UsingStatement(declaration, null, stmt);
                     return SingleStatement(stmt);
                 }
@@ -633,22 +635,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxList<StatementSyntax> SingleStatement(ExpressionSyntax expression)
             {
                 return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ExpressionStatement(expression));
-            }
-
-            public static IEnumerable<ExpressionSyntax> ConvertArrayBounds(VBSyntax.ArgumentListSyntax argumentListSyntax, SemanticModel model, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> commentConvertingNodesVisitor)
-            {
-                return argumentListSyntax.Arguments.Select(a => IncreaseArrayUpperBoundExpression(((VBSyntax.SimpleArgumentSyntax)a).Expression, model, commentConvertingNodesVisitor));
-            }
-
-            private static ExpressionSyntax IncreaseArrayUpperBoundExpression(VBSyntax.ExpressionSyntax expr, SemanticModel model, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> commentConvertingNodesVisitor)
-            {
-                var constant = model.GetConstantValue(expr);
-                if (constant.HasValue && constant.Value is int)
-                    return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((int)constant.Value + 1));
-
-                return SyntaxFactory.BinaryExpression(
-                    SyntaxKind.SubtractExpression,
-                    (ExpressionSyntax)expr.Accept(commentConvertingNodesVisitor), SyntaxFactory.Token(SyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
             }
         }
     }

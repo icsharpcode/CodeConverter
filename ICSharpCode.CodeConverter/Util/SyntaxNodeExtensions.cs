@@ -576,7 +576,7 @@ namespace ICSharpCode.CodeConverter.Util
                 m => m.GetModifiers().Any(SyntaxKind.UnsafeKeyword));
         }
 
-        public static bool IsInStaticContext(this SyntaxNode node)
+        public static bool IsInStaticCsContext(this SyntaxNode node)
         {
             // this/base calls are always static.
             if (node.FirstAncestorOrSelf<ConstructorInitializerSyntax>() != null) {
