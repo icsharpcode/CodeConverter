@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
@@ -29,20 +28,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CSharpCompilation CreateCompilation(List<SyntaxTree> csTrees)
         {
-            var references = _sourceCompilation.References.Select(ConvertReference);
+            var references = _sourceCompilation.References.Select(ReferenceConverter.ConvertReference);
             return CSharpCompilation.Create("Conversion", csTrees, references,
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-        }
-
-        private MetadataReference ConvertReference(MetadataReference nonLanguageSpecificRef)
-        {
-            if (!(nonLanguageSpecificRef is CompilationReference cr)) return nonLanguageSpecificRef;
-
-            using (var stream = new MemoryStream())
-            {
-                cr.Compilation.Emit(stream);
-                return MetadataReference.CreateFromStream(stream);
-            }
         }
 
         public SyntaxTree SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)

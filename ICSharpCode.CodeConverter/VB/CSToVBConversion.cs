@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
@@ -6,19 +8,33 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 using CSSyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.VB
 {
     public class CSToVBConversion : ILanguageConversion
     {
+        private readonly List<SyntaxTree> _firstPassResults = new List<SyntaxTree>();
+        private Compilation _sourceCompilation;
+
+        private VisualBasicCompilation CreateCompilation(List<SyntaxTree> vbTrees)
+        {
+            var references = _sourceCompilation.References.Select(ReferenceConverter.ConvertReference);
+            return VisualBasicCompilation.Create("Conversion", vbTrees, references,
+                new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        }
+
         public SyntaxTree SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)
         {
+            _sourceCompilation = sourceCompilation;
             var converted = CSharpConverter.ConvertCompilationTree((CSharpCompilation)sourceCompilation, (CSharpSyntaxTree)tree);
             var convertedTree = VBSyntaxFactory.SyntaxTree(converted);
+            _firstPassResults.Add(convertedTree);
             return convertedTree;
         }
 
@@ -99,7 +115,18 @@ namespace ICSharpCode.CodeConverter.VB
 
         public string GetWarningsOrNull()
         {
-            return null;
+            var finalCompilation = CreateCompilation(_firstPassResults);
+            var targetErrors = GetDiagnostics(finalCompilation);
+            return targetErrors.Any() ? $"{targetErrors.Count} resulting compilation errors:{Environment.NewLine}{string.Join(Environment.NewLine, targetErrors)}" : null;
+        }
+
+        private static List<string> GetDiagnostics(Compilation compilation)
+        {
+            var diagnostics = compilation.GetDiagnostics()
+                .Where(d => d.Severity == DiagnosticSeverity.Error)
+                .Select(d => $"{d.Id}: {d.GetMessage()}")
+                .ToList();
+            return diagnostics;
         }
 
         public SyntaxTree CreateTree(string text)
