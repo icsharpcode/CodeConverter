@@ -331,9 +331,10 @@ class TestClass
         }
 
         [Fact]
-        public void TestHandlesWithEvents()
+        public void TestModuleHandlesWithEvents()
         {
-            TestConversionVisualBasicToCSharp(
+            // Too much auto-generated code to auto-test comments
+            TestConversionVisualBasicToCSharpWithoutComments(
 @"Class MyEventClass
     Public Event TestEvent()
 
@@ -429,6 +430,136 @@ static class Module1
     }
 
     public static void PrintTestMessage3()
+    {
+    }
+}");
+        }
+
+        [Fact]
+        public void TestClassHandlesWithEvents()
+        {
+            // Too much auto-generated code to auto-test comments
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Class MyEventClass
+    Public Event TestEvent()
+
+    Sub RaiseEvents()
+        RaiseEvent TestEvent()
+    End Sub
+End Class
+
+Class Class1
+    Shared WithEvents SharedEventClassInstance As New MyEventClass
+    WithEvents NonSharedEventClassInstance As New MyEventClass
+
+    Public Sub New()
+    End Sub
+
+    Public Sub New(num As Integer)
+    End Sub
+
+    Public Sub New(obj As Object)
+        MyClass.New()
+    End Sub
+
+    Shared Sub PrintTestMessage2() Handles SharedEventClassInstance.TestEvent, NonSharedEventClassInstance.TestEvent
+    End Sub
+
+    Sub PrintTestMessage3() Handles NonSharedEventClassInstance.TestEvent
+    End Sub
+End Class", @"using System.Runtime.CompilerServices;
+
+class MyEventClass
+{
+    public event TestEventEventHandler TestEvent;
+
+    public delegate void TestEventEventHandler();
+
+    public void RaiseEvents()
+    {
+        TestEvent?.Invoke();
+    }
+}
+
+class Class1
+{
+    static Class1()
+    {
+        SharedEventClassInstance = new MyEventClass();
+    }
+
+    public Class1(int num)
+    {
+        NonSharedEventClassInstance = new MyEventClass();
+    }
+
+    public Class1()
+    {
+        NonSharedEventClassInstance = new MyEventClass();
+    }
+    private static MyEventClass _SharedEventClassInstance;
+
+    private static MyEventClass SharedEventClassInstance
+    {
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        get
+        {
+            return _SharedEventClassInstance;
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        set
+        {
+            if (_SharedEventClassInstance != null)
+            {
+                _SharedEventClassInstance.TestEvent -= PrintTestMessage2;
+            }
+
+            _SharedEventClassInstance = value;
+            if (_SharedEventClassInstance != null)
+            {
+                _SharedEventClassInstance.TestEvent += PrintTestMessage2;
+            }
+        }
+    }
+
+    private MyEventClass _NonSharedEventClassInstance;
+
+    private MyEventClass NonSharedEventClassInstance
+    {
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        get
+        {
+            return _NonSharedEventClassInstance;
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        set
+        {
+            if (_NonSharedEventClassInstance != null)
+            {
+                _NonSharedEventClassInstance.TestEvent -= PrintTestMessage2;
+                _NonSharedEventClassInstance.TestEvent -= PrintTestMessage3;
+            }
+
+            _NonSharedEventClassInstance = value;
+            if (_NonSharedEventClassInstance != null)
+            {
+                _NonSharedEventClassInstance.TestEvent += PrintTestMessage2;
+                _NonSharedEventClassInstance.TestEvent += PrintTestMessage3;
+            }
+        }
+    }
+
+    public Class1(object obj) : this()
+    {
+    }
+
+    public static void PrintTestMessage2()
+    {
+    }
+
+    public void PrintTestMessage3()
     {
     }
 }");
