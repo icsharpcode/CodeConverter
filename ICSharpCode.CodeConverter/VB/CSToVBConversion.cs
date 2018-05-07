@@ -116,17 +116,7 @@ namespace ICSharpCode.CodeConverter.VB
         public string GetWarningsOrNull()
         {
             var finalCompilation = CreateCompilation(_firstPassResults);
-            var targetErrors = GetDiagnostics(finalCompilation);
-            return targetErrors.Any() ? $"{targetErrors.Count} resulting compilation errors:{Environment.NewLine}{string.Join(Environment.NewLine, targetErrors)}" : null;
-        }
-
-        private static List<string> GetDiagnostics(Compilation compilation)
-        {
-            var diagnostics = compilation.GetDiagnostics()
-                .Where(d => d.Severity == DiagnosticSeverity.Error)
-                .Select(d => $"{d.Id}: {d.GetMessage()}")
-                .ToList();
-            return diagnostics;
+            return CompilationWarnings.WarningsForCompilation(_sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(finalCompilation, "target");
         }
 
         public SyntaxTree CreateTree(string text)
