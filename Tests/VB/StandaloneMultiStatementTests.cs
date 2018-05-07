@@ -82,8 +82,8 @@ End Class");
         public void SingleAbstractMethod()
         {
             TestConversionCSharpToVisualBasic(
-@"abstract void abs();",
-@"Private MustOverride Sub abs()");
+@"protected abstract void abs();",
+@"Protected MustOverride Sub abs()");
         }
 
         [Fact]

@@ -119,9 +119,9 @@ End Class", @"class TestClass
         public void TestAbstractMethod()
         {
             TestConversionVisualBasicToCSharp(
-@"Class TestClass
+@"MustInherit Class TestClass
     Public MustOverride Sub TestMethod()
-End Class", @"class TestClass
+End Class", @"abstract class TestClass
 {
     public abstract void TestMethod();
 }");

@@ -89,10 +89,10 @@ End Class");
         public void TestAbstractMethod()
         {
             TestConversionCSharpToVisualBasic(
-                @"class TestClass
+                @"abstract class TestClass
 {
     public abstract void TestMethod();
-}", @"Class TestClass
+}", @"MustInherit Class TestClass
     Public MustOverride Sub TestMethod()
 End Class");
         }
