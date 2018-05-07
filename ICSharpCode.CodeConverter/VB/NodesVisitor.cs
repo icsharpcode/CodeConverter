@@ -447,54 +447,62 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitPropertyDeclaration(CSS.PropertyDeclarationSyntax node)
         {
             var id = CommonConversions.ConvertIdentifier(node.Identifier);
-            ConvertAndSplitAttributes(node.AttributeLists, out var attributes, out var returnAttributes);
-            bool isIterator = false;
-            List<AccessorBlockSyntax> accessors = new List<AccessorBlockSyntax>();
-            var csAccessors = node.AccessorList.Accessors;
-            foreach (var a in csAccessors) {
-                accessors.Add(_commonConversions.ConvertAccessor(a, out var isAIterator));
-                isIterator |= isAIterator;
-            }
             var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Member);
-            if (isIterator) modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.IteratorKeyword));
-            var accessLimitationTokens = GetAccessLimitationTokens(csAccessors);
-            modifiers = modifiers.AddRange(accessLimitationTokens);
-            var stmt = SyntaxFactory.PropertyStatement(
-                attributes,
-                modifiers,
-                id, null,
-                SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)),
-                node.Initializer == null ? null : SyntaxFactory.EqualsValue((ExpressionSyntax) _commonConversions.ConvertTopLevelExpression(node.Initializer.Value)), null
-            );
-
-            if (HasNoAccessorBody(node.AccessorList))
-                return stmt;
-            return SyntaxFactory.PropertyBlock(stmt, SyntaxFactory.List(accessors));
+            var initializer = node.Initializer == null ? null
+                : SyntaxFactory.EqualsValue((ExpressionSyntax)_commonConversions.ConvertTopLevelExpression(node.Initializer.Value));
+            return ConvertPropertyBlock(node, id, modifiers, null, node.ExpressionBody, initializer);
         }
 
         public override VisualBasicSyntaxNode VisitIndexerDeclaration(CSS.IndexerDeclarationSyntax node)
         {
             var id = SyntaxFactory.Identifier("Item");
+            var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Member).Insert(0, SyntaxFactory.Token(SyntaxKind.DefaultKeyword));
+            var parameterListSyntax = (ParameterListSyntax) node.ParameterList?.Accept(TriviaConvertingVisitor);
+            return ConvertPropertyBlock(node, id, modifiers, parameterListSyntax, node.ExpressionBody, null);
+        }
+
+        private VisualBasicSyntaxNode ConvertPropertyBlock(CSS.BasePropertyDeclarationSyntax node,
+            SyntaxToken id, SyntaxTokenList modifiers,
+            ParameterListSyntax parameterListSyntax, CSS.ArrowExpressionClauseSyntax arrowExpressionClauseSyntax,
+            EqualsValueSyntax initializerOrNull)
+        {
             ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
+
             bool isIterator = false;
             List<AccessorBlockSyntax> accessors = new List<AccessorBlockSyntax>();
-            var csAccessors = node.AccessorList.Accessors;
-            foreach (var a in csAccessors) {
-                accessors.Add(_commonConversions.ConvertAccessor(a, out var isAIterator));
-                isIterator |= isAIterator;
+            var hasAccessors = node.AccessorList != null;
+            if (hasAccessors) {
+                var csAccessors = node.AccessorList.Accessors;
+                foreach (var a in csAccessors)
+                {
+                    accessors.Add(_commonConversions.ConvertAccessor(a, out var isAIterator));
+                    isIterator |= isAIterator;
+                }
+
+                var accessLimitationTokens = GetAccessLimitationTokens(csAccessors);
+                modifiers = modifiers.AddRange(accessLimitationTokens);
+                if (isIterator) modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.IteratorKeyword));
             }
-            var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Member).Insert(0, SyntaxFactory.Token(SyntaxKind.DefaultKeyword));
-            if (isIterator) modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.IteratorKeyword));
-            var accessLimitationTokens = GetAccessLimitationTokens(csAccessors);
-            modifiers = modifiers.AddRange(accessLimitationTokens);
-            var parameterList = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor);
+            else {
+                StatementSyntax expressionStatementSyntax =
+                    SyntaxFactory.ReturnStatement(
+                        (ExpressionSyntax) arrowExpressionClauseSyntax.Expression.Accept(TriviaConvertingVisitor));
+                var accessorStatementSyntax = SyntaxFactory.AccessorStatement(SyntaxKind.GetAccessorStatement,
+                    SyntaxFactory.Token(SyntaxKind.GetKeyword));
+                accessors.Add(SyntaxFactory.GetAccessorBlock(accessorStatementSyntax,
+                    SyntaxFactory.SingletonList(expressionStatementSyntax), SyntaxFactory.EndGetStatement()));
+                modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword));
+            }
+
             var stmt = SyntaxFactory.PropertyStatement(
                 attributes,
                 modifiers,
-                id, parameterList,
-                SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)), null, null
+                id, parameterListSyntax,
+                SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax) node.Type.Accept(TriviaConvertingVisitor)),
+                initializerOrNull,
+                null
             );
-            if (HasNoAccessorBody(node.AccessorList))
+            if (hasAccessors && HasNoAccessorBody(node.AccessorList))
                 return stmt;
             return SyntaxFactory.PropertyBlock(stmt, SyntaxFactory.List(accessors));
         }
@@ -511,7 +519,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static bool HasNoAccessorBody(CSS.AccessorListSyntax accessorListSyntaxOrNull)
         {
-            return accessorListSyntaxOrNull?.Accessors.All(a => a.Body == null && a.ExpressionBody == null) == true;
+            return accessorListSyntaxOrNull.Accessors.All(a => a.Body == null && a.ExpressionBody == null);
         }
 
         public override VisualBasicSyntaxNode VisitEventDeclaration(CSS.EventDeclarationSyntax node)

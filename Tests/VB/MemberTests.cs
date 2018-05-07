@@ -270,6 +270,30 @@ End Class");
         }
 
         [Fact]
+        public void TestOmmittedAccessorsReplacedWithExpressionBody()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class MyFavColor  
+{  
+    private string[] favColor => new string[] {""Red"", ""Green""};
+    public string this[int index] => favColor[index];
+}  
+", @"Class MyFavColor
+    Private ReadOnly Property favColor As String()
+        Get
+            Return New String() {""Red"", ""Green""}
+        End Get
+    End Property
+
+    Default Public ReadOnly Property Item(ByVal index As Integer) As String
+        Get
+            Return favColor(index)
+        End Get
+    End Property
+End Class");
+        }
+
+        [Fact]
         public void TestPropertyWithExpressionBodyThatCanBeStatement()
         {
             TestConversionCSharpToVisualBasic(
