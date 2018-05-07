@@ -25,6 +25,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private readonly SemanticModel _semanticModel;
         private readonly VisualBasicSyntaxVisitor<CSharpSyntaxNode> _nodesVisitor;
+        public string WithEventsBackingFieldPrefix { get; } = "_";
 
         public CommonConversions(SemanticModel semanticModel, VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor)
         {
@@ -43,7 +44,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             foreach (var name in declarator.Names) {
                 var (type, adjustedInitializer) = AdjustFromName(rawType, name, initializer);
-                var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier), null, adjustedInitializer == null ? null : SyntaxFactory.EqualsValueClause(adjustedInitializer));
+                var equalsValueClauseSyntax = adjustedInitializer == null ? null : SyntaxFactory.EqualsValueClause(adjustedInitializer);
+                var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier, prefix: isWithEvents ? WithEventsBackingFieldPrefix : ""), null, equalsValueClauseSyntax);
                 string k = type.ToString();
                 if (newDecls.TryGetValue(k, out var decl))
                     newDecls[k] = decl.AddVariables(v);
@@ -364,6 +366,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.BinaryExpression(
                 Microsoft.CodeAnalysis.CSharp.SyntaxKind.SubtractExpression,
                 (ExpressionSyntax)expr.Accept(_nodesVisitor), SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+        }
+
+        public static AttributeArgumentListSyntax CreateAttributeArgumentList(params AttributeArgumentSyntax[] attributeArgumentSyntaxs)
+        {
+            return SyntaxFactory.AttributeArgumentList(SyntaxFactory.SeparatedList(attributeArgumentSyntaxs));
         }
     }
 }
