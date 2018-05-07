@@ -16,7 +16,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var parameterlessConstructors = convertedMembers.OfType<ConstructorDeclarationSyntax>()
                 .Where(cds => !cds.Initializer.IsKind(SyntaxKind.ThisConstructorInitializer))
-                .ToLookup(cds => cds.IsInStaticContext());
+                .ToLookup(cds => cds.IsInStaticCsContext());
 
             convertedMembers = WithAdditionalInitializers(convertedMembers, parameterlessConstructors, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(), false);
             return WithAdditionalInitializers(convertedMembers, parameterlessConstructors, parentTypeName, AdditionalStaticInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword)), true);

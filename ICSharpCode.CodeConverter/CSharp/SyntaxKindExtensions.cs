@@ -11,8 +11,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             Global,
             InterfaceOrModule,
             Local,
-            Member,
-            VariableOrConst,
             MemberInModule,
             MemberInClass,
             MemberInStruct,
