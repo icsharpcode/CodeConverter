@@ -126,7 +126,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
-            return CSharpCompilation.Create("Conversion", new[] { tree }, references);
+            return CSharpCompilation.Create("Conversion", new[] { tree }, references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         }
     }
 }
