@@ -34,8 +34,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(
-            VariableDeclaratorSyntax declarator,
-            bool isWithEvents = false)
+            VariableDeclaratorSyntax declarator)
         {
             var rawType = ConvertDeclaratorType(declarator);
             var initializer = ConvertInitializer(declarator);
@@ -45,7 +44,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             foreach (var name in declarator.Names) {
                 var (type, adjustedInitializer) = AdjustFromName(rawType, name, initializer);
                 var equalsValueClauseSyntax = adjustedInitializer == null ? null : SyntaxFactory.EqualsValueClause(adjustedInitializer);
-                var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier, prefix: isWithEvents ? WithEventsBackingFieldPrefix : ""), null, equalsValueClauseSyntax);
+                var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier), null, equalsValueClauseSyntax);
                 string k = type.ToString();
                 if (newDecls.TryGetValue(k, out var decl))
                     newDecls[k] = decl.AddVariables(v);
@@ -217,9 +216,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return value.ToString();
         }
 
-        public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false, string prefix = "")
+        public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false)
         {
-            string text = prefix + id.ValueText;
+            string text = id.ValueText;
             var keywordKind = SyntaxFacts.GetKeywordKind(text);
             if (keywordKind != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None)
                 return SyntaxFactory.Identifier("@" + text);
@@ -261,7 +260,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (!contextsWithIdenticalDefaults.Contains(context)) {
                 bool visibility = false;
                 foreach (var token in modifiers) {
-                    if (IsVisibility(token, isVariableOrConst)) {
+                    if (SyntaxTokenExtensions.IsVbVisibility(token, isVariableOrConst)) {
                         visibility = true;
                         break;
                     }
@@ -295,12 +294,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool isConvOp= token.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ExplicitKeyword, Microsoft.CodeAnalysis.CSharp.SyntaxKind.ImplicitKeyword)
                            ||token.IsKind(SyntaxKind.NarrowingKeyword, SyntaxKind.WideningKeyword);
             return isConvOp;
-        }
-
-        private bool IsVisibility(SyntaxToken token, bool isVariableOrConst)
-        {
-            return token.IsKind(SyntaxKind.PublicKeyword, SyntaxKind.FriendKeyword, SyntaxKind.ProtectedKeyword, SyntaxKind.PrivateKeyword)
-                   || (isVariableOrConst && SyntaxTokenExtensions.IsKind(token, SyntaxKind.ConstKeyword));
         }
 
         private SyntaxToken VisualBasicDefaultVisibility(SyntaxKindExtensions.TokenContext context, bool isVariableOrConst)

@@ -300,7 +300,7 @@ namespace ICSharpCode.CodeConverter.VB
             if (context != SyntaxKindExtensions.TokenContext.Local && context != SyntaxKindExtensions.TokenContext.InterfaceOrModule) {
                 bool visibility = false;
                 foreach (var token in modifiers) {
-                    if (IsVisibility(token, context)) {
+                    if (token.IsCsVisibility(context == SyntaxKindExtensions.TokenContext.VariableOrConst)) {
                         visibility = true;
                         break;
                     }
@@ -321,12 +321,6 @@ namespace ICSharpCode.CodeConverter.VB
                     return m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PublicKeyword, Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
             }
             return false;
-        }
-
-        private static bool IsVisibility(SyntaxToken token, SyntaxKindExtensions.TokenContext context)
-        {
-            return token.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PublicKeyword, Microsoft.CodeAnalysis.CSharp.SyntaxKind.InternalKeyword, Microsoft.CodeAnalysis.CSharp.SyntaxKind.ProtectedKeyword, Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword)
-                   || (context == SyntaxKindExtensions.TokenContext.VariableOrConst && SyntaxTokenExtensions.IsKind(token, Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword));
         }
 
         private static SyntaxToken CSharpDefaultVisibility(SyntaxKindExtensions.TokenContext context)

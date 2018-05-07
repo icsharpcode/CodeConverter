@@ -361,9 +361,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var declarations = new List<MemberDeclarationSyntax>(node.Declarators.Count);
 
                 foreach (var declarator in node.Declarators) {
-                    foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator, isWithEvents).Values) {
+                    foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator).Values) {
                         if (isWithEvents) {
-                            var initializers = decl.Variables.ToDictionary(v => ProxyPropertyIdFromFieldId(v.Identifier), v => v.Initializer);
+                            var initializers = decl.Variables.ToDictionary(v => v.Identifier.Text, v => v.Initializer);
                             var fieldDecl = decl.RemoveNodes(initializers.Values, SyntaxRemoveOptions.KeepNoTrivia);
                             var initializerCollection = convertedModifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword))
                                 ? _additionalInitializers.AdditionalStaticInitializers
@@ -371,12 +371,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                             foreach (var initializer in initializers) {
                                 initializerCollection.Add(initializer.Key, initializer.Value.Value);
                             }
-                            var baseFieldDeclarationSyntax = SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, fieldDecl);
-                            declarations.Add(baseFieldDeclarationSyntax);
-                            foreach (var variable in fieldDecl.Variables) {
-                                var eventProperty = CreateEventProxyProperty(variable.Identifier, attributes, convertedModifiers, fieldDecl.Type);
-                                declarations.Add(eventProperty);
-                            }
+
+                            var fieldDecls = MethodWithHandles.GetDeclarationsForFieldBackedProperty(fieldDecl,
+                                convertedModifiers, SyntaxFactory.List(attributes), _methodsWithHandles);
+                            declarations.AddRange(fieldDecls);
                         } else {
                             var baseFieldDeclarationSyntax = SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, decl);
                             declarations.Add(baseFieldDeclarationSyntax);
@@ -386,18 +384,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 _additionalDeclarations.Add(node, declarations.Skip(1).ToArray());
                 return declarations.First();
-            }
-
-            private PropertyDeclarationSyntax CreateEventProxyProperty(SyntaxToken fieldIdentifier, IEnumerable<AttributeListSyntax> attributes,
-                SyntaxTokenList convertedModifiers, TypeSyntax typeSyntax)
-            {
-                var propertyIdentifier = ProxyPropertyIdFromFieldId(fieldIdentifier);
-                return MethodWithHandles.CreateEventProxyProperty(propertyIdentifier, attributes, convertedModifiers, typeSyntax, fieldIdentifier, _methodsWithHandles);
-            }
-
-            private string ProxyPropertyIdFromFieldId(SyntaxToken fieldIdentifier)
-            {
-                return fieldIdentifier.Text.Substring(CommonConversions.WithEventsBackingFieldPrefix.Length);
             }
 
             private List<MethodWithHandles> GetMethodWithHandles(VBSyntax.TypeBlockSyntax parentType)
