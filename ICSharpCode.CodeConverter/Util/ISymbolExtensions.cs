@@ -170,14 +170,15 @@ namespace ICSharpCode.CodeConverter.Util
             }
         }
 
-        public static ISymbol ExtractBestMatch(this SymbolInfo info)
+        public static ISymbol ExtractBestMatch(this SymbolInfo info, Func<ISymbol, bool> isMatch = null)
         {
+            isMatch = isMatch ?? (_ => true);
             if (info.Symbol == null && info.CandidateSymbols.Length == 0)
                 return null;
             if (info.Symbol != null)
                 return info.Symbol;
             if (info.CandidateSymbols.Length == 1)
-                return info.CandidateSymbols[0];
+                return info.CandidateSymbols.FirstOrDefault(isMatch);
             return null;
         }
 

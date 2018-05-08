@@ -70,9 +70,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return argumentListSyntax;
             }
 
-            var methodSymbol = _semanticModel.GetSymbolInfo(invocationExpression).CandidateSymbols.OfType<IMethodSymbol>()
-                .FirstOrDefault(s => argumentListSyntax.Arguments.Count == s.Parameters.Length);
-            if (methodSymbol != null)
+            if (_semanticModel.GetSymbolInfo(invocationExpression)
+                .ExtractBestMatch(s => s is IMethodSymbol ims && argumentListSyntax.Arguments.Count == ims.Parameters.Length) is IMethodSymbol methodSymbol)
             {
                 //Won't work for named parameters
                 for (var index = 0;
