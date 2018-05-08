@@ -25,7 +25,6 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private readonly SemanticModel _semanticModel;
         private readonly VisualBasicSyntaxVisitor<CSharpSyntaxNode> _nodesVisitor;
-        public string WithEventsBackingFieldPrefix { get; } = "_";
 
         public CommonConversions(SemanticModel semanticModel, VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor)
         {

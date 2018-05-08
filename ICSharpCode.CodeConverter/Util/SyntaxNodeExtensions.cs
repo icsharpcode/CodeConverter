@@ -858,7 +858,7 @@ namespace ICSharpCode.CodeConverter.Util
                 return SyntaxFactory.SyntaxTrivia(SyntaxKind.SingleLineCommentTrivia, $"// {t.GetCommentText()}");
             if (t.IsKind(VBSyntaxKind.DocumentationCommentTrivia)) {
                 var previousWhitespace = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None).ToString();
-                var commentTextLines = t.GetCommentText().Replace("\r\n", "\r").Split('\r');
+                var commentTextLines = t.GetCommentText().Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
                 var outputCommentText = "/// " + String.Join($"\r\n{previousWhitespace}/// ", commentTextLines) + Environment.NewLine;
                 return SyntaxFactory.SyntaxTrivia(SyntaxKind.SingleLineCommentTrivia, outputCommentText); //It's always single line...even when it has multiple lines
             }
@@ -887,10 +887,10 @@ namespace ICSharpCode.CodeConverter.Util
                 return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.CommentTrivia, $"' {t.GetCommentText()}");
             if (t.IsKind(CSSyntaxKind.SingleLineCommentTrivia)) {
                 var previousWhitespace = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None).ToString();
-                var commentTextLines = t.GetCommentText().Replace("\r\n", "\r").Split('\r');
+                var commentTextLines = t.GetCommentText().Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
                 var multiLine = commentTextLines.Count() > 1;
                 var outputCommentText = multiLine
-                    ? "''' " + String.Join($"\r\n{previousWhitespace}/// ", commentTextLines)
+                    ? "''' " + String.Join($"\r\n{previousWhitespace}''' ", commentTextLines)
                     : $"' {commentTextLines.Single()}";
                 return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.DocumentationCommentTrivia,
                     outputCommentText);
