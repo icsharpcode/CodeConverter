@@ -1,6 +1,27 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
+#5.7.0 - TBC
+* Update to .NET Standard 2.0
+* Convert solution and project files
+* Added convert and copy to clipboard into options
+ 
+### VB -> C#
+* Convert WithEvents/Handles
+* Convert `Handles` and `WithEvents` similarly to the VB compiler
+* Handle expressions in Select Case
+* Ensure all parts of a partial class have the partial modifier
+* Handle missing optional arguments
+* Increase number of default global imports for web conversion
+* Default properties not implemented
+
+### C# -> VB
+* Fix DeclarationExpressions without a type throwing exception
+* Convert Throw Expressions to multi-line lambda function
+* Convert properties with no accessors
+* Fix error converting ObjectCollectionInitializerSyntax within object initializer
+* Escape predefined if they are used for the name of declaration
+
 #5.6.3 - 09/04/2018
 
 * Improve support for sub-class snippets through the website
