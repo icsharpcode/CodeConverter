@@ -13,7 +13,7 @@ All notable changes to the code converter will be documented here.
 * Ensure all parts of a partial class have the partial modifier
 * Handle missing optional arguments
 * Increase number of default global imports for web conversion
-* Default properties not implemented
+* Default properties now converted
 
 ### C# -> VB
 * Fix DeclarationExpressions without a type throwing exception
