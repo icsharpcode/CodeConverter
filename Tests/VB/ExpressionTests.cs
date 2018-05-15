@@ -2,13 +2,12 @@
 
 namespace CodeConverter.Tests.VB
 {
-	public class ExpressionTests : ConverterTestBase
-	{
-		[Fact]
-		public void MultilineString()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+    public class ExpressionTests : ConverterTestBase
+    {
+        [Fact]
+        public void MultilineString()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -21,13 +20,12 @@ World!"";
 World!""
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ConditionalExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ConditionalExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -38,13 +36,111 @@ class TestClass
         Dim result As Boolean = If((str = """"), True, False)
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void NullCoalescingExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
+        [Fact]
+        public void IfIsPatternExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    private static int GetLength(object node)
+    {
+        if (node is string s)
+        {
+            return s.Length;
+        }
+
+        return -1;
+    }
+}", @"Class TestClass
+    Private Shared Function GetLength(ByVal node As Object) As Integer
+        Dim s As String = Nothing
+
+        If CSharpImpl.__Assign(s, TryCast(node, String)) IsNot Nothing Then
+            Return s.Length
+        End If
+
+        Return -1
+    End Function
+
+    Private Class CSharpImpl
+        <Obsolete(""Please refactor calling code to use normal Visual Basic assignment"")>
+        Shared Function __Assign(Of T)(ByRef target As T, value As T) As T
+            target = value
+            Return value
+        End Function
+    End Class
+End Class");
+        }
+
+        [Fact]
+        public void DeclarationExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"using System.Collections.Generic;
+
 class TestClass
+{
+    private static bool Do()
+    {
+        var d = new Dictionary<string, string>();
+        return d.TryGetValue("""", out var output);
+    }
+}", @"Imports System.Collections.Generic
+
+Class TestClass
+    Private Shared Function [Do]() As Boolean
+        Dim d = New Dictionary(Of String, String)()
+        Dim output As string = Nothing" + /* Ideally string would have the first letter uppercased but that's out of scope for this test */ @"
+        Return d.TryGetValue("""", output)
+    End Function
+End Class");
+        }
+
+        [Fact]
+        public void ThrowExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    void TestMethod(string str)
+    {
+        bool result = (str == """") ? throw new Exception(""empty"") : false;
+    }
+}", @"Class TestClass
+    Private Sub TestMethod(ByVal str As String)
+        Dim result As Boolean = If((str = """"), CSharpImpl.__Throw(Of System.Boolean)(New Exception(""empty"")), False)
+    End Sub
+
+    Private Class CSharpImpl
+        <Obsolete(""Please refactor calling code to use normal throw statements"")>
+        Shared Function __Throw(Of T)(ByVal e As Exception) As T
+            Throw e
+        End Function
+    End Class
+End Class");
+        }
+
+        [Fact]
+        public void NameOf()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    private string n = nameof(TestMethod);
+
+    private void TestMethod()
+    {
+    }
+}", @"Class TestClass
+    Private n As String = NameOf(TestMethod)
+
+    Private Sub TestMethod()
+    End Sub
+End Class");
+        }
+
+        [Fact]
+        public void NullCoalescingExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -55,13 +151,12 @@ class TestClass
         Console.WriteLine(If(str, ""<null>""))
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void MemberAccessAndInvocationExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void MemberAccessAndInvocationExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -78,13 +173,12 @@ class TestClass
         Console.ReadKey()
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ElvisOperatorExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ElvisOperatorExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -101,12 +195,12 @@ class TestClass
         Dim redirectUri As String = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri
     End Sub
 End Class");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void ObjectInitializerExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
+        [Fact]
+        public void ObjectInitializerExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"
 class StudentName
 {
     public string LastName, FirstName;
@@ -116,8 +210,7 @@ class TestClass
 {
     void TestMethod(string str)
     {
-        StudentName student2 = new StudentName
-        {
+        StudentName student2 = new StudentName {
             FirstName = ""Craig"",
             LastName = ""Playstead"",
         };
@@ -128,16 +221,18 @@ End Class
 
 Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim student2 As StudentName = New StudentName With {.FirstName = ""Craig"", .LastName = ""Playstead""}
+        Dim student2 As StudentName = New StudentName With {
+            .FirstName = ""Craig"",
+            .LastName = ""Playstead""
+        }
     End Sub
 End Class");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void ObjectInitializerExpression2()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ObjectInitializerExpression2()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -148,16 +243,47 @@ class TestClass
     }
 }", @"Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim student2 = New With {Key .FirstName = ""Craig"", Key .LastName = ""Playstead""}
+        Dim student2 = New With {Key
+            .FirstName = ""Craig"", Key
+            .LastName = ""Playstead""
+        }
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ThisMemberAccessExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ObjectInitializerExpression3()
+        {
+            TestConversionCSharpToVisualBasic(@"using System.Collections.Generic;
+
+internal class SomeSettings
+{
+    public IList<object> Converters { get; set; }
+}
+
+internal class Converter
+{
+    public static readonly SomeSettings Settings = new SomeSettings
+    {
+        Converters = {},
+    };
+}", @"Imports System.Collections.Generic
+
+Friend Class SomeSettings
+    Public Property Converters As IList(Of Object)
+End Class
+
+Friend Class Converter
+    Public Shared ReadOnly Settings As SomeSettings = New SomeSettings With {
+        .Converters = {}
+    }
+End Class");
+        }
+
+        [Fact]
+        public void ThisMemberAccessExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     private int member;
 
@@ -172,13 +298,12 @@ class TestClass
         Me.member = 0
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void BaseMemberAccessExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class BaseTestClass
+        [Fact]
+        public void BaseMemberAccessExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"class BaseTestClass
 {
     public int member;
 }
@@ -200,14 +325,16 @@ Class TestClass
         MyBase.member = 0
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void DelegateExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass 
+        [Fact]
+        public void DelegateExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass 
 {
+
+    private static Action<int> m_Event1 = delegate { };
+
     void TestMethod()
     {
         var test = delegate(int a) { return a * 2 };
@@ -215,18 +342,20 @@ class TestClass
         test(3);
     }
 }", @"Class TestClass
+    Private Shared m_Event1 As Action(Of Integer) = Function()
+                                                    End Function
+
     Private Sub TestMethod()
         Dim test = Function(ByVal a As Integer) a * 2
         test(3)
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void LambdaBodyExpression()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass 
+        [Fact]
+        public void LambdaBodyExpression()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass 
 {
     void TestMethod()
     {
@@ -248,13 +377,12 @@ class TestClass
         test(3)
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void Await()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass 
+        [Fact]
+        public void Await()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass 
 {
     Task<int> SomeAsyncMethod()
     {
@@ -276,12 +404,12 @@ class TestClass
         Console.WriteLine(result)
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void Linq1()
-		{
-			TestConversionCSharpToVisualBasic(@"static void SimpleQuery()
+        [Fact]
+        public void Linq1()
+        {
+            TestConversionCSharpToVisualBasic(@"static void SimpleQuery()
 {
     int[] numbers = { 7, 9, 5, 3, 6 };
  
@@ -300,19 +428,22 @@ End Class");
         Console.WriteLine(n)
     Next
 End Sub");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void Linq2()
-		{
-			TestConversionCSharpToVisualBasic(@"public static void Linq40() 
+        [Fact]
+        public void Linq2()
+        {
+            TestConversionCSharpToVisualBasic(@"public static void Linq40() 
     { 
         int[] numbers = { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 }; 
       
         var numberGroups = 
             from n in numbers 
             group n by n % 5 into g 
-            select new { Remainder = g.Key, Numbers = g }; 
+            select new { 
+                Remainder = g.Key,
+                Numbers = g
+            }; 
       
         foreach (var g in numberGroups) 
         { 
@@ -325,7 +456,10 @@ End Sub");
     }",
 @"Public Shared Sub Linq40()
     Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
-    Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g Select New With {Key .Remainder = g.Key, Key .Numbers = g}
+    Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g Select New With {Key
+        .Remainder = g.Key, Key
+        .Numbers = g
+    }
 
     For Each g In numberGroups
         Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"")
@@ -335,12 +469,12 @@ End Sub");
         Next
     Next
 End Sub");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void Linq3()
-		{
-			TestConversionCSharpToVisualBasic(@"class Product {
+        [Fact]
+        public void Linq3()
+        {
+            TestConversionCSharpToVisualBasic(@"class Product {
     public string Category;
     public string ProductName;
 }
@@ -360,7 +494,9 @@ class Test {
             var q =
                 from c in categories
                 join p in products on c equals p.Category
-                select new { Category = c, p.ProductName }; 
+                select new {
+                    Category = c, p.ProductName
+                }; 
  
         foreach (var v in q) 
         { 
@@ -377,19 +513,21 @@ Class Test
     Public Sub Linq102()
         Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
         Dim products As Product() = GetProductList()
-        Dim q = From c In categories Join p In products On c Equals p.Category Select New With {Key .Category = c, p.ProductName}
+        Dim q = From c In categories Join p In products On c Equals p.Category Select New With {Key
+            .Category = c, p.ProductName
+        }
 
         For Each v In q
             Console.WriteLine($""{v.ProductName}: {v.Category}"")
         Next
     End Sub
 End Class");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void Linq4()
-		{
-			TestConversionCSharpToVisualBasic(@"public void Linq103() 
+        [Fact]
+        public void Linq4()
+        {
+            TestConversionCSharpToVisualBasic(@"public void Linq103() 
 { 
     string[] categories = new string[]{  
         ""Beverages"",  
@@ -403,7 +541,10 @@ End Class");
         var q =
             from c in categories
             join p in products on c equals p.Category into ps
-            select new { Category = c, Products = ps }; 
+            select new {
+                Category = c,
+                Products = ps
+            }; 
   
     foreach (var v in q) 
     { 
@@ -416,7 +557,10 @@ End Class");
 }", @"Public Sub Linq103()
     Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
     Dim products = GetProductList()
-    Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {Key .Category = c, Key .Products = ps}
+    Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {Key
+        .Category = c, Key
+        .Products = ps
+    }
 
     For Each v In q
         Console.WriteLine(v.Category & "":"")
@@ -426,6 +570,6 @@ End Class");
         Next
     Next
 End Sub");
-		}
-	}
+        }
+    }
 }

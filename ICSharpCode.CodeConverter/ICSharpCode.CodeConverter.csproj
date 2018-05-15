@@ -1,23 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>ICSharpCode.CodeConverter</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter</RootNamespace>
-    <PackageTargetFallback>portable-net45+win8</PackageTargetFallback>
     <Company>ICSharpCode</Company>
-    <Description>This Roslyn-based code converter was previously part of Refactoring Essentials. It has been teased out to be able to evolve separately and faster than the analyzers/refactorings. Conversion from C# to VB.NET, as well as from VB.NET to C# are included.</Description>
+    <Description>Convert VB.NET to/from C#
+	
+	* Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
+	* Actively developed: User feedback helps us continuously strive for a more accurate conversion.
+	* Completely free and open source: Check out [GitHub](https://github.com/icsharpcode/CodeConverter#code-converter-).</Description>
     <Product>Code Converter for C# to/from VB.NET</Product>
-    <Copyright>Copyright (c) 2014-2017 AlphaSierraPapa</Copyright>
-    <AssemblyVersion>5.5.0.0</AssemblyVersion>
-    <FileVersion>5.5.0.0</FileVersion>
-    <Version>5.5.0</Version>
+    <Copyright>Copyright (c) 2014-2018 AlphaSierraPapa</Copyright>
+    <AssemblyVersion>5.7.0.0</AssemblyVersion>
+    <FileVersion>5.7.0.0</FileVersion>
+    <Version>5.7.0</Version>
     <PackageId>ICSharpCode.CodeConverter</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseUrl>https://github.com/icsharpcode/CodeConverter/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/icsharpcode/CodeConverter/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/icsharpcode/CodeConverter/</RepositoryUrl>
-    <PackageTags>Convert C# VB.NET Roslyn</PackageTags>
-    <PackageReleaseNotes>First standalone release of the Code Converter. Version increases from the joint Refactoring Essentials version number</PackageReleaseNotes>
+    <PackageTags>Convert Converter Conversion C# CSharp CS VB VB.NET Visual Basic Code Free Roslyn Tool</PackageTags>
+    <PackageReleaseNotes>See https://github.com/icsharpcode/CodeConverter/blob/master/CHANGELOG.md</PackageReleaseNotes>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DefineConstants>TRACE;DEBUG;NETSTANDARD1_3;NETSTANDARD1_3</DefineConstants>
@@ -30,6 +33,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="2.6.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="2.6.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="2.6.1" />
+    <PackageReference Include="Microsoft.VisualBasic" Version="10.2.0" />
   </ItemGroup>
   <!-- The InternalVisibleTo fails when building with signing -->
   <ItemGroup Condition="'$(SignAssembly)'=='True'">

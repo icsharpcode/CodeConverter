@@ -1,14 +1,17 @@
-﻿using Xunit;
+﻿using ICSharpCode.CodeConverter;
+using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.VB;
+using Microsoft.CodeAnalysis;
+using Xunit;
 
 namespace CodeConverter.Tests.VB
 {
-	public class StatementTests : ConverterTestBase
-	{
-		[Fact]
-		public void EmptyStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+    public class StatementTests : ConverterTestBase
+    {
+        [Fact]
+        public void EmptyStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -16,6 +19,7 @@ class TestClass
         while (true) ;
         for (;;) ;
         do ; while (true);
+        ;
     }
 }", @"Class TestClass
     Private Sub TestMethod()
@@ -32,13 +36,12 @@ class TestClass
         Loop While True
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void AssignmentStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void AssignmentStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -51,13 +54,12 @@ class TestClass
         b = 0
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void AssignmentStatementInDeclaration()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void AssignmentStatementInDeclaration()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -68,13 +70,12 @@ class TestClass
         Dim b As Integer = 0
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void AssignmentStatementInVarDeclaration()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void AssignmentStatementInVarDeclaration()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -85,13 +86,12 @@ class TestClass
         Dim b = 0
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ObjectInitializationStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ObjectInitializationStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -104,13 +104,12 @@ class TestClass
         b = New String(""test"")
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ObjectInitializationStatementInDeclaration()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ObjectInitializationStatementInDeclaration()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -121,13 +120,12 @@ class TestClass
         Dim b As String = New String(""test"")
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ObjectInitializationStatementInVarDeclaration()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ObjectInitializationStatementInVarDeclaration()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -138,13 +136,12 @@ class TestClass
         Dim b = New String(""test"")
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ArrayDeclarationStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ArrayDeclarationStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -155,13 +152,12 @@ class TestClass
         Dim b As Integer()
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ArrayInitializationStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ArrayInitializationStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -172,13 +168,12 @@ class TestClass
         Dim b As Integer() = {1, 2, 3}
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ArrayInitializationStatementInVarDeclaration()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ArrayInitializationStatementInVarDeclaration()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -189,13 +184,12 @@ class TestClass
         Dim b = {1, 2, 3}
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ArrayInitializationStatementWithType()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ArrayInitializationStatementWithType()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -206,13 +200,12 @@ class TestClass
         Dim b As Integer() = New Integer() {1, 2, 3}
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ArrayInitializationStatementWithLength()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ArrayInitializationStatementWithLength()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -223,13 +216,12 @@ class TestClass
         Dim b As Integer() = New Integer(2) {1, 2, 3}
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void MultidimensionalArrayDeclarationStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void MultidimensionalArrayDeclarationStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -240,64 +232,75 @@ class TestClass
         Dim b As Integer(,)
     End Sub
 End Class");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void MultidimensionalArrayInitializationStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void MultidimensionalArrayInitializationStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
-        int[,] b = { { 1, 2 }, { 3, 4 } };
+        int[,] b = {
+            {1, 2},
+            {3, 4}
+        };
     }
 }", @"Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer(,) = {{1, 2}, {3, 4}}
+        Dim b As Integer(,) = {
+        {1, 2},
+        {3, 4}}
     End Sub
 End Class");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void MultidimensionalArrayInitializationStatementWithType()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void MultidimensionalArrayInitializationStatementWithType()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
-        int[,] b = new int[,] { { 1, 2 }, { 3, 4 } };
+        int[,] b = new int[,] {
+            {1, 2},
+            {3, 4}
+        };
     }
 }", @"Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer(,) = New Integer(,) {{1, 2}, {3, 4}}
+        Dim b As Integer(,) = New Integer(,) {
+        {1, 2},
+        {3, 4}}
     End Sub
 End Class");
-		}
+        }
 
-		[Fact(Skip = "Not implemented!")]
-		public void MultidimensionalArrayInitializationStatementWithLengths()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void MultidimensionalArrayInitializationStatementWithLengths()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
-        int[,] b = new int[2, 2] { { 1, 2 }, { 3, 4 } };
+        int[,] b = new int[2, 2] {
+            {1, 2},
+            {3, 4}
+        }
     }
 }", @"Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer(,) = New Integer(1, 1) {{1, 2}, {3, 4}}
+        Dim b As Integer(,) = New Integer(1, 1) {
+        {1, 2},
+        {3, 4}}
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void JaggedArrayDeclarationStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void JaggedArrayDeclarationStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -308,13 +311,12 @@ class TestClass
         Dim b As Integer()()
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void JaggedArrayInitializationStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void JaggedArrayInitializationStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -325,13 +327,12 @@ class TestClass
         Dim b As Integer()() = {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void JaggedArrayInitializationStatementWithType()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void JaggedArrayInitializationStatementWithType()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -342,13 +343,12 @@ class TestClass
         Dim b As Integer()() = New Integer()() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void JaggedArrayInitializationStatementWithLength()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void JaggedArrayInitializationStatementWithLength()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -359,13 +359,13 @@ class TestClass
         Dim b As Integer()() = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void DeclarationStatements()
-		{
-			TestConversionCSharpToVisualBasic(
-				@"class Test {
+        [Fact]
+        public void DeclarationStatements()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"class Test {
     void TestMethod()
     {
 the_beginning:
@@ -383,13 +383,38 @@ the_beginning:
         GoTo the_beginning
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void IfStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void IfStatementWithoutBlock()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    void TestMethod (int a)
+    {
+        int b;
+        if (a == 0)
+            b = 0;
+        else
+            b = 3;
+    }
+}", @"Class TestClass
+    Private Sub TestMethod(ByVal a As Integer)
+        Dim b As Integer
+
+        If a = 0 Then
+            b = 0
+        Else
+            b = 3
+        End If
+    End Sub
+End Class");
+        }
+
+        [Fact]
+        public void IfStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod (int a)
     {
@@ -419,13 +444,44 @@ class TestClass
         End If
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void WhileStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void BlockStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    public static void TestMethod()
+    {
+        {
+            var x = 1;
+            Console.WriteLine(x);
+        }
+
+        {
+            var x = 2;
+            Console.WriteLine(x);
+        }
+    }
+}", @"Class TestClass
+    Public Shared Sub TestMethod()
+        If True Then
+            Dim x = 1
+            Console.WriteLine(x)
+        End If
+
+        If True Then
+            Dim x = 2
+            Console.WriteLine(x)
+        End If
+    End Sub
+End Class");
+        }
+
+        [Fact]
+        public void WhileStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -452,13 +508,46 @@ class TestClass
         End While
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void DoWhileStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void UnsafeStatements()
+        {
+            var convertedCode = ProjectConversion.ConvertText<CSToVBConversion>(@"class TestClass
+{
+    void TestMethod()
+    {
+        int b;
+        b = 0;
+        while (b == 0)
+        {
+            if (b == 2)
+            {
+                unsafe
+                {
+                    int ab = 32;
+                    int* p = &ab;
+                    Console.WriteLine(""value of ab is {0}"", *p);
+                }
+            }
+            if (b == 3)
+                break;
+            b = 1;
+        }
+    }
+}", CodeWithOptions.DefaultMetadataReferences).ConvertedCode;
+
+            Assert.Contains("CONVERSION ERROR", convertedCode);
+            Assert.Contains("unsafe", convertedCode);
+            Assert.Contains("UnsafeStatementSyntax", convertedCode);
+            Assert.Contains("If b = 2 Then", convertedCode);
+            Assert.Contains("End If", convertedCode);
+        }
+
+        [Fact]
+        public void DoWhileStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -486,13 +575,12 @@ class TestClass
         Loop While b = 0
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ForEachStatementWithExplicitType()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ForEachStatementWithExplicitType()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(int[] values)
     {
@@ -512,13 +600,12 @@ class TestClass
         Next
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ForEachStatementWithVar()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ForEachStatementWithVar()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(int[] values)
     {
@@ -538,13 +625,12 @@ class TestClass
         Next
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void SyncLockStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void SyncLockStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(object nullObject)
     {
@@ -563,13 +649,12 @@ class TestClass
         End SyncLock
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ForWithUnknownConditionAndSingleStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ForWithUnknownConditionAndSingleStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -586,23 +671,22 @@ class TestClass
         End While
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ForWithUnknownConditionAndBlock()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ForWithUnknownConditionAndBlock()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
-        for (i = 0; unknownCondition; i++) {
+        for (int i = 0; unknownCondition; i++) {
             b[i] = s[i];
         }
     }
 }", @"Class TestClass
     Private Sub TestMethod()
-        i = 0
+        Dim i As Integer = 0
 
         While unknownCondition
             b(i) = s(i)
@@ -610,13 +694,12 @@ class TestClass
         End While
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ForWithSingleStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ForWithSingleStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -629,13 +712,12 @@ class TestClass
         Next
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ForWithBlock()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ForWithBlock()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -650,13 +732,12 @@ class TestClass
         Next
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void LabeledAndForStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class GotoTest1
+        [Fact]
+        public void LabeledAndForStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class GotoTest1
 {
     static void Main()
     {
@@ -692,7 +773,6 @@ class GotoTest1
 
         Finish:
             Console.WriteLine(""End of search."");
-
 
             Console.WriteLine(""Press any key to exit."");
             Console.ReadKey();
@@ -733,13 +813,12 @@ Finish:
         Console.ReadKey()
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void ThrowStatement()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void ThrowStatement()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(object nullObject)
     {
@@ -751,12 +830,12 @@ class TestClass
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void AddRemoveHandler()
-		{
-			TestConversionCSharpToVisualBasic(@"using System;
+        [Fact]
+        public void AddRemoveHandler()
+        {
+            TestConversionCSharpToVisualBasic(@"using System;
 
 class TestClass
 {
@@ -778,7 +857,9 @@ class TestClass
     {
 
     }
-}", @"Class TestClass
+}", @"Imports System
+
+Class TestClass
     Public Event MyEvent As EventHandler
 
     Private Sub TestMethod(ByVal e As EventHandler)
@@ -794,13 +875,12 @@ class TestClass
     Private Sub MyHandler(ByVal sender As Object, ByVal e As EventArgs)
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void SelectCase1()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void SelectCase1()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(int number)
     {
@@ -816,11 +896,11 @@ class TestClass
             case 4:
                 Console.Write(""section 4"");
                 goto default;
-            case 5:
-                Console.Write(""section 5"");
-                break;
             default:
                 Console.Write(""default section"");
+                break;
+            case 5:
+                Console.Write(""section 5"");
                 break;
         }
     }
@@ -844,13 +924,12 @@ _Select0_CaseDefault:
         End Select
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void TryCatch()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void TryCatch()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     static bool Log(string message)
     {
@@ -914,13 +993,12 @@ class TestClass
         End Try
     End Sub
 End Class");
-		}
+        }
 
-		[Fact]
-		public void Yield()
-		{
-			TestConversionCSharpToVisualBasic(@"
-class TestClass
+        [Fact]
+        public void Yield()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
 {
     IEnumerable<int> TestMethod(int number)
     {
@@ -938,6 +1016,6 @@ class TestClass
         Next
     End Function
 End Class");
-		}
-	}
+        }
+    }
 }
