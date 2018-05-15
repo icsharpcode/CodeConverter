@@ -217,6 +217,10 @@
     <Content Include="favicon.ico" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Global.asax" />
+    <Content Include="Images\change.svg" />
+    <Content Include="Images\delete.svg" />
+    <Content Include="Images\logo-telerik.svg" />
+    <Content Include="Images\logo.svg" />
     <Content Include="Images\refactoringessentials-logo.png" />
     <Content Include="robots.txt" />
     <Content Include="fonts\glyphicons-halflings-regular.woff2" />
@@ -235,8 +239,10 @@
     <None Include="Scripts\jquery-2.2.2.intellisense.js" />
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
+    <Content Include="Scripts\file-saver.js" />
     <Content Include="Scripts\jquery-2.2.2.js" />
     <Content Include="Scripts\jquery-2.2.2.min.js" />
+    <Content Include="Service.asmx" />
     <Content Include="Web.config" />
     <Content Include="Views\_ViewStart.cshtml" />
   </ItemGroup>
@@ -252,6 +258,10 @@
     <Compile Include="Models\ConvertRequest.cs" />
     <Compile Include="Models\ConvertResponse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Service.asmx.cs">
+      <DependentUpon>Service.asmx</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\web.config" />

@@ -1,64 +1,104 @@
-﻿@using System.Diagnostics
+﻿@using System
+@using System.Diagnostics
 @using System.Reflection
 @using ICSharpCode.CodeConverter
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@Page.Title - Roslyn Code Converter</title>
-    @RenderSection("head", required: false)
+	<meta charset="utf-8" />
+	
+	<!-- Page hiding snippet (recommended) -->
+	<style>
+		.async-hide {
+			opacity: 0 !important
+		}
+	</style>
+	<script>
+		(function (a, s, y, n, c, h, i, d, e) {
+		s.className += ' ' + y;
+			h.end = i = function () { s.className = s.className.replace(RegExp(' ?' + y), '') };
+			(a[n] = a[n] || []).hide = h; setTimeout(function () { i(); h.end = null }, c);
+		})(window, document.documentElement, 'async-hide', 'dataLayer', 4000, { 'GTM-PQP63L': true });
+	</script>
 
-    <meta name="keywords" content="@Page.Keywords" />
-    <meta name="description" content="@Page.Description" />
-    <meta name="robots" content="index,follow">
-    <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon"/>
+	<!-- Google Tag Manager -->
+	<script>
+		(function (w, d, s, l, i) {
+			w[l] = w[l] || []; w[l].push({
+				'gtm.start':
+				new Date().getTime(), event: 'gtm.js'
+			}); var f = d.getElementsByTagName(s)[0],
+				j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+					'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+		})(window, document, 'script', 'dataLayer', 'GTM-6X92');</script>
+	<!-- End Google Tag Manager -->
 
-    <link rel="stylesheet" href="~/Content/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/Content/site.css" />
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Code Converter C# to VB and VB to C# – Telerik</title>
+	@RenderSection("head", required: false)
+
+	<meta name="keywords" content="code converter, csharp to vb, vb to csharp, c#, vb.net" />
+	<meta name="description" content="Telerik Code Converter by Progress is free online code converter from C# to VB and from VB to C#. No registration required. Check it out." />
+	<meta name="robots" content="index,follow">
+	<link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+
+	<link rel="stylesheet" href="https://d6vtbcy3ong79.cloudfront.net/fonts/1.1.5/css/metric.min.css" />
+	<link rel="stylesheet" href="~/Content/bootstrap.min.css" />
+	<link rel="stylesheet" href="~/Content/site.css" />
 </head>
-<body>
-    <div class="navbar navbar-inverse navbar-fixed-top">
-        <div class="container">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a href="~/" class="navbar-brand">Code Converter</a>
-            </div>
-            <div class="navbar-collapse collapse">
-                <ul class="nav navbar-nav">
-                    <li><a href="~/">Home</a></li>
-                    <li><a href="~/Home/About">About</a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="container body-content">
-        @RenderBody()
-        <hr />
-        @{
-            var versionInfo = HttpContext.Current.Cache["AssemblyVersionInformation"];
-            if (null == versionInfo)
-            {
-                Assembly assembly = Assembly.GetAssembly(typeof(CodeConverter));
-                FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+<body class="d-flex flex-column">
+	<!-- Google Tag Manager (noscript) -->
+	<noscript>
+		<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-6X92"
+				height="0" width="0" style="display:none;visibility:hidden"></iframe>
+	</noscript>
+	<!-- End Google Tag Manager (noscript) -->
 
-                versionInfo = fvi.FileVersion;
-                HttpContext.Current.Cache["AssemblyVersionInformation"] = versionInfo;
-            }
-            <footer>
-                <p>&copy; 2015-@DateTime.Now.Year - Code Converter by <a href="https://github.com/icsharpcode/CodeConverter/">https://github.com/icsharpcode/CodeConverter/</a> - Version @versionInfo</p>
-            </footer>
-        }
-        </div>
+	<div class="navbar navbar-inverse">
+		<div class="navbar-header">
+			<a href="~/" class="navbar-brand"><img src="~/Images/logo.svg" alt="Code Converter Logo" /></a>
+		</div>
+	</div>
+	<div class="body-content p-2 flex-100">
+		@RenderBody()
+		@{
+			var versionInfo = HttpContext.Current.Cache["AssemblyVersionInformation"];
+			if (null == versionInfo)
+			{
+				Assembly assembly = Assembly.GetAssembly(typeof(CodeConverter));
+				FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
 
-        <script src="~/Scripts/jquery-2.2.2.min.js"></script>
-        <script src="~/Scripts/bootstrap.min.js"></script>
-
-        @RenderSection("scripts", required: false)
-    </body>
+				versionInfo = fvi.FileVersion;
+				HttpContext.Current.Cache["AssemblyVersionInformation"] = versionInfo;
+			}
+		}
+	</div>
+	<footer class="px-2 py-3">
+		<div class="row mb-1">
+			<div class="col col-xs-12">
+				<a href="https://www.telerik.com">
+					<img class="logo-footer" src="~/Images/logo-telerik.svg" alt="Progress Telerik" />
+				</a>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-8">
+				<p class="m-0 mb-1">Copyright &copy; @DateTime.Now.Year, Progress Software Corporation and/or its subsidiaries or affiliates. All Rights Reserved.</p>
+				<p class="m-0">Progress, Telerik, and certain product names used herein are trademarks or registered trademarks of Progress Software Corporation and/or one of its subsidiaries or affiliates in the U.S. and/or other countries. See <a href="https://www.progress.com/legal/trademarks">Trademarks</a> for appropriate markings.</p>
+			</div>
+			<div class="col-md-4 text-center text-md-right">
+				<ul class="footer-list mt-3 mt-md-0">
+					<li><a class="text-white" href="~/Home/About">About</a></li>
+					<li><a class="text-white" href="http://www.telerik.com/company/terms-of-use">Terms of Use</a></li>
+					<li><a class="text-white" href="http://www.telerik.com/company/privacy-policy">Privacy Policy</a></li>
+				</ul>
+			</div>
+		</div>
+	</footer>
+	<script src="~/Scripts/jquery-2.2.2.min.js"></script>
+	<script src="~/Scripts/bootstrap.min.js"></script>
+	<script src="~/Scripts/file-saver.js"></script>
+	@RenderSection("scripts", required: false)
+</body>
 </html>
