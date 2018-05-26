@@ -16,7 +16,7 @@ namespace CodeConverter.Tests.VB
         int a, b;
         b = a = 5;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim a, b As Integer
         b = CSharpImpl.__Assign(a, 5)
@@ -43,7 +43,7 @@ End Class");
         int a = 5, b;
         b = a++;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer, a As Integer = 5
         b = Math.Min(System.Threading.Interlocked.Increment(a), a - 1)
@@ -63,7 +63,7 @@ End Class");
     {
         if (MyEvent != null) MyEvent(this, EventArgs.Empty);
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Event MyEvent As EventHandler
 
     Private Sub TestMethod()
@@ -77,7 +77,7 @@ End Class");
     {
         if ((MyEvent != null)) MyEvent(this, EventArgs.Empty);
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
@@ -89,7 +89,7 @@ End Class");
     {
         if (null != MyEvent) { MyEvent(this, EventArgs.Empty); }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
@@ -101,7 +101,7 @@ End Class");
     {
         if (this.MyEvent != null) MyEvent(this, EventArgs.Empty);
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
@@ -113,7 +113,7 @@ End Class");
     {
         if (MyEvent != null) this.MyEvent(this, EventArgs.Empty);
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
@@ -125,7 +125,7 @@ End Class");
     {
         if ((this.MyEvent != null)) { this.MyEvent(this, EventArgs.Empty); }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
@@ -142,7 +142,7 @@ End Class");
     {
         if (FullImage != null) DrawImage();
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         If FullImage IsNot Nothing Then DrawImage()
     End Sub
@@ -155,7 +155,7 @@ End Class");
     {
         if (FullImage != null) e.DrawImage();
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         If FullImage IsNot Nothing Then e.DrawImage()
     End Sub
@@ -168,7 +168,7 @@ End Class");
     {
         if (FullImage != null) { DrawImage(); }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         If FullImage IsNot Nothing Then
             DrawImage()
@@ -182,7 +182,7 @@ End Class");
     {
         if (FullImage != null) { e.DrawImage(); }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         If FullImage IsNot Nothing Then
             e.DrawImage()
@@ -197,7 +197,7 @@ End Class");
     {
         if (Tiles != null) foreach (Tile t in Tiles) this.TileTray.Controls.Remove(t);
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         If Tiles IsNot Nothing Then
 
@@ -240,7 +240,7 @@ End Class");
     }
 }", @"Imports System.Runtime.CompilerServices
 
-Module TestClass
+Friend Module TestClass
     <Extension()>
     Private Function TypeSwitch(ByVal obj As Object, ByVal matchFunc1 As Func(Of String, Object), ByVal matchFunc2 As Func(Of Integer, Object), ByVal defaultFunc As Func(Of Object, Object)) As Object
         Return Nothing
@@ -269,7 +269,7 @@ End Module");
                 @"class Test
 {
     public int CR = 0x0D * 0b1;
-}", @"Class Test
+}", @"Friend Class Test
     Public CR As Integer = &H0D * &B1
 End Class");
         }

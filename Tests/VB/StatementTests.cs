@@ -21,7 +21,7 @@ namespace CodeConverter.Tests.VB
         do ; while (true);
         ;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         If True Then
         End If
@@ -48,7 +48,7 @@ End Class");
         int b;
         b = 0;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -65,7 +65,7 @@ End Class");
     {
         int b = 0;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer = 0
     End Sub
@@ -81,7 +81,7 @@ End Class");
     {
         var b = 0;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b = 0
     End Sub
@@ -98,7 +98,7 @@ End Class");
         string b;
         b = new string(""test"");
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As String
         b = New String(""test"")
@@ -115,7 +115,7 @@ End Class");
     {
         string b = new string(""test"");
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As String = New String(""test"")
     End Sub
@@ -131,7 +131,7 @@ End Class");
     {
         var b = new string(""test"");
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b = New String(""test"")
     End Sub
@@ -147,7 +147,7 @@ End Class");
     {
         int[] b;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()
     End Sub
@@ -163,7 +163,7 @@ End Class");
     {
         int[] b = { 1, 2, 3 };
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = {1, 2, 3}
     End Sub
@@ -179,7 +179,7 @@ End Class");
     {
         var b = { 1, 2, 3 };
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b = {1, 2, 3}
     End Sub
@@ -195,7 +195,7 @@ End Class");
     {
         int[] b = new int[] { 1, 2, 3 };
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer() {1, 2, 3}
     End Sub
@@ -211,7 +211,7 @@ End Class");
     {
         int[] b = new int[3] { 1, 2, 3 };
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer(2) {1, 2, 3}
     End Sub
@@ -227,7 +227,7 @@ End Class");
     {
         int[,] b;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,)
     End Sub
@@ -246,7 +246,7 @@ End Class");
             {3, 4}
         };
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = {
         {1, 2},
@@ -267,7 +267,7 @@ End Class");
             {3, 4}
         };
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = New Integer(,) {
         {1, 2},
@@ -288,7 +288,7 @@ End Class");
             {3, 4}
         }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = New Integer(1, 1) {
         {1, 2},
@@ -306,7 +306,7 @@ End Class");
     {
         int[][] b;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()()
     End Sub
@@ -322,7 +322,7 @@ End Class");
     {
         int[][] b = { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
@@ -338,7 +338,7 @@ End Class");
     {
         int[][] b = new int[][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = New Integer()() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
@@ -354,7 +354,7 @@ End Class");
     {
         int[][] b = new int[2][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
@@ -374,7 +374,7 @@ the_beginning:
         var text = ""This is my text!"";
         goto the_beginning;
     }
-}", @"Class Test
+}", @"Friend Class Test
     Private Sub TestMethod()
 the_beginning:
         Dim value As Integer = 1
@@ -398,7 +398,7 @@ End Class");
         else
             b = 3;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod(ByVal a As Integer)
         Dim b As Integer
 
@@ -429,7 +429,7 @@ End Class");
             b = 3;
         }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod(ByVal a As Integer)
         Dim b As Integer
 
@@ -463,7 +463,7 @@ End Class");
             Console.WriteLine(x);
         }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Public Shared Sub TestMethod()
         If True Then
             Dim x = 1
@@ -496,7 +496,7 @@ End Class");
             b = 1;
         }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -563,7 +563,7 @@ End Class");
         }
         while (b == 0);
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -592,7 +592,7 @@ End Class");
                 break;
         }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         For Each val As Integer In values
             If val = 2 Then Continue For
@@ -617,7 +617,7 @@ End Class");
                 break;
         }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         For Each val In values
             If val = 2 Then Continue For
@@ -640,7 +640,7 @@ End Class");
             Console.WriteLine(nullObject);
         }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod(ByVal nullObject As Object)
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
 
@@ -661,7 +661,7 @@ End Class");
         for (i = 0; unknownCondition; i++)
             b[i] = s[i];
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         i = 0
 
@@ -684,7 +684,7 @@ End Class");
             b[i] = s[i];
         }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim i As Integer = 0
 
@@ -705,7 +705,7 @@ End Class");
     {
         for (i = 0; i < end; i++) b[i] = s[i];
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         For i = 0 To [end] - 1
             b(i) = s(i)
@@ -725,7 +725,7 @@ End Class");
             b[i] = s[i];
         }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         For i = 0 To [end] - 1
             b(i) = s(i)
@@ -777,7 +777,7 @@ End Class");
             Console.WriteLine(""Press any key to exit."");
             Console.ReadKey();
         }
-    }", @"Class GotoTest1
+    }", @"Friend Class GotoTest1
     Private Shared Sub Main()
         Dim x As Integer = 200, y As Integer = 4
         Dim count As Integer = 0
@@ -825,7 +825,7 @@ End Class");
         if (nullObject == null)
             throw new ArgumentNullException(nameof(nullObject));
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod(ByVal nullObject As Object)
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
     End Sub
@@ -859,7 +859,7 @@ class TestClass
     }
 }", @"Imports System
 
-Class TestClass
+Friend Class TestClass
     Public Event MyEvent As EventHandler
 
     Private Sub TestMethod(ByVal e As EventHandler)
@@ -904,7 +904,7 @@ End Class");
                 break;
         }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod(ByVal number As Integer)
         Select Case number
             Case 0, 1, 2
@@ -961,7 +961,7 @@ End Class");
             Console.WriteLine(""finally"");
         }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Shared Function Log(ByVal message As String) As Boolean
         Console.WriteLine(message)
         Return False
@@ -1007,7 +1007,7 @@ End Class");
         for (int i = 0; i < number; i++)
             yield return i;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
         If number < 0 Then Return
 

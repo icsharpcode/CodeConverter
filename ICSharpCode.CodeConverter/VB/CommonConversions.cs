@@ -295,17 +295,17 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
 
-        private static IEnumerable<SyntaxToken> ConvertModifiersCore(IEnumerable<SyntaxToken> modifiers, SyntaxKindExtensions.TokenContext context)
+        private static IEnumerable<SyntaxToken> ConvertModifiersCore(IReadOnlyCollection<SyntaxToken> modifiers, SyntaxKindExtensions.TokenContext context)
         {
-            if (context != SyntaxKindExtensions.TokenContext.Local && context != SyntaxKindExtensions.TokenContext.InterfaceOrModule) {
+            if (context != SyntaxKindExtensions.TokenContext.Local && context != SyntaxKindExtensions.TokenContext.MemberInInterface) {
                 bool visibility = false;
                 foreach (var token in modifiers) {
-                    if (token.IsCsVisibility(context == SyntaxKindExtensions.TokenContext.VariableOrConst)) {
+                    if (token.IsCsVisibility(true)) { //TODO Don't treat const as visibility, pass in more context to detect this
                         visibility = true;
                         break;
                     }
                 }
-                if (!visibility && context == SyntaxKindExtensions.TokenContext.Member)
+                if (!visibility)
                     yield return CSharpDefaultVisibility(context);
             }
             foreach (var token in modifiers.Where(m => !IgnoreInContext(m, context))) {
@@ -327,16 +327,19 @@ namespace ICSharpCode.CodeConverter.VB
         {
             switch (context) {
                 case SyntaxKindExtensions.TokenContext.Global:
+                case SyntaxKindExtensions.TokenContext.InterfaceOrModule:
                     return SyntaxFactory.Token(SyntaxKind.FriendKeyword);
                 case SyntaxKindExtensions.TokenContext.Local:
-                case SyntaxKindExtensions.TokenContext.VariableOrConst:
-                case SyntaxKindExtensions.TokenContext.Member:
+                case SyntaxKindExtensions.TokenContext.MemberInClass:
+                case SyntaxKindExtensions.TokenContext.MemberInStruct:
                     return SyntaxFactory.Token(SyntaxKind.PrivateKeyword);
+                case SyntaxKindExtensions.TokenContext.MemberInInterface:
+                    return SyntaxFactory.Token(SyntaxKind.PublicKeyword);
             }
             throw new ArgumentOutOfRangeException(nameof(context));
         }
 
-        internal static SyntaxTokenList ConvertModifiers(IEnumerable<SyntaxToken> modifiers, SyntaxKindExtensions.TokenContext context = SyntaxKindExtensions.TokenContext.Global)
+        internal static SyntaxTokenList ConvertModifiers(IReadOnlyCollection<SyntaxToken> modifiers, SyntaxKindExtensions.TokenContext context = SyntaxKindExtensions.TokenContext.Global)
         {
             return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context));
         }

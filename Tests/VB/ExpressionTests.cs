@@ -14,7 +14,7 @@ namespace CodeConverter.Tests.VB
         var x = @""Hello,
 World!"";
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim x = ""Hello,
 World!""
@@ -31,7 +31,7 @@ End Class");
     {
         bool result = (str == """") ? true : false;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = If((str = """"), True, False)
     End Sub
@@ -52,7 +52,7 @@ End Class");
 
         return -1;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Shared Function GetLength(ByVal node As Object) As Integer
         Dim s As String = Nothing
 
@@ -87,7 +87,7 @@ class TestClass
     }
 }", @"Imports System.Collections.Generic
 
-Class TestClass
+Friend Class TestClass
     Private Shared Function [Do]() As Boolean
         Dim d = New Dictionary(Of String, String)()
         Dim output As string = Nothing" + /* Ideally string would have the first letter uppercased but that's out of scope for this test */ @"
@@ -105,7 +105,7 @@ End Class");
     {
         bool result = (str == """") ? throw new Exception(""empty"") : false;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = If((str = """"), CSharpImpl.__Throw(Of System.Boolean)(New Exception(""empty"")), False)
     End Sub
@@ -129,7 +129,7 @@ End Class");
     private void TestMethod()
     {
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private n As String = NameOf(TestMethod)
 
     Private Sub TestMethod()
@@ -146,7 +146,7 @@ End Class");
     {
         Console.WriteLine(str ?? ""<null>"");
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Console.WriteLine(If(str, ""<null>""))
     End Sub
@@ -165,7 +165,7 @@ End Class");
         Console.WriteLine(""Test"" + length);
         Console.ReadKey();
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim length As Integer
         length = str.Length
@@ -187,7 +187,7 @@ End Class");
         Console.ReadKey();
         string redirectUri = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim length As Integer = If(str?.Length, -1)
         Console.WriteLine(length)
@@ -215,11 +215,11 @@ class TestClass
             LastName = ""Playstead"",
         };
     }
-}", @"Class StudentName
+}", @"Friend Class StudentName
     Public LastName, FirstName As String
 End Class
 
-Class TestClass
+Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 As StudentName = New StudentName With {
             .FirstName = ""Craig"",
@@ -241,7 +241,7 @@ End Class");
             LastName = ""Playstead"",
         };
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 = New With {Key
             .FirstName = ""Craig"", Key
@@ -291,7 +291,7 @@ End Class");
     {
         this.member = 0;
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private member As Integer
 
     Private Sub TestMethod()
@@ -314,11 +314,11 @@ class TestClass : BaseTestClass
     {
         base.member = 0;
     }
-}", @"Class BaseTestClass
+}", @"Friend Class BaseTestClass
     Public member As Integer
 End Class
 
-Class TestClass
+Friend Class TestClass
     Inherits BaseTestClass
 
     Private Sub TestMethod()
@@ -341,7 +341,7 @@ End Class");
 
         test(3);
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Shared m_Event1 As Action(Of Integer) = Function()
                                                     End Function
 
@@ -365,7 +365,7 @@ End Class");
 
         test(3);
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim test = Function(a) a * 2
         Dim test2 = Function(a, b)
@@ -394,7 +394,7 @@ End Class");
         int result = await SomeAsyncMethod();
         Console.WriteLine(result);
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private Function SomeAsyncMethod() As Task(Of Integer)
         Return Task.FromResult(0)
     End Function
@@ -504,12 +504,12 @@ class Test {
         }
     }
 }",
-@"Class Product
+@"Friend Class Product
     Public Category As String
     Public ProductName As String
 End Class
 
-Class Test
+Friend Class Test
     Public Sub Linq102()
         Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
         Dim products As Product() = GetProductList()

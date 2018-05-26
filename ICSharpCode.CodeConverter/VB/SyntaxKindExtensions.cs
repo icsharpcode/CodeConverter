@@ -9,9 +9,10 @@ namespace ICSharpCode.CodeConverter.VB
         {
             Global,
             InterfaceOrModule,
-            Member,
-            VariableOrConst,
-            Local
+            Local,
+            MemberInClass,
+            MemberInStruct,
+            MemberInInterface
         }
 
         public static SyntaxKind ConvertToken(this Microsoft.CodeAnalysis.CSharp.SyntaxKind t, TokenContext context = TokenContext.Global)
