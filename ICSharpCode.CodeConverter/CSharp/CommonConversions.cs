@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -237,12 +238,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.Identifier(text);
         }
 
-        public SyntaxTokenList ConvertModifiers(IEnumerable<SyntaxToken> modifiers, SyntaxKindExtensions.TokenContext context = SyntaxKindExtensions.TokenContext.Global, bool isVariableOrConst = false)
+        public SyntaxTokenList ConvertModifiers(IEnumerable<SyntaxToken> modifiers, TokenContext context = TokenContext.Global, bool isVariableOrConst = false)
         {
             return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context, isVariableOrConst).Where(t => CSharpExtensions.Kind(t) != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None));
         }
 
-        private SyntaxToken? ConvertModifier(SyntaxToken m, SyntaxKindExtensions.TokenContext context = SyntaxKindExtensions.TokenContext.Global)
+        private SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)
         {
             SyntaxKind vbSyntaxKind = VisualBasicExtensions.Kind(m);
             switch (vbSyntaxKind) {
@@ -253,9 +254,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return token == Microsoft.CodeAnalysis.CSharp.SyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));
         }
 
-        private IEnumerable<SyntaxToken> ConvertModifiersCore(IEnumerable<SyntaxToken> modifiers, SyntaxKindExtensions.TokenContext context, bool isVariableOrConst = false)
+        private IEnumerable<SyntaxToken> ConvertModifiersCore(IEnumerable<SyntaxToken> modifiers, TokenContext context, bool isVariableOrConst = false)
         {
-            var contextsWithIdenticalDefaults = new[] {SyntaxKindExtensions.TokenContext.Global, SyntaxKindExtensions.TokenContext.Local, SyntaxKindExtensions.TokenContext.InterfaceOrModule, SyntaxKindExtensions.TokenContext.MemberInInterface };
+            var contextsWithIdenticalDefaults = new[] {TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface };
             if (!contextsWithIdenticalDefaults.Contains(context)) {
                 bool visibility = false;
                 foreach (var token in modifiers) {
@@ -271,11 +272,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var m = ConvertModifier(token, context);
                 if (m.HasValue) yield return m.Value;
             }
-            if (context == SyntaxKindExtensions.TokenContext.MemberInModule)
+            if (context == TokenContext.MemberInModule)
                 yield return SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
         }
 
-        private bool IgnoreInContext(SyntaxToken m, SyntaxKindExtensions.TokenContext context)
+        private bool IgnoreInContext(SyntaxToken m, TokenContext context)
         {
             switch (VisualBasicExtensions.Kind(m)) {
                 case SyntaxKind.OptionalKeyword:
@@ -295,21 +296,21 @@ namespace ICSharpCode.CodeConverter.CSharp
             return isConvOp;
         }
 
-        private SyntaxToken VisualBasicDefaultVisibility(SyntaxKindExtensions.TokenContext context, bool isVariableOrConst)
+        private SyntaxToken VisualBasicDefaultVisibility(TokenContext context, bool isVariableOrConst)
         {
             switch (context) {
-                case SyntaxKindExtensions.TokenContext.Global:
-                case SyntaxKindExtensions.TokenContext.InterfaceOrModule:
+                case TokenContext.Global:
+                case TokenContext.InterfaceOrModule:
                     return SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.InternalKeyword);
-                case SyntaxKindExtensions.TokenContext.MemberInModule:
-                case SyntaxKindExtensions.TokenContext.MemberInClass:
-                case SyntaxKindExtensions.TokenContext.MemberInInterface:
+                case TokenContext.MemberInModule:
+                case TokenContext.MemberInClass:
+                case TokenContext.MemberInInterface:
                     return SyntaxFactory.Token(isVariableOrConst
                         ? Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword
                         : Microsoft.CodeAnalysis.CSharp.SyntaxKind.PublicKeyword);
-                case SyntaxKindExtensions.TokenContext.MemberInStruct:
+                case TokenContext.MemberInStruct:
                     return SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PublicKeyword);
-                case SyntaxKindExtensions.TokenContext.Local:
+                case TokenContext.Local:
                     return SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword);
             }
             throw new ArgumentOutOfRangeException(nameof(context), context, "Specified argument was out of the range of valid values.");

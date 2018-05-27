@@ -582,8 +582,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private TokenContext GetMemberContext(VBSyntax.StatementSyntax member)
             {
-                var parentType = member.GetAncestorOrThis<VBSyntax.TypeBlockSyntax>()?.Kind();
-                switch (parentType) {
+                var parentType = member.GetAncestorOrThis<VBSyntax.TypeBlockSyntax>();
+                var parentTypeKind = parentType?.Kind();
+                switch (parentTypeKind) {
                     case VBasic.SyntaxKind.ModuleBlock:
                         return TokenContext.MemberInModule;
                     case VBasic.SyntaxKind.ClassBlock:

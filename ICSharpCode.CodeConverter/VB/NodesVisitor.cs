@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
@@ -419,13 +420,15 @@ namespace ICSharpCode.CodeConverter.VB
             if (containingType?.IsStatic == true) {
                 modifiers = SyntaxFactory.TokenList(modifiers.Where(t => !(t.IsKind(SyntaxKind.SharedKeyword, SyntaxKind.PublicKeyword))));
             }
+
+            var implementsClause = CreateImplementsClauseSyntaxOrNull(methodInfo);
             if (methodInfo?.GetReturnType()?.SpecialType == SpecialType.System_Void) {
                 var stmt = SyntaxFactory.SubStatement(
                     attributes,
                     modifiers,
                     id, (TypeParameterListSyntax)node.TypeParameterList?.Accept(TriviaConvertingVisitor),
                     parameterList,
-                    null, null, null
+                    null, null, implementsClause
                 );
                 if (node.Body == null && node.ExpressionBody == null)
                     return stmt;
@@ -436,12 +439,28 @@ namespace ICSharpCode.CodeConverter.VB
                     modifiers,
                     id, (TypeParameterListSyntax)node.TypeParameterList?.Accept(TriviaConvertingVisitor),
                     parameterList,
-                    SyntaxFactory.SimpleAsClause((TypeSyntax)node.ReturnType.Accept(TriviaConvertingVisitor)), null, null
+                    SyntaxFactory.SimpleAsClause((TypeSyntax)node.ReturnType.Accept(TriviaConvertingVisitor)), null, implementsClause
                 );
                 if (node.Body == null && node.ExpressionBody == null)
                     return stmt;
                 return SyntaxFactory.FunctionBlock(stmt, block);
             }
+        }
+
+        /// <remarks>
+        /// PERF: Computational complexity high due to starting with all members and narrowing down
+        /// </remarks>
+        private ImplementsClauseSyntax CreateImplementsClauseSyntaxOrNull(ISymbol memberInfo)
+        {
+            var containingType = memberInfo.ContainingType;
+            var baseClassesAndInterfaces = containingType.GetAllBaseClassesAndInterfaces(true);
+            var implementor = baseClassesAndInterfaces.Except(new[] {containingType}).SelectMany(t => t.GetMembers().Where(m => m.Name.Equals(memberInfo.Name)))
+                .FirstOrDefault(m => containingType.FindImplementationForInterfaceMember(m)?.Equals(memberInfo) == true);
+
+            return implementor == null ? null
+                : SyntaxFactory.ImplementsClause(SyntaxFactory.QualifiedName(
+                    SyntaxFactory.IdentifierName(implementor.ContainingSymbol.Name),
+                    SyntaxFactory.IdentifierName(implementor.Name)));
         }
 
         public override VisualBasicSyntaxNode VisitPropertyDeclaration(CSS.PropertyDeclarationSyntax node)
@@ -500,7 +519,7 @@ namespace ICSharpCode.CodeConverter.VB
                 id, parameterListSyntax,
                 SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax) node.Type.Accept(TriviaConvertingVisitor)),
                 initializerOrNull,
-                null
+                CreateImplementsClauseSyntaxOrNull(_semanticModel.GetDeclaredSymbol(node))
             );
             if (hasAccessors && HasNoAccessorBody(node.AccessorList))
                 return stmt;
@@ -524,16 +543,17 @@ namespace ICSharpCode.CodeConverter.VB
         
         private TokenContext GetMemberContext(CSS.MemberDeclarationSyntax member)
         {
-            var parentType = member.GetAncestorOrThis<CSS.BaseTypeDeclarationSyntax>()?.Kind();
-            switch (parentType) {
+            var parentType = member.GetAncestorOrThis<CSS.BaseTypeDeclarationSyntax>();
+            var parentTypeKind = parentType?.Kind();
+            switch (parentTypeKind) {
                 case CS.SyntaxKind.ClassDeclaration:
-                    return TokenContext.MemberInClass;
+                    return parentType.GetModifiers().Any(SyntaxKind.StaticKeyword) ? TokenContext.MemberInModule : TokenContext.MemberInClass;
                 case CS.SyntaxKind.InterfaceDeclaration:
                     return TokenContext.MemberInInterface;
                 case CS.SyntaxKind.StructDeclaration:
                     return TokenContext.MemberInStruct;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(member), parentType, null);
+                    throw new ArgumentOutOfRangeException(nameof(member), parentTypeKind, null);
             }
         }
 
@@ -542,7 +562,8 @@ namespace ICSharpCode.CodeConverter.VB
             ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
             var stmt = SyntaxFactory.EventStatement(
                 attributes, CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)), CommonConversions.ConvertIdentifier(node.Identifier), null,
-                SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)), null
+                SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)),
+                CreateImplementsClauseSyntaxOrNull(_semanticModel.GetDeclaredSymbol(node))
             );
             if (HasNoAccessorBody(node.AccessorList))
                 return stmt;

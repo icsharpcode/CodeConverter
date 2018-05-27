@@ -1272,61 +1272,6 @@ namespace ICSharpCode.CodeConverter.Util
 
             return getResult.ReturnType;
         }
-
-        /// <summary>
-        /// First, remove symbols from the set if they are overridden by other symbols in the set.
-        /// If a symbol is overridden only by symbols outside of the set, then it is not removed. 
-        /// This is useful for filtering out symbols that cannot be accessed in a given context due
-        /// to the existence of overriding members. Second, remove remaining symbols that are
-        /// unsupported (e.g. pointer types in VB) or not editor browsable based on the EditorBrowsable
-        /// attribute.
-        /// </summary>
-        //        public static IEnumerable<T> FilterToVisibleAndBrowsableSymbols<T>(this IEnumerable<T> symbols, bool hideAdvancedMembers, Compilation compilation) where T : ISymbol
-        //        {
-        //            symbols = symbols.RemoveOverriddenSymbolsWithinSet();
-        //
-        //            // Since all symbols are from the same compilation, find the required attribute
-        //            // constructors once and reuse.
-        //
-        //            var editorBrowsableAttributeConstructor = EditorBrowsableHelpers.GetSpecialEditorBrowsableAttributeConstructor(compilation);
-        //            var typeLibTypeAttributeConstructors = EditorBrowsableHelpers.GetSpecialTypeLibTypeAttributeConstructors(compilation);
-        //            var typeLibFuncAttributeConstructors = EditorBrowsableHelpers.GetSpecialTypeLibFuncAttributeConstructors(compilation);
-        //            var typeLibVarAttributeConstructors = EditorBrowsableHelpers.GetSpecialTypeLibVarAttributeConstructors(compilation);
-        //            var hideModuleNameAttribute = compilation.HideModuleNameAttribute();
-        //
-        //            // PERF: HasUnsupportedMetadata may require recreating the syntax tree to get the base class, so first
-        //            // check to see if we're referencing a symbol defined in source.
-        //            Func<Location, bool> isSymbolDefinedInSource = l => l.IsInSource;
-        //            return symbols.Where(s =>
-        //                (s.Locations.Any(isSymbolDefinedInSource) || !s.HasUnsupportedMetadata) &&
-        //                !s.IsDestructor() &&
-        //                s.IsEditorBrowsable(
-        //                    hideAdvancedMembers,
-        //                    compilation,
-        //                    editorBrowsableAttributeConstructor,
-        //                    typeLibTypeAttributeConstructors,
-        //                    typeLibFuncAttributeConstructors,
-        //                    typeLibVarAttributeConstructors,
-        //                    hideModuleNameAttribute));
-        //        }
-
-        private static IEnumerable<T> RemoveOverriddenSymbolsWithinSet<T>(this IEnumerable<T> symbols) where T : ISymbol
-        {
-            HashSet<ISymbol> overriddenSymbols = new HashSet<ISymbol>();
-
-            foreach (var symbol in symbols) {
-                if (symbol.OverriddenMember() != null && !overriddenSymbols.Contains(symbol.OverriddenMember())) {
-                    overriddenSymbols.Add(symbol.OverriddenMember());
-                }
-            }
-
-            return symbols.Where(s => !overriddenSymbols.Contains(s));
-        }
-
-        //        public static IEnumerable<T> FilterToVisibleAndBrowsableSymbolsAndNotUnsafeSymbols<T>(this IEnumerable<T> symbols, bool hideAdvancedMembers, Compilation compilation) where T : ISymbol
-        //        {
-        //            return symbols.FilterToVisibleAndBrowsableSymbols(hideAdvancedMembers, compilation).Where(s => !s.IsUnsafe());
-        //        }
     }
 
     public enum SymbolVisibility
