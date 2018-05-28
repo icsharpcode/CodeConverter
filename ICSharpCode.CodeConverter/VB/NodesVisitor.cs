@@ -547,7 +547,7 @@ namespace ICSharpCode.CodeConverter.VB
             var parentTypeKind = parentType?.Kind();
             switch (parentTypeKind) {
                 case CS.SyntaxKind.ClassDeclaration:
-                    return parentType.GetModifiers().Any(SyntaxKind.StaticKeyword) ? TokenContext.MemberInModule : TokenContext.MemberInClass;
+                    return parentType.GetModifiers().Any(CS.SyntaxKind.StaticKeyword) ? TokenContext.MemberInModule : TokenContext.MemberInClass;
                 case CS.SyntaxKind.InterfaceDeclaration:
                     return TokenContext.MemberInInterface;
                 case CS.SyntaxKind.StructDeclaration:

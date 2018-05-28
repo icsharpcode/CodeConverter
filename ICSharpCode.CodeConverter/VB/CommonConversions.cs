@@ -320,8 +320,6 @@ namespace ICSharpCode.CodeConverter.VB
                 case TokenContext.InterfaceOrModule:
                 case TokenContext.MemberInModule:
                     return m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
-                case TokenContext.MemberInInterface:
-                    return m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PublicKeyword);
             }
             return false;
         }
@@ -334,6 +332,7 @@ namespace ICSharpCode.CodeConverter.VB
                     return SyntaxFactory.Token(SyntaxKind.FriendKeyword);
                 case TokenContext.Local:
                 case TokenContext.MemberInClass:
+                case TokenContext.MemberInModule:
                 case TokenContext.MemberInStruct:
                     return SyntaxFactory.Token(SyntaxKind.PrivateKeyword);
                 case TokenContext.MemberInInterface:
