@@ -1,4 +1,5 @@
 ﻿using System;
+using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -6,16 +7,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     public static class SyntaxKindExtensions
     {
-        public enum TokenContext
-        {
-            Global,
-            InterfaceOrModule,
-            Local,
-            MemberInModule,
-            MemberInClass,
-            MemberInStruct,
-            MemberInInterface
-        }
 
         public static SyntaxToken ConvertToken(this SyntaxToken t, TokenContext context = TokenContext.Global)
         {

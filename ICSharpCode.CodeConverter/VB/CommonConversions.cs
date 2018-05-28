@@ -144,7 +144,7 @@ namespace ICSharpCode.CodeConverter.VB
             body = ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
             isIterator = isIteratorState.IsIterator;
             var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(_nodesVisitor)));
-            var modifiers = ConvertModifiers(node.Modifiers, SyntaxKindExtensions.TokenContext.Local);
+            var modifiers = ConvertModifiers(node.Modifiers, TokenContext.Local);
             var parent = (BasePropertyDeclarationSyntax)node.Parent.Parent;
             Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterSyntax valueParam;
 
@@ -205,7 +205,7 @@ namespace ICSharpCode.CodeConverter.VB
             SyntaxKind singleLineExpressionKind;
             if (symbol.ReturnsVoid) {
                 header = SyntaxFactory.SubLambdaHeader(SyntaxFactory.List<AttributeListSyntax>(),
-                    ConvertModifiers(modifiers, SyntaxKindExtensions.TokenContext.Local), parameterList, null);
+                    ConvertModifiers(modifiers, TokenContext.Local), parameterList, null);
                 endBlock = SyntaxFactory.EndBlockStatement(SyntaxKind.EndSubStatement,
                     SyntaxFactory.Token(SyntaxKind.SubKeyword));
                 multiLineExpressionKind = SyntaxKind.MultiLineSubLambdaExpression;
@@ -244,7 +244,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             LambdaHeaderSyntax header;
             header = SyntaxFactory.FunctionLambdaHeader(SyntaxFactory.List<AttributeListSyntax>(),
-                ConvertModifiers(modifiers, SyntaxKindExtensions.TokenContext.Local), parameterList, null);
+                ConvertModifiers(modifiers, TokenContext.Local), parameterList, null);
             endBlock = SyntaxFactory.EndBlockStatement(SyntaxKind.EndFunctionStatement,
                 SyntaxFactory.Token(SyntaxKind.FunctionKeyword));
             multiLineExpressionKind = SyntaxKind.MultiLineFunctionLambdaExpression;
@@ -295,17 +295,17 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
 
-        private static IEnumerable<SyntaxToken> ConvertModifiersCore(IEnumerable<SyntaxToken> modifiers, SyntaxKindExtensions.TokenContext context)
+        private static IEnumerable<SyntaxToken> ConvertModifiersCore(IReadOnlyCollection<SyntaxToken> modifiers, TokenContext context)
         {
-            if (context != SyntaxKindExtensions.TokenContext.Local && context != SyntaxKindExtensions.TokenContext.InterfaceOrModule) {
+            if (context != TokenContext.Local && context != TokenContext.MemberInInterface) {
                 bool visibility = false;
                 foreach (var token in modifiers) {
-                    if (token.IsCsVisibility(context == SyntaxKindExtensions.TokenContext.VariableOrConst)) {
+                    if (token.IsCsVisibility(true)) { //TODO Don't treat const as visibility, pass in more context to detect this
                         visibility = true;
                         break;
                     }
                 }
-                if (!visibility && context == SyntaxKindExtensions.TokenContext.Member)
+                if (!visibility)
                     yield return CSharpDefaultVisibility(context);
             }
             foreach (var token in modifiers.Where(m => !IgnoreInContext(m, context))) {
@@ -314,34 +314,39 @@ namespace ICSharpCode.CodeConverter.VB
             }
         }
 
-        private static bool IgnoreInContext(SyntaxToken m, SyntaxKindExtensions.TokenContext context)
+        private static bool IgnoreInContext(SyntaxToken m, TokenContext context)
         {
             switch (context) {
-                case SyntaxKindExtensions.TokenContext.InterfaceOrModule:
-                    return m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PublicKeyword, Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
+                case TokenContext.InterfaceOrModule:
+                case TokenContext.MemberInModule:
+                    return m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
             }
             return false;
         }
 
-        private static SyntaxToken CSharpDefaultVisibility(SyntaxKindExtensions.TokenContext context)
+        private static SyntaxToken CSharpDefaultVisibility(TokenContext context)
         {
             switch (context) {
-                case SyntaxKindExtensions.TokenContext.Global:
+                case TokenContext.Global:
+                case TokenContext.InterfaceOrModule:
                     return SyntaxFactory.Token(SyntaxKind.FriendKeyword);
-                case SyntaxKindExtensions.TokenContext.Local:
-                case SyntaxKindExtensions.TokenContext.VariableOrConst:
-                case SyntaxKindExtensions.TokenContext.Member:
+                case TokenContext.Local:
+                case TokenContext.MemberInClass:
+                case TokenContext.MemberInModule:
+                case TokenContext.MemberInStruct:
                     return SyntaxFactory.Token(SyntaxKind.PrivateKeyword);
+                case TokenContext.MemberInInterface:
+                    return SyntaxFactory.Token(SyntaxKind.PublicKeyword);
             }
             throw new ArgumentOutOfRangeException(nameof(context));
         }
 
-        internal static SyntaxTokenList ConvertModifiers(IEnumerable<SyntaxToken> modifiers, SyntaxKindExtensions.TokenContext context = SyntaxKindExtensions.TokenContext.Global)
+        internal static SyntaxTokenList ConvertModifiers(IReadOnlyCollection<SyntaxToken> modifiers, TokenContext context = TokenContext.Global)
         {
             return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context));
         }
 
-        private static SyntaxToken? ConvertModifier(SyntaxToken m, SyntaxKindExtensions.TokenContext context = SyntaxKindExtensions.TokenContext.Global)
+        private static SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)
         {
             var token = CSharpExtensions.Kind(m).ConvertToken(context);
             return token == SyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));

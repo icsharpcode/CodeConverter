@@ -42,7 +42,7 @@ Imports VB = Microsoft.VisualBasic");
     {
     }
 }", @"Namespace Test.[class]
-    Class TestClass(Of T)
+    Friend Class TestClass(Of T)
     End Class
 End Namespace");
         }
@@ -77,7 +77,7 @@ End Namespace");
     {
     }
 }", @"Namespace Test.[class]
-    MustInherit Class TestClass
+    Friend MustInherit Class TestClass
     End Class
 End Namespace");
         }
@@ -91,7 +91,7 @@ End Namespace");
     {
     }
 }", @"Namespace Test.[class]
-    NotInheritable Class TestClass
+    Friend NotInheritable Class TestClass
     End Class
 End Namespace");
         }
@@ -103,7 +103,7 @@ End Namespace");
                 @"interface ITest : System.IDisposable
 {
     void Test ();
-}", @"Interface ITest
+}", @"Friend Interface ITest
     Inherits System.IDisposable
 
     Sub Test()
@@ -118,7 +118,7 @@ End Interface");
 {
     void Test ();
     void Test2 ();
-}", @"Interface ITest
+}", @"Friend Interface ITest
     Inherits System.IDisposable
 
     Sub Test()
@@ -151,7 +151,7 @@ End Enum");
     @"abstract class ClassA : System.IDisposable
 {
     protected abstract void Test();
-}", @"MustInherit Class ClassA
+}", @"Friend MustInherit Class ClassA
     Implements System.IDisposable
 
     Protected MustOverride Sub Test()
@@ -161,7 +161,7 @@ End Class");
                 @"abstract class ClassA : System.EventArgs, System.IDisposable
 {
     protected abstract void Test();
-}", @"MustInherit Class ClassA
+}", @"Friend MustInherit Class ClassA
     Inherits System.EventArgs
     Implements System.IDisposable
 
@@ -176,7 +176,7 @@ End Class");
     @"struct MyType : System.IComparable<MyType>
 {
     void Test() {}
-}", @"Structure MyType
+}", @"Friend Structure MyType
     Implements System.IComparable(Of MyType)
 
     Private Sub Test()
@@ -214,19 +214,40 @@ End Namespace");
         [Fact]
         public void ClassImplementsInterface()
         {
-            TestConversionCSharpToVisualBasic("using System; class test : IComparable { }",
-@"Imports System
+            TestConversionCSharpToVisualBasic(@"public class ToBeDisplayed : iDisplay
+{
+    public string Name { get; set; }
 
-Class test
-    Implements IComparable
-End Class");
+    public void DisplayName()
+    {
+    }
+}
+
+public interface iDisplay
+{
+    string Name { get; set; }
+    void DisplayName();
+}",
+@"Public Class ToBeDisplayed
+    Implements iDisplay
+
+    Public Property Name As String Implements iDisplay.Name
+
+    Public Sub DisplayName() Implements iDisplay.DisplayName
+    End Sub
+End Class
+
+Public Interface iDisplay
+    Property Name As String
+    Sub DisplayName()
+End Interface");
         }
 
         [Fact]
         public void ClassImplementsInterface2()
         {
             TestConversionCSharpToVisualBasic("class test : System.IComparable { }",
-@"Class test
+@"Friend Class test
     Implements System.IComparable
 End Class");
         }
@@ -237,7 +258,7 @@ End Class");
             TestConversionCSharpToVisualBasic("using System.IO; class test : InvalidDataException { }",
 @"Imports System.IO
 
-Class test
+Friend Class test
     Inherits InvalidDataException
 End Class");
         }
@@ -246,7 +267,7 @@ End Class");
         public void ClassInheritsClass2()
         {
             TestConversionCSharpToVisualBasic("class test : System.IO.InvalidDataException { }",
-@"Class test
+@"Friend Class test
     Inherits System.IO.InvalidDataException
 End Class");
         }

@@ -13,10 +13,10 @@ namespace CodeConverter.Tests.VB
     const int answer = 42;
     int value = 10;
     readonly int v = 15;
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Const answer As Integer = 42
     Private value As Integer = 10
-    ReadOnly v As Integer = 15
+    Private ReadOnly v As Integer = 15
 End Class");
         }
 
@@ -34,7 +34,7 @@ End Class");
     }
 }", @"Imports System.Runtime.InteropServices
 
-Class TestClass
+Friend Class TestClass
     Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
         argument2 = Nothing
@@ -55,7 +55,7 @@ End Class");
     }
 }", @"Imports System.Runtime.InteropServices
 
-Class TestClass
+Friend Class TestClass
     Public Function TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) As Integer
         Return 0
     End Function
@@ -76,7 +76,7 @@ End Class");
     }
 }", @"Imports System.Runtime.InteropServices
 
-Class TestClass
+Friend Class TestClass
     Public Shared Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
         argument2 = Nothing
@@ -92,7 +92,7 @@ End Class");
                 @"abstract class TestClass
 {
     public abstract void TestMethod();
-}", @"MustInherit Class TestClass
+}", @"Friend MustInherit Class TestClass
     Public MustOverride Sub TestMethod()
 End Class");
         }
@@ -119,7 +119,7 @@ class TestSubclass : TestClass
         TestMethod(3);
         System.Console.WriteLine(""Shadowed implementation"");
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Public Sub TestMethod()
     End Sub
 
@@ -127,7 +127,7 @@ class TestSubclass : TestClass
     End Sub
 End Class
 
-Class TestSubclass
+Friend Class TestSubclass
     Inherits TestClass
 
     Public Overloads Sub TestMethod()
@@ -151,7 +151,7 @@ End Class");
     }
 }", @"Imports System.Runtime.InteropServices
 
-Class TestClass
+Friend Class TestClass
     Public NotOverridable Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
         argument2 = Nothing
@@ -175,7 +175,7 @@ End Class");
     }
 }", @"Imports System.Runtime.CompilerServices
 
-Module TestClass
+Friend Module TestClass
     <Extension()>
     Sub TestMethod(ByVal str As String)
     End Sub
@@ -199,7 +199,7 @@ static class TestClass
     }
 }", @"Imports System.Runtime.CompilerServices
 
-Module TestClass
+Friend Module TestClass
     <Extension()>
     Sub TestMethod(ByVal str As String)
     End Sub
@@ -221,7 +221,7 @@ End Module");
         get { return this.m_test3; }
         set { this.m_test3 = value; }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Public Property Test As Integer
 
     Public ReadOnly Property Test2 As Integer
@@ -278,7 +278,7 @@ End Class");
     private string[] favColor => new string[] {""Red"", ""Green""};
     public string this[int index] => favColor[index];
 }  
-", @"Class MyFavColor
+", @"Friend Class MyFavColor
     Private ReadOnly Property favColor As String()
         Get
             Return New String() {""Red"", ""Green""}
@@ -333,7 +333,7 @@ End Class");
 {
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
     int value { get; set; }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     <DatabaseGenerated(DatabaseGeneratedOption.None)>
     Private Property value As Integer
 End Class
@@ -351,7 +351,7 @@ End Class
     }
 }", @"Imports System.Runtime.InteropServices
 
-Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
+Friend Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
     Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
     End Sub
 End Class");
@@ -398,7 +398,7 @@ End Class");
     ~TestClass()
     {
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Protected Overrides Sub Finalize()
     End Sub
 End Class");
@@ -411,7 +411,7 @@ End Class");
                 @"class TestClass
 {
     public event EventHandler MyEvent;
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Public Event MyEvent As EventHandler
 End Class");
         }
@@ -436,7 +436,7 @@ class TestClass
     }
 }", @"Imports System
 
-Class TestClass
+Friend Class TestClass
     Private backingField As EventHandler
 
     Public Event MyEvent As EventHandler
@@ -491,7 +491,7 @@ End Class");
             this.m_test3 = value;
         }
     }
-}", @"Class TestClass
+}", @"Friend Class TestClass
     Private _Items As Integer()
 
     Default Public Property Item(ByVal index As Integer) As Integer

@@ -1,19 +1,11 @@
 ﻿using System;
+using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.VB
 {
     public static class SyntaxKindExtensions
     {
-        public enum TokenContext
-        {
-            Global,
-            InterfaceOrModule,
-            Member,
-            VariableOrConst,
-            Local
-        }
-
         public static SyntaxKind ConvertToken(this Microsoft.CodeAnalysis.CSharp.SyntaxKind t, TokenContext context = TokenContext.Global)
         {
             switch (t)
