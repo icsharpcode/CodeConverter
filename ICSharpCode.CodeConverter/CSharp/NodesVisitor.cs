@@ -1233,18 +1233,23 @@ namespace ICSharpCode.CodeConverter.CSharp
                 while (querySectionsReversed.Any()) {
                     var (convertedClauses, clauseEnd) = querySectionsReversed.Pop();
                     SelectOrGroupClauseSyntax selectOrGroup = null;
-                    clauseEnd.TypeSwitch(
-                        (VBSyntax.GroupByClauseSyntax gcs) => {
+                    switch (clauseEnd) {
+                        case null:
+                            selectOrGroup = CreateDefaultSelectClause(fromClauseSyntax);
+                            break;
+
+                        case VBSyntax.GroupByClauseSyntax gcs:
                             queryContinuation = CreateGroupByContinuation(gcs, convertedClauses, nestedQueryBody, queryContinuation);
                             selectOrGroup = ConvertGroupByClause(gcs);
-                        },
-                        (VBSyntax.SelectClauseSyntax scs) => { selectOrGroup = ConvertSelectClauseSyntax(scs); },
-                        _ => {
-                            if (clauseEnd != null) {
-                                throw new NotImplementedException($"Clause kind '{clauseEnd.Kind()}' is not yet implemented");
-                            }
-                            selectOrGroup = CreateDefaultSelectClause(fromClauseSyntax); //TODO Build correct select for context
-                        });
+                            break;
+
+                        case VBSyntax.SelectClauseSyntax scs:
+                            selectOrGroup = ConvertSelectClauseSyntax(scs);
+                            break;
+
+                        default:
+                            throw new NotImplementedException($"Clause kind '{clauseEnd.Kind()}' is not yet implemented");
+                    }
                     nestedQueryBody = SyntaxFactory.QueryBody(convertedClauses, selectOrGroup, queryContinuation);
                 }
 
