@@ -1210,29 +1210,64 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitQueryExpression(VBSyntax.QueryExpressionSyntax node)
             {
-                var vbBodyClauses = node.Clauses;
-                var vbFromClause = vbBodyClauses.OfType<VBSyntax.FromClauseSyntax>().First();
+                return ConvertClauses(node.Clauses);
+            }
+
+            /// <remarks>
+            ///  Grammar info: http://kursinfo.himolde.no/in-kurs/IBE150/VBspec.htm#_Toc248253288
+            /// </remarks>
+            private CSharpSyntaxNode ConvertClauses(SyntaxList<VBSyntax.QueryClauseSyntax> clauses)
+            {
+                var vbBodyClauses = new Queue<VBSyntax.QueryClauseSyntax>(clauses);
+
+                var vbFromClause = (VBSyntax.FromClauseSyntax) vbBodyClauses.Dequeue();
                 var fromClauseSyntax = ConvertFromClauseSyntax(vbFromClause);
-                var vbGroupClause = vbBodyClauses.OfType<VBSyntax.GroupByClauseSyntax>().SingleOrDefault();
-                var vbSelectClause = vbBodyClauses.OfType<VBSyntax.SelectClauseSyntax>().SingleOrDefault();
-                var selectClauseSyntax = vbSelectClause != null
-                    ? ConvertSelectClauseSyntax(vbSelectClause)
-                    : CreateDefaultSelectClause(fromClauseSyntax);
-                var alreadyConverted = new VBSyntax.QueryClauseSyntax[] { vbFromClause, vbGroupClause, vbSelectClause };
-                SelectOrGroupClauseSyntax selectOrGroup = null;
-                QueryContinuationSyntax queryContinuation = null;
-                var queryClauseSyntaxs = SyntaxFactory.List(vbBodyClauses.TakeWhile(x => x != vbGroupClause).Except(alreadyConverted).Select(ConvertQueryBodyClause));
-                var continuedClauses = SyntaxFactory.List(vbBodyClauses.SkipWhile(x => x != vbGroupClause).Skip(1).Except(alreadyConverted).Select(ConvertQueryBodyClause));
-                if (vbGroupClause != null) {
-                    selectOrGroup = ConvertGroupByClause(vbGroupClause);
-                    queryContinuation = SyntaxFactory.QueryContinuation(GetGroupIdentifier(vbGroupClause),
-                        SyntaxFactory.QueryBody(continuedClauses, selectClauseSyntax, null));
-                } else {
-                    selectOrGroup = selectClauseSyntax;
+
+                var querySectionsReversed = new Stack<(SyntaxList<QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>();
+                while (vbBodyClauses.Any()) {
+                    querySectionsReversed.Push(ConvertQueryBodyClauses(vbBodyClauses));
                 }
 
-                var queryBodySyntax = SyntaxFactory.QueryBody(queryClauseSyntaxs, selectOrGroup, queryContinuation);
-                return SyntaxFactory.QueryExpression(fromClauseSyntax, queryBodySyntax);
+                QueryContinuationSyntax queryContinuation = null;
+                QueryBodySyntax nestedQueryBody = null;
+                while (querySectionsReversed.Any()) {
+                    var (convertedClauses, clauseEnd) = querySectionsReversed.Pop();
+                    SelectOrGroupClauseSyntax selectOrGroup = null;
+                    if (clauseEnd is VBSyntax.GroupByClauseSyntax gcs)  {
+                        queryContinuation = SyntaxFactory.QueryContinuation(GetGroupIdentifier(gcs),
+                            SyntaxFactory.QueryBody(convertedClauses, nestedQueryBody?.SelectOrGroup, queryContinuation));
+                        selectOrGroup = ConvertGroupByClause(gcs);
+                    } else if (clauseEnd is VBSyntax.SelectClauseSyntax scs) {
+                        selectOrGroup = ConvertSelectClauseSyntax(scs);
+                    } else if (clauseEnd == null) {
+                        selectOrGroup =  CreateDefaultSelectClause(fromClauseSyntax); //TODO Build correct select for context
+                    } else {
+                        throw new NotImplementedException($"Clause kind '{clauseEnd.Kind()}' is not yet implemented");
+                    }
+                    nestedQueryBody = SyntaxFactory.QueryBody(convertedClauses, selectOrGroup, queryContinuation);
+                }
+
+                return SyntaxFactory.QueryExpression(fromClauseSyntax, nestedQueryBody);
+            }
+
+            private (SyntaxList<QueryClauseSyntax>, VBSyntax.QueryClauseSyntax) ConvertQueryBodyClauses(Queue<VBSyntax.QueryClauseSyntax> vbBodyClauses)
+            {
+                var convertedClauses = new List<QueryClauseSyntax>();
+                while (vbBodyClauses.Any() && !EndsQueryBody(vbBodyClauses.Peek()))
+                {
+                    convertedClauses.Add(ConvertQueryBodyClause(vbBodyClauses.Dequeue()));
+                }
+
+                return (SyntaxFactory.List(convertedClauses), vbBodyClauses.Any() ? vbBodyClauses.Dequeue() : null);
+            }
+
+            private static bool EndsQueryBody(VBSyntax.QueryClauseSyntax queryClauseSyntax)
+            {
+                return queryClauseSyntax is VBSyntax.GroupByClauseSyntax
+                       || queryClauseSyntax is VBSyntax.SelectClauseSyntax
+                       || queryClauseSyntax is VBSyntax.PartitionClauseSyntax
+                       || queryClauseSyntax is VBSyntax.PartitionWhileClauseSyntax;
+
             }
 
             private FromClauseSyntax ConvertFromClauseSyntax(VBSyntax.FromClauseSyntax vbFromClause)
@@ -1252,6 +1287,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 );
             }
 
+            /// <summary>
+            /// TODO: In the case of multiple Froms and no Select, VB returns an anonymous type containing all the variables created by the from clause
+            /// </summary>
             private static SelectClauseSyntax CreateDefaultSelectClause(FromClauseSyntax fromClauseSyntax)
             {
                 return SyntaxFactory.SelectClause(SyntaxFactory.IdentifierName(fromClauseSyntax.Identifier));
