@@ -898,6 +898,30 @@ End Sub", @"private static void LinqSub()
         }
 
         [Fact]
+        public void LinqPartitionDistinct()
+        {
+            TestConversionVisualBasicToCSharp(@"Private Shared Function FindPicFilePath() As IEnumerable(Of String)
+    Dim words = {""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away""}
+
+    Return From word In words
+            Skip 1
+            Skip While word.Length >= 1
+            Take While word.Length < 5
+            Take 2
+            Distinct
+End Function", @"private static IEnumerable<string> FindPicFilePath()
+{
+    var words = new[] {""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away""};
+    return words
+        .Skip(1)
+        .SkipWhile(word => word.Length >= 1)
+        .TakeWhile(word => word.Length < 5)
+        .Take(2)
+        .Distinct();
+}");
+        }
+
+        [Fact]
         public void PartiallyQualifiedName()
         {
             TestConversionVisualBasicToCSharp(@"Imports System.Collections

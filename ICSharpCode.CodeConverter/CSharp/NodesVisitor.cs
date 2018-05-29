@@ -1266,7 +1266,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return queryClauseSyntax is VBSyntax.GroupByClauseSyntax
                        || queryClauseSyntax is VBSyntax.SelectClauseSyntax
                        || queryClauseSyntax is VBSyntax.PartitionClauseSyntax
-                       || queryClauseSyntax is VBSyntax.PartitionWhileClauseSyntax;
+                       || queryClauseSyntax is VBSyntax.PartitionWhileClauseSyntax
+                       || queryClauseSyntax is VBSyntax.DistinctClauseSyntax;
 
             }
 
