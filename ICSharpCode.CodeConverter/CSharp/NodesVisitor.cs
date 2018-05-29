@@ -1172,7 +1172,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitQueryExpression(VBSyntax.QueryExpressionSyntax node)
             {
                 var vbBodyClauses = node.Clauses;
-                var vbFromClause = vbBodyClauses.OfType<VBSyntax.FromClauseSyntax>().Single();
+                var vbFromClause = vbBodyClauses.OfType<VBSyntax.FromClauseSyntax>().First();
                 var fromClauseSyntax = ConvertFromClauseSyntax(vbFromClause);
                 var vbGroupClause = vbBodyClauses.OfType<VBSyntax.GroupByClauseSyntax>().SingleOrDefault();
                 var vbSelectClause = vbBodyClauses.OfType<VBSyntax.SelectClauseSyntax>().SingleOrDefault();
@@ -1220,9 +1220,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private QueryClauseSyntax ConvertQueryBodyClause(VBSyntax.QueryClauseSyntax node)
             {
-                return node.TypeSwitch<VBSyntax.QueryClauseSyntax, VBSyntax.JoinClauseSyntax, VBSyntax.LetClauseSyntax, VBSyntax.OrderByClauseSyntax, VBSyntax.WhereClauseSyntax, QueryClauseSyntax>(
+                return node.TypeSwitch<VBSyntax.QueryClauseSyntax, VBSyntax.FromClauseSyntax, VBSyntax.JoinClauseSyntax, VBSyntax.LetClauseSyntax, VBSyntax.OrderByClauseSyntax, VBSyntax.WhereClauseSyntax, QueryClauseSyntax>(
                     //(VBSyntax.AggregateClauseSyntax ags) => null,
                     //(VBSyntax.DistinctClauseSyntax ds) => null,
+                    ConvertFromClauseSyntax,
                     ConvertJoinClause,
                     ConvertLetClause,
                     ConvertOrderByClause,

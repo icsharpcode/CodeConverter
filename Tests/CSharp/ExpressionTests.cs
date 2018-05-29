@@ -771,6 +771,23 @@ End Function", @"private static string FindPicFilePath(string picId)
         }
 
         [Fact]
+        public void LinqMultipleFroms()
+        {
+            TestConversionVisualBasicToCSharp(@"Private Shared Sub LinqSub()
+    Dim _result = From _claimProgramSummary In New List(Of List(Of List(Of List(Of String))))()
+                  From _claimComponentSummary In _claimProgramSummary.First()
+                  From _lineItemCalculation In _claimComponentSummary.Last()
+                  Select _lineItemCalculation
+End Sub", @"private static void LinqSub()
+{
+    var _result = from _claimProgramSummary in new List<List<List<List<string>>>>()
+                  from _claimComponentSummary in _claimProgramSummary.First()
+                  from _lineItemCalculation in _claimComponentSummary.Last()
+                  select _lineItemCalculation;
+}");
+        }
+
+        [Fact]
         public void PartiallyQualifiedName()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
