@@ -6,21 +6,21 @@
 
   <Commands package="guidREConverterPackage">
     <Groups>
-      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterMenuGroup" priority="0x0600">
+      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterMenuGroup" priority="0x0300">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_EDIT"/>
       </Group>
-      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterCtxMenuGroup" priority="0x0600">
+      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterCtxMenuGroup" priority="0x0300">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_CODEWIN"/>
       </Group>
-      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectItemCtxMenuGroup" priority="0x0600">
+      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectItemCtxMenuGroup" priority="0x0300">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE"/>
       </Group>
-      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" priority="0x0600" />
+      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" />
     </Groups>
 
     <Buttons>
       <!-- C# to VB convertion commands -->
-      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBCommandId" priority="0x0100" type="Button">
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBCommandId" type="Button">
         <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterMenuGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -28,7 +28,7 @@
           <ButtonText>Convert to VB</ButtonText>
         </Strings>
       </Button>
-      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBCtxCommandId" priority="0x0100" type="Button">
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBCtxCommandId" type="Button">
         <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterCtxMenuGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -36,7 +36,7 @@
           <ButtonText>Convert to VB</ButtonText>
         </Strings>
       </Button>
-      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBProjectItemCtxCommandId" priority="0x0100" type="Button">
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBProjectItemCtxCommandId" type="Button">
         <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectItemCtxMenuGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -44,7 +44,7 @@
           <ButtonText>Convert to VB</ButtonText>
         </Strings>
       </Button>
-      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBSolutionOrProjectCtxCommandId" priority="0x0100" type="Button">
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBSolutionOrProjectCtxCommandId" type="Button">
         <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -54,7 +54,7 @@
       </Button>
 
       <!-- VB to C# conversion commands -->
-      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSCommandId" priority="0x0100" type="Button">
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSCommandId" type="Button">
         <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterMenuGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -62,7 +62,7 @@
           <ButtonText>Convert to C#</ButtonText>
         </Strings>
       </Button>
-      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSCtxCommandId" priority="0x0100" type="Button">
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSCtxCommandId" type="Button">
         <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterCtxMenuGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -70,7 +70,7 @@
           <ButtonText>Convert to C#</ButtonText>
         </Strings>
       </Button>
-      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSProjectItemCtxCommandId" priority="0x0100" type="Button">
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSProjectItemCtxCommandId" type="Button">
         <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectItemCtxMenuGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -78,7 +78,7 @@
           <ButtonText>Convert to C#</ButtonText>
         </Strings>
       </Button>
-      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSSolutionOrProjectCtxCommandId" priority="0x0100" type="Button">
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSSolutionOrProjectCtxCommandId" type="Button">
         <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -89,13 +89,13 @@
     </Buttons>
   </Commands>
   <CommandPlacements>
-    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup">
+    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" priority="0x0300">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_PROJNODE"/>
     </CommandPlacement>
-    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup">
+    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" priority="0x0300">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_XPROJ_MULTIPROJ"/>
     </CommandPlacement>
-    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup">
+    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" priority="0x0300">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_SOLNNODE"/>
     </CommandPlacement>
   </CommandPlacements>
