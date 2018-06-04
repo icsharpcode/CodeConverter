@@ -243,8 +243,8 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim student2 = New With {Key
-            .FirstName = ""Craig"", Key
+        Dim student2 = New With {
+            .FirstName = ""Craig"",
             .LastName = ""Playstead""
         }
     End Sub
@@ -456,8 +456,8 @@ End Sub");
     }",
 @"Public Shared Sub Linq40()
     Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
-    Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g Select New With {Key
-        .Remainder = g.Key, Key
+    Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {
+        .Remainder = __groupByKey1__,
         .Numbers = g
     }
 
@@ -513,7 +513,7 @@ Friend Class Test
     Public Sub Linq102()
         Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
         Dim products As Product() = GetProductList()
-        Dim q = From c In categories Join p In products On c Equals p.Category Select New With {Key
+        Dim q = From c In categories Join p In products On c Equals p.Category Select New With {
             .Category = c, p.ProductName
         }
 
@@ -557,8 +557,8 @@ End Class");
 }", @"Public Sub Linq103()
     Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
     Dim products = GetProductList()
-    Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {Key
-        .Category = c, Key
+    Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {
+        .Category = c,
         .Products = ps
     }
 

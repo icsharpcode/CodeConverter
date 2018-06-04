@@ -43,8 +43,8 @@ obj = Nothing",
     Value = ""World""
 };
 obj = null;",
-@"Dim obj = New With {Key
-    .Name = ""Hello"", Key
+@"Dim obj = New With {
+    .Name = ""Hello"",
     .Value = ""World""
 }
 obj = Nothing",

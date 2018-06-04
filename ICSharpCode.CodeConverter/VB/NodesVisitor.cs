@@ -1092,10 +1092,7 @@ namespace ICSharpCode.CodeConverter.VB
                 return SyntaxFactory.InferredFieldInitializer((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
             } else {
                 return SyntaxFactory.NamedFieldInitializer(
-                    SyntaxFactory.Token(SyntaxKind.KeyKeyword),
-                    SyntaxFactory.Token(SyntaxKind.DotToken),
                     (IdentifierNameSyntax)node.NameEquals.Name.Accept(TriviaConvertingVisitor),
-                    SyntaxFactory.Token(SyntaxKind.EqualsToken),
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor)
                 );
             }
@@ -1209,16 +1206,29 @@ namespace ICSharpCode.CodeConverter.VB
                 yield return (QueryClauseSyntax)body.SelectOrGroup.Accept(TriviaConvertingVisitor);
             } else {
                 var group = (CSS.GroupClauseSyntax)body.SelectOrGroup;
+                var newGroupKeyName = GeneratePlaceholder("groupByKey");
+                var csGroupId = CommonConversions.ConvertIdentifier(body.Continuation.Identifier);
+                var groupIdEquals = SyntaxFactory.VariableNameEquals(SyntaxFactory.ModifiedIdentifier(csGroupId));
+                var aggregationRangeVariableSyntax = SyntaxFactory.AggregationRangeVariable(groupIdEquals, SyntaxFactory.GroupAggregation());
                 yield return SyntaxFactory.GroupByClause(
                     SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ExpressionRangeVariable((ExpressionSyntax)group.GroupExpression.Accept(TriviaConvertingVisitor))),
-                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ExpressionRangeVariable(SyntaxFactory.VariableNameEquals(SyntaxFactory.ModifiedIdentifier(GeneratePlaceholder("groupByKey"))), (ExpressionSyntax)group.ByExpression.Accept(TriviaConvertingVisitor))),
-                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.AggregationRangeVariable(SyntaxFactory.FunctionAggregation(CommonConversions.ConvertIdentifier(body.Continuation.Identifier))))
-                );
+                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ExpressionRangeVariable(SyntaxFactory.VariableNameEquals(SyntaxFactory.ModifiedIdentifier(newGroupKeyName)), (ExpressionSyntax)group.ByExpression.Accept(TriviaConvertingVisitor))),
+                    SyntaxFactory.SingletonSeparatedList(aggregationRangeVariableSyntax));
                 if (body.Continuation.Body != null) {
-                    foreach (var clause in ConvertQueryBody(body.Continuation.Body))
-                        yield return clause;
+                    foreach (var clause in ConvertQueryBody(body.Continuation.Body)) {
+                        var groupKeyAccesses = clause.DescendantNodes().OfType<MemberAccessExpressionSyntax>()
+                            .Where(node => IsGroupKeyAccess(node, csGroupId));
+                        yield return clause.ReplaceNodes(groupKeyAccesses, (_, rewrite) => SyntaxFactory.IdentifierName(newGroupKeyName));
+                    }
                 }
             }
+        }
+
+        private static bool IsGroupKeyAccess(MemberAccessExpressionSyntax node, SyntaxToken csGroupId)
+        {
+            return node.Name.Identifier.Text == "Key" && 
+                   node.Expression is IdentifierNameSyntax ins &&
+                   ins.Identifier.Text == csGroupId.Text;
         }
 
         public override VisualBasicSyntaxNode VisitLetClause(CSS.LetClauseSyntax node)
