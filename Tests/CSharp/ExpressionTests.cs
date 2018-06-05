@@ -820,5 +820,49 @@ class TestClass
     }
 }");
         }
+
+        [Fact]
+        public void ValueCapitalisation()
+        {
+            //TODO: Fix comment to be ported to top of property rather than bottom
+            TestConversionVisualBasicToCSharpWithoutComments(@"public Enum TestState
+one
+two
+end enum
+public class test
+private _state as TestState
+    Public Property State As TestState
+        Get
+            Return _state
+        End Get
+        Set
+            If Not _state.Equals(Value) Then
+                _state = Value
+            End If
+        End Set
+    End Property
+end class", @"public enum TestState
+{
+    one,
+    two
+}
+
+public class test
+{
+    private TestState _state;
+    public TestState State
+    {
+        get
+        {
+            return _state;
+        }
+        set
+        {
+            if (!_state.Equals(value))
+                _state = value;
+        }
+    }
+}");
+        }
     }
 }

@@ -229,8 +229,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                         text = symbol.ContainingType.Name;
                         if (text.EndsWith("Attribute", StringComparison.Ordinal))
                             text = text.Remove(text.Length - "Attribute".Length);
+                    } else if (symbol.IsKind(SymbolKind.Parameter) && symbol.Name == "Value") {
+                        text = "value";
                     } else if (text.StartsWith("_", StringComparison.Ordinal) && symbol is IFieldSymbol fieldSymbol && fieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
-
                         text = fieldSymbol.AssociatedSymbol.Name;
                     }
                 }
