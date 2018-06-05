@@ -64,16 +64,23 @@ namespace ICSharpCode.CodeConverter.CSharp
             };
         }
 
-        public bool MustBeContainedByMethod(SyntaxNode node)
+        public bool CanBeContainedByMethod(SyntaxNode node)
         {
             return node is VBSyntax.IncompleteMemberSyntax ||
                    !(node is VBSyntax.DeclarationStatementSyntax) ||
-                   CouldBeFieldOrLocalVariableDeclaration(node);
+                   CouldBeFieldOrLocalVariableDeclaration(node) ||
+                   IsNonTypeEndBlock(node);
         }
 
         private static bool CouldBeFieldOrLocalVariableDeclaration(SyntaxNode node)
         {
             return node is VBSyntax.FieldDeclarationSyntax f && f.Modifiers.All(m => m.IsKind(SyntaxKind.DimKeyword));
+        }
+
+        private static bool IsNonTypeEndBlock(SyntaxNode node)
+        {
+            return node is VBSyntax.EndBlockStatementSyntax ebs && 
+                   !ebs.BlockKeyword.IsKind(SyntaxKind.ClassKeyword, SyntaxKind.StructureKeyword, SyntaxKind.InterfaceKeyword, SyntaxKind.ModuleKeyword);
         }
 
         public bool MustBeContainedByClass(SyntaxNode node)

@@ -60,7 +60,7 @@ namespace ICSharpCode.CodeConverter.VB
             };
         }
 
-        public bool MustBeContainedByMethod(SyntaxNode node)
+        public bool CanBeContainedByMethod(SyntaxNode node)
         {
             return node is CSSyntax.IncompleteMemberSyntax || 
                    node is CSSyntax.StatementSyntax || 

@@ -11,7 +11,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         SyntaxTree CreateTree(string text);
         Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references);
         List<SyntaxNode> FindSingleImportantChild(SyntaxNode annotatedNode);
-        bool MustBeContainedByMethod(SyntaxNode node);
+        bool CanBeContainedByMethod(SyntaxNode node);
         bool MustBeContainedByClass(SyntaxNode node);
         string WithSurroundingMethod(string text);
         string WithSurroundingClass(string text);
