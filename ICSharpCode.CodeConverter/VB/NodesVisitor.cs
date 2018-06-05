@@ -968,52 +968,47 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitBinaryExpression(CSS.BinaryExpressionSyntax node)
         {
+            var vbLeft = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
+            var vbRight = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
+
             if (node.IsKind(CS.SyntaxKind.CoalesceExpression)) {
                 return SyntaxFactory.BinaryConditionalExpression(
-                     (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor),
-                     (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor)
+                     vbLeft,
+                     vbRight
                 );
             }
             if (node.IsKind(CS.SyntaxKind.AsExpression)) {
-                return SyntaxFactory.TryCastExpression((ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor), (TypeSyntax)node.Right.Accept(TriviaConvertingVisitor));
+                return SyntaxFactory.TryCastExpression(vbLeft, (TypeSyntax)vbRight);
             }
             if (node.IsKind(CS.SyntaxKind.IsExpression)) {
-                return SyntaxFactory.TypeOfIsExpression((ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor), (TypeSyntax)node.Right.Accept(TriviaConvertingVisitor));
+                return SyntaxFactory.TypeOfIsExpression(vbLeft, (TypeSyntax)vbRight);
             }
-            if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.EqualsEqualsToken)) {
-                ExpressionSyntax otherArgument = null;
-                if (node.Left.IsKind(CS.SyntaxKind.NullLiteralExpression)) {
-                    otherArgument = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
-                }
-                if (node.Right.IsKind(CS.SyntaxKind.NullLiteralExpression)) {
-                    otherArgument = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
-                }
-                if (otherArgument != null) {
-                    return SyntaxFactory.IsExpression(otherArgument, CommonConversions.Literal(null));
-                }
+
+            var leftType = _semanticModel.GetTypeInfo(node.Left).ConvertedType;
+            var rightType = _semanticModel.GetTypeInfo(node.Right).ConvertedType;
+
+            var isReferenceComparison = node.Left.IsKind(CS.SyntaxKind.NullLiteralExpression) ||
+                                        node.Right.IsKind(CS.SyntaxKind.NullLiteralExpression) ||
+                                        leftType.IsReferenceType ||
+                                        rightType.IsReferenceType;
+
+            if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.EqualsEqualsToken) && isReferenceComparison) {
+                return SyntaxFactory.IsExpression(vbLeft, vbRight);
             }
-            if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.ExclamationEqualsToken)) {
-                ExpressionSyntax otherArgument = null;
-                if (node.Left.IsKind(CS.SyntaxKind.NullLiteralExpression)) {
-                    otherArgument = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
-                }
-                if (node.Right.IsKind(CS.SyntaxKind.NullLiteralExpression)) {
-                    otherArgument = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
-                }
-                if (otherArgument != null) {
-                    return SyntaxFactory.IsNotExpression(otherArgument, CommonConversions.Literal(null));
-                }
+            if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.ExclamationEqualsToken) && isReferenceComparison) {
+                return SyntaxFactory.IsNotExpression(vbLeft, vbRight);
             }
+
             var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
-            if (node.IsKind(CS.SyntaxKind.AddExpression) && (ModelExtensions.GetTypeInfo(_semanticModel, node.Left).ConvertedType?.SpecialType == SpecialType.System_String
-                || ModelExtensions.GetTypeInfo(_semanticModel, node.Right).ConvertedType?.SpecialType == SpecialType.System_String)) {
+            if (node.IsKind(CS.SyntaxKind.AddExpression) && (leftType.SpecialType == SpecialType.System_String
+                || rightType.SpecialType == SpecialType.System_String)) {
                 kind = SyntaxKind.ConcatenateExpression;
             }
             return SyntaxFactory.BinaryExpression(
                 kind,
-                (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor),
+                vbLeft,
                 SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)),
-                (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor)
+                vbRight
             );
         }
 

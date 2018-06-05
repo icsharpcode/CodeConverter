@@ -33,7 +33,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim result As Boolean = If((str = """"), True, False)
+        Dim result As Boolean = If((str Is """"), True, False)
     End Sub
 End Class");
         }
@@ -107,7 +107,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim result As Boolean = If((str = """"), CSharpImpl.__Throw(Of System.Boolean)(New Exception(""empty"")), False)
+        Dim result As Boolean = If((str Is """"), CSharpImpl.__Throw(Of System.Boolean)(New Exception(""empty"")), False)
     End Sub
 
     Private Class CSharpImpl
@@ -325,6 +325,17 @@ Friend Class TestClass
         MyBase.member = 0
     End Sub
 End Class");
+        }
+
+        [Fact]
+        public void ReferenceTypeComparison()
+        {
+            TestConversionCSharpToVisualBasic(@"public static bool AreTwoObjectsReferenceEqual()
+{
+    return new object() == new object();
+}", @"Public Shared Function AreTwoObjectsReferenceEqual() As Boolean
+    Return New Object() Is New Object()
+End Function");
         }
 
         [Fact]
