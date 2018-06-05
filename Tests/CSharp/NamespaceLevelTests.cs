@@ -265,5 +265,28 @@ End Class",
 {
 }");
         }
+
+        [Fact]
+        public void MultilineDocComment()
+        {
+            TestConversionVisualBasicToCSharp(@"Public Class MyTestClass
+    ''' <summary>
+    ''' Returns empty
+    ''' </summary>
+    Private Function MyFunc() As String
+        Return """"
+    End Function
+End Class",
+                @"public class MyTestClass
+{
+    /// <summary>
+    /// Returns empty
+    /// </summary>
+    private string MyFunc()
+    {
+        return """";
+    }
+}");
+        }
     }
 }

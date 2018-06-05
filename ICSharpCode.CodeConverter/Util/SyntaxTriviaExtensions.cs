@@ -148,6 +148,7 @@ namespace ICSharpCode.CodeConverter.Util
             return trivia.Kind() == SyntaxKind.MultiLineDocumentationCommentTrivia;
         }
 
+        /// <remarks>Good candidate for unit testing to catch newline issues hidden by the test harness</remarks>
         public static string GetCommentText(this SyntaxTrivia trivia)
         {
             var commentText = trivia.ToString();
@@ -208,8 +209,8 @@ namespace ICSharpCode.CodeConverter.Util
 
                 commentText = commentText.Trim();
 
-                var newLine = Environment.NewLine;
-                var lines = commentText.Split(new[] { newLine }, StringSplitOptions.None);
+                var newLine = commentText.Contains('\n') ? '\n' : '\r';
+                var lines = commentText.Split(new []{newLine}, StringSplitOptions.None);
                 foreach (var line in lines) {
                     var trimmedLine = line.Trim();
 
@@ -223,13 +224,10 @@ namespace ICSharpCode.CodeConverter.Util
                     textBuilder.AppendLine(trimmedLine);
                 }
 
-                // remove last line break
-                textBuilder.Remove(textBuilder.Length - newLine.Length, newLine.Length);
+                return textBuilder.ToString().TrimEnd();
+            } 
 
-                return textBuilder.ToString();
-            } else {
-                throw new InvalidOperationException();
-            }
+            throw new NotImplementedException($"Comment cannot be parsed:\r\n'{commentText}'");
         }
 
         public static string AsString(this IEnumerable<SyntaxTrivia> trivia)
