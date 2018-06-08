@@ -24,6 +24,7 @@ namespace CodeConverter.VsExtension
         private readonly VisualStudioWorkspace _visualStudioWorkspace;
         public static readonly string ConverterTitle = "Code converter";
         private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine + "Writing converted files to disk:";
+        private VisualStudioInteraction.OutputWindow _outputWindow;
         private string SolutionDir => Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
 
         public CodeConversion(IServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace,
@@ -32,6 +33,7 @@ namespace CodeConverter.VsExtension
             GetOptions = getOptions;
             _serviceProvider = serviceProvider;
             _visualStudioWorkspace = visualStudioWorkspace;
+            _outputWindow = new VisualStudioInteraction.OutputWindow();
         }
         
         public async Task PerformProjectConversion<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects) where TLanguageConversion : ILanguageConversion, new()
@@ -52,7 +54,7 @@ namespace CodeConverter.VsExtension
 
             if (GetOptions().CopyResultToClipboardForSingleDocument) {
                 Clipboard.SetText(conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString());
-                VisualStudioInteraction.OutputWindow.WriteToOutputWindow("Conversion result copied to clipboard.");
+                _outputWindow.WriteToOutputWindow("Conversion result copied to clipboard.");
                 VisualStudioInteraction.ShowMessageBox(_serviceProvider, "Conversion result copied to clipboard.", conversionResult.GetExceptionsAsString(), false);
             }
 
@@ -66,8 +68,9 @@ namespace CodeConverter.VsExtension
             string longestFilePath = null;
             var longestFileLength = -1;
 
-            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(Intro);
-            VisualStudioInteraction.OutputWindow.ForceShowOutputPane();
+            _outputWindow.Clear();
+            _outputWindow.WriteToOutputWindow(Intro);
+            _outputWindow.ForceShowOutputPane();
 
             foreach (var convertedFile in convertedFiles) {
                 if (convertedFile.SourcePathOrNull == null) continue;
@@ -96,8 +99,8 @@ namespace CodeConverter.VsExtension
         {
             var options = GetOptions();
             var conversionSummary = GetConversionSummary(files, errors);
-            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(conversionSummary);
-            VisualStudioInteraction.OutputWindow.ForceShowOutputPane();
+            _outputWindow.WriteToOutputWindow(conversionSummary);
+            _outputWindow .ForceShowOutputPane();
 
             if (longestFilePath != null)
             {
@@ -113,14 +116,14 @@ namespace CodeConverter.VsExtension
             if (shouldOverwriteSolutionAndProjectFiles)
             {
                 var titleMessage = options.CreateBackups ? "Creating backups and overwriting files:" : "Overwriting files:" + "";
-                VisualStudioInteraction.OutputWindow.WriteToOutputWindow(titleMessage);
+                _outputWindow.WriteToOutputWindow(titleMessage);
                 foreach (var fileToOverwrite in filesToOverwrite)
                 {
                     if (options.CreateBackups) File.Copy(fileToOverwrite.SourcePathOrNull, fileToOverwrite.SourcePathOrNull + ".bak", true);
                     File.WriteAllText(fileToOverwrite.TargetPathOrNull, fileToOverwrite.ConvertedCode);
 
                     var targetPathRelativeToSolutionDir = PathRelativeToSolutionDir(fileToOverwrite.TargetPathOrNull);
-                    VisualStudioInteraction.OutputWindow.WriteToOutputWindow(Environment.NewLine + $"* {targetPathRelativeToSolutionDir}");
+                    _outputWindow.WriteToOutputWindow(Environment.NewLine + $"* {targetPathRelativeToSolutionDir}");
                 }
             }
         }
@@ -163,7 +166,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                 output += $" contains errors{Environment.NewLine}    {indentedException}";
             }
 
-            VisualStudioInteraction.OutputWindow.WriteToOutputWindow(output);
+            _outputWindow.WriteToOutputWindow(output);
         }
 
         private string PathRelativeToSolutionDir(string path)

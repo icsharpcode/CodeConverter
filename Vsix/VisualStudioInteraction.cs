@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio;
@@ -147,12 +148,25 @@ namespace CodeConverter.VsExtension
                 defaultOk || !showCancelButton ? OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST : OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_SECOND) == answeredOk;
         }
 
-        public static class OutputWindow
+        public class OutputWindow
         {
             private const string PaneName = "Code Converter";
             private static readonly Guid PaneGuid = new Guid("44F575C6-36B5-4CDB-AAAE-E096E6A446BF");
-            private static readonly Lazy<IVsOutputWindowPane> OutputPane = new Lazy<IVsOutputWindowPane>(CreateOutputPane);
-            
+            private readonly IVsOutputWindowPane _outputPane;
+            private readonly StringBuilder _cachedOutput = new StringBuilder();
+
+            // Reference to avoid GC https://docs.microsoft.com/en-us/dotnet/api/envdte.solutionevents?view=visualstudiosdk-2017#remarks
+            // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
+            private readonly SolutionEvents _solutionEvents;
+
+            public OutputWindow()
+            {
+                _outputPane = CreateOutputPane();
+
+                _solutionEvents = Dte.Events.SolutionEvents;
+                _solutionEvents.Opened += () => { WriteToOutputWindow(_cachedOutput.ToString()); };
+            }
+
             private static IVsOutputWindow GetOutputWindow()
             {
                 IServiceProvider serviceProvider = new ServiceProvider(Dte as Microsoft.VisualStudio.OLE.Interop.IServiceProvider);
@@ -161,9 +175,8 @@ namespace CodeConverter.VsExtension
             private static IVsOutputWindowPane CreateOutputPane()
             {
                 Guid generalPaneGuid = PaneGuid;
-                IVsOutputWindowPane pane;
                 var outputWindow = GetOutputWindow();
-                outputWindow.GetPane(ref generalPaneGuid, out pane);
+                outputWindow.GetPane(ref generalPaneGuid, out var pane);
 
                 if (pane == null) {
                     outputWindow.CreatePane(ref generalPaneGuid, PaneName, 1, 1);
@@ -173,15 +186,22 @@ namespace CodeConverter.VsExtension
                 return pane;
             }
 
-            public static void ForceShowOutputPane()
+            public void Clear()
             {
-                Dte.Windows.Item(EnvDTE.Constants.vsWindowKindOutput).Visible = true;
-                OutputPane.Value.Activate();
+                _cachedOutput.Clear();
+                _outputPane.Clear();
             }
 
-            public static void WriteToOutputWindow(string message)
+            public void ForceShowOutputPane()
             {
-                OutputPane.Value.OutputString(message);
+                Dte.Windows.Item(EnvDTE.Constants.vsWindowKindOutput).Visible = true;
+                _outputPane.Activate();
+            }
+
+            public void WriteToOutputWindow(string message)
+            {
+                _cachedOutput.AppendLine(message);
+                _outputPane.OutputString(message);
             }
         }
     }
