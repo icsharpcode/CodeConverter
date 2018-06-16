@@ -24,7 +24,7 @@ Let us know what needs improving. If you want to get involved in writing the cod
 ## Other ways to use the converter
 * Extension "nightly" developer builds (potentially less stable and more effort to update): https://ci.appveyor.com/project/icsharpcode/codeconverter/branch/master
 
-* Online snippet converter: [https://roslyncodeconverter.azurewebsites.net](https://roslyncodeconverter.azurewebsites.net) (less accurate due to lack of project context)
+* Online snippet converter: [https://codeconverter.icsharpcode.net/](https://codeconverter.icsharpcode.net/) (less accurate due to lack of project context)
 
 * NuGet package: [https://www.nuget.org/packages/ICSharpCode.CodeConverter/](https://www.nuget.org/packages/ICSharpCode.CodeConverter/)
 
