@@ -436,6 +436,61 @@ static class Module1
         }
 
         [Fact]
+        public void TestWitheventsWithoutInitializer()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Class MyEventClass
+    Public Event TestEvent()
+End Class
+Class Class1
+    WithEvents MyEventClassInstance As MyEventClass
+    Sub EventClassInstance_TestEvent() Handles MyEventClassInstance.TestEvent
+    End Sub
+End Class", @"using System.Runtime.CompilerServices;
+
+class MyEventClass
+{
+    public event TestEventEventHandler TestEvent;
+
+    public delegate void TestEventEventHandler();
+}
+
+class Class1
+{
+    private MyEventClass _MyEventClassInstance;
+
+    private MyEventClass MyEventClassInstance
+    {
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        get
+        {
+            return _MyEventClassInstance;
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        set
+        {
+            if (_MyEventClassInstance != null)
+            {
+                _MyEventClassInstance.TestEvent -= EventClassInstance_TestEvent;
+            }
+
+            _MyEventClassInstance = value;
+            if (_MyEventClassInstance != null)
+            {
+                _MyEventClassInstance.TestEvent += EventClassInstance_TestEvent;
+            }
+        }
+    }
+
+    public void EventClassInstance_TestEvent()
+    {
+    }
+}
+");
+        }
+
+        [Fact]
         public void TestClassHandlesWithEvents()
         {
             // Too much auto-generated code to auto-test comments
