@@ -363,7 +363,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 foreach (var declarator in node.Declarators) {
                     foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator).Values) {
                         if (isWithEvents) {
-                            var initializers = decl.Variables.ToDictionary(v => v.Identifier.Text, v => v.Initializer);
+                            var initializers = decl.Variables
+                                .Where(a => a.Initializer != null)
+                                .ToDictionary(v => v.Identifier.Text, v => v.Initializer);
                             var fieldDecl = decl.RemoveNodes(initializers.Values, SyntaxRemoveOptions.KeepNoTrivia);
                             var initializerCollection = convertedModifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword))
                                 ? _additionalInitializers.AdditionalStaticInitializers
