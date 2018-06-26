@@ -550,7 +550,7 @@ class TestClass
 {
     private void TestMethod()
     {
-        Func<int, int> test = int a => a * 2;
+        Func<int, int> test = (int a) => a * 2;
         test(3);
     }
 }");

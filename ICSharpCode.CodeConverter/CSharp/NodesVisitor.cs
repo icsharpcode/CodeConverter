@@ -1442,7 +1442,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     body = node.Body.Accept(TriviaConvertingVisitor);
                 }
                 var param = (ParameterListSyntax)node.SubOrFunctionHeader.ParameterList.Accept(TriviaConvertingVisitor);
-                if (param.Parameters.Count == 1)
+                if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null)
                     return SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
                 return SyntaxFactory.ParenthesizedLambdaExpression(param, body);
             }
@@ -1451,7 +1451,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var body = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())));
                 var param = (ParameterListSyntax)node.SubOrFunctionHeader.ParameterList.Accept(TriviaConvertingVisitor);
-                if (param.Parameters.Count == 1)
+                if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null)
                     return SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
                 return SyntaxFactory.ParenthesizedLambdaExpression(param, body);
             }
