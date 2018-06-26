@@ -1162,11 +1162,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitCollectionInitializer(VBSyntax.CollectionInitializerSyntax node)
             {
-                var typeInfo = _semanticModel.GetTypeInfo(node);
-                var isArrayType = typeInfo.ConvertedType?.IsKind(SymbolKind.ArrayType) == true;
-                var initializerType = isArrayType ? SyntaxKind.ArrayInitializerExpression : SyntaxKind.CollectionInitializerExpression;
+                var isArrayLiteral =
+                    !( node.Parent is VBSyntax.ObjectCollectionInitializerSyntax
+                    || node.Parent is VBSyntax.CollectionInitializerSyntax
+                    || node.Parent is VBSyntax.ArrayCreationExpressionSyntax);
+                var initializerType = isArrayLiteral ? SyntaxKind.ArrayInitializerExpression : SyntaxKind.CollectionInitializerExpression;
                 var initializer = SyntaxFactory.InitializerExpression(initializerType, SyntaxFactory.SeparatedList(node.Initializers.Select(i => (ExpressionSyntax)i.Accept(TriviaConvertingVisitor))));
-                return typeInfo.Type == null && (typeInfo.ConvertedType?.SpecialType == SpecialType.System_Collections_IEnumerable || isArrayType)
+                return isArrayLiteral
                     ? (CSharpSyntaxNode)SyntaxFactory.ImplicitArrayCreationExpression(initializer)
                     : initializer;
             }
