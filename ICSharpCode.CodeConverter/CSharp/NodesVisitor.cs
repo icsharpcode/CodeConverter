@@ -1442,15 +1442,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                     body = node.Body.Accept(TriviaConvertingVisitor);
                 }
                 var param = (ParameterListSyntax)node.SubOrFunctionHeader.ParameterList.Accept(TriviaConvertingVisitor);
-                if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null)
-                    return SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
-                return SyntaxFactory.ParenthesizedLambdaExpression(param, body);
+                return CreateLambdaExpression(param, body);
             }
 
             public override CSharpSyntaxNode VisitMultiLineLambdaExpression(VBSyntax.MultiLineLambdaExpressionSyntax node)
             {
                 var body = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())));
                 var param = (ParameterListSyntax)node.SubOrFunctionHeader.ParameterList.Accept(TriviaConvertingVisitor);
+                return CreateLambdaExpression(param, body);
+            }
+
+            private static CSharpSyntaxNode CreateLambdaExpression(ParameterListSyntax param, CSharpSyntaxNode body)
+            {
                 if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null)
                     return SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
                 return SyntaxFactory.ParenthesizedLambdaExpression(param, body);
