@@ -183,14 +183,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             var replacements = new Dictionary<string, string> {
                 {"C", ""},
                 {"I", ""},
+                {"%", ""},
                 {"UI", "U"},
                 {"S", ""},
                 {"US", ""},
                 {"UL", "UL"},
                 {"D", "M"},
+                {"@", "M"},
                 {"R", "D"},
+                {"#", "D"},
                 {"F", "F"}, // Normalizes casing
-                {"L", "L"} // Normalizes casing
+                {"!", "F"},
+                {"L", "L"}, // Normalizes casing
+                {"&", "L"},
             };
             // Be careful not to replace only the "S" in "US" for example
             var longestMatchingReplacement = replacements.Where(t => valueText.EndsWith(t.Key, StringComparison.OrdinalIgnoreCase))
