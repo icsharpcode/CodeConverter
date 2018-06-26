@@ -1,7 +1,23 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
-#5.7.0 - TBC
+#5.8.0 - TBC
+* Move options lower down in the context menus so they aren't in the way 
+
+### VB -> C#
+* Handle WithEvents fields without initializers
+* In lambda, use parentheses around single explicitly typed parameter
+* Convert LocalDeclarationStatementSyntax
+* Default parameter "value" now has the correct case
+* Multiline xml doc comment conversion bugfix
+
+### C# -> VB
+* Interfaces "implements" clause now converted
+* Shared no longer appears on Module members
+* Fixed .Name bug with anonymous object creation
+* Use Is and IsNot for reference type comparison
+
+#5.7.0 - 08/05/2018
 * Update to .NET Standard 2.0
 * Convert solution and project files
 * Added convert and copy to clipboard into options
