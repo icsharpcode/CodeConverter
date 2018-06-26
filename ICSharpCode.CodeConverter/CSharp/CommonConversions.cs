@@ -273,7 +273,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var m = ConvertModifier(token, context);
                 if (m.HasValue) yield return m.Value;
             }
-            if (context == TokenContext.MemberInModule)
+            if (context == TokenContext.MemberInModule &&
+                    !modifiers.Any(a => VisualBasicExtensions.Kind(a) == SyntaxKind.ConstKeyword ))
                 yield return SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
         }
 

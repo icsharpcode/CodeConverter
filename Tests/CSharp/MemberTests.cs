@@ -21,6 +21,18 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void TestConstantFieldInModule()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Module TestModule
+    Const answer As Integer = 42
+End Module", @"static class TestModule
+{
+    const int answer = 42;
+}");
+        }
+
+        [Fact]
         public void TestMethod()
         {
             TestConversionVisualBasicToCSharp(
