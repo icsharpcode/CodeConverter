@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
-#5.8.0 - TBC
+# 5.8.0 - 26/06/2018
 * Move options lower down in the context menus so they aren't in the way 
 
 ### VB -> C#
@@ -17,7 +17,7 @@ All notable changes to the code converter will be documented here.
 * Fixed .Name bug with anonymous object creation
 * Use Is and IsNot for reference type comparison
 
-#5.7.0 - 08/05/2018
+# 5.7.0 - 08/05/2018
 * Update to .NET Standard 2.0
 * Convert solution and project files
 * Added convert and copy to clipboard into options
@@ -38,7 +38,7 @@ All notable changes to the code converter will be documented here.
 * Fix error converting ObjectCollectionInitializerSyntax within object initializer
 * Escape predefined if they are used for the name of declaration
 
-#5.6.3 - 09/04/2018
+# 5.6.3 - 09/04/2018
 
 * Improve support for sub-class snippets through the website
 * Best effort conversion with errors as comments inline
