@@ -1438,6 +1438,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                 CSharpSyntaxNode body;
                 if (node.Body is VBSyntax.ExpressionStatementSyntax ess)
                     body = ess.Expression.Accept(TriviaConvertingVisitor);
+                else if (node.Body is VBSyntax.StatementSyntax statement) {
+                    var convertedStatement = statement.Accept(CreateMethodBodyVisitor()).Single();
+                    if (convertedStatement is ExpressionStatementSyntax exprStmt) {
+                        body = exprStmt.Expression; // Assignment is an expression in C#
+                    } else {
+                        // VB in-line if statement is an example of a statement that must be enclosed in block
+                        body = SyntaxFactory.Block((StatementSyntax)convertedStatement);
+                    }
+                }
                 else {
                     body = node.Body.Accept(TriviaConvertingVisitor);
                 }

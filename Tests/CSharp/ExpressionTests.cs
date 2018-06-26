@@ -591,6 +591,32 @@ class TestClass
         }
 
         [Fact]
+        public void SingleLineLambdaWithStatementBody()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+    Private Sub TestMethod()
+        Dim x = 1
+        Dim simpleAssignmentAction As System.Action = Sub() x = 1
+        Dim ifAction As Action = Sub() If True Then Exit Sub
+    End Sub
+End Class", @"using System;
+
+class TestClass
+{
+    private void TestMethod()
+    {
+        var x = 1;
+        System.Action simpleAssignmentAction = () => x = 1;
+        Action ifAction = () =>
+        {
+            if (true)
+                return;
+        };
+    }
+}");
+        }
+        
+        [Fact]
         public void Await()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
