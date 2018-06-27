@@ -1162,13 +1162,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitCollectionInitializer(VBSyntax.CollectionInitializerSyntax node)
             {
-                var typeInfo = _semanticModel.GetTypeInfo(node);
-                var isArrayType = typeInfo.ConvertedType?.IsKind(SymbolKind.ArrayType) == true;
-                var initializerType = isArrayType ? SyntaxKind.ArrayInitializerExpression : SyntaxKind.CollectionInitializerExpression;
+                var isExplicitCollectionInitializer = node.Parent is VBSyntax.ObjectCollectionInitializerSyntax
+                        || node.Parent is VBSyntax.CollectionInitializerSyntax
+                        || node.Parent is VBSyntax.ArrayCreationExpressionSyntax;
+                var initializerType = isExplicitCollectionInitializer ? SyntaxKind.CollectionInitializerExpression : SyntaxKind.ArrayInitializerExpression;
                 var initializer = SyntaxFactory.InitializerExpression(initializerType, SyntaxFactory.SeparatedList(node.Initializers.Select(i => (ExpressionSyntax)i.Accept(TriviaConvertingVisitor))));
-                return typeInfo.Type == null && (typeInfo.ConvertedType?.SpecialType == SpecialType.System_Collections_IEnumerable || isArrayType)
-                    ? (CSharpSyntaxNode)SyntaxFactory.ImplicitArrayCreationExpression(initializer)
-                    : initializer;
+                return isExplicitCollectionInitializer
+                    ? initializer
+                    : (CSharpSyntaxNode)SyntaxFactory.ImplicitArrayCreationExpression(initializer);
             }
 
             public override CSharpSyntaxNode VisitQueryExpression(VBSyntax.QueryExpressionSyntax node)
