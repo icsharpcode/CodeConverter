@@ -92,7 +92,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             FirstPass();
             var secondPassByFilePath = SecondPass();
-#if DEBUG && false
+#if DEBUG && ShowCompilationErrors
             AddProjectWarnings();
 #endif
             return secondPassByFilePath;

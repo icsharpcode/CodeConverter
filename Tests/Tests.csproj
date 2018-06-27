@@ -147,6 +147,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConverterTestBase.cs" />
+    <Compile Include="CSharp\MissingSemanticModelInfo\ExpressionTests.cs" />
     <Compile Include="CSharp\SolutionAndProjectTests.cs" />
     <Compile Include="CSharp\StandaloneMultiStatementTests.cs" />
     <Compile Include="CSharp\ExpressionTests.cs" />
@@ -166,5 +167,8 @@
     <Compile Include="VB\StandaloneMultiStatementTests.cs" />
     <Compile Include="VB\StatementTests.cs" />
     <Compile Include="VB\TypeCastTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Readme.txt" />
   </ItemGroup>
 </Project>
