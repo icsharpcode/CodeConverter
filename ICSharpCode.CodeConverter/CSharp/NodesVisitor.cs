@@ -1621,7 +1621,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var lhsSyntax = (NameSyntax)node.Left.Accept(TriviaConvertingVisitor);
                 var rhsSyntax = (SimpleNameSyntax)node.Right.Accept(TriviaConvertingVisitor);
 
-                var partOfNamespaceDeclaration = node.Parent.IsKind(VBasic.SyntaxKind.NamespaceStatement);
+                VBSyntax.NameSyntax topLevelName = node;
+                while (topLevelName.Parent is VBSyntax.NameSyntax parentName)
+                {
+                    topLevelName = parentName;
+                }
+                var partOfNamespaceDeclaration = topLevelName.Parent.IsKind(VBasic.SyntaxKind.NamespaceStatement);
                 var leftIsGlobal = node.Left.IsKind(VBasic.SyntaxKind.GlobalName);
 
                 ExpressionSyntax qualifiedName;
