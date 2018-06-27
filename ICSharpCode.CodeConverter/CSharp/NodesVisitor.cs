@@ -1437,8 +1437,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitSingleLineLambdaExpression(VBSyntax.SingleLineLambdaExpressionSyntax node)
             {
                 CSharpSyntaxNode body;
-                if (node.Body is VBSyntax.ExpressionStatementSyntax ess)
-                    body = ess.Expression.Accept(TriviaConvertingVisitor);
+                if (node.Body is VBSyntax.StatementSyntax statement) {
+                    var convertedStatements = statement.Accept(CreateMethodBodyVisitor());
+                    if (convertedStatements.Count == 1
+                            && convertedStatements.Single() is ExpressionStatementSyntax exprStmt) {
+                        // Assignment is an example of a statement in VB that becomes an expression in C#
+                        body = exprStmt.Expression;
+                    } else {
+                        body = SyntaxFactory.Block(convertedStatements).UnpackNonNestedBlock();
+                    }
+                }
                 else {
                     body = node.Body.Accept(TriviaConvertingVisitor);
                 }
