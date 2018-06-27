@@ -377,7 +377,7 @@ End Class", @"class TestClass
     public System.Some.UnknownType SomeProperty { get; set; }
     private void TestMethod()
     {
-        var value = SomeProperty(0);
+        var value = SomeProperty[0];
     }
 }");
         }
