@@ -365,6 +365,24 @@ class TestClass
         }
 
         [Fact]
+        public void InvokeIndexerOnPropertyValue()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Public Property SomeProperty As System.Some.UnknownType
+    Private Sub TestMethod()
+        Dim value = SomeProperty(0)
+    End Sub
+End Class", @"class TestClass
+{
+    public System.Some.UnknownType SomeProperty { get; set; }
+    private void TestMethod()
+    {
+        var value = SomeProperty[0];
+    }
+}");
+        }
+
+        [Fact]
         public void ExternalReferenceToOutParameter()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass

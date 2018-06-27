@@ -1064,7 +1064,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (symbol != null) {
                     var parameterKinds = symbol.GetParameters().Select(param => param.RefKind).ToList();
                     //WARNING: If named parameters can reach here it won't work properly for them
-                    var refKind = argId >= parameterKinds.Count && symbol.IsParams() ? RefKind.None : parameterKinds[argId];
+                    var refKind = argId >= parameterKinds.Count ? RefKind.None : parameterKinds[argId];
                     switch (refKind) {
                         case RefKind.None:
                             token = default(SyntaxToken);
@@ -1421,7 +1421,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch();
                 var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
-                if (invocationSymbol?.IsIndexer() == true || symbol?.GetReturnType()?.IsArrayType() == true && !(symbol is IMethodSymbol)) //The null case happens quite a bit - should try to fix
+                var symbolReturnType = symbol?.GetReturnType();
+                // Chances of having an unknown delegate stored as a field/local seem lower than having an unknown non-delegate type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
+                if (invocationSymbol?.IsIndexer() == true || symbolReturnType.IsArrayType() && !(symbol is IMethodSymbol) || symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax)
                 {
                     return SyntaxFactory.ElementAccessExpression(
                         (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
