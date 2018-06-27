@@ -1061,10 +1061,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return node.Expression.Accept(TriviaConvertingVisitor);
                 var symbol = GetInvocationSymbol(invocation);
                 SyntaxToken token = default(SyntaxToken);
-                if (symbol != null && !(symbol.Kind == SymbolKind.Property && symbol.GetParameters().Length == 0)) {
+                if (symbol != null) {
                     var parameterKinds = symbol.GetParameters().Select(param => param.RefKind).ToList();
                     //WARNING: If named parameters can reach here it won't work properly for them
-                    var refKind = argId >= parameterKinds.Count && symbol.IsParams() ? RefKind.None : parameterKinds[argId];
+                    var refKind = argId >= parameterKinds.Count ? RefKind.None : parameterKinds[argId];
                     switch (refKind) {
                         case RefKind.None:
                             token = default(SyntaxToken);
