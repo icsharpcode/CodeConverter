@@ -597,6 +597,7 @@ class TestClass
     Private Sub TestMethod()
         Dim x = 1
         Dim simpleAssignmentAction As System.Action = Sub() x = 1
+        Dim nonBlockAction As System.Action = Sub() Console.WriteLine(""Statement"")
         Dim ifAction As Action = Sub() If True Then Exit Sub
     End Sub
 End Class", @"using System;
@@ -607,7 +608,8 @@ class TestClass
     {
         var x = 1;
         System.Action simpleAssignmentAction = () => x = 1;
-        Action ifAction = () =>
+        System.Action nonBlockAction = () => Console.WriteLine(""Statement"");
+        Action ifAction = () =>"/* I don't know why this Action doesn't get qualified when the above two do - just characterizing current behaviour*/ + @"
         {
             if (true)
                 return;
