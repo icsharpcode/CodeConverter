@@ -105,7 +105,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 var attributes = SyntaxFactory.List(node.Attributes.SelectMany(a => a.AttributeLists).SelectMany(ConvertAttribute));
-                var members = SyntaxFactory.List(node.Members.Select(m => (MemberDeclarationSyntax)m.Accept(TriviaConvertingVisitor)));
+                var convertedMembers = node.Members.Select(m => (MemberDeclarationSyntax)m.Accept(TriviaConvertingVisitor));
+                if (!string.IsNullOrEmpty(options.RootNamespace))
+                {
+                    var rootNamespaceIdentifier = SyntaxFactory.IdentifierName(options.RootNamespace);
+                    convertedMembers = PrependRootNamespace(convertedMembers, rootNamespaceIdentifier);
+                }
+                var members = SyntaxFactory.List(convertedMembers);
 
                 return SyntaxFactory.CompilationUnit(
                     SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
@@ -113,6 +119,31 @@ namespace ICSharpCode.CodeConverter.CSharp
                     attributes,
                     members
                 );
+            }
+
+            private IEnumerable<MemberDeclarationSyntax> PrependRootNamespace(
+                    IEnumerable<MemberDeclarationSyntax> memberDeclarations,
+                    IdentifierNameSyntax rootNamespaceIdentifier)
+            {
+                if (!memberDeclarations.Skip(1).Any() && memberDeclarations.FirstOrDefault() is NamespaceDeclarationSyntax nsDecl) {
+                    return new [] { nsDecl.WithName(PrependName(nsDecl.Name, rootNamespaceIdentifier)) };
+                }
+
+                var newNamespaceDecl = (MemberDeclarationSyntax)SyntaxFactory.NamespaceDeclaration(rootNamespaceIdentifier)
+                        .WithMembers(SyntaxFactory.List(memberDeclarations));
+                return new [] { newNamespaceDecl };
+            }
+            private NameSyntax PrependName(NameSyntax name, IdentifierNameSyntax toPrepend)
+            {
+                if (name is IdentifierNameSyntax identName) {
+                    return SyntaxFactory.QualifiedName(toPrepend, identName);
+                }
+                else if (name is QualifiedNameSyntax qName) {
+                    return SyntaxFactory.QualifiedName(PrependName(qName.Left, toPrepend), qName.Right);
+                }
+                else {
+                    throw new Exception("Unknown name syntax");
+                }
             }
 
             public override CSharpSyntaxNode VisitSimpleImportsClause(VBSyntax.SimpleImportsClauseSyntax node)
