@@ -14,6 +14,15 @@ End Namespace", @"namespace Test
         }
 
         [Fact]
+        public void TestLongNamespace()
+        {
+            TestConversionVisualBasicToCSharp(@"Namespace Test1.Test2.Test3
+End Namespace", @"namespace Test1.Test2.Test3
+{
+}");
+        }
+
+        [Fact]
         public void TestGlobalNamespace()
         {
             TestConversionVisualBasicToCSharp(@"Namespace Global.Test
