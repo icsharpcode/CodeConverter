@@ -142,7 +142,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxFactory.QualifiedName(PrependName(qName.Left, toPrepend), qName.Right);
                 }
                 else {
-                    throw new Exception("Unknown name syntax");
+                    throw new ArgumentOutOfRangeException(nameof(name), name, $"{name.GetType().Name} of kind {name.Kind()} not expected within namespace declaration");
                 }
             }
 
