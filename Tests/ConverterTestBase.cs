@@ -5,8 +5,6 @@ using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.VisualBasic;
 using Xunit;
 
 namespace CodeConverter.Tests
@@ -14,7 +12,7 @@ namespace CodeConverter.Tests
     public class ConverterTestBase
     {
         private bool _testCstoVBCommentsByDefault = false;
-        public void TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
+        public void TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false)
         {
             expectedVisualBasicCode = AddSurroundingMethodBlock(expectedVisualBasicCode, expectSurroundingMethodBlock);
 
@@ -43,8 +41,8 @@ End Sub";
         public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool expectSurroundingBlock = false)
         {
             if (expectSurroundingBlock) expectedCsharpCode = SurroundWithBlock(expectedCsharpCode);
-            TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode, false);
-            TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true), false);
+            TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode);
+            TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true));
         }
 
         private static string SurroundWithBlock(string expectedCsharpCode)
@@ -53,7 +51,7 @@ End Sub";
             return $"{{\r\n    {indentedStatements}\r\n}}";
         }
 
-        public void TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode, bool addUsings = true, CSharpParseOptions csharpOptions = null, VisualBasicParseOptions vbOptions = null)
+        public void TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode)
         {
             AssertConvertedCodeResultEquals<VBToCSConversion>(visualBasicCode, expectedCsharpCode);
         }

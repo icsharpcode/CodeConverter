@@ -37,7 +37,7 @@ namespace ICSharpCode.CodeConverter.Util
             return source;
         }
 
-        public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> source)
+        public static IReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> source)
         {
             if (source == null) {
                 throw new ArgumentNullException(nameof(source));

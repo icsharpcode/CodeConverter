@@ -139,7 +139,6 @@ End Class";
         public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
             var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                .WithRootNamespace("TestProject")
                 .WithGlobalImports(GlobalImport.Parse(
                     "System",
                     "System.Collections.Generic",
