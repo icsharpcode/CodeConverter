@@ -111,13 +111,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var rootNamespaceIdentifier = SyntaxFactory.IdentifierName(options.RootNamespace);
                     convertedMembers = PrependRootNamespace(convertedMembers, rootNamespaceIdentifier);
                 }
-                var members = SyntaxFactory.List(convertedMembers);
 
                 return SyntaxFactory.CompilationUnit(
                     SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
                     SyntaxFactory.List(importsClauses.GroupBy(c => c.ToString()).Select(g => g.First()).Select(c => (UsingDirectiveSyntax)c.Accept(TriviaConvertingVisitor))),
                     attributes,
-                    members
+                    SyntaxFactory.List(convertedMembers)
                 );
             }
 
@@ -125,7 +124,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     IReadOnlyCollection<MemberDeclarationSyntax> memberDeclarations,
                     IdentifierNameSyntax rootNamespaceIdentifier)
             {
-                if (!memberDeclarations.Skip(1).Any() && memberDeclarations.FirstOrDefault() is NamespaceDeclarationSyntax nsDecl) {
+                if (memberDeclarations.Count == 1 && memberDeclarations.First() is NamespaceDeclarationSyntax nsDecl) {
                     return new [] { nsDecl.WithName(PrependName(nsDecl.Name, rootNamespaceIdentifier)) };
                 }
 
@@ -133,6 +132,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         .WithMembers(SyntaxFactory.List(memberDeclarations));
                 return new [] { newNamespaceDecl };
             }
+
             private NameSyntax PrependName(NameSyntax name, IdentifierNameSyntax toPrepend)
             {
                 if (name is IdentifierNameSyntax identName) {
