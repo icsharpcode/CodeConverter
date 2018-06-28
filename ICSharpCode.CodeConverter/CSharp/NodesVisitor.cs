@@ -105,7 +105,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 var attributes = SyntaxFactory.List(node.Attributes.SelectMany(a => a.AttributeLists).SelectMany(ConvertAttribute));
-                var convertedMembers = node.Members.Select(m => (MemberDeclarationSyntax)m.Accept(TriviaConvertingVisitor));
+                var convertedMembers = node.Members.Select(m => (MemberDeclarationSyntax)m.Accept(TriviaConvertingVisitor)).ToReadOnlyCollection();
                 if (!string.IsNullOrEmpty(options.RootNamespace))
                 {
                     var rootNamespaceIdentifier = SyntaxFactory.IdentifierName(options.RootNamespace);
@@ -121,8 +121,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 );
             }
 
-            private IEnumerable<MemberDeclarationSyntax> PrependRootNamespace(
-                    IEnumerable<MemberDeclarationSyntax> memberDeclarations,
+            private IReadOnlyCollection<MemberDeclarationSyntax> PrependRootNamespace(
+                    IReadOnlyCollection<MemberDeclarationSyntax> memberDeclarations,
                     IdentifierNameSyntax rootNamespaceIdentifier)
             {
                 if (!memberDeclarations.Skip(1).Any() && memberDeclarations.FirstOrDefault() is NamespaceDeclarationSyntax nsDecl) {
