@@ -899,13 +899,22 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var expressionSyntax = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
 
-                return convertMethodOrNull != null ?
-                    SyntaxFactory.InvocationExpression(convertMethodOrNull,
-                        SyntaxFactory.ArgumentList(
-                            SyntaxFactory.SingletonSeparatedList(
-                                SyntaxFactory.Argument(expressionSyntax)))
-                    ) // Hopefully will be a compile error if it's wrong
-                    : (ExpressionSyntax)SyntaxFactory.CastExpression((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor), expressionSyntax);
+                if (convertMethodOrNull != null)
+                {
+                    return
+                        SyntaxFactory.InvocationExpression(convertMethodOrNull,
+                            SyntaxFactory.ArgumentList(
+                                SyntaxFactory.SingletonSeparatedList(
+                                    SyntaxFactory.Argument(expressionSyntax)))
+                        );
+                }
+
+                var castExpr = SyntaxFactory.CastExpression((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor), expressionSyntax);
+                if (node.Parent is VBSyntax.MemberAccessExpressionSyntax)
+                {
+                    return (ExpressionSyntax)SyntaxFactory.ParenthesizedExpression(castExpr);
+                }
+                return castExpr;
             }
 
             public override CSharpSyntaxNode VisitPredefinedCastExpression(VBSyntax.PredefinedCastExpressionSyntax node)
@@ -1382,7 +1391,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)
                 );
                 if (node.IsKind(VBasic.SyntaxKind.TypeOfIsNotExpression))
-                    return SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, expr);
+                    return SyntaxFactory.PrefixUnaryExpression(
+                            SyntaxKind.LogicalNotExpression,
+                            SyntaxFactory.ParenthesizedExpression(expr));
                 return expr;
             }
 
@@ -1395,8 +1406,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.PrefixUnaryExpression(
                     kind,
                     SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind)),
-                    expr
+                    MaybeParenthesize(expr, kind)
                 );
+            }
+            private ExpressionSyntax MaybeParenthesize(ExpressionSyntax expr, SyntaxKind operatorKind)
+            {
+                return expr is BinaryExpressionSyntax && operatorKind == SyntaxKind.LogicalNotExpression
+                    ? SyntaxFactory.ParenthesizedExpression(expr)
+                    : expr;
             }
 
             public override CSharpSyntaxNode VisitBinaryExpression(VBSyntax.BinaryExpressionSyntax node)
