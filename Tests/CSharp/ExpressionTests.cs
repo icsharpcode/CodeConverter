@@ -145,11 +145,13 @@ class TestClass
     private sub TestMethod()
         Dim a = DefaultDate(1, 2, 3).Blawer(1, 2, 3)
     End Sub
-End Class", @"using System;
-
-class TestClass
+End Class", @"class TestClass
 {
-    private DateTime DefaultDate = default(DateTime);
+    private System.SomeUnknownType DefaultDate { get; set; }
+    private void TestMethod()
+    {
+        var a = DefaultDate[1, 2, 3].Blawer(1, 2, 3);
+    }
 }");
         }
 
