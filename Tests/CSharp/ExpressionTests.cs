@@ -87,10 +87,64 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void ConversionOfNotUsesParensIfNeeded()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Dim rslt = Not 1 = 2
+        Dim rslt2 = Not True
+        Dim rslt3 = TypeOf True IsNot Boolean
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        var rslt = !(1 == 2);
+        var rslt2 = !true;
+        var rslt3 = !(true is bool);
+    }
+}");
+        }
+
+        [Fact]
+        public void ConversionOfCTypeUsesParensIfNeeded()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Dim rslt = Ctype(true, Object).ToString()
+        Dim rslt2 = Ctype(true, Object)
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        var rslt = ((object)true).ToString();
+        var rslt2 = (object)true;
+    }
+}");
+        }
+
+        [Fact]
         public void DateKeyword()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private DefaultDate as Date = Nothing
+End Class", @"using System;
+
+class TestClass
+{
+    private DateTime DefaultDate = default(DateTime);
+}");
+        }
+
+        [Fact]
+        public void UnknownTypeInvocation()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private property DefaultDate as System.SomeUnknownType
+    private sub TestMethod()
+        Dim a = DefaultDate(1, 2, 3).Blawer(1, 2, 3)
+    End Sub
 End Class", @"using System;
 
 class TestClass
