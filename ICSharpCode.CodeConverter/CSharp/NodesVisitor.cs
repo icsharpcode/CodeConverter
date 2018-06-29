@@ -1626,19 +1626,25 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var typeOrNamespace = targetSymbolInfo.ContainingNamespace.ToCSharpDisplayString(referenceSymbolFormat);
                 if (typeBlockSyntax != null) {
                     var declaredSymbol = _semanticModel.GetDeclaredSymbol(typeBlockSyntax);
-                    var prefixes = GetSymbolQualification(declaredSymbol)
-                    .Where(x => x != null).Select(p => p.ToCSharpDisplayString(referenceSymbolFormat) + ".");
-                    var firstMatch = prefixes.FirstOrDefault(p => qualifiedName.StartsWith(p));
-                    if (firstMatch != null)
+                    do
                     {
-                        // CSharp allows partial qualification within the current type's parent namespace
-                        qualifiedName = qualifiedName.Substring(firstMatch.Length);
-                    }
-                    else if (!targetSymbolInfo.IsNamespace() && _importedNamespaces.ContainsKey(typeOrNamespace) && qualifiedName.StartsWith(typeOrNamespace))
-                    {
-                        // An import matches the entire namespace, which means it's not a partially qualified thing that would need extra help in CSharp
-                        qualifiedName = qualifiedName.Substring(typeOrNamespace.Length + 1);
-                    }
+                        var prefixes = GetSymbolQualification(declaredSymbol)
+                        .Where(x => x != null).Select(p => p.ToCSharpDisplayString(referenceSymbolFormat) + ".");
+                        var firstMatch = prefixes.FirstOrDefault(p => qualifiedName.StartsWith(p));
+                        if (firstMatch != null)
+                        {
+                            // CSharp allows partial qualification within the current type's parent namespace
+                            qualifiedName = qualifiedName.Substring(firstMatch.Length);
+                            break;
+                        }
+                        else if (!targetSymbolInfo.IsNamespace() && _importedNamespaces.ContainsKey(typeOrNamespace) && qualifiedName.StartsWith(typeOrNamespace))
+                        {
+                            // An import matches the entire namespace, which means it's not a partially qualified thing that would need extra help in CSharp
+                            qualifiedName = qualifiedName.Substring(typeOrNamespace.Length + 1);
+                            break;
+                        }
+                        declaredSymbol = declaredSymbol is ITypeSymbol typeSym ? typeSym.BaseType : null;
+                    } while (declaredSymbol != null);
                 }
                 return qualifiedName != defaultNode.ToString() ? 
                     SyntaxFactory.ParseName(qualifiedName.Replace(node.ToString(), defaultNode.ToString()))
