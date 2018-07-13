@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -24,7 +25,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private List<MethodWithHandles> _methodsWithHandles;
             private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
             private readonly Stack<string> _withBlockTempVariableNames = new Stack<string>();
-            readonly IDictionary<string, string> _importedNamespaces;
+            readonly IDictionary<ISymbol, string> _importedNamespaces;
             private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(SyntaxKind.SemicolonToken);
             private static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
             private readonly AdditionalInitializers _additionalInitializers;
@@ -36,7 +37,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 this._semanticModel = semanticModel;
                 TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
-                _importedNamespaces = new Dictionary<string, string> {{VBasic.VisualBasicExtensions.RootNamespace(semanticModel.Compilation).ToString(), ""}};
+                _importedNamespaces = new Dictionary<ISymbol, string> {{VBasic.VisualBasicExtensions.RootNamespace(_semanticModel.Compilation), ""}};
                 _createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
                 CommonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor);
                 _additionalInitializers = new AdditionalInitializers();
@@ -100,8 +101,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var options = (VBasic.VisualBasicCompilationOptions)_semanticModel.Compilation.Options;
                 var importsClauses = options.GlobalImports.Select(gi => gi.Clause).Concat(node.Imports.SelectMany(imp => imp.ImportsClauses)).ToList();
-                foreach (var importClause in importsClauses.OfType<VBSyntax.SimpleImportsClauseSyntax>()) {
-                    _importedNamespaces[importClause.Name.ToString()] = importClause.Alias != null ? importClause.Alias.Identifier.ToString() : "";
+                foreach (var importClause in VBasic.VisualBasicExtensions.MemberImports(_semanticModel.Compilation)) {
+                    _importedNamespaces[importClause] = "";
+                }
+                foreach (var importClause in VBasic.VisualBasicExtensions.AliasImports(_semanticModel.Compilation)) {
+                    _importedNamespaces[importClause.Target] = importClause.Name;
                 }
 
                 var attributes = SyntaxFactory.List(node.Attributes.SelectMany(a => a.AttributeLists).SelectMany(ConvertAttribute));
@@ -164,9 +168,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.List<UsingDirectiveSyntax>(),
                     SyntaxFactory.List(members)
                 );
-
-                // Add this afterwards so we don't try to shorten the namespace declaration itself
-                _importedNamespaces[namespaceDeclaration.Name.ToString()] = "";
 
                 return namespaceDeclaration;
             }
@@ -1024,7 +1025,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxFactory.AliasQualifiedName((IdentifierNameSyntax)left, simpleNameSyntax);
                 }
 
-                var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, QualifyNode(node.Expression, left), simpleNameSyntax);
+                var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left, simpleNameSyntax);
                 if (_semanticModel.GetSymbolInfo(node).Symbol.IsKind(SymbolKind.Method) && node.Parent?.IsKind(VBasic.SyntaxKind.InvocationExpression) != true) {
                     var visitMemberAccessExpression = SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax, SyntaxFactory.ArgumentList());
                     return visitMemberAccessExpression;
@@ -1605,67 +1606,59 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var identifier = SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier, node.GetAncestor<VBSyntax.AttributeSyntax>() != null));
 
-                return !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer) 
+                return !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer)
+                                    || node.Parent is VBSyntax.MemberAccessExpressionSyntax maes && maes.Expression == node
+                                    || node.Parent is VBSyntax.QualifiedNameSyntax qns && qns.Left == node
                     ? QualifyNode(node, identifier) : identifier;
             }
 
-            private ExpressionSyntax QualifyNode(SyntaxNode node, ExpressionSyntax defaultNode)
+            private ExpressionSyntax QualifyNode(SyntaxNode node, ExpressionSyntax left)
             {
-                if (!(node is VBSyntax.NameSyntax)) return defaultNode;
-                var referenceSymbolFormat = new SymbolDisplayFormat(SymbolDisplayGlobalNamespaceStyle.OmittedAsContaining, SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces, SymbolDisplayGenericsOptions.IncludeTypeParameters, SymbolDisplayMemberOptions.IncludeContainingType);
-
-                var targetSymbolInfo = GetSymbolInfoInDocument(node);
-
-                var qualifiedName = targetSymbolInfo?.ToCSharpDisplayString(referenceSymbolFormat);
-                var sourceText = node.WithoutTrivia().GetText().ToString().Trim();
-                if (qualifiedName == null || sourceText.Length >= qualifiedName.Length ||
-                    !qualifiedName.EndsWith(sourceText, StringComparison.Ordinal)) return defaultNode;
-
+                var qualifiedLeft = left;
                 var typeBlockSyntax = node.GetAncestor<VBSyntax.TypeBlockSyntax>();
+                if (qualifiedLeft != null &&
+                    typeBlockSyntax != null &&
+                    node?.IsKind(VBasic.SyntaxKind.IdentifierName) == true) {
 
-                var typeOrNamespace = targetSymbolInfo.ContainingNamespace.ToCSharpDisplayString(referenceSymbolFormat);
-                if (typeBlockSyntax != null) {
-                    var declaredSymbol = _semanticModel.GetDeclaredSymbol(typeBlockSyntax);
-                    do
-                    {
-                        var prefixes = GetSymbolQualification(declaredSymbol)
-                        .Where(x => x != null).Select(p => p.ToCSharpDisplayString(referenceSymbolFormat) + ".");
-                        var firstMatch = prefixes.FirstOrDefault(p => qualifiedName.StartsWith(p));
-                        if (firstMatch != null)
-                        {
-                            // CSharp allows partial qualification within the current type's parent namespace
-                            qualifiedName = qualifiedName.Substring(firstMatch.Length);
-                            break;
-                        }
-                        else if (!targetSymbolInfo.IsNamespace() && _importedNamespaces.ContainsKey(typeOrNamespace) && qualifiedName.StartsWith(typeOrNamespace))
-                        {
-                            // An import matches the entire namespace, which means it's not a partially qualified thing that would need extra help in CSharp
-                            qualifiedName = qualifiedName.Substring(typeOrNamespace.Length + 1);
-                            break;
-                        }
-                        declaredSymbol = declaredSymbol is ITypeSymbol typeSym ? typeSym.BaseType : null;
-                    } while (declaredSymbol != null);
+                    var enclosingType = _semanticModel.GetDeclaredSymbol(typeBlockSyntax);
+                    // Qualify with a type name where it was a global import for example
+                    var implicitNamespaces = ((ITypeSymbol) enclosingType).GetBaseTypesAndThis()
+                        .Concat(FollowProperty(enclosingType, n => n.ContainingSymbol))
+                            .ToList();
+                    var nodeSymbolInfo = GetSymbolInfoInDocument(node);
+                    for (var targetSymbolInfo = nodeSymbolInfo;
+                        targetSymbolInfo?.ContainingSymbol is ITypeSymbol containingType &&
+                        !implicitNamespaces.Contains(containingType) && 
+                        targetSymbolInfo?.IsConstructor() != true; // Cover usage in attributes
+                        targetSymbolInfo = containingType) {
+                        qualifiedLeft = SyntaxFactory.QualifiedName(
+                            SyntaxFactory.ParseName(containingType.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart)),
+                            (SimpleNameSyntax)qualifiedLeft);
+                    }
+
+                    // Fully qualify partial namespace qualification
+                    for (var targetSymbolInfo = nodeSymbolInfo;
+                        targetSymbolInfo.IsNamespace() &&
+                        targetSymbolInfo.ContainingNamespace?.IsGlobalNamespace == false;
+                        targetSymbolInfo = targetSymbolInfo.ContainingNamespace) {
+                        qualifiedLeft = SyntaxFactory.QualifiedName(
+                            SyntaxFactory.ParseName(targetSymbolInfo.ContainingNamespace.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart)),
+                            (SimpleNameSyntax)qualifiedLeft);
+                    }
                 }
-                return qualifiedName != defaultNode.ToString() ? 
-                    SyntaxFactory.ParseName(qualifiedName.Replace(node.ToString(), defaultNode.ToString()))
-                    : defaultNode;
-            }
 
-            private IEnumerable<ISymbol> GetSymbolQualification(ISymbol symbol)
-            {
-                return FollowProperty(symbol, s => s.ContainingSymbol);
+                return qualifiedLeft;
             }
 
             private static IEnumerable<T> FollowProperty<T>(T start, Func<T, T> getProperty) where T : class
             {
-                for (var current = start; current != null; current = getProperty(current))
-                {
+                for (var current = start; current != null; current = getProperty(current)) {
                     yield return current;
                 }
             }
 
             /// <returns>The ISymbol if available in this document, otherwise null</returns>
-            private ISymbol GetSymbolInfoInDocument(SyntaxNode node)
+                private ISymbol GetSymbolInfoInDocument(SyntaxNode node)
             {
                 return _semanticModel.SyntaxTree == node.SyntaxTree ? _semanticModel.GetSymbolInfo(node).Symbol : null;
             }
