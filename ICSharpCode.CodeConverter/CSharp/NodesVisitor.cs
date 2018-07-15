@@ -1382,7 +1382,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     (ExpressionSyntax)node.WhenFalse.Accept(TriviaConvertingVisitor)
                 );
 
-                if (node.Parent is VBSyntax.InterpolationSyntax)
+                if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation))
                     return SyntaxFactory.ParenthesizedExpression(expr);
                 
                 return expr;
