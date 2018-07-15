@@ -4,7 +4,10 @@ using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
+using ParenthesizedExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ParenthesizedExpressionSyntax;
+using SkippedTokensTriviaSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.SkippedTokensTriviaSyntax;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -46,11 +49,6 @@ namespace ICSharpCode.CodeConverter.Util
         public static bool IsParentKind(this SyntaxToken node, SyntaxKind kind)
         {
             return node.Parent != null && node.Parent.IsKind(kind);
-        }
-
-        public static INamedTypeSymbol GetEnclosingNamedType(this SemanticModel semanticModel, int position, CancellationToken cancellationToken)
-        {
-            return semanticModel.GetEnclosingSymbol<INamedTypeSymbol>(position, cancellationToken);
         }
 
         public static TSymbol GetEnclosingSymbol<TSymbol>(this SemanticModel semanticModel, int position, CancellationToken cancellationToken)
@@ -105,7 +103,7 @@ namespace ICSharpCode.CodeConverter.Util
 
             return null;
         }
-        public static bool HasOperandOfUnconvertedType(this Microsoft.CodeAnalysis.VisualBasic.Syntax.AssignmentStatementSyntax node, string operandType, SemanticModel semanticModel)
+        public static bool HasOperandOfUnconvertedType(this AssignmentStatementSyntax node, string operandType, SemanticModel semanticModel)
         {
             return new[] { node.Left, node.Right }.Any(e => ExpressionSyntaxExtensions.UnconvertedIsType(e, operandType, semanticModel));
         }

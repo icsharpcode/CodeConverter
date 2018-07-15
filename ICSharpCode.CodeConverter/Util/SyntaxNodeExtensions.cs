@@ -214,6 +214,14 @@ namespace ICSharpCode.CodeConverter.Util
             return (TSyntaxNode)nodes.FindInnermostCommonNode(n => n is TSyntaxNode);
         }
 
+        public static ISymbol GetEnclosingDeclaredTypeSymbol(this SyntaxNode node, SemanticModel semanticModel)
+        {
+            var typeBlockSyntax = (SyntaxNode) node.GetAncestor<Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeBlockSyntax>()
+                ?? node.GetAncestor<TypeSyntax>();
+            if (typeBlockSyntax == null) return null;
+            return semanticModel.GetDeclaredSymbol(typeBlockSyntax);
+        }
+
         /// <summary>
         /// create a new root node from the given root after adding annotations to the tokens
         /// 

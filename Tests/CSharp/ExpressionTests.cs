@@ -912,6 +912,34 @@ End Class", @"class TestClass
     }
 }");
         }
+        
+        [Fact]
+        public void NameQualifyingHandlesInheritance()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClassBase
+    Sub DoStuff()
+    End Sub
+End Class
+Class TestClass
+    Inherits TestClassBase
+    Private Sub TestMethod()
+        DoStuff()
+    End Sub
+End Class", @"class TestClassBase
+{
+    public void DoStuff()
+    {
+    }
+}
+
+class TestClass : TestClassBase
+{
+    private void TestMethod()
+    {
+        DoStuff();
+    }
+}");
+        }
 
         [Fact]
         public void UsingGlobalImport()
