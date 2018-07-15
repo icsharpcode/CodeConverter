@@ -987,5 +987,18 @@ End Function",
     return $""You {(yourBoolean ? ""do"" : ""do not"")} have a true value"";
 }");
         }
+
+        [Fact]
+        public void LogicalOrWithConditionalOperator()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+                @"Public Function GetString(yourBoolean as Boolean) As Boolean
+    Return 1 <> 1 OrElse if (yourBoolean, True, False)
+End Function",
+                @"public bool GetString(bool yourBoolean)
+{
+    return 1 != 1 || yourBoolean ? true : false;
+}");
+        }
     }
 }
