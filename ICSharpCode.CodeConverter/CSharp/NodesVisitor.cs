@@ -25,7 +25,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             private List<MethodWithHandles> _methodsWithHandles;
             private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
             private readonly Stack<string> _withBlockTempVariableNames = new Stack<string>();
-            readonly IDictionary<ISymbol, string> _importedNamespaces;
             private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(SyntaxKind.SemicolonToken);
             private static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
             private readonly AdditionalInitializers _additionalInitializers;
@@ -37,7 +36,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 this._semanticModel = semanticModel;
                 TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
-                _importedNamespaces = new Dictionary<ISymbol, string> {{VBasic.VisualBasicExtensions.RootNamespace(_semanticModel.Compilation), ""}};
                 _createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
                 CommonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor);
                 _additionalInitializers = new AdditionalInitializers();
@@ -101,12 +99,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var options = (VBasic.VisualBasicCompilationOptions)_semanticModel.Compilation.Options;
                 var importsClauses = options.GlobalImports.Select(gi => gi.Clause).Concat(node.Imports.SelectMany(imp => imp.ImportsClauses)).ToList();
-                foreach (var importClause in VBasic.VisualBasicExtensions.MemberImports(_semanticModel.Compilation)) {
-                    _importedNamespaces[importClause] = "";
-                }
-                foreach (var importClause in VBasic.VisualBasicExtensions.AliasImports(_semanticModel.Compilation)) {
-                    _importedNamespaces[importClause.Target] = importClause.Name;
-                }
 
                 var attributes = SyntaxFactory.List(node.Attributes.SelectMany(a => a.AttributeLists).SelectMany(ConvertAttribute));
                 var convertedMembers = node.Members.Select(m => (MemberDeclarationSyntax)m.Accept(TriviaConvertingVisitor)).ToReadOnlyCollection();
