@@ -1376,11 +1376,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitTernaryConditionalExpression(VBSyntax.TernaryConditionalExpressionSyntax node)
             {
-                return SyntaxFactory.ConditionalExpression(
+                var expr = SyntaxFactory.ConditionalExpression(
                     (ExpressionSyntax)node.Condition.Accept(TriviaConvertingVisitor),
                     (ExpressionSyntax)node.WhenTrue.Accept(TriviaConvertingVisitor),
                     (ExpressionSyntax)node.WhenFalse.Accept(TriviaConvertingVisitor)
                 );
+
+                if (node.Parent.GetType() == typeof(VBSyntax.InterpolationSyntax))
+                    return SyntaxFactory.ParenthesizedExpression(expr);
+                
+                return expr;
             }
 
             public override CSharpSyntaxNode VisitTypeOfExpression(VBSyntax.TypeOfExpressionSyntax node)
