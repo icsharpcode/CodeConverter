@@ -974,5 +974,18 @@ public class test
     }
 }");
         }
+
+        [Fact]
+        public void StringInterpolationWithConditionalOperator()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+                @"Public Function GetString(yourBoolean as Boolean) As String
+    Return $""You {if (yourBoolean, ""do"", ""do not"")} have a true value""
+End Function",
+                @"public string GetString(bool yourBoolean)
+{
+    return $""You {(yourBoolean ? ""do"" : ""do not"")} have a true value"";
+}");
+        }
     }
 }
