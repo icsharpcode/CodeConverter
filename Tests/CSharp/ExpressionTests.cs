@@ -1002,5 +1002,31 @@ public class test
     }
 }");
         }
+
+        [Fact]
+        public void StringInterpolationWithConditionalOperator()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+                @"Public Function GetString(yourBoolean as Boolean) As String
+    Return $""You {if (yourBoolean, ""do"", ""do not"")} have a true value""
+End Function",
+                @"public string GetString(bool yourBoolean)
+{
+    return $""You {(yourBoolean ? ""do"" : ""do not"")} have a true value"";
+}");
+        }
+
+        [Fact]
+        public void LogicalOrWithConditionalOperator()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+                @"Public Function GetString(yourBoolean as Boolean) As Boolean
+    Return 1 <> 1 OrElse if (yourBoolean, True, False)
+End Function",
+                @"public bool GetString(bool yourBoolean)
+{
+    return 1 != 1 || yourBoolean ? true : false;
+}");
+        }
     }
 }
