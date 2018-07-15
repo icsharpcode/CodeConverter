@@ -12,6 +12,8 @@ using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using static ICSharpCode.CodeConverter.CSharp.SyntaxKindExtensions;
+using SyntaxExtensions = ICSharpCode.CodeConverter.Util.SyntaxExtensions;
+using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 using SyntaxToken = Microsoft.CodeAnalysis.SyntaxToken;
 
 namespace ICSharpCode.CodeConverter.CSharp
@@ -1607,39 +1609,50 @@ namespace ICSharpCode.CodeConverter.CSharp
             private ExpressionSyntax QualifyNode(SyntaxNode node, ExpressionSyntax left)
             {
                 var qualifiedLeft = left;
-                var typeBlockSyntax = node.GetAncestor<VBSyntax.TypeBlockSyntax>();
+                var nodeSymbolInfo = GetSymbolInfoInDocument(node);
                 if (qualifiedLeft != null &&
-                    typeBlockSyntax != null &&
-                    node?.IsKind(VBasic.SyntaxKind.IdentifierName) == true) {
+                    node?.IsKind(VBasic.SyntaxKind.IdentifierName) == true &&
+                    nodeSymbolInfo?.ContainingSymbol is INamespaceOrTypeSymbol containingSymbol && 
+                    !ContextImplicitlyQualfiesSymbol(node, containingSymbol)) {
 
-                    var enclosingType = _semanticModel.GetDeclaredSymbol(typeBlockSyntax);
-                    // Qualify with a type name where it was a global import for example
-                    var implicitNamespaces = ((ITypeSymbol) enclosingType).GetBaseTypesAndThis()
-                        .Concat(FollowProperty(enclosingType, n => n.ContainingSymbol))
-                            .ToList();
-                    var nodeSymbolInfo = GetSymbolInfoInDocument(node);
-                    for (var targetSymbolInfo = nodeSymbolInfo;
-                        targetSymbolInfo?.ContainingSymbol is ITypeSymbol containingType &&
-                        !implicitNamespaces.Contains(containingType) && 
-                        targetSymbolInfo?.IsConstructor() != true; // Cover usage in attributes
-                        targetSymbolInfo = containingType) {
-                        qualifiedLeft = SyntaxFactory.QualifiedName(
-                            SyntaxFactory.ParseName(containingType.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart)),
-                            (SimpleNameSyntax)qualifiedLeft);
-                    }
-
-                    // Fully qualify partial namespace qualification
-                    for (var targetSymbolInfo = nodeSymbolInfo;
-                        targetSymbolInfo.IsNamespace() &&
-                        targetSymbolInfo.ContainingNamespace?.IsGlobalNamespace == false;
-                        targetSymbolInfo = targetSymbolInfo.ContainingNamespace) {
-                        qualifiedLeft = SyntaxFactory.QualifiedName(
-                            SyntaxFactory.ParseName(targetSymbolInfo.ContainingNamespace.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart)),
-                            (SimpleNameSyntax)qualifiedLeft);
+                    if (containingSymbol.IsType() &&
+                        !nodeSymbolInfo.IsConstructor() /* Constructors are implicitly qualified with their type */) {
+                        // Qualify with a type to handle VB's type promotion https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/declared-elements/type-promotion
+                        var qualification =
+                            containingSymbol.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart);
+                        qualifiedLeft = Qualify(qualification, qualifiedLeft);
+                    } else if (nodeSymbolInfo.IsNamespace()) {
+                        // Turn partial namespace qualification into full namespace qualification
+                        var qualification =
+                            containingSymbol.ToCSharpDisplayString();
+                        qualifiedLeft = Qualify(qualification, qualifiedLeft);
                     }
                 }
 
                 return qualifiedLeft;
+            }
+
+            private bool ContextImplicitlyQualfiesSymbol(SyntaxNode syntaxNodeContext, INamespaceOrTypeSymbol symbolToCheck)
+            {
+                return symbolToCheck is INamespaceSymbol ns && ns.IsGlobalNamespace ||
+                       EnclosingTypeImplicitlyQualifiesSymbol(syntaxNodeContext, symbolToCheck);
+            }
+
+            private bool EnclosingTypeImplicitlyQualifiesSymbol(SyntaxNode syntaxNodeContext, INamespaceOrTypeSymbol symbolToCheck)
+            {
+                ISymbol typeContext = syntaxNodeContext.GetEnclosingDeclaredTypeSymbol(_semanticModel);
+                var implicitCsQualifications = ((ITypeSymbol) typeContext).GetBaseTypesAndThis()
+                    .Concat(FollowProperty(typeContext, n => n.ContainingSymbol))
+                    .ToList();
+
+                return implicitCsQualifications.Contains(symbolToCheck);
+            }
+
+            private static QualifiedNameSyntax Qualify(string qualification, ExpressionSyntax toBeQualified)
+            {
+                return SyntaxFactory.QualifiedName(
+                    SyntaxFactory.ParseName(qualification),
+                    (SimpleNameSyntax)toBeQualified);
             }
 
             private static IEnumerable<T> FollowProperty<T>(T start, Func<T, T> getProperty) where T : class
