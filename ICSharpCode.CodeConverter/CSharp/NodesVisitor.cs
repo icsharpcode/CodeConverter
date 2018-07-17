@@ -1655,6 +1655,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private static QualifiedNameSyntax Qualify(string qualification, ExpressionSyntax toBeQualified)
             {
+                if (toBeQualified is QualifiedNameSyntax qName) {
+                    toBeQualified = qName.Right;
+                }
                 return SyntaxFactory.QualifiedName(
                     SyntaxFactory.ParseName(qualification),
                     (SimpleNameSyntax)toBeQualified);
