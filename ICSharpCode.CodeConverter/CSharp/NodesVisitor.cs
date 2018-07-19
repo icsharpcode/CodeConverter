@@ -1611,11 +1611,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     ? QualifyNode(node, identifier) : identifier;
             }
 
-            private ExpressionSyntax QualifyNode(SyntaxNode node, ExpressionSyntax left)
+            private ExpressionSyntax QualifyNode(SyntaxNode node, SimpleNameSyntax left)
             {
                 var nodeSymbolInfo = GetSymbolInfoInDocument(node);
                 if (left != null &&
-                    node?.IsKind(VBasic.SyntaxKind.IdentifierName) == true &&
                     nodeSymbolInfo?.ContainingSymbol is INamespaceOrTypeSymbol containingSymbol && 
                     !ContextImplicitlyQualfiesSymbol(node, containingSymbol)) {
 
@@ -1654,9 +1653,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private static QualifiedNameSyntax Qualify(string qualification, ExpressionSyntax toBeQualified)
             {
-                if (toBeQualified is QualifiedNameSyntax qName) {
-                    toBeQualified = qName.Right;
-                }
                 return SyntaxFactory.QualifiedName(
                     SyntaxFactory.ParseName(qualification),
                     (SimpleNameSyntax)toBeQualified);
@@ -1689,11 +1685,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var leftIsGlobal = node.Left.IsKind(VBasic.SyntaxKind.GlobalName);
 
                 ExpressionSyntax qualifiedName;
-                if (partOfNamespaceDeclaration) {
+                if (partOfNamespaceDeclaration || !(lhsSyntax is SimpleNameSyntax sns)) {
                     if (leftIsGlobal) return rhsSyntax;
                     qualifiedName = lhsSyntax;
                 } else {
-                    qualifiedName = QualifyNode(node.Left, lhsSyntax);
+                    qualifiedName = QualifyNode(node.Left, sns);
                 }
 
                 return leftIsGlobal
