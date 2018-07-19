@@ -1613,9 +1613,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private ExpressionSyntax QualifyNode(SyntaxNode node, ExpressionSyntax left)
             {
-                var qualifiedLeft = left;
                 var nodeSymbolInfo = GetSymbolInfoInDocument(node);
-                if (qualifiedLeft != null &&
+                if (left != null &&
                     node?.IsKind(VBasic.SyntaxKind.IdentifierName) == true &&
                     nodeSymbolInfo?.ContainingSymbol is INamespaceOrTypeSymbol containingSymbol && 
                     !ContextImplicitlyQualfiesSymbol(node, containingSymbol)) {
@@ -1625,16 +1624,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                         // Qualify with a type to handle VB's type promotion https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/declared-elements/type-promotion
                         var qualification =
                             containingSymbol.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart);
-                        qualifiedLeft = Qualify(qualification, qualifiedLeft);
+                        return Qualify(qualification, left);
                     } else if (nodeSymbolInfo.IsNamespace()) {
                         // Turn partial namespace qualification into full namespace qualification
                         var qualification =
                             containingSymbol.ToCSharpDisplayString();
-                        qualifiedLeft = Qualify(qualification, qualifiedLeft);
+                        return Qualify(qualification, left);
                     }
                 }
 
-                return qualifiedLeft;
+                return left;
             }
 
             private bool ContextImplicitlyQualfiesSymbol(SyntaxNode syntaxNodeContext, INamespaceOrTypeSymbol symbolToCheck)
