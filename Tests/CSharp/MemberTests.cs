@@ -1085,6 +1085,58 @@ class MyClassC
         }
 
         [Fact]
+        public void LessQualifiedNestedClass()
+        {
+            TestConversionVisualBasicToCSharp(@"Class ClA
+    Public Shared Sub MA()
+        ClassB.MB()
+        MyClassC.MC()
+    End Sub
+
+    Public Class ClassB
+        Public Shared Function MB() as ClassB
+            MA()
+            MyClassC.MC()
+            Return MB()
+        End Function
+    End Class
+End Class
+
+Class MyClassC
+    Public Shared Sub MC()
+        ClA.MA()
+        ClA.ClassB.MB()
+    End Sub
+End Class", @"class ClA
+{
+    public static void MA()
+    {
+        ClassB.MB();
+        MyClassC.MC();
+    }
+
+    public class ClassB
+    {
+        public static ClassB MB()
+        {
+            MA();
+            MyClassC.MC();
+            return MB();
+        }
+    }
+}
+
+class MyClassC
+{
+    public static void MC()
+    {
+        ClA.MA();
+        ClA.ClassB.MB();
+    }
+}");
+        }
+
+        [Fact]
         public void TestIndexer()
         {   // BUG: Comments aren't properly transferred to the property statement because the line ends in a square bracket
             TestConversionVisualBasicToCSharpWithoutComments(

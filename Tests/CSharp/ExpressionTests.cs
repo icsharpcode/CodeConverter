@@ -900,15 +900,18 @@ End Sub", @"private static void LinqSub()
         [Fact]
         public void PartiallyQualifiedName()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
-    Public Function TestMethod(dir As String) As String
-         Return IO.Path.Combine(dir, ""file.txt"")
-    End Function
+            TestConversionVisualBasicToCSharp(@"Imports System.Collections
+Class TestClass
+    Public Sub TestMethod(dir As String)
+        IO.Path.Combine(dir, ""file.txt"")
+        Dim c As New ObjectModel.ObservableCollection(Of String)
+    End Sub
 End Class", @"class TestClass
 {
-    public string TestMethod(string dir)
+    public void TestMethod(string dir)
     {
-        return System.IO.Path.Combine(dir, ""file.txt"");
+        System.IO.Path.Combine(dir, ""file.txt"");
+        System.Collections.ObjectModel.ObservableCollection<string> c = new System.Collections.ObjectModel.ObservableCollection<string>();
     }
 }");
         }
