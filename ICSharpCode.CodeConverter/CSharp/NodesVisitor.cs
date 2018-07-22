@@ -384,10 +384,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var convertableModifiers = node.Modifiers.Where(m => !SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
                 var isWithEvents = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
                 var convertedModifiers = CommonConversions.ConvertModifiers(convertableModifiers, GetMemberContext(node), true);
+                var isConst = convertedModifiers.Any(a => a.Kind() == Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
                 var declarations = new List<MemberDeclarationSyntax>(node.Declarators.Count);
 
                 foreach (var declarator in node.Declarators) {
-                    foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator).Values) {
+                    foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator, preferExplicitType: isConst).Values) {
                         if (isWithEvents) {
                             var initializers = decl.Variables
                                 .Where(a => a.Initializer != null)

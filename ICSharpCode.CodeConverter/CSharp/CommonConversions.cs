@@ -34,9 +34,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(
-            VariableDeclaratorSyntax declarator)
+            VariableDeclaratorSyntax declarator, bool preferExplicitType = false)
         {
-            var rawType = ConvertDeclaratorType(declarator);
+            var rawType = ConvertDeclaratorType(declarator, preferExplicitType);
             var initializer = ConvertInitializer(declarator);
 
             var newDecls = new Dictionary<string, VariableDeclarationSyntax>();
@@ -55,13 +55,28 @@ namespace ICSharpCode.CodeConverter.CSharp
             return newDecls;
         }
 
-        private TypeSyntax ConvertDeclaratorType(VariableDeclaratorSyntax declarator)
+        private TypeSyntax ConvertDeclaratorType(VariableDeclaratorSyntax declarator, bool preferExplicitType)
         {
+            TypeSyntax inferredTypeSyntax = null;
+            if (preferExplicitType && declarator.AsClause == null)
+            {
+                var typeInf = _semanticModel.GetTypeInfo(declarator.Initializer.Value);
+                if (typeInf.ConvertedType != null)
+                {
+                    var predefined = typeInf.ConvertedType.SpecialType.GetPredefinedKeywordKind();
+                    if (predefined != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None) {
+                        inferredTypeSyntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(predefined));
+                    }
+                    else {
+                        inferredTypeSyntax = SyntaxFactory.ParseTypeName(typeInf.ConvertedType.GetFullMetadataName());
+                    }
+                }
+            }
             return (TypeSyntax) declarator.AsClause?.TypeSwitch(
                        (SimpleAsClauseSyntax c) => c.Type,
                        (AsNewClauseSyntax c) => c.NewExpression.Type(),
                        _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
-                   )?.Accept(_nodesVisitor) ?? SyntaxFactory.ParseTypeName("var");
+                   )?.Accept(_nodesVisitor) ?? inferredTypeSyntax ?? SyntaxFactory.ParseTypeName("var");
         }
 
         private ExpressionSyntax ConvertInitializer(VariableDeclaratorSyntax declarator)

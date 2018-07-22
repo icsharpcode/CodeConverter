@@ -62,11 +62,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override SyntaxList<StatementSyntax> VisitLocalDeclarationStatement(VBSyntax.LocalDeclarationStatementSyntax node)
             {
                 var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Local);
+                var isConst = modifiers.Any(a => a.Kind() == Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
 
                 var declarations = new List<LocalDeclarationStatementSyntax>();
 
                 foreach (var declarator in node.Declarators)
-                    foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator))
+                    foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator, preferExplicitType: isConst))
                         declarations.Add(SyntaxFactory.LocalDeclarationStatement(modifiers, decl.Value));
 
                 return SyntaxFactory.List<StatementSyntax>(declarations);

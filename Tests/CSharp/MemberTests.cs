@@ -33,6 +33,25 @@ End Module", @"static class TestModule
         }
 
         [Fact]
+        public void TestTypeInferredConst()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Class TestClass
+    Const someConstField = 42
+    Sub TestMethod()
+        Const someConst = System.DateTimeKind.Local
+    End Sub
+End Class", @"class TestClass
+{
+    const int someConstField = 42;
+    public void TestMethod()
+    {
+        const System.DateTimeKind someConst = System.DateTimeKind.Local;
+    }
+}");
+        }
+
+        [Fact]
         public void TestMethod()
         {
             TestConversionVisualBasicToCSharp(
