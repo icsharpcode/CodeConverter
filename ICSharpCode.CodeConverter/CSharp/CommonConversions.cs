@@ -57,27 +57,33 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private TypeSyntax ConvertDeclaratorType(VariableDeclaratorSyntax declarator, bool preferExplicitType)
         {
-            TypeSyntax inferredTypeSyntax = null;
-            if (preferExplicitType && declarator.AsClause == null)
+            var vbType = declarator.AsClause?.TypeSwitch(
+                (SimpleAsClauseSyntax c) => c.Type,
+                (AsNewClauseSyntax c) => c.NewExpression.Type(),
+                _ => throw new NotImplementedException($"{_.GetType().FullName} not implemented!"));
+            return (TypeSyntax)vbType?.Accept(_nodesVisitor) ?? GetTypeSyntax(declarator, preferExplicitType);
+        }
+
+        private TypeSyntax GetTypeSyntax(VariableDeclaratorSyntax declarator, bool preferExplicitType)
+        {
+            if (!preferExplicitType) return CreateVarTypeName();
+
+            var typeInf = _semanticModel.GetTypeInfo(declarator.Initializer.Value);
+            if (typeInf.ConvertedType == null) return CreateVarTypeName();
+
+            var predefined = typeInf.ConvertedType.SpecialType.GetPredefinedKeywordKind();
+            if (predefined != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None)
             {
-                var typeInf = _semanticModel.GetTypeInfo(declarator.Initializer.Value);
-                if (typeInf.ConvertedType != null)
-                {
-                    var predefined = typeInf.ConvertedType.SpecialType.GetPredefinedKeywordKind();
-                    if (predefined != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None) {
-                        inferredTypeSyntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(predefined));
-                    }
-                    else {
-                        var typeName = typeInf.ConvertedType.ToMinimalCSharpDisplayString(_semanticModel, declarator.SpanStart);
-                        inferredTypeSyntax = SyntaxFactory.ParseTypeName(typeName);
-                    }
-                }
+                return SyntaxFactory.PredefinedType(SyntaxFactory.Token(predefined));
             }
-            return (TypeSyntax) declarator.AsClause?.TypeSwitch(
-                       (SimpleAsClauseSyntax c) => c.Type,
-                       (AsNewClauseSyntax c) => c.NewExpression.Type(),
-                       _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
-                   )?.Accept(_nodesVisitor) ?? inferredTypeSyntax ?? SyntaxFactory.ParseTypeName("var");
+
+            var typeName = typeInf.ConvertedType.ToMinimalCSharpDisplayString(_semanticModel, declarator.SpanStart);
+            return SyntaxFactory.ParseTypeName(typeName);
+        }
+
+        private static TypeSyntax CreateVarTypeName()
+        {
+            return SyntaxFactory.ParseTypeName("var");
         }
 
         private ExpressionSyntax ConvertInitializer(VariableDeclaratorSyntax declarator)
