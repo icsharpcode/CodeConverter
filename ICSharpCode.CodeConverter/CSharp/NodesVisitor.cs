@@ -1619,11 +1619,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                     nodeSymbolInfo?.ContainingSymbol is INamespaceOrTypeSymbol containingSymbol && 
                     !ContextImplicitlyQualfiesSymbol(node, containingSymbol)) {
 
-                    if (containingSymbol.IsType() &&
+                    if (containingSymbol is ITypeSymbol containingTypeSymbol &&
                         !nodeSymbolInfo.IsConstructor() /* Constructors are implicitly qualified with their type */) {
                         // Qualify with a type to handle VB's type promotion https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/declared-elements/type-promotion
                         var qualification =
-                            containingSymbol.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart);
+                            containingTypeSymbol.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart);
                         return Qualify(qualification, left);
                     } else if (nodeSymbolInfo.IsNamespace()) {
                         // Turn partial namespace qualification into full namespace qualification
@@ -1646,7 +1646,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 ISymbol typeContext = syntaxNodeContext.GetEnclosingDeclaredTypeSymbol(_semanticModel);
                 var implicitCsQualifications = ((ITypeSymbol) typeContext).GetBaseTypesAndThis()
-                    .Concat(FollowProperty(typeContext, n => n.ContainingSymbol))
+                    .Concat(CSharpUtil.FollowProperty(typeContext, n => n.ContainingSymbol))
                     .ToList();
 
                 return implicitCsQualifications.Contains(symbolToCheck);
@@ -1657,13 +1657,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.QualifiedName(
                     SyntaxFactory.ParseName(qualification),
                     (SimpleNameSyntax)toBeQualified);
-            }
-
-            private static IEnumerable<T> FollowProperty<T>(T start, Func<T, T> getProperty) where T : class
-            {
-                for (var current = start; current != null; current = getProperty(current)) {
-                    yield return current;
-                }
             }
 
             /// <returns>The ISymbol if available in this document, otherwise null</returns>

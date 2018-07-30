@@ -182,10 +182,14 @@ namespace ICSharpCode.CodeConverter.Util
             return null;
         }
 
-        public static string ToMinimalCSharpDisplayString(this ISymbol symbol, SemanticModel vbSemanticModel, int position, SymbolDisplayFormat format = null)
+        public static string ToMinimalCSharpDisplayString(this ITypeSymbol symbol, SemanticModel vbSemanticModel, int position, SymbolDisplayFormat format = null)
         {
             if (TryGetSpecialVBTypeConversion(symbol, out var cSharpDisplayString)) return cSharpDisplayString;
-            return symbol.ToMinimalDisplayString(vbSemanticModel, position, format);
+            var minimalCSharpDisplayString = symbol.ToMinimalDisplayString(vbSemanticModel, position, format);
+            var parentTypes = symbol.FollowProperty(t => t?.ContainingSymbol as ITypeSymbol).Count() - 1;
+            // Workaround: The above call can return a name qualified by a partial namespace, e.g. IO.Path if System is already imported.
+            // So check that we don't end up qualifying with non-type symbols by checking the number of dots
+            return minimalCSharpDisplayString.Count(x => x == '.') > parentTypes ? ToCSharpDisplayString(symbol, format) : minimalCSharpDisplayString;
         }
 
         public static string ToCSharpDisplayString(this ISymbol symbol, SymbolDisplayFormat format = null)

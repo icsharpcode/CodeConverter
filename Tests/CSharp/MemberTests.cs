@@ -41,12 +41,14 @@ End Module", @"static class TestModule
     Sub TestMethod()
         Const someConst = System.DateTimeKind.Local
     End Sub
-End Class", @"class TestClass
+End Class", @"using System;
+
+class TestClass
 {
     const int someConstField = 42;
     public void TestMethod()
     {
-        const System.DateTimeKind someConst = System.DateTimeKind.Local;
+        const DateTimeKind someConst = System.DateTimeKind.Local;
     }
 }");
         }

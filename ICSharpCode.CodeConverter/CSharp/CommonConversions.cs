@@ -68,7 +68,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                         inferredTypeSyntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(predefined));
                     }
                     else {
-                        inferredTypeSyntax = SyntaxFactory.ParseTypeName(typeInf.ConvertedType.GetFullMetadataName());
+                        var typeName = typeInf.ConvertedType.ToMinimalCSharpDisplayString(_semanticModel, declarator.SpanStart);
+                        inferredTypeSyntax = SyntaxFactory.ParseTypeName(typeName);
                     }
                 }
             }

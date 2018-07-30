@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -248,7 +249,7 @@ namespace ICSharpCode.CodeConverter.Util
             throw new NotSupportedException();
         }
 
-        public static TypeSyntax ToCsSyntax(this ITypeSymbol type, SemanticModel model, VBasic.Syntax.TypeSyntax typeSyntax)
+        public static TypeSyntax ToCsSyntax(this ITypeSymbol type, SemanticModel model, Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax typeSyntax)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
@@ -256,13 +257,20 @@ namespace ICSharpCode.CodeConverter.Util
                 .WithLeadingTrivia(typeSyntax.GetLeadingTrivia().ConvertTrivia())
                 .WithTrailingTrivia(typeSyntax.GetTrailingTrivia().ConvertTrivia());
         }
-        public static VBasic.Syntax.TypeSyntax ToVbSyntax(this ITypeSymbol type, SemanticModel model, TypeSyntax typeSyntax)
+        public static Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax ToVbSyntax(this ITypeSymbol type, SemanticModel model, TypeSyntax typeSyntax)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
             return VBasic.SyntaxFactory.ParseTypeName(type.ToMinimalDisplayString(model, typeSyntax.SpanStart))
                 .WithLeadingTrivia(typeSyntax.GetLeadingTrivia().ConvertTrivia())
                 .WithTrailingTrivia(typeSyntax.GetTrailingTrivia().ConvertTrivia());
+        }
+
+        public static IEnumerable<T> FollowProperty<T>(this T start, Func<T, T> getProperty) where T : class
+        {
+            for (var current = start; current != null; current = getProperty(current)) {
+                yield return current;
+            }
         }
     }
 }

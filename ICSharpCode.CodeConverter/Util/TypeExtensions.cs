@@ -29,24 +29,6 @@ namespace ICSharpCode.CodeConverter.Util
         #endregion
 
         /// <summary>
-        /// Gets the full name of the namespace.
-        /// </summary>
-        public static string GetFullName(this INamespaceSymbol ns)
-        {
-            return ns.ToCSharpDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
-        }
-
-        /// <summary>
-        /// Gets the full name. The full name is no 1:1 representation of a type it's missing generics and it has a poor
-        /// representation for inner types (just dot separated).
-        /// DO NOT use this method unless you're know what you do. It's only implemented for legacy code.
-        /// </summary>
-        public static string GetFullName(this ITypeSymbol type)
-        {
-            return type.ToCSharpDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
-        }
-
-        /// <summary>
         /// Returns true if the type is public and was tagged with
         /// [System.ComponentModel.ToolboxItem (true)]
         /// </summary>
