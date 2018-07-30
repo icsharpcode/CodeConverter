@@ -384,7 +384,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var convertableModifiers = node.Modifiers.Where(m => !SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
                 var isWithEvents = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
                 var convertedModifiers = CommonConversions.ConvertModifiers(convertableModifiers, GetMemberContext(node), true);
-                var isConst = convertedModifiers.Any(a => a.Kind() == Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
+                var isConst = convertedModifiers.Any(a => a.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword));
                 var declarations = new List<MemberDeclarationSyntax>(node.Declarators.Count);
 
                 foreach (var declarator in node.Declarators) {
