@@ -19,11 +19,6 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static readonly Comparison<INamespaceOrTypeSymbol> CompareNamespaceOrTypeSymbols = CompareTo;
 
-        public static string GetShortName(this INamespaceOrTypeSymbol symbol)
-        {
-            return symbol.ToCSharpDisplayString(s_shortNameFormat);
-        }
-
         public static IEnumerable<IPropertySymbol> GetIndexers(this INamespaceOrTypeSymbol symbol)
         {
             return symbol == null

@@ -298,44 +298,6 @@ namespace ICSharpCode.CodeConverter.Util
             return false;
         }
 
-        public static string CreateParameterName(this ITypeSymbol type, bool capitalize = false)
-        {
-            while (true) {
-                var arrayType = type as IArrayTypeSymbol;
-                if (arrayType != null) {
-                    type = arrayType.ElementType;
-                    continue;
-                }
-
-                var pointerType = type as IPointerTypeSymbol;
-                if (pointerType != null) {
-                    type = pointerType.PointedAtType;
-                    continue;
-                }
-
-                break;
-            }
-
-            var shortName = GetParameterName(type);
-            return capitalize ? shortName.ToPascalCase() : shortName.ToCamelCase();
-        }
-
-        private static string GetParameterName(ITypeSymbol type)
-        {
-            if (type == null || type.IsAnonymousType()) {
-                return DefaultParameterName;
-            }
-
-            if (type.IsSpecialType() || type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T) {
-                return DefaultBuiltInParameterName;
-            }
-
-            var shortName = type.GetShortName();
-            return shortName.Length == 0
-                ? DefaultParameterName
-                    : shortName;
-        }
-
         private static bool IsSpecialType(this ITypeSymbol symbol)
         {
             if (symbol != null) {
