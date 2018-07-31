@@ -186,6 +186,7 @@
     <Content Include="Views\Home\About.cshtml" />
     <Content Include="Scripts\angular.min.js.map" />
     <Content Include="Scripts\jquery-2.2.2.min.map" />
+    <Content Include="Views\Shared\_GithubLink.cshtml" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
