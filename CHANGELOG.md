@@ -1,6 +1,20 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
+# 5.9.0 - 01/08/2018
+
+* Note: This release downgrades the library to net standard 1.3 for compatibility reasons - this should fix "could not load file or assembly netstandard, Culture=neutral'" error
+
+### VB -> C#
+* Type inferred const - convert to explicit type
+* Improve name qualification
+* Add parentheses around conditional expression in string interpolation
+* Add parentheses where needed when convert Not, CType and TypeOf
+* Fix namespace conversion issues
+* Conversion error for indexer on property value of unresolved type
+* Single-line lambda with statement body not implemented
+* Array literals not always converted to implicit C# array
+
 # 5.8.0 - 26/06/2018
 * Move options lower down in the context menus so they aren't in the way 
 
