@@ -98,14 +98,6 @@ namespace CodeConverter.VsExtension
         private void FinalizeConversion(List<string> files, List<string> errors, string longestFilePath, List<ConversionResult> filesToOverwrite)
         {
             var options = GetOptions();
-            var conversionSummary = GetConversionSummary(files, errors);
-            _outputWindow.WriteToOutputWindow(conversionSummary);
-            _outputWindow .ForceShowOutputPane();
-
-            if (longestFilePath != null)
-            {
-                VisualStudioInteraction.OpenFile(new FileInfo(longestFilePath)).SelectAll();
-            }
 
             var pathsToOverwrite = string.Join(Environment.NewLine + "* ",
                 filesToOverwrite.Select(f => PathRelativeToSolutionDir(f.SourcePathOrNull)));
@@ -125,7 +117,15 @@ namespace CodeConverter.VsExtension
                     var targetPathRelativeToSolutionDir = PathRelativeToSolutionDir(fileToOverwrite.TargetPathOrNull);
                     _outputWindow.WriteToOutputWindow(Environment.NewLine + $"* {targetPathRelativeToSolutionDir}");
                 }
+                files = files.Concat(filesToOverwrite.Select(f => f.SourcePathOrNull)).ToList();
+            } else if (longestFilePath != null) {
+                VisualStudioInteraction.OpenFile(new FileInfo(longestFilePath)).SelectAll();
             }
+
+            var conversionSummary = GetConversionSummary(files, errors);
+            _outputWindow.WriteToOutputWindow(conversionSummary);
+            _outputWindow.ForceShowOutputPane();
+
         }
 
         private bool UserHasConfirmedOverwrite(List<string> files, List<string> errors, string pathsToOverwrite)
@@ -182,13 +182,16 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             if (files.Any()) {
                 oneLine = "Code conversion completed";
                 successSummary = $"{files.Count} files have been written to disk.";
-                if (files.Count > 1) {
-                    successSummary += Environment.NewLine + "One file has been opened as an example, to see others in Visual Studio's solution explorer, you can use its 'Show All Files' button.";
-                }
             }
 
             if (errors.Any()) {
                 oneLine += $" with {errors.Count} error" + (errors.Count == 1 ? "" : "s");
+            }
+
+            if (files.Count > errors.Count * 2) {
+                successSummary += Environment.NewLine + "Please report issues at https://github.com/icsharpcode/CodeConverter/issues and consider rating at https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter#review-details";
+            } else {
+                successSummary += Environment.NewLine + "Please report issues at https://github.com/icsharpcode/CodeConverter/issues";
             }
 
             WriteStatusBarText(oneLine + " - see output window");
