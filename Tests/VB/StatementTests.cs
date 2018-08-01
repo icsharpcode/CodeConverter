@@ -535,7 +535,7 @@ End Class");
             b = 1;
         }
     }
-}", CodeWithOptions.DefaultMetadataReferences).ConvertedCode;
+}", DefaultReferences.NetStandard2).ConvertedCode;
 
             Assert.Contains("CONVERSION ERROR", convertedCode);
             Assert.Contains("unsafe", convertedCode);

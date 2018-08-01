@@ -169,6 +169,9 @@
     <Content Include="Views\_ViewStart.cshtml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\ICSharpCode.CodeConverter\Shared\DefaultReferences.cs">
+      <Link>DefaultReferences.cs</Link>
+    </Compile>
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\SwaggerConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />

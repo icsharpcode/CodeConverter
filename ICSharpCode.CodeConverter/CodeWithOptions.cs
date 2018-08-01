@@ -9,20 +9,20 @@ namespace ICSharpCode.CodeConverter
 {
     public class CodeWithOptions
     {
-        public static readonly IReadOnlyCollection<MetadataReference> DefaultMetadataReferences = GetRefs(
+        private static readonly HashSet<Type> _typesToFindAssemblyReferencesFrom = new HashSet<Type> {
             typeof(System.Text.Encoding),
-            typeof(System.ComponentModel.BrowsableAttribute),
+            typeof(System.ComponentModel.DefaultValueAttribute),
             typeof(System.Dynamic.DynamicObject),
-            typeof(System.Data.DataRow),
             typeof(System.Net.Http.HttpClient),
-            typeof(System.Web.HttpUtility),
-            typeof(System.Xml.XmlElement),
+            typeof(System.Xml.XmlConvert),
             typeof(System.Xml.Linq.XElement),
-            typeof(Microsoft.VisualBasic.Constants)).ToArray();
+            typeof(Microsoft.VisualBasic.Constants)};
 
-        private static IEnumerable<MetadataReference> GetRefs(params Type[] types)
+        private static IReadOnlyCollection<MetadataReference> NetStandard3MetadataReferences => GetRefs(_typesToFindAssemblyReferencesFrom).ToArray();
+
+        private static IEnumerable<MetadataReference> GetRefs(IReadOnlyCollection<Type> types)
         {
-            return types.Select(type => MetadataReference.CreateFromFile(type.Assembly.Location));
+            return types.Select(type => MetadataReference.CreateFromFile(type.GetAssemblyLocation()));
         }
 
         public string Text { get; private set; }
@@ -56,9 +56,9 @@ namespace ICSharpCode.CodeConverter
             return this;
         }
 
-        public CodeWithOptions WithDefaultReferences()
+        public CodeWithOptions WithTypeReferences(IReadOnlyCollection<MetadataReference> references = null)
         {
-            References = DefaultMetadataReferences;
+            References = references ?? NetStandard3MetadataReferences;
             return this;
         }
     }

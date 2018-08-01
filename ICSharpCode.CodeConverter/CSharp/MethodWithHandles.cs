@@ -114,7 +114,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static AttributeListSyntax CreateSynchronizedAttribute()
         {
             var methodImplOptions = SyntaxFactory.IdentifierName(nameof(MethodImplOptions));
-            var synchronized = SyntaxFactory.IdentifierName(nameof(MethodImplOptions.Synchronized));
+            var synchronized = SyntaxFactory.IdentifierName("Synchronized"); // Switch to nameof(MethodImplOptions.Synchronized) when upgrading to netstandard 2.0
             var methodImplOptionsSynchronized = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, methodImplOptions, synchronized);
             var attributeArg = SyntaxFactory.AttributeArgument(methodImplOptionsSynchronized);
             var attribute = SyntaxFactory.Attribute(SyntaxFactory.IdentifierName("MethodImpl"), CommonConversions.CreateAttributeArgumentList(attributeArg));

@@ -7,6 +7,7 @@ using System.Web.Http;
 using System.Web.Http.Description;
 using CodeConverterWebApp.Models;
 using ICSharpCode.CodeConverter;
+using ICSharpCode.CodeConverter.Shared;
 
 namespace CodeConverterWebApp.Controllers
 {
@@ -32,7 +33,7 @@ namespace CodeConverterWebApp.Controllers
             }
 
             var codeWithOptions = new CodeWithOptions(todo.code)
-                .WithDefaultReferences()
+                .WithTypeReferences(DefaultReferences.NetStandard2)
                 .SetFromLanguage(fromLanguage, fromVersion)
                 .SetToLanguage(toLanguage, toVersion);
             var result = CodeConverter.Convert(codeWithOptions);

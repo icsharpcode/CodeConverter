@@ -24,7 +24,7 @@ namespace CodeConverter.VsExtension
         private readonly VisualStudioWorkspace _visualStudioWorkspace;
         public static readonly string ConverterTitle = "Code converter";
         private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine + "Writing converted files to disk:";
-        private VisualStudioInteraction.OutputWindow _outputWindow;
+        private readonly VisualStudioInteraction.OutputWindow _outputWindow;
         private string SolutionDir => Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
 
         public CodeConversion(IServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace,
@@ -223,7 +223,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                 documentText = documentText.Substring(selected.Start, selected.Length);
             }
 
-            var convertTextOnly = ProjectConversion.ConvertText<TLanguageConversion>(documentText, CodeWithOptions.DefaultMetadataReferences);
+            var convertTextOnly = ProjectConversion.ConvertText<TLanguageConversion>(documentText, DefaultReferences.NetStandard2);
             convertTextOnly.SourcePathOrNull = documentPath;
             return convertTextOnly;
         }
