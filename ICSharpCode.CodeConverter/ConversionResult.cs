@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using ICSharpCode.CodeConverter.Shared;
@@ -50,6 +51,11 @@ namespace ICSharpCode.CodeConverter
                 builder.AppendLine(Exceptions[i]);
             }
             return builder.ToString();
+        }
+
+        public void WriteToFile()
+        {
+            File.WriteAllText(TargetPathOrNull, ConvertedCode, Encoding.UTF8);
         }
     }
 }

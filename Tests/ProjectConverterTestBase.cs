@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
@@ -79,6 +80,25 @@ namespace CodeConverter.Tests
                 Utils.HomogenizeEol(conversionResult.ConvertedCode ?? "" + conversionResult.GetExceptionsAsString() ?? "");
 
             Assert.Equal(expectedText, actualText);
+            Assert.Equal(GetEncoding(expectedFile.FullName), GetEncoding(conversionResult));
+        }
+
+        private Encoding GetEncoding(ConversionResult conversionResult)
+        {
+            var filePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            conversionResult.TargetPathOrNull = filePath;
+            conversionResult.WriteToFile();
+            var encoding = GetEncoding(filePath);
+            File.Delete(filePath);
+            return encoding;
+        }
+
+        private static Encoding GetEncoding(string filePath)
+        {
+            using (var reader = new StreamReader(filePath, true)) {
+                reader.Peek();
+                return reader.CurrentEncoding;
+            }
         }
 
         private static DirectoryInfo GetExpectedResultDirectory<TLanguageConversion>(string testName) where TLanguageConversion : ILanguageConversion, new()

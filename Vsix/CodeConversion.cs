@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using ICSharpCode.CodeConverter;
@@ -62,16 +63,15 @@ namespace CodeConverter.VsExtension
 
         private void WriteConvertedFilesAndShowSummary(IEnumerable<ConversionResult> convertedFiles)
         {
+            _outputWindow.Clear();
+            _outputWindow.WriteToOutputWindow(Intro);
+            _outputWindow.ForceShowOutputPane();
+
             var files = new List<string>();
             var filesToOverwrite = new List<ConversionResult>();
             var errors = new List<string>();
             string longestFilePath = null;
             var longestFileLength = -1;
-
-            _outputWindow.Clear();
-            _outputWindow.WriteToOutputWindow(Intro);
-            _outputWindow.ForceShowOutputPane();
-
             foreach (var convertedFile in convertedFiles) {
                 if (convertedFile.SourcePathOrNull == null) continue;
 
@@ -89,7 +89,8 @@ namespace CodeConverter.VsExtension
                     longestFileLength = convertedFile.ConvertedCode.Length;
                     longestFilePath = convertedFile.TargetPathOrNull;
                 }
-                File.WriteAllText(convertedFile.TargetPathOrNull, convertedFile.ConvertedCode);
+
+                convertedFile.WriteToFile();
             }
 
             FinalizeConversion(files, errors, longestFilePath, filesToOverwrite);
@@ -112,7 +113,7 @@ namespace CodeConverter.VsExtension
                 foreach (var fileToOverwrite in filesToOverwrite)
                 {
                     if (options.CreateBackups) File.Copy(fileToOverwrite.SourcePathOrNull, fileToOverwrite.SourcePathOrNull + ".bak", true);
-                    File.WriteAllText(fileToOverwrite.TargetPathOrNull, fileToOverwrite.ConvertedCode);
+                    fileToOverwrite.WriteToFile();
 
                     var targetPathRelativeToSolutionDir = PathRelativeToSolutionDir(fileToOverwrite.TargetPathOrNull);
                     _outputWindow.WriteToOutputWindow(Environment.NewLine + $"* {targetPathRelativeToSolutionDir}");
