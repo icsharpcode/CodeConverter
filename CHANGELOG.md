@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
+# vNext - TBC
+* Fix VB to CS solution level conversion issues for projects other than the first one
+
 # 5.9.0 - 01/08/2018
 
 * Note: This release downgrades the library to net standard 1.3 for compatibility reasons - this should fix "could not load file or assembly netstandard, Culture=neutral'" error
