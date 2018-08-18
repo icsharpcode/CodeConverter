@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
+using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
@@ -17,15 +18,13 @@ namespace ICSharpCode.CodeConverter.CSharp
     public class VBToCSConversion : ILanguageConversion
     {
         private Compilation _sourceCompilation;
-        private readonly List<SyntaxTree> _firstPassResults = new List<SyntaxTree>();
         private readonly List<SyntaxTree> _secondPassResults = new List<SyntaxTree>();
-        private Lazy<CSharpCompilation> _targetCompilation;
-        
-        private CSharpCompilation CreateCompilation(List<SyntaxTree> csTrees)
+        private CSharpCompilation _convertedCompilation;
+
+
+        public void Initialize(Compilation convertedCompilation)
         {
-            var references = _sourceCompilation.References.Select(ReferenceConverter.ConvertReference);
-            return CSharpCompilation.Create("Conversion", csTrees, references,
-                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            _convertedCompilation = (CSharpCompilation) convertedCompilation;
         }
 
         public SyntaxTree SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)
@@ -33,8 +32,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _sourceCompilation = sourceCompilation;
             var converted = VisualBasicConverter.ConvertCompilationTree((VisualBasicCompilation)sourceCompilation, (VisualBasicSyntaxTree)tree);
             var convertedTree = SyntaxFactory.SyntaxTree(converted);
-            _firstPassResults.Add(convertedTree);
-            _targetCompilation = new Lazy<CSharpCompilation>(() => CreateCompilation(_firstPassResults));
+            _convertedCompilation = _convertedCompilation.AddSyntaxTrees(convertedTree);
             return convertedTree;
         }
 
@@ -59,6 +57,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 (".vb<", ".cs<")
             };
         }
+
+        public string TargetLanguage { get; } = LanguageNames.CSharp;
 
         public bool CanBeContainedByMethod(SyntaxNode node)
         {
@@ -116,15 +116,14 @@ End Class";
 
         public SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)
         {
-            var cSharpSyntaxNode = new CompilationErrorFixer(_targetCompilation.Value, (CSharpSyntaxTree)cs.Value).Fix();
+            var cSharpSyntaxNode = new CompilationErrorFixer(_convertedCompilation, (CSharpSyntaxTree)cs.Value).Fix();
             _secondPassResults.Add(cSharpSyntaxNode.SyntaxTree);
             return cSharpSyntaxNode;
         }
 
         public string GetWarningsOrNull()
         {
-            var finalCompilation = CreateCompilation(_firstPassResults);
-            return CompilationWarnings.WarningsForCompilation(_sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(finalCompilation, "target");
+            return CompilationWarnings.WarningsForCompilation(_sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(_convertedCompilation, "target");
         }
 
         public SyntaxTree CreateTree(string text)
@@ -133,6 +132,12 @@ End Class";
         }
 
         public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
+        {
+            var compilation = CreateVisualBasicCompilation(references);
+            return compilation.AddSyntaxTrees(tree);
+        }
+
+        public static VisualBasicCompilation CreateVisualBasicCompilation(IEnumerable<MetadataReference> references)
         {
             var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithGlobalImports(GlobalImport.Parse(
@@ -148,7 +153,7 @@ End Class";
                     "System.Text",
                     "System.Threading.Tasks",
                     "Microsoft.VisualBasic"));
-            var compilation = VisualBasicCompilation.Create("Conversion", new[] {tree}, references)
+            var compilation = VisualBasicCompilation.Create("Conversion", references: references)
                 .WithOptions(compilationOptions);
             return compilation;
         }

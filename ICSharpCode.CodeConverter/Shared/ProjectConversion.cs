@@ -6,9 +6,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
+using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
@@ -24,18 +27,19 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly ILanguageConversion _languageConversion;
         private readonly bool _handlePartialConversion;
 
-        private ProjectConversion(Compilation sourceCompilation, string solutionDir, ILanguageConversion languageConversion)
-            : this(sourceCompilation, sourceCompilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir)), languageConversion)
+        private ProjectConversion(Compilation sourceCompilation, string solutionDir, ILanguageConversion languageConversion, Compilation convertedCompilation)
+            : this(sourceCompilation, sourceCompilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir)), languageConversion, convertedCompilation)
         {
             _solutionDir = solutionDir;
         }
 
-        private ProjectConversion(Compilation sourceCompilation, IEnumerable<SyntaxTree> syntaxTreesToConvert, ILanguageConversion languageConversion)
+        private ProjectConversion(Compilation sourceCompilation, IEnumerable<SyntaxTree> syntaxTreesToConvert, ILanguageConversion languageConversion, Compilation convertedCompilation)
         {
             _languageConversion = languageConversion;
             this._sourceCompilation = sourceCompilation;
             _syntaxTreesToConvert = syntaxTreesToConvert.ToList();
             _handlePartialConversion = _syntaxTreesToConvert.Count() == 1;
+            languageConversion.Initialize(convertedCompilation.RemoveAllSyntaxTrees());
         }
 
         public static ConversionResult ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<MetadataReference> references) where TLanguageConversion : ILanguageConversion, new()
@@ -54,7 +58,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 syntaxTree = annotatedSyntaxTree;
             }
 
-            var conversion = new ProjectConversion(compilation, new [] {syntaxTree}, languageConversion);
+            var conversion = new ProjectConversion(compilation, new [] {syntaxTree}, languageConversion, GetConvertedCompilation(compilation, languageConversion));
             var conversionResults = ConvertProjectContents(conversion).ToList();
             var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode)) 
                              ?? conversionResults.First();
@@ -68,8 +72,26 @@ namespace ICSharpCode.CodeConverter.Shared
             var solutionFilePath = project.Solution.FilePath;
             var solutionDir = Path.GetDirectoryName(solutionFilePath);
             var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
-            var projectConversion = new ProjectConversion(compilation, solutionDir, languageConversion);
+            var projectConversion = new ProjectConversion(compilation, solutionDir, languageConversion, GetConvertedCompilation(project.GetCompilationAsync().GetAwaiter().GetResult(), languageConversion));
             foreach (var conversionResult in ConvertProjectContents(projectConversion)) yield return conversionResult;
+        }
+
+        /// <summary>
+        /// If the source compilation has project references to a compilation of the same language, this will fail with an argument exception.
+        /// Use <see cref="GetConvertedCompilationWithProjectReferences"/> wherever this is possible.
+        /// </summary>
+        private static Compilation GetConvertedCompilation(Compilation compilation, ILanguageConversion languageConversion)
+        {
+            return languageConversion is VBToCSConversion ? CSToVBConversion.CreateCSharpCompilation(compilation.References) : (Compilation) VBToCSConversion.CreateVisualBasicCompilation(compilation.References);
+        }
+
+        private static Compilation GetConvertedCompilationWithProjectReferences(Project project, ILanguageConversion languageConversion)
+        {
+            return project.Solution.RemoveProject(project.Id)
+                .AddProject(project.Id, project.Name, project.AssemblyName, languageConversion.TargetLanguage)
+                .GetProject(project.Id)
+                .WithProjectReferences(project.AllProjectReferences).WithMetadataReferences(project.MetadataReferences)
+                .GetCompilationAsync().GetAwaiter().GetResult();
         }
 
         private static IEnumerable<ConversionResult> ConvertProjectContents(ProjectConversion projectConversion)

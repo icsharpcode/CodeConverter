@@ -19,14 +19,12 @@ namespace ICSharpCode.CodeConverter.VB
 {
     public class CSToVBConversion : ILanguageConversion
     {
-        private readonly List<SyntaxTree> _firstPassResults = new List<SyntaxTree>();
         private Compilation _sourceCompilation;
+        private VisualBasicCompilation _convertedCompilation;
 
-        private VisualBasicCompilation CreateCompilation(List<SyntaxTree> vbTrees)
+        public void Initialize(Compilation convertedCompilation)
         {
-            var references = _sourceCompilation.References.Select(ReferenceConverter.ConvertReference);
-            return VisualBasicCompilation.Create("Conversion", vbTrees, references,
-                new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            _convertedCompilation = (VisualBasicCompilation) convertedCompilation;
         }
 
         public SyntaxTree SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)
@@ -34,7 +32,7 @@ namespace ICSharpCode.CodeConverter.VB
             _sourceCompilation = sourceCompilation;
             var converted = CSharpConverter.ConvertCompilationTree((CSharpCompilation)sourceCompilation, (CSharpSyntaxTree)tree);
             var convertedTree = VBSyntaxFactory.SyntaxTree(converted);
-            _firstPassResults.Add(convertedTree);
+            _convertedCompilation = _convertedCompilation.AddSyntaxTrees(convertedTree);
             return convertedTree;
         }
 
@@ -59,6 +57,8 @@ namespace ICSharpCode.CodeConverter.VB
                 (".cs<", ".vb<")
             };
         }
+
+        public string TargetLanguage { get; } = LanguageNames.VisualBasic;
 
         public bool CanBeContainedByMethod(SyntaxNode node)
         {
@@ -115,8 +115,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public string GetWarningsOrNull()
         {
-            var finalCompilation = CreateCompilation(_firstPassResults);
-            return CompilationWarnings.WarningsForCompilation(_sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(finalCompilation, "target");
+            return CompilationWarnings.WarningsForCompilation(_sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(_convertedCompilation, "target");
         }
 
         public SyntaxTree CreateTree(string text)
@@ -126,7 +125,12 @@ namespace ICSharpCode.CodeConverter.VB
 
         public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
-            return CSharpCompilation.Create("Conversion", new[] { tree }, references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            return CreateCSharpCompilation(references).AddSyntaxTrees(tree);
+        }
+
+        public static CSharpCompilation CreateCSharpCompilation(IEnumerable<MetadataReference> references)
+        {
+            return CSharpCompilation.Create("Conversion", references: references, options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         }
     }
 }
