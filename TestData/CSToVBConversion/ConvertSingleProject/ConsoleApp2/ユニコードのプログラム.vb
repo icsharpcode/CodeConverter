@@ -1,4 +1,4 @@
-﻿Imports System
+Imports System
 Imports System.Diagnostics
 Imports System.Linq
 

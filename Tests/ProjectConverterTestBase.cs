@@ -33,8 +33,8 @@ namespace CodeConverter.Tests
         {
             using (var workspace = MSBuildWorkspace.Create())
             {
-                var solutionDir = Path.Combine(GetTestDataDirectory(), "CharacterizationTestSolution");
-                var solutionFile = Path.Combine(solutionDir, "CharacterizationTestSolution.sln");
+                var originalSolutionDir = Path.Combine(GetTestDataDirectory(), "CharacterizationTestSolution");
+                var solutionFile = Path.Combine(originalSolutionDir, "CharacterizationTestSolution.sln");
 
                 var solution = workspace.OpenSolutionAsync(solutionFile).GetAwaiter().GetResult();
                 var languageNameToConvert = typeof(TLanguageConversion) == typeof(VBToCSConversion)
@@ -43,33 +43,58 @@ namespace CodeConverter.Tests
                 var projectsToConvert = solution.Projects.Where(p => p.Language == languageNameToConvert && shouldConvertProject(p)).ToArray();
                 var conversionResults = SolutionConverter.CreateFor<TLanguageConversion>(projectsToConvert).Convert().ToDictionary(c => c.TargetPathOrNull);
                 var expectedResultDirectory = GetExpectedResultDirectory<TLanguageConversion>(testName);
-                
+
                 try {
-
                     var expectedFiles = expectedResultDirectory.GetFiles("*", SearchOption.AllDirectories);
-                    foreach (var expectedFile in expectedFiles) {
-                        AssertFileEqual(conversionResults, expectedResultDirectory, expectedFile, solutionDir);
-                    }
-                } catch (Exception e) when (_writeNewCharacterization) {
-                    Console.Error.WriteLine(e);
-                    if (expectedResultDirectory.Exists) expectedResultDirectory.Delete(true);
-                    FileSystem.CopyDirectory(solutionDir, expectedResultDirectory.FullName);
+                    AssertAllExpectedFilesAreEqual(expectedFiles, conversionResults, expectedResultDirectory, originalSolutionDir);
+                    AssertAllConvertedFilesWereExpected(expectedFiles, conversionResults, expectedResultDirectory, originalSolutionDir);
+                    AssertNoConversionErrors(conversionResults);
+                } finally {
+                    if (_writeNewCharacterization) {
+                        if (expectedResultDirectory.Exists) expectedResultDirectory.Delete(true);
+                        //FileSystem.CopyDirectory(originalSolutionDir, expectedResultDirectory.FullName); //Uncomment to copy all source files too so the sln is runnable
 
-                    foreach (var conversionResult in conversionResults) {
-                        var expectedFilePath =
-                            conversionResult.Key.Replace(solutionDir, expectedResultDirectory.FullName);
-                        Directory.CreateDirectory(Path.GetDirectoryName(expectedFilePath));
-                        File.WriteAllText(expectedFilePath, conversionResult.Value.ConvertedCode);
+                        foreach (var conversionResult in conversionResults) {
+                            var expectedFilePath =
+                                conversionResult.Key.Replace(originalSolutionDir, expectedResultDirectory.FullName);
+                            Directory.CreateDirectory(Path.GetDirectoryName(expectedFilePath));
+                            File.WriteAllText(expectedFilePath, conversionResult.Value.ConvertedCode);
+                        }
                     }
-                }
+                } 
 
-                var errors = conversionResults
-                    .SelectMany(r => (r.Value.Exceptions ?? new string[0]).Select(e => new {Path = r.Key, Exception = e}))
-                    .ToList();
-                Assert.Empty(errors);
             }
 
             Assert.False(_writeNewCharacterization, $"Test setup issue: Set {_writeNewCharacterization} to false after using it");
+        }
+
+        private static void AssertAllConvertedFilesWereExpected(FileInfo[] expectedFiles,
+            Dictionary<string, ConversionResult> conversionResults, DirectoryInfo expectedResultDirectory,
+            string originalSolutionDir)
+        {
+            AssertSubset(expectedFiles.Select(f => f.FullName), conversionResults.Select(r => r.Key.Replace(originalSolutionDir, expectedResultDirectory.FullName)));
+        }
+
+        private void AssertAllExpectedFilesAreEqual(FileInfo[] expectedFiles, Dictionary<string, ConversionResult> conversionResults,
+            DirectoryInfo expectedResultDirectory, string originalSolutionDir)
+        {
+            foreach (var expectedFile in expectedFiles)
+            {
+                AssertFileEqual(conversionResults, expectedResultDirectory, expectedFile, originalSolutionDir);
+            }
+        }
+
+        private static void AssertNoConversionErrors(Dictionary<string, ConversionResult> conversionResults)
+        {
+            var errors = conversionResults
+                .SelectMany(r => (r.Value.Exceptions ?? new string[0]).Select(e => new {Path = r.Key, Exception = e}))
+                .ToList();
+            Assert.Empty(errors);
+        }
+
+        private static void AssertSubset(IEnumerable<string> expectedFiles, IEnumerable<string> collection)
+        {
+            Assert.Subset(new HashSet<string>(expectedFiles, StringComparer.OrdinalIgnoreCase), new HashSet<string>(collection, StringComparer.OrdinalIgnoreCase));
         }
 
         private void AssertFileEqual(Dictionary<string, ConversionResult> conversionResults,
@@ -77,12 +102,14 @@ namespace CodeConverter.Tests
             FileInfo expectedFile,
             string actualSolutionDir)
         {
-            var actualFilePath = expectedFile.FullName.Replace(expectedResultDirectory.FullName, actualSolutionDir);
-            Assert.True(conversionResults.ContainsKey(actualFilePath),
-                expectedFile.Name + " is missing from the conversion result");
+            var convertedFilePath = expectedFile.FullName.Replace(expectedResultDirectory.FullName, actualSolutionDir);
+            var fileDidNotNeedConversion = !conversionResults.ContainsKey(convertedFilePath) && File.Exists(convertedFilePath);
+            if (fileDidNotNeedConversion) return;
+
+            Assert.True(conversionResults.ContainsKey(convertedFilePath), expectedFile.Name + " is missing from the conversion result");
 
             var expectedText = Utils.HomogenizeEol(File.ReadAllText(expectedFile.FullName));
-            var conversionResult = conversionResults[actualFilePath];
+            var conversionResult = conversionResults[convertedFilePath];
             var actualText =
                 Utils.HomogenizeEol(conversionResult.ConvertedCode ?? "" + conversionResult.GetExceptionsAsString() ?? "");
 
