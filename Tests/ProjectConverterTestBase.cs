@@ -68,6 +68,8 @@ namespace CodeConverter.Tests
                     .ToList();
                 Assert.Empty(errors);
             }
+
+            Assert.False(_writeNewCharacterization, $"Test setup issue: Set {_writeNewCharacterization} to false after using it");
         }
 
         private void AssertFileEqual(Dictionary<string, ConversionResult> conversionResults,
