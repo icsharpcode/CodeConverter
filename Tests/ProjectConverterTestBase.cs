@@ -62,6 +62,11 @@ namespace CodeConverter.Tests
                         File.WriteAllText(expectedFilePath, conversionResult.Value.ConvertedCode);
                     }
                 }
+
+                var errors = conversionResults
+                    .SelectMany(r => (r.Value.Exceptions ?? new string[0]).Select(e => new {Path = r.Key, Exception = e}))
+                    .ToList();
+                Assert.Empty(errors);
             }
         }
 

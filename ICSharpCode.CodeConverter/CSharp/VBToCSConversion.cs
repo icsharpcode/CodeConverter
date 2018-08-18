@@ -19,13 +19,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         private Compilation _sourceCompilation;
         private readonly List<SyntaxTree> _firstPassResults = new List<SyntaxTree>();
         private readonly List<SyntaxTree> _secondPassResults = new List<SyntaxTree>();
-        private readonly Lazy<CSharpCompilation> _targetCompilation;
-
-        public VBToCSConversion()
-        {
-            _targetCompilation = new Lazy<CSharpCompilation>(() => CreateCompilation(_firstPassResults));
-        }
-
+        private Lazy<CSharpCompilation> _targetCompilation;
+        
         private CSharpCompilation CreateCompilation(List<SyntaxTree> csTrees)
         {
             var references = _sourceCompilation.References.Select(ReferenceConverter.ConvertReference);
@@ -39,6 +34,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var converted = VisualBasicConverter.ConvertCompilationTree((VisualBasicCompilation)sourceCompilation, (VisualBasicSyntaxTree)tree);
             var convertedTree = SyntaxFactory.SyntaxTree(converted);
             _firstPassResults.Add(convertedTree);
+            _targetCompilation = new Lazy<CSharpCompilation>(() => CreateCompilation(_firstPassResults));
             return convertedTree;
         }
 
