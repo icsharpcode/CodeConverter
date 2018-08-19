@@ -1238,43 +1238,41 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var (convertedClauses, clauseEnd) = querySectionsReversed.Dequeue();
 
                 var nestedClause = ConvertClauseGroup(querySectionsReversed, fromClauseSyntax);
-                var (selectOrGroup, queryContinuation) = ConvertClause(fromClauseSyntax, clauseEnd, SyntaxFactory.List<QueryClauseSyntax>(), nestedClause);
-
-                return SyntaxFactory.QueryBody(convertedClauses, selectOrGroup, queryContinuation);
+                return ConvertSubQuery(fromClauseSyntax, clauseEnd, nestedClause, convertedClauses);
             }
 
-            private (SelectOrGroupClauseSyntax, QueryContinuationSyntax) ConvertClause(FromClauseSyntax fromClauseSyntax, VBSyntax.QueryClauseSyntax clauseEnd, SyntaxList<QueryClauseSyntax> convertedClauses,
-                QueryBodySyntax nestedClause)
+            private QueryBodySyntax ConvertSubQuery(FromClauseSyntax fromClauseSyntax, VBSyntax.QueryClauseSyntax clauseEnd,
+                QueryBodySyntax nestedClause, SyntaxList<QueryClauseSyntax> convertedClauses)
             {
-                switch (clauseEnd)
-                {
+                SelectOrGroupClauseSyntax selectOrGroup = null;
+                QueryContinuationSyntax queryContinuation = null;
+                switch (clauseEnd) {
                     case null:
-                        return (CreateDefaultSelectClause(fromClauseSyntax), null);
-
+                        selectOrGroup = CreateDefaultSelectClause(fromClauseSyntax);
+                        break;
                     case VBSyntax.GroupByClauseSyntax gcs:
-                        SelectOrGroupClauseSyntax selectOrGroup; 
-                        if (!gcs.Items.Any())
-                        {
+                        var continuationClauses = SyntaxFactory.List<QueryClauseSyntax>();
+                        if (!gcs.Items.Any()) {
                             var identifierNameSyntax =
                                 SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(fromClauseSyntax.Identifier));
                             var letGroupKey = SyntaxFactory.LetClause(GetGroupKeyIdentifiers(gcs).First(), SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName(GetGroupIdentifier(gcs)), SyntaxFactory.IdentifierName("Key")));
-                            convertedClauses = convertedClauses.Add(letGroupKey);
-                                selectOrGroup = SyntaxFactory.GroupClause(identifierNameSyntax, GetGroupExpression(gcs));
+                            continuationClauses = continuationClauses.Add(letGroupKey);
+                            selectOrGroup = SyntaxFactory.GroupClause(identifierNameSyntax, GetGroupExpression(gcs));
                         } else {
                             var item = (IdentifierNameSyntax)gcs.Items.Single().Expression.Accept(TriviaConvertingVisitor);
                             var keyExpression = (ExpressionSyntax)gcs.Keys.Single().Expression.Accept(TriviaConvertingVisitor);
                             selectOrGroup = SyntaxFactory.GroupClause(item, keyExpression);
                         }
-
-                        var queryContinuation = CreateGroupByContinuation(gcs, convertedClauses, nestedClause);
-                        return (selectOrGroup, queryContinuation);
-
+                        queryContinuation = CreateGroupByContinuation(gcs, continuationClauses, nestedClause);
+                        break;
                     case VBSyntax.SelectClauseSyntax scs:
-                        return (ConvertSelectClauseSyntax(scs), null);
-
+                        selectOrGroup = ConvertSelectClauseSyntax(scs);
+                        break;
                     default:
                         throw new NotImplementedException($"Clause kind '{clauseEnd.Kind()}' is not yet implemented");
                 }
+
+                return SyntaxFactory.QueryBody(convertedClauses, selectOrGroup, queryContinuation);
             }
 
             private QueryContinuationSyntax CreateGroupByContinuation(VBSyntax.GroupByClauseSyntax gcs, SyntaxList<QueryClauseSyntax> convertedClauses, QueryBodySyntax body)
