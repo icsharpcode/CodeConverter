@@ -95,7 +95,7 @@ namespace ICSharpCode.CodeConverter.Shared
             return languageConversion is VBToCSConversion ? CSToVBConversion.CreateCSharpCompilation(compilation.References) : (Compilation) VBToCSConversion.CreateVisualBasicCompilation(compilation.References);
         }
 
-        public static Compilation GetConvertedCompilationWithProjectReferences(Project project, ILanguageConversion languageConversion)
+        private static Compilation GetConvertedCompilationWithProjectReferences(Project project, ILanguageConversion languageConversion)
         {
             return project.Solution.RemoveProject(project.Id)
                 .AddProject(project.Id, project.Name, project.AssemblyName, languageConversion.TargetLanguage)
