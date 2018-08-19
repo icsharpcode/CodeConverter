@@ -68,6 +68,11 @@ namespace CodeConverter.VsExtension
             var selectedObjects = (IEnumerable<object>) Dte.ToolWindows.SolutionExplorer.SelectedItems;
             var selectedItems = selectedObjects.Cast<UIHierarchyItem>().ToList();
 
+            return ObjectOfType<T>(selectedItems);
+        }
+
+        private static IEnumerable<T> ObjectOfType<T>(IReadOnlyCollection<UIHierarchyItem> selectedItems) where T : class
+        {
             var returnType = typeof(T);
             return selectedItems.Select(item => item.Object).Where(returnType.IsInstanceOfType).Cast<T>();
         }
@@ -86,13 +91,12 @@ namespace CodeConverter.VsExtension
 
         public static IReadOnlyCollection<Project> GetSelectedProjects(string projectExtension)
         {
-            var items = GetSelectedSolutionExplorerItems<Solution>()
-                .SelectMany(s => s.Projects.Cast<Project>())
-                .Concat(GetSelectedSolutionExplorerItems<Project>())
-                .Concat(GetSelectedSolutionExplorerItems<ProjectItem>().Where(p => p.SubProject != null).Select(p => p.SubProject))
+            var projects = GetSelectedSolutionExplorerItems<Solution>().SelectMany(s => s.GetAllProjects())
+                .Concat(GetSelectedSolutionExplorerItems<Project>().SelectMany(p => p.GetProjects()))
+                .Concat(GetSelectedSolutionExplorerItems<ProjectItem>().Where(p => p.SubProject != null).SelectMany(p => p.SubProject.GetProjects()))
                 .Where(project => project.FullName.EndsWith(projectExtension, StringComparison.InvariantCultureIgnoreCase))
-                .ToList();
-            return items;
+                .Distinct().ToList();
+            return projects;
         }
 
         public static IWpfTextViewHost GetCurrentViewHost(IServiceProvider serviceProvider)
