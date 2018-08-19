@@ -14,27 +14,28 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly string _sourceSolutionContents;
         private readonly IReadOnlyCollection<Project> _projectsToConvert;
         private readonly List<(string, string)> _projectReferenceReplacements;
-        private readonly Action<string> _showProgressMessage;
+        private readonly IProgress<string> _progress;
         private readonly ILanguageConversion _languageConversion;
 
-        public static SolutionConverter CreateFor<TLanguageConversion>(IReadOnlyCollection<Project> projectsToConvert, Action<string> showProgressMessage = null) where TLanguageConversion : ILanguageConversion, new()
+        public static SolutionConverter CreateFor<TLanguageConversion>(IReadOnlyCollection<Project> projectsToConvert,
+            IProgress<string> progress = null) where TLanguageConversion : ILanguageConversion, new()
         {
             var solutionFilePath = projectsToConvert.First().Solution.FilePath;
             var sourceSolutionContents = File.ReadAllText(solutionFilePath);
             var projectReferenceReplacements = GetProjectReferenceReplacements(projectsToConvert, sourceSolutionContents);
-            return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, showProgressMessage, new TLanguageConversion());
+            return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, progress, new TLanguageConversion());
         }
 
         private SolutionConverter(string solutionFilePath,
             string sourceSolutionContents, IReadOnlyCollection<Project> projectsToConvert,
-            List<(string, string)> projectReferenceReplacements, Action<string> showProgressMessage,
+            List<(string, string)> projectReferenceReplacements, IProgress<string> showProgressMessage,
             ILanguageConversion languageConversion)
         {
             _solutionFilePath = solutionFilePath;
             _sourceSolutionContents = sourceSolutionContents;
             _projectsToConvert = projectsToConvert;
             _projectReferenceReplacements = projectReferenceReplacements;
-            _showProgressMessage = showProgressMessage ?? (_ => {});
+            _progress = showProgressMessage ?? new Progress<string>();
             _languageConversion = languageConversion;
         }
 
@@ -56,7 +57,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private IEnumerable<ConversionResult> ConvertProject(IEnumerable<(string, string)> projectFileReplacementRegexes, Project project)
         {
             var replacements = _projectReferenceReplacements.Concat(projectFileReplacementRegexes).ToArray();
-            _showProgressMessage($"Converting {project.Name}, this may take a some time...");
+            _progress.Report($"Converting {project.Name}, this may take a some time...");
             return ProjectConversion.ConvertProjectContents(project, _languageConversion).Concat(new[]
                 {ConversionResultFromReplacements(project.FilePath, replacements)}
             );

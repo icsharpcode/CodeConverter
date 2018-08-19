@@ -215,7 +215,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             var documentSyntaxTree = await document.GetSyntaxTreeAsync();
 
             var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
-            return await ProjectConversion.ConvertSingle(compilation, documentSyntaxTree, selectedTextSpan, new TLanguageConversion());
+            return await ProjectConversion.ConvertSingle(compilation, documentSyntaxTree, selectedTextSpan, new TLanguageConversion(), document.Project);
         }
 
         private static ConversionResult ConvertTextOnly<TLanguageConversion>(string documentPath, Span selected)
@@ -238,7 +238,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             var projectsByPath =
                 _visualStudioWorkspace.CurrentSolution.Projects.ToLookup(p => p.FilePath, p => p);
             var projects = selectedProjects.Select(p => projectsByPath[p.FullName].First()).ToList();
-            var convertedFiles = SolutionConverter.CreateFor<TLanguageConversion>(projects, s => _outputWindow.WriteToOutputWindow(Environment.NewLine + s)).Convert();
+            var convertedFiles = SolutionConverter.CreateFor<TLanguageConversion>(projects, new Progress<string>(s => _outputWindow.WriteToOutputWindow(Environment.NewLine + s))).Convert();
             return convertedFiles;
         }
 

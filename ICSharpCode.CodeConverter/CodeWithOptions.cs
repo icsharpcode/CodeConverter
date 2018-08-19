@@ -18,9 +18,9 @@ namespace ICSharpCode.CodeConverter
             typeof(System.Xml.Linq.XElement),
             typeof(Microsoft.VisualBasic.Constants)};
 
-        private static IReadOnlyCollection<MetadataReference> NetStandard3MetadataReferences => GetRefs(_typesToFindAssemblyReferencesFrom).ToArray();
+        private static IReadOnlyCollection<PortableExecutableReference> NetStandard3MetadataReferences => GetRefs(_typesToFindAssemblyReferencesFrom).ToArray();
 
-        private static IEnumerable<MetadataReference> GetRefs(IReadOnlyCollection<Type> types)
+        private static IEnumerable<PortableExecutableReference> GetRefs(IReadOnlyCollection<Type> types)
         {
             return types.Select(type => MetadataReference.CreateFromFile(type.GetAssemblyLocation()));
         }
@@ -31,7 +31,7 @@ namespace ICSharpCode.CodeConverter
         public string ToLanguage { get; private set; }
         public int ToLanguageVersion { get; private set; }
 
-        public IReadOnlyCollection<MetadataReference> References { get; set; } = new List<MetadataReference>();
+        public IReadOnlyCollection<PortableExecutableReference> References { get; set; } = new List<PortableExecutableReference>();
 
         public CodeWithOptions(string text)
         {
@@ -56,7 +56,7 @@ namespace ICSharpCode.CodeConverter
             return this;
         }
 
-        public CodeWithOptions WithTypeReferences(IReadOnlyCollection<MetadataReference> references = null)
+        public CodeWithOptions WithTypeReferences(IReadOnlyCollection<PortableExecutableReference> references = null)
         {
             References = references ?? NetStandard3MetadataReferences;
             return this;

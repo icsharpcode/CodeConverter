@@ -22,9 +22,9 @@ namespace ICSharpCode.CodeConverter.Shared
             typeof(Microsoft.VisualBasic.Constants)
         };
 
-        public static IReadOnlyCollection<MetadataReference> NetStandard2 => GetRefs(TypesToLoadAssembliesFor).ToArray();
+        public static IReadOnlyCollection<PortableExecutableReference> NetStandard2 => GetRefs(TypesToLoadAssembliesFor).ToArray();
 
-        private static IEnumerable<MetadataReference> GetRefs(IReadOnlyCollection<Type> types)
+        private static IEnumerable<PortableExecutableReference> GetRefs(IReadOnlyCollection<Type> types)
         {
             return types.Select(type => MetadataReference.CreateFromFile(type.Assembly.Location));
         }

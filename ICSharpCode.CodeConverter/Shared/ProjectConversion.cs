@@ -42,7 +42,7 @@ namespace ICSharpCode.CodeConverter.Shared
             languageConversion.Initialize(convertedCompilation.RemoveAllSyntaxTrees());
         }
 
-        public static ConversionResult ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<MetadataReference> references) where TLanguageConversion : ILanguageConversion, new()
+        public static ConversionResult ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references) where TLanguageConversion : ILanguageConversion, new()
         {
             var languageConversion = new TLanguageConversion();
             var syntaxTree = languageConversion.CreateTree(text);
@@ -50,17 +50,27 @@ namespace ICSharpCode.CodeConverter.Shared
             return ConvertSingle(compilation, syntaxTree, new TextSpan(0, 0), new TLanguageConversion()).GetAwaiter().GetResult();
         }
 
-        public static async Task<ConversionResult> ConvertSingle(Compilation compilation, SyntaxTree syntaxTree, TextSpan selected, ILanguageConversion languageConversion)
+        /// <summary>
+        /// If the compilation comes from a Project/Workspace, you must specify the <paramref name="containingProject"/>.
+        /// Otherwise an error will occur when one or more project references to another project of the same language exist.
+        /// </summary>
+        public static async Task<ConversionResult> ConvertSingle(Compilation compilation, SyntaxTree syntaxTree, TextSpan selected,
+            ILanguageConversion languageConversion, Project containingProject = null)
         {
-            if (selected.Length > 0) {
+            var convertedCompilation = containingProject == null
+                ? GetConvertedCompilation(compilation, languageConversion)
+                : GetConvertedCompilationWithProjectReferences(containingProject, languageConversion);
+
+            if (selected.Length > 0)
+            {
                 var annotatedSyntaxTree = await GetSyntaxTreeWithAnnotatedSelection(syntaxTree, selected);
                 compilation = compilation.ReplaceSyntaxTree(syntaxTree, annotatedSyntaxTree);
                 syntaxTree = annotatedSyntaxTree;
             }
 
-            var conversion = new ProjectConversion(compilation, new [] {syntaxTree}, languageConversion, GetConvertedCompilation(compilation, languageConversion));
+            var conversion = new ProjectConversion(compilation, new[] {syntaxTree}, languageConversion, convertedCompilation);
             var conversionResults = ConvertProjectContents(conversion).ToList();
-            var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode)) 
+            var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
                              ?? conversionResults.First();
             codeResult.Exceptions = conversionResults.SelectMany(x => x.Exceptions).ToArray();
             return codeResult;
@@ -85,7 +95,7 @@ namespace ICSharpCode.CodeConverter.Shared
             return languageConversion is VBToCSConversion ? CSToVBConversion.CreateCSharpCompilation(compilation.References) : (Compilation) VBToCSConversion.CreateVisualBasicCompilation(compilation.References);
         }
 
-        private static Compilation GetConvertedCompilationWithProjectReferences(Project project, ILanguageConversion languageConversion)
+        public static Compilation GetConvertedCompilationWithProjectReferences(Project project, ILanguageConversion languageConversion)
         {
             return project.Solution.RemoveProject(project.Id)
                 .AddProject(project.Id, project.Name, project.AssemblyName, languageConversion.TargetLanguage)
