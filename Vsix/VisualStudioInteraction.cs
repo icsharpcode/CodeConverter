@@ -204,8 +204,10 @@ namespace CodeConverter.VsExtension
 
             public void WriteToOutputWindow(string message)
             {
-                _cachedOutput.AppendLine(message);
-                _outputPane.OutputString(message);
+                lock (_outputPane) {
+                    _cachedOutput.AppendLine(message);
+                    _outputPane.OutputString(message);
+                }
             }
         }
     }

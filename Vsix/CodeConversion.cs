@@ -108,14 +108,14 @@ namespace CodeConverter.VsExtension
             if (shouldOverwriteSolutionAndProjectFiles)
             {
                 var titleMessage = options.CreateBackups ? "Creating backups and overwriting files:" : "Overwriting files:" + "";
-                _outputWindow.WriteToOutputWindow(titleMessage);
+                _outputWindow.WriteToOutputWindow(Environment.NewLine + titleMessage);
                 foreach (var fileToOverwrite in filesToOverwrite)
                 {
                     if (options.CreateBackups) File.Copy(fileToOverwrite.SourcePathOrNull, fileToOverwrite.SourcePathOrNull + ".bak", true);
                     fileToOverwrite.WriteToFile();
 
                     var targetPathRelativeToSolutionDir = PathRelativeToSolutionDir(fileToOverwrite.TargetPathOrNull);
-                    _outputWindow.WriteToOutputWindow(Environment.NewLine + $"* {targetPathRelativeToSolutionDir}");
+                    _outputWindow.WriteToOutputWindow($"* {targetPathRelativeToSolutionDir}");
                 }
                 files = files.Concat(filesToOverwrite.Select(f => f.SourcePathOrNull)).ToList();
             } else if (longestFilePath != null) {
@@ -149,9 +149,9 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
         private void LogProgress(ConversionResult convertedFile, List<string> errors)
         {
             var exceptionsAsString = convertedFile.GetExceptionsAsString();
-            var indentedException = exceptionsAsString.Replace(Environment.NewLine, Environment.NewLine + "    ");
+            var indentedException = exceptionsAsString.Replace(Environment.NewLine, Environment.NewLine + "    ").TrimEnd();
             var targetPathRelativeToSolutionDir = PathRelativeToSolutionDir(convertedFile.TargetPathOrNull ?? "unknown");
-            string output = Environment.NewLine + $"* {targetPathRelativeToSolutionDir}";
+            string output = $"* {targetPathRelativeToSolutionDir}";
             var containsErrors = !string.IsNullOrWhiteSpace(exceptionsAsString);
 
             if (containsErrors) {
@@ -161,8 +161,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode))
             {
                 var sourcePathRelativeToSolutionDir = PathRelativeToSolutionDir(convertedFile.SourcePathOrNull ?? "unknown");
-                output = Environment.NewLine +
-                         $"* Failure processing {sourcePathRelativeToSolutionDir}{Environment.NewLine}    {indentedException}";    
+                output = $"* Failure processing {sourcePathRelativeToSolutionDir}{Environment.NewLine}    {indentedException}";    
             }
             else if (containsErrors){
                 output += $" contains errors{Environment.NewLine}    {indentedException}";
@@ -239,7 +238,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             var projectsByPath =
                 _visualStudioWorkspace.CurrentSolution.Projects.ToLookup(p => p.FilePath, p => p);
             var projects = selectedProjects.Select(p => projectsByPath[p.FullName].First()).ToList();
-            var convertedFiles = SolutionConverter.CreateFor<TLanguageConversion>(projects, s => _outputWindow.WriteToOutputWindow(Environment.NewLine + Environment.NewLine + s)).Convert();
+            var convertedFiles = SolutionConverter.CreateFor<TLanguageConversion>(projects, s => _outputWindow.WriteToOutputWindow(Environment.NewLine + s)).Convert();
             return convertedFiles;
         }
 
