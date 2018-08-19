@@ -72,7 +72,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var solutionFilePath = project.Solution.FilePath;
             var solutionDir = Path.GetDirectoryName(solutionFilePath);
             var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
-            var projectConversion = new ProjectConversion(compilation, solutionDir, languageConversion, GetConvertedCompilation(project.GetCompilationAsync().GetAwaiter().GetResult(), languageConversion));
+            var projectConversion = new ProjectConversion(compilation, solutionDir, languageConversion, GetConvertedCompilationWithProjectReferences(project, languageConversion));
             foreach (var conversionResult in ConvertProjectContents(projectConversion)) yield return conversionResult;
         }
 
