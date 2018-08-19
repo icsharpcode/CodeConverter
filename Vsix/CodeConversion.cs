@@ -24,7 +24,7 @@ namespace CodeConverter.VsExtension
         private readonly IServiceProvider _serviceProvider;
         private readonly VisualStudioWorkspace _visualStudioWorkspace;
         public static readonly string ConverterTitle = "Code converter";
-        private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine + "Writing converted files to disk:";
+        private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine;
         private readonly VisualStudioInteraction.OutputWindow _outputWindow;
         private string SolutionDir => Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
 
@@ -100,11 +100,10 @@ namespace CodeConverter.VsExtension
         {
             var options = GetOptions();
 
-            var pathsToOverwrite = string.Join(Environment.NewLine + "* ",
-                filesToOverwrite.Select(f => PathRelativeToSolutionDir(f.SourcePathOrNull)));
+            var pathsToOverwrite = filesToOverwrite.Select(f => PathRelativeToSolutionDir(f.SourcePathOrNull));
             var shouldOverwriteSolutionAndProjectFiles =
                 filesToOverwrite.Any() &&
-                (options.AlwaysOverwriteFiles || UserHasConfirmedOverwrite(files, errors, pathsToOverwrite));
+                (options.AlwaysOverwriteFiles || UserHasConfirmedOverwrite(files, errors, pathsToOverwrite.ToList()));
 
             if (shouldOverwriteSolutionAndProjectFiles)
             {
@@ -129,12 +128,14 @@ namespace CodeConverter.VsExtension
 
         }
 
-        private bool UserHasConfirmedOverwrite(List<string> files, List<string> errors, string pathsToOverwrite)
+        private bool UserHasConfirmedOverwrite(List<string> files, List<string> errors, IReadOnlyCollection<string> pathsToOverwrite)
         {
+            var maxExamples = 30; // Avoid a huge unreadable dialog going off the screen
+            var exampleText = pathsToOverwrite.Count > maxExamples ? $". First {maxExamples} examples" : "";
             return VisualStudioInteraction.ShowMessageBox(_serviceProvider,
                 "Overwrite solution and referencing projects?",
-                $@"The current solution file and any referencing projects will be overwritten to reference the new project(s):
-* {pathsToOverwrite}
+                $@"The current solution file and any referencing projects will be overwritten to reference the new project(s){exampleText}:
+* {string.Join(Environment.NewLine + "* ", pathsToOverwrite.Take(maxExamples))}
 
 The old contents will be copied to 'currentFilename.bak'.
 Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors.Count);
@@ -238,7 +239,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             var projectsByPath =
                 _visualStudioWorkspace.CurrentSolution.Projects.ToLookup(p => p.FilePath, p => p);
             var projects = selectedProjects.Select(p => projectsByPath[p.FullName].First()).ToList();
-            var convertedFiles = SolutionConverter.CreateFor<TLanguageConversion>(projects).Convert();
+            var convertedFiles = SolutionConverter.CreateFor<TLanguageConversion>(projects, s => _outputWindow.WriteToOutputWindow(Environment.NewLine + Environment.NewLine + s)).Convert();
             return convertedFiles;
         }
 

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.CSharp
@@ -20,5 +21,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool surroundedWithMethod);
         IReadOnlyCollection<(string, string)> GetProjectTypeGuidMappings();
         IEnumerable<(string, string)> GetProjectFileReplacementRegexes();
+        string TargetLanguage { get; }
+        void Initialize(Compilation convertedCompilation);
     }
 }
