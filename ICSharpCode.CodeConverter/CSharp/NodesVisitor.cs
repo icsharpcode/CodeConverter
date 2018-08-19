@@ -1238,7 +1238,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var (convertedClauses, clauseEnd) = querySectionsReversed.Dequeue();
 
                 var nestedClause = ConvertClauseGroup(querySectionsReversed, fromClauseSyntax);
-                var (selectOrGroup, queryContinuation) = ConvertClause(fromClauseSyntax, clauseEnd, convertedClauses, nestedClause);
+                var (selectOrGroup, queryContinuation) = ConvertClause(fromClauseSyntax, clauseEnd, SyntaxFactory.List<QueryClauseSyntax>(), nestedClause);
 
                 return SyntaxFactory.QueryBody(convertedClauses, selectOrGroup, queryContinuation);
             }
@@ -1252,8 +1252,21 @@ namespace ICSharpCode.CodeConverter.CSharp
                         return (CreateDefaultSelectClause(fromClauseSyntax), null);
 
                     case VBSyntax.GroupByClauseSyntax gcs:
+                        SelectOrGroupClauseSyntax selectOrGroup; 
+                        if (!gcs.Items.Any())
+                        {
+                            var identifierNameSyntax =
+                                SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(fromClauseSyntax.Identifier));
+                            var letGroupKey = SyntaxFactory.LetClause(GetGroupKeyIdentifiers(gcs).First(), SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName(GetGroupIdentifier(gcs)), SyntaxFactory.IdentifierName("Key")));
+                            convertedClauses = convertedClauses.Add(letGroupKey);
+                                selectOrGroup = SyntaxFactory.GroupClause(identifierNameSyntax, GetGroupExpression(gcs));
+                        } else {
+                            var item = (IdentifierNameSyntax)gcs.Items.Single().Expression.Accept(TriviaConvertingVisitor);
+                            var keyExpression = (ExpressionSyntax)gcs.Keys.Single().Expression.Accept(TriviaConvertingVisitor);
+                            selectOrGroup = SyntaxFactory.GroupClause(item, keyExpression);
+                        }
+
                         var queryContinuation = CreateGroupByContinuation(gcs, convertedClauses, nestedClause);
-                        var selectOrGroup = ConvertGroupByClause(gcs);
                         return (selectOrGroup, queryContinuation);
 
                     case VBSyntax.SelectClauseSyntax scs:
@@ -1331,17 +1344,26 @@ namespace ICSharpCode.CodeConverter.CSharp
                     _ => throw new NotImplementedException($"Conversion for query clause with kind '{node.Kind()}' not implemented"));
             }
 
-            private GroupClauseSyntax ConvertGroupByClause(VBSyntax.GroupByClauseSyntax gs)
+            private ExpressionSyntax GetGroupExpression(VBSyntax.GroupByClauseSyntax gs)
             {
-                if (gs == null) return null;
-                var item = (IdentifierNameSyntax) gs.Items.Single().Expression.Accept(TriviaConvertingVisitor);
-                var keyExpression = (ExpressionSyntax) gs.Keys.Single().Expression.Accept(TriviaConvertingVisitor);
-                return SyntaxFactory.GroupClause(item, keyExpression);
+                return (ExpressionSyntax) gs.Keys.Single().Expression.Accept(TriviaConvertingVisitor);
             }
-
+            
             private SyntaxToken GetGroupIdentifier(VBSyntax.GroupByClauseSyntax gs)
             {
-                return ConvertIdentifier(gs.AggregationVariables.Select(x => x.Aggregation).OfType<VBSyntax.FunctionAggregationSyntax>().First().FunctionName);
+                var names = gs.AggregationVariables.Select(v => v.Aggregation is VBSyntax.FunctionAggregationSyntax f
+                        ? f.FunctionName.Text : v.Aggregation is VBSyntax.GroupAggregationSyntax g ? g.GroupKeyword.Text : null)
+                    .Where(x => x != null)
+                    .DefaultIfEmpty(gs.Keys.Select(k => k.NameEquals.Identifier.Identifier.Text).First());
+                return SyntaxFactory.Identifier(names.First());
+            }
+
+            private IEnumerable<string> GetGroupKeyIdentifiers(VBSyntax.GroupByClauseSyntax gs)
+            {
+                return gs.AggregationVariables
+                    .Select(x => x.NameEquals != null ? x.NameEquals.Identifier.Identifier.Text : null)
+                    .Concat(gs.Keys.Select(k => k.NameEquals != null ? k.NameEquals.Identifier.Identifier.Text : null))
+                    .Where(x => x != null);
             }
 
             private SyntaxToken ConvertIdentifier(SyntaxToken identifierIdentifier, bool isAttribute = false)

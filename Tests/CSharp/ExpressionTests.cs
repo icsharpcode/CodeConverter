@@ -922,6 +922,124 @@ End Function", @"private static IEnumerable<string> FindPicFilePath()
         }
 
         [Fact]
+        public void LinqGroupByAnonymous()
+        {
+            //Very hard to automated test comments on such a complicated query
+            TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Runtime.CompilerServices
+
+Public Class AccountEntry
+    Public Property LookupAccountEntryTypeId As Object
+    Public Property LookupAccountEntrySourceId As Object
+    Public Property SponsorId As Object
+    Public Property LookupFundTypeId As Object
+    Public Property StartDate As Object
+    Public Property SatisfiedDate As Object
+    Public Property InterestStartDate As Object
+    Public Property ComputeInterestFlag As Object
+    Public Property SponsorClaimRevision As Object
+    Public Property Amount As Decimal
+    Public Property AccountTransactions As List(Of Object)
+    Public Property AccountEntryClaimDetails As List(Of AccountEntry)
+End Class
+
+Module Ext
+    <Extension>
+    Public Function Reduce(ByVal accountEntries As IEnumerable(Of AccountEntry)) As IEnumerable(Of AccountEntry)
+        Return (
+            From _accountEntry In accountEntries
+                Where _accountEntry.Amount > 0D
+                Group By _keys = New With
+                    {
+                    Key .LookupAccountEntryTypeId = _accountEntry.LookupAccountEntryTypeId,
+                    Key .LookupAccountEntrySourceId = _accountEntry.LookupAccountEntrySourceId,
+                    Key .SponsorId = _accountEntry.SponsorId,
+                    Key .LookupFundTypeId = _accountEntry.LookupFundTypeId,
+                    Key .StartDate = _accountEntry.StartDate,
+                    Key .SatisfiedDate = _accountEntry.SatisfiedDate,
+                    Key .InterestStartDate = _accountEntry.InterestStartDate,
+                    Key .ComputeInterestFlag = _accountEntry.ComputeInterestFlag,
+                    Key .SponsorClaimRevision = _accountEntry.SponsorClaimRevision
+                    } Into Group
+                Select New AccountEntry() With
+                    {
+                    .LookupAccountEntryTypeId = _keys.LookupAccountEntryTypeId,
+                    .LookupAccountEntrySourceId = _keys.LookupAccountEntrySourceId,
+                    .SponsorId = _keys.SponsorId,
+                    .LookupFundTypeId = _keys.LookupFundTypeId,
+                    .StartDate = _keys.StartDate,
+                    .SatisfiedDate = _keys.SatisfiedDate,
+                    .ComputeInterestFlag = _keys.ComputeInterestFlag,
+                    .InterestStartDate = _keys.InterestStartDate,
+                    .SponsorClaimRevision = _keys.SponsorClaimRevision,
+                    .Amount = Group.Sum(Function(accountEntry) accountEntry.Amount),
+                    .AccountTransactions = New List(Of Object)(),
+                    .AccountEntryClaimDetails =
+                        (From _accountEntry In Group From _claimDetail In _accountEntry.AccountEntryClaimDetails
+                            Select _claimDetail).Reduce().ToList
+                    }
+            )
+    End Function
+End Module", @"using System.Collections.Generic;
+using System.Linq;
+
+public class AccountEntry
+{
+    public object LookupAccountEntryTypeId { get; set; }
+    public object LookupAccountEntrySourceId { get; set; }
+    public object SponsorId { get; set; }
+    public object LookupFundTypeId { get; set; }
+    public object StartDate { get; set; }
+    public object SatisfiedDate { get; set; }
+    public object InterestStartDate { get; set; }
+    public object ComputeInterestFlag { get; set; }
+    public object SponsorClaimRevision { get; set; }
+    public decimal Amount { get; set; }
+    public List<object> AccountTransactions { get; set; }
+    public List<AccountEntry> AccountEntryClaimDetails { get; set; }
+}
+
+static class Ext
+{
+    public static IEnumerable<AccountEntry> Reduce(this IEnumerable<AccountEntry> accountEntries)
+    {
+        return (from _accountEntry in accountEntries
+                where _accountEntry.Amount > 0M
+                group _accountEntry by new
+                {
+                    LookupAccountEntryTypeId = _accountEntry.LookupAccountEntryTypeId,
+                    LookupAccountEntrySourceId = _accountEntry.LookupAccountEntrySourceId,
+                    SponsorId = _accountEntry.SponsorId,
+                    LookupFundTypeId = _accountEntry.LookupFundTypeId,
+                    StartDate = _accountEntry.StartDate,
+                    SatisfiedDate = _accountEntry.SatisfiedDate,
+                    InterestStartDate = _accountEntry.InterestStartDate,
+                    ComputeInterestFlag = _accountEntry.ComputeInterestFlag,
+                    SponsorClaimRevision = _accountEntry.SponsorClaimRevision
+                } into Group
+                let _keys = Group.Key
+                select new AccountEntry()
+                {
+                    LookupAccountEntryTypeId = _keys.LookupAccountEntryTypeId,
+                    LookupAccountEntrySourceId = _keys.LookupAccountEntrySourceId,
+                    SponsorId = _keys.SponsorId,
+                    LookupFundTypeId = _keys.LookupFundTypeId,
+                    StartDate = _keys.StartDate,
+                    SatisfiedDate = _keys.SatisfiedDate,
+                    ComputeInterestFlag = _keys.ComputeInterestFlag,
+                    InterestStartDate = _keys.InterestStartDate,
+                    SponsorClaimRevision = _keys.SponsorClaimRevision,
+                    Amount = Group.Sum(accountEntry => accountEntry.Amount),
+                    AccountTransactions = new List<object>(),
+                    AccountEntryClaimDetails = (from _accountEntry in Group
+                                                from _claimDetail in _accountEntry.AccountEntryClaimDetails
+                                                select _claimDetail).Reduce().ToList()
+                }
+);
+    }
+}");
+        }
+
+        [Fact]
         public void PartiallyQualifiedName()
         {
             TestConversionVisualBasicToCSharp(@"Imports System.Collections
