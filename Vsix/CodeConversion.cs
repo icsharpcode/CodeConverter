@@ -24,7 +24,7 @@ namespace CodeConverter.VsExtension
         private readonly IServiceProvider _serviceProvider;
         private readonly VisualStudioWorkspace _visualStudioWorkspace;
         public static readonly string ConverterTitle = "Code converter";
-        private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine + "Writing converted files to disk:";
+        private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine;
         private readonly VisualStudioInteraction.OutputWindow _outputWindow;
         private string SolutionDir => Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
 
@@ -239,7 +239,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             var projectsByPath =
                 _visualStudioWorkspace.CurrentSolution.Projects.ToLookup(p => p.FilePath, p => p);
             var projects = selectedProjects.Select(p => projectsByPath[p.FullName].First()).ToList();
-            var convertedFiles = SolutionConverter.CreateFor<TLanguageConversion>(projects).Convert();
+            var convertedFiles = SolutionConverter.CreateFor<TLanguageConversion>(projects, s => _outputWindow.WriteToOutputWindow(Environment.NewLine + Environment.NewLine + s)).Convert();
             return convertedFiles;
         }
 
