@@ -27,12 +27,6 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly ILanguageConversion _languageConversion;
         private readonly bool _handlePartialConversion;
 
-        private ProjectConversion(Compilation sourceCompilation, string solutionDir, ILanguageConversion languageConversion, Compilation convertedCompilation)
-            : this(sourceCompilation, sourceCompilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir)), languageConversion, convertedCompilation)
-        {
-            _solutionDir = solutionDir;
-        }
-
         private ProjectConversion(Compilation sourceCompilation, IEnumerable<SyntaxTree> syntaxTreesToConvert, ILanguageConversion languageConversion, Compilation convertedCompilation)
         {
             _languageConversion = languageConversion;
@@ -79,10 +73,15 @@ namespace ICSharpCode.CodeConverter.Shared
         public static IEnumerable<ConversionResult> ConvertProjectContents(Project project,
             ILanguageConversion languageConversion)
         {
+            var compilation = project.GetCompilationAsync();
             var solutionFilePath = project.Solution.FilePath;
             var solutionDir = Path.GetDirectoryName(solutionFilePath);
-            var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
-            var projectConversion = new ProjectConversion(compilation, solutionDir, languageConversion, GetConvertedCompilationWithProjectReferences(project, languageConversion));
+            var projectOutputDir = Path.GetDirectoryName(project.OutputFilePath);
+            var guessAtProjectIntermediateOutputDir = projectOutputDir.Replace(@"\bin\", @"\obj\");
+            var syntaxTrees = compilation.GetAwaiter().GetResult().SyntaxTrees.Where(t =>
+                    t.FilePath.StartsWith(solutionDir) && !t.FilePath.StartsWith(projectOutputDir) &&
+                    !t.FilePath.StartsWith(guessAtProjectIntermediateOutputDir));
+            var projectConversion = new ProjectConversion(compilation.GetAwaiter().GetResult(), syntaxTrees, languageConversion, GetConvertedCompilationWithProjectReferences(project, languageConversion));
             foreach (var conversionResult in ConvertProjectContents(projectConversion)) yield return conversionResult;
         }
 
