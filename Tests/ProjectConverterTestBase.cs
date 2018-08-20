@@ -72,7 +72,7 @@ namespace CodeConverter.Tests
             Dictionary<string, ConversionResult> conversionResults, DirectoryInfo expectedResultDirectory,
             string originalSolutionDir)
         {
-            AssertSubset(expectedFiles.Select(f => f.FullName.Replace(expectedResultDirectory.FullName, "")), conversionResults.Select(r => r.Key.Replace(originalSolutionDir, "")));
+            AssertSubset(expectedFiles.Select(f => f.FullName), conversionResults.Select(r => r.Key.Replace(originalSolutionDir, expectedResultDirectory.FullName)));
         }
 
         private void AssertAllExpectedFilesAreEqual(FileInfo[] expectedFiles, Dictionary<string, ConversionResult> conversionResults,
@@ -92,11 +92,9 @@ namespace CodeConverter.Tests
             Assert.Empty(errors);
         }
 
-        private static void AssertSubset(IEnumerable<string> superset, IEnumerable<string> subset)
+        private static void AssertSubset(IEnumerable<string> expectedFiles, IEnumerable<string> collection)
         {
-            var notExpected = new HashSet<string>(subset, StringComparer.OrdinalIgnoreCase);
-            notExpected.ExceptWith(new HashSet<string>(superset, StringComparer.OrdinalIgnoreCase));
-            Assert.Empty(notExpected);
+            Assert.Subset(new HashSet<string>(expectedFiles, StringComparer.OrdinalIgnoreCase), new HashSet<string>(collection, StringComparer.OrdinalIgnoreCase));
         }
 
         private void AssertFileEqual(Dictionary<string, ConversionResult> conversionResults,
