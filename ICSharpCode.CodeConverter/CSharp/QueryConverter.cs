@@ -27,13 +27,33 @@ namespace ICSharpCode.CodeConverter.CSharp
         public CSharpSyntaxNode ConvertClauses(SyntaxList<VBSyntax.QueryClauseSyntax> clauses)
         {
             var vbBodyClauses = new Queue<VBSyntax.QueryClauseSyntax>(clauses);
-
             var vbFromClause = (VBSyntax.FromClauseSyntax) vbBodyClauses.Dequeue();
-            var fromClauseSyntax = ConvertFromClauseSyntax(vbFromClause);
 
+            var fromClauseSyntax = ConvertFromClauseSyntax(vbFromClause);
             var querySegments = GetQuerySegments(vbBodyClauses);
-                
             return ConvertQuerySegments(querySegments, fromClauseSyntax);
+        }
+
+        /// <summary>
+        ///  TODO: Don't bother with reversing, rewrite ConvertQueryWithContinuation to recurse on them the right way around
+        /// </summary>
+        private IEnumerable<(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>, VBSyntax.QueryClauseSyntax)> GetQuerySegments(Queue<VBSyntax.QueryClauseSyntax> vbBodyClauses)
+        {
+            while (vbBodyClauses.Any()) {
+                var querySectionsReversed =
+                    new Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>();
+                while (vbBodyClauses.Any() && !RequiresMethodInvocation(vbBodyClauses.Peek())) {
+                    var convertedClauses = new List<CSSyntax.QueryClauseSyntax>();
+                    while (vbBodyClauses.Any() && !RequiredContinuation(vbBodyClauses.Peek())) {
+                        convertedClauses.Add(ConvertQueryBodyClause(vbBodyClauses.Dequeue()));
+                    }
+
+                    var convertQueryBodyClauses = (SyntaxFactory.List(convertedClauses),
+                        vbBodyClauses.Any() ? vbBodyClauses.Dequeue() : null);
+                    querySectionsReversed.Enqueue(convertQueryBodyClauses);
+                }
+                yield return (querySectionsReversed, vbBodyClauses.Any() ? vbBodyClauses.Dequeue() : null);
+            }
         }
 
         private CSharpSyntaxNode ConvertQuerySegments(IEnumerable<(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>, VBSyntax.QueryClauseSyntax)> querySegments, CSSyntax.FromClauseSyntax fromClauseSyntax)
@@ -61,25 +81,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxFactory.SeparatedList(GetLinqArguments(fromClauseSyntax, queryEnd).Select(SyntaxFactory.Argument)));
             var invocationExpressionSyntax = SyntaxFactory.InvocationExpression(linqMethod, linqArguments);
             return invocationExpressionSyntax;
-        }
-
-        private IEnumerable<(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>, VBSyntax.QueryClauseSyntax)> GetQuerySegments(Queue<VBSyntax.QueryClauseSyntax> vbBodyClauses)
-        {
-            while (vbBodyClauses.Any()) {
-                var querySectionsReversed =
-                    new Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>();
-                while (vbBodyClauses.Any() && !RequiresMethodInvocation(vbBodyClauses.Peek())) {
-                    var convertedClauses = new List<CSSyntax.QueryClauseSyntax>();
-                    while (vbBodyClauses.Any() && !RequiredContinuation(vbBodyClauses.Peek())) {
-                        convertedClauses.Add(ConvertQueryBodyClause(vbBodyClauses.Dequeue()));
-                    }
-
-                    var convertQueryBodyClauses = (SyntaxFactory.List(convertedClauses),
-                        vbBodyClauses.Any() ? vbBodyClauses.Dequeue() : null);
-                    querySectionsReversed.Enqueue(convertQueryBodyClauses);
-                }
-                yield return (querySectionsReversed, vbBodyClauses.Any() ? vbBodyClauses.Dequeue() : null);
-            }
         }
 
         private CSharpSyntaxNode ConvertQueryWithContinuations(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)> queryContinuation, CSSyntax.FromClauseSyntax fromClauseSyntax)
