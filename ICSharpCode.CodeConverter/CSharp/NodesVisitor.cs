@@ -1223,21 +1223,69 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var vbFromClause = (VBSyntax.FromClauseSyntax) vbBodyClauses.Dequeue();
                 var fromClauseSyntax = ConvertFromClauseSyntax(vbFromClause);
 
-                var querySectionsReversed = new Queue<(SyntaxList<QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>();
-                while (vbBodyClauses.Any()) {
-                    querySectionsReversed.Enqueue(ConvertQueryBodyClauses(vbBodyClauses));
-                }
-
-                var query = ConvertClauseGroup(querySectionsReversed, fromClauseSyntax);
-                return SyntaxFactory.QueryExpression(fromClauseSyntax, query);
+                var querySegments = GetQuerySegments(vbBodyClauses);
+                
+                return ConvertQuerySegments(querySegments, fromClauseSyntax);
             }
 
-            private QueryBodySyntax ConvertClauseGroup(Queue<(SyntaxList<QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)> querySectionsReversed, FromClauseSyntax fromClauseSyntax)
+            private CSharpSyntaxNode ConvertQuerySegments(IEnumerable<(Queue<(SyntaxList<QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>, VBSyntax.QueryClauseSyntax)> querySegments, FromClauseSyntax fromClauseSyntax)
+            {
+                ExpressionSyntax query = null;
+                foreach (var (queryContinuation, queryEnd) in querySegments) {
+                    query = (ExpressionSyntax) ConvertQueryWithContinuations(queryContinuation, fromClauseSyntax);
+                    if (queryEnd == null) return query;
+                    var queryWithoutTrivia = ConvertQueryToLinq(fromClauseSyntax, queryEnd, query);
+                    query = TriviaConvertingVisitor.TriviaConverter.PortConvertedTrivia(queryEnd, queryWithoutTrivia);
+                    fromClauseSyntax = SyntaxFactory.FromClause(fromClauseSyntax.Identifier, query);
+                }
+
+                return query ?? throw new ArgumentOutOfRangeException(nameof(querySegments), querySegments, null);
+            }
+
+            private InvocationExpressionSyntax ConvertQueryToLinq(FromClauseSyntax fromClauseSyntax, VBSyntax.QueryClauseSyntax queryEnd,
+                ExpressionSyntax query)
+            {
+                var linqMethodName = GetLinqMethodName(queryEnd);
+                var parenthesizedQuery = query is QueryExpressionSyntax ? SyntaxFactory.ParenthesizedExpression(query) : query;
+                var linqMethod = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, parenthesizedQuery,
+                    SyntaxFactory.IdentifierName(linqMethodName));
+                var linqArguments = SyntaxFactory.ArgumentList(
+                    SyntaxFactory.SeparatedList(GetLinqArguments(fromClauseSyntax, queryEnd).Select(SyntaxFactory.Argument)));
+                var invocationExpressionSyntax = SyntaxFactory.InvocationExpression(linqMethod, linqArguments);
+                return invocationExpressionSyntax;
+            }
+
+            private IEnumerable<(Queue<(SyntaxList<QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>, VBSyntax.QueryClauseSyntax)> GetQuerySegments(Queue<VBSyntax.QueryClauseSyntax> vbBodyClauses)
+            {
+                while (vbBodyClauses.Any()) {
+                    var querySectionsReversed =
+                        new Queue<(SyntaxList<QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>();
+                    while (vbBodyClauses.Any() && !RequiresMethodInvocation(vbBodyClauses.Peek())) {
+                        var convertedClauses = new List<QueryClauseSyntax>();
+                        while (vbBodyClauses.Any() && !RequiredContinuation(vbBodyClauses.Peek())) {
+                            convertedClauses.Add(ConvertQueryBodyClause(vbBodyClauses.Dequeue()));
+                        }
+
+                        var convertQueryBodyClauses = (SyntaxFactory.List(convertedClauses),
+                            vbBodyClauses.Any() ? vbBodyClauses.Dequeue() : null);
+                        querySectionsReversed.Enqueue(convertQueryBodyClauses);
+                    }
+                    yield return (querySectionsReversed, vbBodyClauses.Any() ? vbBodyClauses.Dequeue() : null);
+                }
+            }
+
+            private CSharpSyntaxNode ConvertQueryWithContinuations(Queue<(SyntaxList<QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)> queryContinuation, FromClauseSyntax fromClauseSyntax)
+            {
+                var subQuery = ConvertQueryWithContinuation(queryContinuation, fromClauseSyntax);
+                return subQuery != null ? SyntaxFactory.QueryExpression(fromClauseSyntax, subQuery) : fromClauseSyntax.Expression;
+            }
+
+            private QueryBodySyntax ConvertQueryWithContinuation(Queue<(SyntaxList<QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)> querySectionsReversed, FromClauseSyntax fromClauseSyntax)
             {
                 if (!querySectionsReversed.Any()) return null;
                 var (convertedClauses, clauseEnd) = querySectionsReversed.Dequeue();
 
-                var nestedClause = ConvertClauseGroup(querySectionsReversed, fromClauseSyntax);
+                var nestedClause = ConvertQueryWithContinuation(querySectionsReversed, fromClauseSyntax);
                 return ConvertSubQuery(fromClauseSyntax, clauseEnd, nestedClause, convertedClauses);
             }
 
@@ -1281,25 +1329,49 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.QueryContinuation(GetGroupIdentifier(gcs), queryBody);
             }
 
-            private (SyntaxList<QueryClauseSyntax>, VBSyntax.QueryClauseSyntax) ConvertQueryBodyClauses(Queue<VBSyntax.QueryClauseSyntax> vbBodyClauses)
+            private IEnumerable<ExpressionSyntax> GetLinqArguments(FromClauseSyntax fromClauseSyntax,
+                VBSyntax.QueryClauseSyntax linqQuery)
             {
-                var convertedClauses = new List<QueryClauseSyntax>();
-                while (vbBodyClauses.Any() && !EndsQueryBody(vbBodyClauses.Peek()))
-                {
-                    convertedClauses.Add(ConvertQueryBodyClause(vbBodyClauses.Dequeue()));
+                switch (linqQuery) {
+                    case VBSyntax.DistinctClauseSyntax _:
+                        return Enumerable.Empty<ExpressionSyntax>();
+                    case VBSyntax.PartitionClauseSyntax pcs:
+                        return new[] {(ExpressionSyntax)pcs.Count.Accept(TriviaConvertingVisitor)};
+                    case VBSyntax.PartitionWhileClauseSyntax pwcs: {
+                        var lambdaParam = SyntaxFactory.Parameter(fromClauseSyntax.Identifier);
+                        var lambdaBody = (ExpressionSyntax) pwcs.Condition.Accept(TriviaConvertingVisitor);
+                        return new[] {(ExpressionSyntax) SyntaxFactory.SimpleLambdaExpression(lambdaParam, lambdaBody)};
+                    }
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(linqQuery), linqQuery.Kind(), null);
                 }
-
-                return (SyntaxFactory.List(convertedClauses), vbBodyClauses.Any() ? vbBodyClauses.Dequeue() : null);
             }
 
-            private static bool EndsQueryBody(VBSyntax.QueryClauseSyntax queryClauseSyntax)
+            private static string GetLinqMethodName(VBSyntax.QueryClauseSyntax queryEnd)
             {
-                return queryClauseSyntax is VBSyntax.GroupByClauseSyntax
-                       || queryClauseSyntax is VBSyntax.SelectClauseSyntax
-                       || queryClauseSyntax is VBSyntax.PartitionClauseSyntax
+                switch (queryEnd) {
+                    case VBSyntax.DistinctClauseSyntax _:
+                        return nameof(Enumerable.Distinct);
+                    case VBSyntax.PartitionClauseSyntax pcs:
+                        return pcs.SkipOrTakeKeyword.IsKind(VBasic.SyntaxKind.SkipKeyword) ? nameof(Enumerable.Skip) : nameof(Enumerable.Take);
+                    case VBSyntax.PartitionWhileClauseSyntax pwcs:
+                        return pwcs.SkipOrTakeKeyword.IsKind(VBasic.SyntaxKind.SkipKeyword) ? nameof(Enumerable.SkipWhile) : nameof(Enumerable.TakeWhile);
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(queryEnd), queryEnd.Kind(), null);
+                }
+            }
+
+            private static bool RequiresMethodInvocation(VBSyntax.QueryClauseSyntax queryClauseSyntax)
+            {
+                return queryClauseSyntax is VBSyntax.PartitionClauseSyntax
                        || queryClauseSyntax is VBSyntax.PartitionWhileClauseSyntax
                        || queryClauseSyntax is VBSyntax.DistinctClauseSyntax;
+            }
 
+            private static bool RequiredContinuation(VBSyntax.QueryClauseSyntax queryClauseSyntax)
+            {
+                return queryClauseSyntax is VBSyntax.GroupByClauseSyntax
+                       || queryClauseSyntax is VBSyntax.SelectClauseSyntax;
             }
 
             private FromClauseSyntax ConvertFromClauseSyntax(VBSyntax.FromClauseSyntax vbFromClause)
@@ -1411,6 +1483,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                         .SingleOrDefault();
                 }
                 return SyntaxFactory.JoinClause(null, convertIdentifier, expressionSyntax, joinLhs, joinRhs, joinIntoClauseSyntax);
+            }
+
+            /// <summary>
+            /// TODO Dedupe with one in methodbodyvisitor
+            /// </summary>
+            private string GetUniqueVariableNameInScope(SyntaxNode node, string variableNameBase)
+            {
+                var reservedNames = _withBlockTempVariableNames.Concat(node.DescendantNodesAndSelf()
+                    .SelectMany(syntaxNode => _semanticModel.LookupSymbols(syntaxNode.SpanStart).Select(s => s.Name)));
+                return NameGenerator.EnsureUniqueness(variableNameBase, reservedNames, true);
             }
 
             private ExpressionSyntax SingleExpression(IReadOnlyCollection<ExpressionSyntax> expressions)
