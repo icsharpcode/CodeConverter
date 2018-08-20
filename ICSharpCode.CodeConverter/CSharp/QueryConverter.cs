@@ -111,7 +111,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     if (!gcs.Items.Any()) {
                         var identifierNameSyntax =
                             SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(fromClauseSyntax.Identifier));
-                        var letGroupKey = SyntaxFactory.LetClause(GetGroupKeyIdentifiers(gcs).First(), SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName(GetGroupIdentifier(gcs)), SyntaxFactory.IdentifierName("Key")));
+                        var letGroupKey = SyntaxFactory.LetClause(GetGroupKeyIdentifiers(gcs).Single(), SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName(GetGroupIdentifier(gcs)), SyntaxFactory.IdentifierName("Key")));
                         continuationClauses = continuationClauses.Add(letGroupKey);
                         selectOrGroup = SyntaxFactory.GroupClause(identifierNameSyntax, GetGroupExpression(gcs));
                     } else {
@@ -229,11 +229,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private SyntaxToken GetGroupIdentifier(VBSyntax.GroupByClauseSyntax gs)
         {
-            var names = gs.AggregationVariables.Select(v => v.Aggregation is VBSyntax.FunctionAggregationSyntax f
+            var name = gs.AggregationVariables.Select(v => v.Aggregation is VBSyntax.FunctionAggregationSyntax f
                     ? f.FunctionName.Text : v.Aggregation is VBSyntax.GroupAggregationSyntax g ? g.GroupKeyword.Text : null)
-                .Where(x => x != null)
-                .DefaultIfEmpty(gs.Keys.Select(k => k.NameEquals.Identifier.Identifier.Text).First());
-            return SyntaxFactory.Identifier(names.First());
+                .SingleOrDefault(x => x != null) ?? gs.Keys.Select(k => k.NameEquals.Identifier.Identifier.Text).Single();
+            return SyntaxFactory.Identifier(name);
         }
 
         private IEnumerable<string> GetGroupKeyIdentifiers(VBSyntax.GroupByClauseSyntax gs)
