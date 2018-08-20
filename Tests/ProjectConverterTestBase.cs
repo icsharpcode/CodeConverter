@@ -41,7 +41,7 @@ namespace CodeConverter.Tests
                     ? LanguageNames.VisualBasic
                     : LanguageNames.CSharp;
                 var projectsToConvert = solution.Projects.Where(p => p.Language == languageNameToConvert && shouldConvertProject(p)).ToArray();
-                var conversionResults = SolutionConverter.CreateFor<TLanguageConversion>(projectsToConvert).Convert().ToDictionary(c => c.TargetPathOrNull);
+                var conversionResults = SolutionConverter.CreateFor<TLanguageConversion>(projectsToConvert).Convert().ToDictionary(c => c.TargetPathOrNull, StringComparer.OrdinalIgnoreCase);
                 var expectedResultDirectory = GetExpectedResultDirectory<TLanguageConversion>(testName);
 
                 try {
@@ -108,7 +108,7 @@ namespace CodeConverter.Tests
             var fileDidNotNeedConversion = !conversionResults.ContainsKey(convertedFilePath) && File.Exists(convertedFilePath);
             if (fileDidNotNeedConversion) return;
 
-            Assert.True(conversionResults.ContainsKey(convertedFilePath), expectedFile.Name + " is missing from the conversion result");
+            Assert.True(conversionResults.ContainsKey(convertedFilePath), expectedFile.Name + " is missing from the conversion result of [" + string.Join(",", conversionResults.Keys) + "]");
 
             var expectedText = Utils.HomogenizeEol(File.ReadAllText(expectedFile.FullName));
             var conversionResult = conversionResults[convertedFilePath];

@@ -76,7 +76,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var solutionFilePath = project.Solution.FilePath;
             var solutionDir = Path.GetDirectoryName(solutionFilePath);
             var projectOutputDir = Path.GetDirectoryName(project.OutputFilePath);
-            var guessAtProjectIntermediateOutputDir = projectOutputDir.Replace(@"\bin\", @"\obj\");
+            var guessAtProjectIntermediateOutputDir = projectOutputDir.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Select(x => x == "bin" ? "obj" : x.EndsWith(":") ? x + "\\" : x).Aggregate("", Path.Combine);
             var syntaxTrees = compilation.GetAwaiter().GetResult().SyntaxTrees.Where(t =>
                     t.FilePath.StartsWith(solutionDir) && !t.FilePath.StartsWith(projectOutputDir) &&
                     !t.FilePath.StartsWith(guessAtProjectIntermediateOutputDir));
