@@ -17,7 +17,6 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     public class ProjectConversion
     {
-        private readonly string _solutionDir;
         private readonly Compilation _sourceCompilation;
         private readonly IEnumerable<SyntaxTree> _syntaxTreesToConvert;
         // ReSharper disable once StaticMemberInGenericType - Stateless
@@ -30,7 +29,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private ProjectConversion(Compilation sourceCompilation, IEnumerable<SyntaxTree> syntaxTreesToConvert, ILanguageConversion languageConversion, Compilation convertedCompilation)
         {
             _languageConversion = languageConversion;
-            this._sourceCompilation = sourceCompilation;
+            _sourceCompilation = sourceCompilation;
             _syntaxTreesToConvert = syntaxTreesToConvert.ToList();
             _handlePartialConversion = _syntaxTreesToConvert.Count() == 1;
             languageConversion.Initialize(convertedCompilation.RemoveAllSyntaxTrees());
@@ -149,7 +148,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var nonFatalWarningsOrNull = _languageConversion.GetWarningsOrNull();
             if (!string.IsNullOrWhiteSpace(nonFatalWarningsOrNull))
             {
-                var warningsDescription = Path.Combine(_solutionDir ?? "", _sourceCompilation.AssemblyName, "ConversionWarnings.txt");
+                var warningsDescription = Path.Combine("", _sourceCompilation.AssemblyName, "ConversionWarnings.txt");
                 _errors.TryAdd(warningsDescription, nonFatalWarningsOrNull);
             }
         }
