@@ -17,6 +17,7 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     public class ProjectConversion
     {
+        private readonly string _solutionDir;
         private readonly Compilation _sourceCompilation;
         private readonly IEnumerable<SyntaxTree> _syntaxTreesToConvert;
         // ReSharper disable once StaticMemberInGenericType - Stateless
@@ -26,10 +27,16 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly ILanguageConversion _languageConversion;
         private readonly bool _handlePartialConversion;
 
+        private ProjectConversion(Compilation sourceCompilation, string solutionDir, ILanguageConversion languageConversion, Compilation convertedCompilation)
+            : this(sourceCompilation, sourceCompilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir)), languageConversion, convertedCompilation)
+        {
+            _solutionDir = solutionDir;
+        }
+
         private ProjectConversion(Compilation sourceCompilation, IEnumerable<SyntaxTree> syntaxTreesToConvert, ILanguageConversion languageConversion, Compilation convertedCompilation)
         {
             _languageConversion = languageConversion;
-            _sourceCompilation = sourceCompilation;
+            this._sourceCompilation = sourceCompilation;
             _syntaxTreesToConvert = syntaxTreesToConvert.ToList();
             _handlePartialConversion = _syntaxTreesToConvert.Count() == 1;
             languageConversion.Initialize(convertedCompilation.RemoveAllSyntaxTrees());
@@ -72,15 +79,10 @@ namespace ICSharpCode.CodeConverter.Shared
         public static IEnumerable<ConversionResult> ConvertProjectContents(Project project,
             ILanguageConversion languageConversion)
         {
-            var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
             var solutionFilePath = project.Solution.FilePath;
             var solutionDir = Path.GetDirectoryName(solutionFilePath);
-            var projectOutputDir = Path.GetDirectoryName(project.OutputFilePath);
-            var guessAtProjectIntermediateOutputDir = projectOutputDir.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Select(x => x == "bin" ? "obj" : x.EndsWith(":") ? x + "\\" : x).Aggregate("", Path.Combine);
-            var syntaxTrees = compilation.SyntaxTrees.Where(t =>
-                    t.FilePath.StartsWith(solutionDir) && !t.FilePath.StartsWith(projectOutputDir) &&
-                    !t.FilePath.StartsWith(guessAtProjectIntermediateOutputDir));
-            var projectConversion = new ProjectConversion(compilation, syntaxTrees, languageConversion, GetConvertedCompilationWithProjectReferences(project, languageConversion));
+            var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
+            var projectConversion = new ProjectConversion(compilation, solutionDir, languageConversion, GetConvertedCompilationWithProjectReferences(project, languageConversion));
             foreach (var conversionResult in ConvertProjectContents(projectConversion)) yield return conversionResult;
         }
 
@@ -148,7 +150,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var nonFatalWarningsOrNull = _languageConversion.GetWarningsOrNull();
             if (!string.IsNullOrWhiteSpace(nonFatalWarningsOrNull))
             {
-                var warningsDescription = Path.Combine("", _sourceCompilation.AssemblyName, "ConversionWarnings.txt");
+                var warningsDescription = Path.Combine(_solutionDir ?? "", _sourceCompilation.AssemblyName, "ConversionWarnings.txt");
                 _errors.TryAdd(warningsDescription, nonFatalWarningsOrNull);
             }
         }
