@@ -41,7 +41,7 @@ namespace CodeConverter.Tests
                     ? LanguageNames.VisualBasic
                     : LanguageNames.CSharp;
                 var projectsToConvert = solution.Projects.Where(p => p.Language == languageNameToConvert && shouldConvertProject(p)).ToArray();
-                var conversionResults = SolutionConverter.CreateFor<TLanguageConversion>(projectsToConvert).Convert().ToDictionary(c => c.TargetPathOrNull);
+                var conversionResults = SolutionConverter.CreateFor<TLanguageConversion>(projectsToConvert).Convert().ToDictionary(c => c.TargetPathOrNull, StringComparer.OrdinalIgnoreCase);
                 var expectedResultDirectory = GetExpectedResultDirectory<TLanguageConversion>(testName);
 
                 try {
@@ -72,7 +72,8 @@ namespace CodeConverter.Tests
             Dictionary<string, ConversionResult> conversionResults, DirectoryInfo expectedResultDirectory,
             string originalSolutionDir)
         {
-            AssertSubset(expectedFiles.Select(f => f.FullName), conversionResults.Select(r => r.Key.Replace(originalSolutionDir, expectedResultDirectory.FullName)));
+            AssertSubset(expectedFiles.Select(f => f.FullName.Replace(expectedResultDirectory.FullName, "")), conversionResults.Select(r => r.Key.Replace(originalSolutionDir, "")).Where(x => !x.Contains(@"\obj\Debug\")), 
+                "Extra unexpected files were converted");
         }
 
         private void AssertAllExpectedFilesAreEqual(FileInfo[] expectedFiles, Dictionary<string, ConversionResult> conversionResults,
@@ -92,9 +93,11 @@ namespace CodeConverter.Tests
             Assert.Empty(errors);
         }
 
-        private static void AssertSubset(IEnumerable<string> expectedFiles, IEnumerable<string> collection)
+        private static void AssertSubset(IEnumerable<string> superset, IEnumerable<string> subset, string userMessage)
         {
-            Assert.Subset(new HashSet<string>(expectedFiles, StringComparer.OrdinalIgnoreCase), new HashSet<string>(collection, StringComparer.OrdinalIgnoreCase));
+            var notExpected = new HashSet<string>(subset, StringComparer.OrdinalIgnoreCase);
+            notExpected.ExceptWith(new HashSet<string>(superset, StringComparer.OrdinalIgnoreCase));
+            Assert.False(notExpected.Any(), userMessage + "\r\n" + string.Join("\r\n", notExpected));
         }
 
         private void AssertFileEqual(Dictionary<string, ConversionResult> conversionResults,
@@ -106,7 +109,7 @@ namespace CodeConverter.Tests
             var fileDidNotNeedConversion = !conversionResults.ContainsKey(convertedFilePath) && File.Exists(convertedFilePath);
             if (fileDidNotNeedConversion) return;
 
-            Assert.True(conversionResults.ContainsKey(convertedFilePath), expectedFile.Name + " is missing from the conversion result");
+            Assert.True(conversionResults.ContainsKey(convertedFilePath), expectedFile.Name + " is missing from the conversion result of [" + string.Join(",", conversionResults.Keys) + "]");
 
             var expectedText = Utils.HomogenizeEol(File.ReadAllText(expectedFile.FullName));
             var conversionResult = conversionResults[convertedFilePath];

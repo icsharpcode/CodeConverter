@@ -1,19 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
-using static ICSharpCode.CodeConverter.CSharp.SyntaxKindExtensions;
-using SyntaxExtensions = ICSharpCode.CodeConverter.Util.SyntaxExtensions;
-using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 using SyntaxToken = Microsoft.CodeAnalysis.SyntaxToken;
 
 namespace ICSharpCode.CodeConverter.CSharp
@@ -30,6 +24,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(SyntaxKind.SemicolonToken);
             private static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
             private readonly AdditionalInitializers _additionalInitializers;
+            private readonly QueryConverter _queryConverter;
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
 
             private CommonConversions CommonConversions { get; }
@@ -40,6 +35,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
                 _createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
                 CommonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor);
+                _queryConverter = new QueryConverter(CommonConversions, TriviaConvertingVisitor);
                 _additionalInitializers = new AdditionalInitializers();
             }
 
@@ -1210,100 +1206,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitQueryExpression(VBSyntax.QueryExpressionSyntax node)
             {
-                var vbBodyClauses = node.Clauses;
-                var vbFromClause = vbBodyClauses.OfType<VBSyntax.FromClauseSyntax>().First();
-                var fromClauseSyntax = ConvertFromClauseSyntax(vbFromClause);
-                var vbGroupClause = vbBodyClauses.OfType<VBSyntax.GroupByClauseSyntax>().SingleOrDefault();
-                var vbSelectClause = vbBodyClauses.OfType<VBSyntax.SelectClauseSyntax>().SingleOrDefault();
-                var selectClauseSyntax = vbSelectClause != null
-                    ? ConvertSelectClauseSyntax(vbSelectClause)
-                    : CreateDefaultSelectClause(fromClauseSyntax);
-                var alreadyConverted = new VBSyntax.QueryClauseSyntax[] { vbFromClause, vbGroupClause, vbSelectClause };
-                SelectOrGroupClauseSyntax selectOrGroup = null;
-                QueryContinuationSyntax queryContinuation = null;
-                var queryClauseSyntaxs = SyntaxFactory.List(vbBodyClauses.TakeWhile(x => x != vbGroupClause).Except(alreadyConverted).Select(ConvertQueryBodyClause));
-                var continuedClauses = SyntaxFactory.List(vbBodyClauses.SkipWhile(x => x != vbGroupClause).Skip(1).Except(alreadyConverted).Select(ConvertQueryBodyClause));
-                if (vbGroupClause != null) {
-                    selectOrGroup = ConvertGroupByClause(vbGroupClause);
-                    queryContinuation = SyntaxFactory.QueryContinuation(GetGroupIdentifier(vbGroupClause),
-                        SyntaxFactory.QueryBody(continuedClauses, selectClauseSyntax, null));
-                } else {
-                    selectOrGroup = selectClauseSyntax;
-                }
-
-                var queryBodySyntax = SyntaxFactory.QueryBody(queryClauseSyntaxs, selectOrGroup, queryContinuation);
-                return SyntaxFactory.QueryExpression(fromClauseSyntax, queryBodySyntax);
-            }
-
-            private FromClauseSyntax ConvertFromClauseSyntax(VBSyntax.FromClauseSyntax vbFromClause)
-            {
-                var collectionRangeVariableSyntax = vbFromClause.Variables.Single();
-                var fromClauseSyntax = SyntaxFactory.FromClause(
-                    ConvertIdentifier(collectionRangeVariableSyntax.Identifier.Identifier),
-                    (ExpressionSyntax) collectionRangeVariableSyntax.Expression.Accept(TriviaConvertingVisitor));
-                return fromClauseSyntax;
-            }
-
-            private SelectClauseSyntax ConvertSelectClauseSyntax(VBSyntax.SelectClauseSyntax vbFromClause)
-            {
-                var collectionRangeVariableSyntax = vbFromClause.Variables.Single();
-                return SyntaxFactory.SelectClause(
-                    (ExpressionSyntax)collectionRangeVariableSyntax.Expression.Accept(TriviaConvertingVisitor)
-                );
-            }
-
-            private static SelectClauseSyntax CreateDefaultSelectClause(FromClauseSyntax fromClauseSyntax)
-            {
-                return SyntaxFactory.SelectClause(SyntaxFactory.IdentifierName(fromClauseSyntax.Identifier));
-            }
-
-            private QueryClauseSyntax ConvertQueryBodyClause(VBSyntax.QueryClauseSyntax node)
-            {
-                return node.TypeSwitch<VBSyntax.QueryClauseSyntax, VBSyntax.FromClauseSyntax, VBSyntax.JoinClauseSyntax, VBSyntax.LetClauseSyntax, VBSyntax.OrderByClauseSyntax, VBSyntax.WhereClauseSyntax, QueryClauseSyntax>(
-                    //(VBSyntax.AggregateClauseSyntax ags) => null,
-                    //(VBSyntax.DistinctClauseSyntax ds) => null,
-                    ConvertFromClauseSyntax,
-                    ConvertJoinClause,
-                    ConvertLetClause,
-                    ConvertOrderByClause,
-                    //(VBSyntax.PartitionClauseSyntax ps) => null, // TODO Convert to Skip and Take methods (they don't exist in C#s query syntax)
-                    //(VBSyntax.PartitionWhileClauseSyntax pws) => null, // TODO Convert to SkipWhile and TakeWhile methods (they don't exist in C#s query syntax)
-                    ConvertWhereClause,
-                    _ => throw new NotImplementedException($"Conversion for query clause with kind '{node.Kind()}' not implemented"));
-            }
-
-            private GroupClauseSyntax ConvertGroupByClause(VBSyntax.GroupByClauseSyntax gs)
-            {
-                if (gs == null) return null;
-                var item = (IdentifierNameSyntax) gs.Items.Single().Expression.Accept(TriviaConvertingVisitor);
-                var keyExpression = (ExpressionSyntax) gs.Keys.Single().Expression.Accept(TriviaConvertingVisitor);
-                return SyntaxFactory.GroupClause(item, keyExpression);
-            }
-
-            private SyntaxToken GetGroupIdentifier(VBSyntax.GroupByClauseSyntax gs)
-            {
-                return ConvertIdentifier(gs.AggregationVariables.Select(x => x.Aggregation).OfType<VBSyntax.FunctionAggregationSyntax>().First().FunctionName);
+                return _queryConverter.ConvertClauses(node.Clauses);
             }
 
             private SyntaxToken ConvertIdentifier(SyntaxToken identifierIdentifier, bool isAttribute = false)
             {
                 return CommonConversions.ConvertIdentifier(identifierIdentifier, isAttribute);
-            }
-
-            private QueryClauseSyntax ConvertWhereClause(VBSyntax.WhereClauseSyntax ws)
-            {
-                return SyntaxFactory.WhereClause((ExpressionSyntax) ws.Condition.Accept(TriviaConvertingVisitor));
-            }
-
-            private QueryClauseSyntax ConvertLetClause(VBSyntax.LetClauseSyntax ls)
-            {
-                var singleVariable = ls.Variables.Single();
-                return SyntaxFactory.LetClause(ConvertIdentifier(singleVariable.NameEquals.Identifier.Identifier), (ExpressionSyntax) singleVariable.Expression.Accept(TriviaConvertingVisitor));
-            }
-
-            private QueryClauseSyntax ConvertOrderByClause(VBSyntax.OrderByClauseSyntax os)
-            {
-                return SyntaxFactory.OrderByClause(SyntaxFactory.SeparatedList(os.Orderings.Select(o => (OrderingSyntax) o.Accept(TriviaConvertingVisitor))));
             }
 
             public override CSharpSyntaxNode VisitOrdering(VBSyntax.OrderingSyntax node)
@@ -1312,34 +1220,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var expressionSyntax = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
                 var ascendingOrDescendingKeyword = node.AscendingOrDescendingKeyword.ConvertToken();
                 return SyntaxFactory.Ordering(convertToken, expressionSyntax, ascendingOrDescendingKeyword);
-            }
-
-            private QueryClauseSyntax ConvertJoinClause(VBSyntax.JoinClauseSyntax js)
-            {
-                var variable = js.JoinedVariables.Single();
-                var joinLhs = SingleExpression(js.JoinConditions.Select(c => c.Left.Accept(TriviaConvertingVisitor))
-                    .Cast<ExpressionSyntax>().ToList());
-                var joinRhs = SingleExpression(js.JoinConditions.Select(c => c.Right.Accept(TriviaConvertingVisitor))
-                    .Cast<ExpressionSyntax>().ToList());
-                var convertIdentifier = ConvertIdentifier(variable.Identifier.Identifier);
-                var expressionSyntax = (ExpressionSyntax) variable.Expression.Accept(TriviaConvertingVisitor);
-
-                JoinIntoClauseSyntax joinIntoClauseSyntax = null;
-                if (js is VBSyntax.GroupJoinClauseSyntax gjs) {
-                    joinIntoClauseSyntax = gjs.AggregationVariables
-                        .Where(a => a.Aggregation is VBSyntax.GroupAggregationSyntax)
-                        .Select(a => SyntaxFactory.JoinIntoClause(ConvertIdentifier(a.NameEquals.Identifier.Identifier)))
-                        .SingleOrDefault();
-                }
-                return SyntaxFactory.JoinClause(null, convertIdentifier, expressionSyntax, joinLhs, joinRhs, joinIntoClauseSyntax);
-            }
-
-            private ExpressionSyntax SingleExpression(IReadOnlyCollection<ExpressionSyntax> expressions)
-            {
-                if (expressions.Count == 1) return expressions.Single();
-                return SyntaxFactory.AnonymousObjectCreationExpression(SyntaxFactory.SeparatedList(expressions.Select((e, i) =>
-                    SyntaxFactory.AnonymousObjectMemberDeclarator(SyntaxFactory.NameEquals($"key{i}"), e)
-                )));
             }
 
             public override CSharpSyntaxNode VisitNamedFieldInitializer(VBSyntax.NamedFieldInitializerSyntax node)
@@ -1646,7 +1526,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 ISymbol typeContext = syntaxNodeContext.GetEnclosingDeclaredTypeSymbol(_semanticModel);
                 var implicitCsQualifications = ((ITypeSymbol) typeContext).GetBaseTypesAndThis()
-                    .Concat(CSharpUtil.FollowProperty(typeContext, n => n.ContainingSymbol))
+                    .Concat(typeContext.FollowProperty(n => n.ContainingSymbol))
                     .ToList();
 
                 return implicitCsQualifications.Contains(symbolToCheck);
