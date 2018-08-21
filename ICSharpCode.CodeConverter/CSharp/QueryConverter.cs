@@ -215,17 +215,18 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CSSyntax.QueryClauseSyntax ConvertQueryBodyClause(VBSyntax.QueryClauseSyntax node)
         {
-            return node.TypeSwitch<VBSyntax.QueryClauseSyntax, VBSyntax.FromClauseSyntax, VBSyntax.JoinClauseSyntax, VBSyntax.LetClauseSyntax, VBSyntax.OrderByClauseSyntax, VBSyntax.WhereClauseSyntax, CSSyntax.QueryClauseSyntax>(
-                //(VBSyntax.AggregateClauseSyntax ags) => null,
-                //(VBSyntax.DistinctClauseSyntax ds) => null,
-                ConvertFromClauseSyntax,
-                ConvertJoinClause,
-                ConvertLetClause,
-                ConvertOrderByClause,
-                //(VBSyntax.PartitionClauseSyntax ps) => null, // TODO Convert to Skip and Take methods (they don't exist in C#s query syntax)
-                //(VBSyntax.PartitionWhileClauseSyntax pws) => null, // TODO Convert to SkipWhile and TakeWhile methods (they don't exist in C#s query syntax)
-                ConvertWhereClause,
-                _ => throw new NotImplementedException($"Conversion for query clause with kind '{node.Kind()}' not implemented"));
+            return node
+                .TypeSwitch<VBSyntax.QueryClauseSyntax, VBSyntax.FromClauseSyntax, VBSyntax.JoinClauseSyntax,
+                    VBSyntax.LetClauseSyntax, VBSyntax.OrderByClauseSyntax, VBSyntax.WhereClauseSyntax,
+                    CSSyntax.QueryClauseSyntax>(
+                    //(VBSyntax.AggregateClauseSyntax ags) => null,
+                    ConvertFromClauseSyntax,
+                    ConvertJoinClause,
+                    ConvertLetClause,
+                    ConvertOrderByClause,
+                    ConvertWhereClause,
+                    _ => throw new NotImplementedException(
+                        $"Conversion for query clause with kind '{node.Kind()}' not implemented"));
         }
 
         private CSSyntax.ExpressionSyntax GetGroupExpression(VBSyntax.GroupByClauseSyntax gs)
