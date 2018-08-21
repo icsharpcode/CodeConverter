@@ -1,8 +1,13 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
-# vNext - TBC
-* Fix VB to CS solution level conversion issues for projects other than the first one
+# 6.0.0 - 21/08/2018
+* Performance improvement for large solutions
+* Fix solution/project level context menu item not appearing when projects are within folders
+
+### VB -> C#
+* Fix solution level conversion issues for projects other than the first one
+* Improve query syntax support (some forms of group now supported)
 
 # 5.9.0 - 01/08/2018
 
