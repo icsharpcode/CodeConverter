@@ -72,15 +72,15 @@ namespace ICSharpCode.CodeConverter.Shared
         public static IEnumerable<ConversionResult> ConvertProjectContents(Project project,
             ILanguageConversion languageConversion)
         {
-            var compilation = project.GetCompilationAsync();
+            var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
             var solutionFilePath = project.Solution.FilePath;
             var solutionDir = Path.GetDirectoryName(solutionFilePath);
             var projectOutputDir = Path.GetDirectoryName(project.OutputFilePath);
             var guessAtProjectIntermediateOutputDir = projectOutputDir.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Select(x => x == "bin" ? "obj" : x.EndsWith(":") ? x + "\\" : x).Aggregate("", Path.Combine);
-            var syntaxTrees = compilation.GetAwaiter().GetResult().SyntaxTrees.Where(t =>
+            var syntaxTrees = compilation.SyntaxTrees.Where(t =>
                     t.FilePath.StartsWith(solutionDir) && !t.FilePath.StartsWith(projectOutputDir) &&
                     !t.FilePath.StartsWith(guessAtProjectIntermediateOutputDir));
-            var projectConversion = new ProjectConversion(compilation.GetAwaiter().GetResult(), syntaxTrees, languageConversion, GetConvertedCompilationWithProjectReferences(project, languageConversion));
+            var projectConversion = new ProjectConversion(compilation, syntaxTrees, languageConversion, GetConvertedCompilationWithProjectReferences(project, languageConversion));
             foreach (var conversionResult in ConvertProjectContents(projectConversion)) yield return conversionResult;
         }
 
