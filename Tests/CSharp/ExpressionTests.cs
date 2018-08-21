@@ -948,7 +948,10 @@ End Sub", @"private static void ASub()
                               CustomerOrders, OrderTotal
 End Sub", @"private static void ASub()
 {
-// TODO
+    var customerList = from cust in customers
+                       join ord in orders on cust.CustomerID equals ord.CustomerID into CustomerOrders
+                       let OrderTotal = Sum(ord.Total) //TODO Figure out exact C# syntax for this query
+                       select new { cust.CompanyName, cust.CustomerID, CustomerOrders, OrderTotal };
 }");
         }
 
