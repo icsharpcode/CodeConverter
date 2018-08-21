@@ -72,7 +72,7 @@ namespace CodeConverter.Tests
             Dictionary<string, ConversionResult> conversionResults, DirectoryInfo expectedResultDirectory,
             string originalSolutionDir)
         {
-            AssertSubset(expectedFiles.Select(f => f.FullName.Replace(expectedResultDirectory.FullName, "")), conversionResults.Select(r => r.Key.Replace(originalSolutionDir, "")), 
+            AssertSubset(expectedFiles.Select(f => f.FullName.Replace(expectedResultDirectory.FullName, "")), conversionResults.Select(r => r.Key.Replace(originalSolutionDir, "")).Where(x => !x.Contains(@"\obj\Debug\")), 
                 "Extra unexpected files were converted");
         }
 
