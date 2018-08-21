@@ -922,6 +922,36 @@ End Function", @"private static IEnumerable<string> FindPicFilePath()
 }");
         }
 
+        [Fact(Skip = "Issue #29 - Aggregate not supported")]
+        public void LinqAggregateSum()
+        {
+            TestConversionVisualBasicToCSharp(@"Private Shared Sub ASub()
+    Dim expenses() As Double = {560.0, 300.0, 1080.5, 29.95, 64.75, 200.0}
+    Dim totalExpense = Aggregate expense In expenses Into Sum()
+End Sub", @"private static void ASub()
+{
+    double[] expenses = {560.0, 300.0, 1080.5, 29.95, 64.75, 200.0};
+    var totalExpense = expenses.Sum();
+}");
+        }
+
+        [Fact(Skip = "Issue #29 - Group join not supported")]
+        public void LinqGroupJoin()
+        {
+            TestConversionVisualBasicToCSharp(@"Private Shared Sub ASub()
+    Dim customerList = From cust In customers
+                       Group Join ord In orders On
+                       cust.CustomerID Equals ord.CustomerID
+                       Into CustomerOrders = Group,
+                            OrderTotal = Sum(ord.Total)
+                       Select cust.CompanyName, cust.CustomerID,
+                              CustomerOrders, OrderTotal
+End Sub", @"private static void ASub()
+{
+// TODO
+}");
+        }
+
         [Fact]
         public void LinqGroupByAnonymous()
         {

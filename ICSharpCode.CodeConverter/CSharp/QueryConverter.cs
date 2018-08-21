@@ -194,10 +194,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CSSyntax.SelectClauseSyntax ConvertSelectClauseSyntax(VBSyntax.SelectClauseSyntax vbFromClause)
         {
-            var collectionRangeVariableSyntax = vbFromClause.Variables.Single();
-            return SyntaxFactory.SelectClause(
-                (CSSyntax.ExpressionSyntax)collectionRangeVariableSyntax.Expression.Accept(_triviaConvertingVisitor)
-            );
+            var selectedVariables = vbFromClause.Variables.Select(v => {
+                    var nameEquals = (CSSyntax.NameEqualsSyntax)v.NameEquals?.Accept(_triviaConvertingVisitor);
+                    var expression = (CSSyntax.ExpressionSyntax)v.Expression.Accept(_triviaConvertingVisitor);
+                    return SyntaxFactory.AnonymousObjectMemberDeclarator(nameEquals, expression);
+                }).ToList();
+
+            if (selectedVariables.Count() == 1)
+                return SyntaxFactory.SelectClause(selectedVariables.Single().Expression);
+            return SyntaxFactory.SelectClause(SyntaxFactory.AnonymousObjectCreationExpression(SyntaxFactory.SeparatedList(selectedVariables)));
         }
 
         /// <summary>
