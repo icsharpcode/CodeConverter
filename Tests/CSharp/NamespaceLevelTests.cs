@@ -276,6 +276,25 @@ End Class",
         }
 
         [Fact]
+        public void ClassInheritsClassWithNoParenthesesOnBaseCall()
+        {
+            // Moving where the base call appears confuses the auto comment tester
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class DataSet1
+    Inherits Global.System.Data.DataSet
+    Public Sub New()
+        MyBase.New
+    End Sub
+End Class",
+                @"public class DataSet1 : global::System.Data.DataSet
+{
+    public DataSet1() : base()
+    {
+    }
+}
+");
+        }
+
+        [Fact]
         public void MultilineDocComment()
         {
             TestConversionVisualBasicToCSharp(@"Public Class MyTestClass

@@ -723,7 +723,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var ctor = (node.Statements.FirstOrDefault() as VBSyntax.ExpressionStatementSyntax)?.Expression as VBSyntax.InvocationExpressionSyntax;
                 var ctorExpression = ctor?.Expression as VBSyntax.MemberAccessExpressionSyntax;
-                var ctorArgs = (ArgumentListSyntax)ctor?.ArgumentList.Accept(TriviaConvertingVisitor);
+                var ctorArgs = (ArgumentListSyntax)ctor?.ArgumentList?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ArgumentList();
 
                 IEnumerable<VBSyntax.StatementSyntax> statements;
                 ConstructorInitializerSyntax ctorCall;
@@ -732,10 +732,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     ctorCall = null;
                 } else if (ctorExpression.Expression is VBSyntax.MyBaseExpressionSyntax) {
                     statements = node.Statements.Skip(1);
-                    ctorCall = SyntaxFactory.ConstructorInitializer(SyntaxKind.BaseConstructorInitializer, ctorArgs ?? SyntaxFactory.ArgumentList());
+                    ctorCall = SyntaxFactory.ConstructorInitializer(SyntaxKind.BaseConstructorInitializer, ctorArgs);
                 } else if (ctorExpression.Expression is VBSyntax.MeExpressionSyntax || ctorExpression.Expression is VBSyntax.MyClassExpressionSyntax) {
                     statements = node.Statements.Skip(1);
-                    ctorCall = SyntaxFactory.ConstructorInitializer(SyntaxKind.ThisConstructorInitializer, ctorArgs ?? SyntaxFactory.ArgumentList());
+                    ctorCall = SyntaxFactory.ConstructorInitializer(SyntaxKind.ThisConstructorInitializer, ctorArgs);
                 } else {
                     statements = node.Statements;
                     ctorCall = null;
