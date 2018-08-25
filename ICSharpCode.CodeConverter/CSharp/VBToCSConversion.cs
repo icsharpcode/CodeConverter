@@ -58,6 +58,21 @@ namespace ICSharpCode.CodeConverter.CSharp
             };
         }
 
+        public string PostTransformProjectFile(string s)
+        {
+            // TODO Find API to, or parse project file sections to remove "<DefineDebug>true</DefineDebug>" + "<DefineTrace>true</DefineTrace>"
+            // Then add them to the define constants in the same section, or create one if necessary.
+
+            var defineConstantsStart = s.IndexOf("<DefineConstants>");
+            var defineConstantsEnd = s.IndexOf("</DefineConstants>");
+            if (defineConstantsStart == -1 || defineConstantsEnd == -1)
+                return s;
+
+            return s.Substring(0, defineConstantsStart) +
+                   s.Substring(defineConstantsStart, defineConstantsEnd - defineConstantsStart).Replace(",", ";") +
+                   s.Substring(defineConstantsEnd);
+        }
+
         public string TargetLanguage { get; } = LanguageNames.CSharp;
 
         public bool CanBeContainedByMethod(SyntaxNode node)

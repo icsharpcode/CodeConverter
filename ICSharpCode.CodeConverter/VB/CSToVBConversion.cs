@@ -57,6 +57,19 @@ namespace ICSharpCode.CodeConverter.VB
                 (".cs<", ".vb<")
             };
         }
+        public string PostTransformProjectFile(string s)
+        {
+            var startTag = "<DefineConstants>";
+            var endTag = "</DefineConstants>";
+            var defineConstantsStart = s.IndexOf(startTag);
+            var defineConstantsEnd = s.IndexOf(endTag);
+            if (defineConstantsStart == -1 || defineConstantsEnd == -1)
+                return s;
+
+            return s.Substring(0, defineConstantsStart) +
+                   s.Substring(defineConstantsStart, defineConstantsEnd - defineConstantsStart).Replace(";", ",") +
+                   s.Substring(defineConstantsEnd);
+        }
 
         public string TargetLanguage { get; } = LanguageNames.VisualBasic;
 

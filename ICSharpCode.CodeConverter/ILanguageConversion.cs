@@ -23,5 +23,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         IEnumerable<(string, string)> GetProjectFileReplacementRegexes();
         string TargetLanguage { get; }
         void Initialize(Compilation convertedCompilation);
+        string PostTransformProjectFile(string s);
     }
 }

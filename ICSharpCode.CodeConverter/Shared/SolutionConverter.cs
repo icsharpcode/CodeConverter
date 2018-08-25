@@ -59,7 +59,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var replacements = _projectReferenceReplacements.Concat(projectFileReplacementRegexes).ToArray();
             _progress.Report($"Converting {project.Name}, this may take a some time...");
             return ProjectConversion.ConvertProjectContents(project, _languageConversion).Concat(new[]
-                {ConversionResultFromReplacements(project.FilePath, replacements)}
+                {ConversionResultFromReplacements(project.FilePath, replacements, s => _languageConversion.PostTransformProjectFile(s))}
             );
         }
 
@@ -100,11 +100,12 @@ namespace ICSharpCode.CodeConverter.Shared
             };
         }
 
-        private static ConversionResult ConversionResultFromReplacements(string filePath, IEnumerable<(string, string)> replacements)
+        private static ConversionResult ConversionResultFromReplacements(string filePath, IEnumerable<(string, string)> replacements, Func<string, string> postReplacementTransform = null)
         {
+            postReplacementTransform = postReplacementTransform ?? (s => s);
             var newProjectText = File.ReadAllText(filePath);
             newProjectText = ApplyReplacements(newProjectText, replacements);
-            return new ConversionResult(newProjectText) {SourcePathOrNull = filePath};
+            return new ConversionResult(postReplacementTransform(newProjectText)) {SourcePathOrNull = filePath};
         }
 
         private static string ApplyReplacements(string originalText, IEnumerable<(string, string)> replacements)
