@@ -550,14 +550,16 @@ End Class", @"class Test
 }");
         }
 
-        [Fact]
-        public void DeclareStatement()
+        [Theory]
+        [InlineData("Sub", "", "void")]
+        [InlineData("Function", " As Long", "long")]
+        public void DeclareStatement(string vbMethodDecl,string vbType, string csType)
         {
             // Intentionally uses a type name with a different casing as the loop variable, i.e. "process" to test name resolution
-            TestConversionVisualBasicToCSharp(@"Imports System.Diagnostics
+            TestConversionVisualBasicToCSharp($@"Imports System.Diagnostics
 
 Public Class AcmeClass
-    Private Declare Function SetForegroundWindow Lib ""user32"" (ByVal hwnd As Int32) As Long
+    Private Declare {vbMethodDecl} SetForegroundWindow Lib ""user32"" (ByVal hwnd As Int32){vbType}
 
     Public Shared Sub Main()
         For Each process In Process.GetProcesses().Where(Function(p) Not String.IsNullOrEmpty(p.MainWindowTitle))
@@ -566,24 +568,24 @@ Public Class AcmeClass
         Next
     End Sub
 End Class"
-                , @"using System;
+                , $@"using System;
 using System.Diagnostics;
 using System.Linq;
 
 public class AcmeClass
-{
+{{
     [System.Runtime.InteropServices.DllImport(""user32"")]
-    private static extern long SetForegroundWindow(Int32 hwnd);
+    private static extern {csType} SetForegroundWindow(Int32 hwnd);
 
     public static void Main()
-    {
+    {{
         foreach (var process in Process.GetProcesses().Where(p => !string.IsNullOrEmpty(p.MainWindowTitle)))
-        {
+        {{
             SetForegroundWindow(process.MainWindowHandle.ToInt32());
             Thread.Sleep(1000);
-        }
-    }
-}");
+        }}
+    }}
+}}");
         }
 
         [Fact]

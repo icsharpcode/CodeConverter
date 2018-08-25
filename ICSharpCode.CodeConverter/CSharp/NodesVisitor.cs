@@ -762,7 +762,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var attributeLists = ConvertAttributes(node.AttributeLists).Add(dllImportAttributeList);
 
                 var modifiers = CommonConversions.ConvertModifiers(node.Modifiers).Add(SyntaxFactory.Token(SyntaxKind.StaticKeyword)).Add(SyntaxFactory.Token(SyntaxKind.ExternKeyword));
-                var returnType = (TypeSyntax)node.AsClause?.Type.Accept(TriviaConvertingVisitor);
+                var returnType = (TypeSyntax)node.AsClause?.Type.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ParseTypeName("void");
                 var parameterListSyntax = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor) ??
                                           SyntaxFactory.ParameterList();
 
