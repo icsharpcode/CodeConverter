@@ -1354,11 +1354,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch();
                 var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
                 var symbolReturnType = symbol?.GetReturnType();
-                // Chances of having an unknown delegate stored as a field/local seem lower than having an unknown non-delegate type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
-                if (invocationSymbol?.IsIndexer() == true || symbolReturnType.IsArrayType() && !(symbol is IMethodSymbol) || symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax)
-                {
+
+                var memberAccessExpression = node.Expression as VBSyntax.MemberAccessExpressionSyntax;
+                if (invocationSymbol?.IsIndexer() == true 
+                    || symbolReturnType.IsArrayType() && !(symbol is IMethodSymbol)
+                    // Chances of having an unknown delegate stored as a field/local seem lower than having an unknown non-delegate type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
+                    || symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax
+                    // VB uses an imaginary member "Item" when an object has an indexer
+                    || symbolReturnType?.IsErrorType() != false && memberAccessExpression?.Name.Identifier.Text == "Item"
+                    ) {
+                    var expressionToConvert = memberAccessExpression?.Expression ?? node.Expression;
                     return SyntaxFactory.ElementAccessExpression(
-                        (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
+                        (ExpressionSyntax)expressionToConvert.Accept(TriviaConvertingVisitor),
                         SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(node.ArgumentList.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor)))));
                 }
 
