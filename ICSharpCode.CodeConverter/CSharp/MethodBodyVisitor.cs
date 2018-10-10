@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -16,19 +18,27 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     public partial class VisualBasicConverter
     {
+        /// <summary>
+        /// Maintains state relevant to the called method-like object. A fresh one must be used for each method, and the same one must be reused for statements in the same method
+        /// </summary>
         class MethodBodyVisitor : VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>>
         {
+            private readonly VBasic.VisualBasicSyntaxNode _methodNode;
             private readonly SemanticModel _semanticModel;
             private readonly VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> _nodesVisitor;
             private readonly Stack<string> _withBlockTempVariableNames;
+            private readonly HashSet<string> _generatedNames = new HashSet<string>();
 
             public bool IsIterator { get; set; }
             public VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CommentConvertingVisitor { get; }
 
             private CommonConversions CommonConversions { get; }
 
-            public MethodBodyVisitor(SemanticModel semanticModel, VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, Stack<string> withBlockTempVariableNames, TriviaConverter triviaConverter)
+            public MethodBodyVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
+                VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
+                Stack<string> withBlockTempVariableNames, TriviaConverter triviaConverter)
             {
+                _methodNode = methodNode;
                 this._semanticModel = semanticModel;
                 this._nodesVisitor = nodesVisitor;
                 this._withBlockTempVariableNames = withBlockTempVariableNames;
@@ -150,7 +160,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var oldArrayAssignment = CreateLocalVariableDeclarationAndAssignment(oldTargetName, csTargetArrayExpression);
 
                 var oldTargetExpression = SyntaxFactory.IdentifierName(oldTargetName);
-                var arrayCopyIfNotNull = CreateConditionalArrayCopy(oldTargetExpression, csTargetArrayExpression, convertedBounds);
+                var arrayCopyIfNotNull = CreateConditionalArrayCopy(node, oldTargetExpression, csTargetArrayExpression, convertedBounds);
 
                 return SyntaxFactory.List(new StatementSyntax[] {oldArrayAssignment, newArrayAssignment, arrayCopyIfNotNull});
             }
@@ -158,14 +168,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             /// <summary>
             /// Cut down version of Microsoft.VisualBasic.CompilerServices.Utils.CopyArray
             /// </summary>
-            private IfStatementSyntax CreateConditionalArrayCopy(IdentifierNameSyntax sourceArrayExpression,
+            private IfStatementSyntax CreateConditionalArrayCopy(VBasic.VisualBasicSyntaxNode originalVbNode,
+                IdentifierNameSyntax sourceArrayExpression,
                 ExpressionSyntax targetArrayExpression,
                 List<ExpressionSyntax> convertedBounds)
             {
                 var sourceLength = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, sourceArrayExpression, SyntaxFactory.IdentifierName("Length"));
                 var arrayCopyStatement = convertedBounds.Count == 1 
                     ? CreateArrayCopyWithMinOfLengths(sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds.Single()) 
-                    : CreateArrayCopy(sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds);
+                    : CreateArrayCopy(originalVbNode, sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds);
 
                 var oldTargetNotEqualToNull = SyntaxFactory.BinaryExpression(SyntaxKind.NotEqualsExpression, sourceArrayExpression,
                     SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression));
@@ -180,7 +191,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             ///  but existing VB code relying on the exception thrown from a multidimensional redim preserve on
             ///  different rank arrays is hopefully rare enough that it's worth saving a few lines of code
             /// </remarks>
-            private StatementSyntax CreateArrayCopy(IdentifierNameSyntax sourceArrayExpression,
+            private StatementSyntax CreateArrayCopy(VBasic.VisualBasicSyntaxNode originalVbNode,
+                IdentifierNameSyntax sourceArrayExpression,
                 MemberAccessExpressionSyntax sourceLength,
                 ExpressionSyntax targetArrayExpression, ICollection convertedBounds)
             {
@@ -192,7 +204,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         lastSourceLengthArgs);
                 var length = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Math.Min"), ExpressionSyntaxExtensions.CreateArgList(sourceLastRankLength, targetLastRankLength));
 
-                var loopVariableName = GetUniqueVariableNameInScope(sourceArrayExpression, "i");
+                var loopVariableName = GetUniqueVariableNameInScope(originalVbNode, "i");
                 var loopVariableIdentifier = SyntaxFactory.IdentifierName(loopVariableName);
                 var sourceStartForThisIteration =
                     SyntaxFactory.BinaryExpression(SyntaxKind.MultiplyExpression, loopVariableIdentifier, sourceLastRankLength);
@@ -384,11 +396,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     id = (ExpressionSyntax)stmt.ControlVariable.Accept(_nodesVisitor);
                     var symbol = _semanticModel.GetSymbolInfo(stmt.ControlVariable).Symbol;
                     if (!_semanticModel.LookupSymbols(node.FullSpan.Start, name: symbol.Name).Any()) {
-                        var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(SyntaxFactory.Identifier(symbol.Name), null,
-                            SyntaxFactory.EqualsValueClause(startValue));
-                        declaration = SyntaxFactory.VariableDeclaration(
-                            SyntaxFactory.IdentifierName("var"),
-                            SyntaxFactory.SingletonSeparatedList(variableDeclaratorSyntax));
+                        declaration = CreateVariableDeclaration(symbol.Name, startValue);
                     } else {
                         startValue = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, id, startValue);
                     }
@@ -397,22 +405,48 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var step = (ExpressionSyntax)stmt.StepClause?.StepValue.Accept(_nodesVisitor);
                 PrefixUnaryExpressionSyntax value = step.SkipParens() as PrefixUnaryExpressionSyntax;
                 ExpressionSyntax condition;
+
+                // In Visual Basic, the To expression is only evaluated once, but in C# will be evaluated every loop.
+                // If it could evaluate differently or has side effects, it must be extracted as a variable
+                var preLoopStatements = new List<SyntaxNode>();
+                var csToValue = (ExpressionSyntax)stmt.ToValue.Accept(_nodesVisitor);
+                if (!_semanticModel.GetConstantValue(stmt.ToValue).HasValue) {
+                    var loopToVariableName = GetUniqueVariableNameInScope(node, "loopTo");
+                    var loopEndDeclaration = SyntaxFactory.LocalDeclarationStatement(CreateVariableDeclaration(loopToVariableName, csToValue));
+                    // Does not do anything about porting newline trivia upwards to maintain spacing above the loop
+                    preLoopStatements.Add(loopEndDeclaration);
+                    csToValue = SyntaxFactory.IdentifierName(loopToVariableName);
+                };
+                
                 if (value == null) {
-                    condition = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, id, (ExpressionSyntax)stmt.ToValue.Accept(_nodesVisitor));
+                    condition = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, id, csToValue);
                 } else {
-                    condition = SyntaxFactory.BinaryExpression(SyntaxKind.GreaterThanOrEqualExpression, id, (ExpressionSyntax)stmt.ToValue.Accept(_nodesVisitor));
+                    condition = SyntaxFactory.BinaryExpression(SyntaxKind.GreaterThanOrEqualExpression, id, csToValue);
                 }
                 if (step == null)
                     step = SyntaxFactory.PostfixUnaryExpression(SyntaxKind.PostIncrementExpression, id);
                 else
                     step = SyntaxFactory.AssignmentExpression(SyntaxKind.AddAssignmentExpression, id, step);
                 var block = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
-                return SingleStatement(SyntaxFactory.ForStatement(
+                var forStatementSyntax = SyntaxFactory.ForStatement(
                     declaration,
-                    declaration != null ? SyntaxFactory.SeparatedList<ExpressionSyntax>() : SyntaxFactory.SingletonSeparatedList(startValue),
+                    declaration != null
+                        ? SyntaxFactory.SeparatedList<ExpressionSyntax>()
+                        : SyntaxFactory.SingletonSeparatedList(startValue),
                     condition,
                     SyntaxFactory.SingletonSeparatedList(step),
-                    block.UnpackNonNestedBlock()));
+                    block.UnpackNonNestedBlock());
+                return SyntaxFactory.List(preLoopStatements.Concat(new[] {forStatementSyntax}));
+            }
+            private static VariableDeclarationSyntax CreateVariableDeclaration(string variableName,
+                ExpressionSyntax variableValue)
+            {
+                var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(SyntaxFactory.Identifier(variableName), null,
+                    SyntaxFactory.EqualsValueClause(variableValue));
+                var declaration = SyntaxFactory.VariableDeclaration(
+                    SyntaxFactory.IdentifierName("var"),
+                    SyntaxFactory.SingletonSeparatedList(variableDeclaratorSyntax));
+                return declaration;
             }
 
             public override SyntaxList<StatementSyntax> VisitForEachBlock(VBSyntax.ForEachBlockSyntax node)
@@ -537,11 +571,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return variableDeclarationSyntax;
             }
 
-            private string GetUniqueVariableNameInScope(SyntaxNode node, string variableNameBase)
+            private string GetUniqueVariableNameInScope(VBasic.VisualBasicSyntaxNode node, string variableNameBase)
             {
-                var reservedNames = _withBlockTempVariableNames.Concat(node.DescendantNodesAndSelf()
-                    .SelectMany(syntaxNode => _semanticModel.LookupSymbols(syntaxNode.SpanStart).Select(s => s.Name)));
-                return NameGenerator.EnsureUniqueness(variableNameBase, reservedNames, true);
+                // Need to check not just the symbols this node has access to, but whether there are any nested blocks which have access to this node and contain a conflicting name
+                var scopeStarts = node.GetAncestorOrThis<VBSyntax.StatementSyntax>().DescendantNodesAndSelf()
+                    .OfType<VBSyntax.StatementSyntax>().Select(n => n.SpanStart).ToList();
+                string uniqueName = NameGenerator.GenerateUniqueName(variableNameBase, string.Empty,
+                    n => {
+                        var matchingSymbols = scopeStarts.SelectMany(scopeStart => _semanticModel.LookupSymbols(scopeStart, name: n));
+                        return !_generatedNames.Contains(n) && !matchingSymbols.Any();
+                    });
+                _generatedNames.Add(uniqueName);
+                return uniqueName;
             }
 
             public override SyntaxList<StatementSyntax> VisitTryBlock(VBSyntax.TryBlockSyntax node)

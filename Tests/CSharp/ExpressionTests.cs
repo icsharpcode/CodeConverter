@@ -333,6 +333,26 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void UsesSquareBracketsForItemIndexer()
+        {
+            TestConversionVisualBasicToCSharp(@"Imports System.Data
+
+Class TestClass
+    Function GetItem(dr As DataRow) As Object
+        Return dr.Item(""col1"")
+    End Function
+End Class", @"using System.Data;
+
+class TestClass
+{
+    public object GetItem(DataRow dr)
+    {
+        return dr[""col1""];
+    }
+}");
+        }
+
+        [Fact]
         public void ConditionalExpression()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass

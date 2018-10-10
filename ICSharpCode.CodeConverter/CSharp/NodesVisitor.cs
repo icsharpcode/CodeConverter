@@ -496,7 +496,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 SyntaxKind blockKind;
                 bool isIterator = node.GetModifiers().Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
-                var body = VisitStatements(node.Statements, isIterator);
+                var body = VisitStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator));
                 var attributes = ConvertAttributes(node.AccessorStatement.AttributeLists);
                 var modifiers = CommonConversions.ConvertModifiers(node.AccessorStatement.Modifiers, TokenContext.Local);
 
@@ -542,12 +542,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 BaseMethodDeclarationSyntax block = (BaseMethodDeclarationSyntax)node.SubOrFunctionStatement.Accept(TriviaConvertingVisitor);
                 bool isIterator = node.SubOrFunctionStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
                 return _semanticModel.GetDeclaredSymbol(node).IsPartialDefinition() ? block
-                    : block.WithBody(VisitStatements(node.Statements, isIterator));
+                    : block.WithBody(VisitStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator)));
             }
 
-            private BlockSyntax VisitStatements(SyntaxList<VBSyntax.StatementSyntax> statements, bool isIterator)
+            private BlockSyntax VisitStatements(SyntaxList<VBSyntax.StatementSyntax> statements, VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> methodBodyVisitor)
             {
-                return SyntaxFactory.Block(statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor(isIterator))));
+                return SyntaxFactory.Block(statements.SelectMany(s => s.Accept(methodBodyVisitor)));
             }
             
             public override CSharpSyntaxNode VisitMethodStatement(VBSyntax.MethodStatementSyntax node)
@@ -695,7 +695,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var attributes = SyntaxFactory.List(node.AttributeLists.SelectMany(ConvertAttribute));
                 var returnType = (TypeSyntax)node.AsClause?.Type.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword));
                 var parameterList = (ParameterListSyntax)node.ParameterList.Accept(TriviaConvertingVisitor);
-                var body = SyntaxFactory.Block(containingBlock.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())));
+                var methodBodyVisitor = CreateMethodBodyVisitor(node);
+                var body = SyntaxFactory.Block(containingBlock.Statements.SelectMany(s => s.Accept(methodBodyVisitor)));
                 var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node));
 
                 var conversionModifiers = modifiers.Where(CommonConversions.IsConversionOperator).ToList();
@@ -709,9 +710,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.OperatorDeclaration(attributes, nonConversionModifiers, returnType, node.OperatorToken.ConvertToken(), parameterList, body, null);
             }
 
-            private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(bool isIterator = false)
+            private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false)
             {
-                var methodBodyVisitor = new VisualBasicConverter.MethodBodyVisitor(_semanticModel, TriviaConvertingVisitor, _withBlockTempVariableNames, TriviaConvertingVisitor.TriviaConverter) {IsIterator = isIterator};
+                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, _withBlockTempVariableNames, TriviaConvertingVisitor.TriviaConverter) {IsIterator = isIterator};
                 return methodBodyVisitor.CommentConvertingVisitor;
             }
 
@@ -741,13 +742,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                     ctorCall = null;
                 }
 
+                var methodBodyVisitor = CreateMethodBodyVisitor(node);
                 return SyntaxFactory.ConstructorDeclaration(
                     SyntaxFactory.List(attributes),
                     modifiers,
                     ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier),
                     (ParameterListSyntax)block.ParameterList.Accept(TriviaConvertingVisitor),
                     ctorCall,
-                    SyntaxFactory.Block(statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())))
+                    SyntaxFactory.Block(statements.SelectMany(s => s.Accept(methodBodyVisitor)))
                 );
             }
 
@@ -858,11 +860,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 var filter = (CatchFilterClauseSyntax)stmt.WhenClause?.Accept(TriviaConvertingVisitor);
-
+                var methodBodyVisitor = CreateMethodBodyVisitor(node); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
                 return SyntaxFactory.CatchClause(
                     catcher,
                     filter,
-                    SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())))
+                    SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(methodBodyVisitor)))
                 );
             }
 
@@ -873,7 +875,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitFinallyBlock(VBSyntax.FinallyBlockSyntax node)
             {
-                return SyntaxFactory.FinallyClause(SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor()))));
+                var methodBodyVisitor = CreateMethodBodyVisitor(node); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
+                return SyntaxFactory.FinallyClause(SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(methodBodyVisitor))));
             }
 
             public override CSharpSyntaxNode VisitCTypeExpression(VBSyntax.CTypeExpressionSyntax node)
@@ -942,11 +945,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitTryCastExpression(VBSyntax.TryCastExpressionSyntax node)
             {
-                return SyntaxFactory.BinaryExpression(
+                return ParenthesizeIfNested(node, SyntaxFactory.BinaryExpression(
                     SyntaxKind.AsExpression,
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
                     (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)
-                );
+                ));
+            }
+
+            private static CSharpSyntaxNode ParenthesizeIfNested(VBSyntax.TryCastExpressionSyntax node, BinaryExpressionSyntax castExpression)
+            {
+                return node.Parent is VBSyntax.ExpressionSyntax ? (CSharpSyntaxNode) SyntaxFactory.ParenthesizedExpression(castExpression) : castExpression;
             }
 
             public override CSharpSyntaxNode VisitLiteralExpression(VBSyntax.LiteralExpressionSyntax node)
@@ -1351,11 +1359,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch();
                 var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
                 var symbolReturnType = symbol?.GetReturnType();
-                // Chances of having an unknown delegate stored as a field/local seem lower than having an unknown non-delegate type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
-                if (invocationSymbol?.IsIndexer() == true || symbolReturnType.IsArrayType() && !(symbol is IMethodSymbol) || symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax)
-                {
+
+                var memberAccessExpression = node.Expression as VBSyntax.MemberAccessExpressionSyntax;
+                if (invocationSymbol?.IsIndexer() == true 
+                    || symbolReturnType.IsArrayType() && !(symbol is IMethodSymbol)
+                    // Chances of having an unknown delegate stored as a field/local seem lower than having an unknown non-delegate type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
+                    || symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax
+                    // VB uses an imaginary member "Item" when an object has an indexer
+                    || symbolReturnType?.IsErrorType() != false && memberAccessExpression?.Name.Identifier.Text == "Item"
+                    ) {
+                    var expressionToConvert = memberAccessExpression?.Expression ?? node.Expression;
                     return SyntaxFactory.ElementAccessExpression(
-                        (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
+                        (ExpressionSyntax)expressionToConvert.Accept(TriviaConvertingVisitor),
                         SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(node.ArgumentList.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor)))));
                 }
 
@@ -1369,7 +1384,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 CSharpSyntaxNode body;
                 if (node.Body is VBSyntax.StatementSyntax statement) {
-                    var convertedStatements = statement.Accept(CreateMethodBodyVisitor());
+                    var convertedStatements = statement.Accept(CreateMethodBodyVisitor(node));
                     if (convertedStatements.Count == 1
                             && convertedStatements.Single() is ExpressionStatementSyntax exprStmt) {
                         // Assignment is an example of a statement in VB that becomes an expression in C#
@@ -1387,7 +1402,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitMultiLineLambdaExpression(VBSyntax.MultiLineLambdaExpressionSyntax node)
             {
-                var body = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CreateMethodBodyVisitor())));
+                var methodBodyVisitor = CreateMethodBodyVisitor(node);
+                var body = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(methodBodyVisitor)));
                 var param = (ParameterListSyntax)node.SubOrFunctionHeader.ParameterList.Accept(TriviaConvertingVisitor);
                 return CreateLambdaExpression(param, body);
             }

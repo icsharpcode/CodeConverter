@@ -646,7 +646,8 @@ End Class", @"class TestClass
 {
     public static int FindTextInCol(string w, int pTitleRow, int startCol, string needle)
     {
-        for (int c = startCol; c <= w.Length; c++)
+        var loopTo = w.Length;
+        for (int c = startCol; c <= loopTo; c++)
         {
             if (needle == """")
             {
@@ -877,7 +878,7 @@ class TestClass
         {
             // Comment from "Next" gets pushed up to previous line
             TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
-    Private Sub TestMethod()
+    Private Sub TestMethod(end As Integer)
         Dim b, s As Integer()
         For i = 0 To [end]
             b(i) = s(i)
@@ -885,11 +886,41 @@ class TestClass
     End Sub
 End Class", @"class TestClass
 {
-    private void TestMethod()
+    private void TestMethod(int end)
     {
         int[] b, s;
-        for (var i = 0; i <= end; i++)
+        var loopTo = end;
+        for (var i = 0; i <= loopTo; i++)
             b[i] = s[i];
+    }
+}");
+        }
+
+        [Fact]
+        public void ForRequiringExtraVariable()
+        {
+            // Comment from "Next" gets pushed up to previous line
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+    Private Sub TestMethod()
+        Dim stringValue AS string = ""42""
+        For i As Integer = 1 To 10 - stringValue.Length
+           stringValue = stringValue & "" "" + Cstr(i)
+           Console.WriteLine(stringValue)                
+        Next
+    End Sub
+End Class", @"using System;
+
+class TestClass
+{
+    private void TestMethod()
+    {
+        string stringValue = ""42"";
+        var loopTo = 10 - stringValue.Length;
+        for (int i = 1; i <= loopTo; i++)
+        {
+            stringValue = stringValue + "" "" + System.Convert.ToString(i);
+            Console.WriteLine(stringValue);
+        }
     }
 }");
         }
@@ -910,7 +941,8 @@ End Class", @"class TestClass
     private void TestMethod()
     {
         int[] b, s;
-        for (var i = 0; i <= end - 1; i++)
+        var loopTo = end - 1;
+        for (var i = 0; i <= loopTo; i++)
             b[i] = s[i];
     }
 }");
@@ -964,19 +996,21 @@ class GotoTest1
         int y = 4;
         int count = 0;
         string[,] array = new string[x - 1 + 1, y - 1 + 1];
-
-        for (int i = 0; i <= x - 1; i++)
+        var loopTo = x - 1;
+        for (int i = 0; i <= loopTo; i++)
         {
-            for (int j = 0; j <= y - 1; j++)
+            var loopTo1 = y - 1;
+            for (int j = 0; j <= loopTo1; j++)
                 array[i, j] = (System.Threading.Interlocked.Increment(ref count)).ToString();
         }
 
         Console.Write(""Enter the number to search for: "");
         string myNumber = Console.ReadLine();
-
-        for (int i = 0; i <= x - 1; i++)
+        var loopTo2 = x - 1;
+        for (int i = 0; i <= loopTo2; i++)
         {
-            for (int j = 0; j <= y - 1; j++)
+            var loopTo3 = y - 1;
+            for (int j = 0; j <= loopTo3; j++)
             {
                 if (array[i, j].Equals(myNumber))
                     goto Found;
@@ -1333,7 +1367,6 @@ class TestClass
             TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
         If number < 0 Then Return
-
         For i As Integer = 0 To number - 1
             Yield i
         Next
@@ -1346,8 +1379,8 @@ class TestClass
     {
         if (number < 0)
             yield break;
-
-        for (int i = 0; i <= number - 1; i++)
+        var loopTo = number - 1;
+        for (int i = 0; i <= loopTo; i++)
             yield return i;
     }
 }");
