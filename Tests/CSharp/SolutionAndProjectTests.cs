@@ -12,13 +12,13 @@ namespace CodeConverter.Tests.CSharp
 {
     public class SolutionAndProjectTests : ProjectConverterTestBase
     {
-        [Fact]
+        [Fact(Skip = "https://github.com/icsharpcode/CodeConverter/issues/184")]
         public void ConvertSolution()
         {
             ConvertProjectsWhere<VBToCSConversion>(p => true);
         }
 
-        [Fact]
+        [Fact(Skip = "https://github.com/icsharpcode/CodeConverter/issues/184")]
         public void ConvertSingleProject()
         {
             ConvertProjectsWhere<VBToCSConversion>(p => p.Name == "VisualBasicLibrary");

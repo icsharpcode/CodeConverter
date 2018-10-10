@@ -5,13 +5,13 @@ namespace CodeConverter.Tests.VB
 {
     public class SolutionAndProjectTests : ProjectConverterTestBase
     {
-        [Fact]
+        [Fact(Skip = "https://github.com/icsharpcode/CodeConverter/issues/184")]
         public void ConvertSolution()
         {
             ConvertProjectsWhere<CSToVBConversion>(p => true);
         }
 
-        [Fact]
+        [Fact(Skip = "https://github.com/icsharpcode/CodeConverter/issues/184")]
         public void ConvertSingleProject()
         {
             ConvertProjectsWhere<CSToVBConversion>(p => p.Name == "CSharpConsoleApp");
