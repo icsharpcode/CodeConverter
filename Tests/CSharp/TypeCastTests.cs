@@ -90,6 +90,7 @@ End Class",
     Private Sub Test()
         Dim o As Object = 5
         Dim i As System.Nullable(Of Integer) = TryCast(o, Integer)
+        Dim s As String = TryCast(o, Integer).ToString()
     End Sub
 End Class",
 @"class Class1
@@ -98,6 +99,7 @@ End Class",
     {
         object o = 5;
         System.Nullable<int> i = o as int;
+        string s = (o as int).ToString();
     }
 }");
         }

@@ -945,11 +945,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitTryCastExpression(VBSyntax.TryCastExpressionSyntax node)
             {
-                return SyntaxFactory.BinaryExpression(
+                return ParenthesizeIfNested(node, SyntaxFactory.BinaryExpression(
                     SyntaxKind.AsExpression,
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
                     (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)
-                );
+                ));
+            }
+
+            private static CSharpSyntaxNode ParenthesizeIfNested(VBSyntax.TryCastExpressionSyntax node, BinaryExpressionSyntax castExpression)
+            {
+                return node.Parent is VBSyntax.ExpressionSyntax ? (CSharpSyntaxNode) SyntaxFactory.ParenthesizedExpression(castExpression) : castExpression;
             }
 
             public override CSharpSyntaxNode VisitLiteralExpression(VBSyntax.LiteralExpressionSyntax node)
