@@ -1,6 +1,16 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
+#6.1.0 - 12/10/2018
+
+### VB -> C#
+* Parenthesize "as" cast if necessary
+* Convert properties using "Item" syntax
+* Extract variable for "To" expression
+* Convert base constructor call missing parentheses
+* Fix Nullref in SyntaxFactory.MethodDeclaration
+
+
 # 6.0.0 - 21/08/2018
 * Performance improvement for large solutions
 * Fix solution/project level context menu item not appearing when projects are within folders
