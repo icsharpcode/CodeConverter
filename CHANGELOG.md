@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
-#6.1.0 - 12/10/2018
+# 6.1.0 - 12/10/2018
 
 ### VB -> C#
 * Parenthesize "as" cast if necessary
