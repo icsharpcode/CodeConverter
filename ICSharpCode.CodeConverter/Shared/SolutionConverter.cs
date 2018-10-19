@@ -17,23 +17,48 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly IProgress<string> _progress;
         private readonly ILanguageConversion _languageConversion;
 
-        public static SolutionConverter CreateFor<TLanguageConversion>(IReadOnlyCollection<Project> projectsToConvert,
-            IProgress<string> progress = null) where TLanguageConversion : ILanguageConversion, new()
+        public static SolutionConverter CreateFor<TLanguageConversion>(Solution solution, IProgress<string> progress = null)
+            where TLanguageConversion : ILanguageConversion, new()
         {
-            var solutionFilePath = projectsToConvert.First().Solution.FilePath;
-            var sourceSolutionContents = File.ReadAllText(solutionFilePath);
-            var projectReferenceReplacements = GetProjectReferenceReplacements(projectsToConvert, sourceSolutionContents);
+            return CreateFor<TLanguageConversion>(solution, solution.Projects, progress);
+        }
+
+        public static SolutionConverter CreateFor<TLanguageConversion>(Project projectToConvert,
+            IProgress<string> progress = null)
+            where TLanguageConversion : ILanguageConversion, new()
+        {
+            return CreateFor<TLanguageConversion>(null, new Project[] { projectToConvert }, progress);
+        }
+
+        public static SolutionConverter CreateFor<TLanguageConversion>(IEnumerable<Project> projectsToConvert,
+            IProgress<string> progress = null)
+            where TLanguageConversion : ILanguageConversion, new()
+        {
+            return CreateFor<TLanguageConversion>(null, projectsToConvert, progress);
+        }
+
+        private static SolutionConverter CreateFor<TLanguageConversion>(Solution solution,
+            IEnumerable<Project> projectsToConvert, IProgress<string> progress)
+            where TLanguageConversion : ILanguageConversion, new()
+        {
+            if (solution == null)
+                solution = projectsToConvert.First().Solution;
+
+            var solutionFilePath = solution == null ? null : solution.FilePath;
+            var sourceSolutionContents = solutionFilePath == null ? null : File.ReadAllText(solutionFilePath);
+            var projectReferenceReplacements = sourceSolutionContents == null
+                ? null : GetProjectReferenceReplacements(projectsToConvert, sourceSolutionContents);
             return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, progress, new TLanguageConversion());
         }
 
         private SolutionConverter(string solutionFilePath,
-            string sourceSolutionContents, IReadOnlyCollection<Project> projectsToConvert,
+            string sourceSolutionContents, IEnumerable<Project> projectsToConvert,
             List<(string, string)> projectReferenceReplacements, IProgress<string> showProgressMessage,
             ILanguageConversion languageConversion)
         {
             _solutionFilePath = solutionFilePath;
             _sourceSolutionContents = sourceSolutionContents;
-            _projectsToConvert = projectsToConvert;
+            _projectsToConvert = projectsToConvert.ToList();
             _projectReferenceReplacements = projectReferenceReplacements;
             _progress = showProgressMessage ?? new Progress<string>();
             _languageConversion = languageConversion;
@@ -45,7 +70,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             return ConvertProjects()
                     .Concat(UpdateProjectReferences(projectsToUpdateReferencesOnly))
-                    .Concat(new[] { ConvertSolutionFile() });
+                    .Concat(ConvertSolutionFile());
         }
 
         private IEnumerable<ConversionResult> ConvertProjects()
@@ -56,15 +81,19 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private IEnumerable<ConversionResult> ConvertProject(IEnumerable<(string, string)> projectFileReplacementRegexes, Project project)
         {
-            var replacements = _projectReferenceReplacements.Concat(projectFileReplacementRegexes).ToArray();
+            var replacements = _projectReferenceReplacements == null ? null : _projectReferenceReplacements.Concat(projectFileReplacementRegexes).ToArray();
             _progress.Report($"Converting {project.Name}, this may take a some time...");
-            return ProjectConversion.ConvertProjectContents(project, _languageConversion).Concat(new[]
-                {ConversionResultFromReplacements(project.FilePath, replacements, s => _languageConversion.PostTransformProjectFile(s))}
+            return ProjectConversion.ConvertProjectContents(project, _languageConversion).Concat(
+                replacements == null ? new ConversionResult[] { }
+                : new[] { ConversionResultFromReplacements(project.FilePath, replacements, s => _languageConversion.PostTransformProjectFile(s)) }
             );
         }
 
         private IEnumerable<ConversionResult> UpdateProjectReferences(IEnumerable<Project> projectsToUpdateReferencesOnly)
         {
+            if (_projectReferenceReplacements == null)
+                return new ConversionResult[] { };
+
             return projectsToUpdateReferencesOnly.Select(project => {
                 var withReferencesReplaced =
                     ConversionResultFromReplacements(project.FilePath, _projectReferenceReplacements);
@@ -73,7 +102,7 @@ namespace ICSharpCode.CodeConverter.Shared
             });
         }
 
-        private static List<(string, string)> GetProjectReferenceReplacements(IReadOnlyCollection<Project> projectsToConvert,
+        private static List<(string, string)> GetProjectReferenceReplacements(IEnumerable<Project> projectsToConvert,
             string sourceSolutionContents)
         {
             var projectReferenceReplacements = new List<(string, string)>();
@@ -88,13 +117,15 @@ namespace ICSharpCode.CodeConverter.Shared
             return projectReferenceReplacements;
         }
 
-        private ConversionResult ConvertSolutionFile()
+        private IEnumerable<ConversionResult> ConvertSolutionFile()
         {
+            if (_sourceSolutionContents == null)
+                yield break;
+
             var projectTypeGuidMappings = _languageConversion.GetProjectTypeGuidMappings();
             var projectTypeReplacements = _projectsToConvert.SelectMany(project => GetProjectTypeReplacement(project, projectTypeGuidMappings)).ToList();
-            
             var convertedSolutionContents = ApplyReplacements(_sourceSolutionContents, _projectReferenceReplacements.Concat(projectTypeReplacements));
-            return new ConversionResult(convertedSolutionContents) {
+            yield return new ConversionResult(convertedSolutionContents) {
                 SourcePathOrNull = _solutionFilePath,
                 TargetPathOrNull = _solutionFilePath
             };
