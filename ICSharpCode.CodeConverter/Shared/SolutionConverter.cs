@@ -59,15 +59,14 @@ namespace ICSharpCode.CodeConverter.Shared
             var replacements = _projectReferenceReplacements.Concat(projectFileReplacementRegexes).ToArray();
             _progress.Report($"Converting {project.Name}, this may take a some time...");
             return ProjectConversion.ConvertProjectContents(project, _languageConversion).Concat(new[]
-                {ConversionResultFromReplacements(project.FilePath, replacements, s => _languageConversion.PostTransformProjectFile(s))}
+                {new FileInfo(project.FilePath).ConversionResultFromReplacements(replacements, s => _languageConversion.PostTransformProjectFile(s))}
             );
         }
 
         private IEnumerable<ConversionResult> UpdateProjectReferences(IEnumerable<Project> projectsToUpdateReferencesOnly)
         {
             return projectsToUpdateReferencesOnly.Select(project => {
-                var withReferencesReplaced =
-                    ConversionResultFromReplacements(project.FilePath, _projectReferenceReplacements);
+                var withReferencesReplaced = new FileInfo(project.FilePath).ConversionResultFromReplacements(_projectReferenceReplacements);
                 withReferencesReplaced.TargetPathOrNull = withReferencesReplaced.SourcePathOrNull;
                 return withReferencesReplaced;
             });
@@ -93,29 +92,11 @@ namespace ICSharpCode.CodeConverter.Shared
             var projectTypeGuidMappings = _languageConversion.GetProjectTypeGuidMappings();
             var projectTypeReplacements = _projectsToConvert.SelectMany(project => GetProjectTypeReplacement(project, projectTypeGuidMappings)).ToList();
             
-            var convertedSolutionContents = ApplyReplacements(_sourceSolutionContents, _projectReferenceReplacements.Concat(projectTypeReplacements));
+            var convertedSolutionContents = TextReplacementConverter.Replace(_sourceSolutionContents, _projectReferenceReplacements.Concat(projectTypeReplacements));
             return new ConversionResult(convertedSolutionContents) {
                 SourcePathOrNull = _solutionFilePath,
                 TargetPathOrNull = _solutionFilePath
             };
-        }
-
-        private static ConversionResult ConversionResultFromReplacements(string filePath, IEnumerable<(string, string)> replacements, Func<string, string> postReplacementTransform = null)
-        {
-            postReplacementTransform = postReplacementTransform ?? (s => s);
-            var newProjectText = File.ReadAllText(filePath);
-            newProjectText = ApplyReplacements(newProjectText, replacements);
-            return new ConversionResult(postReplacementTransform(newProjectText)) {SourcePathOrNull = filePath};
-        }
-
-        private static string ApplyReplacements(string originalText, IEnumerable<(string, string)> replacements)
-        {
-            foreach (var (oldValue, newValue) in replacements)
-            {
-                originalText = Regex.Replace(originalText, oldValue, newValue, RegexOptions.IgnoreCase);
-            }
-
-            return originalText;
         }
 
         private static (string, string) GetProjectGuidReplacement(string projFilename, string contents)
