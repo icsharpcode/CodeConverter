@@ -69,6 +69,14 @@ namespace ICSharpCode.CodeConverter.Shared
             return codeResult;
         }
 
+        public static IEnumerable<ConversionResult> ConvertProject(Project project, ILanguageConversion languageConversion,
+            params (string, string)[] replacements)
+        {
+            return ConvertProjectContents(project, languageConversion).Concat(new[]
+                {ConvertProjectFile(project, languageConversion, replacements)}
+            );
+        }
+
         public static IEnumerable<ConversionResult> ConvertProjectContents(Project project,
             ILanguageConversion languageConversion)
         {
@@ -79,6 +87,11 @@ namespace ICSharpCode.CodeConverter.Shared
                 solutionDir == null ? compilation.SyntaxTrees : compilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir)),
                 languageConversion, GetConvertedCompilationWithProjectReferences(project, languageConversion));
             return ConvertProjectContents(projectConversion);
+        }
+
+        public static ConversionResult ConvertProjectFile(Project project, ILanguageConversion languageConversion, params (string, string)[] textReplacements)
+        {
+            return new FileInfo(project.FilePath).ConversionResultFromReplacements(textReplacements, languageConversion.PostTransformProjectFile);
         }
 
         /// <summary>

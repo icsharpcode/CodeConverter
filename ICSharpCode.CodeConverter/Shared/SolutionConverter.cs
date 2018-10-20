@@ -58,9 +58,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var replacements = _projectReferenceReplacements.Concat(projectFileReplacementRegexes).ToArray();
             _progress.Report($"Converting {project.Name}, this may take a some time...");
-            return ProjectConversion.ConvertProjectContents(project, _languageConversion).Concat(new[]
-                {new FileInfo(project.FilePath).ConversionResultFromReplacements(replacements, s => _languageConversion.PostTransformProjectFile(s))}
-            );
+            return ProjectConversion.ConvertProject(project, _languageConversion, replacements);
         }
 
         private IEnumerable<ConversionResult> UpdateProjectReferences(IEnumerable<Project> projectsToUpdateReferencesOnly)
