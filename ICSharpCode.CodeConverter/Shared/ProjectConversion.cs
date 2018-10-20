@@ -80,11 +80,11 @@ namespace ICSharpCode.CodeConverter.Shared
         public static IEnumerable<ConversionResult> ConvertProjectContents(Project project,
             ILanguageConversion languageConversion)
         {
-            var solutionFilePath = project.Solution.FilePath;
+            var solutionFilePath = project.Solution.FilePath ?? project.FilePath;
             var solutionDir = Path.GetDirectoryName(solutionFilePath);
             var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
-            var projectConversion = new ProjectConversion(compilation,
-                solutionDir == null ? compilation.SyntaxTrees : compilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir)),
+            var syntaxTreesToConvert = compilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir));
+            var projectConversion = new ProjectConversion(compilation, syntaxTreesToConvert,
                 languageConversion, GetConvertedCompilationWithProjectReferences(project, languageConversion));
             return ConvertProjectContents(projectConversion);
         }
