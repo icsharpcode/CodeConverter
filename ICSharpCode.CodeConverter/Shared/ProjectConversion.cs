@@ -69,14 +69,29 @@ namespace ICSharpCode.CodeConverter.Shared
             return codeResult;
         }
 
+        public static IEnumerable<ConversionResult> ConvertProject(Project project, ILanguageConversion languageConversion,
+            params (string, string)[] replacements)
+        {
+            return ConvertProjectContents(project, languageConversion).Concat(new[]
+                {ConvertProjectFile(project, languageConversion, replacements)}
+            );
+        }
+
         public static IEnumerable<ConversionResult> ConvertProjectContents(Project project,
             ILanguageConversion languageConversion)
         {
-            var solutionFilePath = project.Solution.FilePath;
+            var solutionFilePath = project.Solution.FilePath ?? project.FilePath;
             var solutionDir = Path.GetDirectoryName(solutionFilePath);
             var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
-            var projectConversion = new ProjectConversion(compilation, compilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir)), languageConversion, GetConvertedCompilationWithProjectReferences(project, languageConversion));
-            foreach (var conversionResult in ConvertProjectContents(projectConversion)) yield return conversionResult;
+            var syntaxTreesToConvert = compilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir));
+            var projectConversion = new ProjectConversion(compilation, syntaxTreesToConvert,
+                languageConversion, GetConvertedCompilationWithProjectReferences(project, languageConversion));
+            return ConvertProjectContents(projectConversion);
+        }
+
+        public static ConversionResult ConvertProjectFile(Project project, ILanguageConversion languageConversion, params (string, string)[] textReplacements)
+        {
+            return new FileInfo(project.FilePath).ConversionResultFromReplacements(textReplacements, languageConversion.PostTransformProjectFile);
         }
 
         /// <summary>
