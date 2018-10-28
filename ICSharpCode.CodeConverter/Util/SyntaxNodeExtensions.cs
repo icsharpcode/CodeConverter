@@ -893,10 +893,10 @@ namespace ICSharpCode.CodeConverter.Util
         {
             if (t.IsKind(CSSyntaxKind.SingleLineCommentTrivia))
                 return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.CommentTrivia, $"' {t.GetCommentText()}");
-            if (t.IsKind(CSSyntaxKind.SingleLineCommentTrivia)) {
+            if (t.IsKind(CSSyntaxKind.SingleLineDocumentationCommentTrivia)) {
                 var previousWhitespace = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None).ToString();
                 var commentTextLines = t.GetCommentText().Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
-                var multiLine = commentTextLines.Count() > 1;
+                var multiLine = commentTextLines.Length > 1;
                 var outputCommentText = multiLine
                     ? "''' " + String.Join($"\r\n{previousWhitespace}''' ", commentTextLines)
                     : $"' {commentTextLines.Single()}";
