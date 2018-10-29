@@ -966,7 +966,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             .WithTrailingTrivia(
                                 SyntaxFactory.Comment("/* TODO Change to default(_) if this is not a reference type */"));
                     }
-                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(type.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart))) : CommonConversions.Literal(null);
+                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(CommonConversions.ToCsTypeSyntax(type, node)) : CommonConversions.Literal(null);
                 }
                 return CommonConversions.Literal(node.Token.Value, node.Token.Text);
             }

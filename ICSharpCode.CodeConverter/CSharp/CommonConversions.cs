@@ -13,6 +13,7 @@ using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankS
 using ArrayTypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayTypeSyntax;
 using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
+using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxFacts = Microsoft.CodeAnalysis.CSharp.SyntaxFacts;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
@@ -72,13 +73,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             var typeInf = _semanticModel.GetTypeInfo(declarator.Initializer.Value);
             if (typeInf.ConvertedType == null) return CreateVarTypeName();
 
-            var predefined = typeInf.ConvertedType.SpecialType.GetPredefinedKeywordKind();
+            return ToCsTypeSyntax(typeInf.ConvertedType, declarator);
+        }
+
+        public TypeSyntax ToCsTypeSyntax(ITypeSymbol typeSymbol, VisualBasicSyntaxNode contextNode)
+        {
+            if (typeSymbol.IsNullable()) return SyntaxFactory.NullableType(ToCsTypeSyntax(typeSymbol.GetNullableUnderlyingType(), contextNode));
+            var predefined = typeSymbol.SpecialType.GetPredefinedKeywordKind();
             if (predefined != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None)
             {
                 return SyntaxFactory.PredefinedType(SyntaxFactory.Token(predefined));
             }
 
-            var typeName = typeInf.ConvertedType.ToMinimalCSharpDisplayString(_semanticModel, declarator.SpanStart);
+            var typeName = typeSymbol.ToMinimalCSharpDisplayString(_semanticModel, contextNode.SpanStart);
             return SyntaxFactory.ParseTypeName(typeName);
         }
 

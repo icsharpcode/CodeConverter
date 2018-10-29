@@ -177,8 +177,11 @@ namespace ICSharpCode.CodeConverter.Util
                 return null;
             if (info.Symbol != null)
                 return info.Symbol;
-            if (info.CandidateSymbols.Length == 1)
-                return info.CandidateSymbols.FirstOrDefault(isMatch);
+            var matches = info.CandidateSymbols.Where(isMatch).ToList();
+            if (matches.Count == 1) {
+                return matches.Single();
+            }
+
             return null;
         }
 
