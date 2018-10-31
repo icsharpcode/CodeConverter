@@ -315,6 +315,32 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void NullableInteger()
+        {
+            //BUG: Line comments after "else" aren't converted
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+    Public Function Bar(value As String) As Integer?
+        Dim result As Integer
+        If Integer.TryParse(value, result) Then
+            Return result
+        Else
+            Return Nothing
+        End If
+    End Function
+End Class", @"class TestClass
+{
+    public int? Bar(string value)
+    {
+        int result;
+        if (int.TryParse(value, out result))
+            return result;
+        else
+            return default(int?);
+    }
+}");
+        }
+
+        [Fact]
         public void UsesSquareBracketsForIndexerButParenthesesForMethodInvocation()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
