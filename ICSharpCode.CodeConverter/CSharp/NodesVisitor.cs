@@ -966,7 +966,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             .WithTrailingTrivia(
                                 SyntaxFactory.Comment("/* TODO Change to default(_) if this is not a reference type */"));
                     }
-                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(CommonConversions.ToCsTypeSyntax(type, node)) : CommonConversions.Literal(null);
+                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(type.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart))) : CommonConversions.Literal(null);
                 }
                 return CommonConversions.Literal(node.Token.Value, node.Token.Text);
             }
@@ -980,7 +980,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitInterpolatedStringText(VBSyntax.InterpolatedStringTextSyntax node)
             {
-                return SyntaxFactory.InterpolatedStringText(SyntaxFactory.Token(default(SyntaxTriviaList), SyntaxKind.InterpolatedStringTextToken, node.TextToken.Text, node.TextToken.ValueText, default(SyntaxTriviaList)));
+                var useVerbatim = node.Parent.DescendantNodes().OfType<VBSyntax.InterpolatedStringTextSyntax>().Any(c => CommonConversions.IsWorthBeingAVerbatimString(c.TextToken.Text));
+                var escapedString = CommonConversions.CleanContentsOfString(node.TextToken.ValueText, node.TextToken.Text, useVerbatim);
+                return SyntaxFactory.InterpolatedStringText(SyntaxFactory.Token(default(SyntaxTriviaList), SyntaxKind.InterpolatedStringTextToken, escapedString, node.TextToken.ValueText, default(SyntaxTriviaList)));
             }
 
             public override CSharpSyntaxNode VisitInterpolation(VBSyntax.InterpolationSyntax node)

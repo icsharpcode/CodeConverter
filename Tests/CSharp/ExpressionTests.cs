@@ -315,32 +315,6 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void NullableInteger()
-        {
-            //BUG: Line comments after "else" aren't converted
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
-    Public Function Bar(value As String) As Integer?
-        Dim result As Integer
-        If Integer.TryParse(value, result) Then
-            Return result
-        Else
-            Return Nothing
-        End If
-    End Function
-End Class", @"class TestClass
-{
-    public int? Bar(string value)
-    {
-        int result;
-        if (int.TryParse(value, out result))
-            return result;
-        else
-            return default(int?);
-    }
-}");
-        }
-
-        [Fact]
         public void UsesSquareBracketsForIndexerButParenthesesForMethodInvocation()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -1251,6 +1225,29 @@ End Function",
                 @"public bool GetString(bool yourBoolean)
 {
     return 1 != 1 || yourBoolean ? true : false;
+}");
+        }
+
+        [Fact]
+        public void StringInterpolationWithDoubleQuotes()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Namespace [Global].InnerNamespace
+    Public Class Test
+        Public Function StringInter(t As String) As String
+            Return $""{t} """" t""
+        End Function
+    End Class
+End Namespace",
+@"namespace Global.InnerNamespace
+{
+    public class Test
+    {
+        public string StringInter(string t)
+        {
+            return $""{t} \"" t"";
+        }
+    }
 }");
         }
     }
