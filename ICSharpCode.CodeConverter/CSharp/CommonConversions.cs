@@ -199,12 +199,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             return "\"" + CleanContentsOfString(valueText, fullText.Substring(1, fullText.Length - 2), false) + "\"";
         }
 
-        internal string CleanContentsOfString(string s1, string valueText, bool isVerbatimString)
+        internal string CleanContentsOfString(string valueText, string fullText, bool isVerbatimString)
         {
             if (isVerbatimString) {
-                return s1.Replace("\"", "\"\"");
+                return valueText.Replace("\"", "\"\"");
             } else {
-                return valueText.Replace("\"\"", "\\\"");
+                return fullText.Replace("\"\"", "\\\"");
             }
         }
 
