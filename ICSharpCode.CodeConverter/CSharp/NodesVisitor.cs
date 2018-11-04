@@ -971,6 +971,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return CommonConversions.Literal(node.Token.Value, node.Token.Text);
             }
 
+            public override CSharpSyntaxNode VisitInterpolation(VBSyntax.InterpolationSyntax node)
+            {
+                return SyntaxFactory.Interpolation((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor), (InterpolationAlignmentClauseSyntax) node.AlignmentClause?.Accept(TriviaConvertingVisitor), (InterpolationFormatClauseSyntax) node.FormatClause?.Accept(TriviaConvertingVisitor));
+            }
+
             public override CSharpSyntaxNode VisitInterpolatedStringExpression(VBSyntax.InterpolatedStringExpressionSyntax node)
             {
                 var useVerbatim = node.DescendantNodes().OfType<VBSyntax.InterpolatedStringTextSyntax>().Any(c => CommonConversions.IsWorthBeingAVerbatimString(c.TextToken.Text));
@@ -985,14 +990,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.InterpolatedStringText(SyntaxFactory.Token(default(SyntaxTriviaList), SyntaxKind.InterpolatedStringTextToken, escapedString, node.TextToken.ValueText, default(SyntaxTriviaList)));
             }
 
-            public override CSharpSyntaxNode VisitInterpolation(VBSyntax.InterpolationSyntax node)
+            public override CSharpSyntaxNode VisitInterpolationAlignmentClause(VBSyntax.InterpolationAlignmentClauseSyntax node)
             {
-                return SyntaxFactory.Interpolation((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
+                return SyntaxFactory.InterpolationAlignmentClause(SyntaxFactory.Token(SyntaxKind.CommaToken), (ExpressionSyntax) node.Value.Accept(TriviaConvertingVisitor));
             }
 
             public override CSharpSyntaxNode VisitInterpolationFormatClause(VBSyntax.InterpolationFormatClauseSyntax node)
             {
-                return base.VisitInterpolationFormatClause(node);
+                SyntaxToken formatStringToken = SyntaxFactory.Token(SyntaxTriviaList.Empty, SyntaxKind.InterpolatedStringTextToken, node.FormatStringToken.Text, node.FormatStringToken.ValueText, SyntaxTriviaList.Empty);
+                return SyntaxFactory.InterpolationFormatClause(SyntaxFactory.Token(SyntaxKind.ColonToken).WithTriviaFrom(node.ColonToken), formatStringToken);
             }
 
             public override CSharpSyntaxNode VisitMeExpression(VBSyntax.MeExpressionSyntax node)
