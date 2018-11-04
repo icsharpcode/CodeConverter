@@ -192,14 +192,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             var worthBeingAVerbatimString = IsWorthBeingAVerbatimString(valueText);
             if (worthBeingAVerbatimString)
             {
-                var valueWithReplacements = CleanContentsOfString(valueText, fullText, true);
+                var valueWithReplacements = EscapeQuotes(valueText, fullText, true);
                 return $"@\"{valueWithReplacements}\"";
             } 
 
-            return "\"" + CleanContentsOfString(valueText, fullText.Substring(1, fullText.Length - 2), false) + "\"";
+            return "\"" + EscapeQuotes(valueText, fullText.Substring(1, fullText.Length - 2), false) + "\"";
         }
 
-        internal string CleanContentsOfString(string valueText, string fullText, bool isVerbatimString)
+        internal string EscapeQuotes(string valueText, string fullText, bool isVerbatimString)
         {
             if (isVerbatimString) {
                 return valueText.Replace("\"", "\"\"");

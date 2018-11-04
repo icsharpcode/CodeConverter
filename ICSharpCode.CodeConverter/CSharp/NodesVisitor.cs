@@ -981,7 +981,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitInterpolatedStringText(VBSyntax.InterpolatedStringTextSyntax node)
             {
                 var useVerbatim = node.Parent.DescendantNodes().OfType<VBSyntax.InterpolatedStringTextSyntax>().Any(c => CommonConversions.IsWorthBeingAVerbatimString(c.TextToken.Text));
-                var escapedString = CommonConversions.CleanContentsOfString(node.TextToken.ValueText, node.TextToken.Text, useVerbatim);
+                var escapedString = CommonConversions.EscapeQuotes(node.TextToken.ValueText, node.TextToken.Text, useVerbatim);
                 return SyntaxFactory.InterpolatedStringText(SyntaxFactory.Token(default(SyntaxTriviaList), SyntaxKind.InterpolatedStringTextToken, escapedString, node.TextToken.ValueText, default(SyntaxTriviaList)));
             }
 
