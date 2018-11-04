@@ -194,9 +194,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var valueWithReplacements = EscapeQuotes(valueText, fullText, true);
                 return $"@\"{valueWithReplacements}\"";
-            } 
+            }
 
-            return "\"" + EscapeQuotes(valueText, fullText.Substring(1, fullText.Length - 2), false) + "\"";
+            string fullTextWithoutSurroundingQuotes = fullText.Substring(1, fullText.Length - 2);
+            return "\"" + EscapeQuotes(valueText, fullTextWithoutSurroundingQuotes, false) + "\"";
         }
 
         internal string EscapeQuotes(string valueText, string fullText, bool isVerbatimString)
