@@ -1253,5 +1253,44 @@ End Function",
     return 1 != 1 || yourBoolean ? true : false;
 }");
         }
+
+        [Fact]
+        public void StringInterpolationWithDoubleQuotes()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Imports System
+
+Namespace [Global].InnerNamespace
+    Public Class Test
+        Public Function StringInter(t As String, dt As DateTime) As String
+            Dim a = $""pre{t} t""
+            Dim b = $""pre{t} """" t""
+            Dim c = $""pre{t} """"\ t""
+            Dim d = $""pre{t & """"""""} """" t""
+            Dim e = $""pre{t & """"""""} """"\ t""
+            Dim f = $""pre{{escapedBraces}}{dt,4:hh}""
+            Return a & b & c & d & e & f
+        End Function
+    End Class
+End Namespace",
+@"using System;
+
+namespace Global.InnerNamespace
+{
+    public class Test
+    {
+        public string StringInter(string t, DateTime dt)
+        {
+            var a = $""pre{t} t"";
+            var b = $""pre{t} \"" t"";
+            var c = $@""pre{t} """"\ t"";
+            var d = $""pre{t + ""\""""} \"" t"";
+            var e = $@""pre{t + ""\""""} """"\ t"";
+            var f = $""pre{{escapedBraces}}{dt,4:hh}"";
+            return a + b + c + d + e + f;
+        }
+    }
+}");
+        }
     }
 }
