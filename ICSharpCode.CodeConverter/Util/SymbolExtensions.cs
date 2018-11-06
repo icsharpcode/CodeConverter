@@ -208,6 +208,12 @@ namespace ICSharpCode.CodeConverter.Util
                     accessorSymbol.MethodKind == MethodKind.EventRemove || accessorSymbol.MethodKind == MethodKind.EventAdd);
         }
 
+        public static bool IsAccessorPropertySet(this ISymbol symbol)
+        {
+            var accessorSymbol = symbol as IMethodSymbol;
+            return accessorSymbol != null && accessorSymbol.MethodKind == MethodKind.PropertySet;
+        }
+
         public static bool IsPublic(this ISymbol symbol)
         {
             return symbol.DeclaredAccessibility == Accessibility.Public;
