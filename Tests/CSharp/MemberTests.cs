@@ -1228,5 +1228,17 @@ End Class", @"class TestClass
     }
 }");
         }
+
+        [Fact]
+        public void TestWriteOnlyProperties()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Interface TestInterface
+    WriteOnly Property Items As Integer()
+End Interface", @"interface TestInterface
+{
+    int[] Items { set; }
+}");
+        }
     }
 }
