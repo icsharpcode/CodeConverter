@@ -142,7 +142,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitSimpleImportsClause(VBSyntax.SimpleImportsClauseSyntax node)
             {
-                var nameEqualsSyntax = node.Alias == null ? null 
+                var nameEqualsSyntax = node.Alias == null ? null
                     : SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(ConvertIdentifier(node.Alias.Identifier)));
                 var usingDirective = SyntaxFactory.UsingDirective(nameEqualsSyntax, (NameSyntax)node.Name.Accept(TriviaConvertingVisitor));
                 return usingDirective;
@@ -549,7 +549,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 return SyntaxFactory.Block(statements.SelectMany(s => s.Accept(methodBodyVisitor)));
             }
-            
+
             public override CSharpSyntaxNode VisitMethodStatement(VBSyntax.MethodStatementSyntax node)
             {
                 var attributes = ConvertAttributes(node.AttributeLists);
@@ -823,7 +823,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     modifiers = modifiers.Replace(SyntaxFactory.Token(SyntaxKind.RefKeyword), SyntaxFactory.Token(SyntaxKind.OutKeyword));
                 }
 
-                if (node.Parent.Parent is VBSyntax.MethodStatementSyntax mss 
+                if (node.Parent.Parent is VBSyntax.MethodStatementSyntax mss
                     && mss.AttributeLists.Any(HasExtensionAttribute) && node.Parent.ChildNodes().First() == node) {
                     modifiers = modifiers.Insert(0, SyntaxFactory.Token(SyntaxKind.ThisKeyword));
                 }
@@ -1268,7 +1268,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation))
                     return SyntaxFactory.ParenthesizedExpression(expr);
-                
+
                 return expr;
             }
 
@@ -1361,14 +1361,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var symbolReturnType = symbol?.GetReturnType();
 
                 var memberAccessExpression = node.Expression as VBSyntax.MemberAccessExpressionSyntax;
-                if (invocationSymbol?.IsIndexer() == true 
-                    || symbolReturnType.IsArrayType() && !(symbol is IMethodSymbol)
-                    // Chances of having an unknown delegate stored as a field/local seem lower than having an unknown non-delegate type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
-                    || symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax
-                    // VB uses an imaginary member "Item" when an object has an indexer
-                    || symbolReturnType?.IsErrorType() != false && memberAccessExpression?.Name.Identifier.Text == "Item"
-                    ) {
-                    var expressionToConvert = memberAccessExpression?.Expression ?? node.Expression;
+                VBSyntax.ExpressionSyntax expressionToConvert;
+                if(TryGetExpressionToConvert(out expressionToConvert)) {
                     return SyntaxFactory.ElementAccessExpression(
                         (ExpressionSyntax)expressionToConvert.Accept(TriviaConvertingVisitor),
                         SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(node.ArgumentList.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor)))));
@@ -1378,6 +1372,26 @@ namespace ICSharpCode.CodeConverter.CSharp
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
                     (ArgumentListSyntax)node.ArgumentList?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ArgumentList()
                 );
+
+                bool TryGetExpressionToConvert(out VBSyntax.ExpressionSyntax toConvert)
+                {
+                    toConvert = null;
+                    if (invocationSymbol?.IsIndexer() == true
+                        // Chances of having an unknown delegate stored as a field/local seem lower than having an unknown non-delegate type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
+                        || symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax
+                        // VB uses an imaginary member "Item" when an object has an indexer
+                        || symbolReturnType?.IsErrorType() != false && memberAccessExpression?.Name.Identifier.Text == "Item"
+                        ) {
+                        toConvert = memberAccessExpression?.Expression ?? node.Expression;
+                    } else if (symbolReturnType.IsArrayType() && !(symbol is IMethodSymbol)) {
+                        if (memberAccessExpression == null || memberAccessExpression.HasLeadingTrivia) {
+                            toConvert = node.Expression;
+                        } else {
+                            toConvert = memberAccessExpression.Expression;
+                        }
+                    }
+                    return toConvert != null;
+                }
             }
 
             public override CSharpSyntaxNode VisitSingleLineLambdaExpression(VBSyntax.SingleLineLambdaExpressionSyntax node)
@@ -1512,7 +1526,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var nodeSymbolInfo = GetSymbolInfoInDocument(node);
                 if (left != null &&
-                    nodeSymbolInfo?.ContainingSymbol is INamespaceOrTypeSymbol containingSymbol && 
+                    nodeSymbolInfo?.ContainingSymbol is INamespaceOrTypeSymbol containingSymbol &&
                     !ContextImplicitlyQualfiesSymbol(node, containingSymbol)) {
 
                     if (containingSymbol is ITypeSymbol containingTypeSymbol &&
