@@ -434,6 +434,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 bool hasBody = node.Parent is VBSyntax.PropertyBlockSyntax;
                 var attributes = node.AttributeLists.SelectMany(ConvertAttribute);
                 var isReadonly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.ReadOnlyKeyword));
+                var isWriteOnly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WriteOnlyKeyword));
                 var convertibleModifiers = node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword, VBasic.SyntaxKind.WriteOnlyKeyword, VBasic.SyntaxKind.DefaultKeyword));
                 var modifiers = CommonConversions.ConvertModifiers(convertibleModifiers, GetMemberContext(node));
                 var isIndexer = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.DefaultKeyword));
@@ -450,9 +451,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 AccessorListSyntax accessors = null;
                 if (!hasBody) {
-                    var accessorList = new List<AccessorDeclarationSyntax> {
-                        SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SemicolonToken)
-                    };
+                    var accessorList = new List<AccessorDeclarationSyntax>();
+
+                    if (!isWriteOnly) {
+                        accessorList.Add(SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SemicolonToken));
+                    }
                     if (!isReadonly) {
                         accessorList.Add(SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration).WithSemicolonToken(SemicolonToken));
                     }

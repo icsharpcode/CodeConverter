@@ -1228,5 +1228,48 @@ End Class", @"class TestClass
     }
 }");
         }
+
+        [Fact]
+        public void TestWriteOnlyProperties()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Interface TestInterface
+    WriteOnly Property Items As Integer()
+End Interface", @"interface TestInterface
+{
+    int[] Items { set; }
+}");
+        }
+
+        [Fact]
+        public void TestSetWithNamedParameterProperties()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Class TestClass
+    Private _Items As Integer()
+    Property Items As Integer()
+        Get
+            Return _Items
+        End Get
+        Set(v As Integer())
+            _Items = v
+        End Set
+    End Property
+End Class", @"class TestClass
+{
+    private int[] _Items;
+    public int[] Items
+    {
+        get
+        {
+            return _Items;
+        }
+        set
+        {
+            _Items = value;
+        }
+    }
+}");
+        }
     }
 }

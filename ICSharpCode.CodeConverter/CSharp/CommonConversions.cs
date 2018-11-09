@@ -264,17 +264,21 @@ namespace ICSharpCode.CodeConverter.CSharp
         public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false)
         {
             string text = id.ValueText;
+
             var keywordKind = SyntaxFacts.GetKeywordKind(text);
             if (keywordKind != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None)
                 return SyntaxFactory.Identifier("@" + text);
+
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
                 var symbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol;
-                if (symbol != null && !String.IsNullOrWhiteSpace(symbol.Name)) {
+                if (symbol != null && !string.IsNullOrWhiteSpace(symbol.Name)) {
                     if (symbol.IsConstructor() && isAttribute) {
                         text = symbol.ContainingType.Name;
                         if (text.EndsWith("Attribute", StringComparison.Ordinal))
                             text = text.Remove(text.Length - "Attribute".Length);
-                    } else if (symbol.IsKind(SymbolKind.Parameter) && symbol.Name == "Value") {
+                    } else if (symbol.IsKind(SymbolKind.Parameter) && symbol.ContainingSymbol.IsAccessorPropertySet() && ((symbol.IsImplicitlyDeclared && symbol.Name == "Value") || symbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared) == symbol)) {
+                        // The case above is basically that if the symbol is a parameter, and the corresponding definition is a property set definition 
+                        // AND the first explicitly declared parameter is this symbol, we need to replace it with value.
                         text = "value";
                     } else if (text.StartsWith("_", StringComparison.Ordinal) && symbol is IFieldSymbol fieldSymbol && fieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
                         text = fieldSymbol.AssociatedSymbol.Name;
