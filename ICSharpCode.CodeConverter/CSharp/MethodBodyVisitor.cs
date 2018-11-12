@@ -685,15 +685,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var invocationExpression = expression as InvocationExpressionSyntax;
                 if (invocationExpression != null) {
-                    InvocationExpressionSyntax ies;
-                    var list = AddRefVariables(invocationExpression, out ies);
-                    list.Add(SyntaxFactory.ExpressionStatement(ies));
-                    return SyntaxFactory.List(list);
+                    InvocationExpressionSyntax newInvocationExpression;
+                    var statements = GetNewStatements(invocationExpression, out newInvocationExpression);
+                    statements.Add(SyntaxFactory.ExpressionStatement(newInvocationExpression));
+                    return SyntaxFactory.List(statements);
                 }
                 return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ExpressionStatement(expression));
             }
 
-            private static List<StatementSyntax> AddRefVariables(InvocationExpressionSyntax initialInvocationExpression, out InvocationExpressionSyntax newInvocationExpression)
+            private static List<StatementSyntax> GetNewStatements(InvocationExpressionSyntax initialInvocationExpression, out InvocationExpressionSyntax newInvocationExpression)
             {
                 var newDeclarations = new List<StatementSyntax>();
                 var newArguments = new List<ArgumentSyntax>();
