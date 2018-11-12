@@ -23,6 +23,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         class MethodBodyVisitor : VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>>
         {
+            private static readonly SyntaxToken _refKeywordToken = SyntaxFactory.Token(SyntaxKind.RefKeyword);
+
             private readonly VBasic.VisualBasicSyntaxNode _methodNode;
             private readonly SemanticModel _semanticModel;
             private readonly VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> _nodesVisitor;
@@ -105,7 +107,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> VisitExpressionStatement(VBSyntax.ExpressionStatementSyntax node)
             {
-                return SingleStatement((ExpressionSyntax)node.Expression.Accept(_nodesVisitor));
+                return MultipleStatements((ExpressionSyntax)node.Expression.Accept(_nodesVisitor));
             }
 
             public override SyntaxList<StatementSyntax> VisitAssignmentStatement(VBSyntax.AssignmentStatementSyntax node)
@@ -149,13 +151,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override SyntaxList<StatementSyntax> VisitRedimClause(VBSyntax.RedimClauseSyntax node)
             {
                 bool preserve = node.Parent is VBSyntax.ReDimStatementSyntax rdss && rdss.PreserveKeyword.IsKind(VBasic.SyntaxKind.PreserveKeyword);
-                
+
                 var csTargetArrayExpression = (ExpressionSyntax) node.Expression.Accept(_nodesVisitor);
                 var convertedBounds = CommonConversions.ConvertArrayBounds(node.ArrayBounds).ToList();
 
                 var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds, node.SpanStart);
                 if (!preserve) return SingleStatement(newArrayAssignment);
-                
+
                 var oldTargetName = GetUniqueVariableNameInScope(node, "old" + csTargetArrayExpression.ToString().ToPascalCase());
                 var oldArrayAssignment = CreateLocalVariableDeclarationAndAssignment(oldTargetName, csTargetArrayExpression);
 
@@ -174,8 +176,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 List<ExpressionSyntax> convertedBounds)
             {
                 var sourceLength = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, sourceArrayExpression, SyntaxFactory.IdentifierName("Length"));
-                var arrayCopyStatement = convertedBounds.Count == 1 
-                    ? CreateArrayCopyWithMinOfLengths(sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds.Single()) 
+                var arrayCopyStatement = convertedBounds.Count == 1
+                    ? CreateArrayCopyWithMinOfLengths(sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds.Single())
                     : CreateArrayCopy(originalVbNode, sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds);
 
                 var oldTargetNotEqualToNull = SyntaxFactory.BinaryExpression(SyntaxKind.NotEqualsExpression, sourceArrayExpression,
@@ -187,7 +189,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             /// Array copy for multiple array dimensions represented by <paramref name="convertedBounds"/>
             /// </summary>
             /// <remarks>
-            /// Exception cases will sometimes silently succeed in the converted code, 
+            /// Exception cases will sometimes silently succeed in the converted code,
             ///  but existing VB code relying on the exception thrown from a multidimensional redim preserve on
             ///  different rank arrays is hopefully rare enough that it's worth saving a few lines of code
             /// </remarks>
@@ -417,7 +419,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     preLoopStatements.Add(loopEndDeclaration);
                     csToValue = SyntaxFactory.IdentifierName(loopToVariableName);
                 };
-                
+
                 if (value == null) {
                     condition = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, id, csToValue);
                 } else {
@@ -645,7 +647,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         statements
                     ));
                 }
-                
+
                 var whileOrUntilStmt = node.LoopStatement.WhileOrUntilClause;
                 ExpressionSyntax conditionExpression;
                 bool isUntilStmt;
@@ -678,6 +680,52 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ExpressionStatement(expression));
             }
+
+            SyntaxList<StatementSyntax> MultipleStatements(ExpressionSyntax expression)
+            {
+                var invocationExpression = expression as InvocationExpressionSyntax;
+                if (invocationExpression != null) {
+                    InvocationExpressionSyntax ies;
+                    var list = AddRefVariables(invocationExpression, out ies);
+                    list.Add(SyntaxFactory.ExpressionStatement(ies));
+                    return SyntaxFactory.List(list);
+                }
+                return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ExpressionStatement(expression));
+            }
+
+            private static List<StatementSyntax> AddRefVariables(InvocationExpressionSyntax initialInvocationExpression, out InvocationExpressionSyntax newInvocationExpression)
+            {
+                var newDeclarations = new List<StatementSyntax>();
+                var newArguments = new List<ArgumentSyntax>();
+                var arguments = initialInvocationExpression.ArgumentList.Arguments;
+                for (var i = 0; i < arguments.Count; i++) {
+                    var argumentSyntax = arguments[i];
+                    
+                    if (IsByRefParameterWithLiteralValue(argumentSyntax)) {
+                        var newArgumentName = $"val{i}";
+                        newArguments.Add(
+                            SyntaxFactory.Argument(SyntaxFactory.IdentifierName(newArgumentName))
+                                .WithRefOrOutKeyword(SyntaxFactory.Token(SyntaxKind.RefKeyword))
+                        );
+
+                        newDeclarations.Add(
+                            SyntaxFactory.LocalDeclarationStatement(
+                                CreateVariableDeclaration(newArgumentName, argumentSyntax.Expression)
+                            )
+                        );
+                    } else {
+                        newArguments.Add(argumentSyntax);
+                    }
+                }
+
+                newInvocationExpression = initialInvocationExpression
+                    .WithArgumentList(SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(newArguments)));
+
+                return newDeclarations;
+            }
+
+            private static bool IsByRefParameterWithLiteralValue(ArgumentSyntax argumentSyntax) 
+                => argumentSyntax.RefOrOutKeyword.IsEquivalentTo(_refKeywordToken) && !argumentSyntax.Expression.IsKind(SyntaxKind.IdentifierName);
         }
     }
 
@@ -685,7 +733,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         /// <summary>
         /// Returns the single statement in a block if it has no nested statements.
-        /// If it has nested statements, and the surrounding block was removed, it could be ambiguous, 
+        /// If it has nested statements, and the surrounding block was removed, it could be ambiguous,
         /// e.g. if (...) { if (...) return null; } else return "";
         /// Unbundling the middle if statement would bind the else to it, rather than the outer if statement
         /// </summary>

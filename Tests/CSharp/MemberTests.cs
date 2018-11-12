@@ -107,6 +107,34 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void TestMethodWithByRefArguments()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Class TestClass
+    Public Sub DoSomething(ByRef str As String, ByRef val As Boolean, ByRef dble As Double, str2 As String)
+    End Sub
+
+    Public Sub DoSomethingElse()
+        Dim dble As Double = 2
+        DoSomething(""sometext"", True, dble, ""sometext2"")
+    End Sub
+End Class", @"class TestClass
+{
+    public void DoSomething(ref string str, ref bool val, ref double dble, string str2)
+    {
+    }
+
+    public void DoSomethingElse()
+    {
+        double dble = 2;
+        var val0 = ""sometext"";
+        var val1 = true;
+        DoSomething(ref val0, ref val1, ref dble, ""sometext2"");
+    }
+}");
+    }
+
+        [Fact]
         public void TestMethodWithReturnType()
         {
             TestConversionVisualBasicToCSharp(
@@ -713,7 +741,7 @@ Friend Class TestClass2
 
     Public Overrides Sub CreateVirtualInstance()
     End Sub
-End Class", 
+End Class",
 @"internal abstract partial class TestClass1
 {
     public static void CreateStatic()
