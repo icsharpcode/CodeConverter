@@ -23,8 +23,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         class MethodBodyVisitor : VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>>
         {
-            private static readonly SyntaxToken _refKeywordToken = SyntaxFactory.Token(SyntaxKind.RefKeyword);
-
             private readonly VBasic.VisualBasicSyntaxNode _methodNode;
             private readonly SemanticModel _semanticModel;
             private readonly VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> _nodesVisitor;
@@ -725,7 +723,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             private static bool IsByRefParameterWithLiteralValue(ArgumentSyntax argumentSyntax) 
-                => argumentSyntax.RefOrOutKeyword.IsEquivalentTo(_refKeywordToken) && !argumentSyntax.Expression.IsKind(SyntaxKind.IdentifierName);
+                => argumentSyntax.RefOrOutKeyword.IsKind(SyntaxKind.RefKeyword) && !argumentSyntax.Expression.IsKind(SyntaxKind.IdentifierName);
         }
     }
 
