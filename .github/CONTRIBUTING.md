@@ -10,3 +10,6 @@ For documentation, prefer:
 
 I have a preference for a small amount of good documentation over a large amount of bad documentation.
 At the moment there's just a very small amount of quite bad documentation...so my apologies there.
+
+Implementation advice:
+* Always try to convert directly between the VB and C# model, avoid converting then post-processing the converted result. This prevents the code getting tangled interdependencies, and means you have the full semantic model available to make an accurate conversion.
