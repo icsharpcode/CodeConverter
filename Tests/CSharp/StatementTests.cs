@@ -139,6 +139,34 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void ValuesOfArrayAssignmentWithSurroundingClass()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Class SurroundingClass
+    Public Arr() As String
+End Class
+
+Class UseClass
+    Public Sub DoStuff()
+        Dim surrounding As SurroundingClass = New SurroundingClass()
+        surrounding.Arr(1) = ""bla""
+    End Sub
+End Class", @"class SurroundingClass
+{
+    public string[] Arr;
+}
+
+class UseClass
+{
+    public void DoStuff()
+    {
+        SurroundingClass surrounding = new SurroundingClass();
+        surrounding.Arr[1] = ""bla"";
+    }
+}");
+        }
+
+        [Fact]
         public void ArrayDeclarationStatement()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -905,7 +933,7 @@ End Class", @"class TestClass
         Dim stringValue AS string = ""42""
         For i As Integer = 1 To 10 - stringValue.Length
            stringValue = stringValue & "" "" + Cstr(i)
-           Console.WriteLine(stringValue)                
+           Console.WriteLine(stringValue)
         Next
     End Sub
 End Class", @"using System;
@@ -1221,7 +1249,7 @@ End Class", @"public class TestClass
                 ' Do something with the Integer
                 Return True
             Case Else
-                ' Do something else 
+                ' Do something else
                 Return False
         End Select
     End Function
@@ -1258,7 +1286,7 @@ public class TestClass2
 
             default:
                 {
-                    // Do something else 
+                    // Do something else
                     return false;
                 }
         }
