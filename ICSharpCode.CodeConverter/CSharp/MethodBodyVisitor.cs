@@ -681,10 +681,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             SyntaxList<StatementSyntax> MultipleStatements(ExpressionSyntax expression)
             {
-                var invocationExpression = expression as InvocationExpressionSyntax;
-                if (invocationExpression != null) {
-                    InvocationExpressionSyntax newInvocationExpression;
-                    var statements = GetNewStatements(invocationExpression, out newInvocationExpression);
+                if (expression is InvocationExpressionSyntax invocationExpression) {
+                    var statements = GetNewStatements(invocationExpression, out var newInvocationExpression);
                     statements.Add(SyntaxFactory.ExpressionStatement(newInvocationExpression));
                     return SyntaxFactory.List(statements);
                 }
