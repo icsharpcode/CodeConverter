@@ -1360,9 +1360,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
                 var symbolReturnType = symbol?.GetReturnType();
 
-                var memberAccessExpression = node.Expression as VBSyntax.MemberAccessExpressionSyntax;
-                VBSyntax.ExpressionSyntax expressionToConvert;
-                if(TryGetExpressionToConvert(out expressionToConvert)) {
+                if(TryGetElementAccessExpressionToConvert(out var expressionToConvert)) {
                     return SyntaxFactory.ElementAccessExpression(
                         (ExpressionSyntax)expressionToConvert.Accept(TriviaConvertingVisitor),
                         SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(node.ArgumentList.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor)))));
@@ -1373,22 +1371,21 @@ namespace ICSharpCode.CodeConverter.CSharp
                     (ArgumentListSyntax)node.ArgumentList?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ArgumentList()
                 );
 
-                bool TryGetExpressionToConvert(out VBSyntax.ExpressionSyntax toConvert)
+                bool TryGetElementAccessExpressionToConvert(out VBSyntax.ExpressionSyntax toConvert)
                 {
                     toConvert = null;
+
                     if (invocationSymbol?.IsIndexer() == true
                         // Chances of having an unknown delegate stored as a field/local seem lower than having an unknown non-delegate type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
                         || symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax
-                        // VB uses an imaginary member "Item" when an object has an indexer
-                        || symbolReturnType?.IsErrorType() != false && memberAccessExpression?.Name.Identifier.Text == "Item"
-                        ) {
-                        toConvert = memberAccessExpression?.Expression ?? node.Expression;
-                    } else if (symbolReturnType.IsArrayType() && !(symbol is IMethodSymbol)) {
-                        if (memberAccessExpression == null || memberAccessExpression.HasLeadingTrivia) {
-                            toConvert = node.Expression;
-                        } else {
-                            toConvert = memberAccessExpression.Expression;
-                        }
+                        || symbolReturnType.IsArrayType() && !(symbol is IMethodSymbol)
+                    ) {
+                        toConvert = node.Expression;
+                    }
+
+                    // VB can use an imaginary member "Item" when an object has an indexer
+                    if ((toConvert != null || invocationSymbol.IsErrorType()) && node.Expression is VBSyntax.MemberAccessExpressionSyntax memberAccessExpression && memberAccessExpression.Name.Identifier.Text == "Item") {
+                        toConvert = memberAccessExpression.Expression;
                     }
                     return toConvert != null;
                 }
