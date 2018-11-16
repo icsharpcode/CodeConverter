@@ -221,7 +221,7 @@ class TestClass
         }
 
         [Fact]
-        public void FloatingPointDivision()
+        public void FloatingPointDivisionIsForced()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
@@ -236,12 +236,12 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var x = 10 / 3;
+        var x = 10 / (double)3;
         x /= 2;
         var y = 10.0 / 3;
         y /= 2;
         int z = 8;
-        z /= 3;
+        z /= (double)3;
     }
 }");
         }
@@ -708,7 +708,7 @@ class TestClass
         Func<int, int, double> test2 = (a, b) =>
         {
             if (b > 0)
-                return a / b;
+                return a / (double)b;
             return 0;
         };
 
