@@ -82,5 +82,13 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return semanticModel.GetTypeInfo(e).Type?.GetFullMetadataName() == fullTypeName;
         }
+
+        public static bool IsIntegralType(this Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax e, SemanticModel semanticModel)
+        {
+            return new string[]{ "System.SByte", "System.Byte",
+                                 "System.Int16", "System.UInt16",
+                                 "System.Int32", "System.UInt32",
+                                 "System.Int64", "System.UInt64" }.Contains(semanticModel.GetTypeInfo(e).Type?.GetFullMetadataName());
+        }
     }
 }
