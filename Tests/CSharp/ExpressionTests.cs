@@ -241,7 +241,7 @@ End Class", @"class TestClass
         var y = 10.0 / 3;
         y /= 2;
         int z = 8;
-        z /= (double)3;
+        z /= 3;
     }
 }");
         }
