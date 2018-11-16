@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -740,10 +741,20 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitDeclareStatement(VBSyntax.DeclareStatementSyntax node)
             {
+                var importAttributes = new List<AttributeArgumentSyntax>();
                 var dllImportAttributeName = SyntaxFactory.ParseName("System.Runtime.InteropServices.DllImport");
                 var dllImportLibLiteral = node.LibraryName.Accept(TriviaConvertingVisitor);
+                importAttributes.Add(SyntaxFactory.AttributeArgument((ExpressionSyntax)dllImportLibLiteral));
 
-                var attributeArguments = CommonConversions.CreateAttributeArgumentList(SyntaxFactory.AttributeArgument((ExpressionSyntax) dllImportLibLiteral));
+                if (node.AliasName != null) {
+                    importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("EntryPoint"), null, (ExpressionSyntax) node.AliasName.Accept(TriviaConvertingVisitor)));
+                }
+
+                if (!node.CharsetKeyword.IsKind(SyntaxKind.None)) {
+                    importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("CharSet"), null, SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.ParseTypeName(typeof(CharSet).FullName), SyntaxFactory.IdentifierName(node.CharsetKeyword.Text))));
+                }
+
+                var attributeArguments = CommonConversions.CreateAttributeArgumentList(importAttributes.ToArray());
                 var dllImportAttributeList = SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Attribute(dllImportAttributeName, attributeArguments)));
 
                 var attributeLists = ConvertAttributes(node.AttributeLists).Add(dllImportAttributeList);
