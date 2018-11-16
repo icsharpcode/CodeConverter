@@ -112,6 +112,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var lhs = (ExpressionSyntax)node.Left.Accept(_nodesVisitor);
                 var rhs = (ExpressionSyntax)node.Right.Accept(_nodesVisitor);
+                // e.g. VB DivideAssignmentExpression "/=" is always on doubles unless you use the "\=" IntegerDivideAssignmentExpression, so need to cast in C#
+                // Need the unconverted type, since the whole point is that it gets converted to a double by the operator
+                if (node.IsKind(VBasic.SyntaxKind.DivideAssignmentStatement) && !node.HasOperandOfUnconvertedType("System.Double", _semanticModel)) {
+                    var doubleType = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword));
+                    rhs = SyntaxFactory.CastExpression(doubleType, rhs);
+                }
 
                 if (node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
                     rhs = SyntaxFactory.InvocationExpression(

@@ -1393,6 +1393,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var lhs = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
                 var rhs = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
 
+                // e.g. VB DivideExpression "/" is always on doubles unless you use the "\" IntegerDivideExpression, so need to cast in C#
+                // Need the unconverted type, since the whole point is that it gets converted to a double by the operator
+                if (node.IsKind(VBasic.SyntaxKind.DivideExpression) && !node.HasOperandOfUnconvertedType("System.Double", _semanticModel)) {
+                    var doubleType = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword));
+                    rhs = SyntaxFactory.CastExpression(doubleType, rhs);
+                }
+
                 if (node.IsKind(VBasic.SyntaxKind.ExponentiateExpression,
                     VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
                     return SyntaxFactory.InvocationExpression(
