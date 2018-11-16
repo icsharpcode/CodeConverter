@@ -176,5 +176,33 @@ End Class" + Environment.NewLine, @"class Class1
     }
 }" + Environment.NewLine);
         }
+
+        [Fact]
+        public void CastConstantNumberToCharacterW()
+        {
+            TestConversionVisualBasicToCSharp(
+                @"Private Sub Test()
+    Dim CR As Char = ChrW(&HD)
+End Sub
+", @"private void Test()
+{
+    char CR = (char)0xD;
+}
+");
+        }
+
+        [Fact]
+        public void CastConstantNumberToCharacter()
+        {
+            TestConversionVisualBasicToCSharp(
+                @"Private Sub Test()
+    Dim CR As Char = Chr(&HD)
+End Sub
+", @"private void Test()
+{
+    char CR = (char)0xD;
+}
+");
+        }
     }
 }

@@ -1371,6 +1371,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
                 var symbolReturnType = symbol?.GetReturnType();
 
+                if (symbol?.ContainingNamespace.MetadataName == "VisualBasic" && TrySubstituteVisualBasicMethod(node, out var csEquivalent)) {
+                    return csEquivalent;
+                }
+
                 if(TryGetElementAccessExpressionToConvert(out var expressionToConvert)) {
                     return SyntaxFactory.ElementAccessExpression(
                         (ExpressionSyntax)expressionToConvert.Accept(TriviaConvertingVisitor),
@@ -1379,7 +1383,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 return SyntaxFactory.InvocationExpression(
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
-                    (ArgumentListSyntax)node.ArgumentList?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ArgumentList()
+                    ConvertArgumentListOrEmpty(node.ArgumentList)
                 );
 
                 bool TryGetElementAccessExpressionToConvert(out VBSyntax.ExpressionSyntax toConvert)
@@ -1400,6 +1404,23 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                     return toConvert != null;
                 }
+            }
+
+            private ArgumentListSyntax ConvertArgumentListOrEmpty(VBSyntax.ArgumentListSyntax argumentListSyntax)
+            {
+                return (ArgumentListSyntax)argumentListSyntax?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ArgumentList();
+            }
+
+            private bool TrySubstituteVisualBasicMethod(VBSyntax.InvocationExpressionSyntax node, out CSharpSyntaxNode cSharpSyntaxNode)
+            {
+                cSharpSyntaxNode = null;
+                var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
+                if (symbol?.Name == "ChrW" || symbol?.Name == "Chr") {
+                    cSharpSyntaxNode = SyntaxFactory.CastExpression(SyntaxFactory.ParseTypeName("char"),
+                        ConvertArguments(node.ArgumentList).Single().Expression);
+                }
+
+                return cSharpSyntaxNode != null;
             }
 
             public override CSharpSyntaxNode VisitSingleLineLambdaExpression(VBSyntax.SingleLineLambdaExpressionSyntax node)
