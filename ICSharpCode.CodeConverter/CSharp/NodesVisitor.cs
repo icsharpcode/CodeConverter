@@ -941,16 +941,21 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitTryCastExpression(VBSyntax.TryCastExpressionSyntax node)
             {
-                return ParenthesizeIfNested(node, SyntaxFactory.BinaryExpression(
+                return ParenthesizeIfPrecedenceCouldChange(node, SyntaxFactory.BinaryExpression(
                     SyntaxKind.AsExpression,
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
                     (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)
                 ));
             }
 
-            private static CSharpSyntaxNode ParenthesizeIfNested(VBSyntax.TryCastExpressionSyntax node, BinaryExpressionSyntax castExpression)
+            private static CSharpSyntaxNode ParenthesizeIfPrecedenceCouldChange(VBasic.VisualBasicSyntaxNode node, ExpressionSyntax expression)
             {
-                return node.Parent is VBSyntax.ExpressionSyntax ? (CSharpSyntaxNode) SyntaxFactory.ParenthesizedExpression(castExpression) : castExpression;
+                return PrecedenceCouldChange(node) ? SyntaxFactory.ParenthesizedExpression(expression) : expression;
+            }
+
+            private static bool PrecedenceCouldChange(VBasic.VisualBasicSyntaxNode node)
+            {
+                return node.Parent is VBSyntax.ExpressionSyntax && !(node.Parent is VBSyntax.ArgumentSyntax);
             }
 
             public override CSharpSyntaxNode VisitLiteralExpression(VBSyntax.LiteralExpressionSyntax node)
@@ -1270,7 +1275,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     (ExpressionSyntax)node.WhenFalse.Accept(TriviaConvertingVisitor)
                 );
 
-                if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation))
+                if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || PrecedenceCouldChange(node))
                     return SyntaxFactory.ParenthesizedExpression(expr);
 
                 return expr;

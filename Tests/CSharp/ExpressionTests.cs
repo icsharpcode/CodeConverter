@@ -395,6 +395,38 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void ConditionalExpressionInUnaryExpression()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod(ByVal str As String)
+        Dim result As Boolean = Not If((str = """"), True, False)
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod(string str)
+    {
+        bool result = !((str == """") ? true : false);
+    }
+}");
+        }
+
+        [Fact]
+        public void ConditionalExpressionInBinaryExpression()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod(ByVal str As String)
+        Dim result As Integer = 5 - If((str = """"), 1, 2)
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod(string str)
+    {
+        int result = 5 - ((str == """") ? 1 : 2);
+    }
+}");
+        }
+
+        [Fact]
         public void NullCoalescingExpression()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -1250,7 +1282,7 @@ End Function",
 End Function",
                 @"public bool GetString(bool yourBoolean)
 {
-    return 1 != 1 || yourBoolean ? true : false;
+    return 1 != 1 || (yourBoolean ? true : false);
 }");
         }
 
