@@ -120,7 +120,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     IdentifierNameSyntax rootNamespaceIdentifier)
             {
                 if (memberDeclarations.Count == 1 && memberDeclarations.First() is NamespaceDeclarationSyntax nsDecl) {
-                    return new [] { nsDecl.WithName(PrependName(nsDecl.Name, rootNamespaceIdentifier)) };
+                    return memberDeclarations;
                 }
 
                 var newNamespaceDecl = (MemberDeclarationSyntax)SyntaxFactory.NamespaceDeclaration(rootNamespaceIdentifier)
