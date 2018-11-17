@@ -12,6 +12,13 @@ namespace CodeConverter.Tests
     public class ConverterTestBase
     {
         private bool _testCstoVBCommentsByDefault = false;
+        private readonly string _rootNamespace;
+
+        public ConverterTestBase(string rootNamespace = null)
+        {
+            _rootNamespace = rootNamespace;
+        }
+
         public void TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false)
         {
             expectedVisualBasicCode = AddSurroundingMethodBlock(expectedVisualBasicCode, expectSurroundingMethodBlock);
@@ -33,7 +40,7 @@ End Sub";
             return expectedVisualBasicCode;
         }
 
-        private static void TestConversionCSharpToVisualBasicWithoutComments(string csharpCode, string expectedVisualBasicCode)
+        private void TestConversionCSharpToVisualBasicWithoutComments(string csharpCode, string expectedVisualBasicCode)
         {
             AssertConvertedCodeResultEquals<CSToVBConversion>(csharpCode, expectedVisualBasicCode);
         }
@@ -56,10 +63,10 @@ End Sub";
             AssertConvertedCodeResultEquals<VBToCSConversion>(visualBasicCode, expectedCsharpCode);
         }
 
-        private static void AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode) where TLanguageConversion : ILanguageConversion, new()
+        private void AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode) where TLanguageConversion : ILanguageConversion, new()
         {
             var outputNode =
-                ProjectConversion.ConvertText<TLanguageConversion>(inputCode, DefaultReferences.NetStandard2);
+                ProjectConversion.ConvertText<TLanguageConversion>(inputCode, DefaultReferences.NetStandard2, _rootNamespace);
             AssertConvertedCodeResultEquals(outputNode, expectedConvertedCode, inputCode);
         }
 

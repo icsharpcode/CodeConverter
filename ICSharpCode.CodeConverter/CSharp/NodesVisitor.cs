@@ -100,45 +100,41 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var importsClauses = options.GlobalImports.Select(gi => gi.Clause).Concat(node.Imports.SelectMany(imp => imp.ImportsClauses)).ToList();
 
                 var attributes = SyntaxFactory.List(node.Attributes.SelectMany(a => a.AttributeLists).SelectMany(ConvertAttribute));
-                var convertedMembers = node.Members.Select(m => (MemberDeclarationSyntax)m.Accept(TriviaConvertingVisitor)).ToReadOnlyCollection();
-                if (!string.IsNullOrEmpty(options.RootNamespace))
-                {
-                    var rootNamespaceIdentifier = SyntaxFactory.IdentifierName(options.RootNamespace);
-                    convertedMembers = PrependRootNamespace(convertedMembers, rootNamespaceIdentifier);
-                }
+                var sourceAndConverted = node.Members.Select(m => (Source: m, Converted: (MemberDeclarationSyntax)m.Accept(TriviaConvertingVisitor))).ToReadOnlyCollection();
+                var convertedMembers = string.IsNullOrEmpty(options.RootNamespace)
+                    ? sourceAndConverted.Select(sd => sd.Converted)
+                    : PrependRootNamespace(sourceAndConverted, SyntaxFactory.IdentifierName(options.RootNamespace));
 
+                var usingDirectiveSyntax = importsClauses.GroupBy(c => c.ToString()).Select(g => g.First())
+                    .Select(c => (UsingDirectiveSyntax)c.Accept(TriviaConvertingVisitor));
                 return SyntaxFactory.CompilationUnit(
                     SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
-                    SyntaxFactory.List(importsClauses.GroupBy(c => c.ToString()).Select(g => g.First()).Select(c => (UsingDirectiveSyntax)c.Accept(TriviaConvertingVisitor))),
+                    SyntaxFactory.List(usingDirectiveSyntax),
                     attributes,
                     SyntaxFactory.List(convertedMembers)
                 );
             }
 
             private IReadOnlyCollection<MemberDeclarationSyntax> PrependRootNamespace(
-                    IReadOnlyCollection<MemberDeclarationSyntax> memberDeclarations,
+                    IReadOnlyCollection<(VBSyntax.StatementSyntax VbNode, MemberDeclarationSyntax CsNode)> memberConversion,
                     IdentifierNameSyntax rootNamespaceIdentifier)
             {
-                if (memberDeclarations.Count == 1 && memberDeclarations.First() is NamespaceDeclarationSyntax nsDecl) {
-                    return memberDeclarations;
+                var inGlobalNamespace = memberConversion
+                    .ToLookup(m => IsNamespaceDeclarationInGlobalScope(m.VbNode), m => m.CsNode);
+                var members = inGlobalNamespace[true].ToList();
+                if (inGlobalNamespace[false].Any()) {
+                    var newNamespaceDecl = (MemberDeclarationSyntax)SyntaxFactory.NamespaceDeclaration(rootNamespaceIdentifier)
+                        .WithMembers(SyntaxFactory.List(inGlobalNamespace[false]));
+                    members.Add(newNamespaceDecl);
                 }
-
-                var newNamespaceDecl = (MemberDeclarationSyntax)SyntaxFactory.NamespaceDeclaration(rootNamespaceIdentifier)
-                        .WithMembers(SyntaxFactory.List(memberDeclarations));
-                return new [] { newNamespaceDecl };
+                return members;
             }
 
-            private NameSyntax PrependName(NameSyntax name, IdentifierNameSyntax toPrepend)
+            private bool IsNamespaceDeclarationInGlobalScope(VBSyntax.StatementSyntax m)
             {
-                if (name is IdentifierNameSyntax identName) {
-                    return SyntaxFactory.QualifiedName(toPrepend, identName);
-                }
-                else if (name is QualifiedNameSyntax qName) {
-                    return SyntaxFactory.QualifiedName(PrependName(qName.Left, toPrepend), qName.Right);
-                }
-                else {
-                    throw new ArgumentOutOfRangeException(nameof(name), name, $"{name.GetType().Name} of kind {name.Kind()} not expected within namespace declaration");
-                }
+                if (!(m is VBSyntax.NamespaceBlockSyntax nss)) return false;
+                if (!(_semanticModel.GetSymbolInfo(nss.NamespaceStatement.Name).Symbol is INamespaceSymbol nsSymbol)) return false;
+                return nsSymbol.ContainingNamespace.IsGlobalNamespace;
             }
 
             public override CSharpSyntaxNode VisitSimpleImportsClause(VBSyntax.SimpleImportsClauseSyntax node)

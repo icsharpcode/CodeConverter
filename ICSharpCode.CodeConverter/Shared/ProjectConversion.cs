@@ -35,9 +35,11 @@ namespace ICSharpCode.CodeConverter.Shared
             languageConversion.Initialize(convertedCompilation.RemoveAllSyntaxTrees());
         }
 
-        public static ConversionResult ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references) where TLanguageConversion : ILanguageConversion, new()
+        public static ConversionResult ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null) where TLanguageConversion : ILanguageConversion, new()
         {
-            var languageConversion = new TLanguageConversion();
+            var languageConversion = new TLanguageConversion {
+                RootNamespace = rootNamespace
+            };
             var syntaxTree = languageConversion.CreateTree(text);
             var compilation = languageConversion.CreateCompilationFromTree(syntaxTree, references);
             return ConvertSingle(compilation, syntaxTree, new TextSpan(0, 0), new TLanguageConversion()).GetAwaiter().GetResult();

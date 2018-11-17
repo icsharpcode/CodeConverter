@@ -22,6 +22,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         IReadOnlyCollection<(string, string)> GetProjectTypeGuidMappings();
         IEnumerable<(string, string)> GetProjectFileReplacementRegexes();
         string TargetLanguage { get; }
+        string RootNamespace { get; set; }
         void Initialize(Compilation convertedCompilation);
         string PostTransformProjectFile(string s);
     }

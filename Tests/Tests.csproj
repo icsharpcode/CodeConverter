@@ -152,6 +152,7 @@
     </Compile>
     <Compile Include="ConverterTestBase.cs" />
     <Compile Include="CSharp\MissingSemanticModelInfo\ExpressionTests.cs" />
+    <Compile Include="CSharp\RootNamespaceTests.cs" />
     <Compile Include="CSharp\SolutionAndProjectTests.cs" />
     <Compile Include="CSharp\StandaloneMultiStatementTests.cs" />
     <Compile Include="CSharp\ExpressionTests.cs" />
