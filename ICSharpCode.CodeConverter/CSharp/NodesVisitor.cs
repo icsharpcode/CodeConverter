@@ -1041,6 +1041,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                         return SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
                     }
                     left = SyntaxFactory.IdentifierName(_withBlockTempVariableNames.Peek());
+                } else if (TryGetTypePromotedModuleSymbol(node, out var promotedModuleSymbol)) {
+                    left = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left,
+                        SyntaxFactory.IdentifierName(promotedModuleSymbol.Name));
                 }
 
                 if (node.Expression.IsKind(VBasic.SyntaxKind.GlobalName)) {
@@ -1054,6 +1057,22 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 return memberAccessExpressionSyntax;
+            }
+
+            /// <remarks>https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/declared-elements/type-promotion</remarks>
+            private bool TryGetTypePromotedModuleSymbol(VBSyntax.MemberAccessExpressionSyntax node, out INamedTypeSymbol moduleSymbol)
+            {
+                if (_semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch() is INamespaceSymbol
+                        expressionSymbol &&
+                    _semanticModel.GetSymbolInfo(node.Name).ExtractBestMatch().ContainingSymbol is INamedTypeSymbol
+                        nameContainingSymbol &&
+                    nameContainingSymbol.ContainingSymbol.Equals(expressionSymbol)) {
+                    moduleSymbol = nameContainingSymbol;
+                    return true;
+                }
+
+                moduleSymbol = null;
+                return false;
             }
 
             private static bool IsSubPartOfConditionalAccess(VBSyntax.MemberAccessExpressionSyntax node)

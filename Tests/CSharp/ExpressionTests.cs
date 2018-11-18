@@ -1169,6 +1169,39 @@ End Class", @"class TestClass
     }
 }");
         }
+
+        [Fact]
+        public void TypePromotedModuleIsQualified()
+        {
+            TestConversionVisualBasicToCSharp(@"Namespace TestNamespace
+    Public Module TestModule
+        Public Sub ModuleFunction()
+        End Sub
+    End Module
+End Namespace
+
+Class TestClass
+    Public Sub TestMethod(dir As String)
+        TestNamespace.ModuleFunction()
+    End Sub
+End Class", @"namespace TestNamespace
+{
+    public static class TestModule
+    {
+        public static void ModuleFunction()
+        {
+        }
+    }
+}
+
+class TestClass
+{
+    public void TestMethod(string dir)
+    {
+        TestNamespace.TestModule.ModuleFunction();
+    }
+}");
+        }
         
         [Fact]
         public void NameQualifyingHandlesInheritance()
