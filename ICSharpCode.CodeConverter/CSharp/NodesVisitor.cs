@@ -7,6 +7,7 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using SyntaxToken = Microsoft.CodeAnalysis.SyntaxToken;
@@ -821,16 +822,31 @@ namespace ICSharpCode.CodeConverter.CSharp
                         returnType = arrayType.WithElementType(SyntaxFactory.NullableType(arrayType.ElementType));
                     }
                 }
-                EqualsValueClauseSyntax @default = null;
-                if (node.Default != null) {
-                    @default = SyntaxFactory.EqualsValueClause((ExpressionSyntax)node.Default?.Value.Accept(TriviaConvertingVisitor));
-                }
+
                 var attributes = node.AttributeLists.SelectMany(ConvertAttribute).ToList();
                 int outAttributeIndex = attributes.FindIndex(a => a.Attributes.Single().Name.ToString() == "Out");
                 var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Local);
                 if (outAttributeIndex > -1) {
                     attributes.RemoveAt(outAttributeIndex);
                     modifiers = modifiers.Replace(SyntaxFactory.Token(SyntaxKind.RefKeyword), SyntaxFactory.Token(SyntaxKind.OutKeyword));
+                }
+                
+                EqualsValueClauseSyntax @default = null;
+                if (node.Default != null) {
+                    if (node.Default.Value is VBSyntax.LiteralExpressionSyntax les && les.Token.Value is DateTime dt)
+                    {
+                        var dateTimeAsLongCsLiteral = CommonConversions.GetLiteralExpression(dt.Ticks, dt.Ticks + "L");
+                        var dateTimeArg = CommonConversions.CreateAttributeArgumentList(SyntaxFactory.AttributeArgument(dateTimeAsLongCsLiteral));
+                        var optionalDateTimeAttributes = new[] {
+                            SyntaxFactory.Attribute(SyntaxFactory.ParseName("System.Runtime.InteropServices.Optional")),
+                            SyntaxFactory.Attribute(SyntaxFactory.ParseName("System.Runtime.CompilerServices.DateTimeConstant"), dateTimeArg)
+                        };
+                        attributes.Insert(0,
+                            SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(optionalDateTimeAttributes)));
+                    } else {
+                        @default = SyntaxFactory.EqualsValueClause(
+                            (ExpressionSyntax)node.Default.Value.Accept(TriviaConvertingVisitor));
+                    }
                 }
 
                 if (node.Parent.Parent is VBSyntax.MethodStatementSyntax mss

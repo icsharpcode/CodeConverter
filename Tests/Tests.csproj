@@ -151,6 +151,7 @@
       <Link>DefaultReferences.cs</Link>
     </Compile>
     <Compile Include="ConverterTestBase.cs" />
+    <Compile Include="CSharp\LinqExpressionTests.cs" />
     <Compile Include="CSharp\MissingSemanticModelInfo\ExpressionTests.cs" />
     <Compile Include="CSharp\RootNamespaceTests.cs" />
     <Compile Include="CSharp\SolutionAndProjectTests.cs" />

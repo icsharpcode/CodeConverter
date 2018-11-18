@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -182,6 +183,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (value is char)
                 return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal((char)value));
+
+            if (value is DateTime dt) {
+                var valueToOutput = dt.Date.Equals(dt) ? dt.ToString("yyyy-MM-dd") : dt.ToString("yyyy-MM-dd HH:mm:ss");
+                return SyntaxFactory.ParseExpression("DateTime.Parse(\"" + valueToOutput + "\")");
+            }
 
 
             throw new ArgumentOutOfRangeException(nameof(value), value, null);
