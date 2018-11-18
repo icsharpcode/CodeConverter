@@ -145,6 +145,18 @@ End Enum");
         }
 
         [Fact]
+        public void TestEnumWithExplicitBaseType()
+        {
+            TestConversionCSharpToVisualBasic(
+    @"public enum ExceptionResource : byte
+{
+    Argument_ImplementIComparable
+}", @"Public Enum ExceptionResource As Byte
+    Argument_ImplementIComparable
+End Enum");
+        }
+
+        [Fact]
         public void TestClassInheritanceList()
         {
             TestConversionCSharpToVisualBasic(

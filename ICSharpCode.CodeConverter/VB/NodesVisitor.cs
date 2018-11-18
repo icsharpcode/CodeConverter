@@ -263,7 +263,8 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitEnumDeclaration(CSS.EnumDeclarationSyntax node)
         {
             var members = node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor));
-            var baseType = (TypeSyntax)node.BaseList?.Types.Single().Accept(TriviaConvertingVisitor);
+            var baseType = (TypeSyntax)node.BaseList?
+                .Types.OfType<CSS.SimpleBaseTypeSyntax>().Single().Type.Accept(TriviaConvertingVisitor);
             return SyntaxFactory.EnumBlock(
                 SyntaxFactory.EnumStatement(
                     SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CommonConversions.ConvertModifiers(node.Modifiers), CommonConversions.ConvertIdentifier(node.Identifier),
