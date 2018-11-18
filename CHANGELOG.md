@@ -1,6 +1,26 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
+# 6.2.0 19/11/2018
+
+### VB -> C#
+
+* Fix array indexing from outside a class
+* Escape double quotes with string interpolation
+* Converts date literals
+* Converts ChrW and Chr
+* Converts type promoted module members
+* Converts EntryPoint and Charset for native functions
+* Converts WriteOnly interface properties
+* Converts "Integer?" to int?
+* Converts property setters with parameters not named "value"
+* Fixed bug causing duplicate namespace qualification
+* Parenthesizes ternary conditional when necessary to preserve logic
+
+### C# -> VB
+
+* Convert enums with explicit base type
+
 # 6.1.0 - 12/10/2018
 
 ### VB -> C#
