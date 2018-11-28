@@ -21,6 +21,7 @@ namespace ICSharpCode.CodeConverter.VB
     {
         private Compilation _sourceCompilation;
         private VisualBasicCompilation _convertedCompilation;
+        public string RootNamespace { get; set; }
 
         public void Initialize(Compilation convertedCompilation)
         {

@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using SyntaxToken = Microsoft.CodeAnalysis.SyntaxToken;
@@ -99,45 +101,41 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var importsClauses = options.GlobalImports.Select(gi => gi.Clause).Concat(node.Imports.SelectMany(imp => imp.ImportsClauses)).ToList();
 
                 var attributes = SyntaxFactory.List(node.Attributes.SelectMany(a => a.AttributeLists).SelectMany(ConvertAttribute));
-                var convertedMembers = node.Members.Select(m => (MemberDeclarationSyntax)m.Accept(TriviaConvertingVisitor)).ToReadOnlyCollection();
-                if (!string.IsNullOrEmpty(options.RootNamespace))
-                {
-                    var rootNamespaceIdentifier = SyntaxFactory.IdentifierName(options.RootNamespace);
-                    convertedMembers = PrependRootNamespace(convertedMembers, rootNamespaceIdentifier);
-                }
+                var sourceAndConverted = node.Members.Select(m => (Source: m, Converted: (MemberDeclarationSyntax)m.Accept(TriviaConvertingVisitor))).ToReadOnlyCollection();
+                var convertedMembers = string.IsNullOrEmpty(options.RootNamespace)
+                    ? sourceAndConverted.Select(sd => sd.Converted)
+                    : PrependRootNamespace(sourceAndConverted, SyntaxFactory.IdentifierName(options.RootNamespace));
 
+                var usingDirectiveSyntax = importsClauses.GroupBy(c => c.ToString()).Select(g => g.First())
+                    .Select(c => (UsingDirectiveSyntax)c.Accept(TriviaConvertingVisitor));
                 return SyntaxFactory.CompilationUnit(
                     SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
-                    SyntaxFactory.List(importsClauses.GroupBy(c => c.ToString()).Select(g => g.First()).Select(c => (UsingDirectiveSyntax)c.Accept(TriviaConvertingVisitor))),
+                    SyntaxFactory.List(usingDirectiveSyntax),
                     attributes,
                     SyntaxFactory.List(convertedMembers)
                 );
             }
 
             private IReadOnlyCollection<MemberDeclarationSyntax> PrependRootNamespace(
-                    IReadOnlyCollection<MemberDeclarationSyntax> memberDeclarations,
+                    IReadOnlyCollection<(VBSyntax.StatementSyntax VbNode, MemberDeclarationSyntax CsNode)> memberConversion,
                     IdentifierNameSyntax rootNamespaceIdentifier)
             {
-                if (memberDeclarations.Count == 1 && memberDeclarations.First() is NamespaceDeclarationSyntax nsDecl) {
-                    return new [] { nsDecl.WithName(PrependName(nsDecl.Name, rootNamespaceIdentifier)) };
+                var inGlobalNamespace = memberConversion
+                    .ToLookup(m => IsNamespaceDeclarationInGlobalScope(m.VbNode), m => m.CsNode);
+                var members = inGlobalNamespace[true].ToList();
+                if (inGlobalNamespace[false].Any()) {
+                    var newNamespaceDecl = (MemberDeclarationSyntax)SyntaxFactory.NamespaceDeclaration(rootNamespaceIdentifier)
+                        .WithMembers(SyntaxFactory.List(inGlobalNamespace[false]));
+                    members.Add(newNamespaceDecl);
                 }
-
-                var newNamespaceDecl = (MemberDeclarationSyntax)SyntaxFactory.NamespaceDeclaration(rootNamespaceIdentifier)
-                        .WithMembers(SyntaxFactory.List(memberDeclarations));
-                return new [] { newNamespaceDecl };
+                return members;
             }
 
-            private NameSyntax PrependName(NameSyntax name, IdentifierNameSyntax toPrepend)
+            private bool IsNamespaceDeclarationInGlobalScope(VBSyntax.StatementSyntax m)
             {
-                if (name is IdentifierNameSyntax identName) {
-                    return SyntaxFactory.QualifiedName(toPrepend, identName);
-                }
-                else if (name is QualifiedNameSyntax qName) {
-                    return SyntaxFactory.QualifiedName(PrependName(qName.Left, toPrepend), qName.Right);
-                }
-                else {
-                    throw new ArgumentOutOfRangeException(nameof(name), name, $"{name.GetType().Name} of kind {name.Kind()} not expected within namespace declaration");
-                }
+                if (!(m is VBSyntax.NamespaceBlockSyntax nss)) return false;
+                if (!(_semanticModel.GetSymbolInfo(nss.NamespaceStatement.Name).Symbol is INamespaceSymbol nsSymbol)) return false;
+                return nsSymbol.ContainingNamespace.IsGlobalNamespace;
             }
 
             public override CSharpSyntaxNode VisitSimpleImportsClause(VBSyntax.SimpleImportsClauseSyntax node)
@@ -758,10 +756,20 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitDeclareStatement(VBSyntax.DeclareStatementSyntax node)
             {
+                var importAttributes = new List<AttributeArgumentSyntax>();
                 var dllImportAttributeName = SyntaxFactory.ParseName("System.Runtime.InteropServices.DllImport");
                 var dllImportLibLiteral = node.LibraryName.Accept(TriviaConvertingVisitor);
+                importAttributes.Add(SyntaxFactory.AttributeArgument((ExpressionSyntax)dllImportLibLiteral));
 
-                var attributeArguments = CommonConversions.CreateAttributeArgumentList(SyntaxFactory.AttributeArgument((ExpressionSyntax) dllImportLibLiteral));
+                if (node.AliasName != null) {
+                    importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("EntryPoint"), null, (ExpressionSyntax) node.AliasName.Accept(TriviaConvertingVisitor)));
+                }
+
+                if (!node.CharsetKeyword.IsKind(SyntaxKind.None)) {
+                    importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("CharSet"), null, SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.ParseTypeName(typeof(CharSet).FullName), SyntaxFactory.IdentifierName(node.CharsetKeyword.Text))));
+                }
+
+                var attributeArguments = CommonConversions.CreateAttributeArgumentList(importAttributes.ToArray());
                 var dllImportAttributeList = SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Attribute(dllImportAttributeName, attributeArguments)));
 
                 var attributeLists = ConvertAttributes(node.AttributeLists).Add(dllImportAttributeList);
@@ -814,16 +822,31 @@ namespace ICSharpCode.CodeConverter.CSharp
                         returnType = arrayType.WithElementType(SyntaxFactory.NullableType(arrayType.ElementType));
                     }
                 }
-                EqualsValueClauseSyntax @default = null;
-                if (node.Default != null) {
-                    @default = SyntaxFactory.EqualsValueClause((ExpressionSyntax)node.Default?.Value.Accept(TriviaConvertingVisitor));
-                }
+
                 var attributes = node.AttributeLists.SelectMany(ConvertAttribute).ToList();
                 int outAttributeIndex = attributes.FindIndex(a => a.Attributes.Single().Name.ToString() == "Out");
                 var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Local);
                 if (outAttributeIndex > -1) {
                     attributes.RemoveAt(outAttributeIndex);
                     modifiers = modifiers.Replace(SyntaxFactory.Token(SyntaxKind.RefKeyword), SyntaxFactory.Token(SyntaxKind.OutKeyword));
+                }
+                
+                EqualsValueClauseSyntax @default = null;
+                if (node.Default != null) {
+                    if (node.Default.Value is VBSyntax.LiteralExpressionSyntax les && les.Token.Value is DateTime dt)
+                    {
+                        var dateTimeAsLongCsLiteral = CommonConversions.GetLiteralExpression(dt.Ticks, dt.Ticks + "L");
+                        var dateTimeArg = CommonConversions.CreateAttributeArgumentList(SyntaxFactory.AttributeArgument(dateTimeAsLongCsLiteral));
+                        var optionalDateTimeAttributes = new[] {
+                            SyntaxFactory.Attribute(SyntaxFactory.ParseName("System.Runtime.InteropServices.Optional")),
+                            SyntaxFactory.Attribute(SyntaxFactory.ParseName("System.Runtime.CompilerServices.DateTimeConstant"), dateTimeArg)
+                        };
+                        attributes.Insert(0,
+                            SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(optionalDateTimeAttributes)));
+                    } else {
+                        @default = SyntaxFactory.EqualsValueClause(
+                            (ExpressionSyntax)node.Default.Value.Accept(TriviaConvertingVisitor));
+                    }
                 }
 
                 if (node.Parent.Parent is VBSyntax.MethodStatementSyntax mss
@@ -948,16 +971,21 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitTryCastExpression(VBSyntax.TryCastExpressionSyntax node)
             {
-                return ParenthesizeIfNested(node, SyntaxFactory.BinaryExpression(
+                return ParenthesizeIfPrecedenceCouldChange(node, SyntaxFactory.BinaryExpression(
                     SyntaxKind.AsExpression,
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
                     (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)
                 ));
             }
 
-            private static CSharpSyntaxNode ParenthesizeIfNested(VBSyntax.TryCastExpressionSyntax node, BinaryExpressionSyntax castExpression)
+            private static CSharpSyntaxNode ParenthesizeIfPrecedenceCouldChange(VBasic.VisualBasicSyntaxNode node, ExpressionSyntax expression)
             {
-                return node.Parent is VBSyntax.ExpressionSyntax ? (CSharpSyntaxNode) SyntaxFactory.ParenthesizedExpression(castExpression) : castExpression;
+                return PrecedenceCouldChange(node) ? SyntaxFactory.ParenthesizedExpression(expression) : expression;
+            }
+
+            private static bool PrecedenceCouldChange(VBasic.VisualBasicSyntaxNode node)
+            {
+                return node.Parent is VBSyntax.ExpressionSyntax && !(node.Parent is VBSyntax.ArgumentSyntax);
             }
 
             public override CSharpSyntaxNode VisitLiteralExpression(VBSyntax.LiteralExpressionSyntax node)
@@ -1029,6 +1057,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                         return SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
                     }
                     left = SyntaxFactory.IdentifierName(_withBlockTempVariableNames.Peek());
+                } else if (TryGetTypePromotedModuleSymbol(node, out var promotedModuleSymbol)) {
+                    left = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left,
+                        SyntaxFactory.IdentifierName(promotedModuleSymbol.Name));
                 }
 
                 if (node.Expression.IsKind(VBasic.SyntaxKind.GlobalName)) {
@@ -1042,6 +1073,22 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 return memberAccessExpressionSyntax;
+            }
+
+            /// <remarks>https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/declared-elements/type-promotion</remarks>
+            private bool TryGetTypePromotedModuleSymbol(VBSyntax.MemberAccessExpressionSyntax node, out INamedTypeSymbol moduleSymbol)
+            {
+                if (_semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch() is INamespaceSymbol
+                        expressionSymbol &&
+                    _semanticModel.GetSymbolInfo(node.Name).ExtractBestMatch().ContainingSymbol is INamedTypeSymbol
+                        nameContainingSymbol &&
+                    nameContainingSymbol.ContainingSymbol.Equals(expressionSymbol)) {
+                    moduleSymbol = nameContainingSymbol;
+                    return true;
+                }
+
+                moduleSymbol = null;
+                return false;
             }
 
             private static bool IsSubPartOfConditionalAccess(VBSyntax.MemberAccessExpressionSyntax node)
@@ -1277,7 +1324,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     (ExpressionSyntax)node.WhenFalse.Accept(TriviaConvertingVisitor)
                 );
 
-                if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation))
+                if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || PrecedenceCouldChange(node))
                     return SyntaxFactory.ParenthesizedExpression(expr);
 
                 return expr;
@@ -1371,6 +1418,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
                 var symbolReturnType = symbol?.GetReturnType();
 
+                if (symbol?.ContainingNamespace.MetadataName == "VisualBasic" && TrySubstituteVisualBasicMethod(node, out var csEquivalent)) {
+                    return csEquivalent;
+                }
+
                 if(TryGetElementAccessExpressionToConvert(out var expressionToConvert)) {
                     return SyntaxFactory.ElementAccessExpression(
                         (ExpressionSyntax)expressionToConvert.Accept(TriviaConvertingVisitor),
@@ -1379,7 +1430,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 return SyntaxFactory.InvocationExpression(
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
-                    (ArgumentListSyntax)node.ArgumentList?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ArgumentList()
+                    ConvertArgumentListOrEmpty(node.ArgumentList)
                 );
 
                 bool TryGetElementAccessExpressionToConvert(out VBSyntax.ExpressionSyntax toConvert)
@@ -1400,6 +1451,23 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                     return toConvert != null;
                 }
+            }
+
+            private ArgumentListSyntax ConvertArgumentListOrEmpty(VBSyntax.ArgumentListSyntax argumentListSyntax)
+            {
+                return (ArgumentListSyntax)argumentListSyntax?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ArgumentList();
+            }
+
+            private bool TrySubstituteVisualBasicMethod(VBSyntax.InvocationExpressionSyntax node, out CSharpSyntaxNode cSharpSyntaxNode)
+            {
+                cSharpSyntaxNode = null;
+                var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
+                if (symbol?.Name == "ChrW" || symbol?.Name == "Chr") {
+                    cSharpSyntaxNode = SyntaxFactory.CastExpression(SyntaxFactory.ParseTypeName("char"),
+                        ConvertArguments(node.ArgumentList).Single().Expression);
+                }
+
+                return cSharpSyntaxNode != null;
             }
 
             public override CSharpSyntaxNode VisitSingleLineLambdaExpression(VBSyntax.SingleLineLambdaExpressionSyntax node)

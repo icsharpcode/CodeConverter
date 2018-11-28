@@ -20,6 +20,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private Compilation _sourceCompilation;
         private readonly List<SyntaxTree> _secondPassResults = new List<SyntaxTree>();
         private CSharpCompilation _convertedCompilation;
+        public string RootNamespace { get; set; }
 
 
         public void Initialize(Compilation convertedCompilation)
@@ -148,13 +149,14 @@ End Class";
 
         public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
-            var compilation = CreateVisualBasicCompilation(references);
+            var compilation = CreateVisualBasicCompilation(references, RootNamespace);
             return compilation.AddSyntaxTrees(tree);
         }
 
-        public static VisualBasicCompilation CreateVisualBasicCompilation(IEnumerable<MetadataReference> references)
+        public static VisualBasicCompilation CreateVisualBasicCompilation(IEnumerable<MetadataReference> references, string rootNamespace = null)
         {
             var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithRootNamespace(rootNamespace)
                 .WithGlobalImports(GlobalImport.Parse(
                     "System",
                     "System.Collections.Generic",

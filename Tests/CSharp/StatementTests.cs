@@ -616,6 +616,20 @@ public class AcmeClass
 }}");
         }
 
+
+        [Fact]
+        public void DeclareStatementWithAttributes()
+        {
+            TestConversionVisualBasicToCSharp(@"Public Class AcmeClass
+    Friend Declare Ansi Function GetNumDevices Lib ""CP210xManufacturing.dll"" Alias ""CP210x_GetNumDevices"" (ByRef NumDevices As String) As Integer
+End Class"
+                , @"public class AcmeClass
+{
+    [System.Runtime.InteropServices.DllImport(""CP210xManufacturing.dll"", EntryPoint = ""CP210x_GetNumDevices"", CharSet = System.Runtime.InteropServices.CharSet.Ansi)]
+    internal static extern int GetNumDevices(ref string NumDevices);
+}");
+        }
+
         [Fact]
         public void IfStatement()
         {

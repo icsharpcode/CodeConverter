@@ -1,9 +1,11 @@
-﻿using Xunit;
+﻿using System;
+using Xunit;
 
 namespace CodeConverter.Tests.CSharp
 {
     public class NamespaceLevelTests : ConverterTestBase
     {
+
         [Fact]
         public void TestNamespace()
         {
