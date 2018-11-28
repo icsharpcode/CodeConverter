@@ -18,7 +18,7 @@ namespace CodeConverter.Tests.CSharp
             ConvertProjectsWhere<VBToCSConversion>(p => true);
         }
 
-        [Fact(Skip = "https://github.com/icsharpcode/CodeConverter/issues/184")]
+        [Fact]
         public void ConvertSingleProject()
         {
             ConvertProjectsWhere<VBToCSConversion>(p => p.Name == "VisualBasicLibrary");
