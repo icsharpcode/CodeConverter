@@ -12,7 +12,7 @@ namespace CodeConverter.Tests.CSharp
 {
     public class SolutionAndProjectTests : ProjectConverterTestBase
     {
-        [Fact(Skip = "https://github.com/icsharpcode/CodeConverter/issues/184")]
+        [Fact]
         public void ConvertSolution()
         {
             ConvertProjectsWhere<VBToCSConversion>(p => true);
