@@ -1080,7 +1080,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 if (_semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch() is INamespaceSymbol
                         expressionSymbol &&
-                    _semanticModel.GetSymbolInfo(node.Name).ExtractBestMatch().ContainingSymbol is INamedTypeSymbol
+                    _semanticModel.GetSymbolInfo(node.Name).ExtractBestMatch()?.ContainingSymbol is INamedTypeSymbol
                         nameContainingSymbol &&
                     nameContainingSymbol.ContainingSymbol.Equals(expressionSymbol)) {
                     moduleSymbol = nameContainingSymbol;
