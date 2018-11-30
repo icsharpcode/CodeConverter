@@ -94,6 +94,9 @@
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="2.6.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="2.6.1" />
     <PackageReference Include="Microsoft.Composition" Version="1.0.31" />
+    <PackageReference Include="Microsoft.VisualStudio.ComponentModelHost">
+      <Version>15.8.525</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.CoreUtility" Version="15.0.26201" />
     <PackageReference Include="Microsoft.VisualStudio.Editor" Version="15.0.26201" />
     <PackageReference Include="Microsoft.VisualStudio.Imaging" Version="15.0.26201" />
