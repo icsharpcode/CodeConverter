@@ -17,7 +17,7 @@
     <Version>6.2.0</Version>
     <PackageId>ICSharpCode.CodeConverter</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageLicenseUrl>https://github.com/icsharpcode/CodeConverter/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/icsharpcode/CodeConverter/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/icsharpcode/CodeConverter/</RepositoryUrl>
     <PackageTags>Convert Converter Conversion C# CSharp CS VB VB.NET Visual Basic Code Free Roslyn Tool</PackageTags>
