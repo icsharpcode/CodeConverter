@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using NUnit.Engine;
+using NUnit.Engine.Services;
 using Xunit;
 
 namespace CodeConverter.Tests.TestRunners
@@ -13,17 +16,25 @@ namespace CodeConverter.Tests.TestRunners
     {
         public static Dictionary<string, Action> GetTestNamesAndCallbacks(byte[] compiledIL)
         {
-            var assembly = Assembly.Load(compiledIL);
-            return GetTestNamesAndCallbacks(assembly);
-        }
+            string tempAssembly = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".dll");
+            try {
+                File.WriteAllBytes(tempAssembly, compiledIL);
+                // https://github.com/nunit/nunit3-tdnet-adapter/issues/9#issuecomment-239300093
+                using (var testEngine = TestEngineActivator.CreateInstance()) {
+                    var testRunner = testEngine.GetRunner(new TestPackage(tempAssembly));
+                    var tests = testRunner.Explore(TestFilter.Empty);
 
-        public static Dictionary<string, Action> GetTestNamesAndCallbacks(Assembly assembly)
-        {
-            var factMethods = DiscoverFactMethods(assembly);
-            return factMethods.ToDictionary(GetFullName, m => new Action(() => {
-                var instance = Activator.CreateInstance(m.DeclaringType);
-                m.Invoke(instance, null);
-            }));
+                    var assembly = Assembly.Load(compiledIL);
+                    var factMethods = DiscoverFactMethods(assembly);
+                    return factMethods.ToDictionary(GetFullName, m => new Action(() => {
+                        var instance = Activator.CreateInstance(m.DeclaringType);
+                        m.Invoke(instance, null);
+                    }));
+                }
+            } finally {
+                File.Delete(tempAssembly);
+            }
+
         }
 
         private static IEnumerable<MethodInfo> DiscoverFactMethods(Assembly assembly)

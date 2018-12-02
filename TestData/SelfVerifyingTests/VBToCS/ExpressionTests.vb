@@ -1,21 +1,21 @@
 ﻿Imports System
 Imports System.Linq
-Imports Xunit
+Imports NUnit.Framework
 
 Module Program
 
-    Public Class Tests
+    Public Class ExpressionTests
 
-        <Fact>
+        <Test>
         Public Sub TestFloatingPointDivision()
             Dim x = 7 / 2
-            Assert.Equal(x, 3.5)
+            Assert.That(x, [Is].EqualTo(3.5))
         End Sub
 
-        <Fact>
+        <Test>
         Public Sub TestIntegerDivision()
             Dim x = 7 \ 2
-            Assert.Equal(x, 3)
+            Assert.That(x, [Is].EqualTo(3))
         End Sub
 
         ' Message: Error compiling target: CodeConverter.Tests.Compilation.CompilationException: Compilation failed:
