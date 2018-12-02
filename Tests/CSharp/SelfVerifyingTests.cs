@@ -19,9 +19,9 @@ namespace CodeConverter.Tests.CSharp
     public class SelfVerifyingTests : ConverterTestBase
     {
         [Theory, MemberData(nameof(GetVisualBasicToCSharpTestData))]
-        public void VisualBasicToCSharp(Action verifyConvertedTestPasses)
+        public void VisualBasicToCSharp(ExecutableTest verifyConvertedTestPasses)
         {
-            verifyConvertedTestPasses();
+            verifyConvertedTestPasses.Execute();
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace CodeConverter.Tests.CSharp
 
             return runnableTestsInSource.Select(sourceTest =>
                 new object[] {
-                    (Action)(() => {
+                    new ExecutableTest(sourceTest.Key, () => {
                         try {
                             sourceTest.Value();
                         } catch(TargetInvocationException ex) {
