@@ -17,12 +17,17 @@ namespace CodeConverter.Tests.TestRunners
 {
     internal class SelfVerifyingTestFactory
     {
+        /// <summary>
+        /// Returns facts which when executed, ensure the source Fact succeeds, then convert it, and ensure the target Fact succeeds too.
+        /// </summary>
         public static IEnumerable<NamedFact> GetSelfVerifyingFacts<TSourceCompiler, TTargetCompiler, TLanguageConversion>(string testFilepath) 
             where TSourceCompiler : ICompiler, new() where TTargetCompiler : ICompiler, new() where TLanguageConversion : ILanguageConversion, new()
         {
             var sourceFileText = File.ReadAllText(testFilepath);
-            byte[] compiledSource = CompileSource<TSourceCompiler>(sourceFileText);
+            var compiledSource = new TSourceCompiler().AssemblyFromCode(sourceFileText, AdditionalReferences);
             var runnableTestsInSource = XUnitFactDiscoverer.GetNamedFacts(compiledSource).ToList();
+            Assert.NotEmpty(runnableTestsInSource);
+
             return GetSelfVerifyingFacts<TTargetCompiler, TLanguageConversion>(sourceFileText, runnableTestsInSource);
         }
 
@@ -30,7 +35,7 @@ namespace CodeConverter.Tests.TestRunners
                 List<NamedFact> runnableTestsInSource) where TTargetCompiler : ICompiler, new()
             where TLanguageConversion : ILanguageConversion, new()
         {
-            ConversionResult conversionResult = ProjectConversion.ConvertText<TLanguageConversion>(sourceFileText, DefaultReferences.NetStandard2);
+            var conversionResult = ProjectConversion.ConvertText<TLanguageConversion>(sourceFileText, DefaultReferences.NetStandard2);
 
             // Avoid confusing test runner on error, but also avoid calculating multiple times
             var runnableTestsInTarget = new Lazy<Dictionary<string, NamedFact>>(() => GetConvertedNamedFacts<TTargetCompiler, TLanguageConversion>(runnableTestsInSource,
@@ -46,7 +51,7 @@ namespace CodeConverter.Tests.TestRunners
                     catch (TargetInvocationException ex)
                     {
                         throw new XunitException(
-                            $"Error running source version of test \"{sourceFact.Name}\": {(ex.InnerException ?? ex)}");
+                            $"Source test failed, ensure the source is correct for \"{sourceFact.Name}\": {(ex.InnerException ?? ex)}");
                     }
 
                     try
@@ -56,7 +61,7 @@ namespace CodeConverter.Tests.TestRunners
                     catch (TargetInvocationException ex)
                     {
                         throw new XunitException(
-                            $"Error running converted version of test \"{sourceFact.Name}\": {(ex.InnerException ?? ex)}\r\nConverted Code: {conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString()}");
+                            $"Converted test failed, the conversion is incorrect for \"{sourceFact.Name}\": {(ex.InnerException ?? ex)}\r\nConverted Code: {conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString()}");
                     }
                 })
             );
@@ -65,30 +70,11 @@ namespace CodeConverter.Tests.TestRunners
         private static Dictionary<string, NamedFact> GetConvertedNamedFacts<TTargetCompiler, TLanguageConversion>(List<NamedFact> runnableTestsInSource, ConversionResult convertedText)
             where TTargetCompiler : ICompiler, new() where TLanguageConversion : ILanguageConversion, new()
         {
-            byte[] compiledTarget = CompileTarget<TTargetCompiler>(convertedText.ConvertedCode);
+            var compiledTarget = new TTargetCompiler().AssemblyFromCode(convertedText.ConvertedCode, AdditionalReferences);
             var runnableTestsInTarget = XUnitFactDiscoverer.GetNamedFacts(compiledTarget).ToDictionary(f => f.Name);
 
-            Assert.NotEmpty(runnableTestsInSource);
             Assert.Equal(runnableTestsInSource.Select(f => f.Name), runnableTestsInTarget.Keys);
             return runnableTestsInTarget;
-        }
-
-        private static byte[] CompileSource<TCompiler>(string sourceText) where TCompiler : ICompiler, new()
-        {
-            try {
-                return new CompilerFrontend(new TCompiler()).FromString(sourceText, AdditionalReferences);
-            } catch (CompilationException ex) {
-                throw new XunitException($"Error compiling source: {ex}");
-            }
-        }
-
-        private static byte[] CompileTarget<TCompiler>(string targetText) where TCompiler : ICompiler, new()
-        {
-            try {
-                return new CompilerFrontend(new TCompiler()).FromString(targetText, AdditionalReferences);
-            } catch (CompilationException ex) {
-                throw new XunitException($"Error compiling target: {ex}");
-            }
         }
 
         private static IEnumerable<MetadataReference> AdditionalReferences => new List<MetadataReference>()

@@ -157,7 +157,7 @@
       <Link>DefaultReferences.cs</Link>
     </Compile>
     <Compile Include="Compilation\CompilationException.cs" />
-    <Compile Include="Compilation\CompilerFrontend.cs" />
+    <Compile Include="Compilation\CompilerExtensions.cs" />
     <Compile Include="TestRunners\XUnitFactDiscoverer.cs" />
     <Compile Include="TestRunners\ConverterTestBase.cs" />
     <Compile Include="CSharp\NamedFact.cs" />

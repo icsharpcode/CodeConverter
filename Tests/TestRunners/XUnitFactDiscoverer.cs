@@ -13,12 +13,6 @@ namespace CodeConverter.Tests.TestRunners
     /// <remarks>Does not support any other NUnit attributes such as Theory</remarks>
     public static class XUnitFactDiscoverer
     {
-        public static IEnumerable<NamedFact> GetNamedFacts(byte[] compiledIL)
-        {
-            var assembly = Assembly.Load(compiledIL);
-            return GetNamedFacts(assembly);
-        }
-
         public static IEnumerable<NamedFact> GetNamedFacts(Assembly assembly)
         {
             var factMethods = DiscoverFactMethods(assembly);
