@@ -7,6 +7,7 @@ using CodeConverter.Tests.Compilation;
 using CodeConverter.Tests.CSharp;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Xunit;
 using Xunit.Sdk;
@@ -59,9 +60,8 @@ namespace CodeConverter.Tests.TestRunners
 
         private static byte[] CompileSource<TCompiler>(string sourceText) where TCompiler : ICompiler, new()
         {
-            var compiler = new TCompiler();
             try {
-                return compiler.Compile.FromString(sourceText, "SourceAssembly", AdditionalReferences);
+                return new CompilerFrontend(new TCompiler()).FromString(sourceText, AdditionalReferences);
             } catch (CompilationException ex) {
                 throw new XunitException($"Error compiling source: {ex}");
             }
@@ -69,9 +69,8 @@ namespace CodeConverter.Tests.TestRunners
 
         private static byte[] CompileTarget<TCompiler>(string targetText) where TCompiler : ICompiler, new()
         {
-            var compiler = new TCompiler();
             try {
-                return compiler.Compile.FromString(targetText, "TargetAssembly", AdditionalReferences);
+                return new CompilerFrontend(new TCompiler()).FromString(targetText, AdditionalReferences);
             } catch (CompilationException ex) {
                 throw new XunitException($"Error compiling target: {ex}");
             }

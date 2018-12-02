@@ -102,7 +102,7 @@ namespace ICSharpCode.CodeConverter.Shared
         /// </summary>
         private static Compilation GetConvertedCompilation(Compilation compilation, ILanguageConversion languageConversion)
         {
-            return languageConversion is VBToCSConversion ? CSToVBConversion.CreateCSharpCompilation(compilation.References) : (Compilation) VBToCSConversion.CreateVisualBasicCompilation(compilation.References);
+            return languageConversion is VBToCSConversion ? CSharpCompiler.CreateCSharpCompilation(compilation.References) : (Compilation) VisualBasicCompiler.CreateVisualBasicCompilation(compilation.References);
         }
 
         private static Compilation GetConvertedCompilationWithProjectReferences(Project project, ILanguageConversion languageConversion)

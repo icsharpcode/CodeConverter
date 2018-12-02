@@ -1,31 +1,39 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
+using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 
 namespace CodeConverter.Tests.Compilation
 {
     public class CompilerFrontend
     {
-        public Func<string, SyntaxTree> Parse { get; set; }
-        public Func<SyntaxTree, string, IEnumerable<MetadataReference>, Microsoft.CodeAnalysis.Compilation> Compile { get; set; }
+        private readonly ICompiler _compiler;
 
+        public CompilerFrontend(ICompiler compiler)
+        {
+            _compiler = compiler;
+        }
+        
         /// <summary>
         /// Compiles the given source file into an IL byte array.
         /// </summary>
         public byte[] FromFile(string filename, string assemblyName, IEnumerable<MetadataReference> additionalReferences = null)
         {
             string source = File.ReadAllText(filename);
-            return FromString(source, assemblyName, additionalReferences);
+            return FromString(source, additionalReferences);
         }
 
         /// <summary>
         /// Compiles the given string of source code into an IL byte array.
         /// </summary>
-        public byte[] FromString(string code, string assemblyName, IEnumerable<MetadataReference> additionalReferences = null)
+        public byte[] FromString(string code, IEnumerable<MetadataReference> additionalReferences = null)
         {
-            var parsedSyntaxTree = Parse(code);
-            var compilation = Compile(parsedSyntaxTree, assemblyName, additionalReferences);
+            var allReferences = DefaultReferences.NetStandard2.Concat(additionalReferences ?? new List<MetadataReference>());
+            var parsedSyntaxTree = _compiler.CreateTree(code);
+            var compilation = _compiler.CreateCompilationFromTree(parsedSyntaxTree, allReferences);
 
             using (var stream = new MemoryStream())
             {

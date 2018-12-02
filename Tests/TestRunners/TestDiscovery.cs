@@ -20,7 +20,7 @@ namespace CodeConverter.Tests.TestRunners
         public static Dictionary<string, Action> GetTestNamesAndCallbacks(Assembly assembly)
         {
             var factMethods = DiscoverFactMethods(assembly);
-            return factMethods.ToDictionary(m => GetFullName(m), m => new Action(() => {
+            return factMethods.ToDictionary(GetFullName, m => new Action(() => {
                 var instance = Activator.CreateInstance(m.DeclaringType);
                 m.Invoke(instance, null);
             }));

@@ -158,10 +158,7 @@
     </Compile>
     <Compile Include="Compilation\CompilationException.cs" />
     <Compile Include="Compilation\CompilerFrontend.cs" />
-    <Compile Include="Compilation\CSharpCompiler.cs" />
-    <Compile Include="Compilation\ICompiler.cs" />
     <Compile Include="TestRunners\TestDiscovery.cs" />
-    <Compile Include="Compilation\VBCompiler.cs" />
     <Compile Include="TestRunners\ConverterTestBase.cs" />
     <Compile Include="CSharp\ExecutableTest.cs" />
     <Compile Include="CSharp\LinqExpressionTests.cs" />

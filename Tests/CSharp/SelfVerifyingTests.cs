@@ -5,6 +5,7 @@ using Xunit;
 using CodeConverter.Tests.Compilation;
 using System.IO;
 using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.Util;
 
 namespace CodeConverter.Tests.CSharp
 {
@@ -27,7 +28,7 @@ namespace CodeConverter.Tests.CSharp
         public static IEnumerable<object[]> GetVisualBasicToCSharpTestData()
         {
             var testFiles = Directory.GetFiles("../../../TestData/SelfVerifyingTests/VBToCS", "*.vb");
-            return testFiles.SelectMany(SelfVerifyingTestFactory.GetExecutableTests<VBCompiler, CSharpCompiler, VBToCSConversion>)
+            return testFiles.SelectMany(SelfVerifyingTestFactory.GetExecutableTests<VisualBasicCompiler, CSharpCompiler, VBToCSConversion>)
                 .Select(et => new object[] {et});
         }
     }
