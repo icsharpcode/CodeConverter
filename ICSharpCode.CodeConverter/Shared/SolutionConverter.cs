@@ -57,7 +57,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private IEnumerable<ConversionResult> ConvertProject(IEnumerable<(string, string)> projectFileReplacementRegexes, Project project)
         {
             var replacements = _projectReferenceReplacements.Concat(projectFileReplacementRegexes).ToArray();
-            _progress.Report($"Converting {project.Name}, this may take a some time...");
+            _progress.Report($"Converting {project.Name}, this may take some time...");
             return ProjectConversion.ConvertProject(project, _languageConversion, replacements);
         }
 

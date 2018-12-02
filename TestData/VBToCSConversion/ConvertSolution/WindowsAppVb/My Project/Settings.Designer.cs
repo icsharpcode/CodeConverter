@@ -10,6 +10,3 @@ using System.Linq;
 using System.Xml.Linq;
 using System.Threading.Tasks;
 
-namespace WindowsAppVb
-{
-}

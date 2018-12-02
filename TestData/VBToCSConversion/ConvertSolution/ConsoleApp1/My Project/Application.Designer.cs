@@ -1,3 +1,2 @@
-namespace ConsoleApp1
-{
-}
+
+
