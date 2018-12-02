@@ -16,7 +16,7 @@ namespace CodeConverter.Tests.CSharp
     /// Run pairs of xUnit tests in converted code before and after conversion
     /// to verify code conversion did not break the tests.
     /// </summary>
-    public class SelfVerifyingTests : ConverterTestBase
+    public class SelfVerifyingTests
     {
         [Theory, MemberData(nameof(GetVisualBasicToCSharpTestData))]
         public void VisualBasicToCSharp(ExecutableTest verifyConvertedTestPasses)
@@ -48,12 +48,12 @@ namespace CodeConverter.Tests.CSharp
                         try {
                             sourceTest.Value();
                         } catch(TargetInvocationException ex) {
-                            Fail($"Error running source version of test \"{sourceTest.Key}\": {(ex.InnerException ?? ex)}");
+                            throw new XunitException($"Error running source version of test \"{sourceTest.Key}\": {(ex.InnerException ?? ex)}");
                         }
                         try {
                             runnableTestsInTarget[sourceTest.Key]();
                         } catch(TargetInvocationException ex) {
-                            Fail($"Error running converted version of test \"{sourceTest.Key}\": {(ex.InnerException ?? ex)}");
+                            throw new XunitException($"Error running converted version of test \"{sourceTest.Key}\": {(ex.InnerException ?? ex)}");
                         }
                     })
                 }
