@@ -6,6 +6,7 @@ using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
 using Xunit;
+using Xunit.Sdk;
 
 namespace CodeConverter.Tests
 {
@@ -172,5 +173,7 @@ End Sub";
         {
             return line.Contains("Inherits") || line.Contains("Implements");
         }
+
+        public static void Fail(string message) => throw new XunitException(message);
     }
 }

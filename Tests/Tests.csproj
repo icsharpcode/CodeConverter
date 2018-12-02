@@ -156,10 +156,17 @@
     <Compile Include="..\ICSharpCode.CodeConverter\Shared\DefaultReferences.cs">
       <Link>DefaultReferences.cs</Link>
     </Compile>
+    <Compile Include="Compilation\CompilationException.cs" />
+    <Compile Include="Compilation\CompilerFrontend.cs" />
+    <Compile Include="Compilation\CSharpCompiler.cs" />
+    <Compile Include="Compilation\ICompiler.cs" />
+    <Compile Include="Compilation\TestDiscovery.cs" />
+    <Compile Include="Compilation\VBCompiler.cs" />
     <Compile Include="ConverterTestBase.cs" />
     <Compile Include="CSharp\LinqExpressionTests.cs" />
     <Compile Include="CSharp\MissingSemanticModelInfo\ExpressionTests.cs" />
     <Compile Include="CSharp\RootNamespaceTests.cs" />
+    <Compile Include="CSharp\SelfVerifyingTests.cs" />
     <Compile Include="CSharp\SolutionAndProjectTests.cs" />
     <Compile Include="CSharp\StandaloneMultiStatementTests.cs" />
     <Compile Include="CSharp\ExpressionTests.cs" />
@@ -183,4 +190,5 @@
   <ItemGroup>
     <Content Include="Readme.txt" />
   </ItemGroup>
+  <ItemGroup />
 </Project>
