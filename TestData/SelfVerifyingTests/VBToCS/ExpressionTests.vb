@@ -18,6 +18,13 @@ Module Program
             Assert.Equal(x, 3)
         End Sub
 
+        <Fact(Skip := "https://github.com/icsharpcode/CodeConverter/issues/105")>
+        Public Sub EmptyStringEqualityToNull()
+            Dim s As String = ""
+            Dim areEqual As Boolean = s = Nothing
+            Assert.True(areEqual)
+        End Sub
+
         ' Message: Error compiling target: CodeConverter.Tests.Compilation.CompilationException: Compilation failed:
         ' (29,21) Error CS0019 : Operator '/' cannot be applied to operands of type 'decimal' and 'double'
         ' https://github.com/icsharpcode/CodeConverter/issues/202
