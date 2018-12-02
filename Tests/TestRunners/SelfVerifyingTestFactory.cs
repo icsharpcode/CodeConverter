@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using CodeConverter.Tests.Compilation;
 using CodeConverter.Tests.CSharp;
+using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
@@ -16,46 +17,60 @@ namespace CodeConverter.Tests.TestRunners
 {
     internal class SelfVerifyingTestFactory
     {
-        public static IEnumerable<ExecutableTest> GetExecutableTests<TSourceCompiler, TTargetCompiler, TLanguageConversion>(string testFilepath) 
+        public static IEnumerable<NamedFact> GetSelfVerifyingFacts<TSourceCompiler, TTargetCompiler, TLanguageConversion>(string testFilepath) 
             where TSourceCompiler : ICompiler, new() where TTargetCompiler : ICompiler, new() where TLanguageConversion : ILanguageConversion, new()
         {
             var sourceFileText = File.ReadAllText(testFilepath);
             byte[] compiledSource = CompileSource<TSourceCompiler>(sourceFileText);
+            var runnableTestsInSource = XUnitFactDiscoverer.GetNamedFacts(compiledSource).ToList();
+            return GetSelfVerifyingFacts<TTargetCompiler, TLanguageConversion>(sourceFileText, runnableTestsInSource);
+        }
 
-            var conversionResult =
-                ProjectConversion.ConvertText<TLanguageConversion>(sourceFileText, DefaultReferences.NetStandard2);
-            byte[] compiledTarget = CompileTarget<TTargetCompiler>(conversionResult.ConvertedCode);
+        private static IEnumerable<NamedFact> GetSelfVerifyingFacts<TTargetCompiler, TLanguageConversion>(string sourceFileText,
+                List<NamedFact> runnableTestsInSource) where TTargetCompiler : ICompiler, new()
+            where TLanguageConversion : ILanguageConversion, new()
+        {
+            ConversionResult conversionResult = ProjectConversion.ConvertText<TLanguageConversion>(sourceFileText, DefaultReferences.NetStandard2);
 
-            Dictionary<string, Action> runnableTestsInSource = TestDiscovery.GetTestNamesAndCallbacks(compiledSource);
-            Dictionary<string, Action> runnableTestsInTarget = TestDiscovery.GetTestNamesAndCallbacks(compiledTarget);
+            // Avoid confusing test runner on error, but also avoid calculating multiple times
+            var runnableTestsInTarget = new Lazy<Dictionary<string, NamedFact>>(() => GetConvertedNamedFacts<TTargetCompiler, TLanguageConversion>(runnableTestsInSource,
+                conversionResult));
 
-            Assert.NotEmpty(runnableTestsInSource);
-            Assert.Equal(runnableTestsInSource.Keys, runnableTestsInTarget.Keys);
-
-            return runnableTestsInSource.Select(sourceTest =>
-                new ExecutableTest(sourceTest.Key, () =>
+            return runnableTestsInSource.Select(sourceFact =>
+                new NamedFact(sourceFact.Name, () =>
                 {
                     try
                     {
-                        sourceTest.Value();
+                        sourceFact.Execute();
                     }
                     catch (TargetInvocationException ex)
                     {
                         throw new XunitException(
-                            $"Error running source version of test \"{sourceTest.Key}\": {(ex.InnerException ?? ex)}");
+                            $"Error running source version of test \"{sourceFact.Name}\": {(ex.InnerException ?? ex)}");
                     }
 
                     try
                     {
-                        runnableTestsInTarget[sourceTest.Key]();
+                        runnableTestsInTarget.Value[sourceFact.Name].Execute();
                     }
                     catch (TargetInvocationException ex)
                     {
                         throw new XunitException(
-                            $"Error running converted version of test \"{sourceTest.Key}\": {(ex.InnerException ?? ex)}");
+                            $"Error running converted version of test \"{sourceFact.Name}\": {(ex.InnerException ?? ex)}\r\nConverted Code: {conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString()}");
                     }
                 })
             );
+        }
+
+        private static Dictionary<string, NamedFact> GetConvertedNamedFacts<TTargetCompiler, TLanguageConversion>(List<NamedFact> runnableTestsInSource, ConversionResult convertedText)
+            where TTargetCompiler : ICompiler, new() where TLanguageConversion : ILanguageConversion, new()
+        {
+            byte[] compiledTarget = CompileTarget<TTargetCompiler>(convertedText.ConvertedCode);
+            var runnableTestsInTarget = XUnitFactDiscoverer.GetNamedFacts(compiledTarget).ToDictionary(f => f.Name);
+
+            Assert.NotEmpty(runnableTestsInSource);
+            Assert.Equal(runnableTestsInSource.Select(f => f.Name), runnableTestsInTarget.Keys);
+            return runnableTestsInTarget;
         }
 
         private static byte[] CompileSource<TCompiler>(string sourceText) where TCompiler : ICompiler, new()

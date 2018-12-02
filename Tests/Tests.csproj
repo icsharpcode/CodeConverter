@@ -158,9 +158,9 @@
     </Compile>
     <Compile Include="Compilation\CompilationException.cs" />
     <Compile Include="Compilation\CompilerFrontend.cs" />
-    <Compile Include="TestRunners\TestDiscovery.cs" />
+    <Compile Include="TestRunners\XUnitFactDiscoverer.cs" />
     <Compile Include="TestRunners\ConverterTestBase.cs" />
-    <Compile Include="CSharp\ExecutableTest.cs" />
+    <Compile Include="CSharp\NamedFact.cs" />
     <Compile Include="CSharp\LinqExpressionTests.cs" />
     <Compile Include="CSharp\MissingSemanticModelInfo\ExpressionTests.cs" />
     <Compile Include="CSharp\RootNamespaceTests.cs" />

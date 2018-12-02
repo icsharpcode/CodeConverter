@@ -2,25 +2,27 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using CodeConverter.Tests.CSharp;
 using Xunit;
 
 namespace CodeConverter.Tests.TestRunners
 {
     /// <summary>
-    /// Discover and return xUnit tests in given assemblies.
+    /// Discover and return xUnit Facts in given assemblies
     /// </summary>
-    public static class TestDiscovery
+    /// <remarks>Does not support any other NUnit attributes such as Theory</remarks>
+    public static class XUnitFactDiscoverer
     {
-        public static Dictionary<string, Action> GetTestNamesAndCallbacks(byte[] compiledIL)
+        public static IEnumerable<NamedFact> GetNamedFacts(byte[] compiledIL)
         {
             var assembly = Assembly.Load(compiledIL);
-            return GetTestNamesAndCallbacks(assembly);
+            return GetNamedFacts(assembly);
         }
 
-        public static Dictionary<string, Action> GetTestNamesAndCallbacks(Assembly assembly)
+        public static IEnumerable<NamedFact> GetNamedFacts(Assembly assembly)
         {
             var factMethods = DiscoverFactMethods(assembly);
-            return factMethods.ToDictionary(GetFullName, m => new Action(() => {
+            return factMethods.Select(m => new NamedFact(GetFullName(m), () => {
                 var instance = Activator.CreateInstance(m.DeclaringType);
                 m.Invoke(instance, null);
             }));
@@ -29,7 +31,7 @@ namespace CodeConverter.Tests.TestRunners
         private static IEnumerable<MethodInfo> DiscoverFactMethods(Assembly assembly)
         {
             return assembly.GetTypes().SelectMany(t => t.GetMethods())
-                .Where(m => m.GetCustomAttributes(false).Any(a => a is FactAttribute) &&
+                .Where(m => m.GetCustomAttributes(false).Any(a => a is FactAttribute fa && string.IsNullOrWhiteSpace(fa.Skip)) &&
                            !m.GetCustomAttributes(false).Any(a => a is TheoryAttribute));
         }
 

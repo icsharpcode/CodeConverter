@@ -2,9 +2,9 @@
 
 namespace CodeConverter.Tests.CSharp
 {
-    public class ExecutableTest
+    public class NamedFact
     {
-        public ExecutableTest(string name, Action execute)
+        public NamedFact(string name, Action execute)
         {
             Execute = execute;
             Name = name;

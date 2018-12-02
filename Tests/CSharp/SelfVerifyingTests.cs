@@ -16,7 +16,7 @@ namespace CodeConverter.Tests.CSharp
     public class SelfVerifyingTests
     {
         [Theory, MemberData(nameof(GetVisualBasicToCSharpTestData))]
-        public void VisualBasicToCSharp(ExecutableTest verifyConvertedTestPasses)
+        public void VisualBasicToCSharp(NamedFact verifyConvertedTestPasses)
         {
             verifyConvertedTestPasses.Execute();
         }
@@ -28,7 +28,7 @@ namespace CodeConverter.Tests.CSharp
         public static IEnumerable<object[]> GetVisualBasicToCSharpTestData()
         {
             var testFiles = Directory.GetFiles("../../../TestData/SelfVerifyingTests/VBToCS", "*.vb");
-            return testFiles.SelectMany(SelfVerifyingTestFactory.GetExecutableTests<VisualBasicCompiler, CSharpCompiler, VBToCSConversion>)
+            return testFiles.SelectMany(SelfVerifyingTestFactory.GetSelfVerifyingFacts<VisualBasicCompiler, CSharpCompiler, VBToCSConversion>)
                 .Select(et => new object[] {et});
         }
     }
