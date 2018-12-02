@@ -1,4 +1,5 @@
 ﻿using System;
+using CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace CodeConverter.Tests.VB

@@ -8,7 +8,7 @@ using ICSharpCode.CodeConverter.VB;
 using Xunit;
 using Xunit.Sdk;
 
-namespace CodeConverter.Tests
+namespace CodeConverter.Tests.TestRunners
 {
     public class ConverterTestBase
     {

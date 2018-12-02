@@ -4,7 +4,7 @@ Imports Xunit
 
 Module Program
 
-    Public Class ExpressionTests
+    Public Class Tests
 
         <Fact>
         Public Sub TestFloatingPointDivision()

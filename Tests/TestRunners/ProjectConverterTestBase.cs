@@ -10,11 +10,10 @@ using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
-using Microsoft.VisualBasic.FileIO;
 using Xunit;
 using SearchOption = System.IO.SearchOption;
 
-namespace CodeConverter.Tests
+namespace CodeConverter.Tests.TestRunners
 {
     /// <summary>
     /// For all files in the testdata folder relevant to the testname, ensures they match the result of the conversion.
