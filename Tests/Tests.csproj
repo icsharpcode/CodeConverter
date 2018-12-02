@@ -188,6 +188,11 @@
     <Compile Include="VB\TypeCastTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\TestData\**\*.*">
+      <Link>TestData\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="Readme.txt" />
   </ItemGroup>
   <ItemGroup />

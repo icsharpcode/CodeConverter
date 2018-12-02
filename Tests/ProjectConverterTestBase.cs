@@ -140,7 +140,7 @@ namespace CodeConverter.Tests
 
         private static DirectoryInfo GetExpectedResultDirectory<TLanguageConversion>(string testName) where TLanguageConversion : ILanguageConversion, new()
         {
-            var combine = Path.Combine(GetTestDataDirectory(), typeof(TLanguageConversion).Name, testName);
+            var combine = Path.Combine(GetTestDataDirectory(), typeof(TLanguageConversion).Name.Replace("Conversion", "Characterization"), testName);
             return new DirectoryInfo(combine);
         }
 

@@ -30,7 +30,7 @@ namespace CodeConverter.Tests.CSharp
         /// </summary>
         public static IEnumerable<object[]> GetVisualBasicToCSharpTestData()
         {
-            var sourceFileText = File.ReadAllText("../../../TestData/VBToCSConversion/SelfVerifyingTests/SelfVerifyingTest.vb");
+            var sourceFileText = File.ReadAllText("../../../TestData/SelfVerifyingTests/VBToCS/SelfVerifyingTest.vb");
             byte[] compiledSource = CompileSource<VBCompiler>(sourceFileText);
 
             var conversionResult = ProjectConversion.ConvertText<VBToCSConversion>(sourceFileText, DefaultReferences.NetStandard2);
