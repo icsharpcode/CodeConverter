@@ -10,7 +10,7 @@ namespace CodeConverter.Tests.TestRunners
     /// <summary>
     /// Discover and return xUnit Facts in given assemblies
     /// </summary>
-    /// <remarks>Does not support any other NUnit attributes such as Theory</remarks>
+    /// <remarks>Does not support any other xUnit attributes such as Theory</remarks>
     public static class XUnitFactDiscoverer
     {
         public static IEnumerable<NamedFact> GetNamedFacts(Assembly assembly)
