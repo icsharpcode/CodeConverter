@@ -1,4 +1,5 @@
-﻿using ICSharpCode.CodeConverter.VB;
+﻿using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.VB;
 using Xunit;
 
 namespace CodeConverter.Tests.VB

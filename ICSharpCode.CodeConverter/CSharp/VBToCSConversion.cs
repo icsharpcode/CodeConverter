@@ -6,7 +6,6 @@ using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -20,6 +19,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private Compilation _sourceCompilation;
         private readonly List<SyntaxTree> _secondPassResults = new List<SyntaxTree>();
         private CSharpCompilation _convertedCompilation;
+
         public string RootNamespace { get; set; }
 
 
@@ -75,7 +75,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public string TargetLanguage { get; } = LanguageNames.CSharp;
-
+        
         public bool CanBeContainedByMethod(SyntaxNode node)
         {
             return node is VBSyntax.IncompleteMemberSyntax ||
@@ -144,35 +144,12 @@ End Class";
 
         public SyntaxTree CreateTree(string text)
         {
-            return Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.ParseSyntaxTree(SourceText.From(text));
+            return new VisualBasicCompiler(RootNamespace).CreateTree(text);
         }
 
         public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
-            var compilation = CreateVisualBasicCompilation(references, RootNamespace);
-            return compilation.AddSyntaxTrees(tree);
-        }
-
-        public static VisualBasicCompilation CreateVisualBasicCompilation(IEnumerable<MetadataReference> references, string rootNamespace = null)
-        {
-            var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                .WithRootNamespace(rootNamespace)
-                .WithGlobalImports(GlobalImport.Parse(
-                    "System",
-                    "System.Collections.Generic",
-                    "System.Diagnostics",
-                    "System.Globalization",
-                    "System.IO",
-                    "System.Linq",
-                    "System.Reflection",
-                    "System.Runtime.CompilerServices",
-                    "System.Security",
-                    "System.Text",
-                    "System.Threading.Tasks",
-                    "Microsoft.VisualBasic"));
-            var compilation = VisualBasicCompilation.Create("Conversion", references: references)
-                .WithOptions(compilationOptions);
-            return compilation;
+            return new VisualBasicCompiler(RootNamespace).CreateCompilationFromTree(tree, references);
         }
     }
 }

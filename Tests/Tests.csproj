@@ -156,10 +156,16 @@
     <Compile Include="..\ICSharpCode.CodeConverter\Shared\DefaultReferences.cs">
       <Link>DefaultReferences.cs</Link>
     </Compile>
-    <Compile Include="ConverterTestBase.cs" />
+    <Compile Include="Compilation\CompilationException.cs" />
+    <Compile Include="Compilation\CompilerExtensions.cs" />
+    <Compile Include="TestRunners\XUnitFactDiscoverer.cs" />
+    <Compile Include="TestRunners\ConverterTestBase.cs" />
+    <Compile Include="CSharp\NamedFact.cs" />
     <Compile Include="CSharp\LinqExpressionTests.cs" />
     <Compile Include="CSharp\MissingSemanticModelInfo\ExpressionTests.cs" />
     <Compile Include="CSharp\RootNamespaceTests.cs" />
+    <Compile Include="TestRunners\SelfVerifyingTestFactory.cs" />
+    <Compile Include="CSharp\SelfVerifyingTests.cs" />
     <Compile Include="CSharp\SolutionAndProjectTests.cs" />
     <Compile Include="CSharp\StandaloneMultiStatementTests.cs" />
     <Compile Include="CSharp\ExpressionTests.cs" />
@@ -168,7 +174,7 @@
     <Compile Include="CSharp\SpecialConversionTests.cs" />
     <Compile Include="CSharp\StatementTests.cs" />
     <Compile Include="CSharp\TypeCastTests.cs" />
-    <Compile Include="ProjectConverterTestBase.cs" />
+    <Compile Include="TestRunners\ProjectConverterTestBase.cs" />
     <Compile Include="UnicodeNewline.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="VB\ExpressionTests.cs" />
@@ -181,6 +187,12 @@
     <Compile Include="VB\TypeCastTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\TestData\**\*.*">
+      <Link>TestData\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="Readme.txt" />
   </ItemGroup>
+  <ItemGroup />
 </Project>

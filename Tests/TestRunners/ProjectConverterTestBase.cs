@@ -10,11 +10,10 @@ using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
-using Microsoft.VisualBasic.FileIO;
 using Xunit;
 using SearchOption = System.IO.SearchOption;
 
-namespace CodeConverter.Tests
+namespace CodeConverter.Tests.TestRunners
 {
     /// <summary>
     /// For all files in the testdata folder relevant to the testname, ensures they match the result of the conversion.
@@ -72,7 +71,8 @@ namespace CodeConverter.Tests
             Dictionary<string, ConversionResult> conversionResults, DirectoryInfo expectedResultDirectory,
             string originalSolutionDir)
         {
-            AssertSubset(expectedFiles.Select(f => f.FullName.Replace(expectedResultDirectory.FullName, "")), conversionResults.Select(r => r.Key.Replace(originalSolutionDir, "")).Where(x => !x.Contains(@"\obj\")), 
+            AssertSubset(expectedFiles.Select(f => f.FullName.Replace(expectedResultDirectory.FullName, "")), conversionResults.Select(r => r.Key.Replace(originalSolutionDir, ""))
+                    .Where(x => !x.Contains(@"\obj\")), 
                 "Extra unexpected files were converted");
         }
 
@@ -140,7 +140,7 @@ namespace CodeConverter.Tests
 
         private static DirectoryInfo GetExpectedResultDirectory<TLanguageConversion>(string testName) where TLanguageConversion : ILanguageConversion, new()
         {
-            var combine = Path.Combine(GetTestDataDirectory(), typeof(TLanguageConversion).Name, testName);
+            var combine = Path.Combine(GetTestDataDirectory(), typeof(TLanguageConversion).Name.Replace("Conversion", "Characterization"), testName);
             return new DirectoryInfo(combine);
         }
 

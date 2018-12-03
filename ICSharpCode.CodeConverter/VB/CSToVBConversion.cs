@@ -7,10 +7,8 @@ using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
-using CSSyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -134,17 +132,12 @@ namespace ICSharpCode.CodeConverter.VB
 
         public SyntaxTree CreateTree(string text)
         {
-            return CSSyntaxFactory.ParseSyntaxTree(SourceText.From(text));
+            return new CSharpCompiler().CreateTree(text);
         }
 
         public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
-            return CreateCSharpCompilation(references).AddSyntaxTrees(tree);
-        }
-
-        public static CSharpCompilation CreateCSharpCompilation(IEnumerable<MetadataReference> references)
-        {
-            return CSharpCompilation.Create("Conversion", references: references, options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            return new CSharpCompiler().CreateCompilationFromTree(tree, references);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using CodeConverter.Tests.TestRunners;
+using Xunit;
 
 namespace CodeConverter.Tests.CSharp.MissingSemanticModelInfo
 {
