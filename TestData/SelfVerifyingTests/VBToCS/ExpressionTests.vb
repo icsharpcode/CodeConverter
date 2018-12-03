@@ -23,14 +23,6 @@ Module Program
             Dim x = 7D / 2D
             Assert.Equal(x, 3.5D)
         End Sub
-        
-        <Fact>
-        Public Sub TestIntegerDivisionOfChars()
-            Dim x As Char = 7
-            Dim y As Char = 2
-            Dim z = x / y
-            Assert.Equal(x, 3)
-        End Sub
 
         <Fact(Skip := "https://github.com/icsharpcode/CodeConverter/issues/105")>
         Public Sub EmptyStringEqualityToNull()
