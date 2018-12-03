@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Options;
 using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.CodeAnalysis.Text;
+using SpecialType = Microsoft.CodeAnalysis.SpecialType;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 
@@ -85,10 +86,28 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsIntegralType(this Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax e, SemanticModel semanticModel)
         {
-            return new string[]{ "System.SByte", "System.Byte",
-                                 "System.Int16", "System.UInt16",
-                                 "System.Int32", "System.UInt32",
-                                 "System.Int64", "System.UInt64" }.Contains(semanticModel.GetTypeInfo(e).Type?.GetFullMetadataName());
+            return IsIntegralType(semanticModel.GetTypeInfo(e).Type?.SpecialType);
+        }
+
+        /// <summary>
+        /// https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/integral-types-table
+        /// </summary>
+        private static bool IsIntegralType(SpecialType? specialType)
+        {
+            switch (specialType)
+            {
+                case SpecialType.System_SByte:
+                case SpecialType.System_Byte:
+                case SpecialType.System_Int16:
+                case SpecialType.System_UInt16:
+                case SpecialType.System_Int32:
+                case SpecialType.System_UInt32:
+                case SpecialType.System_Int64:
+                case SpecialType.System_UInt64:
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }
