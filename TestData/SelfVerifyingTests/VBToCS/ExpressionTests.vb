@@ -7,14 +7,28 @@ Module Program
     Public Class Tests
 
         <Fact>
-        Public Sub TestFloatingPointDivision()
+        Public Sub TestFloatingPointDivisionOfIntegers()
             Dim x = 7 / 2
             Assert.Equal(x, 3.5)
         End Sub
 
         <Fact>
-        Public Sub TestIntegerDivision()
+        Public Sub TestIntegerDivisionOfIntegers()
             Dim x = 7 \ 2
+            Assert.Equal(x, 3)
+        End Sub
+
+        <Fact>
+        Public Sub TestDecimalDivisionOfDecimals()
+            Dim x = 7D / 2D
+            Assert.Equal(x, 3.5D)
+        End Sub
+        
+        <Fact>
+        Public Sub TestIntegerDivisionOfChars()
+            Dim x As Char = 7
+            Dim y As Char = 2
+            Dim z = x / y
             Assert.Equal(x, 3)
         End Sub
 
@@ -24,16 +38,6 @@ Module Program
             Dim areEqual As Boolean = s = Nothing
             Assert.True(areEqual)
         End Sub
-
-        ' Message: Error compiling target: CodeConverter.Tests.Compilation.CompilationException: Compilation failed:
-        ' (29,21) Error CS0019 : Operator '/' cannot be applied to operands of type 'decimal' and 'double'
-        ' https://github.com/icsharpcode/CodeConverter/issues/202
-        '<Fact>
-        'Public Sub TestDecimalDivision()
-        '   Dim x = 7D / 2D
-        '   Assert.Equal(x, 3.5D)
-        'End Sub
-
     End Class
 
 End Module
