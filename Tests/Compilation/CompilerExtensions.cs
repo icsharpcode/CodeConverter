@@ -14,9 +14,10 @@ namespace CodeConverter.Tests.Compilation
         /// <summary>
         /// Compiles the given string of source code into an IL byte array.
         /// </summary>
-        public static Assembly AssemblyFromCode(this ICompiler compiler, string code, IEnumerable<MetadataReference> additionalReferences = null)
+        /// <remarks>The transitive closure of the references for <paramref name="requiredAssemblies"/> are added.</remarks>
+        public static Assembly AssemblyFromCode(this ICompiler compiler, string code, params Assembly[] requiredAssemblies)
         {
-            var allReferences = DefaultReferences.NetStandard2.Concat(additionalReferences ?? new List<MetadataReference>());
+            var allReferences = DefaultReferences.NetStandard2.Concat(GetMetadataReferences(requiredAssemblies));
             var parsedSyntaxTree = compiler.CreateTree(code);
             var compilation = compiler.CreateCompilationFromTree(parsedSyntaxTree, allReferences);
 
@@ -31,6 +32,32 @@ namespace CodeConverter.Tests.Compilation
                 pdbStream.Seek(0, SeekOrigin.Begin);
                 return Assembly.Load(dllStream.ToArray(), pdbStream.ToArray());
             }
+        }
+
+        private static IEnumerable<PortableExecutableReference> GetMetadataReferences(Assembly[] assemblies)
+        {
+            return WithAllReferences(assemblies).Select(a => MetadataReference.CreateFromFile(a.Location));
+        }
+
+        private static IReadOnlyCollection<Assembly> WithAllReferences(IEnumerable<Assembly> initalAssemblies)
+        {
+            var toAdd = new Queue<Assembly>(initalAssemblies);
+            var assemblies = new HashSet<Assembly>();
+            while (toAdd.Any()) {
+                var current = toAdd.Dequeue();
+                if (assemblies.Add(current)) {
+                    foreach (var reference in LoadDirectReferences(current)) {
+                        toAdd.Enqueue(reference);
+                    }
+                }
+            }
+
+            return assemblies;
+        }
+
+        private static List<Assembly> LoadDirectReferences(Assembly a)
+        {
+            return a.GetReferencedAssemblies().Select(Assembly.Load).ToList();
         }
     }
 }
