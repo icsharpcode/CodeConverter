@@ -31,6 +31,14 @@ Let us know what needs improving. If you want to get involved in writing the cod
   * Check out the [CodeConversion class](https://github.com/icsharpcode/CodeConverter/blob/master/Vsix/CodeConversion.cs#L188) in the VSIX project.
   * Or check out the [ConverterController](https://github.com/icsharpcode/CodeConverter/blob/master/Web/Controllers/ConverterController.cs) for a more web-focused API.
 
+## Building/running from source
+1. Ensure you have [.NET Core SDK 2.2+](https://dotnet.microsoft.com/download/dotnet-core/2.2)
+2. Open the solution in Visual Studio 2017+
+3. To run the website, set CodeConverter.Web as the startup project
+4. To run the Visual Studio extension, set Vsix as the startup project and in the project properties, set:
+  * "Start external program" to `C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\devenv.exe`
+  * "Command line arguments" to `/rootsuffix Roslyn`
+
 ##  History
 This was previously part of [Refactoring Essentials](https://github.com/icsharpcode/RefactoringEssentials). However, because of the way analyzers are tied to Visual Studio and Roslyn versions
 made it super-hard to co-evolve the code converter bits. That is why we teased the converters out and they are now a self-contained entity.
