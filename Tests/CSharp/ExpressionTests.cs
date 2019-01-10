@@ -777,7 +777,6 @@ class TestClass
         [Fact]
         public void SingleLineLambdaWithStatementBody()
         {
-            //Bug: Comments after action definition are lost
             TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 1
@@ -794,7 +793,11 @@ class TestClass
         var x = 1;
         System.Action simpleAssignmentAction = () => x = 1;
         System.Action nonBlockAction = () => Console.WriteLine(""Statement"");
-        Action ifAction = () => { if (true) return; };"/* I don't know why this Action doesn't get qualified when the above two do - just characterizing current behaviour*/ + @"
+        Action ifAction = () =>"/* I don't know why this Action doesn't get qualified when the above two do - just characterizing current behaviour*/ + @"
+        {
+            if (true)
+                return;
+        };
     }
 }");
         }
