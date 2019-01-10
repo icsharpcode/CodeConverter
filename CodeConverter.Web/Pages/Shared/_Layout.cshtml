@@ -39,7 +39,7 @@
                     <li><a href="~/About">About</a></li>
                 </ul>
             </div>
-            @{Html.RenderPartial("_GithubLink");}
+            @{ await Html.RenderPartialAsync("_GithubLink"); }
         </div>
     </div>
     <div class="container body-content">
