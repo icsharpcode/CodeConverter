@@ -184,6 +184,28 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void ArrayDeclarationWithRangeStatement()
+        {
+            TestConversionVisualBasicToCSharp(@"Imports System.Collections.Generic
+
+Class TestClass
+    Private Sub TestMethod()
+        Dim colFics = New List(Of Integer)
+        Dim a(0 To colFics.Count - 1) As String
+    End Sub
+End Class", @"using System.Collections.Generic;
+
+class TestClass
+{
+    private void TestMethod()
+    {
+        var colFics = new List<int>();
+        string[] a = new string[colFics.Count - 1 + 1];
+    }
+}");
+        }
+
+        [Fact]
         public void ArrayEraseAndRedimStatement()
         {
             // One statement turns into two, so can't auto-test comments

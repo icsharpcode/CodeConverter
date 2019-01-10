@@ -397,7 +397,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public IEnumerable<ExpressionSyntax> ConvertArrayBounds(ArgumentListSyntax argumentListSyntax)
         {
-            return argumentListSyntax.Arguments.Select(a => IncreaseArrayUpperBoundExpression(((SimpleArgumentSyntax)a).Expression));
+            return argumentListSyntax.Arguments.Select(a => {
+                VBSyntax.ExpressionSyntax upperBoundExpression = a is SimpleArgumentSyntax sas ? sas.Expression
+                    : a is RangeArgumentSyntax ras ? ras.UpperBound
+                    : throw new ArgumentOutOfRangeException(nameof(a), a, null);
+
+                return IncreaseArrayUpperBoundExpression(upperBoundExpression);
+            });
         }
 
         private ExpressionSyntax IncreaseArrayUpperBoundExpression(VBSyntax.ExpressionSyntax expr)
