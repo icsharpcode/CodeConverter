@@ -71,13 +71,13 @@
     <PackageReference Include="System.Collections" Version="4.3.0" />
     <PackageReference Include="System.Collections.Concurrent" Version="4.3.0" />
     <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
-    <PackageReference Include="System.Composition" Version="1.1.0" />
-    <PackageReference Include="System.Composition.AttributedModel" Version="1.1.0" />
-    <PackageReference Include="System.Composition.Convention" Version="1.1.0" />
-    <PackageReference Include="System.Composition.Hosting" Version="1.1.0" />
-    <PackageReference Include="System.Composition.Runtime" Version="1.1.0" />
-    <PackageReference Include="System.Composition.TypedParts" Version="1.1.0" />
-    <PackageReference Include="System.Console" Version="4.3.0" />
+    <PackageReference Include="System.Composition" Version="1.2.0" />
+    <PackageReference Include="System.Composition.AttributedModel" Version="1.2.0" />
+    <PackageReference Include="System.Composition.Convention" Version="1.2.0" />
+    <PackageReference Include="System.Composition.Hosting" Version="1.2.0" />
+    <PackageReference Include="System.Composition.Runtime" Version="1.2.0" />
+    <PackageReference Include="System.Composition.TypedParts" Version="1.2.0" />
+    <PackageReference Include="System.Console" Version="4.3.1" />
     <PackageReference Include="System.Diagnostics.Contracts" Version="4.3.0" />
     <PackageReference Include="System.Diagnostics.Debug" Version="4.3.0" />
     <PackageReference Include="System.Diagnostics.FileVersionInfo" Version="4.3.0" />
@@ -108,28 +108,34 @@
     <PackageReference Include="System.Security.Cryptography.Primitives" Version="4.3.0" />
     <PackageReference Include="System.Security.Cryptography.X509Certificates" Version="4.3.2" />
     <PackageReference Include="System.Text.Encoding" Version="4.3.0" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.4.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.5.1" />
     <PackageReference Include="System.Text.Encoding.Extensions" Version="4.3.0" />
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.0" />
     <PackageReference Include="System.Threading" Version="4.3.0" />
     <PackageReference Include="System.Threading.Tasks" Version="4.3.0" />
     <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
     <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-    <PackageReference Include="System.ValueTuple" Version="4.4.0" />
-    <PackageReference Include="System.Xml.ReaderWriter" Version="4.3.0" />
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+    <PackageReference Include="System.Xml.ReaderWriter" Version="4.3.1" />
     <PackageReference Include="System.Xml.XDocument" Version="4.3.0" />
     <PackageReference Include="System.Xml.XmlDocument" Version="4.3.0" />
     <PackageReference Include="System.Xml.XPath" Version="4.3.0" />
     <PackageReference Include="System.Xml.XPath.XDocument" Version="4.3.0" />
-    <PackageReference Include="xunit" Version="2.3.1" />
-    <PackageReference Include="xunit.abstractions" Version="2.0.1" />
-    <PackageReference Include="xunit.analyzers" Version="0.7.0" />
-    <PackageReference Include="xunit.assert" Version="2.3.1" />
-    <PackageReference Include="xunit.core" Version="2.3.1" />
-    <PackageReference Include="xunit.extensibility.core" Version="2.3.1" />
-    <PackageReference Include="xunit.extensibility.execution" Version="2.3.1" />
-    <PackageReference Include="xunit.runner.console" Version="2.3.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.abstractions" Version="2.0.3" />
+    <PackageReference Include="xunit.analyzers" Version="0.10.0" />
+    <PackageReference Include="xunit.assert" Version="2.4.1" />
+    <PackageReference Include="xunit.core" Version="2.4.1" />
+    <PackageReference Include="xunit.extensibility.core" Version="2.4.1" />
+    <PackageReference Include="xunit.extensibility.execution" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.console" Version="2.4.1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
