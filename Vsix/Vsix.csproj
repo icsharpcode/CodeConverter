@@ -83,6 +83,9 @@
     <StartArguments>/rootsuffix Roslyn</StartArguments>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="EnvDTE100">
+      <Version>10.0.3</Version>
+    </PackageReference>
     <PackageReference Include="ManagedEsent" Version="1.9.4" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="2.10.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="2.6.3">
@@ -105,7 +108,12 @@
     <PackageReference Include="Microsoft.VisualStudio.Imaging" Version="15.9.28307" />
     <PackageReference Include="Microsoft.VisualStudio.LanguageServices" Version="2.10.0" />
     <PackageReference Include="Microsoft.VisualStudio.OLE.Interop" Version="7.10.6071" />
-    <PackageReference Include="Microsoft.VisualStudio.Shell.14.0" Version="14.3.25407" />
+    <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes">
+      <Version>15.0.27</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Shell.15.0">
+      <Version>15.9.28307</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Shell.Immutable.10.0" Version="15.0.25415" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.Immutable.11.0" Version="15.0.25415" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.Immutable.12.0" Version="15.0.25415" />
@@ -199,18 +207,6 @@
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="EnvDTE, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-    </Reference>
-    <Reference Include="EnvDTE100, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-    </Reference>
-    <Reference Include="EnvDTE80, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-    </Reference>
-    <Reference Include="EnvDTE90, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-    </Reference>
     <Reference Include="Microsoft.Build.Framework" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.VisualStudio.CommandBars, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
