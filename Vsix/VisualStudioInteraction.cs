@@ -253,7 +253,7 @@ namespace CodeConverter.VsExtension
         public static async Task WriteStatusBarTextAsync(IAsyncServiceProvider serviceProvider, string text)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            IVsStatusbar statusBar = (IVsStatusbar)serviceProvider.GetService(typeof(SVsStatusbar));
+            var statusBar = await serviceProvider.GetServiceAsync<SVsStatusbar, IVsStatusbar>();
             if (statusBar == null)
                 return;
 
