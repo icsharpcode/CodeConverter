@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio;
@@ -149,27 +150,20 @@ namespace CodeConverter.VsExtension
         public static async Task ShowExceptionAsync(IAsyncServiceProvider serviceProvider, string title, Exception ex)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            VsShellUtilities.ShowMessageBox(
-                serviceProvider,//TODO
-                $"An error has occured during conversion: {ex}",
-                title,
-                OLEMSGICON.OLEMSGICON_CRITICAL,
-                OLEMSGBUTTON.OLEMSGBUTTON_OK,
-                OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+
+            MessageBox.Show($"An error has occured during conversion: {ex}",
+                title, MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         /// <returns>true iff the user answers "OK"</returns>
         public static async Task<bool> ShowMessageBoxAsync(IAsyncServiceProvider serviceProvider, string title, string msg, bool showCancelButton, bool defaultOk = true)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            var answeredOk = 1;
-            return VsShellUtilities.ShowMessageBox(
-                serviceProvider,
-                msg,
-                title,
-                OLEMSGICON.OLEMSGICON_INFO,
-                showCancelButton ? OLEMSGBUTTON.OLEMSGBUTTON_OKCANCEL : OLEMSGBUTTON.OLEMSGBUTTON_OK,
-                defaultOk || !showCancelButton ? OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST : OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_SECOND) == answeredOk;
+            var userAnswer = MessageBox.Show(msg, title,
+                showCancelButton ? MessageBoxButton.OKCancel : MessageBoxButton.OK,
+                MessageBoxImage.Information,
+                defaultOk || !showCancelButton ? MessageBoxResult.OK : MessageBoxResult.Cancel);
+            return userAnswer == MessageBoxResult.OK;
         }
 
         public class OutputWindow
