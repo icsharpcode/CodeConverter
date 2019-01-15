@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.LanguageServices;
@@ -91,8 +92,11 @@ namespace CodeConverter.VsExtension
                 .SkipWhile(a => a == GetType().Assembly);
         }
 
-        public ConverterOptionsPage Options => (ConverterOptionsPage)GetDialogPage(typeof(ConverterOptionsPage));
-        
+        public async Task<ConverterOptionsPage> GetOptionsAsync()
+        {
+            return await this.GetDialogPageAsync<ConverterOptionsPage>();
+        }
+
         /// <summary>
         /// Initialization of the package; this method is called right after the package is sited, so this is the place
         /// where you can put all the initialization code that rely on services provided by VisualStudio.

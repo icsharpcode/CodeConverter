@@ -22,7 +22,7 @@ namespace CodeConverter.VsExtension
 {
     class CodeConversion
     {
-        public Func<ConverterOptionsPage> GetOptions { get; }
+        public Func<Task<ConverterOptionsPage>> GetOptions { get; }
         private readonly IAsyncServiceProvider _serviceProvider;
         private readonly VisualStudioWorkspace _visualStudioWorkspace;
         public static readonly string ConverterTitle = "Code converter";
@@ -30,14 +30,14 @@ namespace CodeConverter.VsExtension
         private readonly VisualStudioInteraction.OutputWindow _outputWindow;
         private string SolutionDir => Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
 
-        public static async Task<CodeConversion> CreateAsync(REConverterPackage serviceProvider, VisualStudioWorkspace visualStudioWorkspace, Func<ConverterOptionsPage> getOptions)
+        public static async Task<CodeConversion> CreateAsync(REConverterPackage serviceProvider, VisualStudioWorkspace visualStudioWorkspace, Func<Task<ConverterOptionsPage>> getOptions)
         {
             return new CodeConversion(serviceProvider, visualStudioWorkspace, 
                 getOptions, await VisualStudioInteraction.OutputWindow.CreateAsync());
         }
 
         public CodeConversion(IAsyncServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace,
-            Func<ConverterOptionsPage> getOptions, VisualStudioInteraction.OutputWindow outputWindow)
+            Func<Task<ConverterOptionsPage>> getOptions, VisualStudioInteraction.OutputWindow outputWindow)
         {
             GetOptions = getOptions;
             _serviceProvider = serviceProvider;
@@ -61,7 +61,7 @@ namespace CodeConverter.VsExtension
                 return result;
             });
 
-            if (GetOptions().CopyResultToClipboardForSingleDocument) {
+            if ((await GetOptions()).CopyResultToClipboardForSingleDocument) {
                 Clipboard.SetText(conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString());
                 await _outputWindow.WriteToOutputWindowAsync("Conversion result copied to clipboard.");
                 await VisualStudioInteraction.ShowMessageBoxAsync(_serviceProvider, "Conversion result copied to clipboard.", conversionResult.GetExceptionsAsString(), false);
@@ -106,7 +106,7 @@ namespace CodeConverter.VsExtension
 
         private async Task FinalizeConversionAsync(List<string> files, List<string> errors, string longestFilePath, List<ConversionResult> filesToOverwrite)
         {
-            var options = GetOptions();
+            var options = await GetOptions();
 
             var pathsToOverwrite = filesToOverwrite.Select(f => PathRelativeToSolutionDir(f.SourcePathOrNull));
             var shouldOverwriteSolutionAndProjectFiles =

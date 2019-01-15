@@ -21,6 +21,7 @@ using Microsoft.VisualStudio.TextManager.Interop;
 using Constants = EnvDTE.Constants;
 using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
 using Task = System.Threading.Tasks.Task;
+using Window = EnvDTE.Window;
 
 namespace CodeConverter.VsExtension
 {

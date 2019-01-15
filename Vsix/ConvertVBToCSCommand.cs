@@ -50,7 +50,7 @@ namespace CodeConverter.VsExtension
         /// </summary>
         IAsyncServiceProvider ServiceProvider {
             get {
-                return this._package;
+                return _package;
             }
         }
 
@@ -60,7 +60,7 @@ namespace CodeConverter.VsExtension
         /// <param name="package">Owner package, not null.</param>
         public static async Task InitializeAsync(REConverterPackage package)
         {
-            CodeConversion codeConversion = await CodeConversion.CreateAsync(package, package.VsWorkspace, () => package.Options);
+            CodeConversion codeConversion = await CodeConversion.CreateAsync(package, package.VsWorkspace, package.GetOptionsAsync);
             Instance = new ConvertVBToCSCommand(package, codeConversion, await package.GetServiceAsync<IMenuCommandService, OleMenuCommandService>());
         }
 
@@ -128,8 +128,7 @@ namespace CodeConverter.VsExtension
 
         private async void SolutionOrProjectMenuItem_BeforeQueryStatus(object sender, EventArgs e)
         {
-            var menuItem = sender as OleMenuCommand;
-            if (menuItem != null) {
+            if (sender is OleMenuCommand menuItem) {
                 var selectedProjectsAsync = await VisualStudioInteraction.GetSelectedProjectsAsync(ProjectExtension);
                 menuItem.Visible = menuItem.Enabled = selectedProjectsAsync.Any();
             }
@@ -167,8 +166,7 @@ namespace CodeConverter.VsExtension
 
             try {
                 await _codeConversion.PerformDocumentConversionAsync<VBToCSConversion>(documentPath, selected);
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 await VisualStudioInteraction.ShowExceptionAsync(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }
         }

@@ -61,7 +61,7 @@ namespace CodeConverter.VsExtension
         /// <param name="package">Owner package, not null.</param>
         public static async Task InitializeAsync(REConverterPackage package)
         {
-            CodeConversion codeConversion = await CodeConversion.CreateAsync(package, package.VsWorkspace, () => package.Options);
+            CodeConversion codeConversion = await CodeConversion.CreateAsync(package, package.VsWorkspace, package.GetOptionsAsync);
             Instance = new ConvertCSToVBCommand(package, codeConversion, await package.GetServiceAsync<OleMenuCommandService>());
         }
 
