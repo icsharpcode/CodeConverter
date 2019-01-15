@@ -36,7 +36,7 @@ namespace CodeConverter.VsExtension
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [ProvideOptionPage(typeof(ConverterOptionsPage),
         "Code Converter", "General", 0, 0, true)]
-    [ProvideAutoLoad(VSConstants.UICONTEXT.BackgroundProjectLoad_string)]
+    [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionOpening_string, PackageAutoLoadFlags.BackgroundLoad)]
     [Guid(PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     public sealed class REConverterPackage : AsyncPackage
