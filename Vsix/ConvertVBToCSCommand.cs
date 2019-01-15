@@ -1,12 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
+using EnvDTE;
 using ICSharpCode.CodeConverter.CSharp;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
 using OleMenuCommand = Microsoft.VisualStudio.Shell.OleMenuCommand;
 using OleMenuCommandService = Microsoft.VisualStudio.Shell.OleMenuCommandService;
+using Task = System.Threading.Tasks.Task;
 
 namespace CodeConverter.VsExtension
 {
@@ -44,7 +48,7 @@ namespace CodeConverter.VsExtension
         /// <summary>
         /// Gets the service provider from the owner package.
         /// </summary>
-        IServiceProvider ServiceProvider {
+        IAsyncServiceProvider ServiceProvider {
             get {
                 return this._package;
             }
@@ -54,9 +58,10 @@ namespace CodeConverter.VsExtension
         /// Initializes the singleton instance of the command.
         /// </summary>
         /// <param name="package">Owner package, not null.</param>
-        public static void Initialize(REConverterPackage package)
+        public static async Task InitializeAsync(REConverterPackage package)
         {
-            Instance = new ConvertVBToCSCommand(package);
+            CodeConversion codeConversion = await CodeConversion.CreateAsync(package, package.VsWorkspace, () => package.Options);
+            Instance = new ConvertVBToCSCommand(package, codeConversion, await package.GetServiceAsync<IMenuCommandService, OleMenuCommandService>());
         }
 
         /// <summary>
@@ -64,12 +69,13 @@ namespace CodeConverter.VsExtension
         /// Adds our command handlers for menu (commands must exist in the command table file)
         /// </summary>
         /// <param name="package">Owner package, not null.</param>
-        ConvertVBToCSCommand(REConverterPackage package)
+        /// <param name="codeConversion"></param>
+        /// <param name="commandService"></param>
+        ConvertVBToCSCommand(REConverterPackage package, CodeConversion codeConversion, OleMenuCommandService commandService)
         {
             this._package = package ?? throw new ArgumentNullException(nameof(package));
-            _codeConversion = new CodeConversion(package, package.VsWorkspace, () => package.Options);
+            _codeConversion = codeConversion;
 
-            OleMenuCommandService commandService = this.ServiceProvider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
             if (commandService != null) {
                 // Command in main menu
                 var menuCommandId = new CommandID(CommandSet, MainMenuCommandId);
@@ -97,23 +103,21 @@ namespace CodeConverter.VsExtension
             }
         }
 
-        void CodeEditorMenuItem_BeforeQueryStatus(object sender, EventArgs e)
+        async void CodeEditorMenuItem_BeforeQueryStatus(object sender, EventArgs e)
         {
-            var menuItem = sender as OleMenuCommand;
-            if (menuItem != null) {
-
-                menuItem.Visible = !_codeConversion.GetSelectionInCurrentView(CodeConversion.IsVBFileName)?.StreamSelectionSpan.IsEmpty ?? false;
+            if (sender is OleMenuCommand menuItem) {
+                var selectionInCurrentViewAsync = await _codeConversion.GetSelectionInCurrentViewAsync(CodeConversion.IsVBFileName);
+                menuItem.Visible = !selectionInCurrentViewAsync?.StreamSelectionSpan.IsEmpty ?? false;
             }
         }
 
-        void ProjectItemMenuItem_BeforeQueryStatus(object sender, EventArgs e)
+        async void ProjectItemMenuItem_BeforeQueryStatus(object sender, EventArgs e)
         {
-            var menuItem = sender as OleMenuCommand;
-            if (menuItem != null) {
+            if (sender is OleMenuCommand menuItem) {
                 menuItem.Visible = false;
                 menuItem.Enabled = false;
 
-                string itemPath = VisualStudioInteraction.GetSingleSelectedItemOrDefault()?.ItemPath;
+                string itemPath = (await VisualStudioInteraction.GetSingleSelectedItemOrDefaultAsync())?.ItemPath;
                 if (itemPath == null || !CodeConversion.IsVBFileName(itemPath))
                     return;
 
@@ -122,46 +126,50 @@ namespace CodeConverter.VsExtension
             }
         }
 
-        private void SolutionOrProjectMenuItem_BeforeQueryStatus(object sender, EventArgs e)
+        private async void SolutionOrProjectMenuItem_BeforeQueryStatus(object sender, EventArgs e)
         {
             var menuItem = sender as OleMenuCommand;
             if (menuItem != null) {
-                menuItem.Visible = menuItem.Enabled = VisualStudioInteraction.GetSelectedProjects(ProjectExtension).Any();
+                var selectedProjectsAsync = await VisualStudioInteraction.GetSelectedProjectsAsync(ProjectExtension);
+                menuItem.Visible = menuItem.Enabled = selectedProjectsAsync.Any();
             }
         }
 
         async void CodeEditorMenuItemCallback(object sender, EventArgs e)
         {
-            var span = _codeConversion.GetSelectionInCurrentView(CodeConversion.IsVBFileName).SelectedSpans.First().Span;
-            await ConvertDocument(_codeConversion.GetCurrentViewHost(CodeConversion.IsVBFileName).GetTextDocument().FilePath, span);
+            var selectionInCurrentViewAsync = await _codeConversion.GetSelectionInCurrentViewAsync(CodeConversion.IsVBFileName);
+            var span = selectionInCurrentViewAsync.SelectedSpans.First().Span;
+            var currentViewHostAsync = await _codeConversion.GetCurrentViewHostAsync(CodeConversion.IsVBFileName);
+            var textDocumentAsync = await currentViewHostAsync.GetTextDocumentAsync();
+            await ConvertDocumentAsync(textDocumentAsync.FilePath, span);
         }
         
         async void ProjectItemMenuItemCallback(object sender, EventArgs e)
         {
-            string itemPath = VisualStudioInteraction.GetSingleSelectedItemOrDefault()?.ItemPath;
-            await ConvertDocument(itemPath, new Span(0, 0));
+            string itemPath = (await VisualStudioInteraction.GetSingleSelectedItemOrDefaultAsync())?.ItemPath;
+            await ConvertDocumentAsync(itemPath, new Span(0, 0));
         }
 
         private async void SolutionOrProjectMenuItemCallback(object sender, EventArgs e)
         {
             try {
-                var projects = VisualStudioInteraction.GetSelectedProjects(ProjectExtension);
-                await _codeConversion.PerformProjectConversion<VBToCSConversion>(projects);
+                var projects = VisualStudioInteraction.GetSelectedProjectsAsync(ProjectExtension);
+                await _codeConversion.PerformProjectConversionAsync<VBToCSConversion>(await projects);
             } catch (Exception ex) {
-                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.ConverterTitle, ex);
+                await VisualStudioInteraction.ShowExceptionAsync(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }
         }
 
-        private async Task ConvertDocument(string documentPath, Span selected)
+        private async Task ConvertDocumentAsync(string documentPath, Span selected)
         {
             if (documentPath == null || !CodeConversion.IsVBFileName(documentPath))
                 return;
 
             try {
-                await _codeConversion.PerformDocumentConversion<VBToCSConversion>(documentPath, selected);
+                await _codeConversion.PerformDocumentConversionAsync<VBToCSConversion>(documentPath, selected);
             }
             catch (Exception ex) {
-                VisualStudioInteraction.ShowException(ServiceProvider, CodeConversion.ConverterTitle, ex);
+                await VisualStudioInteraction.ShowExceptionAsync(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }
         }
     }

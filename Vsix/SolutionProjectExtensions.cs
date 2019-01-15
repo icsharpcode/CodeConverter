@@ -12,11 +12,13 @@ namespace CodeConverter.VsExtension
     {
         public static IEnumerable<Project> GetAllProjects(this Solution sln)
         {
+            Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
             return sln.Projects.Cast<Project>().SelectMany(GetProjects);
         }
 
         public static IEnumerable<Project> GetProjects(this Project project)
         {
+            Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
             if (project.Kind == ProjectKinds.vsProjectKindSolutionFolder) {
                 return project.ProjectItems.Cast<ProjectItem>()
                     .Select(x => x.SubProject).Where(x => x != null)

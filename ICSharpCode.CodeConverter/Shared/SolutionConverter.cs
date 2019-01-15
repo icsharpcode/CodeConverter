@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.CodeAnalysis;
 
@@ -39,13 +40,13 @@ namespace ICSharpCode.CodeConverter.Shared
             _languageConversion = languageConversion;
         }
 
-        public IEnumerable<ConversionResult> Convert()
+        public Task<IEnumerable<ConversionResult>> Convert()
         {
             var projectsToUpdateReferencesOnly = _projectsToConvert.First().Solution.Projects.Except(_projectsToConvert);
 
-            return ConvertProjects()
-                    .Concat(UpdateProjectReferences(projectsToUpdateReferencesOnly))
-                    .Concat(new[] { ConvertSolutionFile() });
+            return Task.FromResult(ConvertProjects()
+                .Concat(UpdateProjectReferences(projectsToUpdateReferencesOnly))
+                .Concat(new[] { ConvertSolutionFile() }));
         }
 
         private IEnumerable<ConversionResult> ConvertProjects()

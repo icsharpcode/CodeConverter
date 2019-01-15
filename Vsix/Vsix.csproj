@@ -252,6 +252,7 @@
     </Compile>
     <Compile Include="ConvertVBToCSCommand.cs" />
     <Compile Include="REConverterPackage.cs" />
+    <Compile Include="ServiceProviderExtensions.cs" />
     <Compile Include="SolutionProjectExtensions.cs" />
     <Compile Include="VisualStudioInteraction.cs" />
     <Compile Include="VsDocument.cs" />

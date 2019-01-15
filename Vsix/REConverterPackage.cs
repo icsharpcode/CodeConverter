@@ -5,10 +5,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;
+using Task = System.Threading.Tasks.Task;
 
 namespace CodeConverter.VsExtension
 {
@@ -29,7 +31,7 @@ namespace CodeConverter.VsExtension
     /// To get loaded into VS, the package must be referred by &lt;Asset Type="Microsoft.VisualStudio.VsPackage" ...&gt; in .vsixmanifest file.
     /// </para>
     /// </remarks>
-    [PackageRegistration(UseManagedResourcesOnly = true)]
+    [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.0")] // Info on this package for Help/About
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [ProvideOptionPage(typeof(ConverterOptionsPage),
@@ -37,7 +39,7 @@ namespace CodeConverter.VsExtension
     [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExistsAndFullyLoaded_string)]
     [Guid(REConverterPackage.PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
-    public sealed class REConverterPackage : Package
+    public sealed class REConverterPackage : AsyncPackage
     {
         public VisualStudioWorkspace VsWorkspace {
             get {
@@ -90,16 +92,16 @@ namespace CodeConverter.VsExtension
         }
 
         public ConverterOptionsPage Options => (ConverterOptionsPage)GetDialogPage(typeof(ConverterOptionsPage));
-
+        
         /// <summary>
         /// Initialization of the package; this method is called right after the package is sited, so this is the place
         /// where you can put all the initialization code that rely on services provided by VisualStudio.
         /// </summary>
-        protected override void Initialize()
+        protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
-            ConvertCSToVBCommand.Initialize(this);
-            ConvertVBToCSCommand.Initialize(this);
-            base.Initialize();
+            await Task.WhenAll(ConvertCSToVBCommand.InitializeAsync(this),
+                ConvertVBToCSCommand.InitializeAsync(this));
+            await base.InitializeAsync(cancellationToken, progress);
         }
     }
 }
