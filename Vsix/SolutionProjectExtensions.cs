@@ -19,11 +19,13 @@ namespace CodeConverter.VsExtension
         public static IEnumerable<Project> GetProjects(this Project project)
         {
             Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             if (project.Kind == ProjectKinds.vsProjectKindSolutionFolder) {
                 return project.ProjectItems.Cast<ProjectItem>()
                     .Select(x => x.SubProject).Where(x => x != null)
                     .SelectMany(GetProjects);
             }
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             return new[] { project };
         }
     }

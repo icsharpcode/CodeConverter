@@ -113,10 +113,10 @@ namespace CodeConverter.VsExtension
             return projects;
         }
 
-        public static async Task<IWpfTextViewHost> GetCurrentViewHostAsync(IServiceProvider serviceProvider)
+        public static async Task<IWpfTextViewHost> GetCurrentViewHostAsync(IAsyncServiceProvider serviceProvider)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            var txtMgr = (IVsTextManager)serviceProvider.GetService(typeof(SVsTextManager));
+            var txtMgr = await serviceProvider.GetServiceAsync<SVsTextManager, IVsTextManager>();
             int mustHaveFocus = 1;
             if (txtMgr == null) {
                 return null;
@@ -140,10 +140,10 @@ namespace CodeConverter.VsExtension
             return textDocument;
         }
 
-        public static async Task<VisualStudioWorkspace> GetWorkspaceAsync(IServiceProvider serviceProvider)
+        public static async Task<VisualStudioWorkspace> GetWorkspaceAsync(IAsyncServiceProvider serviceProvider)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            return (VisualStudioWorkspace) serviceProvider.GetService(typeof(VisualStudioWorkspace)); 
+            return await serviceProvider.GetServiceAsync<VisualStudioWorkspace>(); 
         }
 
         public static async Task ShowExceptionAsync(IAsyncServiceProvider serviceProvider, string title, Exception ex)
@@ -159,7 +159,7 @@ namespace CodeConverter.VsExtension
         }
 
         /// <returns>true iff the user answers "OK"</returns>
-        public static async Task<bool> ShowMessageBoxAsync(IServiceProvider serviceProvider, string title, string msg, bool showCancelButton, bool defaultOk = true)
+        public static async Task<bool> ShowMessageBoxAsync(IAsyncServiceProvider serviceProvider, string title, string msg, bool showCancelButton, bool defaultOk = true)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             var answeredOk = 1;
@@ -210,6 +210,7 @@ namespace CodeConverter.VsExtension
                 IServiceProvider serviceProvider = new ServiceProvider(Dte as Microsoft.VisualStudio.OLE.Interop.IServiceProvider);
                 return serviceProvider.GetService(typeof(SVsOutputWindow)) as IVsOutputWindow;
             }
+
             private static async Task<IVsOutputWindowPane> CreateOutputPaneAsync()
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -249,7 +250,7 @@ namespace CodeConverter.VsExtension
             }
         }
 
-        public static async Task WriteStatusBarTextAsync(IServiceProvider serviceProvider, string text)
+        public static async Task WriteStatusBarTextAsync(IAsyncServiceProvider serviceProvider, string text)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             IVsStatusbar statusBar = (IVsStatusbar)serviceProvider.GetService(typeof(SVsStatusbar));

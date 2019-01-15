@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
 using Project = EnvDTE.Project;
 using Task = System.Threading.Tasks.Task;
 
@@ -22,7 +23,7 @@ namespace CodeConverter.VsExtension
     class CodeConversion
     {
         public Func<ConverterOptionsPage> GetOptions { get; }
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IAsyncServiceProvider _serviceProvider;
         private readonly VisualStudioWorkspace _visualStudioWorkspace;
         public static readonly string ConverterTitle = "Code converter";
         private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine;
@@ -35,7 +36,7 @@ namespace CodeConverter.VsExtension
                 getOptions, await VisualStudioInteraction.OutputWindow.CreateAsync());
         }
 
-        public CodeConversion(IServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace,
+        public CodeConversion(IAsyncServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace,
             Func<ConverterOptionsPage> getOptions, VisualStudioInteraction.OutputWindow outputWindow)
         {
             GetOptions = getOptions;
@@ -48,7 +49,7 @@ namespace CodeConverter.VsExtension
         {
             await Task.Run(async () => {
                 var convertedFiles = ConvertProjectUnhandledAsync<TLanguageConversion>(selectedProjects);
-                await WriteConvertedFilesAndShowSummaryAsync(convertedFiles);
+                await WriteConvertedFilesAndShowSummaryAsync(await convertedFiles);
             });
         }
 
