@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
+
+# 6.3.0 TBC
+* Library API names and return types are now async
+
 # 6.2.0 19/11/2018
 
 ### VB -> C#
