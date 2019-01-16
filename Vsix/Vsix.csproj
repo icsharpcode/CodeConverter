@@ -241,6 +241,7 @@
     <Compile Include="..\ICSharpCode.CodeConverter\Shared\DefaultReferences.cs">
       <Link>DefaultReferences.cs</Link>
     </Compile>
+    <Compile Include="BlockingOleMenuCommand.cs" />
     <Compile Include="CodeConversion.cs" />
     <Compile Include="ConvertCSToVBCommand.cs" />
     <Compile Include="ConverterOptionsPage.cs">
