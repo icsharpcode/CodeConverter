@@ -18,8 +18,8 @@ namespace CodeConverter.VsExtension
 
         public string ItemPath {
             get {
-                string itemPath = null;
-                _hierarchy.GetMkDocument(_itemId, out itemPath);
+                Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
+                _hierarchy.GetMkDocument(_itemId, out string itemPath);
                 return itemPath;
             }
         }
