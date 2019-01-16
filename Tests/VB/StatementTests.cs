@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
@@ -512,9 +513,9 @@ End Class");
         }
 
         [Fact]
-        public void UnsafeStatements()
+        public async Task UnsafeStatements()
         {
-            var convertedCode = ProjectConversion.ConvertText<CSToVBConversion>(@"class TestClass
+            var convertedCode = (await ProjectConversion.ConvertText<CSToVBConversion>(@"class TestClass
 {
     void TestMethod()
     {
@@ -536,7 +537,7 @@ End Class");
             b = 1;
         }
     }
-}", DefaultReferences.NetStandard2).ConvertedCode;
+}", DefaultReferences.NetStandard2)).ConvertedCode;
 
             Assert.Contains("CONVERSION ERROR", convertedCode);
             Assert.Contains("unsafe", convertedCode);
