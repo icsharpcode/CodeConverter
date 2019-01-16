@@ -79,31 +79,31 @@ namespace CodeConverter.VsExtension
             if (commandService != null) {
                 // Command in main menu
                 var menuCommandId = new CommandID(CommandSet, MainMenuCommandId);
-                var menuItem = new BlockingOleMenuCommand(CodeEditorMenuItemCallback, menuCommandId);
-                menuItem.BeforeQueryStatus += CodeEditorMenuItem_BeforeQueryStatus;
+                var menuItem = new BlockingOleMenuCommand(CodeEditorMenuItemCallbackAsync, menuCommandId);
+                menuItem.BeforeQueryStatus += CodeEditorMenuItem_BeforeQueryStatusAsync;
                 commandService.AddCommand(menuItem);
 
                 // Command in code editor's context menu
                 var ctxMenuCommandId = new CommandID(CommandSet, CtxMenuCommandId);
-                var ctxMenuItem = new BlockingOleMenuCommand(CodeEditorMenuItemCallback, ctxMenuCommandId);
-                ctxMenuItem.BeforeQueryStatus += CodeEditorMenuItem_BeforeQueryStatus;
+                var ctxMenuItem = new BlockingOleMenuCommand(CodeEditorMenuItemCallbackAsync, ctxMenuCommandId);
+                ctxMenuItem.BeforeQueryStatus += CodeEditorMenuItem_BeforeQueryStatusAsync;
                 commandService.AddCommand(ctxMenuItem);
 
                 // Command in project item context menu
                 var projectItemCtxMenuCommandId = new CommandID(CommandSet, ProjectItemCtxMenuCommandId);
-                var projectItemCtxMenuItem = new BlockingOleMenuCommand(ProjectItemMenuItemCallback, projectItemCtxMenuCommandId);
-                projectItemCtxMenuItem.BeforeQueryStatus += ProjectItemMenuItem_BeforeQueryStatus;
+                var projectItemCtxMenuItem = new BlockingOleMenuCommand(ProjectItemMenuItemCallbackAsync, projectItemCtxMenuCommandId);
+                projectItemCtxMenuItem.BeforeQueryStatus += ProjectItemMenuItem_BeforeQueryStatusAsync;
                 commandService.AddCommand(projectItemCtxMenuItem);
 
                 // Command in project context menu
                 var solutionOrProjectCtxMenuCommandId = new CommandID(CommandSet, SolutionOrProjectCtxMenuCommandId);
-                var solutionOrProjectCtxMenuItem = new BlockingOleMenuCommand(SolutionOrProjectMenuItemCallback, solutionOrProjectCtxMenuCommandId);
-                solutionOrProjectCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatus;
+                var solutionOrProjectCtxMenuItem = new BlockingOleMenuCommand(SolutionOrProjectMenuItemCallbackAsync, solutionOrProjectCtxMenuCommandId);
+                solutionOrProjectCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatusAsync;
                 commandService.AddCommand(solutionOrProjectCtxMenuItem);
             }
         }
 
-        private async Task CodeEditorMenuItem_BeforeQueryStatus(object sender, EventArgs e)
+        private async Task CodeEditorMenuItem_BeforeQueryStatusAsync(object sender, EventArgs e)
         {
             if (sender is OleMenuCommand menuItem) {
                 var selectionInCurrentViewAsync = await _codeConversion.GetSelectionInCurrentViewAsync(CodeConversion.IsVBFileName);
@@ -111,7 +111,7 @@ namespace CodeConverter.VsExtension
             }
         }
 
-        private async Task ProjectItemMenuItem_BeforeQueryStatus(object sender, EventArgs e)
+        private async Task ProjectItemMenuItem_BeforeQueryStatusAsync(object sender, EventArgs e)
         {
             if (sender is OleMenuCommand menuItem) {
                 menuItem.Visible = false;
@@ -126,7 +126,7 @@ namespace CodeConverter.VsExtension
             }
         }
 
-        private async Task SolutionOrProjectMenuItem_BeforeQueryStatus(object sender, EventArgs e)
+        private async Task SolutionOrProjectMenuItem_BeforeQueryStatusAsync(object sender, EventArgs e)
         {
             if (sender is OleMenuCommand menuItem) {
                 var selectedProjectsAsync = await VisualStudioInteraction.GetSelectedProjectsAsync(ProjectExtension);
@@ -134,7 +134,7 @@ namespace CodeConverter.VsExtension
             }
         }
 
-        private async Task CodeEditorMenuItemCallback(object sender, EventArgs e)
+        private async Task CodeEditorMenuItemCallbackAsync(object sender, EventArgs e)
         {
             var selectionInCurrentViewAsync = await _codeConversion.GetSelectionInCurrentViewAsync(CodeConversion.IsVBFileName);
             var span = selectionInCurrentViewAsync.SelectedSpans.First().Span;
@@ -143,13 +143,13 @@ namespace CodeConverter.VsExtension
             await ConvertDocumentAsync(textDocumentAsync.FilePath, span);
         }
 
-        private async Task ProjectItemMenuItemCallback(object sender, EventArgs e)
+        private async Task ProjectItemMenuItemCallbackAsync(object sender, EventArgs e)
         {
             string itemPath = (await VisualStudioInteraction.GetSingleSelectedItemOrDefaultAsync())?.ItemPath;
             await ConvertDocumentAsync(itemPath, new Span(0, 0));
         }
 
-        private async Task SolutionOrProjectMenuItemCallback(object sender, EventArgs e)
+        private async Task SolutionOrProjectMenuItemCallbackAsync(object sender, EventArgs e)
         {
             try {
                 var projects = VisualStudioInteraction.GetSelectedProjectsAsync(ProjectExtension);
