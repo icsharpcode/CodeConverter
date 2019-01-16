@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using CodeConverter.Tests.Compilation;
 using CodeConverter.Tests.CSharp;
 using ICSharpCode.CodeConverter;
@@ -27,14 +28,14 @@ namespace CodeConverter.Tests.TestRunners
             var runnableTestsInSource = XUnitFactDiscoverer.GetNamedFacts(compiledSource).ToList();
             Assert.NotEmpty(runnableTestsInSource);
 
-            return GetSelfVerifyingFacts<TTargetCompiler, TLanguageConversion>(sourceFileText, runnableTestsInSource);
+            return GetSelfVerifyingFacts<TTargetCompiler, TLanguageConversion>(sourceFileText, runnableTestsInSource).GetAwaiter().GetResult();
         }
 
-        private static IEnumerable<NamedFact> GetSelfVerifyingFacts<TTargetCompiler, TLanguageConversion>(string sourceFileText,
+        private static async Task<IEnumerable<NamedFact>> GetSelfVerifyingFacts<TTargetCompiler, TLanguageConversion>(string sourceFileText,
                 List<NamedFact> runnableTestsInSource) where TTargetCompiler : ICompiler, new()
             where TLanguageConversion : ILanguageConversion, new()
         {
-            var conversionResult = ProjectConversion.ConvertText<TLanguageConversion>(sourceFileText, DefaultReferences.NetStandard2);
+            var conversionResult = await ProjectConversion.ConvertText<TLanguageConversion>(sourceFileText, DefaultReferences.NetStandard2);
 
             // Avoid confusing test runner on error, but also avoid calculating multiple times
             var runnableTestsInTarget = new Lazy<Dictionary<string, NamedFact>>(() => GetConvertedNamedFacts<TTargetCompiler>(runnableTestsInSource,

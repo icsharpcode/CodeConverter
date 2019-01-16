@@ -35,14 +35,14 @@ namespace ICSharpCode.CodeConverter.Shared
             languageConversion.Initialize(convertedCompilation.RemoveAllSyntaxTrees());
         }
 
-        public static ConversionResult ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null) where TLanguageConversion : ILanguageConversion, new()
+        public static Task<ConversionResult> ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null) where TLanguageConversion : ILanguageConversion, new()
         {
             var languageConversion = new TLanguageConversion {
                 RootNamespace = rootNamespace
             };
             var syntaxTree = languageConversion.CreateTree(text);
             var compilation = languageConversion.CreateCompilationFromTree(syntaxTree, references);
-            return ConvertSingle(compilation, syntaxTree, new TextSpan(0, 0), new TLanguageConversion()).GetAwaiter().GetResult();
+            return ConvertSingle(compilation, syntaxTree, new TextSpan(0, 0), new TLanguageConversion());
         }
 
         /// <summary>
@@ -71,20 +71,20 @@ namespace ICSharpCode.CodeConverter.Shared
             return codeResult;
         }
 
-        public static IEnumerable<ConversionResult> ConvertProject(Project project, ILanguageConversion languageConversion,
+        public static async Task<IEnumerable<ConversionResult>> ConvertProject(Project project, ILanguageConversion languageConversion,
             params (string, string)[] replacements)
         {
-            return ConvertProjectContents(project, languageConversion).Concat(new[]
+            return (await ConvertProjectContents(project, languageConversion)).Concat(new[]
                 {ConvertProjectFile(project, languageConversion, replacements)}
             );
         }
 
-        public static IEnumerable<ConversionResult> ConvertProjectContents(Project project,
+        public static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(Project project,
             ILanguageConversion languageConversion)
         {
             var solutionFilePath = project.Solution.FilePath ?? project.FilePath;
             var solutionDir = Path.GetDirectoryName(solutionFilePath);
-            var compilation = project.GetCompilationAsync().GetAwaiter().GetResult();
+            var compilation = await project.GetCompilationAsync();
             var syntaxTreesToConvert = compilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir));
             var projectConversion = new ProjectConversion(compilation, syntaxTreesToConvert,
                 languageConversion, GetConvertedCompilationWithProjectReferences(project, languageConversion));

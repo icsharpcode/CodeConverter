@@ -10,9 +10,11 @@ using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.VisualStudio.LanguageServices;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
 using Project = EnvDTE.Project;
 using Task = System.Threading.Tasks.Task;
 
@@ -20,52 +22,58 @@ namespace CodeConverter.VsExtension
 {
     class CodeConversion
     {
-        public Func<ConverterOptionsPage> GetOptions { get; }
-        private readonly IServiceProvider _serviceProvider;
+        public Func<Task<ConverterOptionsPage>> GetOptions { get; }
+        private readonly IAsyncServiceProvider _serviceProvider;
         private readonly VisualStudioWorkspace _visualStudioWorkspace;
         public static readonly string ConverterTitle = "Code converter";
         private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine;
         private readonly VisualStudioInteraction.OutputWindow _outputWindow;
         private string SolutionDir => Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
 
-        public CodeConversion(IServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace,
-            Func<ConverterOptionsPage> getOptions)
+        public static async Task<CodeConversion> CreateAsync(REConverterPackage serviceProvider, VisualStudioWorkspace visualStudioWorkspace, Func<Task<ConverterOptionsPage>> getOptions)
+        {
+            return new CodeConversion(serviceProvider, visualStudioWorkspace, 
+                getOptions, await VisualStudioInteraction.OutputWindow.CreateAsync());
+        }
+
+        public CodeConversion(IAsyncServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace,
+            Func<Task<ConverterOptionsPage>> getOptions, VisualStudioInteraction.OutputWindow outputWindow)
         {
             GetOptions = getOptions;
             _serviceProvider = serviceProvider;
             _visualStudioWorkspace = visualStudioWorkspace;
-            _outputWindow = new VisualStudioInteraction.OutputWindow();
+            _outputWindow = outputWindow;
         }
         
-        public async Task PerformProjectConversion<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects) where TLanguageConversion : ILanguageConversion, new()
+        public async Task PerformProjectConversionAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects) where TLanguageConversion : ILanguageConversion, new()
         {
-            await Task.Run(() => {
-                var convertedFiles = ConvertProjectUnhandled<TLanguageConversion>(selectedProjects);
-                WriteConvertedFilesAndShowSummary(convertedFiles);
+            await Task.Run(async () => {
+                var convertedFiles = ConvertProjectUnhandledAsync<TLanguageConversion>(selectedProjects);
+                await WriteConvertedFilesAndShowSummaryAsync(await convertedFiles);
             });
         }
 
-        public async Task PerformDocumentConversion<TLanguageConversion>(string documentFilePath, Span selected) where TLanguageConversion : ILanguageConversion, new()
+        public async Task PerformDocumentConversionAsync<TLanguageConversion>(string documentFilePath, Span selected) where TLanguageConversion : ILanguageConversion, new()
         {
             var conversionResult = await Task.Run(async () => {
-                var result = await ConvertDocumentUnhandled<TLanguageConversion>(documentFilePath, selected);
-                WriteConvertedFilesAndShowSummary(new[] { result });
+                var result = await ConvertDocumentUnhandledAsync<TLanguageConversion>(documentFilePath, selected);
+                await WriteConvertedFilesAndShowSummaryAsync(new[] { result });
                 return result;
             });
 
-            if (GetOptions().CopyResultToClipboardForSingleDocument) {
+            if ((await GetOptions()).CopyResultToClipboardForSingleDocument) {
                 Clipboard.SetText(conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString());
-                _outputWindow.WriteToOutputWindow("Conversion result copied to clipboard.");
-                VisualStudioInteraction.ShowMessageBox(_serviceProvider, "Conversion result copied to clipboard.", conversionResult.GetExceptionsAsString(), false);
+                await _outputWindow.WriteToOutputWindowAsync("Conversion result copied to clipboard.");
+                await VisualStudioInteraction.ShowMessageBoxAsync(_serviceProvider, "Conversion result copied to clipboard.", conversionResult.GetExceptionsAsString(), false);
             }
 
         }
 
-        private void WriteConvertedFilesAndShowSummary(IEnumerable<ConversionResult> convertedFiles)
+        private async Task WriteConvertedFilesAndShowSummaryAsync(IEnumerable<ConversionResult> convertedFiles)
         {
-            _outputWindow.Clear();
-            _outputWindow.WriteToOutputWindow(Intro);
-            _outputWindow.ForceShowOutputPane();
+            await _outputWindow.ClearAsync();
+            await _outputWindow.WriteToOutputWindowAsync(Intro);
+            await _outputWindow.ForceShowOutputPaneAsync();
 
             var files = new List<string>();
             var filesToOverwrite = new List<ConversionResult>();
@@ -80,7 +88,7 @@ namespace CodeConverter.VsExtension
                     continue;
                 }
 
-                LogProgress(convertedFile, errors);
+                await LogProgressAsync(convertedFile, errors);
                 if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode)) continue;
 
                 files.Add(convertedFile.TargetPathOrNull);
@@ -93,46 +101,46 @@ namespace CodeConverter.VsExtension
                 convertedFile.WriteToFile();
             }
 
-            FinalizeConversion(files, errors, longestFilePath, filesToOverwrite);
+            await FinalizeConversionAsync(files, errors, longestFilePath, filesToOverwrite);
         }
 
-        private void FinalizeConversion(List<string> files, List<string> errors, string longestFilePath, List<ConversionResult> filesToOverwrite)
+        private async Task FinalizeConversionAsync(List<string> files, List<string> errors, string longestFilePath, List<ConversionResult> filesToOverwrite)
         {
-            var options = GetOptions();
+            var options = await GetOptions();
 
             var pathsToOverwrite = filesToOverwrite.Select(f => PathRelativeToSolutionDir(f.SourcePathOrNull));
             var shouldOverwriteSolutionAndProjectFiles =
                 filesToOverwrite.Any() &&
-                (options.AlwaysOverwriteFiles || UserHasConfirmedOverwrite(files, errors, pathsToOverwrite.ToList()));
+                (options.AlwaysOverwriteFiles || await UserHasConfirmedOverwriteAsync(files, errors, pathsToOverwrite.ToList()));
 
             if (shouldOverwriteSolutionAndProjectFiles)
             {
                 var titleMessage = options.CreateBackups ? "Creating backups and overwriting files:" : "Overwriting files:" + "";
-                _outputWindow.WriteToOutputWindow(Environment.NewLine + titleMessage);
+                await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + titleMessage);
                 foreach (var fileToOverwrite in filesToOverwrite)
                 {
                     if (options.CreateBackups) File.Copy(fileToOverwrite.SourcePathOrNull, fileToOverwrite.SourcePathOrNull + ".bak", true);
                     fileToOverwrite.WriteToFile();
 
                     var targetPathRelativeToSolutionDir = PathRelativeToSolutionDir(fileToOverwrite.TargetPathOrNull);
-                    _outputWindow.WriteToOutputWindow($"* {targetPathRelativeToSolutionDir}");
+                    await _outputWindow.WriteToOutputWindowAsync($"* {targetPathRelativeToSolutionDir}");
                 }
                 files = files.Concat(filesToOverwrite.Select(f => f.SourcePathOrNull)).ToList();
             } else if (longestFilePath != null) {
-                VisualStudioInteraction.OpenFile(new FileInfo(longestFilePath)).SelectAll();
+                await (await VisualStudioInteraction.OpenFileAsync(new FileInfo(longestFilePath))).SelectAllAsync();
             }
 
-            var conversionSummary = GetConversionSummary(files, errors);
-            _outputWindow.WriteToOutputWindow(conversionSummary);
-            _outputWindow.ForceShowOutputPane();
+            var conversionSummary = await GetConversionSummaryAsync(files, errors);
+            await _outputWindow.WriteToOutputWindowAsync(conversionSummary);
+            await _outputWindow.ForceShowOutputPaneAsync();
 
         }
 
-        private bool UserHasConfirmedOverwrite(List<string> files, List<string> errors, IReadOnlyCollection<string> pathsToOverwrite)
+        private Task<bool> UserHasConfirmedOverwriteAsync(List<string> files, List<string> errors, IReadOnlyCollection<string> pathsToOverwrite)
         {
             var maxExamples = 30; // Avoid a huge unreadable dialog going off the screen
             var exampleText = pathsToOverwrite.Count > maxExamples ? $". First {maxExamples} examples" : "";
-            return VisualStudioInteraction.ShowMessageBox(_serviceProvider,
+            return VisualStudioInteraction.ShowMessageBoxAsync(_serviceProvider,
                 "Overwrite solution and referencing projects?",
                 $@"The current solution file and any referencing projects will be overwritten to reference the new project(s){exampleText}:
 * {string.Join(Environment.NewLine + "* ", pathsToOverwrite.Take(maxExamples))}
@@ -146,7 +154,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             return string.Equals(convertedFile.SourcePathOrNull, convertedFile.TargetPathOrNull, StringComparison.OrdinalIgnoreCase);
         }
 
-        private void LogProgress(ConversionResult convertedFile, List<string> errors)
+        private async Task LogProgressAsync(ConversionResult convertedFile, List<string> errors)
         {
             var exceptionsAsString = convertedFile.GetExceptionsAsString();
             var indentedException = exceptionsAsString.Replace(Environment.NewLine, Environment.NewLine + "    ").TrimEnd();
@@ -167,7 +175,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                 output += $" contains errors{Environment.NewLine}    {indentedException}";
             }
 
-            _outputWindow.WriteToOutputWindow(output);
+            await _outputWindow.WriteToOutputWindowAsync(output);
         }
 
         private string PathRelativeToSolutionDir(string path)
@@ -176,7 +184,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                 .Trim(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
 
-        private string GetConversionSummary(IReadOnlyCollection<string> files, IReadOnlyCollection<string> errors)
+        private async Task<string> GetConversionSummaryAsync(IReadOnlyCollection<string> files, IReadOnlyCollection<string> errors)
         {
             var oneLine = "Code conversion failed";
             var successSummary = "";
@@ -195,20 +203,20 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                 successSummary += Environment.NewLine + "Please report issues at https://github.com/icsharpcode/CodeConverter/issues";
             }
 
-            WriteStatusBarText(oneLine + " - see output window");
+            await VisualStudioInteraction.WriteStatusBarTextAsync(_serviceProvider, oneLine + " - see output window");
             return Environment.NewLine + Environment.NewLine
                                        + oneLine
                                        + Environment.NewLine + successSummary
                                        + Environment.NewLine;
         }
 
-        async Task<ConversionResult> ConvertDocumentUnhandled<TLanguageConversion>(string documentPath, Span selected) where TLanguageConversion : ILanguageConversion, new()
+        private async Task<ConversionResult> ConvertDocumentUnhandledAsync<TLanguageConversion>(string documentPath, Span selected) where TLanguageConversion : ILanguageConversion, new()
         {   
             //TODO Figure out when there are multiple document ids for a single file path
             var documentId = _visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(documentPath).SingleOrDefault();
             if (documentId == null) {
                 //If document doesn't belong to any project
-                return ConvertTextOnly<TLanguageConversion>(documentPath, selected);
+                return await ConvertTextOnlyAsync<TLanguageConversion>(documentPath, selected);
             }
             var document = _visualStudioWorkspace.CurrentSolution.GetDocument(documentId);
             var compilation = await document.Project.GetCompilationAsync();
@@ -218,7 +226,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             return await ProjectConversion.ConvertSingle(compilation, documentSyntaxTree, selectedTextSpan, new TLanguageConversion(), document.Project);
         }
 
-        private static ConversionResult ConvertTextOnly<TLanguageConversion>(string documentPath, Span selected)
+        private static async Task<ConversionResult> ConvertTextOnlyAsync<TLanguageConversion>(string documentPath, Span selected)
             where TLanguageConversion : ILanguageConversion, new()
         {
             var documentText = File.ReadAllText(documentPath);
@@ -227,37 +235,36 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                 documentText = documentText.Substring(selected.Start, selected.Length);
             }
 
-            var convertTextOnly = ProjectConversion.ConvertText<TLanguageConversion>(documentText, DefaultReferences.NetStandard2);
+            var convertTextOnly = await ProjectConversion.ConvertText<TLanguageConversion>(documentText, DefaultReferences.NetStandard2);
             convertTextOnly.SourcePathOrNull = documentPath;
             return convertTextOnly;
         }
 
-        private IEnumerable<ConversionResult> ConvertProjectUnhandled<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects)
+        private async Task<IEnumerable<ConversionResult>> ConvertProjectUnhandledAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects)
             where TLanguageConversion : ILanguageConversion, new()
         {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             var projectsByPath =
                 _visualStudioWorkspace.CurrentSolution.Projects.ToLookup(p => p.FilePath, p => p);
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread - ToList ensures this happens within the same thread just switched to above
             var projects = selectedProjects.Select(p => projectsByPath[p.FullName].First()).ToList();
-            var convertedFiles = SolutionConverter.CreateFor<TLanguageConversion>(projects, new Progress<string>(s => _outputWindow.WriteToOutputWindow(Environment.NewLine + s))).Convert();
-            return convertedFiles;
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
+            var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects, new Progress<string>(s => {
+                var unusedFireAndForget = LogProgressAsync(s);
+            }));
+            
+            return await ThreadHelper.JoinableTaskFactory.RunAsync(() => solutionConverter.Convert());
         }
 
-        void WriteStatusBarText(string text)
+        private async Task LogProgressAsync(string s)
         {
-            IVsStatusbar statusBar = (IVsStatusbar)_serviceProvider.GetService(typeof(SVsStatusbar));
-            if (statusBar == null)
-                return;
-
-            int frozen;
-            statusBar.IsFrozen(out frozen);
-            if (frozen != 0) {
-                statusBar.FreezeOutput(0);
+            try {
+                await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + s);
+            } catch (Exception) {
+                //Logging failed. TODO consider logging such issues to external file
             }
-
-            statusBar.SetText(text);
-            statusBar.FreezeOutput(1);
         }
-        
+
         public static bool IsCSFileName(string fileName)
         {
             return fileName.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
@@ -268,22 +275,22 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             return fileName.EndsWith(".vb", StringComparison.OrdinalIgnoreCase);
         }
 
-        public ITextSelection GetSelectionInCurrentView(Func<string, bool> predicate)
+        public async Task<ITextSelection> GetSelectionInCurrentViewAsync(Func<string, bool> predicate)
         {
-            IWpfTextViewHost viewHost = GetCurrentViewHost(predicate);
+            IWpfTextViewHost viewHost = await GetCurrentViewHostAsync(predicate);
             if (viewHost == null)
                 return null;
 
             return viewHost.TextView.Selection;
         }
 
-        public IWpfTextViewHost GetCurrentViewHost(Func<string, bool> predicate)
+        public async Task<IWpfTextViewHost> GetCurrentViewHostAsync(Func<string, bool> predicate)
         {
-            IWpfTextViewHost viewHost = VisualStudioInteraction.GetCurrentViewHost(_serviceProvider);
+            IWpfTextViewHost viewHost = await VisualStudioInteraction.GetCurrentViewHostAsync(_serviceProvider);
             if (viewHost == null)
                 return null;
 
-            ITextDocument textDocument = viewHost.GetTextDocument();
+            ITextDocument textDocument = await viewHost.GetTextDocumentAsync();
             if (textDocument == null || !predicate(textDocument.FilePath))
                 return null;
 

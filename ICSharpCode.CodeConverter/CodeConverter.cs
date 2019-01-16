@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
@@ -7,7 +8,7 @@ namespace ICSharpCode.CodeConverter
 {
     public static class CodeConverter
     {
-        public static ConversionResult Convert(CodeWithOptions code)
+        public static async Task<ConversionResult> Convert(CodeWithOptions code)
         {
             if (!IsSupportedSource(code.FromLanguage, code.FromLanguageVersion))
                 return new ConversionResult(new NotSupportedException($"Source language {code.FromLanguage} {code.FromLanguageVersion} is not supported!"));
@@ -20,13 +21,13 @@ namespace ICSharpCode.CodeConverter
                 case "C#":
                     switch (code.ToLanguage) {
                         case "Visual Basic":
-                            return ProjectConversion.ConvertText<CSToVBConversion>(code.Text, code.References);
+                            return await ProjectConversion.ConvertText<CSToVBConversion>(code.Text, code.References);
                     }
                     break;
                 case "Visual Basic":
                     switch (code.ToLanguage) {
                         case "C#":
-                            return ProjectConversion.ConvertText<VBToCSConversion>(code.Text, code.References);
+                            return await ProjectConversion.ConvertText<VBToCSConversion>(code.Text, code.References);
                     }
                     break;
 

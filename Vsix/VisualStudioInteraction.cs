@@ -6,6 +6,8 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio;
@@ -16,13 +18,18 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
+using Constants = EnvDTE.Constants;
+using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
+using Task = System.Threading.Tasks.Task;
+using Window = EnvDTE.Window;
 
 namespace CodeConverter.VsExtension
 {
     internal static class VisualStudioInteraction
     {
-        public static VsDocument GetSingleSelectedItemOrDefault()
+        public static async Task<VsDocument> GetSingleSelectedItemOrDefaultAsync()
         {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             var monitorSelection = Package.GetGlobalService(typeof(SVsShellMonitorSelection)) as IVsMonitorSelection;
             var solution = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
 
@@ -65,6 +72,7 @@ namespace CodeConverter.VsExtension
         }
         private static IEnumerable<T> GetSelectedSolutionExplorerItems<T>() where T: class
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             var selectedObjects = (IEnumerable<object>) Dte.ToolWindows.SolutionExplorer.SelectedItems;
             var selectedItems = selectedObjects.Cast<UIHierarchyItem>().ToList();
 
@@ -73,83 +81,90 @@ namespace CodeConverter.VsExtension
 
         private static IEnumerable<T> ObjectOfType<T>(IReadOnlyCollection<UIHierarchyItem> selectedItems) where T : class
         {
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             var returnType = typeof(T);
             return selectedItems.Select(item => item.Object).Where(returnType.IsInstanceOfType).Cast<T>();
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
         }
 
-        public static Window OpenFile(FileInfo fileInfo)
+        public static async Task<Window> OpenFileAsync(FileInfo fileInfo)
         {
-            return Dte.ItemOperations.OpenFile(fileInfo.FullName, EnvDTE.Constants.vsViewKindTextView);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            return Dte.ItemOperations.OpenFile(fileInfo.FullName, Constants.vsViewKindTextView);
         }
 
-        public static void SelectAll(this Window window)
+        public static async Task SelectAllAsync(this Window window)
         {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             ((TextSelection)window.Document.Selection).SelectAll();
         }
 
         private static DTE2 Dte => Package.GetGlobalService(typeof(DTE)) as DTE2;
 
-        public static IReadOnlyCollection<Project> GetSelectedProjects(string projectExtension)
+        public static async Task<IReadOnlyCollection<Project>> GetSelectedProjectsAsync(string projectExtension)
         {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             var projects = GetSelectedSolutionExplorerItems<Solution>().SelectMany(s => s.GetAllProjects())
                 .Concat(GetSelectedSolutionExplorerItems<Project>().SelectMany(p => p.GetProjects()))
                 .Concat(GetSelectedSolutionExplorerItems<ProjectItem>().Where(p => p.SubProject != null).SelectMany(p => p.SubProject.GetProjects()))
                 .Where(project => project.FullName.EndsWith(projectExtension, StringComparison.InvariantCultureIgnoreCase))
                 .Distinct().ToList();
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             return projects;
         }
 
-        public static IWpfTextViewHost GetCurrentViewHost(IServiceProvider serviceProvider)
+        public static async Task<IWpfTextViewHost> GetCurrentViewHostAsync(IAsyncServiceProvider serviceProvider)
         {
-            IVsTextManager txtMgr = (IVsTextManager)serviceProvider.GetService(typeof(SVsTextManager));
-            IVsTextView vTextView = null;
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            var txtMgr = await serviceProvider.GetServiceAsync<SVsTextManager, IVsTextManager>();
             int mustHaveFocus = 1;
-            txtMgr.GetActiveView(mustHaveFocus, null, out vTextView);
-            IVsUserData userData = vTextView as IVsUserData;
-            if (userData == null)
+            if (txtMgr == null) {
                 return null;
+            }
 
-            object holder;
+            txtMgr.GetActiveView(mustHaveFocus, null, out IVsTextView vTextView);
+            if (!(vTextView is IVsUserData userData)) {
+                return null;
+            }
+
             Guid guidViewHost = DefGuidList.guidIWpfTextViewHost;
-            userData.GetData(ref guidViewHost, out holder);
+            userData.GetData(ref guidViewHost, out var holder);
 
             return holder as IWpfTextViewHost;
         }
 
-        public static ITextDocument GetTextDocument(this IWpfTextViewHost viewHost)
+        public static async Task<ITextDocument> GetTextDocumentAsync(this IWpfTextViewHost viewHost)
         {
-            ITextDocument textDocument = null;
-            viewHost.TextView.TextDataModel.DocumentBuffer.Properties.TryGetProperty(typeof(ITextDocument), out textDocument);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            viewHost.TextView.TextDataModel.DocumentBuffer.Properties.TryGetProperty(typeof(ITextDocument), out ITextDocument textDocument);
             return textDocument;
         }
 
-        public static VisualStudioWorkspace GetWorkspace(IServiceProvider serviceProvider)
+        public static async Task<VisualStudioWorkspace> GetWorkspaceAsync(IAsyncServiceProvider serviceProvider)
         {
-            return (VisualStudioWorkspace) serviceProvider.GetService(typeof(VisualStudioWorkspace)); 
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            return await serviceProvider.GetServiceAsync<VisualStudioWorkspace>(); 
         }
 
-        public static void ShowException(IServiceProvider serviceProvider, string title, Exception ex)
+        public static async Task ShowExceptionAsync(IAsyncServiceProvider serviceProvider, string title, Exception ex)
         {
-            VsShellUtilities.ShowMessageBox(
-                serviceProvider,
-                $"An error has occured during conversion: {ex}",
-                title,
-                OLEMSGICON.OLEMSGICON_CRITICAL,
-                OLEMSGBUTTON.OLEMSGBUTTON_OK,
-                OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            MessageBox.Show($"An error has occured during conversion: {ex}",
+                title, MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         /// <returns>true iff the user answers "OK"</returns>
-        public static bool ShowMessageBox(IServiceProvider serviceProvider, string title, string msg, bool showCancelButton, bool defaultOk = true)
+        public static async Task<bool> ShowMessageBoxAsync(IAsyncServiceProvider serviceProvider, string title, string msg, bool showCancelButton, bool defaultOk = true)
         {
-            var answeredOk = 1;
-            return VsShellUtilities.ShowMessageBox(
-                serviceProvider,
-                msg,
-                title,
-                OLEMSGICON.OLEMSGICON_INFO,
-                showCancelButton ? OLEMSGBUTTON.OLEMSGBUTTON_OKCANCEL : OLEMSGBUTTON.OLEMSGBUTTON_OK,
-                defaultOk || !showCancelButton ? OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST : OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_SECOND) == answeredOk;
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            var userAnswer = MessageBox.Show(msg, title,
+                showCancelButton ? MessageBoxButton.OKCancel : MessageBoxButton.OK,
+                MessageBoxImage.Information,
+                defaultOk || !showCancelButton ? MessageBoxResult.OK : MessageBoxResult.Cancel);
+            return userAnswer == MessageBoxResult.OK;
         }
 
         public class OutputWindow
@@ -163,23 +178,39 @@ namespace CodeConverter.VsExtension
             // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
             private readonly SolutionEvents _solutionEvents;
 
-            public OutputWindow()
+            public static async Task<OutputWindow> CreateAsync()
             {
-                _outputPane = CreateOutputPane();
-
-                _solutionEvents = Dte.Events.SolutionEvents;
-                _solutionEvents.Opened += () => { WriteToOutputWindow(_cachedOutput.ToString()); };
+                return new OutputWindow(await CreateOutputPaneAsync());
             }
 
-            private static IVsOutputWindow GetOutputWindow()
+            public OutputWindow(IVsOutputWindowPane outputPaneAsync)
             {
+                ThreadHelper.ThrowIfNotOnUIThread();
+                _outputPane = outputPaneAsync;
+
+                _solutionEvents = Dte.Events.SolutionEvents;
+                _solutionEvents.Opened += OnSolutionOpened;
+            }
+
+#pragma warning disable VSTHRD100 // Avoid async void methods - fire and forget event handler
+            private async void OnSolutionOpened()
+#pragma warning restore VSTHRD100 // Avoid async void methods
+            {
+                await WriteToOutputWindowAsync(_cachedOutput.ToString());
+            }
+
+            private static async Task<IVsOutputWindow> GetOutputWindowAsync()
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 IServiceProvider serviceProvider = new ServiceProvider(Dte as Microsoft.VisualStudio.OLE.Interop.IServiceProvider);
                 return serviceProvider.GetService(typeof(SVsOutputWindow)) as IVsOutputWindow;
             }
-            private static IVsOutputWindowPane CreateOutputPane()
+
+            private static async Task<IVsOutputWindowPane> CreateOutputPaneAsync()
             {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 Guid generalPaneGuid = PaneGuid;
-                var outputWindow = GetOutputWindow();
+                var outputWindow = await GetOutputWindowAsync();
                 outputWindow.GetPane(ref generalPaneGuid, out var pane);
 
                 if (pane == null) {
@@ -190,25 +221,44 @@ namespace CodeConverter.VsExtension
                 return pane;
             }
 
-            public void Clear()
+            public async Task ClearAsync()
             {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 _cachedOutput.Clear();
                 _outputPane.Clear();
             }
 
-            public void ForceShowOutputPane()
+            public async Task ForceShowOutputPaneAsync()
             {
-                Dte.Windows.Item(EnvDTE.Constants.vsWindowKindOutput).Visible = true;
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                Dte.Windows.Item(Constants.vsWindowKindOutput).Visible = true;
                 _outputPane.Activate();
             }
 
-            public void WriteToOutputWindow(string message)
+            public async Task WriteToOutputWindowAsync(string message)
             {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 lock (_outputPane) {
                     _cachedOutput.AppendLine(message);
-                    _outputPane.OutputString(message);
+                    _outputPane.OutputStringThreadSafe(message);
                 }
             }
+        }
+
+        public static async Task WriteStatusBarTextAsync(IAsyncServiceProvider serviceProvider, string text)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            var statusBar = await serviceProvider.GetServiceAsync<SVsStatusbar, IVsStatusbar>();
+            if (statusBar == null)
+                return;
+
+            statusBar.IsFrozen(out int frozen);
+            if (frozen != 0) {
+                statusBar.FreezeOutput(0);
+            }
+
+            statusBar.SetText(text);
+            statusBar.FreezeOutput(1);
         }
     }
 }
