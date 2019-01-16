@@ -210,13 +210,13 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                                        + Environment.NewLine;
         }
 
-        async Task<ConversionResult> ConvertDocumentUnhandledAsync<TLanguageConversion>(string documentPath, Span selected) where TLanguageConversion : ILanguageConversion, new()
+        private async Task<ConversionResult> ConvertDocumentUnhandledAsync<TLanguageConversion>(string documentPath, Span selected) where TLanguageConversion : ILanguageConversion, new()
         {   
             //TODO Figure out when there are multiple document ids for a single file path
             var documentId = _visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(documentPath).SingleOrDefault();
             if (documentId == null) {
                 //If document doesn't belong to any project
-                return ConvertTextOnly<TLanguageConversion>(documentPath, selected);
+                return await ConvertTextOnlyAsync<TLanguageConversion>(documentPath, selected);
             }
             var document = _visualStudioWorkspace.CurrentSolution.GetDocument(documentId);
             var compilation = await document.Project.GetCompilationAsync();
@@ -226,7 +226,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             return await ProjectConversion.ConvertSingle(compilation, documentSyntaxTree, selectedTextSpan, new TLanguageConversion(), document.Project);
         }
 
-        private static ConversionResult ConvertTextOnly<TLanguageConversion>(string documentPath, Span selected)
+        private static async Task<ConversionResult> ConvertTextOnlyAsync<TLanguageConversion>(string documentPath, Span selected)
             where TLanguageConversion : ILanguageConversion, new()
         {
             var documentText = File.ReadAllText(documentPath);
@@ -235,7 +235,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                 documentText = documentText.Substring(selected.Start, selected.Length);
             }
 
-            var convertTextOnly = ProjectConversion.ConvertText<TLanguageConversion>(documentText, DefaultReferences.NetStandard2);
+            var convertTextOnly = await ProjectConversion.ConvertText<TLanguageConversion>(documentText, DefaultReferences.NetStandard2);
             convertTextOnly.SourcePathOrNull = documentPath;
             return convertTextOnly;
         }

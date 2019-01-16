@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
@@ -43,7 +44,7 @@ End Sub";
 
         private void TestConversionCSharpToVisualBasicWithoutComments(string csharpCode, string expectedVisualBasicCode)
         {
-            AssertConvertedCodeResultEquals<CSToVBConversion>(csharpCode, expectedVisualBasicCode);
+            AssertConvertedCodeResultEquals<CSToVBConversion>(csharpCode, expectedVisualBasicCode).GetAwaiter().GetResult();
         }
 
         public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool expectSurroundingBlock = false)
@@ -61,14 +62,14 @@ End Sub";
 
         public void TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode)
         {
-            AssertConvertedCodeResultEquals<VBToCSConversion>(visualBasicCode, expectedCsharpCode);
+            AssertConvertedCodeResultEquals<VBToCSConversion>(visualBasicCode, expectedCsharpCode).GetAwaiter().GetResult();
         }
 
-        private void AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode) where TLanguageConversion : ILanguageConversion, new()
+        private async Task AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode) where TLanguageConversion : ILanguageConversion, new()
         {
             var outputNode =
                 ProjectConversion.ConvertText<TLanguageConversion>(inputCode, DefaultReferences.NetStandard2, _rootNamespace);
-            AssertConvertedCodeResultEquals(outputNode, expectedConvertedCode, inputCode);
+            AssertConvertedCodeResultEquals(await outputNode, expectedConvertedCode, inputCode);
         }
 
         private static void AssertConvertedCodeResultEquals(ConversionResult conversionResult,

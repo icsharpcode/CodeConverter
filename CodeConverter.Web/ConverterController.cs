@@ -14,7 +14,7 @@ namespace CodeConverter.Web
     {
         [HttpPost]
         [Produces(typeof(ConvertResponse))]
-        public IActionResult Post([FromBody]ConvertRequest todo)
+        public async Task<IActionResult> Post([FromBody]ConvertRequest todo)
         {
             var languages = todo.requestedConversion.Split('2');
 
@@ -34,7 +34,7 @@ namespace CodeConverter.Web
                 .WithTypeReferences(DefaultReferences.NetStandard2)
                 .SetFromLanguage(fromLanguage, fromVersion)
                 .SetToLanguage(toLanguage, toVersion);
-            var result = ICSharpCode.CodeConverter.CodeConverter.Convert(codeWithOptions);
+            var result = await ICSharpCode.CodeConverter.CodeConverter.Convert(codeWithOptions);
 
             var response = new ConvertResponse() {
                 conversionOk = result.Success,
