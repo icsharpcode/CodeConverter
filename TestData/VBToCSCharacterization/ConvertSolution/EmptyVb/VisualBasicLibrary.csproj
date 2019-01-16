@@ -7,8 +7,8 @@
     <ProjectGuid>{DF56BBFF-B43A-0050-1067-E6EC5C14212C}</ProjectGuid>
 	<ProjectTypeGuids>{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
-    <RootNamespace>Empt.cs</RootNamespace>
-    <AssemblyName>Empt.cs</AssemblyName>
+    <RootNamespace>EmptyVb</RootNamespace>
+    <AssemblyName>EmptyVb</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>Windows</MyType>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>

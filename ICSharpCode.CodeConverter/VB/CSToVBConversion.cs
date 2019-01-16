@@ -51,9 +51,9 @@ namespace ICSharpCode.CodeConverter.VB
         public IEnumerable<(string, string)> GetProjectFileReplacementRegexes()
         {
             return new[] {
-                ("\\\\Microsoft.CSharp.targets", "\\Microsoft.VisualBasic.targets"),
-                (".cs\"", ".vb\""),
-                (".cs<", ".vb<")
+                ("\\\\Microsoft\\.CSharp\\.targets", "\\Microsoft.VisualBasic.targets"),
+                ("\\.cs\"", ".vb\""),
+                ("\\.cs<", ".vb<")
             };
         }
         public string PostTransformProjectFile(string s)

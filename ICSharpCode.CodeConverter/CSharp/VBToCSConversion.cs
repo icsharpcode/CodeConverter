@@ -53,9 +53,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         public IEnumerable<(string, string)> GetProjectFileReplacementRegexes()
         {
             return new[] {
-                ("\\\\Microsoft.VisualBasic.targets", "\\Microsoft.CSharp.targets"),
-                (".vb\"", ".cs\""),
-                (".vb<", ".cs<")
+                ("\\\\Microsoft\\.VisualBasic\\.targets", "\\Microsoft.CSharp.targets"),
+                ("\\.vb\"", ".cs\""),
+                ("\\.vb<", ".cs<")
             };
         }
 
