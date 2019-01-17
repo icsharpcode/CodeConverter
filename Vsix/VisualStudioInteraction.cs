@@ -180,6 +180,7 @@ namespace CodeConverter.VsExtension
 
             public static async Task<OutputWindow> CreateAsync()
             {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 return new OutputWindow(await CreateOutputPaneAsync());
             }
 
