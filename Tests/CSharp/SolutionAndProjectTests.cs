@@ -13,16 +13,16 @@ namespace CodeConverter.Tests.CSharp
 {
     public class SolutionAndProjectTests : ProjectConverterTestBase
     {
-        [Fact(Skip = "Hits nullref on appveyor")]
-        public void ConvertSolution()
+        [Fact]
+        public async Task ConvertSolution()
         {
-            ConvertProjectsWhere<VBToCSConversion>(p => true);
+            await ConvertProjectsWhere<VBToCSConversion>(p => true);
         }
 
-        [Fact(Skip = "Hits nullref on appveyor")]
-        public void ConvertSingleProject()
+        [Fact]
+        public async Task ConvertSingleProject()
         {
-            ConvertProjectsWhere<VBToCSConversion>(p => p.Name == "VisualBasicLibrary");
+            await ConvertProjectsWhere<VBToCSConversion>(p => p.Name == "VisualBasicLibrary");
         }
     }
 }

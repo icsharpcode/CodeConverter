@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.VB;
 using Xunit;
 
@@ -6,16 +7,16 @@ namespace CodeConverter.Tests.VB
 {
     public class SolutionAndProjectTests : ProjectConverterTestBase
     {
-        [Fact(Skip = "Hits nullref on appveyor")]
-        public void ConvertSolution()
+        [Fact]
+        public async Task ConvertSolution()
         {
-            ConvertProjectsWhere<CSToVBConversion>(p => true);
+            await ConvertProjectsWhere<CSToVBConversion>(p => true);
         }
 
-        [Fact(Skip = "Hits nullref on appveyor")]
-        public void ConvertSingleProject()
+        [Fact]
+        public async Task ConvertSingleProject()
         {
-            ConvertProjectsWhere<CSToVBConversion>(p => p.Name == "CSharpConsoleApp");
+            await ConvertProjectsWhere<CSToVBConversion>(p => p.Name == "CSharpConsoleApp");
         }
     }
 }
