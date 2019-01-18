@@ -6,13 +6,13 @@ namespace CodeConverter.Tests.VB
 {
     public class SolutionAndProjectTests : ProjectConverterTestBase
     {
-        [Fact(Skip = "Hits nullref on appveyor")]
+        [Fact]
         public void ConvertSolution()
         {
             ConvertProjectsWhere<CSToVBConversion>(p => true);
         }
 
-        [Fact(Skip = "Hits nullref on appveyor")]
+        [Fact]
         public void ConvertSingleProject()
         {
             ConvertProjectsWhere<CSToVBConversion>(p => p.Name == "CSharpConsoleApp");

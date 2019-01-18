@@ -30,7 +30,11 @@ namespace CodeConverter.Tests.TestRunners
 
         public void ConvertProjectsWhere<TLanguageConversion>(Func<Project, bool> shouldConvertProject, [CallerMemberName] string testName = "") where TLanguageConversion : ILanguageConversion, new()
         {
-            using (var workspace = MSBuildWorkspace.Create())
+            using (var workspace = MSBuildWorkspace.Create(new Dictionary<string, string>()
+            {
+                {"Configuration", "Debug"},
+                {"Platform", "AnyCPU"}
+            }))
             {
                 var originalSolutionDir = Path.Combine(GetTestDataDirectory(), "CharacterizationTestSolution");
                 var solutionFile = Path.Combine(originalSolutionDir, "CharacterizationTestSolution.sln");

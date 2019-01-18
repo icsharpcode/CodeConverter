@@ -13,13 +13,13 @@ namespace CodeConverter.Tests.CSharp
 {
     public class SolutionAndProjectTests : ProjectConverterTestBase
     {
-        [Fact(Skip = "Hits nullref on appveyor")]
+        [Fact]
         public void ConvertSolution()
         {
             ConvertProjectsWhere<VBToCSConversion>(p => true);
         }
 
-        [Fact(Skip = "Hits nullref on appveyor")]
+        [Fact]
         public void ConvertSingleProject()
         {
             ConvertProjectsWhere<VBToCSConversion>(p => p.Name == "VisualBasicLibrary");
