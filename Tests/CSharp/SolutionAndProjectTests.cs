@@ -14,15 +14,15 @@ namespace CodeConverter.Tests.CSharp
     public class SolutionAndProjectTests : ProjectConverterTestBase
     {
         [Fact]
-        public void ConvertSolution()
+        public async Task ConvertSolution()
         {
-            ConvertProjectsWhere<VBToCSConversion>(p => true);
+            await ConvertProjectsWhere<VBToCSConversion>(p => true);
         }
 
         [Fact]
-        public void ConvertSingleProject()
+        public async Task ConvertSingleProject()
         {
-            ConvertProjectsWhere<VBToCSConversion>(p => p.Name == "VisualBasicLibrary");
+            await ConvertProjectsWhere<VBToCSConversion>(p => p.Name == "VisualBasicLibrary");
         }
     }
 }

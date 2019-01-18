@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.VB;
 using Xunit;
 
@@ -7,15 +8,15 @@ namespace CodeConverter.Tests.VB
     public class SolutionAndProjectTests : ProjectConverterTestBase
     {
         [Fact]
-        public void ConvertSolution()
+        public async Task ConvertSolution()
         {
-            ConvertProjectsWhere<CSToVBConversion>(p => true);
+            await ConvertProjectsWhere<CSToVBConversion>(p => true);
         }
 
         [Fact]
-        public void ConvertSingleProject()
+        public async Task ConvertSingleProject()
         {
-            ConvertProjectsWhere<CSToVBConversion>(p => p.Name == "CSharpConsoleApp");
+            await ConvertProjectsWhere<CSToVBConversion>(p => p.Name == "CSharpConsoleApp");
         }
     }
 }
