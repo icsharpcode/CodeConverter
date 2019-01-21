@@ -11,8 +11,9 @@ namespace CodeConverter.VsExtension
 
         private static EventHandler WaitFor(Func<object, EventArgs, Task> task)
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            return (o, a) => ThreadHelper.JoinableTaskFactory.Run(() => task(o,a));
+            return (o, a) => {
+                ThreadHelper.JoinableTaskFactory.Run(() => task(o, a));
+            };
         }
 
         public BlockingOleMenuCommand(Func<object, EventArgs, Task> invokeHandler, CommandID id)
