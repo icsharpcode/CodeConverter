@@ -242,7 +242,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private SyntaxNode GetSelectedNode(SyntaxNode resultNode)
         {
             var selectedNode = resultNode.GetAnnotatedNodes(AnnotationConstants.SelectedNodeAnnotationKind)
-                .SingleOrDefault();
+                .FirstOrDefault();
             if (selectedNode != null)
             {
                 var children = _languageConversion.FindSingleImportantChild(selectedNode);

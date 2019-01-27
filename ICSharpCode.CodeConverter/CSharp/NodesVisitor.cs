@@ -683,7 +683,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.VariableDeclaration((TypeSyntax)node.AsClause.Type.Accept(TriviaConvertingVisitor),
                         SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)))
                 );
-                throw new NotSupportedException();
             }
 
 
