@@ -295,12 +295,13 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
 
-        private static IEnumerable<SyntaxToken> ConvertModifiersCore(IReadOnlyCollection<SyntaxToken> modifiers, TokenContext context)
+        private static IEnumerable<SyntaxToken> ConvertModifiersCore(IReadOnlyCollection<SyntaxToken> modifiers,
+            TokenContext context, bool isConstructor)
         {
             if (context != TokenContext.Local && context != TokenContext.MemberInInterface) {
                 bool visibility = false;
                 foreach (var token in modifiers) {
-                    if (token.IsCsVisibility(true)) { //TODO Don't treat const as visibility, pass in more context to detect this
+                    if (token.IsCsVisibility(true, isConstructor)) { //TODO Don't always treat as variable or const, pass in more context to detect this
                         visibility = true;
                         break;
                     }
@@ -341,9 +342,10 @@ namespace ICSharpCode.CodeConverter.VB
             throw new ArgumentOutOfRangeException(nameof(context));
         }
 
-        internal static SyntaxTokenList ConvertModifiers(IReadOnlyCollection<SyntaxToken> modifiers, TokenContext context = TokenContext.Global)
+        internal static SyntaxTokenList ConvertModifiers(IReadOnlyCollection<SyntaxToken> modifiers,
+            TokenContext context = TokenContext.Global, bool isConstructor = false)
         {
-            return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context));
+            return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context, isConstructor));
         }
 
         private static SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)

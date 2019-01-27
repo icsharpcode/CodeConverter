@@ -358,6 +358,17 @@ Friend Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
 End Class");
         }
 
+
+        [Fact]
+        public void TestStaticConstructor()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"static SurroundingClass()
+{
+}", @"Shared Sub New()
+End Sub");
+        }
+
         [Fact]
         public void TestConstructorCallingBase()
         {

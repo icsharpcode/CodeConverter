@@ -721,7 +721,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var block = node.BlockStatement;
                 var attributes = block.AttributeLists.SelectMany(ConvertAttribute);
-                var modifiers = CommonConversions.ConvertModifiers(block.Modifiers, GetMemberContext(node));
+                var modifiers = CommonConversions.ConvertModifiers(block.Modifiers, GetMemberContext(node), isConstructor: true);
 
                 var ctor = (node.Statements.FirstOrDefault() as VBSyntax.ExpressionStatementSyntax)?.Expression as VBSyntax.InvocationExpressionSyntax;
                 var ctorExpression = ctor?.Expression as VBSyntax.MemberAccessExpressionSyntax;

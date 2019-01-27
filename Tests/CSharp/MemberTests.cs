@@ -336,6 +336,26 @@ End Class", @"class TestClass<T, T2, T3>
         }
 
         [Fact]
+        public void TestConstructorWithImplicitPublicAccessibility()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Sub New()
+End Sub", @"public SurroundingClass()
+{
+}");
+        }
+
+        [Fact]
+        public void TestStaticConstructor()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Shared Sub New()
+End Sub", @"static SurroundingClass()
+{
+}");
+        }
+
+        [Fact]
         public void TestDestructor()
         {
             TestConversionVisualBasicToCSharp(

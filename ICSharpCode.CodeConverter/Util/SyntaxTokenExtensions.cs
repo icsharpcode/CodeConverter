@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
+using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -693,7 +694,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool HasMatchingText(this SyntaxToken token, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind kind)
         {
-            return token.ToString() == Microsoft.CodeAnalysis.VisualBasic.SyntaxFacts.GetText(kind);
+            return token.ToString() == VBasic.SyntaxFacts.GetText(kind);
         }
 
         public static bool IsKind(this SyntaxToken token, SyntaxKind kind1, SyntaxKind kind2)
@@ -1045,16 +1046,18 @@ namespace ICSharpCode.CodeConverter.Util
             }
         }
 
-        public static bool IsVbVisibility(this SyntaxToken token, bool isVariableOrConst)
+        public static bool IsVbVisibility(this SyntaxToken token, bool isVariableOrConst, bool isConstructor)
         {
-            return token.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.PublicKeyword, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.FriendKeyword, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.ProtectedKeyword, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.PrivateKeyword)
-                   || (isVariableOrConst && token.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.ConstKeyword));
+            return token.IsKind(VBasic.SyntaxKind.PublicKeyword, VBasic.SyntaxKind.FriendKeyword, VBasic.SyntaxKind.ProtectedKeyword, VBasic.SyntaxKind.PrivateKeyword)
+                   || isVariableOrConst && token.IsKind(VBasic.SyntaxKind.ConstKeyword)
+                   || isConstructor && token.IsKind(VBasic.SyntaxKind.SharedKeyword);
         }
 
-        public static bool IsCsVisibility(this SyntaxToken token, bool isVariableOrConst)
+        public static bool IsCsVisibility(this SyntaxToken token, bool isVariableOrConst, bool isConstructor)
         {
-            return token.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PublicKeyword, Microsoft.CodeAnalysis.CSharp.SyntaxKind.InternalKeyword, Microsoft.CodeAnalysis.CSharp.SyntaxKind.ProtectedKeyword, Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword)
-                   || (isVariableOrConst && token.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword));
+            return token.IsKind(SyntaxKind.PublicKeyword, SyntaxKind.InternalKeyword, SyntaxKind.ProtectedKeyword, SyntaxKind.PrivateKeyword)
+                   || isVariableOrConst && token.IsKind(SyntaxKind.ConstKeyword)
+                   || isConstructor && token.IsKind(SyntaxKind.StaticKeyword);
         }
     }
 }

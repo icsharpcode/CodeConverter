@@ -294,9 +294,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.Identifier(text);
         }
 
-        public SyntaxTokenList ConvertModifiers(IEnumerable<SyntaxToken> modifiers, TokenContext context = TokenContext.Global, bool isVariableOrConst = false)
+        public SyntaxTokenList ConvertModifiers(IEnumerable<SyntaxToken> modifiers, TokenContext context = TokenContext.Global, bool isVariableOrConst = false, bool isConstructor = false)
         {
-            return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context, isVariableOrConst).Where(t => CSharpExtensions.Kind(t) != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None));
+            return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context, isVariableOrConst, isConstructor).Where(t => CSharpExtensions.Kind(t) != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None));
         }
 
         private SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)
@@ -310,13 +310,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             return token == Microsoft.CodeAnalysis.CSharp.SyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));
         }
 
-        private IEnumerable<SyntaxToken> ConvertModifiersCore(IEnumerable<SyntaxToken> modifiers, TokenContext context, bool isVariableOrConst = false)
+        private IEnumerable<SyntaxToken> ConvertModifiersCore(IEnumerable<SyntaxToken> modifiers, TokenContext context,
+            bool isVariableOrConst = false, bool isConstructor = false)
         {
             var contextsWithIdenticalDefaults = new[] {TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface };
             if (!contextsWithIdenticalDefaults.Contains(context)) {
                 bool visibility = false;
                 foreach (var token in modifiers) {
-                    if (SyntaxTokenExtensions.IsVbVisibility(token, isVariableOrConst)) {
+                    if (token.IsVbVisibility(isVariableOrConst, isConstructor)) {
                         visibility = true;
                         break;
                     }

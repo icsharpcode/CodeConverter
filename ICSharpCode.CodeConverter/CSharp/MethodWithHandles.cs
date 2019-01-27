@@ -30,7 +30,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var fieldDecl = decl.WithVariables(SyntaxFactory.SeparatedList(decl.Variables.Select(v =>
                 v.WithIdentifier(propertyToBackingFieldMapping[v.Identifier.Text])
             )));
-            var fieldModifiers = SyntaxFactory.TokenList(new[] {SyntaxFactory.Token(SyntaxKind.PrivateKeyword)}.Concat(convertedModifiers.Where(m => !m.IsCsVisibility(false))));
+            var fieldModifiers = SyntaxFactory.TokenList(new[] {SyntaxFactory.Token(SyntaxKind.PrivateKeyword)}.Concat(convertedModifiers.Where(m => !m.IsCsVisibility(false, false))));
             yield return SyntaxFactory.FieldDeclaration(attributes, fieldModifiers, fieldDecl);
             foreach (var variable in decl.Variables) {
                 yield return GetDeclarationsForFieldBackedProperty(methodsWithHandles, attributes, convertedModifiers,

@@ -324,7 +324,7 @@ namespace ICSharpCode.CodeConverter.VB
             var initializer = new[] { (StatementSyntax)node.Initializer?.Accept(TriviaConvertingVisitor) }.Where(x => x != null);
             return SyntaxFactory.ConstructorBlock(
                 SyntaxFactory.SubNewStatement(
-                    SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)),
+                    SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node), true),
                     (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor)
                 ),
                 SyntaxFactory.List(initializer.Concat(_commonConversions.ConvertBody(node.Body, node.ExpressionBody)))
