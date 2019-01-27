@@ -761,6 +761,31 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void UntilStatement()
+        {
+            //Bug: comment on statement in do loop gets moved to end of conditional
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+    Private Sub TestMethod()
+        Dim charIndex As Integer
+        ' allow only digits and letters
+        Do
+            charIndex = rand.Next(48, 123)
+        Loop Until (charIndex >= 48 AndAlso charIndex <= 57) OrElse (charIndex >= 65 AndAlso charIndex <= 90) OrElse (charIndex >= 97 AndAlso charIndex <= 122)
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        int charIndex;
+        // allow only digits and letters
+        do
+            charIndex = rand.Next(48, 123);
+        while ((charIndex < 48 || charIndex > 57) && (charIndex < 65 || charIndex > 90) && (charIndex < 97 || charIndex > 122));
+    }
+}");
+        }
+
+        [Fact]
         public void SimpleDoStatement()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass

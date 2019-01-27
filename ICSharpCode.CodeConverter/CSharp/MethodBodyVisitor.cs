@@ -635,7 +635,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             statements
                         ));
                     return SingleStatement(SyntaxFactory.WhileStatement(
-                        SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, (ExpressionSyntax)stmt.Condition.Accept(_nodesVisitor)),
+                        ((ExpressionSyntax)stmt.Condition.Accept(_nodesVisitor)).InvertCondition(),
                         statements
                     ));
                 }
@@ -652,7 +652,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 if (isUntilStmt) {
-                    conditionExpression = SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, conditionExpression);
+                    conditionExpression = conditionExpression.InvertCondition();
                 }
 
                 return SingleStatement(SyntaxFactory.DoStatement(statements, conditionExpression));

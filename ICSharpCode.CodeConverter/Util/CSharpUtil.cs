@@ -13,7 +13,7 @@ namespace ICSharpCode.CodeConverter.Util
         /// Inverts a boolean condition. Note: The condition object can be frozen (from AST) it's cloned internally.
         /// </summary>
         /// <param name="condition">The condition to invert.</param>
-        public static ExpressionSyntax InvertCondition(ExpressionSyntax condition)
+        public static ExpressionSyntax InvertCondition(this ExpressionSyntax condition)
         {
             return InvertConditionInternal(condition);
         }
@@ -51,8 +51,7 @@ namespace ICSharpCode.CodeConverter.Util
                 return SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, SyntaxFactory.ParenthesizedExpression(condition));
             }
 
-            if (condition is ConditionalExpressionSyntax) {
-                var cEx = condition as ConditionalExpressionSyntax;
+            if (condition is ConditionalExpressionSyntax cEx) {
                 return cEx.WithCondition(InvertCondition(cEx.Condition));
             }
 
@@ -63,7 +62,7 @@ namespace ICSharpCode.CodeConverter.Util
                     return SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
             }
 
-            return SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, AddParensIfRequired(condition, false));
+            return SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, condition.AddParensIfRequired());
         }
 
         public static SyntaxKind GetExpressionOperatorTokenKind(SyntaxKind op)
@@ -133,7 +132,7 @@ namespace ICSharpCode.CodeConverter.Util
         /// When negating an expression this is required, otherwise you would end up with
         /// a or b -> !a or b
         /// </summary>
-        public static ExpressionSyntax AddParensIfRequired(ExpressionSyntax expression, bool parenthesesRequiredForUnaryExpressions = true)
+        public static ExpressionSyntax AddParensIfRequired(this ExpressionSyntax expression, bool parenthesesRequiredForUnaryExpressions = false)
         {
             if ((expression is BinaryExpressionSyntax) ||
                 (expression is AssignmentExpressionSyntax) ||
