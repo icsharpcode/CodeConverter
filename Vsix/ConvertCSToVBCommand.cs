@@ -119,6 +119,7 @@ namespace CodeConverter.VsExtension
                 menuItem.Visible = false;
                 menuItem.Enabled = false;
 
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 string itemPath = (await VisualStudioInteraction.GetSingleSelectedItemOrDefaultAsync())?.ItemPath;
                 if (itemPath == null || !CodeConversion.IsCSFileName(itemPath))
                     return;
@@ -147,6 +148,8 @@ namespace CodeConverter.VsExtension
 
         private async Task ProjectItemMenuItemCallbackAsync(object sender, EventArgs e)
         {
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             string itemPath = (await VisualStudioInteraction.GetSingleSelectedItemOrDefaultAsync())?.ItemPath;
             await ConvertDocumentAsync(itemPath, new Span(0, 0));
         }
