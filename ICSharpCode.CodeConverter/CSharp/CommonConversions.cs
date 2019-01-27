@@ -280,13 +280,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (symbol != null && !string.IsNullOrWhiteSpace(symbol.Name)) {
                     if (symbol.IsConstructor() && isAttribute) {
                         text = symbol.ContainingType.Name;
-                        if (text.EndsWith("Attribute", StringComparison.Ordinal))
+                        if (text.EndsWith("Attribute", StringComparison.OrdinalIgnoreCase))
                             text = text.Remove(text.Length - "Attribute".Length);
                     } else if (symbol.IsKind(SymbolKind.Parameter) && symbol.ContainingSymbol.IsAccessorPropertySet() && ((symbol.IsImplicitlyDeclared && symbol.Name == "Value") || symbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared) == symbol)) {
                         // The case above is basically that if the symbol is a parameter, and the corresponding definition is a property set definition 
                         // AND the first explicitly declared parameter is this symbol, we need to replace it with value.
                         text = "value";
-                    } else if (text.StartsWith("_", StringComparison.Ordinal) && symbol is IFieldSymbol fieldSymbol && fieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
+                    } else if (text.StartsWith("_", StringComparison.OrdinalIgnoreCase) && symbol is IFieldSymbol fieldSymbol && fieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
                         text = fieldSymbol.AssociatedSymbol.Name;
                     }
                 }
