@@ -7,6 +7,7 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.FindSymbols;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
@@ -449,15 +450,17 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 AccessorListSyntax accessors = null;
                 if (!hasBody) {
-                    var accessorList = new List<AccessorDeclarationSyntax>();
-
-                    if (!isWriteOnly) {
-                        accessorList.Add(SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SemicolonToken));
+                    var getAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SemicolonToken);
+                    var setAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration).WithSemicolonToken(SemicolonToken);
+                    if (isWriteOnly) {
+                        getAccessor = getAccessor.AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
                     }
-                    if (!isReadonly) {
-                        accessorList.Add(SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration).WithSemicolonToken(SemicolonToken));
+                    if (isReadonly) {
+                        setAccessor = setAccessor.AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
                     }
-                    accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(accessorList));
+                    // In VB, there's a backing field which can always be read and written to even on ReadOnly/WriteOnly properties.
+                    // Our conversion will rewrite usages of that field to use the property accessors which therefore must exist and be private at minimum.
+                    accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor, setAccessor}));
                 } else {
                     accessors = SyntaxFactory.AccessorList(
                         SyntaxFactory.List(

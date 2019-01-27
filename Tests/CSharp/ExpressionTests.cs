@@ -594,7 +594,7 @@ class TestClass3
 {
     private class Rec
     {
-        public Rec Prop { get; } = new Rec();
+        public Rec Prop { get; private set; } = new Rec();
     }
     private Rec TestMethod(string str)
     {

@@ -699,7 +699,7 @@ End Class", @"using System.Collections.Generic;
 
 class TestClass
 {
-    private List<string> First { get; } = new List<string>();
+    private List<string> First { get; private set; } = new List<string>();
     private int Second { get; set; } = 0;
 }");
         }
@@ -1258,7 +1258,28 @@ End Class", @"class TestClass
     WriteOnly Property Items As Integer()
 End Interface", @"interface TestInterface
 {
-    int[] Items { set; }
+    int[] Items { private get; set; }
+}");
+        }
+
+        [Fact]
+        public void TestImplicitPrivateSetter()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Public Class SomeClass
+    Public ReadOnly Property SomeValue As Integer
+
+    Public Sub SetValue(value1 As Integer, value2 As Integer)
+        _SomeValue = value1 + value2
+    End Sub
+End Class", @"public class SomeClass
+{
+    public int SomeValue { get; private set; }
+
+    public void SetValue(int value1, int value2)
+    {
+        SomeValue = value1 + value2;
+    }
 }");
         }
 
