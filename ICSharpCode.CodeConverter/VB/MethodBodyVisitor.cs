@@ -474,7 +474,7 @@ namespace ICSharpCode.CodeConverter.VB
             if (expression is ElseCaseClauseSyntax)
                 expressionText = "Default";
             else
-                expressionText = expression.ToString();
+                expressionText = expression.ToString().Replace('.', '_');
             return $"_Select{_switchCount}_Case{expressionText}";
         }
 

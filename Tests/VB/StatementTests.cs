@@ -929,6 +929,36 @@ End Class");
         }
 
         [Fact]
+        public void SelectCase_WithDotInCaseLabel()
+        {
+            TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    void TestMethod(double number)
+    {
+        switch (number) {
+            case 3:
+                Console.Write(""section 3"");
+                goto case 5.5;
+            case 5.5:
+                Console.Write(""section 5"");
+                break;
+        }
+    }
+}", @"Friend Class TestClass
+    Private Sub TestMethod(ByVal number As Double)
+        Select Case number
+            Case 3
+                Console.Write(""section 3"")
+                GoTo _Select0_Case5_5
+            Case 5.5
+_Select0_Case5_5:
+                Console.Write(""section 5"")
+        End Select
+    End Sub
+End Class");
+        }
+
+        [Fact]
         public void TryCatch()
         {
             TestConversionCSharpToVisualBasic(@"class TestClass
