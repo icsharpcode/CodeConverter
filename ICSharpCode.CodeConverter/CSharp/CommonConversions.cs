@@ -286,8 +286,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                         // The case above is basically that if the symbol is a parameter, and the corresponding definition is a property set definition 
                         // AND the first explicitly declared parameter is this symbol, we need to replace it with value.
                         text = "value";
-                    } else if (text.StartsWith("_", StringComparison.OrdinalIgnoreCase) && symbol is IFieldSymbol fieldSymbol && fieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
-                        text = fieldSymbol.AssociatedSymbol.Name;
+                    } else if (text.StartsWith("_", StringComparison.OrdinalIgnoreCase) && symbol is IFieldSymbol propertyFieldSymbol && propertyFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
+                        text = propertyFieldSymbol.AssociatedSymbol.Name;
+                    } else if (text.EndsWith("Event", StringComparison.OrdinalIgnoreCase) && symbol is IFieldSymbol eventFieldSymbol && eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
+                        text = eventFieldSymbol.AssociatedSymbol.Name;
                     }
                 }
             }

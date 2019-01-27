@@ -998,6 +998,37 @@ End Function",
         }
 
         [Fact]
+        public void UseEventBackingField()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+                @"Public Class Foo
+    Public Event Bar As EventHandler(Of EventArgs)
+
+    Protected Sub OnBar(e As EventArgs)
+        If BarEvent Is Nothing Then
+            System.Diagnostics.Debug.WriteLine(""No subscriber"")
+        Else
+            RaiseEvent Bar(Me, e)
+        End If
+    End Sub
+End Class",
+                @"using System;
+
+public class Foo
+{
+    public event EventHandler<EventArgs> Bar;
+
+    protected void OnBar(EventArgs e)
+    {
+        if (Bar == null)
+            System.Diagnostics.Debug.WriteLine(""No subscriber"");
+        else
+            Bar?.Invoke(this, e);
+    }
+}");
+        }
+
+        [Fact]
         public void StringInterpolationWithDoubleQuotes()
         {
             TestConversionVisualBasicToCSharp(
