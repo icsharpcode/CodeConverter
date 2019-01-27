@@ -985,7 +985,7 @@ End Function",
         }
 
         [Fact]
-        public void LogicalOrWithConditionalOperator()
+        public void Tuple()
         {
             TestConversionVisualBasicToCSharpWithoutComments(
                 @"Public Function GetString(yourBoolean as Boolean) As Boolean

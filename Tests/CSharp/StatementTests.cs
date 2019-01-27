@@ -108,6 +108,22 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void TupleInitializationStatement()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Dim totales As (fics As Integer, dirs As Integer) = (0, 0)
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        (int fics, int dirs) totales = (0, 0);
+    }
+}");
+        }
+
+        [Fact]
         public void ObjectInitializationStatementInDeclaration()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass

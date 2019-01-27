@@ -1153,13 +1153,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitSimpleArgument(VBSyntax.SimpleArgumentSyntax node)
             {
-                int argId = ((VBSyntax.ArgumentListSyntax)node.Parent).Arguments.IndexOf(node);
                 var invocation = node.Parent.Parent;
                 if (invocation is VBSyntax.ArrayCreationExpressionSyntax)
                     return node.Expression.Accept(TriviaConvertingVisitor);
                 var symbol = GetInvocationSymbol(invocation);
                 SyntaxToken token = default(SyntaxToken);
                 if (symbol != null) {
+                    int argId = ((VBSyntax.ArgumentListSyntax)node.Parent).Arguments.IndexOf(node);
                     var parameterKinds = symbol.GetParameters().Select(param => param.RefKind).ToList();
                     //WARNING: If named parameters can reach here it won't work properly for them
                     var refKind = argId >= parameterKinds.Count ? RefKind.None : parameterKinds[argId];
@@ -1499,6 +1499,31 @@ namespace ICSharpCode.CodeConverter.CSharp
             #endregion
 
             #region Type Name / Modifier
+
+            public override CSharpSyntaxNode VisitTupleType(VBSyntax.TupleTypeSyntax node)
+            {
+                var elements = node.Elements.Select(e => (TupleElementSyntax)e.Accept(TriviaConvertingVisitor));
+                return SyntaxFactory.TupleType(SyntaxFactory.SeparatedList(elements));
+            }
+
+            public override CSharpSyntaxNode VisitTypedTupleElement(VBSyntax.TypedTupleElementSyntax node)
+            {
+                return SyntaxFactory.TupleElement((TypeSyntax) node.Type.Accept(TriviaConvertingVisitor));
+            }
+
+            public override CSharpSyntaxNode VisitNamedTupleElement(VBSyntax.NamedTupleElementSyntax node)
+            {
+                return SyntaxFactory.TupleElement((TypeSyntax)node.AsClause.Type.Accept(TriviaConvertingVisitor), CommonConversions.ConvertIdentifier(node.Identifier));
+            }
+
+            public override CSharpSyntaxNode VisitTupleExpression(VBSyntax.TupleExpressionSyntax node)
+            {
+                var args = node.Arguments.Select(a => {
+                    var expr = (ExpressionSyntax)a.Expression.Accept(TriviaConvertingVisitor);
+                    return SyntaxFactory.Argument(expr);
+                });
+                return SyntaxFactory.TupleExpression(SyntaxFactory.SeparatedList(args));
+            }
 
             public override CSharpSyntaxNode VisitPredefinedType(VBSyntax.PredefinedTypeSyntax node)
             {
