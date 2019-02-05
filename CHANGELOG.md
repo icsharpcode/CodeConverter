@@ -5,6 +5,7 @@ All notable changes to the code converter will be documented here.
 
 ### C# -> VB
 * Tuples now converted
+* All known operator overloads now converted
 
 # 6.3.0 05/02/2019
 * VS 2019 support

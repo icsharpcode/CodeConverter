@@ -138,6 +138,152 @@ Friend Class TestSubclass
 End Class");
         }
 
+
+        [Fact]
+        public void OperatorOverloads()
+        {
+            // Note a couple map to the same thing in C# so occasionally the result won't compile. The user can manually decide what to do in such scenarios.
+            TestConversionCSharpToVisualBasic(@"public class AcmeClass
+{
+    public static AcmeClass operator +(int i, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator +(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator -(int i, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator !(AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator *(int i, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator /(int i, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator %(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator <<(AcmeClass ac, int i)
+    {
+        return ac;
+    }
+    public static AcmeClass operator >>(AcmeClass ac, int i)
+    {
+        return ac;
+    }
+    public static AcmeClass operator ==(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator !=(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator <(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator >(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator <=(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator >=(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator &(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator |(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+}", @"Public Class AcmeClass
+    Public Shared Operator +(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator &(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator -(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator Not(ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator *(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator /(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator Mod(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator <<(ByVal ac As AcmeClass, ByVal i As Integer) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator >>(ByVal ac As AcmeClass, ByVal i As Integer) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator =(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator <>(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator <(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator >(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator <=(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator >=(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator And(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+
+    Public Shared Operator Or(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+        Return ac
+    End Operator
+End Class");
+        }
+
         [Fact]
         public void TestSealedMethod()
         {

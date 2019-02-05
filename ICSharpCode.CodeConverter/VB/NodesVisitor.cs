@@ -602,24 +602,57 @@ namespace ICSharpCode.CodeConverter.VB
             ConvertAndSplitAttributes(node.AttributeLists, out var attributes, out var returnAttributes);
             var body = _commonConversions.ConvertBody(node.Body, node.ExpressionBody);
             var parameterList = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor);
+            var firstParam = node.ParameterList?.Parameters.FirstOrDefault()
+                             ?? throw new NotSupportedException("Operator overloads with no parameters aren't supported");
+            var firstParameterIsString = _semanticModel.GetTypeInfo(firstParam.Type).ConvertedType.SpecialType == SpecialType.System_String;
             var stmt = SyntaxFactory.OperatorStatement(
                 attributes, CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)),
-                SyntaxFactory.Token(ConvertOperatorDeclarationToken(CS.CSharpExtensions.Kind(node.OperatorToken))),
+                SyntaxFactory.Token(ConvertOperatorDeclarationToken(CS.CSharpExtensions.Kind(node.OperatorToken), firstParameterIsString)),
                 parameterList,
                 SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.ReturnType.Accept(TriviaConvertingVisitor))
             );
             return SyntaxFactory.OperatorBlock(stmt, body);
         }
 
-        SyntaxKind ConvertOperatorDeclarationToken(CS.SyntaxKind syntaxKind)
+
+
+        SyntaxKind ConvertOperatorDeclarationToken(CS.SyntaxKind syntaxKind, bool firstParameterIsString)
         {
             switch (syntaxKind) {
+                case CS.SyntaxKind.PlusToken:
+                    return firstParameterIsString ? SyntaxKind.AmpersandToken : SyntaxKind.PlusToken;
+                case CS.SyntaxKind.MinusToken:
+                    return SyntaxKind.MinusToken;
+                case CS.SyntaxKind.ExclamationToken:
+                    return SyntaxKind.NotKeyword;
+                case CS.SyntaxKind.AsteriskToken:
+                    return SyntaxKind.AsteriskToken;
+                case CS.SyntaxKind.SlashToken:
+                    return SyntaxKind.SlashToken;
+                case CS.SyntaxKind.PercentToken:
+                    return SyntaxKind.ModKeyword;
+                case CS.SyntaxKind.LessThanLessThanToken:
+                    return SyntaxKind.LessThanLessThanToken;
+                case CS.SyntaxKind.GreaterThanGreaterThanToken:
+                    return SyntaxKind.GreaterThanGreaterThanToken;
                 case CS.SyntaxKind.EqualsEqualsToken:
                     return SyntaxKind.EqualsToken;
                 case CS.SyntaxKind.ExclamationEqualsToken:
                     return SyntaxKind.LessThanGreaterThanToken;
+                case CS.SyntaxKind.GreaterThanToken:
+                    return SyntaxKind.GreaterThanToken;
+                case CS.SyntaxKind.LessThanToken:
+                    return SyntaxKind.LessThanToken;
+                case CS.SyntaxKind.GreaterThanEqualsToken:
+                    return SyntaxKind.GreaterThanEqualsToken;
+                case CS.SyntaxKind.LessThanEqualsToken:
+                    return SyntaxKind.LessThanEqualsToken;
+                case CS.SyntaxKind.AmpersandToken:
+                    return SyntaxKind.AndKeyword;
+                case CS.SyntaxKind.BarToken:
+                    return SyntaxKind.OrKeyword;
             }
-            throw new NotSupportedException();
+            throw new NotSupportedException($"{nameof(syntaxKind)} of {syntaxKind} cannot be converted");
         }
 
         public override VisualBasicSyntaxNode VisitConversionOperatorDeclaration(CSS.ConversionOperatorDeclarationSyntax node)
