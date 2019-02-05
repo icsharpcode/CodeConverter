@@ -1,9 +1,23 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
+# 6.3.0 05/02/2019
+* VS 2019 support
+* Breaking API change: Most library API names and return types are now async
+* Improve VS startup time by making package load async
+* Added SourceLink
 
-# 6.3.0 TBC
-* Library API names and return types are now async
+### VB -> C#
+* Private setter added to conversion of ReadOnly properties to cater for backing field usage
+* Usage of compiler generated event variable name converted correctly
+* Access modifiers no longer added erroneously to static constructor 
+* "Do Until" construct multi-part conditions are correctly converted
+* Tuple conversion support added
+* VB -> C#: Error (lot of comments about the issue) when define an array with number of elements
+* Decimal division conversion bugfix
+
+### C# -> VB
+* GoTo Case with dot in name converted correctly
 
 # 6.2.0 19/11/2018
 
