@@ -636,6 +636,26 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(node.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor))));
         }
 
+        public override VisualBasicSyntaxNode VisitTupleType(CSS.TupleTypeSyntax node)
+        {
+            var elements = node.Elements.Select(e => (TupleElementSyntax)e.Accept(TriviaConvertingVisitor));
+            return SyntaxFactory.TupleType(SyntaxFactory.SeparatedList(elements));
+        }
+
+        public override VisualBasicSyntaxNode VisitTupleElement(CSS.TupleElementSyntax node)
+        {
+            return SyntaxFactory.TypedTupleElement((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor));
+        }
+
+        public override VisualBasicSyntaxNode VisitTupleExpression(CSS.TupleExpressionSyntax node)
+        {
+            var args = node.Arguments.Select(a => {
+                var expr = (ExpressionSyntax)a.Expression.Accept(TriviaConvertingVisitor);
+                return SyntaxFactory.SimpleArgument(expr);
+            });
+            return SyntaxFactory.TupleExpression(SyntaxFactory.SeparatedList(args));
+        }
+
         public override VisualBasicSyntaxNode VisitParameter(CSS.ParameterSyntax node)
         {
             var id = CommonConversions.ConvertIdentifier(node.Identifier);

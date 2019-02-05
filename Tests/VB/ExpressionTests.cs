@@ -340,6 +340,19 @@ End Function");
         }
 
         [Fact]
+        public void TupleType()
+        {
+            TestConversionCSharpToVisualBasic(@"public interface ILanguageConversion 
+{
+    IReadOnlyCollection<(string, string)> GetProjectTypeGuidMappings();
+    IEnumerable<(string, string)> GetProjectFileReplacementRegexes();
+}", @"Public Interface ILanguageConversion
+    Function GetProjectTypeGuidMappings() As IReadOnlyCollection(Of (String, String))
+    Function GetProjectFileReplacementRegexes() As IEnumerable(Of (String, String))
+End Interface");
+        }
+
+        [Fact]
         public void DelegateExpression()
         {
             TestConversionCSharpToVisualBasic(@"class TestClass 
