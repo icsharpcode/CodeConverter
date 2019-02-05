@@ -6,6 +6,7 @@ using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using ArgumentListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax;
@@ -656,6 +657,13 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.TupleExpression(SyntaxFactory.SeparatedList(args));
         }
 
+
+
+        public override VisualBasicSyntaxNode VisitParenthesizedVariableDesignation(CSS.ParenthesizedVariableDesignationSyntax node)
+        {
+            return SyntaxFactory.IdentifierName(CommonConversions.GetTupleName(node));
+        }
+
         public override VisualBasicSyntaxNode VisitParameter(CSS.ParameterSyntax node)
         {
             var id = CommonConversions.ConvertIdentifier(node.Identifier);
@@ -909,11 +917,6 @@ namespace ICSharpCode.CodeConverter.VB
                 (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
                 (ArgumentListSyntax)node.ArgumentList.Accept(TriviaConvertingVisitor)
             );
-        }
-
-        public override VisualBasicSyntaxNode VisitParenthesizedVariableDesignation(CSS.ParenthesizedVariableDesignationSyntax node)
-        {
-            return base.VisitParenthesizedVariableDesignation(node);
         }
 
         private bool IsNameOfExpression(CSS.InvocationExpressionSyntax node)

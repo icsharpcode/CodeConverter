@@ -737,6 +737,33 @@ End Class");
         }
 
         [Fact]
+        public void ForTupleDeconstruction()
+        {
+            TestConversionCSharpToVisualBasic(@"public class SolutionConverter
+{
+    private static string ApplyReplacements(string originalText, IEnumerable<(string, string)> replacements)
+    {
+        foreach (var (oldValue, newValue) in replacements)
+        {
+            originalText = Regex.Replace(originalText, oldValue, newValue, RegexOptions.IgnoreCase);
+        }
+
+        return originalText;
+    }
+}", @"Public Class SolutionConverter
+    Private Shared Function ApplyReplacements(ByVal originalText As String, ByVal replacements As IEnumerable(Of (String, String))) As String
+        For Each oldValueNewValue In replacements
+            Dim oldValue = oldValueNewValue.Item1
+            Dim newValue = oldValueNewValue.Item2
+            originalText = Regex.Replace(originalText, oldValue, newValue, RegexOptions.IgnoreCase)
+        Next
+
+        Return originalText
+    End Function
+End Class");
+        }
+
+        [Fact]
         public void LabeledAndForStatement()
         {
             TestConversionCSharpToVisualBasic(@"class GotoTest1

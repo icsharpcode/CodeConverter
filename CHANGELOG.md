@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
+# 6.4.0 TBC
+
+### C# -> VB
+* Tuples now converted
+
 # 6.3.0 05/02/2019
 * VS 2019 support
 * Breaking API change: Most library API names and return types are now async

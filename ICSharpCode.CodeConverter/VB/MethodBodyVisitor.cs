@@ -387,22 +387,52 @@ namespace ICSharpCode.CodeConverter.VB
             return true;
         }
 
+        public override SyntaxList<StatementSyntax> VisitForEachVariableStatement(CSS.ForEachVariableStatementSyntax node)
+        {
+            var loopVar = node.Variable.Accept(_nodesVisitor);
+            var extraStatements = new List<StatementSyntax>();
+            if (node.Variable is CSS.DeclarationExpressionSyntax des && des.Designation is CSS.ParenthesizedVariableDesignationSyntax pv) {
+                var tupleName = CommonConversions.GetTupleName(pv);
+                extraStatements.AddRange(pv.Variables.Select((v, i) => {
+                    var initializer = SyntaxFactory.EqualsValue(SyntaxFactory.SimpleMemberAccessExpression(
+                        SyntaxFactory.IdentifierName(tupleName),
+                        SyntaxFactory.IdentifierName("Item" + (i + 1).ToString())));
+                    VariableDeclaratorSyntax variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(
+                        SyntaxFactory.ModifiedIdentifier(SyntaxFactory.Identifier(v.ToString())))
+                        .WithInitializer(initializer);
+                    return CommonConversions.CreateLocalDeclarationStatement(variableDeclaratorSyntax);
+                }));
+            }
+            return CreateForEachStatement(loopVar, node.Expression, node.Statement, extraStatements.ToArray());
+        }
+
         public override SyntaxList<StatementSyntax> VisitForEachStatement(CSS.ForEachStatementSyntax node)
         {
             VisualBasicSyntaxNode variable;
-            if (node.Type.IsVar) {
+            if (node.Type.IsVar)
+            {
                 variable = SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(node.Identifier));
-            } else {
+            }
+            else
+            {
                 variable = SyntaxFactory.VariableDeclarator(
-                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(CommonConversions.ConvertIdentifier(node.Identifier))),
-                    SyntaxFactory.SimpleAsClause((TypeSyntax)node.Type.Accept(_nodesVisitor)),
+                    SyntaxFactory.SingletonSeparatedList(
+                        SyntaxFactory.ModifiedIdentifier(CommonConversions.ConvertIdentifier(node.Identifier))),
+                    SyntaxFactory.SimpleAsClause((TypeSyntax) node.Type.Accept(_nodesVisitor)),
                     null
                 );
             }
-            var expression = (ExpressionSyntax)node.Expression.Accept(_nodesVisitor);
-            var stmt = ConvertBlock(node.Statement);
+
+            return CreateForEachStatement(variable, node.Expression, node.Statement);
+        }
+
+        private SyntaxList<StatementSyntax> CreateForEachStatement(VisualBasicSyntaxNode vbVariable,
+            CSS.ExpressionSyntax csExpression, CSS.StatementSyntax csStatement, params StatementSyntax[] prefixExtraVbStatements)
+        {
+            var expression = (ExpressionSyntax) csExpression.Accept(_nodesVisitor);
+            var stmt = ConvertBlock(csStatement, prefixExtraVbStatements);
             var block = SyntaxFactory.ForEachBlock(
-                SyntaxFactory.ForEachStatement(variable, expression),
+                SyntaxFactory.ForEachStatement(vbVariable, expression),
                 stmt,
                 SyntaxFactory.NextStatement()
             );
@@ -518,14 +548,14 @@ namespace ICSharpCode.CodeConverter.VB
             return ifBlock;
         }
 
-        SyntaxList<StatementSyntax> ConvertBlock(CSS.StatementSyntax node)
+        SyntaxList<StatementSyntax> ConvertBlock(CSS.StatementSyntax node, params StatementSyntax[] prefixExtraVbStatements)
         {
-            if (node is CSS.BlockSyntax) {
-                var b = (CSS.BlockSyntax)node;
-                return SyntaxFactory.List(b.Statements.Where(s => !(s is CSS.EmptyStatementSyntax)).SelectMany(s => s.Accept(CommentConvertingVisitor)));
+            if (node is CSS.BlockSyntax b) {
+                return SyntaxFactory.List(prefixExtraVbStatements.Concat(b.Statements.Where(s => !(s is CSS.EmptyStatementSyntax))
+                    .SelectMany(s => s.Accept(CommentConvertingVisitor))));
             }
             if (node is CSS.EmptyStatementSyntax) {
-                return SyntaxFactory.List<StatementSyntax>();
+                return SyntaxFactory.List(prefixExtraVbStatements);
             }
             return node.Accept(CommentConvertingVisitor);
         }
