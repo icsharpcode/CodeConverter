@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
-# 6.4.0 TBC
+# 6.4.0 07/02/2019
 Fix initialization bug in VS2017
 
 ### C# -> VB

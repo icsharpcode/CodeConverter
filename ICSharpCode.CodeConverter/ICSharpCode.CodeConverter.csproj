@@ -12,9 +12,9 @@
 	* Completely free and open source: Check out [GitHub](https://github.com/icsharpcode/CodeConverter#code-converter-).</Description>
     <Product>Code Converter for C# to/from VB.NET</Product>
     <Copyright>Copyright (c) 2014-2018 AlphaSierraPapa</Copyright>
-    <AssemblyVersion>6.3.0.0</AssemblyVersion>
-    <FileVersion>6.3.0.0</FileVersion>
-    <Version>6.3.0</Version>
+    <AssemblyVersion>6.4.0.0</AssemblyVersion>
+    <FileVersion>6.4.0.0</FileVersion>
+    <Version>6.4.0</Version>
     <PackageId>ICSharpCode.CodeConverter</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
