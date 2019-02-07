@@ -60,8 +60,10 @@ namespace CodeConverter.VsExtension
         /// <param name="package">Owner package, not null.</param>
         public static async Task InitializeAsync(REConverterPackage package)
         {
-            CodeConversion codeConversion = await CodeConversion.CreateAsync(package, package.VsWorkspace, package.GetOptionsAsync);
-            Instance = new ConvertVBToCSCommand(package, codeConversion, await package.GetServiceAsync<IMenuCommandService, OleMenuCommandService>());
+            var codeConversion = await CodeConversion.CreateAsync(package, package.VsWorkspace, package.GetOptionsAsync);
+            var oleMenuCommandService = await package.GetServiceAsync<IMenuCommandService, OleMenuCommandService>();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            Instance = new ConvertVBToCSCommand(package, codeConversion, oleMenuCommandService);
         }
 
         /// <summary>
@@ -71,8 +73,10 @@ namespace CodeConverter.VsExtension
         /// <param name="package">Owner package, not null.</param>
         /// <param name="codeConversion"></param>
         /// <param name="commandService"></param>
+        /// <remarks>Must be called on the UI thread due to VS 2017's implementation of AddCommand which calls GetService</remarks>
         ConvertVBToCSCommand(REConverterPackage package, CodeConversion codeConversion, OleMenuCommandService commandService)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             this._package = package ?? throw new ArgumentNullException(nameof(package));
             _codeConversion = codeConversion;
 

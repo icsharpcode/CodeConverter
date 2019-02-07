@@ -2,6 +2,7 @@
 All notable changes to the code converter will be documented here.
 
 # 6.4.0 TBC
+Fix initialization bug in VS2017
 
 ### C# -> VB
 * Tuples now converted
