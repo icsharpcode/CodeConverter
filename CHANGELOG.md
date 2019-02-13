@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
+# 6.5.0 TBC
+* Avoid fatal error converting a project in a solution containing a website project (#243)
+
 # 6.4.0 07/02/2019
 Fix initialization bug in VS2017
 
