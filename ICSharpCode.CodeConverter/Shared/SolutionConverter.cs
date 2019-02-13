@@ -64,11 +64,14 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private IEnumerable<ConversionResult> UpdateProjectReferences(IEnumerable<Project> projectsToUpdateReferencesOnly)
         {
-            return projectsToUpdateReferencesOnly.Select(project => {
-                var withReferencesReplaced = new FileInfo(project.FilePath).ConversionResultFromReplacements(_projectReferenceReplacements);
-                withReferencesReplaced.TargetPathOrNull = withReferencesReplaced.SourcePathOrNull;
-                return withReferencesReplaced;
-            });
+            return projectsToUpdateReferencesOnly
+                .Where(p => p.FilePath != null) //Some project types like Websites don't have a project file
+                .Select(project => {
+                    var withReferencesReplaced =
+                        new FileInfo(project.FilePath).ConversionResultFromReplacements(_projectReferenceReplacements);
+                    withReferencesReplaced.TargetPathOrNull = withReferencesReplaced.SourcePathOrNull;
+                    return withReferencesReplaced;
+                });
         }
 
         private static List<(string, string)> GetProjectReferenceReplacements(IReadOnlyCollection<Project> projectsToConvert,
