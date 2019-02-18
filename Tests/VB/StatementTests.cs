@@ -513,9 +513,9 @@ End Class");
         }
 
         [Fact]
-        public async Task UnsafeStatements()
+        public async Task UnsafeStatementsWithNoVbEquivalentShowErrorInlineCharacterization()
         {
-            var convertedCode = (await ProjectConversion.ConvertText<CSToVBConversion>(@"class TestClass
+            string convertedCode = await GetConvertedCodeOrErrorString<CSToVBConversion>(@"class TestClass
 {
     void TestMethod()
     {
@@ -537,7 +537,7 @@ End Class");
             b = 1;
         }
     }
-}", DefaultReferences.NetStandard2)).ConvertedCode;
+}");
 
             Assert.Contains("CONVERSION ERROR", convertedCode);
             Assert.Contains("unsafe", convertedCode);

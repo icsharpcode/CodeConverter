@@ -50,6 +50,7 @@ namespace ICSharpCode.CodeConverter.VB
         int _placeholder = 1;
         private readonly CSharpHelperMethodDefinition _cSharpHelperMethodDefinition;
         private readonly CommonConversions _commonConversions;
+        private uint failedMemberConversionMarkerCount;
         public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
 
         string GeneratePlaceholder(string v)
@@ -192,7 +193,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitClassDeclaration(CSS.ClassDeclarationSyntax node)
         {
-            var members = node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor)).ToList();
+            var members = ConvertMembers(node).ToList();
             var id = CommonConversions.ConvertIdentifier(node.Identifier);
 
             List<InheritsStatementSyntax> inherits = new List<InheritsStatementSyntax>();
@@ -222,9 +223,14 @@ namespace ICSharpCode.CodeConverter.VB
             }
         }
 
+        private IEnumerable<StatementSyntax> ConvertMembers(CSS.TypeDeclarationSyntax node)
+        {
+            return node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor));
+        }
+
         public override VisualBasicSyntaxNode VisitStructDeclaration(CSS.StructDeclarationSyntax node)
         {
-            var members = node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor)).ToList();
+            var members = ConvertMembers(node).ToList();
 
             List<InheritsStatementSyntax> inherits = new List<InheritsStatementSyntax>();
             List<ImplementsStatementSyntax> implements = new List<ImplementsStatementSyntax>();
@@ -244,7 +250,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitInterfaceDeclaration(CSS.InterfaceDeclarationSyntax node)
         {
-            var members = node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor)).ToArray();
+            var members = ConvertMembers(node).ToArray();
 
             List<InheritsStatementSyntax> inherits = new List<InheritsStatementSyntax>();
             List<ImplementsStatementSyntax> implements = new List<ImplementsStatementSyntax>();

@@ -390,7 +390,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     id = (ExpressionSyntax)stmt.ControlVariable.Accept(_nodesVisitor);
                     var symbol = _semanticModel.GetSymbolInfo(stmt.ControlVariable).Symbol;
                     if (!_semanticModel.LookupSymbols(node.FullSpan.Start, name: symbol.Name).Any()) {
-                        declaration = CreateVariableDeclaration(symbol.Name, startValue);
+                        declaration = CreateVariableDeclarationAndAssignment(symbol.Name, startValue);
                     } else {
                         startValue = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, id, startValue);
                     }
@@ -406,7 +406,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var csToValue = (ExpressionSyntax)stmt.ToValue.Accept(_nodesVisitor);
                 if (!_semanticModel.GetConstantValue(stmt.ToValue).HasValue) {
                     var loopToVariableName = GetUniqueVariableNameInScope(node, "loopTo");
-                    var loopEndDeclaration = SyntaxFactory.LocalDeclarationStatement(CreateVariableDeclaration(loopToVariableName, csToValue));
+                    var loopEndDeclaration = SyntaxFactory.LocalDeclarationStatement(CreateVariableDeclarationAndAssignment(loopToVariableName, csToValue));
                     // Does not do anything about porting newline trivia upwards to maintain spacing above the loop
                     preLoopStatements.Add(loopEndDeclaration);
                     csToValue = SyntaxFactory.IdentifierName(loopToVariableName);
@@ -432,15 +432,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                     block.UnpackNonNestedBlock());
                 return SyntaxFactory.List(preLoopStatements.Concat(new[] {forStatementSyntax}));
             }
-            private static VariableDeclarationSyntax CreateVariableDeclaration(string variableName,
-                ExpressionSyntax variableValue)
+
+            private static VariableDeclarationSyntax CreateVariableDeclarationAndAssignment(string variableName,
+                ExpressionSyntax initValue)
             {
-                var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(SyntaxFactory.Identifier(variableName), null,
-                    SyntaxFactory.EqualsValueClause(variableValue));
-                var declaration = SyntaxFactory.VariableDeclaration(
+                var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(
+                    SyntaxFactory.Identifier(variableName), null,
+                    SyntaxFactory.EqualsValueClause(initValue));
+                var variableDeclarationSyntax = SyntaxFactory.VariableDeclaration(
                     SyntaxFactory.IdentifierName("var"),
                     SyntaxFactory.SingletonSeparatedList(variableDeclaratorSyntax));
-                return declaration;
+                return variableDeclarationSyntax;
             }
 
             public override SyntaxList<StatementSyntax> VisitForEachBlock(VBSyntax.ForEachBlockSyntax node)
@@ -551,18 +553,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             private LocalDeclarationStatementSyntax CreateLocalVariableDeclarationAndAssignment(string variableName, ExpressionSyntax initValue)
             {
                 return SyntaxFactory.LocalDeclarationStatement(CreateVariableDeclarationAndAssignment(variableName, initValue));
-            }
-
-            private static VariableDeclarationSyntax CreateVariableDeclarationAndAssignment(string variableName,
-                ExpressionSyntax initValue)
-            {
-                var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(
-                    SyntaxFactory.Identifier(variableName), null,
-                    SyntaxFactory.EqualsValueClause(initValue));
-                var variableDeclarationSyntax = SyntaxFactory.VariableDeclaration(
-                    SyntaxFactory.IdentifierName("var"),
-                    SyntaxFactory.SingletonSeparatedList(variableDeclaratorSyntax));
-                return variableDeclarationSyntax;
             }
 
             private string GetUniqueVariableNameInScope(VBasic.VisualBasicSyntaxNode node, string variableNameBase)

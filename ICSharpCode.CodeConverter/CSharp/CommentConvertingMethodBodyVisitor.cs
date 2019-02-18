@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -26,7 +27,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             try {
                 return ConvertWithTrivia(node);
             } catch (Exception e) {
-                return SyntaxFactory.SingletonList(CreateErrorCommentStatement(node, e));
+                var withTrailingErrorComment = SyntaxFactory.EmptyStatement()
+                    .WithCsTrailingErrorComment<CSSyntax.StatementSyntax>((VisualBasicSyntaxNode) node, e);
+                return SyntaxFactory.SingletonList(withTrailingErrorComment);
             }
         }
 
@@ -37,15 +40,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             // Port trivia to the last statement in the list
             var lastWithConvertedTrivia = _triviaConverter.PortConvertedTrivia(node, convertedNodes.LastOrDefault());
             return convertedNodes.Replace(convertedNodes.LastOrDefault(), lastWithConvertedTrivia);
-        }
-
-        private CSSyntax.StatementSyntax CreateErrorCommentStatement(SyntaxNode node, Exception exception)
-        {
-            var errorDescription = node.DescribeConversionError(exception);
-            var commentedText = "/* " + errorDescription + " */";
-            return SyntaxFactory.EmptyStatement()
-                .WithTrailingTrivia(SyntaxFactory.Comment(commentedText))
-                .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, exception.ToString()));
         }
 
         public override SyntaxList<CSSyntax.StatementSyntax> VisitTryBlock(TryBlockSyntax node)

@@ -21,6 +21,13 @@ namespace CodeConverter.Tests.TestRunners
             _rootNamespace = rootNamespace;
         }
 
+        protected static async Task<string> GetConvertedCodeOrErrorString<TLanguageConversion>(string toConvert) where TLanguageConversion : ILanguageConversion, new()
+        {
+            var conversionResult = await ProjectConversion.ConvertText<TLanguageConversion>(toConvert, DefaultReferences.NetStandard2);
+            var convertedCode = conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString();
+            return convertedCode;
+        }
+
         public void TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false)
         {
             expectedVisualBasicCode = AddSurroundingMethodBlock(expectedVisualBasicCode, expectSurroundingMethodBlock);

@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.VB
@@ -26,7 +27,9 @@ namespace ICSharpCode.CodeConverter.VB
             try {
                 return ConvertWithTrivia(node);
             } catch (Exception e) {
-                return VBasic.SyntaxFactory.SingletonList(CreateErrorCommentStatement(node, e));
+                var dummyStatement = VBasic.SyntaxFactory.EmptyStatement();
+                var withVbTrailingErrorComment = dummyStatement.WithVbTrailingErrorComment<VBSyntax.StatementSyntax>((CS.CSharpSyntaxNode) node, e);
+                return VBasic.SyntaxFactory.SingletonList(withVbTrailingErrorComment);
             }
         }
 
@@ -37,16 +40,6 @@ namespace ICSharpCode.CodeConverter.VB
             // Port trivia to the last statement in the list
             var lastWithConvertedTrivia = _triviaConverter.PortConvertedTrivia(node, convertedNodes.LastOrDefault());
             return convertedNodes.Replace(convertedNodes.LastOrDefault(), lastWithConvertedTrivia);
-        }
-
-        private VBSyntax.StatementSyntax CreateErrorCommentStatement(SyntaxNode node, Exception exception)
-        {
-            var errorDescription = node.DescribeConversionError(exception);
-            var commentedText = "''' " + errorDescription.Replace("\r\n", "\r\n''' ");
-            return VBasic.SyntaxFactory.EmptyStatement()
-                .WithTrailingTrivia(VBasic.SyntaxFactory.CommentTrivia(commentedText))
-                .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind,
-                    exception.ToString()));
         }
     }
 }
