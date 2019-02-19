@@ -11,9 +11,35 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis.VisualBasic;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using AnonymousObjectCreationExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.AnonymousObjectCreationExpressionSyntax;
+using ArgumentListSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArgumentListSyntax;
+using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankSpecifierSyntax;
+using AttributeListSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.AttributeListSyntax;
+using CastExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.CastExpressionSyntax;
+using CompilationUnitSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.CompilationUnitSyntax;
+using ConditionalAccessExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ConditionalAccessExpressionSyntax;
+using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 using VBSyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 using VBSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+using DoStatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.DoStatementSyntax;
+using EmptyStatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.EmptyStatementSyntax;
+using EnumMemberDeclarationSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.EnumMemberDeclarationSyntax;
+using FieldDeclarationSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.FieldDeclarationSyntax;
+using ForEachStatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ForEachStatementSyntax;
+using ForStatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ForStatementSyntax;
+using IfStatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.IfStatementSyntax;
+using ParameterListSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ParameterListSyntax;
+using ParenthesizedExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ParenthesizedExpressionSyntax;
+using StatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax;
+using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using SyntaxFacts = Microsoft.CodeAnalysis.CSharp.SyntaxFacts;
+using TypeOfExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeOfExpressionSyntax;
+using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
+using UsingStatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.UsingStatementSyntax;
+using WhileStatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.WhileStatementSyntax;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -216,7 +242,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static ISymbol GetEnclosingDeclaredTypeSymbol(this SyntaxNode node, SemanticModel semanticModel)
         {
-            var typeBlockSyntax = (SyntaxNode) node.GetAncestor<Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeBlockSyntax>()
+            var typeBlockSyntax = (SyntaxNode) node.GetAncestor<TypeBlockSyntax>()
                 ?? node.GetAncestor<TypeSyntax>();
             if (typeBlockSyntax == null) return null;
             return semanticModel.GetDeclaredSymbol(typeBlockSyntax);
@@ -522,43 +548,43 @@ namespace ICSharpCode.CodeConverter.Util
             return root;
         }
 
-        public static bool IsKind(this SyntaxNode node, SyntaxKind kind1, SyntaxKind kind2)
+        public static bool IsKind(this SyntaxNode node, CSSyntaxKind kind1, CSSyntaxKind kind2)
         {
             if (node == null) {
                 return false;
             }
 
-            var csharpKind = node.Kind();
+            var csharpKind = CSharpExtensions.Kind(node);
             return csharpKind == kind1 || csharpKind == kind2;
         }
 
-        public static bool IsKind(this SyntaxNode node, SyntaxKind kind1, SyntaxKind kind2, SyntaxKind kind3)
+        public static bool IsKind(this SyntaxNode node, CSSyntaxKind kind1, CSSyntaxKind kind2, CSSyntaxKind kind3)
         {
             if (node == null) {
                 return false;
             }
 
-            var csharpKind = node.Kind();
+            var csharpKind = CSharpExtensions.Kind(node);
             return csharpKind == kind1 || csharpKind == kind2 || csharpKind == kind3;
         }
 
-        public static bool IsKind(this SyntaxNode node, SyntaxKind kind1, SyntaxKind kind2, SyntaxKind kind3, SyntaxKind kind4)
+        public static bool IsKind(this SyntaxNode node, CSSyntaxKind kind1, CSSyntaxKind kind2, CSSyntaxKind kind3, CSSyntaxKind kind4)
         {
             if (node == null) {
                 return false;
             }
 
-            var csharpKind = node.Kind();
+            var csharpKind = CSharpExtensions.Kind(node);
             return csharpKind == kind1 || csharpKind == kind2 || csharpKind == kind3 || csharpKind == kind4;
         }
 
-        public static bool IsKind(this SyntaxNode node, SyntaxKind kind1, SyntaxKind kind2, SyntaxKind kind3, SyntaxKind kind4, SyntaxKind kind5)
+        public static bool IsKind(this SyntaxNode node, CSSyntaxKind kind1, CSSyntaxKind kind2, CSSyntaxKind kind3, CSSyntaxKind kind4, CSSyntaxKind kind5)
         {
             if (node == null) {
                 return false;
             }
 
-            var csharpKind = node.Kind();
+            var csharpKind = CSharpExtensions.Kind(node);
             return csharpKind == kind1 || csharpKind == kind2 || csharpKind == kind3 || csharpKind == kind4 || csharpKind == kind5;
         }
 
@@ -581,7 +607,7 @@ namespace ICSharpCode.CodeConverter.Util
             }
 
             return node.GetAncestors<MemberDeclarationSyntax>().Any(
-                m => m.GetModifiers().Any(SyntaxKind.UnsafeKeyword));
+                m => m.GetModifiers().Any(CSSyntaxKind.UnsafeKeyword));
         }
 
         public static bool IsInStaticCsContext(this SyntaxNode node)
@@ -597,18 +623,18 @@ namespace ICSharpCode.CodeConverter.Util
             }
 
             switch (memberDeclaration.Kind()) {
-                case SyntaxKind.MethodDeclaration:
-                case SyntaxKind.ConstructorDeclaration:
-                case SyntaxKind.PropertyDeclaration:
-                case SyntaxKind.EventDeclaration:
-                case SyntaxKind.IndexerDeclaration:
-                    return memberDeclaration.GetModifiers().Any(SyntaxKind.StaticKeyword);
+                case CSSyntaxKind.MethodDeclaration:
+                case CSSyntaxKind.ConstructorDeclaration:
+                case CSSyntaxKind.PropertyDeclaration:
+                case CSSyntaxKind.EventDeclaration:
+                case CSSyntaxKind.IndexerDeclaration:
+                    return memberDeclaration.GetModifiers().Any(CSSyntaxKind.StaticKeyword);
 
-                case SyntaxKind.FieldDeclaration:
+                case CSSyntaxKind.FieldDeclaration:
                     // Inside a field one can only access static members of a type.
                     return true;
 
-                case SyntaxKind.DestructorDeclaration:
+                case CSSyntaxKind.DestructorDeclaration:
                     return false;
             }
 
@@ -650,12 +676,12 @@ namespace ICSharpCode.CodeConverter.Util
 
         static SyntaxNodeExtensions()
         {
-            var whitespace = Matcher.Repeat(Match(SyntaxKind.WhitespaceTrivia, "\\b"));
-            var endOfLine = Match(SyntaxKind.EndOfLineTrivia, "\\n");
+            var whitespace = Matcher.Repeat(Match(CSSyntaxKind.WhitespaceTrivia, "\\b"));
+            var endOfLine = Match(CSSyntaxKind.EndOfLineTrivia, "\\n");
             var singleBlankLine = Matcher.Sequence(whitespace, endOfLine);
 
-            var singleLineComment = Match(SyntaxKind.SingleLineCommentTrivia, "//");
-            var multiLineComment = Match(SyntaxKind.MultiLineCommentTrivia, "/**/");
+            var singleLineComment = Match(CSSyntaxKind.SingleLineCommentTrivia, "//");
+            var multiLineComment = Match(CSSyntaxKind.MultiLineCommentTrivia, "/**/");
             var anyCommentMatcher = Matcher.Choice(singleLineComment, multiLineComment);
 
             var commentLine = Matcher.Sequence(whitespace, anyCommentMatcher, whitespace, endOfLine);
@@ -667,9 +693,9 @@ namespace ICSharpCode.CodeConverter.Util
                     s_oneOrMoreBlankLines);
         }
 
-        private static Matcher<SyntaxTrivia> Match(SyntaxKind kind, string description)
+        private static Matcher<SyntaxTrivia> Match(CSSyntaxKind kind, string description)
         {
-            return Matcher.Single<SyntaxTrivia>(t => t.Kind() == kind, description);
+            return Matcher.Single<SyntaxTrivia>(t => CSharpExtensions.Kind(t) == kind, description);
         }
 
         /// <summary>
@@ -679,7 +705,7 @@ namespace ICSharpCode.CodeConverter.Util
         public static IEnumerable<SyntaxTrivia> GetAllPrecedingTriviaToPreviousToken(this SyntaxToken token)
         {
             var prevToken = token.GetPreviousToken(includeSkipped: true);
-            if (prevToken.Kind() == SyntaxKind.None) {
+            if (CSharpExtensions.Kind(prevToken) == CSSyntaxKind.None) {
                 return token.LeadingTrivia;
             }
 
@@ -688,12 +714,12 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsBreakableConstruct(this SyntaxNode node)
         {
-            switch (node.Kind()) {
-                case SyntaxKind.DoStatement:
-                case SyntaxKind.WhileStatement:
-                case SyntaxKind.SwitchStatement:
-                case SyntaxKind.ForStatement:
-                case SyntaxKind.ForEachStatement:
+            switch (CSharpExtensions.Kind(node)) {
+                case CSSyntaxKind.DoStatement:
+                case CSSyntaxKind.WhileStatement:
+                case CSSyntaxKind.SwitchStatement:
+                case CSSyntaxKind.ForStatement:
+                case CSSyntaxKind.ForEachStatement:
                     return true;
             }
 
@@ -702,11 +728,11 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsContinuableConstruct(this SyntaxNode node)
         {
-            switch (node.Kind()) {
-                case SyntaxKind.DoStatement:
-                case SyntaxKind.WhileStatement:
-                case SyntaxKind.ForStatement:
-                case SyntaxKind.ForEachStatement:
+            switch (CSharpExtensions.Kind(node)) {
+                case CSSyntaxKind.DoStatement:
+                case CSSyntaxKind.WhileStatement:
+                case CSSyntaxKind.ForStatement:
+                case CSSyntaxKind.ForEachStatement:
                     return true;
             }
 
@@ -715,18 +741,18 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsReturnableConstruct(this SyntaxNode node)
         {
-            switch (node.Kind()) {
-                case SyntaxKind.AnonymousMethodExpression:
-                case SyntaxKind.SimpleLambdaExpression:
-                case SyntaxKind.ParenthesizedLambdaExpression:
-                case SyntaxKind.MethodDeclaration:
-                case SyntaxKind.ConstructorDeclaration:
-                case SyntaxKind.DestructorDeclaration:
-                case SyntaxKind.GetAccessorDeclaration:
-                case SyntaxKind.SetAccessorDeclaration:
-                case SyntaxKind.OperatorDeclaration:
-                case SyntaxKind.AddAccessorDeclaration:
-                case SyntaxKind.RemoveAccessorDeclaration:
+            switch (CSharpExtensions.Kind(node)) {
+                case CSSyntaxKind.AnonymousMethodExpression:
+                case CSSyntaxKind.SimpleLambdaExpression:
+                case CSSyntaxKind.ParenthesizedLambdaExpression:
+                case CSSyntaxKind.MethodDeclaration:
+                case CSSyntaxKind.ConstructorDeclaration:
+                case CSSyntaxKind.DestructorDeclaration:
+                case CSSyntaxKind.GetAccessorDeclaration:
+                case CSSyntaxKind.SetAccessorDeclaration:
+                case CSSyntaxKind.OperatorDeclaration:
+                case CSSyntaxKind.AddAccessorDeclaration:
+                case CSSyntaxKind.RemoveAccessorDeclaration:
                     return true;
             }
 
@@ -773,7 +799,7 @@ namespace ICSharpCode.CodeConverter.Util
             this T node,
             IEnumerable<SyntaxTrivia> trivia) where T : SyntaxNode
         {
-            return node.WithPrependedLeadingTrivia(trivia.ToSyntaxTriviaList());
+            return node.WithPrependedLeadingTrivia(Microsoft.CodeAnalysis.CSharp.SyntaxExtensions.ToSyntaxTriviaList(trivia));
         }
 
         public static T WithAppendedTrailingTrivia<T>(
@@ -802,7 +828,7 @@ namespace ICSharpCode.CodeConverter.Util
             this T node,
             IEnumerable<SyntaxTrivia> trivia) where T : SyntaxNode
         {
-            return node.WithAppendedTrailingTrivia(trivia.ToSyntaxTriviaList());
+            return node.WithAppendedTrailingTrivia(Microsoft.CodeAnalysis.CSharp.SyntaxExtensions.ToSyntaxTriviaList(trivia));
         }
 
         public static T With<T>(
@@ -845,7 +871,7 @@ namespace ICSharpCode.CodeConverter.Util
         public static IEnumerable<SyntaxTrivia> ImportantTrailingTrivia(this SyntaxToken node)
         {
             return node.TrailingTrivia.Where(x => 
-                !x.IsKind(SyntaxKind.WhitespaceTrivia) && !x.IsKind(SyntaxKind.EndOfLineTrivia)
+                !x.IsKind(CSSyntaxKind.WhitespaceTrivia) && !x.IsKind(CSSyntaxKind.EndOfLineTrivia)
                 && !x.IsKind(CSSyntaxKind.WhitespaceTrivia) && !x.IsKind(CSSyntaxKind.EndOfLineTrivia)
             );
         }
@@ -863,23 +889,23 @@ namespace ICSharpCode.CodeConverter.Util
         private static SyntaxTrivia ConvertVBTrivia(SyntaxTrivia t)
         {
             if (t.IsKind(VBSyntaxKind.CommentTrivia))
-                return SyntaxFactory.SyntaxTrivia(SyntaxKind.SingleLineCommentTrivia, $"// {t.GetCommentText()}");
+                return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.SingleLineCommentTrivia, $"// {t.GetCommentText()}");
             if (t.IsKind(VBSyntaxKind.DocumentationCommentTrivia)) {
                 var previousWhitespace = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None).ToString();
                 var commentTextLines = t.GetCommentText().Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
                 var outputCommentText = "/// " + String.Join($"\r\n{previousWhitespace}/// ", commentTextLines) + Environment.NewLine;
-                return SyntaxFactory.SyntaxTrivia(SyntaxKind.SingleLineCommentTrivia, outputCommentText); //It's always single line...even when it has multiple lines
+                return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.SingleLineCommentTrivia, outputCommentText); //It's always single line...even when it has multiple lines
             }
 
             if (t.IsKind(VBSyntaxKind.WhitespaceTrivia)) {
-                return SyntaxFactory.SyntaxTrivia(SyntaxKind.WhitespaceTrivia, t.ToString());
+                return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.WhitespaceTrivia, t.ToString());
             }
 
             if (t.IsKind(VBSyntaxKind.EndOfLineTrivia)) {
                 // Mapping one to one here leads to newlines appearing where the natural line-end was in VB.
                 // e.g. ToString\r\n()
                 // Because C Sharp needs those brackets. Handling each possible case of this is far more effort than it's worth.
-                return SyntaxFactory.SyntaxTrivia(SyntaxKind.EndOfLineTrivia, t.ToString());
+                return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.EndOfLineTrivia, t.ToString());
             }
 
             //Each of these would need its own method to recreate for C# with the right structure probably so let's just warn about them for now.
@@ -924,7 +950,7 @@ namespace ICSharpCode.CodeConverter.Util
         public static T WithoutTrailingEndOfLineTrivia<T>(this T cSharpNode) where T : CSharpSyntaxNode
         {
             var lastDescendant = cSharpNode.DescendantNodesAndTokens().Last();
-            var triviaWithoutNewline = lastDescendant.GetTrailingTrivia().Where(t => !t.IsKind(SyntaxKind.EndOfLineTrivia));
+            var triviaWithoutNewline = lastDescendant.GetTrailingTrivia().Where(t => !t.IsKind(CSSyntaxKind.EndOfLineTrivia));
             if (lastDescendant.IsNode) {
                 return cSharpNode.ReplaceNode(lastDescendant.AsNode(),
                     lastDescendant.AsNode().WithTrailingTrivia(triviaWithoutNewline));
@@ -996,22 +1022,22 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsAnyArgumentList(this SyntaxNode node)
         {
-            return node.IsKind(SyntaxKind.ArgumentList) ||
-                node.IsKind(SyntaxKind.AttributeArgumentList) ||
-                node.IsKind(SyntaxKind.BracketedArgumentList) ||
-                node.IsKind(SyntaxKind.TypeArgumentList);
+            return node.IsKind(CSSyntaxKind.ArgumentList) ||
+                node.IsKind(CSSyntaxKind.AttributeArgumentList) ||
+                node.IsKind(CSSyntaxKind.BracketedArgumentList) ||
+                node.IsKind(CSSyntaxKind.TypeArgumentList);
         }
 
         public static bool IsAnyLambda(this SyntaxNode node)
         {
             return
-                node.IsKind(SyntaxKind.ParenthesizedLambdaExpression) ||
-                node.IsKind(SyntaxKind.SimpleLambdaExpression);
+                node.IsKind(CSSyntaxKind.ParenthesizedLambdaExpression) ||
+                node.IsKind(CSSyntaxKind.SimpleLambdaExpression);
         }
 
         public static bool IsAnyLambdaOrAnonymousMethod(this SyntaxNode node)
         {
-            return node.IsAnyLambda() || node.IsKind(SyntaxKind.AnonymousMethodExpression);
+            return node.IsAnyLambda() || node.IsKind(CSSyntaxKind.AnonymousMethodExpression);
         }
 
         //        /// <summary>
@@ -1151,7 +1177,7 @@ namespace ICSharpCode.CodeConverter.Util
 
             int ppIndex = -1;
             for (int i = leadingTrivia.Count - 1; i >= 0; i--) {
-                if (SyntaxFacts.IsPreprocessorDirective(leadingTrivia[i].Kind())) {
+                if (SyntaxFacts.IsPreprocessorDirective(CSharpExtensions.Kind(leadingTrivia[i]))) {
                     ppIndex = i;
                     break;
                 }
@@ -1181,22 +1207,22 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsAnyAssignExpression(this SyntaxNode node)
         {
-            return SyntaxFacts.IsAssignmentExpression(node.Kind());
+            return SyntaxFacts.IsAssignmentExpression(CSharpExtensions.Kind(node));
         }
 
         public static bool IsCompoundAssignExpression(this SyntaxNode node)
         {
-            switch (node.Kind()) {
-                case SyntaxKind.AddAssignmentExpression:
-                case SyntaxKind.SubtractAssignmentExpression:
-                case SyntaxKind.MultiplyAssignmentExpression:
-                case SyntaxKind.DivideAssignmentExpression:
-                case SyntaxKind.ModuloAssignmentExpression:
-                case SyntaxKind.AndAssignmentExpression:
-                case SyntaxKind.ExclusiveOrAssignmentExpression:
-                case SyntaxKind.OrAssignmentExpression:
-                case SyntaxKind.LeftShiftAssignmentExpression:
-                case SyntaxKind.RightShiftAssignmentExpression:
+            switch (CSharpExtensions.Kind(node)) {
+                case CSSyntaxKind.AddAssignmentExpression:
+                case CSSyntaxKind.SubtractAssignmentExpression:
+                case CSSyntaxKind.MultiplyAssignmentExpression:
+                case CSSyntaxKind.DivideAssignmentExpression:
+                case CSSyntaxKind.ModuloAssignmentExpression:
+                case CSSyntaxKind.AndAssignmentExpression:
+                case CSSyntaxKind.ExclusiveOrAssignmentExpression:
+                case CSSyntaxKind.OrAssignmentExpression:
+                case CSSyntaxKind.LeftShiftAssignmentExpression:
+                case CSSyntaxKind.RightShiftAssignmentExpression:
                     return true;
             }
 
@@ -1205,7 +1231,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsLeftSideOfAssignExpression(this SyntaxNode node)
         {
-            return node.IsParentKind(SyntaxKind.SimpleAssignmentExpression) &&
+            return node.IsParentKind(CSSyntaxKind.SimpleAssignmentExpression) &&
                 ((AssignmentExpressionSyntax)node.Parent).Left == node;
         }
 
@@ -1224,8 +1250,8 @@ namespace ICSharpCode.CodeConverter.Util
         public static bool IsVariableDeclaratorValue(this SyntaxNode node)
         {
             return
-                node.IsParentKind(SyntaxKind.EqualsValueClause) &&
-                node.Parent.IsParentKind(SyntaxKind.VariableDeclarator) &&
+                node.IsParentKind(CSSyntaxKind.EqualsValueClause) &&
+                node.Parent.IsParentKind(CSSyntaxKind.VariableDeclarator) &&
                 ((EqualsValueClauseSyntax)node.Parent).Value == node;
         }
 
@@ -1424,39 +1450,39 @@ namespace ICSharpCode.CodeConverter.Util
         public static SyntaxTokenList GetModifiers(this SyntaxNode member)
         {
             if (member != null) {
-                switch (member.Kind()) {
-                    case SyntaxKind.EnumDeclaration:
+                switch (CSharpExtensions.Kind(member)) {
+                    case CSSyntaxKind.EnumDeclaration:
                         return ((EnumDeclarationSyntax)member).Modifiers;
-                    case SyntaxKind.ClassDeclaration:
-                    case SyntaxKind.InterfaceDeclaration:
-                    case SyntaxKind.StructDeclaration:
+                    case CSSyntaxKind.ClassDeclaration:
+                    case CSSyntaxKind.InterfaceDeclaration:
+                    case CSSyntaxKind.StructDeclaration:
                         return ((TypeDeclarationSyntax)member).Modifiers;
-                    case SyntaxKind.DelegateDeclaration:
+                    case CSSyntaxKind.DelegateDeclaration:
                         return ((DelegateDeclarationSyntax)member).Modifiers;
-                    case SyntaxKind.FieldDeclaration:
+                    case CSSyntaxKind.FieldDeclaration:
                         return ((FieldDeclarationSyntax)member).Modifiers;
-                    case SyntaxKind.EventFieldDeclaration:
+                    case CSSyntaxKind.EventFieldDeclaration:
                         return ((EventFieldDeclarationSyntax)member).Modifiers;
-                    case SyntaxKind.ConstructorDeclaration:
+                    case CSSyntaxKind.ConstructorDeclaration:
                         return ((ConstructorDeclarationSyntax)member).Modifiers;
-                    case SyntaxKind.DestructorDeclaration:
+                    case CSSyntaxKind.DestructorDeclaration:
                         return ((DestructorDeclarationSyntax)member).Modifiers;
-                    case SyntaxKind.PropertyDeclaration:
+                    case CSSyntaxKind.PropertyDeclaration:
                         return ((PropertyDeclarationSyntax)member).Modifiers;
-                    case SyntaxKind.EventDeclaration:
+                    case CSSyntaxKind.EventDeclaration:
                         return ((EventDeclarationSyntax)member).Modifiers;
-                    case SyntaxKind.IndexerDeclaration:
+                    case CSSyntaxKind.IndexerDeclaration:
                         return ((IndexerDeclarationSyntax)member).Modifiers;
-                    case SyntaxKind.OperatorDeclaration:
+                    case CSSyntaxKind.OperatorDeclaration:
                         return ((OperatorDeclarationSyntax)member).Modifiers;
-                    case SyntaxKind.ConversionOperatorDeclaration:
+                    case CSSyntaxKind.ConversionOperatorDeclaration:
                         return ((ConversionOperatorDeclarationSyntax)member).Modifiers;
-                    case SyntaxKind.MethodDeclaration:
+                    case CSSyntaxKind.MethodDeclaration:
                         return ((MethodDeclarationSyntax)member).Modifiers;
-                    case SyntaxKind.GetAccessorDeclaration:
-                    case SyntaxKind.SetAccessorDeclaration:
-                    case SyntaxKind.AddAccessorDeclaration:
-                    case SyntaxKind.RemoveAccessorDeclaration:
+                    case CSSyntaxKind.GetAccessorDeclaration:
+                    case CSSyntaxKind.SetAccessorDeclaration:
+                    case CSSyntaxKind.AddAccessorDeclaration:
+                    case CSSyntaxKind.RemoveAccessorDeclaration:
                         return ((AccessorDeclarationSyntax)member).Modifiers;
                 }
             }
@@ -1467,39 +1493,39 @@ namespace ICSharpCode.CodeConverter.Util
         public static SyntaxNode WithModifiers(this SyntaxNode member, SyntaxTokenList modifiers)
         {
             if (member != null) {
-                switch (member.Kind()) {
-                    case SyntaxKind.EnumDeclaration:
+                switch (CSharpExtensions.Kind(member)) {
+                    case CSSyntaxKind.EnumDeclaration:
                         return ((EnumDeclarationSyntax)member).WithModifiers(modifiers);
-                    case SyntaxKind.ClassDeclaration:
-                    case SyntaxKind.InterfaceDeclaration:
-                    case SyntaxKind.StructDeclaration:
+                    case CSSyntaxKind.ClassDeclaration:
+                    case CSSyntaxKind.InterfaceDeclaration:
+                    case CSSyntaxKind.StructDeclaration:
                         return ((TypeDeclarationSyntax)member).WithModifiers(modifiers);
-                    case SyntaxKind.DelegateDeclaration:
+                    case CSSyntaxKind.DelegateDeclaration:
                         return ((DelegateDeclarationSyntax)member).WithModifiers(modifiers);
-                    case SyntaxKind.FieldDeclaration:
+                    case CSSyntaxKind.FieldDeclaration:
                         return ((FieldDeclarationSyntax)member).WithModifiers(modifiers);
-                    case SyntaxKind.EventFieldDeclaration:
+                    case CSSyntaxKind.EventFieldDeclaration:
                         return ((EventFieldDeclarationSyntax)member).WithModifiers(modifiers);
-                    case SyntaxKind.ConstructorDeclaration:
+                    case CSSyntaxKind.ConstructorDeclaration:
                         return ((ConstructorDeclarationSyntax)member).WithModifiers(modifiers);
-                    case SyntaxKind.DestructorDeclaration:
+                    case CSSyntaxKind.DestructorDeclaration:
                         return ((DestructorDeclarationSyntax)member).WithModifiers(modifiers);
-                    case SyntaxKind.PropertyDeclaration:
+                    case CSSyntaxKind.PropertyDeclaration:
                         return ((PropertyDeclarationSyntax)member).WithModifiers(modifiers);
-                    case SyntaxKind.EventDeclaration:
+                    case CSSyntaxKind.EventDeclaration:
                         return ((EventDeclarationSyntax)member).WithModifiers(modifiers);
-                    case SyntaxKind.IndexerDeclaration:
+                    case CSSyntaxKind.IndexerDeclaration:
                         return ((IndexerDeclarationSyntax)member).WithModifiers(modifiers);
-                    case SyntaxKind.OperatorDeclaration:
+                    case CSSyntaxKind.OperatorDeclaration:
                         return ((OperatorDeclarationSyntax)member).WithModifiers(modifiers);
-                    case SyntaxKind.ConversionOperatorDeclaration:
+                    case CSSyntaxKind.ConversionOperatorDeclaration:
                         return ((ConversionOperatorDeclarationSyntax)member).WithModifiers(modifiers);
-                    case SyntaxKind.MethodDeclaration:
+                    case CSSyntaxKind.MethodDeclaration:
                         return ((MethodDeclarationSyntax)member).WithModifiers(modifiers);
-                    case SyntaxKind.GetAccessorDeclaration:
-                    case SyntaxKind.SetAccessorDeclaration:
-                    case SyntaxKind.AddAccessorDeclaration:
-                    case SyntaxKind.RemoveAccessorDeclaration:
+                    case CSSyntaxKind.GetAccessorDeclaration:
+                    case CSSyntaxKind.SetAccessorDeclaration:
+                    case CSSyntaxKind.AddAccessorDeclaration:
+                    case CSSyntaxKind.RemoveAccessorDeclaration:
                         return ((AccessorDeclarationSyntax)member).WithModifiers(modifiers);
                 }
             }
@@ -1511,11 +1537,11 @@ namespace ICSharpCode.CodeConverter.Util
             this TypeDeclarationSyntax node, SyntaxTokenList modifiers)
         {
             switch (node.Kind()) {
-                case SyntaxKind.ClassDeclaration:
+                case CSSyntaxKind.ClassDeclaration:
                     return ((ClassDeclarationSyntax)node).WithModifiers(modifiers);
-                case SyntaxKind.InterfaceDeclaration:
+                case CSSyntaxKind.InterfaceDeclaration:
                     return ((InterfaceDeclarationSyntax)node).WithModifiers(modifiers);
-                case SyntaxKind.StructDeclaration:
+                case CSSyntaxKind.StructDeclaration:
                     return ((StructDeclarationSyntax)node).WithModifiers(modifiers);
             }
 
@@ -1652,7 +1678,7 @@ namespace ICSharpCode.CodeConverter.Util
                 // simply take the first ancestor ConditionalAccessExpression. Instead, we 
                 // must walk upward until we find the ConditionalAccessExpression whose
                 // OperatorToken appears left of the MemberBinding.
-                if (parent.IsKind(SyntaxKind.ConditionalAccessExpression) &&
+                if (parent.IsKind(CSSyntaxKind.ConditionalAccessExpression) &&
                     ((ConditionalAccessExpressionSyntax)parent).OperatorToken.Span.End <= node.SpanStart) {
                     return (ConditionalAccessExpressionSyntax)parent;
                 }
@@ -1665,14 +1691,14 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsDelegateOrConstructorOrMethodParameterList(this SyntaxNode node)
         {
-            if (!node.IsKind(SyntaxKind.ParameterList)) {
+            if (!node.IsKind(CSSyntaxKind.ParameterList)) {
                 return false;
             }
 
             return
-                node.IsParentKind(SyntaxKind.MethodDeclaration) ||
-                node.IsParentKind(SyntaxKind.ConstructorDeclaration) ||
-                node.IsParentKind(SyntaxKind.DelegateDeclaration);
+                node.IsParentKind(CSSyntaxKind.MethodDeclaration) ||
+                node.IsParentKind(CSSyntaxKind.ConstructorDeclaration) ||
+                node.IsParentKind(CSSyntaxKind.DelegateDeclaration);
         }
 
         public static SyntaxTree WithAnnotatedNode(this SyntaxNode root, SyntaxNode selectedNode, string annotationKind, string annotationData = "")
@@ -1700,6 +1726,28 @@ namespace ICSharpCode.CodeConverter.Util
             input = input.Replace(Environment.NewLine, "\\r\\n").Replace("    ", " ").Replace("\t", " ");
             if (input.Length <= maxLength) return input;
             return input.Substring(0, maxLength - truncationIndicator.Length) + truncationIndicator;
+        }
+
+        public static T WithCsTrailingErrorComment<T>(this T dummyDestNode,
+            VisualBasicSyntaxNode sourceNode,
+            Exception exception) where T: CSharpSyntaxNode
+        {
+            var errorDescription = sourceNode.DescribeConversionError(exception);
+            var commentedText = "/* " + errorDescription + " */";
+            return dummyDestNode
+                .WithTrailingTrivia(SyntaxFactory.Comment(commentedText))
+                .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, exception.ToString()));
+        }
+
+        public static T WithVbTrailingErrorComment<T>(
+            this T dummyDestNode, CSharpSyntaxNode problematicSourceNode, Exception exception) where T : VisualBasicSyntaxNode
+        {
+            var errorDescription = problematicSourceNode.DescribeConversionError(exception);
+            var commentedText = "''' " + errorDescription.Replace("\r\n", "\r\n''' ");
+            return dummyDestNode
+                .WithTrailingTrivia(Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.CommentTrivia(commentedText))
+                .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind,
+                    exception.ToString()));
         }
     }
 }

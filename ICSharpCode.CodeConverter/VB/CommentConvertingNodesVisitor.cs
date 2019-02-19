@@ -25,7 +25,13 @@ namespace ICSharpCode.CodeConverter.VB
         }
         public override VisualBasicSyntaxNode DefaultVisit(SyntaxNode node)
         {
-            return TriviaConverter.PortConvertedTrivia(node, _wrappedVisitor.Visit(node));
+            try {
+                return TriviaConverter.PortConvertedTrivia(node, _wrappedVisitor.Visit(node));
+            } catch (Exception e) {
+                var dummyStatement = SyntaxFactory.EmptyStatement();
+                return dummyStatement.WithVbTrailingErrorComment<VbSyntax.StatementSyntax>((CSharpSyntaxNode) node, e);
+            }
+
         }
 
         public override VisualBasicSyntaxNode VisitAttributeList(CsSyntax.AttributeListSyntax node)

@@ -1,4 +1,7 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Shared;
 using Xunit;
 
 namespace CodeConverter.Tests.CSharp
@@ -932,27 +935,24 @@ End Class", @"public class AcmeClass
 }");
         }
 
-        [Fact(Skip = "No obvious C# equivalent")]
-        public void OperatorOverloadsWithNoCSharpEquivalent()
+        [Fact]// The stack trace displayed will change from time to time. Feel free to update this characterization test appropriately.
+        public async Task OperatorOverloadsWithNoCSharpEquivalentShowErrorInlineCharacterization()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class AcmeClass
+            // No valid conversion to C# - to implement this you'd need to create a new method, and convert all callers to use it.
+            var convertedCode = await GetConvertedCodeOrErrorString<VBToCSConversion>(@"Public Class AcmeClass
     Public Shared Operator ^(i As Integer, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
     Public Shared Operator Like(s As String, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-End Class", @"public class AcmeClass" + /* not valid C# - to implement this you'd need to create a new method, and convert all callers to use it*/ @"
-{
-    public static AcmeClass operator ^(int i, AcmeClass ac)
-    {
-        return ac;
-    }
-    public static AcmeClass operator Like(string s, AcmeClass ac)
-    {
-        return ac;
-    }
-}");
+End Class");
+
+            Assert.Contains("Cannot convert", convertedCode);
+            Assert.Contains("_failedMemberConversionMarker1", convertedCode);
+            Assert.Contains("Public Shared Operator ^(i As Integer, ac As AcmeClass) As AcmeClass", convertedCode);
+            Assert.Contains("_failedMemberConversionMarker2", convertedCode);
+            Assert.Contains("Public Shared Operator Like(s As String, ac As AcmeClass) As AcmeClass", convertedCode);
         }
 
         [Fact]

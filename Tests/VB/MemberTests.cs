@@ -1,4 +1,9 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter;
+using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.VB;
 using Xunit;
 
 namespace CodeConverter.Tests.VB
@@ -678,6 +683,29 @@ End Class");
         End Set
     End Property
 End Class");
+        }
+
+
+
+        [Fact]// The stack trace displayed will change from time to time. Feel free to update this characterization test appropriately.
+        public async Task InvalidOperatorOverloadsShowErrorInlineCharacterization()
+        {
+            // No valid conversion to C# - to implement this you'd need to create a new method, and convert all callers to use it.
+            var convertedCode = await GetConvertedCodeOrErrorString<CSToVBConversion>(@"public class AcmeClass
+{
+    public static AcmeClass operator ++(int i, AcmeClass ac)
+    {
+        return ac;
+    }
+    public static AcmeClass operator --(string s, AcmeClass ac)
+    {
+        return ac;
+    }
+}");
+
+            Assert.Contains("Cannot convert", convertedCode);
+            Assert.Contains("public static AcmeClass operator ++(int i, AcmeClass ac)", convertedCode);
+            Assert.Contains("public static AcmeClass operator --(string s, AcmeClass ac)", convertedCode);
         }
     }
 }

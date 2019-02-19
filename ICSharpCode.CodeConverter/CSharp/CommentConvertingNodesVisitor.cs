@@ -10,6 +10,7 @@ using VbSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CsSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {

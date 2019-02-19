@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using SyntaxToken = Microsoft.CodeAnalysis.SyntaxToken;
@@ -28,6 +29,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
             private readonly AdditionalInitializers _additionalInitializers;
             private readonly QueryConverter _queryConverter;
+            private uint failedMemberConversionMarkerCount;
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
 
             private CommonConversions CommonConversions { get; }
@@ -102,7 +104,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var importsClauses = options.GlobalImports.Select(gi => gi.Clause).Concat(node.Imports.SelectMany(imp => imp.ImportsClauses)).ToList();
 
                 var attributes = SyntaxFactory.List(node.Attributes.SelectMany(a => a.AttributeLists).SelectMany(ConvertAttribute));
-                var sourceAndConverted = node.Members.Select(m => (Source: m, Converted: (MemberDeclarationSyntax)m.Accept(TriviaConvertingVisitor))).ToReadOnlyCollection();
+                var sourceAndConverted = node.Members.Select(m => (Source: m, Converted: ConvertMember(m))).ToReadOnlyCollection();
                 var convertedMembers = string.IsNullOrEmpty(options.RootNamespace)
                     ? sourceAndConverted.Select(sd => sd.Converted)
                     : PrependRootNamespace(sourceAndConverted, SyntaxFactory.IdentifierName(options.RootNamespace));
@@ -149,7 +151,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitNamespaceBlock(VBSyntax.NamespaceBlockSyntax node)
             {
-                var members = node.Members.Select(m => (MemberDeclarationSyntax)m.Accept(TriviaConvertingVisitor));
+                var members = node.Members.Select(ConvertMember);
 
                 var namespaceDeclaration = SyntaxFactory.NamespaceDeclaration(
                     (NameSyntax)node.NamespaceStatement.Name.Accept(TriviaConvertingVisitor),
@@ -165,31 +167,51 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             IEnumerable<MemberDeclarationSyntax> ConvertMembers(SyntaxList<VBSyntax.StatementSyntax> members)
             {
-                IEnumerable<MemberDeclarationSyntax> ConvertMembersInner()
-                {
-                    foreach (var member in members)
-                    {
-                        yield return (MemberDeclarationSyntax) member.Accept(TriviaConvertingVisitor);
+                var parentType = members.FirstOrDefault()?.GetAncestor<VBSyntax.TypeBlockSyntax>();
+                _methodsWithHandles = GetMethodWithHandles(parentType);
 
-                        if (_additionalDeclarations.TryGetValue(member, out var additionalStatements))
-                        {
+                if (parentType == null || !_methodsWithHandles.Any()) {
+                    return GetDirectlyConvertMembers();
+                }
+
+                return _additionalInitializers.WithAdditionalInitializers(GetDirectlyConvertMembers().ToList(), ConvertIdentifier(parentType.BlockStatement.Identifier));
+
+                IEnumerable<MemberDeclarationSyntax> GetDirectlyConvertMembers()
+                {
+                    foreach (var member in members) {
+                        yield return ConvertMember(member);
+
+                        if (_additionalDeclarations.TryGetValue(member, out var additionalStatements)) {
                             _additionalDeclarations.Remove(member);
-                            foreach (var additionalStatement in additionalStatements)
-                            {
+                            foreach (var additionalStatement in additionalStatements) {
                                 yield return additionalStatement;
                             }
                         }
                     }
                 }
+            }
 
-                var parentType = members.FirstOrDefault()?.GetAncestor<VBSyntax.TypeBlockSyntax>();
-                _methodsWithHandles = GetMethodWithHandles(parentType);
-
-                if (parentType == null || !_methodsWithHandles.Any()) {
-                    return ConvertMembersInner();
+            /// <summary>
+            /// In case of error, creates a dummy class to attach the error comment to.
+            /// This is because:
+            /// * Empty statements are invalid in many contexts in C#.
+            /// * There may be no previous node to attach to.
+            /// * Attaching to a parent would result in the code being out of order from where it was originally.
+            /// </summary>
+            private MemberDeclarationSyntax ConvertMember(VBSyntax.StatementSyntax member)
+            {
+                try {
+                    return (MemberDeclarationSyntax)member.Accept(TriviaConvertingVisitor);
+                } catch (Exception e) {
+                    return CreateErrorMember(member, e);
                 }
 
-                return _additionalInitializers.WithAdditionalInitializers(ConvertMembersInner().ToList(), ConvertIdentifier(parentType.BlockStatement.Identifier));
+                MemberDeclarationSyntax CreateErrorMember(VBSyntax.StatementSyntax memberCausingError, Exception e)
+                {
+                    var dummyClass
+                        = SyntaxFactory.ClassDeclaration("_failedMemberConversionMarker" + ++failedMemberConversionMarkerCount);
+                    return dummyClass.WithCsTrailingErrorComment(memberCausingError, e);
+                }
             }
 
             public override CSharpSyntaxNode VisitClassBlock(VBSyntax.ClassBlockSyntax node)
