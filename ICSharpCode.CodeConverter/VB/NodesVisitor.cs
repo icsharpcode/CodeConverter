@@ -50,7 +50,6 @@ namespace ICSharpCode.CodeConverter.VB
         int _placeholder = 1;
         private readonly CSharpHelperMethodDefinition _cSharpHelperMethodDefinition;
         private readonly CommonConversions _commonConversions;
-        private uint failedMemberConversionMarkerCount;
         public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
 
         string GeneratePlaceholder(string v)
