@@ -3,7 +3,7 @@ using Xunit;
 
 namespace CodeConverter.Tests.VB
 {
-    public class StandaloneMultiStatementTests : ConverterTestBase
+    public class StandaloneStatementTests : ConverterTestBase
     {
         [Fact]
         public void Reassignment()
