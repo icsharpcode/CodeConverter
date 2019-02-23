@@ -9,15 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Remove="wwwroot\Scripts\jquery-2.2.2.intellisense.js" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="..\ICSharpCode.CodeConverter\Shared\DefaultReferences.cs" Link="DefaultReferences.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="wwwroot\Scripts\jquery-2.2.2.intellisense.js" />
   </ItemGroup>
 
 
@@ -35,6 +27,19 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ICSharpCode.CodeConverter\ICSharpCode.CodeConverter.csproj" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <Content Update="wwwroot\css\site.css">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <Folder Include="wwwroot\Content\" />
+    <Folder Include="wwwroot\Scripts\" />
   </ItemGroup>
 
 </Project>
