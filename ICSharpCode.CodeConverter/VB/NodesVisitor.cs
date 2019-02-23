@@ -1040,7 +1040,10 @@ namespace ICSharpCode.CodeConverter.VB
                 );
             }
             if (node.IsKind(CS.SyntaxKind.AsExpression)) {
-                return SyntaxFactory.TryCastExpression(vbLeft, (TypeSyntax)vbRight);
+                bool isDefinitelyValueType = _semanticModel.GetTypeInfo(node).Type?.IsReferenceType == false;
+                return isDefinitelyValueType
+                    ? (VisualBasicSyntaxNode)SyntaxFactory.CTypeExpression(vbLeft, (TypeSyntax)vbRight)
+                    : SyntaxFactory.TryCastExpression(vbLeft, (TypeSyntax)vbRight);
             }
             if (node.IsKind(CS.SyntaxKind.IsExpression)) {
                 return SyntaxFactory.TypeOfIsExpression(vbLeft, (TypeSyntax)vbRight);

@@ -988,7 +988,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private ExpressionSyntax GetConvertMethodForKeywordOrNull(SyntaxNode type)
             {
-                var convertedType = _semanticModel.GetTypeInfo(type).ConvertedType;
+                var convertedType = _semanticModel.GetTypeInfo(type).Type;
                 return _createConvertMethodsLookupByReturnType.TryGetValue(convertedType, out var convertMethodName)
                     ? SyntaxFactory.ParseExpression(convertMethodName) : null;
             }

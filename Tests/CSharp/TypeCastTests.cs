@@ -7,7 +7,7 @@ namespace CodeConverter.Tests.CSharp
     public class TypeCastTests : ConverterTestBase
     {
         [Fact]
-        public void CastObjectToInteger()
+        public void CIntObjectToInteger()
         {
             TestConversionVisualBasicToCSharp(
 @"Class Class1
@@ -45,20 +45,20 @@ End Class" + Environment.NewLine, @"class Class1
         }
 
         [Fact]
-        public void DirectCastDoubleToInt()
+        public void CTypeDoubleToInt()
         {
             TestConversionVisualBasicToCSharp(
 @"Class Class1
     Private Sub Test()
         Dim q = 2.37
-        Dim j = DirectCast(q, Integer)
+        Dim j = CType(q, Integer)
     End Sub
 End Class", @"class Class1
 {
     private void Test()
     {
         var q = 2.37;
-        var j = (int)q;
+        var j = System.Convert.ToInt32(q);
     }
 }");
         }
@@ -84,14 +84,14 @@ End Class",
         }
 
         [Fact]
-        public void TryCastObjectToInteger()
+        public void CTypeObjectToInteger()
         {
             TestConversionVisualBasicToCSharp(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5
-        Dim i As System.Nullable(Of Integer) = TryCast(o, Integer)
-        Dim s As String = TryCast(o, Integer).ToString()
+        Dim i As System.Nullable(Of Integer) = CInt(o)
+        Dim s As String = CType(o, Integer).ToString()
     End Sub
 End Class",
 @"class Class1
@@ -99,8 +99,8 @@ End Class",
     private void Test()
     {
         object o = 5;
-        System.Nullable<int> i = o as int;
-        string s = (o as int).ToString();
+        System.Nullable<int> i = System.Convert.ToInt32(o);
+        string s = System.Convert.ToInt32(o).ToString();
     }
 }");
         }

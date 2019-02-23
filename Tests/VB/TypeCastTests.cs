@@ -60,11 +60,11 @@ End Sub
                 @"void Test()
 {
     object o = 5;
-    System.Nullable<int> i = o as int;
+    System.Nullable<int> i = o as int?;
 }
 ", @"Private Sub Test()
     Dim o As Object = 5
-    Dim i As System.Nullable(Of Integer) = TryCast(o, Integer)
+    Dim i As System.Nullable(Of Integer) = CType(o, Integer?)
 End Sub
 ");
         }
