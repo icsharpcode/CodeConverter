@@ -81,6 +81,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return node is VBSyntax.IncompleteMemberSyntax ||
                    !(node is VBSyntax.DeclarationStatementSyntax) ||
                    node.ContainsSkippedText ||
+                   node.IsMissing ||
                    CouldBeFieldOrLocalVariableDeclaration(node) ||
                    IsNonTypeEndBlock(node);
         }

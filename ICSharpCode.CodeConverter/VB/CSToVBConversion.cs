@@ -77,6 +77,7 @@ namespace ICSharpCode.CodeConverter.VB
             return node is CSSyntax.IncompleteMemberSyntax || 
                    node is CSSyntax.StatementSyntax || 
                    node.ContainsSkippedText ||
+                   node.IsMissing ||
                    ParsedAsFieldButCouldBeLocalVariableDeclaration(node); ;
         }
 
