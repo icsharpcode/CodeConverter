@@ -105,5 +105,15 @@ End Namespace");
 @"using s = System.String;",
 @"Imports s = System.String");
         }
+
+        [Fact]
+        public void SingleFieldAssignment()
+        {
+            TestConversionCSharpToVisualBasic(
+@"this.DataContext = from task in tasks
+    where task.Priority == pri
+    select task;",
+@"Me.DataContext = From task In tasks Where task.Priority Is pri Select task");
+        }
     }
 }

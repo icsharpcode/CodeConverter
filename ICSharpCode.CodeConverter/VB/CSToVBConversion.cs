@@ -76,7 +76,8 @@ namespace ICSharpCode.CodeConverter.VB
         {
             return node is CSSyntax.IncompleteMemberSyntax || 
                    node is CSSyntax.StatementSyntax || 
-                   CouldBeFieldOrLocalVariableDeclaration(node); ;
+                   node.ContainsSkippedText ||
+                   ParsedAsFieldButCouldBeLocalVariableDeclaration(node); ;
         }
 
         public bool MustBeContainedByClass(SyntaxNode node)
@@ -85,7 +86,7 @@ namespace ICSharpCode.CodeConverter.VB
                    node is CSSyntax.BasePropertyDeclarationSyntax;
         }
 
-        private static bool CouldBeFieldOrLocalVariableDeclaration(SyntaxNode node)
+        private static bool ParsedAsFieldButCouldBeLocalVariableDeclaration(SyntaxNode node)
         {
             return node is CSSyntax.FieldDeclarationSyntax f && f.Modifiers.All(m => m.IsKind(SyntaxKind.TypeVarKeyword));
         }
