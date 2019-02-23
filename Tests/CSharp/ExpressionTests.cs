@@ -365,6 +365,30 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void NothingInvokesDefaultForValueTypes()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Public Sub Bar()
+        Dim number As Integer
+        number = Nothing
+        Dim dat As Date
+        dat = Nothing
+    End Sub
+End Class", @"using System;
+
+class TestClass
+{
+    public void Bar()
+    {
+        int number;
+        number = default(int);
+        DateTime dat;
+        dat = default(DateTime);
+    }
+}");
+        }
+
+        [Fact]
         public void UsesSquareBracketsForIndexerButParenthesesForMethodInvocation()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
