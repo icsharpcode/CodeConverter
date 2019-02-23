@@ -25,6 +25,12 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly Dictionary<string, SyntaxTree> _firstPassResults = new Dictionary<string, SyntaxTree>();
         private readonly ILanguageConversion _languageConversion;
         private readonly bool _handlePartialConversion;
+        private readonly bool _showCompilationErrors =
+#if DEBUG && ShowCompilationErrors
+            true;
+#else
+            false;
+#endif
 
         private ProjectConversion(Compilation sourceCompilation, IEnumerable<SyntaxTree> syntaxTreesToConvert, ILanguageConversion languageConversion, Compilation convertedCompilation)
         {
@@ -134,9 +140,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             FirstPass();
             var secondPassByFilePath = SecondPass();
-#if DEBUG && ShowCompilationErrors
-            AddProjectWarnings();
-#endif
+            if (_showCompilationErrors) AddProjectWarnings();
             return secondPassByFilePath;
         }
 
