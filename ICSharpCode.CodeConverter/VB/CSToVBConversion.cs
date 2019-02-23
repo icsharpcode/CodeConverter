@@ -100,7 +100,8 @@ namespace ICSharpCode.CodeConverter.VB
 
         public string WithSurroundingClass(string text)
         {
-            return $@"class SurroundingClass
+            var modifier = text.Contains("abstract ") ? "abstract " : "";
+            return $@"{modifier}class SurroundingClass
 {{
 {text}
 }}";

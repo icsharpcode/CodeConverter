@@ -111,7 +111,8 @@ End Sub";
 
         public string WithSurroundingClass(string text)
         {
-            return $@"Class SurroundingClass
+            var modifier = text.Contains("MustOverride ") ? "MustInherit " : "";
+            return $@"{modifier}Class SurroundingClass
 {text}
 End Class";
         }
