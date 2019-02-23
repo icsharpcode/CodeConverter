@@ -61,11 +61,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     .WithNodeInformation(node);
             }
 
-            private Func<SyntaxNode, SyntaxNode> DelegateConversion(Func<SyntaxNode, SyntaxList<StatementSyntax>> convert)
-            {
-                return node => SyntaxFactory.Block(convert(node));
-            }
-
             public override CSharpSyntaxNode VisitGetTypeExpression(VBSyntax.GetTypeExpressionSyntax node)
             {
                 return SyntaxFactory.TypeOfExpression((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor));
