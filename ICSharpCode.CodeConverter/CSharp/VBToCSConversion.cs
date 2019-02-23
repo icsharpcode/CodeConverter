@@ -61,6 +61,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public string PostTransformProjectFile(string s)
         {
+            s = ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(s, "cs", "vb");
+
             // TODO Find API to, or parse project file sections to remove "<DefineDebug>true</DefineDebug>" + "<DefineTrace>true</DefineTrace>"
             // Then add them to the define constants in the same section, or create one if necessary.
 

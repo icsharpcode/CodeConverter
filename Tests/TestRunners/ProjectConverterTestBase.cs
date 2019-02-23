@@ -50,6 +50,7 @@ namespace CodeConverter.Tests.TestRunners
                 var expectedResultDirectory = GetExpectedResultDirectory<TLanguageConversion>(testName);
 
                 try {
+                    if (!expectedResultDirectory.Exists) expectedResultDirectory.Create();
                     var expectedFiles = expectedResultDirectory.GetFiles("*", SearchOption.AllDirectories);
                     AssertAllExpectedFilesAreEqual(expectedFiles, conversionResults, expectedResultDirectory, originalSolutionDir);
                     AssertAllConvertedFilesWereExpected(expectedFiles, conversionResults, expectedResultDirectory, originalSolutionDir);
@@ -70,7 +71,7 @@ namespace CodeConverter.Tests.TestRunners
 
             }
 
-            Assert.False(_writeNewCharacterization, $"Test setup issue: Set {_writeNewCharacterization} to false after using it");
+            Assert.False(_writeNewCharacterization, $"Test setup issue: Set {nameof(_writeNewCharacterization)} to false after using it");
         }
 
         private static void AssertAllConvertedFilesWereExpected(FileInfo[] expectedFiles,

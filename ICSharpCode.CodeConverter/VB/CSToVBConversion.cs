@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
@@ -58,6 +59,8 @@ namespace ICSharpCode.CodeConverter.VB
         }
         public string PostTransformProjectFile(string s)
         {
+            s = ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(s, "vb", "cs");
+
             var startTag = "<DefineConstants>";
             var endTag = "</DefineConstants>";
             var defineConstantsStart = s.IndexOf(startTag);
