@@ -28,18 +28,21 @@ namespace CodeConverter.Tests.TestRunners
             var runnableTestsInSource = XUnitFactDiscoverer.GetNamedFacts(compiledSource).ToList();
             Assert.NotEmpty(runnableTestsInSource);
 
-            return GetSelfVerifyingFacts<TTargetCompiler, TLanguageConversion>(sourceFileText, runnableTestsInSource).GetAwaiter().GetResult();
+            return GetSelfVerifyingFacts<TTargetCompiler, TLanguageConversion>(sourceFileText, runnableTestsInSource);
         }
 
-        private static async Task<IEnumerable<NamedFact>> GetSelfVerifyingFacts<TTargetCompiler, TLanguageConversion>(string sourceFileText,
+        private static IEnumerable<NamedFact> GetSelfVerifyingFacts<TTargetCompiler, TLanguageConversion>(string sourceFileText,
                 List<NamedFact> runnableTestsInSource) where TTargetCompiler : ICompiler, new()
             where TLanguageConversion : ILanguageConversion, new()
         {
-            var conversionResult = await ProjectConversion.ConvertText<TLanguageConversion>(sourceFileText, DefaultReferences.NetStandard2);
+            // Lazy to avoid confusing test runner on error, but also avoid calculating multiple times
+            var conversionResult = new Lazy<ConversionResult>(() =>
+                ProjectConversion.ConvertText<TLanguageConversion>(sourceFileText, DefaultReferences.NetStandard2)
+                    .GetAwaiter().GetResult()
+            );
 
-            // Avoid confusing test runner on error, but also avoid calculating multiple times
             var runnableTestsInTarget = new Lazy<Dictionary<string, NamedFact>>(() => GetConvertedNamedFacts<TTargetCompiler>(runnableTestsInSource,
-                conversionResult));
+                conversionResult.Value));
 
             return runnableTestsInSource.Select(sourceFact =>
                 new NamedFact(sourceFact.Name, () =>
@@ -61,7 +64,7 @@ namespace CodeConverter.Tests.TestRunners
                     catch (TargetInvocationException ex)
                     {
                         throw new XunitException(
-                            $"Converted test failed, the conversion is incorrect for \"{sourceFact.Name}\": {(ex.InnerException ?? ex)}\r\nConverted Code: {conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString()}");
+                            $"Converted test failed, the conversion is incorrect for \"{sourceFact.Name}\": {(ex.InnerException ?? ex)}\r\nConverted Code: {conversionResult.Value.ConvertedCode ?? conversionResult.Value.GetExceptionsAsString()}");
                     }
                 })
             );
