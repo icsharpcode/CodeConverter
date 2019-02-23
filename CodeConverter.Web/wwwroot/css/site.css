@@ -85,14 +85,10 @@ textarea {
         transform: rotate(10deg)
     }
 }
+/* END https://github.com/tholman/github-corners/blob/master/license.md */
 
-@media (max-width:500px) {
-    .github-corner:hover .octo-arm {
-        animation: none
-    }
-
-    .github-corner .octo-arm {
-        animation: octocat-wave 560ms ease-in-out
+@media (max-width:768px) {
+    .github-corner {
+        display: none
     }
 }
-/* END https://github.com/tholman/github-corners/blob/master/license.md */
