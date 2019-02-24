@@ -17,15 +17,20 @@ textarea {
     max-width: 280px;
 }
 
+.horizontal-spaced {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
 /* Carousel */
 .carousel-caption {
     z-index: 10 !important;
 }
 
-    .carousel-caption p {
-        font-size: 20px;
-        line-height: 1.4;
-    }
+.carousel-caption p {
+    font-size: 20px;
+    line-height: 1.4;
+}
 
 @media (min-width: 768px) {
     .carousel-caption {
@@ -41,31 +46,32 @@ textarea {
 @-webkit-keyframes spinner {
     to {-webkit-transform: rotate(360deg);}
 }
- 
+
 .spinner {
-    min-width: 24px;
-    min-height: 24px;
+    display: inline-block;
 }
- 
-.spinner:before {
-    content: 'Loading…';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 16px;
-    height: 16px;
-    margin-top: -10px;
-    margin-left: -10px;
-}
- 
-.spinner:not(:required):before {
-    content: '';
+
+/* BEGIN https://loading.io/css/ */
+.spinner:after {
+    content: " ";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    border-top: 2px solid #03ade0;
-    border-right: 2px solid transparent;
-    animation: spinner .6s linear infinite;
-    -webkit-animation: spinner .6s linear infinite;
+    border: 3px solid #68217a;
+    border-color: #68217a transparent #68217a transparent;
+    animation: lds-dual-ring 1.2s linear infinite;
 }
+
+@keyframes lds-dual-ring {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+/* END https://loading.io/css/ */
 
 /* BEGIN https://github.com/tholman/github-corners/blob/master/license.md */
 .github-corner:hover .octo-arm {
