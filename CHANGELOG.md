@@ -3,6 +3,10 @@ All notable changes to the code converter will be documented here.
 
 # 6.5.0 TBC
 * Avoid fatal error converting a project in a solution containing a website project (#243)
+* Improve best-effort conversion in the presence of errors
+* Improved nuget package and web converter's snippet detection
+* Exclude conversion-source-language files from converted project
+* Improve conversion of type casts
 
 # 6.4.0 07/02/2019
 Fix initialization bug in VS2017
