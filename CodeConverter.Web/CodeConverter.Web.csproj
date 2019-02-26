@@ -39,7 +39,6 @@
 
   <ItemGroup>
     <Folder Include="wwwroot\Content\" />
-    <Folder Include="wwwroot\Scripts\" />
   </ItemGroup>
 
 </Project>

@@ -15,12 +15,15 @@ app.controller('ccController', function ($scope, $timeout, $http) {
     $scope.outputCodeLanguage = function () { return $scope.requestedConversion === vbToCsId ? "C#" : "VB.NET"; };
 
     $scope.setDefaultInput = function () {
-        if ($scope.convertedCode) {
-            $scope.inputCode = $scope.convertedCode;
-        } else if (!$scope.inputCode || $scope.inputCode === defaultVbInput || $scope.inputCode === defaultCsInput) {
+
+        if (!$scope.inputCode || $scope.inputCode === defaultVbInput || $scope.inputCode === defaultCsInput) {
             $scope.inputCode = $scope.requestedConversion === vbToCsId ? defaultVbInput : defaultCsInput;
+            $scope.convertedCode = "";
+        } else if ($scope.convertedCode) {
+            const tempInput = $scope.inputCode;
+            $scope.inputCode = $scope.convertedCode;
+            $scope.convertedCode = tempInput;
         }
-        $scope.convertedCode = "";
 
         $timeout(function() {
             const input = document.getElementById("inputTextArea");
