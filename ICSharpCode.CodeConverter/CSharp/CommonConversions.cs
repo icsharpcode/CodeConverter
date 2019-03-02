@@ -143,7 +143,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         internal ExpressionSyntax GetLiteralExpression(object value, string textForUser = null)
         {
             if (value is string valueTextForCompiler) {
-                textForUser = GetStringTextForUser(textForUser, valueTextForCompiler);
+                textForUser = GetQuotedStringTextForUser(textForUser, valueTextForCompiler);
                 return SyntaxFactory.LiteralExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StringLiteralExpression,
                     SyntaxFactory.Literal(textForUser, valueTextForCompiler));
             }
@@ -194,25 +194,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             throw new ArgumentOutOfRangeException(nameof(value), value, null);
         }
 
-        internal string GetStringTextForUser(string textForUser, string valueTextForCompiler)
+        internal string GetQuotedStringTextForUser(string textForUser, string valueTextForCompiler)
         {
+            var sourceUnquotedTextForUser = Unquote(textForUser);
             var worthBeingAVerbatimString = IsWorthBeingAVerbatimString(valueTextForCompiler);
-            if (worthBeingAVerbatimString)
-            {
-                var valueWithReplacements = EscapeQuotes(textForUser, valueTextForCompiler, true);
-                return $"@\"{valueWithReplacements}\"";
-            }
+            var destQuotedTextForUser =
+                $"\"{EscapeQuotes(sourceUnquotedTextForUser, valueTextForCompiler, worthBeingAVerbatimString)}\"";
+            
+            return worthBeingAVerbatimString ? "@" + destQuotedTextForUser : destQuotedTextForUser;
 
-            string unquotedTextForUser = Unquote(textForUser);
-            return "\"" + EscapeQuotes(unquotedTextForUser, valueTextForCompiler, false) + "\"";
-        }
-
-        private static string Unquote(string quotedText)
-        {
-            int firstQuoteIndex = quotedText.IndexOf("\"");
-            int lastQuoteIndex = quotedText.LastIndexOf("\"");
-            var unquoted = quotedText.Substring(firstQuoteIndex + 1, lastQuoteIndex - firstQuoteIndex - 1);
-            return unquoted;
         }
 
         internal string EscapeQuotes(string unquotedTextForUser, string valueTextForCompiler, bool isVerbatimString)
@@ -222,6 +212,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             } else {
                 return unquotedTextForUser.Replace("\"\"", "\\\"");
             }
+        }
+
+        private static string Unquote(string quotedText)
+        {
+            int firstQuoteIndex = quotedText.IndexOf("\"");
+            int lastQuoteIndex = quotedText.LastIndexOf("\"");
+            var unquoted = quotedText.Substring(firstQuoteIndex + 1, lastQuoteIndex - firstQuoteIndex - 1);
+            return unquoted;
         }
 
         public bool IsWorthBeingAVerbatimString(string s1)
