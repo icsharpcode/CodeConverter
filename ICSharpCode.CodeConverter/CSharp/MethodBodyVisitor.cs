@@ -522,8 +522,20 @@ namespace ICSharpCode.CodeConverter.CSharp
                     sections.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), list));
                 }
 
-                var switchStatementSyntax = SyntaxFactory.SwitchStatement(expr, SyntaxFactory.List(sections));
+                var switchStatementSyntax = SwitchStatement(expr, sections);
                 return SingleStatement(switchStatementSyntax);
+            }
+
+            /// <summary>
+            /// Hopefully temporary workaround helper method since VS2019 Preview 3 stopped adding parentheses by default
+            /// https://github.com/icsharpcode/CodeConverter/issues/246
+            /// </summary>
+            private static SwitchStatementSyntax SwitchStatement(ExpressionSyntax expr, List<SwitchSectionSyntax> sections)
+            {
+                return SyntaxFactory.SwitchStatement(SyntaxFactory.Token(SyntaxKind.SwitchKeyword),
+                    SyntaxFactory.Token(SyntaxKind.OpenParenToken), expr,
+                    SyntaxFactory.Token(SyntaxKind.CloseParenToken), SyntaxFactory.Token(SyntaxKind.OpenBraceToken),
+                    SyntaxFactory.List(sections), SyntaxFactory.Token(SyntaxKind.CloseBraceToken));
             }
 
             private static CasePatternSwitchLabelSyntax WrapInCasePatternSwitchLabelSyntax(ExpressionSyntax cSharpSyntaxNode)
