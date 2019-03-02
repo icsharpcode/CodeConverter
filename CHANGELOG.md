@@ -7,6 +7,10 @@ All notable changes to the code converter will be documented here.
 * Improved nuget package and web converter's snippet detection
 * Exclude conversion-source-language files from converted project
 * Improve conversion of type casts
+* Web UI tweaks
+
+### C# -> VB
+* Fix for interpolated strings and switch statements in VS2019 Preview
 
 # 6.4.0 07/02/2019
 Fix initialization bug in VS2017
