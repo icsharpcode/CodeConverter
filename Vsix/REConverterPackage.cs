@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.LanguageServices;
@@ -78,7 +80,16 @@ namespace CodeConverter.VsExtension
 
         private static Assembly LoadAnyVersionOfAssembly(AssemblyName assemblyName)
         {
-            return Assembly.Load(new AssemblyName(assemblyName.Name){CultureName = assemblyName.CultureName});
+            try {
+                return Assembly.Load(new AssemblyName(assemblyName.Name){CultureName = assemblyName.CultureName});
+            } catch (FileNotFoundException e) when (e.FileName.Contains("Microsoft.VisualStudio.LanguageServices") && ProbablyRequiresVsUpgrade) {
+                MessageBox.Show(
+                    "Code Converter cannot find `Microsoft.VisualStudio.LanguageServices`. Please upgrade Visual Studio to version 15.9.3 or above.\r\n\r\n" +
+                    "If after upgrading you still see this error, attach your activity log %AppData%\\Microsoft\\VisualStudio\\<version>\\ActivityLog.xml to a GitHub issue at https://github.com/icsharpcode/CodeConverter \r\n\r\n" +
+                    "You can press Ctrl + C to copy this message",
+                    "Upgrade Visual Studio", MessageBoxButton.OK);
+                return null;
+            }
         }
 
         private bool IsThisExtensionRequestingAssembly()
@@ -106,6 +117,25 @@ namespace CodeConverter.VsExtension
             await Task.WhenAll(ConvertCSToVBCommand.InitializeAsync(this),
                 ConvertVBToCSCommand.InitializeAsync(this));
             await base.InitializeAsync(cancellationToken, progress);
+        }
+
+        public static bool ProbablyRequiresVsUpgrade {
+            get {
+                var version = FullVsVersion;
+                return version == null || version < new Version(15, 9, 3, 0);
+            }
+        }
+
+        private static Version FullVsVersion {
+            get {
+                string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "msenv.dll");
+
+                if (File.Exists(path)) {
+                    var fvi = FileVersionInfo.GetVersionInfo(path);
+                    return new Version(fvi.ProductMajorPart, fvi.ProductMinorPart, fvi.ProductBuildPart,
+                        fvi.ProductPrivatePart);
+                } else return null;
+            }
         }
     }
 }
