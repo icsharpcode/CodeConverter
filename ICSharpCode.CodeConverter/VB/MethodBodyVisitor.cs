@@ -85,10 +85,9 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override SyntaxList<StatementSyntax> VisitIfStatement(CSS.IfStatementSyntax node)
         {
-            IdentifierNameSyntax name;
             List<ArgumentSyntax> arguments = new List<ArgumentSyntax>();
             StatementSyntax stmt;
-            if (node.Else == null && TryConvertRaiseEvent(node, out name, arguments)) {
+            if (node.Else == null && TryConvertIfNotNullRaiseEvent(node, out IdentifierNameSyntax name, arguments)) {
                 stmt = SyntaxFactory.RaiseEventStatement(name, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
                 return SyntaxFactory.SingletonList(stmt);
             }
@@ -131,37 +130,51 @@ namespace ICSharpCode.CodeConverter.VB
                 || statement is CSS.ThrowStatementSyntax;
         }
 
-        bool TryConvertRaiseEvent(CSS.IfStatementSyntax node, out IdentifierNameSyntax name, List<ArgumentSyntax> arguments)
+        bool TryConvertIfNotNullRaiseEvent(CSS.IfStatementSyntax node, out IdentifierNameSyntax name, List<ArgumentSyntax> arguments)
         {
             name = null;
+            if (TrimParenthesis(node) is CSS.BinaryExpressionSyntax be
+                && be.IsKind(CS.SyntaxKind.NotEqualsExpression)
+                && (be.Left.IsKind(CS.SyntaxKind.NullLiteralExpression) ||
+                    be.Right.IsKind(CS.SyntaxKind.NullLiteralExpression))) {
+                return TryConvertRaiseEvent(ref name, arguments, node.Statement, be);
+            }
+            return false;
+        }
+
+        private static CSS.ExpressionSyntax TrimParenthesis(CSS.IfStatementSyntax node)
+        {
             var condition = node.Condition;
-            while (condition is CSS.ParenthesizedExpressionSyntax)
-                condition = ((CSS.ParenthesizedExpressionSyntax)condition).Expression;
-            if (!(condition is CSS.BinaryExpressionSyntax))
-                return false;
-            var be = (CSS.BinaryExpressionSyntax)condition;
-            if (!be.IsKind(CS.SyntaxKind.NotEqualsExpression) || (!be.Left.IsKind(CS.SyntaxKind.NullLiteralExpression) && !be.Right.IsKind(CS.SyntaxKind.NullLiteralExpression)))
-                return false;
+            while (condition is CSS.ParenthesizedExpressionSyntax pExp) condition = pExp.Expression;
+            return condition;
+        }
+
+        private bool TryConvertRaiseEvent(ref IdentifierNameSyntax name, List<ArgumentSyntax> arguments, CSS.StatementSyntax resultStatement,
+            CSS.BinaryExpressionSyntax be)
+        {
             CSS.ExpressionStatementSyntax singleStatement;
-            if (node.Statement is CSS.BlockSyntax) {
-                var block = ((CSS.BlockSyntax)node.Statement);
+            if (resultStatement is CSS.BlockSyntax block)
+            {
                 if (block.Statements.Count != 1)
                     return false;
                 singleStatement = block.Statements[0] as CSS.ExpressionStatementSyntax;
-            } else {
-                singleStatement = node.Statement as CSS.ExpressionStatementSyntax;
             }
+            else
+            {
+                singleStatement = resultStatement as CSS.ExpressionStatementSyntax;
+            }
+
             if (singleStatement == null || !(singleStatement.Expression is CSS.InvocationExpressionSyntax))
                 return false;
             var possibleEventName = GetPossibleEventName(be.Left) ?? GetPossibleEventName(be.Right);
             if (possibleEventName == null)
                 return false;
-            var invocation = (CSS.InvocationExpressionSyntax)singleStatement.Expression;
+            var invocation = (CSS.InvocationExpressionSyntax) singleStatement.Expression;
             var invocationName = GetPossibleEventName(invocation.Expression);
             if (possibleEventName != invocationName)
                 return false;
             name = SyntaxFactory.IdentifierName(possibleEventName);
-            arguments.AddRange(invocation.ArgumentList.Arguments.Select(a => (ArgumentSyntax)a.Accept(_nodesVisitor)));
+            arguments.AddRange(invocation.ArgumentList.Arguments.Select(a => (ArgumentSyntax) a.Accept(_nodesVisitor)));
             return true;
         }
 
