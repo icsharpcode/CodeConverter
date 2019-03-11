@@ -41,6 +41,12 @@ namespace ICSharpCode.CodeConverter.VB
         }
         public CommentConvertingMethodBodyVisitor CommentConvertingVisitor { get; }
 
+        public SemanticModel SemanticModel
+        {
+            set { _semanticModel = value; }
+            get { return _semanticModel; }
+        }
+
         public MethodBodyVisitor(SemanticModel semanticModel,
             CSharpSyntaxVisitor<VisualBasicSyntaxNode> nodesVisitor, TriviaConverter triviaConverter,
             CommonConversions commonConversions)
@@ -85,15 +91,17 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override SyntaxList<StatementSyntax> VisitIfStatement(CSS.IfStatementSyntax node)
         {
-            List<ArgumentSyntax> arguments = new List<ArgumentSyntax>();
-            StatementSyntax stmt;
-            if (node.Else == null && TryConvertIfNotNullRaiseEvent(node, out IdentifierNameSyntax name, arguments)) {
-                stmt = SyntaxFactory.RaiseEventStatement(name, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
+            if (node.Else == null && TryConvertIfNotNullRaiseEvent(node, out var stmt)) {
                 return SyntaxFactory.SingletonList(stmt);
             }
             var elseIfBlocks = new List<ElseIfBlockSyntax>();
             ElseBlockSyntax elseBlock = null;
-            CollectElseBlocks(node, elseIfBlocks, ref elseBlock);
+            if (TryConvertElseRaiseEvent(node, out var elseStmt)) {
+                elseBlock = SyntaxFactory.ElseBlock(SyntaxFactory.SingletonList(elseStmt));
+            } else {
+                CollectElseBlocks(node, elseIfBlocks, ref elseBlock);
+            }
+
             if (node.Statement is CSS.BlockSyntax) {
                 stmt = SyntaxFactory.MultiLineIfBlock(
                     SyntaxFactory.IfStatement((ExpressionSyntax)node.Condition.Accept(_nodesVisitor)).WithThenKeyword(SyntaxFactory.Token(SyntaxKind.ThenKeyword)),
@@ -130,16 +138,28 @@ namespace ICSharpCode.CodeConverter.VB
                 || statement is CSS.ThrowStatementSyntax;
         }
 
-        bool TryConvertIfNotNullRaiseEvent(CSS.IfStatementSyntax node, out IdentifierNameSyntax name, List<ArgumentSyntax> arguments)
+        bool TryConvertIfNotNullRaiseEvent(CSS.IfStatementSyntax node, out StatementSyntax raiseEventStatement)
         {
-            name = null;
-            if (TrimParenthesis(node) is CSS.BinaryExpressionSyntax be
-                && be.IsKind(CS.SyntaxKind.NotEqualsExpression)
-                && (be.Left.IsKind(CS.SyntaxKind.NullLiteralExpression) ||
-                    be.Right.IsKind(CS.SyntaxKind.NullLiteralExpression))) {
-                return TryConvertRaiseEvent(ref name, arguments, node.Statement, be);
-            }
-            return false;
+            raiseEventStatement = null;
+            return TryGetBinaryExpression(node, out var comparisonExpression, CS.SyntaxKind.NotEqualsExpression, CS.SyntaxKind.NullLiteralExpression)
+                   && TryConvertRaiseEvent(node.Statement, comparisonExpression, ref raiseEventStatement);
+        }
+
+        bool TryConvertElseRaiseEvent(CSS.IfStatementSyntax node, out StatementSyntax raiseEventStatement)
+        {
+            raiseEventStatement = null;
+            return node.Else != null && 
+                   TryGetBinaryExpression(node, out var comparisonExpression, CS.SyntaxKind.EqualsExpression, CS.SyntaxKind.NullLiteralExpression)
+                   && TryConvertRaiseEvent(node.Else.Statement, comparisonExpression, ref raiseEventStatement);
+        }
+
+        private static bool TryGetBinaryExpression(CSS.IfStatementSyntax node, out CSS.BinaryExpressionSyntax binaryExpressionSyntax, CS.SyntaxKind notEqualsExpression, CS.SyntaxKind operand)
+        {
+            binaryExpressionSyntax = TrimParenthesis(node) as CSS.BinaryExpressionSyntax;
+            return binaryExpressionSyntax != null
+                   && binaryExpressionSyntax.IsKind(notEqualsExpression)
+                   && (binaryExpressionSyntax.Left.IsKind(operand) ||
+                       binaryExpressionSyntax.Right.IsKind(operand));
         }
 
         private static CSS.ExpressionSyntax TrimParenthesis(CSS.IfStatementSyntax node)
@@ -149,8 +169,8 @@ namespace ICSharpCode.CodeConverter.VB
             return condition;
         }
 
-        private bool TryConvertRaiseEvent(ref IdentifierNameSyntax name, List<ArgumentSyntax> arguments, CSS.StatementSyntax resultStatement,
-            CSS.BinaryExpressionSyntax be)
+        private bool TryConvertRaiseEvent(CSS.StatementSyntax resultStatement,
+            CSS.BinaryExpressionSyntax be, ref StatementSyntax raiseEventStatement)
         {
             CSS.ExpressionStatementSyntax singleStatement;
             if (resultStatement is CSS.BlockSyntax block)
@@ -166,27 +186,19 @@ namespace ICSharpCode.CodeConverter.VB
 
             if (singleStatement == null || !(singleStatement.Expression is CSS.InvocationExpressionSyntax))
                 return false;
-            var possibleEventName = GetPossibleEventName(be.Left) ?? GetPossibleEventName(be.Right);
-            if (possibleEventName == null)
-                return false;
-            var invocation = (CSS.InvocationExpressionSyntax) singleStatement.Expression;
-            var invocationName = GetPossibleEventName(invocation.Expression);
-            if (possibleEventName != invocationName)
-                return false;
-            name = SyntaxFactory.IdentifierName(possibleEventName);
-            arguments.AddRange(invocation.ArgumentList.Arguments.Select(a => (ArgumentSyntax) a.Accept(_nodesVisitor)));
-            return true;
-        }
 
-        string GetPossibleEventName(CSS.ExpressionSyntax expression)
-        {
-            var ident = expression as CSS.IdentifierNameSyntax;
-            if (ident != null)
-                return ident.Identifier.Text;
-            var fre = expression as CSS.MemberAccessExpressionSyntax;
-            if (fre != null && fre.Expression.IsKind(CS.SyntaxKind.ThisExpression))
-                return fre.Name.Identifier.Text;
-            return null;
+            var eventIdentifier = _commonConversions.IsEventHandlerType(be.Left) ? be.Left
+                : _commonConversions.IsEventHandlerType(be.Right) ? be.Right
+                : null;
+            if (eventIdentifier == null) return false;
+
+            var nameExpr = eventIdentifier.Accept(_nodesVisitor);
+            var nameIdentifier = nameExpr is MemberAccessExpressionSyntax maes ? maes.Name : nameExpr;
+            var invocation = (CSS.InvocationExpressionSyntax) singleStatement.Expression;
+            var arguments = invocation.ArgumentList.Arguments.Select(a => (ArgumentSyntax) a.Accept(_nodesVisitor));
+            raiseEventStatement = SyntaxFactory.RaiseEventStatement((IdentifierNameSyntax) nameIdentifier
+, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
+            return true;
         }
 
         void CollectElseBlocks(CSS.IfStatementSyntax node, List<ElseIfBlockSyntax> elseIfBlocks, ref ElseBlockSyntax elseBlock)
@@ -201,8 +213,10 @@ namespace ICSharpCode.CodeConverter.VB
                     )
                 );
                 CollectElseBlocks(elseIf, elseIfBlocks, ref elseBlock);
-            } else
-                elseBlock = SyntaxFactory.ElseBlock(ConvertBlock(node.Else.Statement));
+            } else {
+                SyntaxList<StatementSyntax> statements = ConvertBlock(node.Else.Statement);
+                elseBlock = SyntaxFactory.ElseBlock(statements);
+            }
         }
 
         public override SyntaxList<StatementSyntax> VisitSwitchStatement(CSS.SwitchStatementSyntax node)
@@ -376,7 +390,7 @@ namespace ICSharpCode.CodeConverter.VB
                 if (start == null)
                     return false;
                 variable = SyntaxFactory.VariableDeclarator(
-                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(CommonConversions.ConvertIdentifier(v.Identifier))),
+                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(_commonConversions.ConvertIdentifier(v.Identifier))),
                     node.Declaration.Type.IsVar ? null : SyntaxFactory.SimpleAsClause((TypeSyntax)node.Declaration.Type.Accept(_nodesVisitor)),
                     null
                 );
@@ -424,13 +438,13 @@ namespace ICSharpCode.CodeConverter.VB
             VisualBasicSyntaxNode variable;
             if (node.Type.IsVar)
             {
-                variable = SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(node.Identifier));
+                variable = SyntaxFactory.IdentifierName(_commonConversions.ConvertIdentifier(node.Identifier));
             }
             else
             {
                 variable = SyntaxFactory.VariableDeclarator(
                     SyntaxFactory.SingletonSeparatedList(
-                        SyntaxFactory.ModifiedIdentifier(CommonConversions.ConvertIdentifier(node.Identifier))),
+                        SyntaxFactory.ModifiedIdentifier(_commonConversions.ConvertIdentifier(node.Identifier))),
                     SyntaxFactory.SimpleAsClause((TypeSyntax) node.Type.Accept(_nodesVisitor)),
                     null
                 );
@@ -476,7 +490,7 @@ namespace ICSharpCode.CodeConverter.VB
                 simpleTypeName = type.ToString();
             return SyntaxFactory.CatchBlock(
                 SyntaxFactory.CatchStatement(
-                    SyntaxFactory.IdentifierName(SyntaxTokenExtensions.IsKind(catchClause.Declaration.Identifier, CS.SyntaxKind.None) ? SyntaxFactory.Identifier($"__unused{simpleTypeName}{index + 1}__") : CommonConversions.ConvertIdentifier(catchClause.Declaration.Identifier)),
+                    SyntaxFactory.IdentifierName(SyntaxTokenExtensions.IsKind(catchClause.Declaration.Identifier, CS.SyntaxKind.None) ? SyntaxFactory.Identifier($"__unused{simpleTypeName}{index + 1}__") : _commonConversions.ConvertIdentifier(catchClause.Declaration.Identifier)),
                     SyntaxFactory.SimpleAsClause(type),
                     catchClause.Filter == null ? null : SyntaxFactory.CatchFilterClause((ExpressionSyntax)catchClause.Filter.FilterExpression.Accept(_nodesVisitor))
                 ), statements
@@ -507,7 +521,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override SyntaxList<StatementSyntax> VisitLabeledStatement(CSS.LabeledStatementSyntax node)
         {
-            return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.LabelStatement(CommonConversions.ConvertIdentifier(node.Identifier)))
+            return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.LabelStatement(_commonConversions.ConvertIdentifier(node.Identifier)))
                 .AddRange(ConvertBlock(node.Statement));
         }
 
@@ -531,7 +545,7 @@ namespace ICSharpCode.CodeConverter.VB
                 _blockInfo.Peek().GotoCaseExpressions.Add(labelExpression);
                 label = SyntaxFactory.Label(SyntaxKind.IdentifierLabel, MakeGotoSwitchLabel(labelExpression));
             } else {
-                label = SyntaxFactory.Label(SyntaxKind.IdentifierLabel, CommonConversions.ConvertIdentifier(((CSS.IdentifierNameSyntax)node.Expression).Identifier));
+                label = SyntaxFactory.Label(SyntaxKind.IdentifierLabel, _commonConversions.ConvertIdentifier(((CSS.IdentifierNameSyntax)node.Expression).Identifier));
             }
             return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.GoToStatement(label));
         }

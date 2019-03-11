@@ -396,12 +396,12 @@ namespace ICSharpCode.CodeConverter.VB
             return topLevelExpression.Accept(_nodesVisitor);
         }
 
-        private static ModifiedIdentifierSyntax ExtractIdentifier(Microsoft.CodeAnalysis.CSharp.Syntax.VariableDeclaratorSyntax v)
+        private ModifiedIdentifierSyntax ExtractIdentifier(Microsoft.CodeAnalysis.CSharp.Syntax.VariableDeclaratorSyntax v)
         {
             return SyntaxFactory.ModifiedIdentifier(ConvertIdentifier(v.Identifier));
         }
 
-        public static SyntaxToken ConvertIdentifier(SyntaxToken id)
+        public SyntaxToken ConvertIdentifier(SyntaxToken id)
         {
             var idText = id.ValueText;
             // Underscore is a special character in VB lexer which continues lines - not sure where to find the whole set of other similar tokens if any
@@ -529,6 +529,11 @@ namespace ICSharpCode.CodeConverter.VB
         private static string UppercaseFirstLetter(string sourceText)
         {
             return sourceText.Substring(0, 1).ToUpper() + sourceText.Substring(1);
+        }
+
+        public bool IsEventHandlerType(CSharpSyntaxNode syntax)
+        {
+            return _semanticModel.GetTypeInfo(syntax).Type?.GetFullMetadataName()?.StartsWith("System.EventHandler") == true;
         }
     }
 }

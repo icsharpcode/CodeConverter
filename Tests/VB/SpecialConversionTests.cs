@@ -53,10 +53,45 @@ End Class");
         }
 
         [Fact]
-        public void RaiseEvent()
+        public void RaiseEventInElse()
         {
             TestConversionCSharpToVisualBasic(
-                @"class TestClass
+                @"using System;
+
+public class Foo
+{
+    public event EventHandler<EventArgs> Bar;
+
+    protected void OnBar(EventArgs e)
+    {
+        if (Bar == null)
+            System.Diagnostics.Debug.WriteLine(""No subscriber"");
+        else
+            Bar.Invoke(this, e);
+    }
+}", @"Imports System
+
+Public Class Foo
+    Public Event Bar As EventHandler(Of EventArgs)
+
+    Protected Sub OnBar(ByVal e As EventArgs)
+        If BarEvent Is Nothing Then
+            System.Diagnostics.Debug.WriteLine(""No subscriber"")
+        Else
+            RaiseEvent Bar(Me, e)
+        End If
+    End Sub
+End Class
+");
+        }
+
+        [Fact]
+        public void RaiseEventMinimal()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"using System;
+
+class TestClass
 {
     event EventHandler MyEvent;
 
@@ -64,75 +99,141 @@ End Class");
     {
         if (MyEvent != null) MyEvent(this, EventArgs.Empty);
     }
-}", @"Friend Class TestClass
+}", @"Imports System
+
+Friend Class TestClass
     Private Event MyEvent As EventHandler
 
     Private Sub TestMethod()
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class");
+        }
+
+        [Fact]
+        public void CharacterizeRaiseEventWithMissingDefinitionActsLikeFunc()
+        {
             TestConversionCSharpToVisualBasic(
-                @"class TestClass
+                @"using System;
+
+class TestClass
 {
     void TestMethod()
     {
-        if ((MyEvent != null)) MyEvent(this, EventArgs.Empty);
+        if (MyEvent != null) MyEvent(this, EventArgs.Empty);
     }
-}", @"Friend Class TestClass
+}", @"Imports System
+
+Friend Class TestClass
     Private Sub TestMethod()
-        RaiseEvent MyEvent(Me, EventArgs.Empty)
+        If MyEvent IsNot Nothing Then MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class");
+        }
+
+        [Fact]
+        public void RaiseEventReversedConditional()
+        {
             TestConversionCSharpToVisualBasic(
-                @"class TestClass
+                @"using System;
+
+class TestClass
 {
+    event EventHandler MyEvent;
+
     void TestMethod()
     {
         if (null != MyEvent) { MyEvent(this, EventArgs.Empty); }
     }
-}", @"Friend Class TestClass
-    Private Sub TestMethod()
-        RaiseEvent MyEvent(Me, EventArgs.Empty)
-    End Sub
-End Class");
-            TestConversionCSharpToVisualBasic(
-                @"class TestClass
-{
-    void TestMethod()
-    {
-        if (this.MyEvent != null) MyEvent(this, EventArgs.Empty);
-    }
-}", @"Friend Class TestClass
-    Private Sub TestMethod()
-        RaiseEvent MyEvent(Me, EventArgs.Empty)
-    End Sub
-End Class");
-            TestConversionCSharpToVisualBasic(
-                @"class TestClass
-{
-    void TestMethod()
-    {
-        if (MyEvent != null) this.MyEvent(this, EventArgs.Empty);
-    }
-}", @"Friend Class TestClass
-    Private Sub TestMethod()
-        RaiseEvent MyEvent(Me, EventArgs.Empty)
-    End Sub
-End Class");
-            TestConversionCSharpToVisualBasic(
-                @"class TestClass
-{
-    void TestMethod()
-    {
-        if ((this.MyEvent != null)) { this.MyEvent(this, EventArgs.Empty); }
-    }
-}", @"Friend Class TestClass
+}", @"Imports System
+
+Friend Class TestClass
+    Private Event MyEvent As EventHandler
+
     Private Sub TestMethod()
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class");
         }
 
+        [Fact]
+        public void RaiseEventQualified()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"using System;
+
+class TestClass
+{
+    event EventHandler MyEvent;
+
+    void TestMethod()
+    {
+        if (this.MyEvent != null) MyEvent(this, EventArgs.Empty);
+    }
+}", @"Imports System
+
+Friend Class TestClass
+    Private Event MyEvent As EventHandler
+
+    Private Sub TestMethod()
+        RaiseEvent MyEvent(Me, EventArgs.Empty)
+    End Sub
+End Class");
+        }
+
+        [Fact]
+        public void RaiseEventInNestedBrackets()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"using System;
+
+class TestClass
+{
+    event EventHandler MyEvent;
+
+    void TestMethod()
+    {
+        if ((MyEvent != null)) this.MyEvent(this, EventArgs.Empty);
+    }
+}", @"Imports System
+
+Friend Class TestClass
+    Private Event MyEvent As EventHandler
+
+    Private Sub TestMethod()
+        RaiseEvent MyEvent(Me, EventArgs.Empty)
+    End Sub
+End Class");
+        }
+
+        [Fact]
+        public void RaiseEventQualifiedWithNestedBrackets()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"using System;
+
+class TestClass
+{
+    event EventHandler MyEvent;
+
+    void TestMethod()
+    {
+        if ((this.MyEvent != null)) { this.MyEvent(this, EventArgs.Empty); }
+    }
+}", @"Imports System
+
+Friend Class TestClass
+    Private Event MyEvent As EventHandler
+
+    Private Sub TestMethod()
+        RaiseEvent MyEvent(Me, EventArgs.Empty)
+    End Sub
+End Class");
+        }
+
+        /// <summary>
+        /// Intentionally unknown type used to ensure imperfect compilation errs towards common case
+        /// </summary>
         [Fact]
         public void IfStatementSimilarToRaiseEvent()
         {
@@ -147,7 +248,7 @@ End Class");
     Private Sub TestMethod()
         If FullImage IsNot Nothing Then DrawImage()
     End Sub
-End Class");
+End Class", expectCompilationErrors: true);
             // regression test:
             TestConversionCSharpToVisualBasic(
                 @"class TestClass
@@ -160,7 +261,7 @@ End Class");
     Private Sub TestMethod()
         If FullImage IsNot Nothing Then e.DrawImage()
     End Sub
-End Class");
+End Class", expectCompilationErrors: true);
             // with braces:
             TestConversionCSharpToVisualBasic(
                 @"class TestClass
@@ -175,7 +276,7 @@ End Class");
             DrawImage()
         End If
     End Sub
-End Class");
+End Class", expectCompilationErrors: true);
             TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
@@ -189,7 +290,7 @@ End Class");
             e.DrawImage()
         End If
     End Sub
-End Class");
+End Class", expectCompilationErrors: true);
             // another bug related to the IfStatement code:
             TestConversionCSharpToVisualBasic(
                 @"class TestClass
@@ -207,7 +308,7 @@ End Class");
             Next
         End If
     End Sub
-End Class");
+End Class", expectCompilationErrors: true);
         }
 
         /// <summary>
