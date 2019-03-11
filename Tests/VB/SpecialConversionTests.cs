@@ -218,7 +218,9 @@ End Class");
         [Fact]
         public void AddressOfWhereVbTypeInferenceIsWeaker()
         {
-            TestConversionCSharpToVisualBasic(@"static class TestClass
+            TestConversionCSharpToVisualBasic(@"using System;
+
+static class TestClass
 {
     private static object TypeSwitch(this object obj, Func<string, object> matchFunc1, Func<int, object> matchFunc2, Func<object, object> defaultFunc)
     {
@@ -239,7 +241,8 @@ End Class");
     {
         return node.TypeSwitch(ConvertString, ConvertInt, _ => throw new NotImplementedException($""Conversion for '{node.GetType()}' not implemented""));
     }
-}", @"Imports System.Runtime.CompilerServices
+}", @"Imports System
+Imports System.Runtime.CompilerServices
 
 Friend Module TestClass
     <Extension()>

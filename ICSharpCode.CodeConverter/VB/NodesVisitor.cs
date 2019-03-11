@@ -1520,15 +1520,11 @@ namespace ICSharpCode.CodeConverter.VB
                 var argIndex = ies.ArgumentList.Arguments.IndexOf(nameArgument);
                 //TODO: Deal with named parameters
                 var symbolInfo = _semanticModel.GetSymbolInfo(ies.Expression);
-                // We ignore symbolInfo.Symbol, since if there's an exact match it isn't overloaded
-                var destinationType = symbolInfo.CandidateSymbols
-                    .Select(m => m.GetParameters()).Where(p => p.Length > argIndex).Select(p => p[argIndex].Type)
-                    .FirstOrDefault();
-
+                var destinationType = symbolInfo.ExtractBestMatch(m => m.GetParameters().Length > argIndex);
                 if (destinationType != null) {
                     var toCreate = (TypeSyntax)
                         CS.SyntaxFactory
-                            .ParseTypeName(destinationType.ToMinimalDisplayString(_semanticModel,
+                            .ParseTypeName(destinationType.GetParameters()[argIndex].Type.ToMinimalDisplayString(_semanticModel,
                                 argumentChildExpression.SpanStart))
                             .Accept(TriviaConvertingVisitor);
                     return toCreate;
