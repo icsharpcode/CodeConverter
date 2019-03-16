@@ -403,7 +403,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public SyntaxToken ConvertIdentifier(SyntaxToken id)
         {
-            var idText = id.ValueText;
+            var idText = IsEventHandlerType((CSharpSyntaxNode) id.Parent) ? id.ValueText + "Event" : id.ValueText;
             // Underscore is a special character in VB lexer which continues lines - not sure where to find the whole set of other similar tokens if any
             // Rather than a complicated contextual rename, just add an extra dash to all identifiers and hope this method is consistently used
             if (idText.All(c => c == '_')) idText += "_";
