@@ -41,12 +41,6 @@ namespace ICSharpCode.CodeConverter.VB
         }
         public CommentConvertingMethodBodyVisitor CommentConvertingVisitor { get; }
 
-        public SemanticModel SemanticModel
-        {
-            set { _semanticModel = value; }
-            get { return _semanticModel; }
-        }
-
         public MethodBodyVisitor(SemanticModel semanticModel,
             CSharpSyntaxVisitor<VisualBasicSyntaxNode> nodesVisitor, TriviaConverter triviaConverter,
             CommonConversions commonConversions)
@@ -187,18 +181,25 @@ namespace ICSharpCode.CodeConverter.VB
             if (singleStatement == null || !(singleStatement.Expression is CSS.InvocationExpressionSyntax))
                 return false;
 
-            var eventIdentifier = _commonConversions.IsEventHandlerType(be.Left) ? be.Left
-                : _commonConversions.IsEventHandlerType(be.Right) ? be.Right
+            var eventIdentifier = _commonConversions.IsEventHandlerIdentifier(be.Left) ? be.Left
+                : _commonConversions.IsEventHandlerIdentifier(be.Right) ? be.Right
                 : null;
             if (eventIdentifier == null) return false;
 
-            var nameExpr = eventIdentifier.Accept(_nodesVisitor);
-            var nameIdentifier = nameExpr is MemberAccessExpressionSyntax maes ? maes.Name : nameExpr;
+            var handlerName = ConvertEventHandlerName(eventIdentifier);
             var invocation = (CSS.InvocationExpressionSyntax) singleStatement.Expression;
             var arguments = invocation.ArgumentList.Arguments.Select(a => (ArgumentSyntax) a.Accept(_nodesVisitor));
-            raiseEventStatement = SyntaxFactory.RaiseEventStatement((IdentifierNameSyntax) nameIdentifier
-, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
+            raiseEventStatement = SyntaxFactory.RaiseEventStatement(handlerName, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
             return true;
+        }
+
+        private IdentifierNameSyntax ConvertEventHandlerName(CSS.ExpressionSyntax eventIdentifier)
+        {
+            var nameExpr = eventIdentifier.Accept(_nodesVisitor);
+            var eventName = (SimpleNameSyntax) (nameExpr is MemberAccessExpressionSyntax maes ? maes.Name : nameExpr);
+            string identifierText = eventName.Identifier.Text;
+            if (identifierText.EndsWith("Event")) identifierText = identifierText.Substring(0, identifierText.Length - "Event".Length);
+            return SyntaxFactory.IdentifierName(identifierText);
         }
 
         void CollectElseBlocks(CSS.IfStatementSyntax node, List<ElseIfBlockSyntax> elseIfBlocks, ref ElseBlockSyntax elseBlock)
@@ -589,12 +590,17 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override SyntaxList<StatementSyntax> VisitReturnStatement(CSS.ReturnStatementSyntax node)
         {
-            StatementSyntax stmt;
-            if (node.Expression == null)
-                stmt = SyntaxFactory.ReturnStatement();
-            else
-                stmt = SyntaxFactory.ReturnStatement((ExpressionSyntax)node.Expression.Accept(_nodesVisitor));
-            return SyntaxFactory.SingletonList(stmt);
+            var vbExpression = node.Expression?.Accept(_nodesVisitor);
+            return SyntaxFactory.SingletonList(ReturnStatement(vbExpression));
+        }
+
+        private static StatementSyntax ReturnStatement(VisualBasicSyntaxNode vbExpression)
+        {
+            return vbExpression == null
+                ? SyntaxFactory.ReturnStatement()
+                : vbExpression.IsKind(SyntaxKind.EmptyStatement)
+                    ? SyntaxFactory.ReturnStatement().WithTriviaFrom(vbExpression)
+                    : SyntaxFactory.ReturnStatement((ExpressionSyntax)vbExpression);
         }
 
         public override SyntaxList<StatementSyntax> VisitYieldStatement(CSS.YieldStatementSyntax node)

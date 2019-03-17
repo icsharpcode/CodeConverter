@@ -19,7 +19,6 @@ namespace ICSharpCode.CodeConverter.Shared
     {
         private readonly Compilation _sourceCompilation;
         private readonly IEnumerable<SyntaxTree> _syntaxTreesToConvert;
-        // ReSharper disable once StaticMemberInGenericType - Stateless
         private static readonly AdhocWorkspace AdhocWorkspace = new AdhocWorkspace();
         private readonly ConcurrentDictionary<string, string> _errors = new ConcurrentDictionary<string, string>();
         private readonly Dictionary<string, SyntaxTree> _firstPassResults = new Dictionary<string, SyntaxTree>();

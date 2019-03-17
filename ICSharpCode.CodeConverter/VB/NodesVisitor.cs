@@ -1522,11 +1522,10 @@ namespace ICSharpCode.CodeConverter.VB
                 var symbolInfo = _semanticModel.GetSymbolInfo(ies.Expression);
                 var destinationType = symbolInfo.ExtractBestMatch(m => m.GetParameters().Length > argIndex);
                 if (destinationType != null) {
-                    var toCreate = (TypeSyntax)
-                        CS.SyntaxFactory
-                            .ParseTypeName(destinationType.GetParameters()[argIndex].Type.ToMinimalDisplayString(_semanticModel,
-                                argumentChildExpression.SpanStart))
-                            .Accept(TriviaConvertingVisitor);
+                    string symbolName = destinationType.GetParameters()[argIndex].Type
+                        .ToMinimalDisplayString(_semanticModel, argumentChildExpression.SpanStart);
+                    var csType = CS.SyntaxFactory.ParseTypeName(symbolName);
+                    var toCreate = (TypeSyntax) csType.Accept(TriviaConvertingVisitor);
                     return toCreate;
                 }
             }
