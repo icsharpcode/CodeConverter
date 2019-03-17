@@ -207,7 +207,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public LambdaExpressionSyntax ConvertLambdaExpression(AnonymousFunctionExpressionSyntax node, CSharpSyntaxNode body, IEnumerable<ParameterSyntax> parameters, SyntaxTokenList modifiers)
         {
-            var symbol = ModelExtensions.GetSymbolInfo(_semanticModel, node).Symbol as IMethodSymbol;
+            var symbol = (IMethodSymbol) ModelExtensions.GetSymbolInfo(_semanticModel, node).Symbol;
             var parameterList = SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters.Select(p => (Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterSyntax)p.Accept(_nodesVisitor))));
             LambdaHeaderSyntax header;
             EndBlockStatementSyntax endBlock;
@@ -234,7 +234,8 @@ namespace ICSharpCode.CodeConverter.VB
                 var vbThrowExpression = (ExpressionSyntax)csThrowExpression.Expression.Accept(_nodesVisitor);
                 var vbThrowStatement = SyntaxFactory.ThrowStatement(SyntaxFactory.Token(SyntaxKind.ThrowKeyword), vbThrowExpression);
 
-                return SyntaxFactory.MultiLineFunctionLambdaExpression(header, SyntaxFactory.SingletonList<StatementSyntax>(vbThrowStatement), endBlock);
+                return SyntaxFactory.MultiLineFunctionLambdaExpression(header,
+                    SyntaxFactory.SingletonList<StatementSyntax>(vbThrowStatement), endBlock);
             } else {
                 statements = InsertRequiredDeclarations(
                     SyntaxFactory.SingletonList<StatementSyntax>(
