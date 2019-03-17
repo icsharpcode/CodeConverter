@@ -1,7 +1,12 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
-# 6.5.0 TBC
+# 6.6.0 TBC
+
+### C# -> VB
+* Improve event identifier conversion
+
+# 6.5.0 03/03/2019
 * Avoid fatal error converting a project in a solution containing a website project (#243)
 * Improve best-effort conversion in the presence of errors
 * Improved nuget package and web converter's snippet detection

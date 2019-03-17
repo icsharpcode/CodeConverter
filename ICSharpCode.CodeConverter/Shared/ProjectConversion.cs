@@ -19,8 +19,6 @@ namespace ICSharpCode.CodeConverter.Shared
     {
         private readonly Compilation _sourceCompilation;
         private readonly IEnumerable<SyntaxTree> _syntaxTreesToConvert;
-        // ReSharper disable once StaticMemberInGenericType - Stateless
-        private static readonly AdhocWorkspace AdhocWorkspace = new AdhocWorkspace();
         private readonly ConcurrentDictionary<string, string> _errors = new ConcurrentDictionary<string, string>();
         private readonly Dictionary<string, SyntaxTree> _firstPassResults = new Dictionary<string, SyntaxTree>();
         private readonly ILanguageConversion _languageConversion;
@@ -147,12 +145,13 @@ namespace ICSharpCode.CodeConverter.Shared
         private Dictionary<string, SyntaxNode> SecondPass()
         {
             var secondPassByFilePath = new Dictionary<string, SyntaxNode>();
+            var adhocWorkspace = new AdhocWorkspace();
             foreach (var firstPassResult in _firstPassResults) {
                 var treeFilePath = firstPassResult.Key;
                 try {
-                    secondPassByFilePath.Add(treeFilePath, SingleSecondPass(firstPassResult));
+                    secondPassByFilePath.Add(treeFilePath, SingleSecondPass(firstPassResult, adhocWorkspace));
                 }  catch (Exception e) {
-                    secondPassByFilePath.Add(treeFilePath, Format(firstPassResult.Value.GetRoot()));
+                    secondPassByFilePath.Add(treeFilePath, Format(firstPassResult.Value.GetRoot(), adhocWorkspace));
                     _errors.TryAdd(treeFilePath, e.ToString());
                 }
             }
@@ -169,10 +168,10 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        private SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)
+        private SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs, AdhocWorkspace workspace)
         {
             var secondPassNode = _languageConversion.SingleSecondPass(cs);
-            return Format(secondPassNode);
+            return Format(secondPassNode, workspace);
         }
 
         private void FirstPass()
@@ -237,10 +236,11 @@ namespace ICSharpCode.CodeConverter.Shared
             return root.WithAnnotatedNode(selectedNode, AnnotationConstants.SelectedNodeAnnotationKind);
         }
 
-        private SyntaxNode Format(SyntaxNode resultNode)
+        private SyntaxNode Format(SyntaxNode resultNode, Workspace workspace)
         {
             SyntaxNode selectedNode = _handlePartialConversion ? GetSelectedNode(resultNode) : resultNode;
-            return Formatter.Format(selectedNode ?? resultNode, AdhocWorkspace);
+            SyntaxNode nodeToFormat = selectedNode ?? resultNode;
+            return Formatter.Format(nodeToFormat, workspace);
         }
 
         private SyntaxNode GetSelectedNode(SyntaxNode resultNode)

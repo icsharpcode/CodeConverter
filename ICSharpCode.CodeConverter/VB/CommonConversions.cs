@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using AttributeListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.AttributeListSyntax;
+using BinaryExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.BinaryExpressionSyntax;
 using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using ExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax;
@@ -206,7 +207,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public LambdaExpressionSyntax ConvertLambdaExpression(AnonymousFunctionExpressionSyntax node, CSharpSyntaxNode body, IEnumerable<ParameterSyntax> parameters, SyntaxTokenList modifiers)
         {
-            var symbol = ModelExtensions.GetSymbolInfo(_semanticModel, node).Symbol as IMethodSymbol;
+            var symbol = (IMethodSymbol) ModelExtensions.GetSymbolInfo(_semanticModel, node).Symbol;
             var parameterList = SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters.Select(p => (Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterSyntax)p.Accept(_nodesVisitor))));
             LambdaHeaderSyntax header;
             EndBlockStatementSyntax endBlock;
@@ -233,7 +234,8 @@ namespace ICSharpCode.CodeConverter.VB
                 var vbThrowExpression = (ExpressionSyntax)csThrowExpression.Expression.Accept(_nodesVisitor);
                 var vbThrowStatement = SyntaxFactory.ThrowStatement(SyntaxFactory.Token(SyntaxKind.ThrowKeyword), vbThrowExpression);
 
-                return SyntaxFactory.MultiLineFunctionLambdaExpression(header, SyntaxFactory.SingletonList<StatementSyntax>(vbThrowStatement), endBlock);
+                return SyntaxFactory.MultiLineFunctionLambdaExpression(header,
+                    SyntaxFactory.SingletonList<StatementSyntax>(vbThrowStatement), endBlock);
             } else {
                 statements = InsertRequiredDeclarations(
                     SyntaxFactory.SingletonList<StatementSyntax>(
@@ -396,19 +398,25 @@ namespace ICSharpCode.CodeConverter.VB
             return topLevelExpression.Accept(_nodesVisitor);
         }
 
-        private static ModifiedIdentifierSyntax ExtractIdentifier(Microsoft.CodeAnalysis.CSharp.Syntax.VariableDeclaratorSyntax v)
+        private ModifiedIdentifierSyntax ExtractIdentifier(Microsoft.CodeAnalysis.CSharp.Syntax.VariableDeclaratorSyntax v)
         {
             return SyntaxFactory.ModifiedIdentifier(ConvertIdentifier(v.Identifier));
         }
 
-        public static SyntaxToken ConvertIdentifier(SyntaxToken id)
+        public SyntaxToken ConvertIdentifier(SyntaxToken id)
         {
-            var idText = id.ValueText;
+            CSharpSyntaxNode parent = (CSharpSyntaxNode) id.Parent;
+            var idText = IsEventHandlerIdentifier(parent) && !IsEventHandlerAssignLhs(parent) ? id.ValueText + "Event" : id.ValueText;
             // Underscore is a special character in VB lexer which continues lines - not sure where to find the whole set of other similar tokens if any
             // Rather than a complicated contextual rename, just add an extra dash to all identifiers and hope this method is consistently used
+            bool keywordRequiresEscaping = KeywordRequiresEscaping(id);
+            return Identifier(idText, keywordRequiresEscaping);
+        }
+
+        public static SyntaxToken Identifier(string idText, bool keywordRequiresEscaping = false)
+        {
             if (idText.All(c => c == '_')) idText += "_";
-            
-            return KeywordRequiresEscaping(id) ? SyntaxFactory.Identifier($"[{idText}]") : SyntaxFactory.Identifier(idText);
+            return keywordRequiresEscaping ? SyntaxFactory.Identifier($"[{idText}]") : SyntaxFactory.Identifier(idText);
         }
 
         private static bool KeywordRequiresEscaping(SyntaxToken id)
@@ -529,6 +537,32 @@ namespace ICSharpCode.CodeConverter.VB
         private static string UppercaseFirstLetter(string sourceText)
         {
             return sourceText.Substring(0, 1).ToUpper() + sourceText.Substring(1);
+        }
+
+        public bool IsEventHandlerIdentifier(CSharpSyntaxNode syntax)
+        {
+            return GetSymbol(syntax).IsKind(SymbolKind.Event);
+        }
+
+        private static bool IsEventHandlerAssignLhs(CSharpSyntaxNode syntax)
+        {
+            var assignmentExpressionSyntax = syntax.GetAncestor<AssignmentExpressionSyntax>();
+            return assignmentExpressionSyntax != null && assignmentExpressionSyntax.IsKind(CSSyntaxKind.AddAssignmentExpression, CSSyntaxKind.SubtractAssignmentExpression)
+                       && assignmentExpressionSyntax.Left.DescendantNodes().Contains(syntax);
+        }
+
+        private ISymbol GetSymbol(CSharpSyntaxNode syntax)
+        {
+            return syntax.SyntaxTree == _semanticModel.SyntaxTree
+                ? _semanticModel.GetSymbolInfo(syntax).Symbol
+                : null;
+        }
+
+        private ITypeSymbol GetTypeSymbol(CSharpSyntaxNode syntax)
+        {
+            return syntax.SyntaxTree == _semanticModel.SyntaxTree
+                ? _semanticModel.GetTypeInfo(syntax).Type
+                : null;
         }
     }
 }
