@@ -406,7 +406,7 @@ namespace ICSharpCode.CodeConverter.VB
         public SyntaxToken ConvertIdentifier(SyntaxToken id)
         {
             CSharpSyntaxNode parent = (CSharpSyntaxNode) id.Parent;
-            var idText = IsEventHandlerIdentifier(parent) ? id.ValueText + "Event" : id.ValueText;
+            var idText = IsEventHandlerIdentifier(parent) && !IsEventHandlerAssignLhs(parent) ? id.ValueText + "Event" : id.ValueText;
             // Underscore is a special character in VB lexer which continues lines - not sure where to find the whole set of other similar tokens if any
             // Rather than a complicated contextual rename, just add an extra dash to all identifiers and hope this method is consistently used
             bool keywordRequiresEscaping = KeywordRequiresEscaping(id);
@@ -541,14 +541,14 @@ namespace ICSharpCode.CodeConverter.VB
 
         public bool IsEventHandlerIdentifier(CSharpSyntaxNode syntax)
         {
-            return GetSymbol(syntax).IsKind(SymbolKind.Event) && !IsEventHandlerAssignLhs(syntax);
+            return GetSymbol(syntax).IsKind(SymbolKind.Event);
         }
 
         private static bool IsEventHandlerAssignLhs(CSharpSyntaxNode syntax)
         {
             var assignmentExpressionSyntax = syntax.GetAncestor<AssignmentExpressionSyntax>();
             return assignmentExpressionSyntax != null && assignmentExpressionSyntax.IsKind(CSSyntaxKind.AddAssignmentExpression, CSSyntaxKind.SubtractAssignmentExpression)
-                       && assignmentExpressionSyntax.Left.DescendantNodes().Contains(syntax) == true;
+                       && assignmentExpressionSyntax.Left.DescendantNodes().Contains(syntax);
         }
 
         private ISymbol GetSymbol(CSharpSyntaxNode syntax)

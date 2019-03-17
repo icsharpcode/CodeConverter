@@ -951,10 +951,43 @@ namespace ICSharpCode.CodeConverter.VB
                 return SyntaxFactory.NameOfExpression(convertedExpression);
             }
 
-            return SyntaxFactory.InvocationExpression(
-                (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
-                (ArgumentListSyntax)node.ArgumentList.Accept(TriviaConvertingVisitor)
-            );
+            var invokedCsExpression = node.Expression;
+            if (invokedCsExpression is CSS.MemberAccessExpressionSyntax csMemberAccess && csMemberAccess.Name.Identifier.Value.Equals("Invoke") && _commonConversions.IsEventHandlerIdentifier(csMemberAccess.Expression)) {
+                invokedCsExpression = csMemberAccess.Expression;
+            }
+
+            var vbEventExpression = (ExpressionSyntax)invokedCsExpression.Accept(TriviaConvertingVisitor);
+            var argumentListSyntax = (ArgumentListSyntax)node.ArgumentList.Accept(TriviaConvertingVisitor);
+
+            if (_commonConversions.IsEventHandlerIdentifier(invokedCsExpression)) {
+                return SyntaxFactory.RaiseEventStatement(RemoveEventSuffix(GetSimpleName(vbEventExpression)),
+                    argumentListSyntax);
+            }
+
+            return SyntaxFactory.InvocationExpression(vbEventExpression, argumentListSyntax);
+        }
+
+        private IdentifierNameSyntax RemoveEventSuffix(SimpleNameSyntax name)
+        {
+            var identifierName = name.Identifier.ValueText;
+            if (identifierName.EndsWith("Event")) {
+                identifierName = identifierName.Substring(0, identifierName.Length - "Event".Length);
+            }
+            return SyntaxFactory.IdentifierName(identifierName);
+        }
+
+        private SimpleNameSyntax GetSimpleName(ExpressionSyntax expressionSyntax)
+        {
+            switch (expressionSyntax)
+            {
+                case SimpleNameSyntax simpleName:
+                    return simpleName;
+                case MemberAccessExpressionSyntax memberAccess:
+                    return GetSimpleName(memberAccess.Name);
+                default:
+                    throw new NotSupportedException(
+                        $"Cannot get SimpleNameSyntax from {expressionSyntax.Kind()}:\r\n{expressionSyntax}");
+            }
         }
 
         private bool IsNameOfExpression(CSS.InvocationExpressionSyntax node)

@@ -90,11 +90,7 @@ namespace ICSharpCode.CodeConverter.VB
             }
             var elseIfBlocks = new List<ElseIfBlockSyntax>();
             ElseBlockSyntax elseBlock = null;
-            if (TryConvertElseRaiseEvent(node, out var elseStmt)) {
-                elseBlock = SyntaxFactory.ElseBlock(SyntaxFactory.SingletonList(elseStmt));
-            } else {
-                CollectElseBlocks(node, elseIfBlocks, ref elseBlock);
-            }
+            CollectElseBlocks(node, elseIfBlocks, ref elseBlock);
 
             if (node.Statement is CSS.BlockSyntax) {
                 stmt = SyntaxFactory.MultiLineIfBlock(
@@ -139,14 +135,6 @@ namespace ICSharpCode.CodeConverter.VB
                    && TryConvertRaiseEvent(node.Statement, comparisonExpression, ref raiseEventStatement);
         }
 
-        bool TryConvertElseRaiseEvent(CSS.IfStatementSyntax node, out StatementSyntax raiseEventStatement)
-        {
-            raiseEventStatement = null;
-            return node.Else != null && 
-                   TryGetBinaryExpression(node, out var comparisonExpression, CS.SyntaxKind.EqualsExpression, CS.SyntaxKind.NullLiteralExpression)
-                   && TryConvertRaiseEvent(node.Else.Statement, comparisonExpression, ref raiseEventStatement);
-        }
-
         private static bool TryGetBinaryExpression(CSS.IfStatementSyntax node, out CSS.BinaryExpressionSyntax binaryExpressionSyntax, CS.SyntaxKind notEqualsExpression, CS.SyntaxKind operand)
         {
             binaryExpressionSyntax = TrimParenthesis(node) as CSS.BinaryExpressionSyntax;
@@ -178,28 +166,11 @@ namespace ICSharpCode.CodeConverter.VB
                 singleStatement = resultStatement as CSS.ExpressionStatementSyntax;
             }
 
-            if (singleStatement == null || !(singleStatement.Expression is CSS.InvocationExpressionSyntax))
+            if (!(singleStatement?.Expression is CSS.InvocationExpressionSyntax singleInvocationExpression))
                 return false;
 
-            var eventIdentifier = _commonConversions.IsEventHandlerIdentifier(be.Left) ? be.Left
-                : _commonConversions.IsEventHandlerIdentifier(be.Right) ? be.Right
-                : null;
-            if (eventIdentifier == null) return false;
-
-            var handlerName = ConvertEventHandlerName(eventIdentifier);
-            var invocation = (CSS.InvocationExpressionSyntax) singleStatement.Expression;
-            var arguments = invocation.ArgumentList.Arguments.Select(a => (ArgumentSyntax) a.Accept(_nodesVisitor));
-            raiseEventStatement = SyntaxFactory.RaiseEventStatement(handlerName, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
-            return true;
-        }
-
-        private IdentifierNameSyntax ConvertEventHandlerName(CSS.ExpressionSyntax eventIdentifier)
-        {
-            var nameExpr = eventIdentifier.Accept(_nodesVisitor);
-            var eventName = (SimpleNameSyntax) (nameExpr is MemberAccessExpressionSyntax maes ? maes.Name : nameExpr);
-            string identifierText = eventName.Identifier.Text;
-            if (identifierText.EndsWith("Event")) identifierText = identifierText.Substring(0, identifierText.Length - "Event".Length);
-            return SyntaxFactory.IdentifierName(identifierText);
+            raiseEventStatement = singleInvocationExpression.Accept(_nodesVisitor) as RaiseEventStatementSyntax;
+            return raiseEventStatement != null;
         }
 
         void CollectElseBlocks(CSS.IfStatementSyntax node, List<ElseIfBlockSyntax> elseIfBlocks, ref ElseBlockSyntax elseBlock)

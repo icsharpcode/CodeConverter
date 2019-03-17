@@ -53,6 +53,37 @@ End Class");
         }
 
         [Fact]
+        public void RaiseEventOneLiners()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"using System;
+
+class TestClass
+{
+    event EventHandler MyEvent;
+
+    void TestMethod()
+    {
+        MyEvent(this, EventArgs.Empty);
+        if (MyEvent != null) MyEvent(this, EventArgs.Empty);
+        MyEvent.Invoke(this, EventArgs.Empty);
+        MyEvent?.Invoke(this, EventArgs.Empty);
+    }
+}", @"Imports System
+
+Friend Class TestClass
+    Private Event MyEvent As EventHandler
+
+    Private Sub TestMethod()
+        RaiseEvent MyEvent(Me, EventArgs.Empty)
+        RaiseEvent MyEvent(Me, EventArgs.Empty)
+        RaiseEvent MyEvent(Me, EventArgs.Empty)
+        RaiseEvent MyEvent(Me, EventArgs.Empty)
+    End Sub
+End Class");
+        }
+
+        [Fact]
         public void RaiseEventInElse()
         {
             TestConversionCSharpToVisualBasic(
@@ -83,52 +114,6 @@ Public Class Foo
     End Sub
 End Class
 ");
-        }
-
-        [Fact]
-        public void RaiseEventMinimal()
-        {
-            TestConversionCSharpToVisualBasic(
-                @"using System;
-
-class TestClass
-{
-    event EventHandler MyEvent;
-
-    void TestMethod()
-    {
-        if (MyEvent != null) MyEvent(this, EventArgs.Empty);
-    }
-}", @"Imports System
-
-Friend Class TestClass
-    Private Event MyEvent As EventHandler
-
-    Private Sub TestMethod()
-        RaiseEvent MyEvent(Me, EventArgs.Empty)
-    End Sub
-End Class");
-        }
-
-        [Fact]
-        public void CharacterizeRaiseEventWithMissingDefinitionActsLikeFunc()
-        {
-            TestConversionCSharpToVisualBasic(
-                @"using System;
-
-class TestClass
-{
-    void TestMethod()
-    {
-        if (MyEvent != null) MyEvent(this, EventArgs.Empty);
-    }
-}", @"Imports System
-
-Friend Class TestClass
-    Private Sub TestMethod()
-        If MyEvent IsNot Nothing Then MyEvent(Me, EventArgs.Empty)
-    End Sub
-End Class");
         }
 
         [Fact]
@@ -168,7 +153,7 @@ class TestClass
 
     void TestMethod()
     {
-        if (this.MyEvent != null) MyEvent(this, EventArgs.Empty);
+        if (this.MyEvent != null) this.MyEvent(this, EventArgs.Empty);
     }
 }", @"Imports System
 
@@ -193,7 +178,7 @@ class TestClass
 
     void TestMethod()
     {
-        if ((MyEvent != null)) this.MyEvent(this, EventArgs.Empty);
+        if ((MyEvent != null)) this.MyEvent.Invoke(this, EventArgs.Empty);
     }
 }", @"Imports System
 
@@ -227,6 +212,27 @@ Friend Class TestClass
 
     Private Sub TestMethod()
         RaiseEvent MyEvent(Me, EventArgs.Empty)
+    End Sub
+End Class");
+        }
+
+        [Fact]
+        public void CharacterizeRaiseEventWithMissingDefinitionActsLikeFunc()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"using System;
+
+class TestClass
+{
+    void TestMethod()
+    {
+        if (MyEvent != null) MyEvent(this, EventArgs.Empty);
+    }
+}", @"Imports System
+
+Friend Class TestClass
+    Private Sub TestMethod()
+        If MyEvent IsNot Nothing Then MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class");
         }
