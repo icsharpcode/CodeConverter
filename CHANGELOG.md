@@ -3,6 +3,8 @@ All notable changes to the code converter will be documented here.
 
 # 6.6.0 TBC
 
+* Ask people to upgrade VS if missing languageservices
+
 ### C# -> VB
 * Improve event identifier conversion
 
