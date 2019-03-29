@@ -1,5 +1,5 @@
 ﻿platform: Any CPU
-version: 6.5.{build}
+version: 6.6.{build}
 configuration: Debug
 image: Visual Studio 2017
 
