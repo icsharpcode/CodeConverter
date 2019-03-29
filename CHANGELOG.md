@@ -8,6 +8,9 @@ All notable changes to the code converter will be documented here.
 ### C# -> VB
 * Improve event identifier conversion
 
+### VB -> C#
+* Improve conversion of interpolated strings (format, alignment, escaping)
+
 # 6.5.0 03/03/2019
 * Avoid fatal error converting a project in a solution containing a website project (#243)
 * Improve best-effort conversion in the presence of errors

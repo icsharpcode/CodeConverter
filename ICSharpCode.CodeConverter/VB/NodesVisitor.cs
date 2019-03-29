@@ -765,7 +765,13 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitInterpolatedStringText(CSS.InterpolatedStringTextSyntax node)
         {
-            return SyntaxFactory.InterpolatedStringText(SyntaxFactory.InterpolatedStringTextToken(node.TextToken.Text, node.TextToken.ValueText));
+            return SyntaxFactory.InterpolatedStringText(SyntaxFactory.InterpolatedStringTextToken(ConvertUserText(node.TextToken), node.TextToken.ValueText));
+        }
+
+        private static string ConvertUserText(SyntaxToken token)
+        {
+            if (CS.CSharpExtensions.IsVerbatimStringLiteral(token)) return token.Text;
+            return token.ValueText.Replace("\"", "\"\"");
         }
 
         public override VisualBasicSyntaxNode VisitInterpolation(CSS.InterpolationSyntax node)

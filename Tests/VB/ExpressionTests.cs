@@ -39,6 +39,7 @@ namespace Global.InnerNamespace
             var a = $""pre{t} t"";
             var b = $""pre{t} \"" t"";
             var c = $@""pre{t} """"\ t"";
+            var d = $""pre{t + ""\""""} \"" t"";
             var e = $@""pre{t + ""\""""} """"\ t"";
             var f = $""pre{{escapedBraces}}{dt,4:hh}"";
             return a + b + c + d + e + f;
@@ -53,6 +54,7 @@ Namespace [Global].InnerNamespace
             Dim a = $""pre{t} t""
             Dim b = $""pre{t} """" t""
             Dim c = $""pre{t} """"\ t""
+            Dim d = $""pre{t & """"""""} """" t""
             Dim e = $""pre{t & """"""""} """"\ t""
             Dim f = $""pre{{escapedBraces}}{dt,4:hh}""
             Return a & b & c & d & e & f
