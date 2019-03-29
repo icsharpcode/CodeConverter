@@ -23,6 +23,44 @@ World!""
 End Class");
         }
 
+
+        [Fact]
+        public void StringInterpolationWithDoubleQuotes()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"using System;
+
+namespace Global.InnerNamespace
+{
+    public class Test
+    {
+        public string StringInter(string t, DateTime dt)
+        {
+            var a = $""pre{t} t"";
+            var b = $""pre{t} \"" t"";
+            var c = $@""pre{t} """"\ t"";
+            var e = $@""pre{t + ""\""""} """"\ t"";
+            var f = $""pre{{escapedBraces}}{dt,4:hh}"";
+            return a + b + c + d + e + f;
+        }
+    }
+}",
+                @"Imports System
+
+Namespace [Global].InnerNamespace
+    Public Class Test
+        Public Function StringInter(ByVal t As String, ByVal dt As DateTime) As String
+            Dim a = $""pre{t} t""
+            Dim b = $""pre{t} """" t""
+            Dim c = $""pre{t} """"\ t""
+            Dim e = $""pre{t & """"""""} """"\ t""
+            Dim f = $""pre{{escapedBraces}}{dt,4:hh}""
+            Return a & b & c & d & e & f
+        End Function
+    End Class
+End Namespace");
+        }
+
         [Fact]
         public void ConditionalExpression()
         {

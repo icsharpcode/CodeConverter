@@ -770,12 +770,19 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitInterpolation(CSS.InterpolationSyntax node)
         {
-            return SyntaxFactory.Interpolation((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
+            return SyntaxFactory.Interpolation(SyntaxFactory.Token(SyntaxKind.OpenBraceToken), (ExpressionSyntax) node.Expression.Accept(TriviaConvertingVisitor), (InterpolationAlignmentClauseSyntax) node.AlignmentClause?.Accept(TriviaConvertingVisitor), (InterpolationFormatClauseSyntax) node.FormatClause?.Accept(TriviaConvertingVisitor), SyntaxFactory.Token(SyntaxKind.CloseBraceToken));
         }
 
         public override VisualBasicSyntaxNode VisitInterpolationFormatClause(CSS.InterpolationFormatClauseSyntax node)
         {
-            return base.VisitInterpolationFormatClause(node);
+            SyntaxToken formatStringToken = SyntaxFactory.InterpolatedStringTextToken(SyntaxTriviaList.Empty,
+                node.FormatStringToken.Text, node.FormatStringToken.ValueText, SyntaxTriviaList.Empty);
+            return SyntaxFactory.InterpolationFormatClause(SyntaxFactory.Token(SyntaxKind.ColonToken), formatStringToken);
+        }
+
+        public override VisualBasicSyntaxNode VisitInterpolationAlignmentClause(CSS.InterpolationAlignmentClauseSyntax node)
+        {
+            return SyntaxFactory.InterpolationAlignmentClause(SyntaxFactory.Token(SyntaxKind.CommaToken), (ExpressionSyntax)node.Value.Accept(TriviaConvertingVisitor));
         }
 
         public override VisualBasicSyntaxNode VisitParenthesizedExpression(CSS.ParenthesizedExpressionSyntax node)
