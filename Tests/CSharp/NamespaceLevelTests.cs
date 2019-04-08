@@ -319,5 +319,23 @@ End Class",
     }
 }");
         }
+
+        [Fact]
+        public void NewConstraintLast()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Interface Foo
+End Interface
+
+Public Class Bar(Of x As {New, Foo})
+
+End Class",
+                @"public interface Foo
+{
+}
+
+public class Bar<x> where x : Foo, new()
+{
+}");
+        }
     }
 }
