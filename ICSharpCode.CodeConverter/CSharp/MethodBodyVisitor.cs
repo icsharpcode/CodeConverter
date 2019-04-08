@@ -105,6 +105,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> VisitExpressionStatement(VBSyntax.ExpressionStatementSyntax node)
             {
+                if (node.Expression is VBSyntax.InvocationExpressionSyntax invoke &&
+                    invoke.Expression is VBSyntax.MemberAccessExpressionSyntax expr &&
+                    expr.Expression is VBSyntax.MyBaseExpressionSyntax &&
+                    expr.Name.Identifier.ValueText.Equals("Finalize", StringComparison.OrdinalIgnoreCase)) {
+                    return new SyntaxList<StatementSyntax>();
+                }
                 return SingleStatement((ExpressionSyntax)node.Expression.Accept(_nodesVisitor));
             }
 
