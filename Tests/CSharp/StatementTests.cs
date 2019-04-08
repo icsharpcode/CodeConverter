@@ -624,13 +624,14 @@ End Class", @"class Test
         {
             // Intentionally uses a type name with a different casing as the loop variable, i.e. "process" to test name resolution
             TestConversionVisualBasicToCSharp($@"Imports System.Diagnostics
+Imports System.Threading
 
 Public Class AcmeClass
     Private Declare {vbMethodDecl} SetForegroundWindow Lib ""user32"" (ByVal hwnd As Int32){vbType}
 
     Public Shared Sub Main()
-        For Each process In Process.GetProcesses().Where(Function(p) Not String.IsNullOrEmpty(p.MainWindowTitle))
-            SetForegroundWindow(process.MainWindowHandle.ToInt32())
+        For Each proc In Process.GetProcesses().Where(Function(p) Not String.IsNullOrEmpty(p.MainWindowTitle))
+            SetForegroundWindow(proc.MainWindowHandle.ToInt32())
             Thread.Sleep(1000)
         Next
     End Sub
@@ -638,6 +639,7 @@ End Class"
                 , $@"using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 
 public class AcmeClass
 {{
@@ -646,9 +648,9 @@ public class AcmeClass
 
     public static void Main()
     {{
-        foreach (var process in Process.GetProcesses().Where(p => !string.IsNullOrEmpty(p.MainWindowTitle)))
+        foreach (var proc in Process.GetProcesses().Where(p => !string.IsNullOrEmpty(p.MainWindowTitle)))
         {{
-            SetForegroundWindow(process.MainWindowHandle.ToInt32());
+            SetForegroundWindow(proc.MainWindowHandle.ToInt32());
             Thread.Sleep(1000);
         }}
     }}
