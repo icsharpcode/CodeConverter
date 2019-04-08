@@ -1,7 +1,16 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
-# 6.6.0 TBC
+# 6.7.0 TBC
+
+* Downgrade Roslyn requirement in attempt to work with VS2017 15.3+
+
+### VB -> C#
+* Ensure "new()" generic constraint is last
+* Do not convert MyBase.Finalize, it's implicit
+* Standardize case of identifiers
+
+# 6.6.0 29/03/2019
 
 * Ask people to upgrade VS if missing languageservices
 
