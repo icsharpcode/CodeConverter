@@ -1105,5 +1105,32 @@ End Class", @"public class Class1
     }
 }");
         }
+
+        [Fact]
+        public void MemberAccessCasing()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Bar()
+
+    End Sub
+
+    Sub Foo()
+        bar()
+        me.bar()
+    End Sub
+End Class", @"public class Class1
+{
+    public void Bar()
+    {
+    }
+
+    public void Foo()
+    {
+        Bar();
+        this.Bar();
+    }
+}");
+        }
+
     }
 }

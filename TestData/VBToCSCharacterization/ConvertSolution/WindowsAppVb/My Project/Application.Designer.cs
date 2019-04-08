@@ -16,7 +16,7 @@ namespace WindowsAppVb
                 this.IsSingleInstance = false;
                 this.EnableVisualStyles = true;
                 this.SaveMySettingsOnExit = true;
-                this.ShutDownStyle = global::Microsoft.VisualBasic.ApplicationServices.ShutdownMode.AfterMainFormCloses;
+                this.ShutdownStyle = global::Microsoft.VisualBasic.ApplicationServices.ShutdownMode.AfterMainFormCloses;
             }
 
             [global::System.Diagnostics.DebuggerStepThrough()]
