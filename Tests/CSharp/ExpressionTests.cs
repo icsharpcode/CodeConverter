@@ -1203,6 +1203,24 @@ namespace Global.InnerNamespace
         }
 
         [Fact]
+        public void DateTimeToDateAndTime()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Foo()
+        Dim x = DateAdd(""m"", 5, Now)
+    End Sub
+End Class", @"using Microsoft.VisualBasic;
+
+public class Class1
+{
+    public void Foo()
+    {
+        var x = DateAndTime.DateAdd(""m"", 5, DateAndTime.Now);
+    }
+}");
+        }
+
+        [Fact]
         public void BaseFinalizeRemoved()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
