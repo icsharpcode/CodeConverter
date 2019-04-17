@@ -1534,10 +1534,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(node.ArgumentList.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor)))));
                 }
 
-                return SyntaxFactory.InvocationExpression(
-                    (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
-                    ConvertArgumentListOrEmpty(node.ArgumentList)
-                );
+                if (symbol != null && symbol.IsKind(SymbolKind.Property)) {
+                    return node.Expression.Accept(TriviaConvertingVisitor);
+                } else {
+                    return SyntaxFactory.InvocationExpression(
+                        (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
+                        ConvertArgumentListOrEmpty(node.ArgumentList)
+                    );
+                }
 
                 bool TryGetElementAccessExpressionToConvert(out VBSyntax.ExpressionSyntax toConvert)
                 {
@@ -1727,7 +1731,19 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer)
                                     || node.Parent is VBSyntax.MemberAccessExpressionSyntax maes && maes.Expression == node
                                     || node.Parent is VBSyntax.QualifiedNameSyntax qns && qns.Left == node
-                    ? QualifyNode(node, identifier) : identifier;
+                    ? AddParenthesis(node, QualifyNode(node, identifier)) : AddParenthesis(node, identifier);
+            }
+
+            private CSharpSyntaxNode AddParenthesis(VBSyntax.IdentifierNameSyntax node, ExpressionSyntax id)
+            {
+                var symbol = GetSymbolInfoInDocument(node);
+                if (symbol != null &&
+                    (symbol.IsOrdinaryMethod() || symbol.IsExtensionMethod()) &&
+                    !node.Parent.IsKind(VBasic.SyntaxKind.InvocationExpression, VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.AddressOfExpression)) {
+                    return SyntaxFactory.InvocationExpression(id);
+                }
+
+                return id;
             }
 
             private ExpressionSyntax QualifyNode(SyntaxNode node, SimpleNameSyntax left)

@@ -151,6 +151,40 @@ class TestClass
 }");
         }
 
+
+        [Fact]
+        public void MethodCallWithoutParens()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Foo()
+        Dim w = Bar
+        Dim x = Me.Bar
+        Dim y = Baz()
+        Dim z = Me.Baz()
+    End Sub
+
+    Function Bar() As Integer
+        Return 1
+    End Function
+    Property Baz As Integer
+End Class", @"public class Class1
+{
+    public void Foo()
+    {
+        var w = Bar();
+        var x = this.Bar();
+        var y = Baz;
+        var z = this.Baz;
+    }
+
+    public int Bar()
+    {
+        return 1;
+    }
+    public int Baz { get; set; }
+}");
+        }
+
         [Fact]
         public void ConversionOfCTypeUsesParensIfNeeded()
         {
