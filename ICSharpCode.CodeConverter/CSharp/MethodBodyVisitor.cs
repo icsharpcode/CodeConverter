@@ -30,6 +30,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             private readonly HashSet<string> _generatedNames = new HashSet<string>();
 
             public bool IsIterator { get; set; }
+            public string ReturnVariable { get; set; }
+            public bool HasReturnVariable {
+                get {
+                    return !string.IsNullOrEmpty(ReturnVariable);
+                }
+            }
             public VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CommentConvertingVisitor { get; }
 
             private CommonConversions CommonConversions { get; }
@@ -118,6 +124,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var lhs = (ExpressionSyntax)node.Left.Accept(_nodesVisitor);
                 var rhs = (ExpressionSyntax)node.Right.Accept(_nodesVisitor);
+
+                if (node.Left is VBSyntax.IdentifierNameSyntax id &&
+                    _methodNode is VBSyntax.MethodBlockSyntax mb &&
+                    HasReturnVariable &&
+                    id.Identifier.ValueText.Equals(mb.SubOrFunctionStatement.Identifier.ValueText, StringComparison.OrdinalIgnoreCase)) {
+                    lhs = SyntaxFactory.ParseName(ReturnVariable);
+                }
 
                 if (node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
                     rhs = SyntaxFactory.InvocationExpression(
@@ -313,7 +326,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                             }
                         );
                         ExpressionSyntax expr;
-                        if (info == null)
+                        if (HasReturnVariable)
+                            expr = SyntaxFactory.ParseName(ReturnVariable);
+                        else if (info == null)
                             expr = null;
                         else if (info.IsReferenceType)
                             expr = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
