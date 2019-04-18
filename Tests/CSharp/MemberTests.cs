@@ -322,6 +322,20 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void TestReadWriteOnlyInterfaceProperty()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Public Interface Foo
+    ReadOnly Property P1() As String
+    WriteOnly Property P2() As String
+End Interface", @"public interface Foo
+{
+    string P1 { get; }
+    string P2 { set; }
+}");
+        }
+
+        [Fact]
         public void TestConstructor()
         {
             TestConversionVisualBasicToCSharp(
@@ -1259,7 +1273,7 @@ End Class", @"class TestClass
     WriteOnly Property Items As Integer()
 End Interface", @"interface TestInterface
 {
-    int[] Items { private get; set; }
+    int[] Items { set; }
 }");
         }
 
