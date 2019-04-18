@@ -45,9 +45,30 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var newDecls = new Dictionary<string, VariableDeclarationSyntax>();
 
+            var method = declarator.Ancestors().OfType<MethodBlockSyntax>().SingleOrDefault();
+            DataFlowAnalysis dataFlow = null;
+            if (method != null) {
+                dataFlow = _semanticModel.AnalyzeDataFlow(method.Statements.First(), method.Statements.Last());
+            }
+
             foreach (var name in declarator.Names) {
                 var (type, adjustedInitializer) = AdjustFromName(rawType, name, initializer);
-                var equalsValueClauseSyntax = adjustedInitializer == null ? null : SyntaxFactory.EqualsValueClause(adjustedInitializer);
+
+                bool isField = declarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
+                EqualsValueClauseSyntax equalsValueClauseSyntax = null;
+                if (adjustedInitializer != null) {
+                    equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(adjustedInitializer);
+                } else {
+                    Func<ISymbol, bool> equalsId = s => s.Name.Equals(name.Identifier.ValueText, StringComparison.OrdinalIgnoreCase);
+                    bool alwaysAssigned = dataFlow != null && dataFlow.AlwaysAssigned.Any(equalsId);
+                    bool neverRead = dataFlow != null && !dataFlow.ReadInside.Any(equalsId) && !dataFlow.ReadOutside.Any(equalsId);
+                    if (isField || alwaysAssigned || neverRead) {
+                        equalsValueClauseSyntax = null;
+                    } else {
+                        equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(SyntaxFactory.DefaultExpression(type));
+                    }
+                }
+
                 var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier), null, equalsValueClauseSyntax);
                 string k = type.ToString();
                 if (newDecls.TryGetValue(k, out var decl))

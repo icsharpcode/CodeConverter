@@ -252,6 +252,26 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void UninitializedVariable()
+        {
+            TestConversionVisualBasicToCSharp(@"Public Class Class1
+    Sub Foo()
+        Dim x As Integer
+
+        Dim y = x
+    End Sub
+End Class", @"public class Class1
+{
+    public void Foo()
+    {
+        int x = default(int);
+
+        var y = x;
+    }
+}");
+        }
+
+        [Fact]
         public void ShiftAssignment()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
