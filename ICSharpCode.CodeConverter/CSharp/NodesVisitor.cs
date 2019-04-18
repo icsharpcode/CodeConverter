@@ -1126,10 +1126,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var expressionSyntax = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
                 if (SyntaxTokenExtensions.IsKind(node.Keyword, VBasic.SyntaxKind.CDateKeyword)) {
-                    return SyntaxFactory.CastExpression(
-                        SyntaxFactory.ParseTypeName("DateTime"),
-                        expressionSyntax
-                    );
+                    return SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Microsoft.VisualBasic.CompilerServices.Conversions.ToDate"), SyntaxFactory.ArgumentList(
+                            SyntaxFactory.SingletonSeparatedList(
+                                SyntaxFactory.Argument(expressionSyntax))));
                 }
 
                 var convertMethodForKeywordOrNull = GetConvertMethodForKeywordOrNull(node);
