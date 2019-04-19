@@ -649,12 +649,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                     SplitTypeParameters(node.TypeParameterList, out var typeParameters, out var constraints);
 
-                    var identifier = node.Identifier;
+                    var csIdentifier = ConvertIdentifier(node.Identifier);
                     // If the method is virtual, and there is a MyClass.SomeMethod() call,
                     // we need to emit a non-virtual method for it to call
                     if (accessedThroughMyClass)
                     {
-                        var identifierName = "MyClass" + node.Identifier.ValueText;
+                        var identifierName = "MyClass" + csIdentifier.ValueText;
                         var arrowClause = SyntaxFactory.ArrowExpressionClause(
                             SyntaxFactory.ParseExpression($"this.{identifierName}();\n")
                         );
@@ -672,9 +672,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                         );
 
                         var declNode = (VBSyntax.StatementSyntax)node.Parent;
-                        _additionalDeclarations.Add(declNode, new[] { realDecl });
+                        _additionalDeclarations.Add(declNode, new MemberDeclarationSyntax[] { realDecl });
                         convertedModifiers = convertedModifiers.Remove(convertedModifiers.Single(m => m.IsKind(SyntaxKind.VirtualKeyword)));
-                        identifier = SyntaxFactory.Identifier(identifierName);
+                        csIdentifier = SyntaxFactory.Identifier(identifierName);
                     }
 
                     var decl = SyntaxFactory.MethodDeclaration(
@@ -682,7 +682,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         convertedModifiers,
                         (TypeSyntax)node.AsClause?.Type?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)),
                         null,
-                        ConvertIdentifier(identifier),
+                        csIdentifier,
                         typeParameters,
                         (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ParameterList(),
                         constraints,
@@ -1160,7 +1160,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     } else {
                         left = SyntaxFactory.ThisExpression();
                         if (symbolInfo.Symbol.IsVirtual && !symbolInfo.Symbol.IsAbstract) {
-                            simpleNameSyntax = SyntaxFactory.IdentifierName($"MyClass{node.Name.Identifier.ValueText}");
+                            simpleNameSyntax = SyntaxFactory.IdentifierName($"MyClass{ConvertIdentifier(node.Name.Identifier).ValueText}");
                         }
                     }
                 }
