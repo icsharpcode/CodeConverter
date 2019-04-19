@@ -31,11 +31,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public bool IsIterator { get; set; }
             public string ReturnVariable { get; set; }
-            public bool HasReturnVariable {
-                get {
-                    return !string.IsNullOrEmpty(ReturnVariable);
-                }
-            }
+            public bool HasReturnVariable => !string.IsNullOrEmpty(ReturnVariable);
             public VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CommentConvertingVisitor { get; }
 
             private CommonConversions CommonConversions { get; }

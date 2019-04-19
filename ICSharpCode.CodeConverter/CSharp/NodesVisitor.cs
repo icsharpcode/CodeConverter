@@ -596,22 +596,17 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitMethodBlock(VBSyntax.MethodBlockSyntax node)
             {
-                BaseMethodDeclarationSyntax block = (BaseMethodDeclarationSyntax)node.SubOrFunctionStatement.Accept(TriviaConvertingVisitor);
+                var methodBlock = (BaseMethodDeclarationSyntax)node.SubOrFunctionStatement.Accept(TriviaConvertingVisitor);
 
                 if (_semanticModel.GetDeclaredSymbol(node).IsPartialDefinition()) {
-                    return block;
+                    return methodBlock;
                 } 
 
                 bool isIterator = node.SubOrFunctionStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
                 bool isBasicFunction = !isIterator && node.IsKind(VBasic.SyntaxKind.FunctionBlock);
 
-                if (isBasicFunction) {
-                    block = block.WithBody(VisitBasicFunction(node, isIterator));
-                } else {
-                    block = block.WithBody(VisitStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator)));
-                }
-
-                return block;
+                var body = isBasicFunction ? VisitBasicFunction(node, isIterator) : VisitStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator));
+                return methodBlock.WithBody(body);
             }
 
             private BlockSyntax VisitBasicFunction(VBSyntax.MethodBlockSyntax node, bool isIterator)
@@ -622,8 +617,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                                                                 .Any(id => id.Parent.IsKind(VBasic.SyntaxKind.SimpleAssignmentStatement) && id.Identifier.ValueText.Equals(methodName, StringComparison.OrdinalIgnoreCase)));
 
 
-                var preludeStatements = new StatementSyntax[0];
-                var epilogStatements = new StatementSyntax[0];
+                var preBodyStatements = new List<StatementSyntax>();
+                var postBodyStatements = new List<StatementSyntax>();
                 string returnVariableName = null;
                 var functionSym = _semanticModel.GetDeclaredSymbol(node);
                 var returnType = CommonConversions.ToCsTypeSyntax(functionSym.GetReturnType(), node);
@@ -631,26 +626,23 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (referencesSelf) {
                     returnVariableName = methodName + "Ret";
                     var retVariable = SyntaxFactory.ParseStatement($"{returnType} {returnVariableName} = default({returnType});{Environment.NewLine}");
-                    preludeStatements = new[] { retVariable };
+                    preBodyStatements.Add(retVariable);
                 }
 
-                ControlFlowAnalysis cfg = null;
+                ControlFlowAnalysis controlFlowAnalysis = null;
                 if (!node.Statements.IsEmpty())
-                    cfg = _semanticModel.AnalyzeControlFlow(node.Statements.First(), node.Statements.Last());
+                    controlFlowAnalysis = _semanticModel.AnalyzeControlFlow(node.Statements.First(), node.Statements.Last());
 
-                bool needsReturn = cfg == null || cfg.EndPointIsReachable;
+                bool needsReturn = controlFlowAnalysis?.EndPointIsReachable != false;
                 if (needsReturn) {
-                    if (referencesSelf) {
-                        epilogStatements = new[] { SyntaxFactory.ParseStatement($"return {returnVariableName};") };
-                    } else {
-                        epilogStatements = new[] { SyntaxFactory.ParseStatement($"return default({returnType});") };
-                    }
+                    string csReturnText = referencesSelf ? $"return {returnVariableName};" : $"return default({returnType});";
+                    postBodyStatements.Add(SyntaxFactory.ParseStatement(csReturnText));
                 }
 
                 var methodBodyVisitor = CreateMethodBodyVisitor(node, isIterator, returnVariableName);
-                var statements = preludeStatements
+                var statements = preBodyStatements
                                     .Concat(node.Statements.SelectMany(s => s.Accept(methodBodyVisitor)))
-                                    .Concat(epilogStatements);
+                                    .Concat(postBodyStatements);
 
                 return SyntaxFactory.Block(statements);
             }
