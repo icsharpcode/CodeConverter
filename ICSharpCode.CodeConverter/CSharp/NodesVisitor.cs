@@ -1390,9 +1390,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return _queryConverter.ConvertClauses(node.Clauses);
             }
 
-            private SyntaxToken ConvertIdentifier(SyntaxToken identifierIdentifier, bool isAttribute = false, bool updateCase = true)
+            private SyntaxToken ConvertIdentifier(SyntaxToken identifierIdentifier, bool isAttribute = false)
             {
-                return CommonConversions.ConvertIdentifier(identifierIdentifier, isAttribute, updateCase);
+                return CommonConversions.ConvertIdentifier(identifierIdentifier, isAttribute);
             }
 
             public override CSharpSyntaxNode VisitOrdering(VBSyntax.OrderingSyntax node)
@@ -1722,7 +1722,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitIdentifierName(VBSyntax.IdentifierNameSyntax node)
             {
-                var identifier = SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier, node.GetAncestor<VBSyntax.AttributeSyntax>() != null, updateCase: true));
+                var identifier = SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier, node.GetAncestor<VBSyntax.AttributeSyntax>() != null));
 
                 return !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer)
                                     || node.Parent is VBSyntax.MemberAccessExpressionSyntax maes && maes.Expression == node
