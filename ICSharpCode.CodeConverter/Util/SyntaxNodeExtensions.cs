@@ -1732,10 +1732,13 @@ namespace ICSharpCode.CodeConverter.Util
             VisualBasicSyntaxNode sourceNode,
             Exception exception) where T: CSharpSyntaxNode
         {
+            var errorDirective = SyntaxFactory.ParseTrailingTrivia($"#error Cannot convert {sourceNode.GetType().Name} - see comment for details{Environment.NewLine}");
             var errorDescription = sourceNode.DescribeConversionError(exception);
             var commentedText = "/* " + errorDescription + " */";
+            var trailingTrivia = SyntaxFactory.TriviaList(errorDirective.Concat(SyntaxFactory.Comment(commentedText)));
+
             return dummyDestNode
-                .WithTrailingTrivia(SyntaxFactory.Comment(commentedText))
+                .WithTrailingTrivia(trailingTrivia)
                 .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, exception.ToString()));
         }
 

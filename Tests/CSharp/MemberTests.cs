@@ -949,6 +949,7 @@ End Class", @"public class AcmeClass
 End Class");
 
             Assert.Contains("Cannot convert", convertedCode);
+            Assert.Contains("#error", convertedCode);
             Assert.Contains("_failedMemberConversionMarker1", convertedCode);
             Assert.Contains("Public Shared Operator ^(i As Integer, ac As AcmeClass) As AcmeClass", convertedCode);
             Assert.Contains("_failedMemberConversionMarker2", convertedCode);
