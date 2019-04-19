@@ -554,7 +554,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 SyntaxKind blockKind;
                 bool isIterator = node.GetModifiers().Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
-                var body = VisitStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator));
+                var body = ConvertStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator));
                 var attributes = ConvertAttributes(node.AccessorStatement.AttributeLists);
                 var modifiers = CommonConversions.ConvertModifiers(node.AccessorStatement.Modifiers, TokenContext.Local);
 
@@ -601,22 +601,24 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 if (_semanticModel.GetDeclaredSymbol(node).IsPartialDefinition()) {
                     return methodBlock;
-                } 
+                }
 
                 bool isIterator = node.SubOrFunctionStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
-                bool isBasicFunction = !isIterator && node.IsKind(VBasic.SyntaxKind.FunctionBlock);
+                var convertedStatements = ConvertStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator));
 
-                var body = isBasicFunction ? VisitBasicFunction(node, isIterator) : VisitStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator));
+                bool isFunction = node.IsKind(VBasic.SyntaxKind.FunctionBlock); 
+                var body = isFunction ? AddImplicitReturnStatements(node, convertedStatements, isIterator) : convertedStatements;
+
                 return methodBlock.WithBody(body);
             }
 
-            private BlockSyntax VisitBasicFunction(VBSyntax.MethodBlockSyntax node, bool isIterator)
+            private BlockSyntax AddImplicitReturnStatements(VBSyntax.MethodBlockSyntax node, BlockSyntax convertedStatements, bool isIterator)
             {
-                string methodName = node.SubOrFunctionStatement.Identifier.ValueText;
-                bool referencesSelf = node.Statements.Any(s => s.DescendantNodes()
-                                                                .OfType<VBSyntax.IdentifierNameSyntax>()
-                                                                .Any(id => id.Parent.IsKind(VBasic.SyntaxKind.SimpleAssignmentStatement) && id.Identifier.ValueText.Equals(methodName, StringComparison.OrdinalIgnoreCase)));
+                if (isIterator) return convertedStatements; //TODO: Implement for iterator functions
 
+                string methodName = node.SubOrFunctionStatement.Identifier.ValueText;
+                bool assignsToMethodNameVariable = node.Statements.Any(s => s.DescendantNodes().OfType<VBSyntax.AssignmentStatementSyntax>().Any(assignment =>
+                        (assignment.Left as VBSyntax.SimpleNameSyntax)?.Identifier.ValueText.Equals(methodName, StringComparison.OrdinalIgnoreCase) == true));
 
                 var preBodyStatements = new List<StatementSyntax>();
                 var postBodyStatements = new List<StatementSyntax>();
@@ -624,7 +626,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var functionSym = _semanticModel.GetDeclaredSymbol(node);
                 var returnType = CommonConversions.ToCsTypeSyntax(functionSym.GetReturnType(), node);
 
-                if (referencesSelf) {
+                if (assignsToMethodNameVariable) {
+                    // In VB, assigning to the method name implicitly creates a variable that is returned when the method exits
                     var csReturnVariableName = CommonConversions.ConvertIdentifier(node.SubOrFunctionStatement.Identifier).ValueText + "Ret";
                     csReturnVariable = SyntaxFactory.IdentifierName(csReturnVariableName);
                     var retVariable = CommonConversions.CreateVariableDeclarationAndAssignment(csReturnVariableName, SyntaxFactory.DefaultExpression(returnType), returnType);
@@ -635,21 +638,20 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (!node.Statements.IsEmpty())
                     controlFlowAnalysis = _semanticModel.AnalyzeControlFlow(node.Statements.First(), node.Statements.Last());
 
-                bool needsReturn = controlFlowAnalysis?.EndPointIsReachable != false;
-                if (needsReturn) {
-                    var csReturnExpression = referencesSelf ? csReturnVariable : SyntaxFactory.ParseExpression($"default({returnType})");
+                bool mayNeedReturn = controlFlowAnalysis?.EndPointIsReachable != false;
+                if (mayNeedReturn) {
+                    var csReturnExpression = assignsToMethodNameVariable ? csReturnVariable : SyntaxFactory.ParseExpression($"default({returnType})");
                     postBodyStatements.Add(SyntaxFactory.ReturnStatement(csReturnExpression));
                 }
 
-                var methodBodyVisitor = CreateMethodBodyVisitor(node, isIterator, csReturnVariable);
                 var statements = preBodyStatements
-                                    .Concat(node.Statements.SelectMany(s => s.Accept(methodBodyVisitor)))
+                                    .Concat(convertedStatements.Statements)
                                     .Concat(postBodyStatements);
 
                 return SyntaxFactory.Block(statements);
             }
 
-            private BlockSyntax VisitStatements(SyntaxList<VBSyntax.StatementSyntax> statements, VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> methodBodyVisitor)
+            private BlockSyntax ConvertStatements(SyntaxList<VBSyntax.StatementSyntax> statements, VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> methodBodyVisitor)
             {
                 return SyntaxFactory.Block(statements.SelectMany(s => s.Accept(methodBodyVisitor)));
             }
