@@ -604,34 +604,29 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 bool isIterator = node.SubOrFunctionStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
-                var convertedStatements = ConvertStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator));
-
-                bool isFunction = node.IsKind(VBasic.SyntaxKind.FunctionBlock); 
-                var body = isFunction ? AddImplicitReturnStatements(node, convertedStatements, isIterator) : convertedStatements;
+                //TODO Implement for iterator functions
+                var shouldAddImplicitReturnStatements = !isIterator && node.IsKind(VBasic.SyntaxKind.FunctionBlock);
+                IdentifierNameSyntax csReturnVariableOrNull = shouldAddImplicitReturnStatements ? GetRetVariableNameOrNull(node, isIterator) : null;
+                var convertedStatements = ConvertStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator, csReturnVariableOrNull));
+                var body = shouldAddImplicitReturnStatements ? AddImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull) : convertedStatements;
 
                 return methodBlock.WithBody(body);
             }
 
-            private BlockSyntax AddImplicitReturnStatements(VBSyntax.MethodBlockSyntax node, BlockSyntax convertedStatements, bool isIterator)
+            private BlockSyntax AddImplicitReturnStatements(VBSyntax.MethodBlockSyntax node, BlockSyntax convertedStatements,
+                IdentifierNameSyntax csReturnVariableOrNull)
             {
-                if (isIterator) return convertedStatements; //TODO: Implement for iterator functions
-
-                string methodName = node.SubOrFunctionStatement.Identifier.ValueText;
-                bool assignsToMethodNameVariable = node.Statements.Any(s => s.DescendantNodes().OfType<VBSyntax.AssignmentStatementSyntax>().Any(assignment =>
-                        (assignment.Left as VBSyntax.SimpleNameSyntax)?.Identifier.ValueText.Equals(methodName, StringComparison.OrdinalIgnoreCase) == true));
-
                 var preBodyStatements = new List<StatementSyntax>();
                 var postBodyStatements = new List<StatementSyntax>();
-                IdentifierNameSyntax csReturnVariable = null;
+
                 var functionSym = _semanticModel.GetDeclaredSymbol(node);
                 var returnType = CommonConversions.ToCsTypeSyntax(functionSym.GetReturnType(), node);
 
-                if (assignsToMethodNameVariable) {
-                    // In VB, assigning to the method name implicitly creates a variable that is returned when the method exits
-                    var csReturnVariableName = CommonConversions.ConvertIdentifier(node.SubOrFunctionStatement.Identifier).ValueText + "Ret";
-                    csReturnVariable = SyntaxFactory.IdentifierName(csReturnVariableName);
-                    var retVariable = CommonConversions.CreateVariableDeclarationAndAssignment(csReturnVariableName, SyntaxFactory.DefaultExpression(returnType), returnType);
-                    preBodyStatements.Add(SyntaxFactory.LocalDeclarationStatement(retVariable));
+                if (csReturnVariableOrNull != null)
+                {
+                    var retDeclaration = CommonConversions.CreateVariableDeclarationAndAssignment(
+                        csReturnVariableOrNull.Identifier.ValueText, SyntaxFactory.DefaultExpression(returnType), returnType);
+                    preBodyStatements.Add(SyntaxFactory.LocalDeclarationStatement(retDeclaration));
                 }
 
                 ControlFlowAnalysis controlFlowAnalysis = null;
@@ -639,16 +634,38 @@ namespace ICSharpCode.CodeConverter.CSharp
                     controlFlowAnalysis = _semanticModel.AnalyzeControlFlow(node.Statements.First(), node.Statements.Last());
 
                 bool mayNeedReturn = controlFlowAnalysis?.EndPointIsReachable != false;
-                if (mayNeedReturn) {
-                    var csReturnExpression = assignsToMethodNameVariable ? csReturnVariable : SyntaxFactory.ParseExpression($"default({returnType})");
+                if (mayNeedReturn)
+                {
+                    var csReturnExpression = csReturnVariableOrNull ?? (ExpressionSyntax) SyntaxFactory.DefaultExpression(returnType);
                     postBodyStatements.Add(SyntaxFactory.ReturnStatement(csReturnExpression));
                 }
 
                 var statements = preBodyStatements
-                                    .Concat(convertedStatements.Statements)
-                                    .Concat(postBodyStatements);
+                    .Concat(convertedStatements.Statements)
+                    .Concat(postBodyStatements);
 
                 return SyntaxFactory.Block(statements);
+            }
+
+            private IdentifierNameSyntax GetRetVariableNameOrNull(VBSyntax.MethodBlockSyntax node, bool isIterator)
+            {
+                string methodName = node.SubOrFunctionStatement.Identifier.ValueText;
+                bool assignsToMethodNameVariable = node.Statements.Any(s => s.DescendantNodes()
+                    .OfType<VBSyntax.AssignmentStatementSyntax>().Any(assignment =>
+                        (assignment.Left as VBSyntax.SimpleNameSyntax)?.Identifier.ValueText.Equals(methodName,
+                            StringComparison.OrdinalIgnoreCase) == true));
+
+                IdentifierNameSyntax csReturnVariable = null;
+
+                if (assignsToMethodNameVariable)
+                {
+                    // In VB, assigning to the method name implicitly creates a variable that is returned when the method exits
+                    var csReturnVariableName =
+                        CommonConversions.ConvertIdentifier(node.SubOrFunctionStatement.Identifier).ValueText + "Ret";
+                    csReturnVariable = SyntaxFactory.IdentifierName(csReturnVariableName);
+                }
+
+                return csReturnVariable;
             }
 
             private BlockSyntax ConvertStatements(SyntaxList<VBSyntax.StatementSyntax> statements, VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> methodBodyVisitor)
