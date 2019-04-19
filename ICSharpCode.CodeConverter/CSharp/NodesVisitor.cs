@@ -1732,10 +1732,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                                                     || node.Parent is VBSyntax.MemberAccessExpressionSyntax maes && maes.Expression == node
                                                     || node.Parent is VBSyntax.QualifiedNameSyntax qns && qns.Left == node
                     ? QualifyNode(node, identifier) : identifier;
-                return AddParenthesis(node, qualifiedIdentifier);
+                return AddEmptyArgumentListIfImplicit(node, qualifiedIdentifier);
             }
 
-            private CSharpSyntaxNode AddParenthesis(VBSyntax.IdentifierNameSyntax node, ExpressionSyntax id)
+            private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(VBSyntax.IdentifierNameSyntax node, ExpressionSyntax id)
             {
                 var symbol = GetSymbolInfoInDocument(node);
                 if (symbol != null &&
