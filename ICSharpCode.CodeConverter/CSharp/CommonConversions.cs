@@ -45,7 +45,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var newDecls = new Dictionary<string, VariableDeclarationSyntax>();
 
-            var method = declarator.Ancestors().OfType<MethodBlockSyntax>().SingleOrDefault();
+            var method = declarator.Ancestors().OfType<MethodBlockBaseSyntax>().SingleOrDefault();
             DataFlowAnalysis dataFlow = null;
             if (method != null) {
                 dataFlow = _semanticModel.AnalyzeDataFlow(method.Statements.First(), method.Statements.Last());
@@ -55,7 +55,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var (type, adjustedInitializer) = AdjustFromName(rawType, name, initializer);
 
                 bool isField = declarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
-                EqualsValueClauseSyntax equalsValueClauseSyntax = null;
+                EqualsValueClauseSyntax equalsValueClauseSyntax;
                 if (adjustedInitializer != null) {
                     equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(adjustedInitializer);
                 } else {

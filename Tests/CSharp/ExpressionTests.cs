@@ -254,19 +254,53 @@ End Class", @"class TestClass
         [Fact]
         public void UninitializedVariable()
         {
-            TestConversionVisualBasicToCSharp(@"Public Class Class1
-    Sub Foo()
-        Dim x As Integer
-
-        Dim y = x
+            //TODO: Fix comment to be ported to top of property rather than bottom
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub New()
+        Dim needsInitialization As Integer
+        Dim notUsed As Integer
+        Dim y = needsInitialization
     End Sub
+
+    Sub Foo()
+        Dim needsInitialization As Integer
+        Dim notUsed As Integer
+        Dim y = needsInitialization
+    End Sub
+
+    Public ReadOnly Property State As Integer
+        Get
+            Dim needsInitialization As Integer
+            Dim notUsed As Integer
+            Dim y = needsInitialization
+            Return y
+        End Get
+    End Property
 End Class", @"public class Class1
 {
+    public Class1()
+    {
+        int needsInitialization = default(int);
+        int notUsed;
+        var y = needsInitialization;
+    }
+
     public void Foo()
     {
-        int x = default(int);
+        int needsInitialization = default(int);
+        int notUsed;
+        var y = needsInitialization;
+    }
 
-        var y = x;
+    public int State
+    {
+        get
+        {
+            int needsInitialization = default(int);
+            int notUsed;
+            var y = needsInitialization;
+            return y;
+        }
     }
 }");
         }
