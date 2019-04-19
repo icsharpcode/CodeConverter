@@ -274,7 +274,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return value.ToString();
         }
 
-        public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false, bool updateCase = false)
+        public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false, bool updateCase = true)
         {
             string text = id.ValueText;
 

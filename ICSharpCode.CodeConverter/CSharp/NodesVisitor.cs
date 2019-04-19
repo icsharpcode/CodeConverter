@@ -1390,7 +1390,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return _queryConverter.ConvertClauses(node.Clauses);
             }
 
-            private SyntaxToken ConvertIdentifier(SyntaxToken identifierIdentifier, bool isAttribute = false, bool updateCase = false)
+            private SyntaxToken ConvertIdentifier(SyntaxToken identifierIdentifier, bool isAttribute = false, bool updateCase = true)
             {
                 return CommonConversions.ConvertIdentifier(identifierIdentifier, isAttribute, updateCase);
             }
