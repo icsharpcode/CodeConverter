@@ -627,8 +627,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (referencesSelf) {
                     var csReturnVariableName = CommonConversions.ConvertIdentifier(node.SubOrFunctionStatement.Identifier).ValueText + "Ret";
                     csReturnVariable = SyntaxFactory.IdentifierName(csReturnVariableName);
-                    var retVariable = SyntaxFactory.ParseStatement($"{returnType} {csReturnVariableName} = default({returnType});{Environment.NewLine}");
-                    preBodyStatements.Add(retVariable);
+                    var retVariable = CommonConversions.CreateVariableDeclarationAndAssignment(csReturnVariableName, SyntaxFactory.DefaultExpression(returnType), returnType);
+                    preBodyStatements.Add(SyntaxFactory.LocalDeclarationStatement(retVariable));
                 }
 
                 ControlFlowAnalysis controlFlowAnalysis = null;
