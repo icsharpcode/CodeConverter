@@ -26,6 +26,24 @@ End Class" + Environment.NewLine, @"class Class1
         }
 
         [Fact]
+        public void CDate()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Public Class Class1
+    Sub Foo()
+        Dim x = CDate(""2019-09-04"")
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+public class Class1
+{
+    public void Foo()
+    {
+        var x = Conversions.ToDate(""2019-09-04"");
+    }
+}");
+        }
+
+        [Fact]
         public void CastObjectToString()
         {
             TestConversionVisualBasicToCSharp(
