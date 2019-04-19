@@ -347,7 +347,7 @@ public class Bar<x> where x : Foo, new()
     End Function
     MustOverride Function F2() As Integer
     Public Sub TestMethod() 
-        Dim w = MyClass.F1()
+        Dim w = MyClass.f1()"/* Intentionally access with the wrong case which is valid VB */ + @"
         Dim x = Me.F1()
         Dim y = MyClass.F2()
         Dim z = Me.F2()
@@ -379,7 +379,7 @@ End Class",
     Overridable Property P1() As Integer = 1
     MustOverride Property P2() As Integer
     Public Sub TestMethod() 
-        Dim w = MyClass.p1
+        Dim w = MyClass.p1"/* Intentionally access with the wrong case which is valid VB */ + @"
         Dim x = Me.P1
         Dim y = MyClass.P2
         Dim z = Me.P2
