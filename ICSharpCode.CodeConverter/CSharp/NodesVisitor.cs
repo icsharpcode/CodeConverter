@@ -448,7 +448,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitPropertyStatement(VBSyntax.PropertyStatementSyntax node)
             {
                 bool hasBody = node.Parent is VBSyntax.PropertyBlockSyntax;
-                var attributes = node.AttributeLists.SelectMany(ConvertAttribute);
+                var attributes = node.AttributeLists.SelectMany(ConvertAttribute).ToArray();
                 var isReadonly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.ReadOnlyKeyword));
                 var isWriteOnly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WriteOnlyKeyword));
                 var convertibleModifiers = node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword, VBasic.SyntaxKind.WriteOnlyKeyword, VBasic.SyntaxKind.DefaultKeyword));
@@ -489,7 +489,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 if (isIndexer) {
                     if (accessedThroughMyClass) {
-                        // TODO Not sure if this is possible?
+                        // Not sure if this is possible
                         throw new NotImplementedException("MyClass indexing not implemented");
                     }
 
@@ -502,12 +502,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                         accessors
                     );
                 } else {
-                    var identifier = node.Identifier;
+                    var csIdentifier = ConvertIdentifier(node.Identifier);
                     if (accessedThroughMyClass) {
-                        var identifierName = "MyClass" + node.Identifier.ValueText;
-                        var getReturn = SyntaxFactory.Block(SyntaxFactory.ParseStatement($"return this.{identifierName};"));
+                        var csIndentifierName = "MyClass" + csIdentifier.ValueText;
+                        var getReturn = SyntaxFactory.Block(SyntaxFactory.ParseStatement($"return this.{csIndentifierName};"));
                         var getAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration, getReturn);
-                        var setValue = SyntaxFactory.Block(SyntaxFactory.ParseStatement($"this.{identifierName} = value;"));
+                        var setValue = SyntaxFactory.Block(SyntaxFactory.ParseStatement($"this.{csIndentifierName} = value;"));
                         var setAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration, setValue);
                         var realAccessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor, setAccessor}));
                         var realDecl = SyntaxFactory.PropertyDeclaration(
@@ -515,15 +515,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                             modifiers,
                             rawType,
                             null,
-                            ConvertIdentifier(node.Identifier), realAccessors,
+                            csIdentifier, realAccessors,
                             null,
                             null,
                             SyntaxFactory.Token(SyntaxKind.None));
 
-                        _additionalDeclarations.Add(node, new[] { realDecl });
+                        _additionalDeclarations.Add(node, new MemberDeclarationSyntax[] { realDecl });
                         modifiers = modifiers.Remove(modifiers.Single(m => m.IsKind(SyntaxKind.VirtualKeyword)));
-                        identifier = SyntaxFactory.Identifier(identifierName);
-                        //initializer = null;
+                        csIdentifier = SyntaxFactory.Identifier(csIndentifierName);
                     }
 
                     return SyntaxFactory.PropertyDeclaration(
@@ -531,7 +530,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         modifiers,
                         rawType,
                         null,
-                        ConvertIdentifier(identifier), accessors,
+                        csIdentifier, accessors,
                         null,
                         initializer,
                         SyntaxFactory.Token(initializer == null ? SyntaxKind.None : SyntaxKind.SemicolonToken));
