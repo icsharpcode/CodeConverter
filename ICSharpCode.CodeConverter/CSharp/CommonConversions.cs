@@ -274,7 +274,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return value.ToString();
         }
 
-        public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false, bool updateCase = false)
+        public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false)
         {
             string text = id.ValueText;
 
@@ -285,7 +285,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
                 var symbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol;
                 if (symbol != null && !string.IsNullOrWhiteSpace(symbol.Name)) {
-                    if (updateCase && text.Equals(symbol.Name, StringComparison.OrdinalIgnoreCase)) {
+                    if (text.Equals(symbol.Name, StringComparison.OrdinalIgnoreCase)) {
                         text = symbol.Name;
                     }
 

@@ -448,12 +448,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitPropertyStatement(VBSyntax.PropertyStatementSyntax node)
             {
                 bool hasBody = node.Parent is VBSyntax.PropertyBlockSyntax;
-                var attributes = node.AttributeLists.SelectMany(ConvertAttribute);
+                var attributes = node.AttributeLists.SelectMany(ConvertAttribute).ToArray();
                 var isReadonly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.ReadOnlyKeyword));
                 var isWriteOnly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WriteOnlyKeyword));
                 var convertibleModifiers = node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword, VBasic.SyntaxKind.WriteOnlyKeyword, VBasic.SyntaxKind.DefaultKeyword));
                 var modifiers = CommonConversions.ConvertModifiers(convertibleModifiers, GetMemberContext(node));
                 var isIndexer = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.DefaultKeyword));
+                var accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, _semanticModel.GetDeclaredSymbol(node));
 
                 var initializer = (EqualsValueClauseSyntax)node.Initializer?.Accept(TriviaConvertingVisitor);
                 var rawType = (TypeSyntax)node.AsClause?.TypeSwitch(
@@ -486,7 +487,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                     );
                 }
 
-                if (isIndexer)
+                if (isIndexer) {
+                    if (accessedThroughMyClass) {
+                        // Not sure if this is possible
+                        throw new NotImplementedException("MyClass indexing not implemented");
+                    }
+
                     return SyntaxFactory.IndexerDeclaration(
                         SyntaxFactory.List(attributes),
                         modifiers,
@@ -495,13 +501,36 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(node.ParameterList.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor)))),
                         accessors
                     );
-                else {
+                } else {
+                    var csIdentifier = ConvertIdentifier(node.Identifier);
+                    if (accessedThroughMyClass) {
+                        var csIndentifierName = "MyClass" + csIdentifier.ValueText;
+                        var getReturn = SyntaxFactory.Block(SyntaxFactory.ParseStatement($"return this.{csIndentifierName};"));
+                        var getAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration, getReturn);
+                        var setValue = SyntaxFactory.Block(SyntaxFactory.ParseStatement($"this.{csIndentifierName} = value;"));
+                        var setAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration, setValue);
+                        var realAccessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor, setAccessor}));
+                        var realDecl = SyntaxFactory.PropertyDeclaration(
+                            SyntaxFactory.List(attributes),
+                            modifiers,
+                            rawType,
+                            null,
+                            csIdentifier, realAccessors,
+                            null,
+                            null,
+                            SyntaxFactory.Token(SyntaxKind.None));
+
+                        _additionalDeclarations.Add(node, new MemberDeclarationSyntax[] { realDecl });
+                        modifiers = modifiers.Remove(modifiers.Single(m => m.IsKind(SyntaxKind.VirtualKeyword)));
+                        csIdentifier = SyntaxFactory.Identifier(csIndentifierName);
+                    }
+
                     return SyntaxFactory.PropertyDeclaration(
                         SyntaxFactory.List(attributes),
                         modifiers,
                         rawType,
                         null,
-                        ConvertIdentifier(node.Identifier), accessors,
+                        csIdentifier, accessors,
                         null,
                         initializer,
                         SyntaxFactory.Token(initializer == null ? SyntaxKind.None : SyntaxKind.SemicolonToken));
@@ -571,6 +600,24 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.Block(statements.SelectMany(s => s.Accept(methodBodyVisitor)));
             }
 
+            private static bool IsAccessedThroughMyClass(SyntaxNode node, SyntaxToken identifier, ISymbol symbol)
+            {
+                bool accessedThroughMyClass = false;
+                if (symbol.IsVirtual && !symbol.IsAbstract) {
+                    var classBlock = node.Ancestors().OfType<VBSyntax.ClassBlockSyntax>().FirstOrDefault();
+                    if (classBlock != null) {
+                        var memberAccesses = classBlock.DescendantNodes().OfType<VBSyntax.MemberAccessExpressionSyntax>();
+                        accessedThroughMyClass = memberAccesses.Any(mae => {
+                            bool isMyClass = mae.Expression is VBSyntax.MyClassExpressionSyntax;
+                            bool namesMatch = mae.Name.Identifier.ValueText.Equals(identifier.ValueText, StringComparison.OrdinalIgnoreCase);
+                            return isMyClass && namesMatch;
+                        });
+                    }
+                }
+
+                return accessedThroughMyClass;
+            }
+
             public override CSharpSyntaxNode VisitMethodStatement(VBSyntax.MethodStatementSyntax node)
             {
                 var attributes = ConvertAttributes(node.AttributeLists);
@@ -586,9 +633,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 } else {
                     var tokenContext = GetMemberContext(node);
                     var convertedModifiers = CommonConversions.ConvertModifiers(node.Modifiers, tokenContext);
-
                     var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
+                    bool accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, declaredSymbol);
+
                     var isPartialDefinition = declaredSymbol.IsPartialDefinition();
+
                     if (declaredSymbol.IsPartialImplementation() || isPartialDefinition) {
                         var privateModifier = convertedModifiers.SingleOrDefault(m => m.IsKind(SyntaxKind.PrivateKeyword));
                         if (privateModifier != default(SyntaxToken)) {
@@ -600,12 +649,40 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                     SplitTypeParameters(node.TypeParameterList, out var typeParameters, out var constraints);
 
+                    var csIdentifier = ConvertIdentifier(node.Identifier);
+                    // If the method is virtual, and there is a MyClass.SomeMethod() call,
+                    // we need to emit a non-virtual method for it to call
+                    if (accessedThroughMyClass)
+                    {
+                        var identifierName = "MyClass" + csIdentifier.ValueText;
+                        var arrowClause = SyntaxFactory.ArrowExpressionClause(
+                            SyntaxFactory.ParseExpression($"this.{identifierName}();\n")
+                        );
+                        var realDecl = SyntaxFactory.MethodDeclaration(
+                            attributes,
+                            convertedModifiers,
+                            (TypeSyntax)node.AsClause?.Type?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)),
+                            null,
+                            ConvertIdentifier(node.Identifier),
+                            typeParameters,
+                            (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ParameterList(),
+                            constraints,
+                            null,
+                            arrowClause
+                        );
+
+                        var declNode = (VBSyntax.StatementSyntax)node.Parent;
+                        _additionalDeclarations.Add(declNode, new MemberDeclarationSyntax[] { realDecl });
+                        convertedModifiers = convertedModifiers.Remove(convertedModifiers.Single(m => m.IsKind(SyntaxKind.VirtualKeyword)));
+                        csIdentifier = SyntaxFactory.Identifier(identifierName);
+                    }
+
                     var decl = SyntaxFactory.MethodDeclaration(
                         attributes,
                         convertedModifiers,
                         (TypeSyntax)node.AsClause?.Type?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)),
                         null,
-                        ConvertIdentifier(node.Identifier),
+                        csIdentifier,
                         typeParameters,
                         (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ParameterList(),
                         constraints,
@@ -1074,7 +1151,22 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var simpleNameSyntax = (SimpleNameSyntax)node.Name.Accept(TriviaConvertingVisitor);
 
-                var left = (ExpressionSyntax)node.Expression?.Accept(TriviaConvertingVisitor);
+                ExpressionSyntax left = null;
+                if (node.Expression is VBSyntax.MyClassExpressionSyntax) {
+                    var symbolInfo = _semanticModel.GetSymbolInfo(node.Name);
+                    if (symbolInfo.Symbol.IsStatic) {
+                        var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
+                        left = SyntaxFactory.IdentifierName(typeInfo.Type.Name);
+                    } else {
+                        left = SyntaxFactory.ThisExpression();
+                        if (symbolInfo.Symbol.IsVirtual && !symbolInfo.Symbol.IsAbstract) {
+                            simpleNameSyntax = SyntaxFactory.IdentifierName($"MyClass{ConvertIdentifier(node.Name.Identifier).ValueText}");
+                        }
+                    }
+                }
+                if (left == null) {
+                    left = (ExpressionSyntax)node.Expression?.Accept(TriviaConvertingVisitor);
+                }
                 if (left == null) {
                     if (IsSubPartOfConditionalAccess(node)) {
                         return SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
@@ -1298,9 +1390,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return _queryConverter.ConvertClauses(node.Clauses);
             }
 
-            private SyntaxToken ConvertIdentifier(SyntaxToken identifierIdentifier, bool isAttribute = false, bool updateCase = false)
+            private SyntaxToken ConvertIdentifier(SyntaxToken identifierIdentifier, bool isAttribute = false)
             {
-                return CommonConversions.ConvertIdentifier(identifierIdentifier, isAttribute, updateCase);
+                return CommonConversions.ConvertIdentifier(identifierIdentifier, isAttribute);
             }
 
             public override CSharpSyntaxNode VisitOrdering(VBSyntax.OrderingSyntax node)
@@ -1630,7 +1722,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitIdentifierName(VBSyntax.IdentifierNameSyntax node)
             {
-                var identifier = SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier, node.GetAncestor<VBSyntax.AttributeSyntax>() != null, updateCase: true));
+                var identifier = SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier, node.GetAncestor<VBSyntax.AttributeSyntax>() != null));
 
                 return !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer)
                                     || node.Parent is VBSyntax.MemberAccessExpressionSyntax maes && maes.Expression == node

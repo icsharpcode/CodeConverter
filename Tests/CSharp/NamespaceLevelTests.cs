@@ -337,5 +337,81 @@ public class Bar<x> where x : Foo, new()
 {
 }");
         }
+
+        [Fact]
+        public void MyClassVirtualCallMethod()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class A
+    Overridable Function F1() As Integer
+        Return 1
+    End Function
+    MustOverride Function F2() As Integer
+    Public Sub TestMethod() 
+        Dim w = MyClass.F1()
+        Dim x = Me.F1()
+        Dim y = MyClass.F2()
+        Dim z = Me.F2()
+    End Sub
+End Class",
+                @"public class A
+{
+    public int MyClassF1()
+    {
+        return 1;
+    }
+
+    public virtual int F1() => this.MyClassF1();
+    public abstract int F2();
+    public void TestMethod()
+    {
+        var w = this.MyClassF1();
+        var x = this.F1();
+        var y = this.F2();
+        var z = this.F2();
+    }
+}");
+        }
+
+        [Fact]
+        public void MyClassVirtualCallProperty()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class A
+    Overridable Property P1() As Integer = 1
+    MustOverride Property P2() As Integer
+    Public Sub TestMethod() 
+        Dim w = MyClass.p1
+        Dim x = Me.P1
+        Dim y = MyClass.P2
+        Dim z = Me.P2
+    End Sub
+End Class",
+                @"public class A
+{
+    public int MyClassP1 { get; set; } = 1;
+
+    public virtual int P1
+    {
+        get
+        {
+            return this.MyClassP1;
+        }
+
+        set
+        {
+            this.MyClassP1 = value;
+        }
+    }
+
+    public abstract int P2 { get; set; }
+    public void TestMethod()
+    {
+        var w = this.MyClassP1;
+        var x = this.P1;
+        var y = this.P2;
+        var z = this.P2;
+    }
+}");
+        }
+
     }
 }

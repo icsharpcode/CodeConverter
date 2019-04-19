@@ -9,6 +9,27 @@ namespace CodeConverter.Tests.CSharp
     public class ExpressionTests : ConverterTestBase
     {
         [Fact]
+        public void MyClassExpr()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass
+    Sub TestMethod()
+        MyClass.Val = 6
+    End Sub
+
+    Shared Val As Integer
+End Class", @"public class TestClass
+{
+    public void TestMethod()
+    {
+        TestClass.Val = 6;
+    }
+
+    private static int Val;
+}");
+
+        }
+
+        [Fact]
         public void MultilineString()
         {
             // Don't auto-test comments, otherwise it tries to put a comment in the middle of the string, which obviously isn't a valid place for it
