@@ -619,12 +619,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var preBodyStatements = new List<StatementSyntax>();
                 var postBodyStatements = new List<StatementSyntax>();
-                string csReturnVariableName = null;
+                IdentifierNameSyntax csReturnVariable = null;
                 var functionSym = _semanticModel.GetDeclaredSymbol(node);
                 var returnType = CommonConversions.ToCsTypeSyntax(functionSym.GetReturnType(), node);
 
                 if (referencesSelf) {
-                    csReturnVariableName = CommonConversions.ConvertIdentifier(node.SubOrFunctionStatement.Identifier).ValueText + "Ret";
+                    var csReturnVariableName = CommonConversions.ConvertIdentifier(node.SubOrFunctionStatement.Identifier).ValueText + "Ret";
+                    csReturnVariable = SyntaxFactory.IdentifierName(csReturnVariableName);
                     var retVariable = SyntaxFactory.ParseStatement($"{returnType} {csReturnVariableName} = default({returnType});{Environment.NewLine}");
                     preBodyStatements.Add(retVariable);
                 }
@@ -635,11 +636,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 bool needsReturn = controlFlowAnalysis?.EndPointIsReachable != false;
                 if (needsReturn) {
-                    var csReturnExpression = referencesSelf ? SyntaxFactory.IdentifierName(csReturnVariableName) : SyntaxFactory.ParseExpression($"default({returnType})");
+                    var csReturnExpression = referencesSelf ? csReturnVariable : SyntaxFactory.ParseExpression($"default({returnType})");
                     postBodyStatements.Add(SyntaxFactory.ReturnStatement(csReturnExpression));
                 }
 
-                var methodBodyVisitor = CreateMethodBodyVisitor(node, isIterator, csReturnVariableName);
+                var methodBodyVisitor = CreateMethodBodyVisitor(node, isIterator, csReturnVariable);
                 var statements = preBodyStatements
                                     .Concat(node.Statements.SelectMany(s => s.Accept(methodBodyVisitor)))
                                     .Concat(postBodyStatements);
@@ -859,11 +860,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.OperatorDeclaration(attributes, nonConversionModifiers, returnType, node.OperatorToken.ConvertToken(), parameterList, body, null);
             }
 
-            private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, string returnVariable = null)
+            private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
             {
                 var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, _withBlockTempVariableNames, TriviaConvertingVisitor.TriviaConverter) {
                     IsIterator = isIterator,
-                    ReturnVariable = returnVariable,
+                    ReturnVariable = csReturnVariable,
                 };
                 return methodBodyVisitor.CommentConvertingVisitor;
             }
