@@ -231,7 +231,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private ForStatementSyntax CreateForZeroToValueLoop(SimpleNameSyntax loopVariableIdentifier, StatementSyntax loopStatement, ExpressionSyntax inclusiveLoopUpperBound)
             {
-                var loopVariableAssignment = CreateVariableDeclarationAndAssignment(loopVariableIdentifier.Identifier.Text, CommonConversions.Literal(0));
+                var loopVariableAssignment = CommonConversions.CreateVariableDeclarationAndAssignment(loopVariableIdentifier.Identifier.Text, CommonConversions.Literal(0));
                 var lessThanSourceBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression,
                     loopVariableIdentifier, inclusiveLoopUpperBound);
                 var incrementors = SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(
@@ -407,7 +407,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     id = (ExpressionSyntax)stmt.ControlVariable.Accept(_nodesVisitor);
                     var symbol = _semanticModel.GetSymbolInfo(stmt.ControlVariable).Symbol;
                     if (!_semanticModel.LookupSymbols(node.FullSpan.Start, name: symbol.Name).Any()) {
-                        declaration = CreateVariableDeclarationAndAssignment(symbol.Name, startValue);
+                        declaration = CommonConversions.CreateVariableDeclarationAndAssignment(symbol.Name, startValue);
                     } else {
                         startValue = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, id, startValue);
                     }
@@ -423,7 +423,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var csToValue = (ExpressionSyntax)stmt.ToValue.Accept(_nodesVisitor);
                 if (!_semanticModel.GetConstantValue(stmt.ToValue).HasValue) {
                     var loopToVariableName = GetUniqueVariableNameInScope(node, "loopTo");
-                    var loopEndDeclaration = SyntaxFactory.LocalDeclarationStatement(CreateVariableDeclarationAndAssignment(loopToVariableName, csToValue));
+                    var loopEndDeclaration = SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(loopToVariableName, csToValue));
                     // Does not do anything about porting newline trivia upwards to maintain spacing above the loop
                     preLoopStatements.Add(loopEndDeclaration);
                     csToValue = SyntaxFactory.IdentifierName(loopToVariableName);
@@ -448,18 +448,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.SingletonSeparatedList(step),
                     block.UnpackNonNestedBlock());
                 return SyntaxFactory.List(preLoopStatements.Concat(new[] {forStatementSyntax}));
-            }
-
-            private static VariableDeclarationSyntax CreateVariableDeclarationAndAssignment(string variableName,
-                ExpressionSyntax initValue)
-            {
-                var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(
-                    SyntaxFactory.Identifier(variableName), null,
-                    SyntaxFactory.EqualsValueClause(initValue));
-                var variableDeclarationSyntax = SyntaxFactory.VariableDeclaration(
-                    SyntaxFactory.IdentifierName("var"),
-                    SyntaxFactory.SingletonSeparatedList(variableDeclaratorSyntax));
-                return variableDeclarationSyntax;
             }
 
             public override SyntaxList<StatementSyntax> VisitForEachBlock(VBSyntax.ForEachBlockSyntax node)
@@ -569,7 +557,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private LocalDeclarationStatementSyntax CreateLocalVariableDeclarationAndAssignment(string variableName, ExpressionSyntax initValue)
             {
-                return SyntaxFactory.LocalDeclarationStatement(CreateVariableDeclarationAndAssignment(variableName, initValue));
+                return SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(variableName, initValue));
             }
 
             private string GetUniqueVariableNameInScope(VBasic.VisualBasicSyntaxNode node, string variableNameBase)
