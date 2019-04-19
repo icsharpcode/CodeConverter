@@ -996,7 +996,7 @@ End Class", @"class TestClass
 {
     private void TestMethod(int end)
     {
-        int[] b, s;
+        int[] b = default(int[]), s = default(int[]);
         var loopTo = end;
         for (var i = 0; i <= loopTo; i++)
             b[i] = s[i];
@@ -1048,7 +1048,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[] b, s;
+        int[] b = default(int[]), s = default(int[]);
         var loopTo = end - 1;
         for (var i = 0; i <= loopTo; i++)
             b[i] = s[i];
