@@ -512,9 +512,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var csIdentifier = ConvertIdentifier(node.Identifier);
                     if (accessedThroughMyClass) {
                         var csIndentifierName = "MyClass" + csIdentifier.ValueText;
-                        var getReturn = SyntaxFactory.Block(SyntaxFactory.ParseStatement($"return this.{csIndentifierName};"));
+                        ExpressionSyntax thisDotIdentifier = SyntaxFactory.ParseExpression($"this.{csIndentifierName}");
+                        var getReturn = SyntaxFactory.Block(SyntaxFactory.ReturnStatement(thisDotIdentifier));
                         var getAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration, getReturn);
-                        var setValue = SyntaxFactory.Block(SyntaxFactory.ParseStatement($"this.{csIndentifierName} = value;"));
+                        var setValue = SyntaxFactory.Block(SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, thisDotIdentifier, SyntaxFactory.IdentifierName("value"))));
                         var setAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration, setValue);
                         var realAccessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor, setAccessor}));
                         var realDecl = SyntaxFactory.PropertyDeclaration(
