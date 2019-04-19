@@ -455,6 +455,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var modifiers = CommonConversions.ConvertModifiers(convertibleModifiers, GetMemberContext(node));
                 var isIndexer = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.DefaultKeyword));
                 var accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, _semanticModel.GetDeclaredSymbol(node));
+                bool isInInterface = node.Ancestors().OfType<VBSyntax.InterfaceBlockSyntax>().FirstOrDefault() != null;
 
                 var initializer = (EqualsValueClauseSyntax)node.Initializer?.Accept(TriviaConvertingVisitor);
                 var rawType = (TypeSyntax)node.AsClause?.TypeSwitch(
@@ -476,9 +477,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                     if (isReadonly) {
                         setAccessor = setAccessor.AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
                     }
-                    // In VB, there's a backing field which can always be read and written to even on ReadOnly/WriteOnly properties.
-                    // Our conversion will rewrite usages of that field to use the property accessors which therefore must exist and be private at minimum.
-                    accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor, setAccessor}));
+                    if (isInInterface && isReadonly) {
+                        accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] { getAccessor }));
+                    } else if (isInInterface && isWriteOnly) {
+                        accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] { setAccessor }));
+                    } else {
+                        // In VB, there's a backing field which can always be read and written to even on ReadOnly/WriteOnly properties.
+                        // Our conversion will rewrite usages of that field to use the property accessors which therefore must exist and be private at minimum.
+                        accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] { getAccessor, setAccessor }));
+                    }
                 } else {
                     accessors = SyntaxFactory.AccessorList(
                         SyntaxFactory.List(
