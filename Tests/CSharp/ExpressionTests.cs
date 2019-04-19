@@ -140,10 +140,12 @@ End Class", @"class TestClass
         Dim rslt2 = #8/13/2002 12:14 PM#
     End Sub
 End Class", @"using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 class TestClass
 {
-    private void TestMethod([System.Runtime.InteropServices.Optional, System.Runtime.CompilerServices.DateTimeConstant(599266080000000000L)] DateTime date)
+    private void TestMethod([Optional, DateTimeConstant(599266080000000000L)] DateTime date)
     {
         var rslt = DateTime.Parse(""1900-01-01"");
         var rslt2 = DateTime.Parse(""2002-08-13 12:14:00"");

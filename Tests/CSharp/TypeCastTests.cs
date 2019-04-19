@@ -32,11 +32,13 @@ End Class" + Environment.NewLine, @"class Class1
 @"Public Class Class1
     Sub Foo()
         Dim x = CDate(""2019-09-04"")
-End Class", @"public class Class1
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+public class Class1
 {
     public void Foo()
     {
-        var x = Microsoft.VisualBasic.CompilerServices.Conversions.ToDate(""2019-09-04"");
+        var x = Conversions.ToDate(""2019-09-04"");
     }
 }");
         }

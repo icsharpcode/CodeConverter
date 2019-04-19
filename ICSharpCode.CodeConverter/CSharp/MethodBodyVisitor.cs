@@ -27,6 +27,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private readonly SemanticModel _semanticModel;
             private readonly VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> _nodesVisitor;
             private readonly Stack<string> _withBlockTempVariableNames;
+            private readonly HashSet<string> _extraUsingDirectives;
             private readonly HashSet<string> _generatedNames = new HashSet<string>();
 
             public bool IsIterator { get; set; }
@@ -38,12 +39,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public MethodBodyVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
                 VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
-                Stack<string> withBlockTempVariableNames, TriviaConverter triviaConverter)
+                Stack<string> withBlockTempVariableNames, HashSet<string> extraUsingDirectives,
+                TriviaConverter triviaConverter)
             {
                 _methodNode = methodNode;
                 this._semanticModel = semanticModel;
                 this._nodesVisitor = nodesVisitor;
                 this._withBlockTempVariableNames = withBlockTempVariableNames;
+                _extraUsingDirectives = extraUsingDirectives;
                 CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
                 CommonConversions = new CommonConversions(semanticModel, _nodesVisitor);
             }
@@ -59,13 +62,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SingleStatement(SyntaxFactory.ParseStatement(ConvertStopOrEndToCSharpStatementText(node)));
             }
 
-            private static string ConvertStopOrEndToCSharpStatementText(VBSyntax.StopOrEndStatementSyntax node)
+            private string ConvertStopOrEndToCSharpStatementText(VBSyntax.StopOrEndStatementSyntax node)
             {
                 switch (VBasic.VisualBasicExtensions.Kind(node.StopOrEndKeyword)) {
                     case VBasic.SyntaxKind.StopKeyword:
-                        return "System.Diagnostics.Debugger.Break();";
+                        _extraUsingDirectives.Add("System.Diagnostics");
+                        return "Debugger.Break();";
                     case VBasic.SyntaxKind.EndKeyword:
-                        return "System.Environment.Exit(0);";
+                        _extraUsingDirectives.Add("System");
+                        return "Environment.Exit(0);";
                     default:
                         throw new NotImplementedException(node.StopOrEndKeyword.Kind() + " not implemented!");
                 }

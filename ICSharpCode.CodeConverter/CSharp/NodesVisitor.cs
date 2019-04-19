@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
@@ -30,6 +31,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             private readonly AdditionalInitializers _additionalInitializers;
             private readonly QueryConverter _queryConverter;
             private uint failedMemberConversionMarkerCount;
+            private HashSet<string> _extraUsingDirectives = new HashSet<string>();
+            private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
 
             private CommonConversions CommonConversions { get; }
@@ -105,7 +108,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                     : PrependRootNamespace(sourceAndConverted, SyntaxFactory.IdentifierName(options.RootNamespace));
 
                 var usingDirectiveSyntax = importsClauses.GroupBy(c => c.ToString()).Select(g => g.First())
-                    .Select(c => (UsingDirectiveSyntax)c.Accept(TriviaConvertingVisitor));
+                    .Select(c => (UsingDirectiveSyntax)c.Accept(TriviaConvertingVisitor))
+                    .Concat(_extraUsingDirectives.Select(u => SyntaxFactory.UsingDirective(SyntaxFactory.ParseName(u))))
+                    .GroupBy(u => u.ToString())
+                    .Select(g => g.First());
+
                 return SyntaxFactory.CompilationUnit(
                     SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
                     SyntaxFactory.List(usingDirectiveSyntax),
@@ -785,7 +792,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private bool IsExtensionAttribute(VBSyntax.AttributeSyntax a)
             {
-                return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()?.Equals("System.Runtime.CompilerServices.ExtensionAttribute") == true;
+                return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()?.Equals(ExtensionAttributeType.FullName) == true;
             }
 
             private TokenContext GetMemberContext(VBSyntax.StatementSyntax member)
@@ -894,7 +901,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
             {
-                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, _withBlockTempVariableNames, TriviaConvertingVisitor.TriviaConverter) {
+                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, _withBlockTempVariableNames, _extraUsingDirectives, TriviaConvertingVisitor.TriviaConverter) {
                     IsIterator = isIterator,
                     ReturnVariable = csReturnVariable,
                 };
@@ -941,7 +948,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitDeclareStatement(VBSyntax.DeclareStatementSyntax node)
             {
                 var importAttributes = new List<AttributeArgumentSyntax>();
-                var dllImportAttributeName = SyntaxFactory.ParseName("System.Runtime.InteropServices.DllImport");
+                Type dllImportType = typeof(DllImportAttribute);
+                Type charSetType = typeof(CharSet);
+                _extraUsingDirectives.Add(dllImportType.Namespace);
+                _extraUsingDirectives.Add(charSetType.Namespace);
+                var dllImportAttributeName = SyntaxFactory.ParseName(dllImportType.Name.Replace("Attribute", ""));
                 var dllImportLibLiteral = node.LibraryName.Accept(TriviaConvertingVisitor);
                 importAttributes.Add(SyntaxFactory.AttributeArgument((ExpressionSyntax)dllImportLibLiteral));
 
@@ -950,7 +961,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 if (!node.CharsetKeyword.IsKind(SyntaxKind.None)) {
-                    importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("CharSet"), null, SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.ParseTypeName(typeof(CharSet).FullName), SyntaxFactory.IdentifierName(node.CharsetKeyword.Text))));
+                    importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals(charSetType.Name), null, SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.ParseTypeName(charSetType.Name), SyntaxFactory.IdentifierName(node.CharsetKeyword.Text))));
                 }
 
                 var attributeArguments = CommonConversions.CreateAttributeArgumentList(importAttributes.ToArray());
@@ -1021,9 +1032,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                     {
                         var dateTimeAsLongCsLiteral = CommonConversions.GetLiteralExpression(dt.Ticks, dt.Ticks + "L");
                         var dateTimeArg = CommonConversions.CreateAttributeArgumentList(SyntaxFactory.AttributeArgument(dateTimeAsLongCsLiteral));
+                        _extraUsingDirectives.Add("System.Runtime.InteropServices");
+                        _extraUsingDirectives.Add("System.Runtime.CompilerServices");
                         var optionalDateTimeAttributes = new[] {
-                            SyntaxFactory.Attribute(SyntaxFactory.ParseName("System.Runtime.InteropServices.Optional")),
-                            SyntaxFactory.Attribute(SyntaxFactory.ParseName("System.Runtime.CompilerServices.DateTimeConstant"), dateTimeArg)
+                            SyntaxFactory.Attribute(SyntaxFactory.ParseName("Optional")),
+                            SyntaxFactory.Attribute(SyntaxFactory.ParseName("DateTimeConstant"), dateTimeArg)
                         };
                         attributes.Insert(0,
                             SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(optionalDateTimeAttributes)));
@@ -1126,7 +1139,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var expressionSyntax = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
                 if (SyntaxTokenExtensions.IsKind(node.Keyword, VBasic.SyntaxKind.CDateKeyword)) {
-                    return SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Microsoft.VisualBasic.CompilerServices.Conversions.ToDate"), SyntaxFactory.ArgumentList(
+
+                    _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
+                    return SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Conversions.ToDate"), SyntaxFactory.ArgumentList(
                             SyntaxFactory.SingletonSeparatedList(
                                 SyntaxFactory.Argument(expressionSyntax))));
                 }

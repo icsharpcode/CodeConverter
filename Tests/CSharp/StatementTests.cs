@@ -272,11 +272,13 @@ public class TestClass
     Private Sub TestMethod()
         End
     End Sub
-End Class", @"class TestClass
+End Class", @"using System;
+
+class TestClass
 {
     private void TestMethod()
     {
-        System.Environment.Exit(0);
+        Environment.Exit(0);
     }
 }");
         }
@@ -288,11 +290,13 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Stop
     End Sub
-End Class", @"class TestClass
+End Class", @"using System.Diagnostics;
+
+class TestClass
 {
     private void TestMethod()
     {
-        System.Diagnostics.Debugger.Break();
+        Debugger.Break();
     }
 }");
         }
@@ -640,10 +644,11 @@ End Class"
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 public class AcmeClass
 {{
-    [System.Runtime.InteropServices.DllImport(""user32"")]
+    [DllImport(""user32"")]
     private static extern {csType} SetForegroundWindow(Int32 hwnd);
 
     public static void Main()
@@ -664,9 +669,11 @@ public class AcmeClass
             TestConversionVisualBasicToCSharp(@"Public Class AcmeClass
     Friend Declare Ansi Function GetNumDevices Lib ""CP210xManufacturing.dll"" Alias ""CP210x_GetNumDevices"" (ByRef NumDevices As String) As Integer
 End Class"
-                , @"public class AcmeClass
+                , @"using System.Runtime.InteropServices;
+
+public class AcmeClass
 {
-    [System.Runtime.InteropServices.DllImport(""CP210xManufacturing.dll"", EntryPoint = ""CP210x_GetNumDevices"", CharSet = System.Runtime.InteropServices.CharSet.Ansi)]
+    [DllImport(""CP210xManufacturing.dll"", EntryPoint = ""CP210x_GetNumDevices"", CharSet = CharSet.Ansi)]
     internal static extern int GetNumDevices(ref string NumDevices);
 }");
         }
