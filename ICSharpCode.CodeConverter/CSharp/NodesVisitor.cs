@@ -604,11 +604,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 bool isIterator = node.SubOrFunctionStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
-                //TODO Implement for iterator functions
-                var shouldAddImplicitReturnStatements = !isIterator && node.IsKind(VBasic.SyntaxKind.FunctionBlock);
-                IdentifierNameSyntax csReturnVariableOrNull = shouldAddImplicitReturnStatements ? GetRetVariableNameOrNull(node, isIterator) : null;
+                var allowsImplicitReturn = !isIterator && node.IsKind(VBasic.SyntaxKind.FunctionBlock);
+                IdentifierNameSyntax csReturnVariableOrNull = allowsImplicitReturn ? GetRetVariableNameOrNull(node, isIterator) : null;
                 var convertedStatements = ConvertStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator, csReturnVariableOrNull));
-                var body = shouldAddImplicitReturnStatements ? AddImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull) : convertedStatements;
+                var body = allowsImplicitReturn ? AddImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull) : convertedStatements;
 
                 return methodBlock.WithBody(body);
             }
