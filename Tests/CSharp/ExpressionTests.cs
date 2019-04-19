@@ -219,6 +219,28 @@ class TestClass
         }
 
         [Fact]
+        public void AccessSharedThroughInstance()
+        {
+            TestConversionVisualBasicToCSharp(@"Public Class A
+    Public Shared x As Integer = 2
+    Public Sub Test()
+        Dim tmp = Me
+        Dim y = Me.x
+        Dim z = tmp.x
+    End Sub
+End Class", @"public class A
+{
+    public static int x = 2;
+    public void Test()
+    {
+        var tmp = this;
+        var y = A.x;
+        var z = A.x;
+    }
+}");
+        }
+
+        [Fact]
         public void UnknownTypeInvocation()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
