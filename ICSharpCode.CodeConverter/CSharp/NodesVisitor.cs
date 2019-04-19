@@ -603,18 +603,29 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return methodBlock;
                 }
 
-                bool isIterator = node.SubOrFunctionStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
-                var allowsImplicitReturn = !isIterator && node.IsKind(VBasic.SyntaxKind.FunctionBlock);
-                IdentifierNameSyntax csReturnVariableOrNull = allowsImplicitReturn ? GetRetVariableNameOrNull(node, isIterator) : null;
-                var convertedStatements = ConvertStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator, csReturnVariableOrNull));
-                var body = allowsImplicitReturn ? AddImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull) : convertedStatements;
+                var csReturnVariableOrNull = GetRetVariableNameOrNull(node);
+                var visualBasicSyntaxVisitor = CreateMethodBodyVisitor(node, IsIterator(node), csReturnVariableOrNull);
+                var convertedStatements = ConvertStatements(node.Statements, visualBasicSyntaxVisitor);
+                var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
 
                 return methodBlock.WithBody(body);
             }
 
-            private BlockSyntax AddImplicitReturnStatements(VBSyntax.MethodBlockSyntax node, BlockSyntax convertedStatements,
+            private static bool AllowsImplicitReturn(VBSyntax.MethodBlockSyntax node)
+            {
+                return !IsIterator(node) && node.IsKind(VBasic.SyntaxKind.FunctionBlock);
+            }
+
+            private static bool IsIterator(VBSyntax.MethodBlockSyntax node)
+            {
+                return node.SubOrFunctionStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
+            }
+
+            private BlockSyntax WithImplicitReturnStatements(VBSyntax.MethodBlockSyntax node, BlockSyntax convertedStatements,
                 IdentifierNameSyntax csReturnVariableOrNull)
             {
+                if (!AllowsImplicitReturn(node)) return convertedStatements;
+
                 var preBodyStatements = new List<StatementSyntax>();
                 var postBodyStatements = new List<StatementSyntax>();
 
@@ -646,8 +657,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.Block(statements);
             }
 
-            private IdentifierNameSyntax GetRetVariableNameOrNull(VBSyntax.MethodBlockSyntax node, bool isIterator)
+            private IdentifierNameSyntax GetRetVariableNameOrNull(VBSyntax.MethodBlockSyntax node)
             {
+                if (!AllowsImplicitReturn(node)) return null;
+
                 string methodName = node.SubOrFunctionStatement.Identifier.ValueText;
                 bool assignsToMethodNameVariable = node.Statements.Any(s => s.DescendantNodes()
                     .OfType<VBSyntax.AssignmentStatementSyntax>().Any(assignment =>
