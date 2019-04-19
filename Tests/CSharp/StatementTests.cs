@@ -1033,7 +1033,7 @@ class TestClass
         var loopTo = 10 - stringValue.Length;
         for (int i = 1; i <= loopTo; i++)
         {
-            stringValue = stringValue + "" "" + System.Convert.ToString(i);
+            stringValue = stringValue + ("" "" + System.Convert.ToString(i));
             Console.WriteLine(stringValue);
         }
     }
@@ -1308,7 +1308,7 @@ End Class", @"public class TestClass
 
             case object _ when daysAgo > 0:
                 {
-                    return daysAgo / 7 + "" weeks ago"";
+                    return (daysAgo / 7) + "" weeks ago"";
                 }
 
             default:
@@ -1353,7 +1353,7 @@ public class TestClass2
     {
         switch (true)
         {
-            case object _ when DateTime.Today.DayOfWeek == DayOfWeek.Saturday | DateTime.Today.DayOfWeek == DayOfWeek.Sunday:
+            case object _ when (DateTime.Today.DayOfWeek == DayOfWeek.Saturday) | (DateTime.Today.DayOfWeek == DayOfWeek.Sunday):
                 {
                     // we do not work on weekends
                     return false;

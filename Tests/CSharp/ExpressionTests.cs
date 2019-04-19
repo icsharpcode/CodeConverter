@@ -328,6 +328,22 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void StringConcatPrecedence()
+        {
+            TestConversionVisualBasicToCSharp(@"Public Class Class1
+    Sub Foo()
+        Dim x = ""x "" & 5 - 4 & "" y""
+    End Sub
+End Class", @"public class Class1
+{
+    public void Foo()
+    {
+        var x = ""x "" + (5 - 4) + "" y"";
+    }
+}");
+        }
+
+        [Fact]
         public void IntegerArithmetic()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -345,7 +361,7 @@ class TestClass
 {
     private void TestMethod()
     {
-        var x = Math.Pow(7, 6) % 5 / 4 + 3 * 2;
+        var x = (Math.Pow(7, 6) % (5 / 4)) + (3 * 2);
         x += 1;
         x -= 2;
         x *= 3;
