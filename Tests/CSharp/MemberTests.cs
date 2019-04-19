@@ -86,6 +86,92 @@ class TestClass
         }
 
         [Fact]
+        public void TestMethodAssignmentReturn()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Class Class1
+    Function TestMethod(x As Integer) As Integer
+        If x = 1 Then
+            TestMethod = 1
+        ElseIf x = 2 Then
+            TestMethod = 2
+            Exit Function
+        ElseIf x = 3 Then
+            TestMethod = TestMethod(1)
+        End If
+    End Function
+End Class", @"class Class1
+{
+    public int TestMethod(int x)
+    {
+        int TestMethodRet = default(int);
+        if (x == 1)
+            TestMethodRet = 1;
+        else if (x == 2)
+        {
+            TestMethodRet = 2;
+            return TestMethodRet;
+        }
+        else if (x == 3)
+            TestMethodRet = TestMethod(1);
+        return TestMethodRet;
+    }
+}");
+        }
+
+
+        [Fact]
+        public void TestMethodAssignmentAdditionReturn()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Class Class1
+    Function TestMethod(x As Integer) As Integer
+        If x = 1 Then
+            TestMethod += 1
+        ElseIf x = 2 Then
+            TestMethod -= 2
+            Exit Function
+        ElseIf x = 3 Then
+            TestMethod *= TestMethod(1)
+        End If
+    End Function
+End Class", @"class Class1
+{
+    public int TestMethod(int x)
+    {
+        int TestMethodRet = default(int);
+        if (x == 1)
+            TestMethodRet += 1;
+        else if (x == 2)
+        {
+            TestMethodRet -= 2;
+            return TestMethodRet;
+        }
+        else if (x == 3)
+            TestMethodRet *= TestMethod(1);
+        return TestMethodRet;
+    }
+}");
+        }
+
+        [Fact]
+        public void TestMethodMissingReturn()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Class Class1
+    Function TestMethod() As Integer
+
+    End Function
+End Class", @"class Class1
+{
+    public int TestMethod()
+    {
+        return default(int);
+    }
+}");
+        }
+
+        [Fact]
         public void TestMethodXmlDoc()
         {
             TestConversionVisualBasicToCSharp(

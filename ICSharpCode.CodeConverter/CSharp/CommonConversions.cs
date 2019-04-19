@@ -456,5 +456,17 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             return SyntaxFactory.AttributeArgumentList(SyntaxFactory.SeparatedList(attributeArgumentSyntaxs));
         }
+
+        public static VariableDeclarationSyntax CreateVariableDeclarationAndAssignment(string variableName,
+            ExpressionSyntax initValue, TypeSyntax explicitType = null)
+        {
+            var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(
+                SyntaxFactory.Identifier(variableName), null,
+                SyntaxFactory.EqualsValueClause(initValue));
+            var variableDeclarationSyntax = SyntaxFactory.VariableDeclaration(
+                explicitType ?? SyntaxFactory.IdentifierName("var"),
+                SyntaxFactory.SingletonSeparatedList(variableDeclaratorSyntax));
+            return variableDeclarationSyntax;
+        }
     }
 }
