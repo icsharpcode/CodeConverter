@@ -1728,10 +1728,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var identifier = SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier, node.GetAncestor<VBSyntax.AttributeSyntax>() != null));
 
-                return !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer)
-                                    || node.Parent is VBSyntax.MemberAccessExpressionSyntax maes && maes.Expression == node
-                                    || node.Parent is VBSyntax.QualifiedNameSyntax qns && qns.Left == node
-                    ? AddParenthesis(node, QualifyNode(node, identifier)) : AddParenthesis(node, identifier);
+                var qualifiedIdentifier = !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer)
+                                                    || node.Parent is VBSyntax.MemberAccessExpressionSyntax maes && maes.Expression == node
+                                                    || node.Parent is VBSyntax.QualifiedNameSyntax qns && qns.Left == node
+                    ? QualifyNode(node, identifier) : identifier;
+                return AddParenthesis(node, qualifiedIdentifier);
             }
 
             private CSharpSyntaxNode AddParenthesis(VBSyntax.IdentifierNameSyntax node, ExpressionSyntax id)
