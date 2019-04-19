@@ -619,13 +619,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var preBodyStatements = new List<StatementSyntax>();
                 var postBodyStatements = new List<StatementSyntax>();
-                string returnVariableName = null;
+                string csReturnVariableName = null;
                 var functionSym = _semanticModel.GetDeclaredSymbol(node);
                 var returnType = CommonConversions.ToCsTypeSyntax(functionSym.GetReturnType(), node);
 
                 if (referencesSelf) {
-                    returnVariableName = methodName + "Ret";
-                    var retVariable = SyntaxFactory.ParseStatement($"{returnType} {returnVariableName} = default({returnType});{Environment.NewLine}");
+                    csReturnVariableName = CommonConversions.ConvertIdentifier(node.SubOrFunctionStatement.Identifier).ValueText + "Ret";
+                    var retVariable = SyntaxFactory.ParseStatement($"{returnType} {csReturnVariableName} = default({returnType});{Environment.NewLine}");
                     preBodyStatements.Add(retVariable);
                 }
 
@@ -635,11 +635,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 bool needsReturn = controlFlowAnalysis?.EndPointIsReachable != false;
                 if (needsReturn) {
-                    string csReturnText = referencesSelf ? $"return {returnVariableName};" : $"return default({returnType});";
-                    postBodyStatements.Add(SyntaxFactory.ParseStatement(csReturnText));
+                    var csReturnExpression = referencesSelf ? SyntaxFactory.IdentifierName(csReturnVariableName) : SyntaxFactory.ParseExpression($"default({returnType})");
+                    postBodyStatements.Add(SyntaxFactory.ReturnStatement(csReturnExpression));
                 }
 
-                var methodBodyVisitor = CreateMethodBodyVisitor(node, isIterator, returnVariableName);
+                var methodBodyVisitor = CreateMethodBodyVisitor(node, isIterator, csReturnVariableName);
                 var statements = preBodyStatements
                                     .Concat(node.Statements.SelectMany(s => s.Accept(methodBodyVisitor)))
                                     .Concat(postBodyStatements);
