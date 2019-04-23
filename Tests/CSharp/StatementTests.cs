@@ -1346,6 +1346,7 @@ End Class", @"public class TestClass
         Return True
     End Function
 End Class", @"using System;
+using Microsoft.VisualBasic;
 
 public class TestClass2
 {
@@ -1353,7 +1354,7 @@ public class TestClass2
     {
         switch (true)
         {
-            case object _ when DateTime.Today.DayOfWeek == DayOfWeek.Saturday | DateTime.Today.DayOfWeek == DayOfWeek.Sunday:
+            case object _ when DateAndTime.Today.DayOfWeek == DayOfWeek.Saturday | DateAndTime.Today.DayOfWeek == DayOfWeek.Sunday:
                 {
                     // we do not work on weekends
                     return false;

@@ -11,7 +11,10 @@ namespace ICSharpCode.CodeConverter.Util
 #endif
     static class ISymbolExtensions
     {
-        private static readonly string[] TypesToConvertToDateTime = new[] {"DateTime", "DateAndTime" };
+        // A lot of symbols in DateAndTime do not exist in DateTime, eg. DateSerial(),
+        // and some have different names/arguments, eg. DateAdd(). This needs to be handled properly
+        // as part of #174
+        private static readonly string[] TypesToConvertToDateTime = new[] { "DateTime" };
 
         /// <summary>
         /// Checks if 'symbol' is accessible from within 'within'.
