@@ -1266,17 +1266,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var simpleNameSyntax = (SimpleNameSyntax)node.Name.Accept(TriviaConvertingVisitor);
 
+                var symbolInfo = _semanticModel.GetSymbolInfo(node.Name);
                 ExpressionSyntax left = null;
                 if (node.Expression is VBSyntax.MyClassExpressionSyntax) {
-                    var symbolInfo = _semanticModel.GetSymbolInfo(node.Name);
                     if (symbolInfo.Symbol.IsStatic) {
                         var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
-                        left = SyntaxFactory.IdentifierName(typeInfo.Type.Name);
+                        left = CommonConversions.ToCsTypeSyntax(typeInfo.Type, node);
                     } else {
                         left = SyntaxFactory.ThisExpression();
                         if (symbolInfo.Symbol.IsVirtual && !symbolInfo.Symbol.IsAbstract) {
                             simpleNameSyntax = SyntaxFactory.IdentifierName($"MyClass{ConvertIdentifier(node.Name.Identifier).ValueText}");
                         }
+                    }
+                }
+                if (left == null && symbolInfo.Symbol?.IsStatic == true) {
+                    var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
+                    var symbol = _semanticModel.GetSymbolInfo(node.Expression);
+                    if (typeInfo.Type != null && !symbol.Symbol.IsType()) {
+                        left = CommonConversions.ToCsTypeSyntax(typeInfo.Type, node);
                     }
                 }
                 if (left == null) {

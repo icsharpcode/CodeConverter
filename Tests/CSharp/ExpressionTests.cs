@@ -219,6 +219,28 @@ class TestClass
         }
 
         [Fact]
+        public void AccessSharedThroughInstance()
+        {
+            TestConversionVisualBasicToCSharp(@"Public Class A
+    Public Shared x As Integer = 2
+    Public Sub Test()
+        Dim tmp = Me
+        Dim y = Me.x
+        Dim z = tmp.x
+    End Sub
+End Class", @"public class A
+{
+    public static int x = 2;
+    public void Test()
+    {
+        var tmp = this;
+        var y = A.x;
+        var z = A.x;
+    }
+}");
+        }
+
+        [Fact]
         public void UnknownTypeInvocation()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -1214,6 +1236,24 @@ namespace Global.InnerNamespace
             var f = $""pre{{escapedBraces}}{dt,4:hh}"";
             return a + b + c + d + e + f;
         }
+    }
+}");
+        }
+
+        [Fact]
+        public void DateTimeToDateAndTime()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Foo()
+        Dim x = DateAdd(""m"", 5, Now)
+    End Sub
+End Class", @"using Microsoft.VisualBasic;
+
+public class Class1
+{
+    public void Foo()
+    {
+        var x = DateAndTime.DateAdd(""m"", 5, DateAndTime.Now);
     }
 }");
         }

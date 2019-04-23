@@ -11,6 +11,7 @@ using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using System.Text.RegularExpressions;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -62,6 +63,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         public string PostTransformProjectFile(string s)
         {
             s = ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(s, "cs", "vb");
+
+            if (!Regex.IsMatch(s, @"<Reference\s+Include=""Microsoft.VisualBasic""\s*/>")) {
+                s = Regex.Replace(s, @"(<Reference\s+Include=""System""\s*/>)", "<Reference Include=\"Microsoft.VisualBasic\" />\r\n    $1");
+            }
 
             // TODO Find API to, or parse project file sections to remove "<DefineDebug>true</DefineDebug>" + "<DefineTrace>true</DefineTrace>"
             // Then add them to the define constants in the same section, or create one if necessary.
