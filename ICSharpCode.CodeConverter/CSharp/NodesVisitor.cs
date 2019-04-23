@@ -1183,7 +1183,20 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private static bool PrecedenceCouldChange(VBasic.VisualBasicSyntaxNode node)
             {
-                return node.Parent is VBSyntax.ExpressionSyntax && !(node.Parent is VBSyntax.ArgumentSyntax);
+                bool parentIsSameBinaryKind = node is VBSyntax.BinaryExpressionSyntax && node.Parent is VBSyntax.BinaryExpressionSyntax parent && parent.Kind() == node.Kind();
+                bool parentIsReturn = node.Parent is VBSyntax.ReturnStatementSyntax;
+                bool parentIsLambda = node.Parent is VBSyntax.LambdaExpressionSyntax;
+                bool parentIsNonArgumentExpression = node.Parent is VBSyntax.ExpressionSyntax && !(node.Parent is VBSyntax.ArgumentSyntax);
+                bool parentIsParenthesis = node.Parent is VBSyntax.ParenthesizedExpressionSyntax;
+
+                // Could be a full C# precendence table - this is just a common case
+                bool parentIsAndOr = node.Parent.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression);
+                bool nodeIsRelationalOrEqual = node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression,
+                                                           VBasic.SyntaxKind.LessThanExpression, VBasic.SyntaxKind.LessThanOrEqualExpression,
+                                                           VBasic.SyntaxKind.GreaterThanExpression, VBasic.SyntaxKind.GreaterThanOrEqualExpression);
+                bool csharpPrecedenceSame = parentIsAndOr && nodeIsRelationalOrEqual;
+
+                return parentIsNonArgumentExpression && !parentIsSameBinaryKind && !parentIsReturn && !parentIsLambda && !parentIsParenthesis && !csharpPrecedenceSame;
             }
 
             public override CSharpSyntaxNode VisitLiteralExpression(VBSyntax.LiteralExpressionSyntax node)
@@ -1624,7 +1637,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
                 var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
-                return SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
+
+                return ParenthesizeIfPrecedenceCouldChange(node, SyntaxFactory.BinaryExpression(kind, lhs, op, rhs));
             }
 
             public override CSharpSyntaxNode VisitInvocationExpression(VBSyntax.InvocationExpressionSyntax node)
