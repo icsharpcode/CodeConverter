@@ -1291,7 +1291,9 @@ class TestClass
                 Return ""in the future""
         End Select
     End Function
-End Class", @"public class TestClass
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+public class TestClass
 {
     public static string TimeAgo(int daysAgo)
     {
@@ -1308,7 +1310,7 @@ End Class", @"public class TestClass
 
             case object _ when daysAgo > 0:
                 {
-                    return (daysAgo / 7) + "" weeks ago"";
+                    return Conversions.ToString(daysAgo / 7) + "" weeks ago"";
                 }
 
             default:

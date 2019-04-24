@@ -21,6 +21,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         class NodesVisitor : VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
         {
+            private readonly CSharpCompilation _csCompilation;
             private readonly SemanticModel _semanticModel;
             private readonly Dictionary<ITypeSymbol, string> _createConvertMethodsLookupByReturnType;
             private List<MethodWithHandles> _methodsWithHandles;
@@ -37,9 +38,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private CommonConversions CommonConversions { get; }
 
-            public NodesVisitor(SemanticModel semanticModel)
+            public NodesVisitor(SemanticModel semanticModel, CSharpCompilation csCompilation)
             {
                 this._semanticModel = semanticModel;
+                this._csCompilation = csCompilation;
                 TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
                 _createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
                 CommonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor);
@@ -1618,14 +1620,19 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
 
-                var lhs = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
-                var rhs = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
+                var lhs = AddExplicitConversion(node.Left, (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor));
+                var rhs = AddExplicitConversion(node.Right, (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor));
 
-                // e.g. VB DivideExpression "/" returns a double result for integer types (integer division is the "\" IntegerDivideExpression), so need to cast in C#
-                // see: https://docs.microsoft.com/en-us/dotnet/visual-basic/language-reference/operators/floating-point-division-operator#remarks
-                if (node.IsKind(VBasic.SyntaxKind.DivideExpression) && node.Left.IsIntegralType(_semanticModel) && node.Right.IsIntegralType(_semanticModel)) {
-                    var doubleType = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword));
-                    rhs = SyntaxFactory.CastExpression(doubleType, rhs);
+                if (node.IsKind(VBasic.SyntaxKind.ConcatenateExpression)) {
+                    var stringType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
+                    var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
+                    var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
+                    if (lhsTypeInfo.Type.SpecialType != SpecialType.System_String &&
+                        lhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String &&
+                        rhsTypeInfo.Type.SpecialType != SpecialType.System_String &&
+                        rhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String) {
+                        lhs = AddExplicitConvertTo(node.Left, lhs, stringType);
+                    }
                 }
 
                 if (node.IsKind(VBasic.SyntaxKind.ExponentiateExpression,
@@ -1638,7 +1645,87 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
                 var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
 
-                return ParenthesizeIfPrecedenceCouldChange(node, SyntaxFactory.BinaryExpression(kind, lhs, op, rhs));
+                var csBinExp = SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
+                var convertedNode = AddExplicitConversion(node, csBinExp, addParenthesisIfNeeded: true);
+                if (convertedNode == csBinExp) {
+                    return ParenthesizeIfPrecedenceCouldChange(node, csBinExp);
+                } else {
+                    return convertedNode;
+                }
+            }
+
+            private ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = false)
+            {
+                var typeInfo = _semanticModel.GetTypeInfo(vbNode);
+                var vbType = typeInfo.Type;
+                var vbConvertedType = typeInfo.ConvertedType;
+                if (vbType is null || vbConvertedType is null) {
+                    return csNode;
+                }
+
+                var vbCompilation = _semanticModel.Compilation as VBasic.VisualBasicCompilation;
+                var vbConversion = vbCompilation.ClassifyConversion(vbType, vbConvertedType);
+
+                var csType = _csCompilation.GetTypeByMetadataName(vbType.GetFullMetadataName());
+                var csConvertedType = _csCompilation.GetTypeByMetadataName(vbConvertedType.GetFullMetadataName());
+
+                if (csType is null || csConvertedType is null) {
+                    return csNode;
+                }
+
+                var csConversion = _csCompilation.ClassifyConversion(csType, csConvertedType);
+
+                bool insertConvertTo = false;
+                bool insertCast = false;
+
+                bool isConvertToString = vbConversion.IsString && vbConvertedType.SpecialType == SpecialType.System_String;
+                bool isArithmetic = vbNode.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression,
+                                                  VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression,
+                                                  VBasic.SyntaxKind.IntegerDivideExpression);
+                if (!csConversion.Exists) {
+                    insertConvertTo = isConvertToString || vbConversion.IsNarrowing;
+                } else if (vbConversion.IsWidening && vbConversion.IsNumeric && csConversion.IsImplicit && csConversion.IsNumeric) {
+                    insertCast = true;
+                } else if (csConversion.IsExplicit && vbConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
+                    insertConvertTo = true;
+                } else if (isArithmetic) {
+                    var arithmeticConversion = vbCompilation.ClassifyConversion(vbConvertedType, vbCompilation.GetTypeByMetadataName("System.Int32"));
+                    if (arithmeticConversion.IsWidening && !arithmeticConversion.IsIdentity) {
+                        insertConvertTo = true;
+                    }
+                }
+
+                if (insertConvertTo) {
+                    return AddExplicitConvertTo(vbNode, csNode, vbConvertedType);
+                } else if (insertCast) {
+                    var typeName = CommonConversions.ToCsTypeSyntax(vbConvertedType, vbNode);
+                    if (csNode is CastExpressionSyntax cast && cast.Type.IsEquivalentTo(typeName)) {
+                        return csNode;
+                    }
+
+                    csNode = addParenthesisIfNeeded ? (ExpressionSyntax)ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
+                    return SyntaxFactory.CastExpression(typeName, csNode);
+                }
+
+                return csNode;
+            }
+
+            private ExpressionSyntax AddExplicitConvertTo(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol type)
+            {
+                var displayType = type.ToMinimalDisplayString(_semanticModel, vbNode.SpanStart);
+                if (csNode is InvocationExpressionSyntax invoke &&
+                    invoke.Expression is MemberAccessExpressionSyntax expr &&
+                    expr.Expression is IdentifierNameSyntax name && name.Identifier.ValueText == "Conversions" &&
+                    expr.Name.Identifier.ValueText == $"To{displayType}") {
+                    return csNode;
+                }
+
+                // Need to use Conversions rather than Convert to match what VB does, eg. True -> -1
+                _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
+                var memberAccess = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                    SyntaxFactory.IdentifierName("Conversions"), SyntaxFactory.IdentifierName($"To{displayType}"));
+                var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(csNode)));
+                return SyntaxFactory.InvocationExpression(memberAccess, arguments);
             }
 
             public override CSharpSyntaxNode VisitInvocationExpression(VBSyntax.InvocationExpressionSyntax node)
