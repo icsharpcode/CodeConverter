@@ -119,6 +119,32 @@ End Class", @"class Class1
 }");
         }
 
+        [Fact]
+        public void TestMethodAssignmentReturn293()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Public Class Class1
+    Public Event MyEvent As EventHandler
+    Protected Overrides Function Foo() As String
+        AddHandler MyEvent, AddressOf Foo
+        Foo = Foo & """"
+        Foo += NameOf(Foo)
+    End Function
+End Class", @"using System;
+
+public class Class1
+{
+    public event EventHandler MyEvent;
+    protected override string Foo()
+    {
+        string FooRet = default(string);
+        MyEvent += Foo;
+        FooRet = FooRet + """";
+        FooRet += nameof(Foo);
+        return FooRet;
+    }
+}");
+        }
 
         [Fact]
         public void TestMethodAssignmentAdditionReturn()
