@@ -47,8 +47,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var method = declarator.Ancestors().OfType<MethodBlockBaseSyntax>().SingleOrDefault();
             DataFlowAnalysis dataFlow = null;
+            IEnumerable<AssignmentStatementSyntax> simpleAssignments = new List<AssignmentStatementSyntax>();
             if (method != null) {
                 dataFlow = _semanticModel.AnalyzeDataFlow(method.Statements.First(), method.Statements.Last());
+                simpleAssignments = method.Statements
+                                          .SelectMany(s => s.DescendantNodesAndSelf().OfType<AssignmentStatementSyntax>())
+                                          .Where(s => s.IsKind(SyntaxKind.SimpleAssignmentStatement));
             }
 
             foreach (var name in declarator.Names) {
@@ -59,10 +63,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (adjustedInitializer != null) {
                     equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(adjustedInitializer);
                 } else {
-                    Func<ISymbol, bool> equalsId = s => s.Name.Equals(name.Identifier.ValueText, StringComparison.OrdinalIgnoreCase);
-                    bool alwaysAssigned = dataFlow != null && dataFlow.AlwaysAssigned.Any(equalsId);
-                    bool neverRead = dataFlow != null && !dataFlow.ReadInside.Any(equalsId) && !dataFlow.ReadOutside.Any(equalsId);
-                    if (isField || alwaysAssigned || neverRead) {
+                    Func<string, bool> equalsId = s => s.Equals(name.Identifier.ValueText, StringComparison.OrdinalIgnoreCase);
+                    bool alwaysAssigned = dataFlow != null && dataFlow.AlwaysAssigned.Any(s => equalsId(s.Name));
+                    bool simplyAssigned = alwaysAssigned && simpleAssignments.Any(s => s.Left is VBSyntax.IdentifierNameSyntax idName && equalsId(idName.Identifier.ValueText));
+                    bool neverRead = dataFlow != null && !dataFlow.ReadInside.Any(s => equalsId(s.Name)) && !dataFlow.ReadOutside.Any(s => equalsId(s.Name));
+                    if (isField || simplyAssigned || neverRead) {
                         equalsValueClauseSyntax = null;
                     } else {
                         equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(SyntaxFactory.DefaultExpression(type));
