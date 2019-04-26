@@ -155,6 +155,36 @@ class TestClass
 }");
         }
 
+        [Fact]
+        public void MethodCallWithImplicitConversion()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Foo()
+        Bar(True)
+        Me.Bar(""4"")
+        Dim ss(1) As String
+        Dim y = ss(""0"")
+    End Sub
+
+    Sub Bar(x as Integer)
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+public class Class1
+{
+    public void Foo()
+    {
+        Bar(Conversions.ToInteger(true));
+        this.Bar(Conversions.ToInteger(""4""));
+        string[] ss = new string[2];
+        var y = ss[Conversions.ToInteger(""0"")];
+    }
+
+    public void Bar(int x)
+    {
+    }
+}");
+        }
 
         [Fact]
         public void MethodCallWithoutParens()
@@ -1289,7 +1319,7 @@ public class Class1
 {
     public void Foo()
     {
-        var x = DateAndTime.DateAdd(""m"", 5, DateAndTime.Now);
+        var x = DateAndTime.DateAdd(""m"", (double)5, DateAndTime.Now);
     }
 }");
         }

@@ -1419,7 +1419,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.Argument(
                     node.IsNamed ? SyntaxFactory.NameColon((IdentifierNameSyntax)node.NameColonEquals.Name.Accept(TriviaConvertingVisitor)) : null,
                     token,
-                    (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor)
+                    AddExplicitConversion(node.Expression, (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor))
                 );
             }
 
