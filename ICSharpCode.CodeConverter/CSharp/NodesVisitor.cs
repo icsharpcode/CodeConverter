@@ -1191,7 +1191,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 bool parentIsNonArgumentExpression = node.Parent is VBSyntax.ExpressionSyntax && !(node.Parent is VBSyntax.ArgumentSyntax);
                 bool parentIsParenthesis = node.Parent is VBSyntax.ParenthesizedExpressionSyntax;
 
-                // Could be a full C# precendence table - this is just a common case
+                // Could be a full C# precedence table - this is just a common case
                 bool parentIsAndOr = node.Parent.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression);
                 bool nodeIsRelationalOrEqual = node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression,
                                                            VBasic.SyntaxKind.LessThanExpression, VBasic.SyntaxKind.LessThanOrEqualExpression,
@@ -1685,6 +1685,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (!csConversion.Exists) {
                     insertConvertTo = isConvertToString || vbConversion.IsNarrowing;
                 } else if (vbConversion.IsWidening && vbConversion.IsNumeric && csConversion.IsImplicit && csConversion.IsNumeric) {
+                    // Safe overapproximation: A cast is really only needed to help resolve the overload for the operator/method used.
+                    // e.g. When VB "&" changes to C# "+", there are lots more overloads available that implicit casts could match.
+                    // e.g. sbyte * ulong uses the decimal * operator in VB. In C# it's ambiguous - see ExpressionTests.vb "TestMul".
                     insertCast = true;
                 } else if (csConversion.IsExplicit && vbConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
                     insertConvertTo = true;
