@@ -1171,34 +1171,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitTryCastExpression(VBSyntax.TryCastExpressionSyntax node)
             {
-                return ParenthesizeIfPrecedenceCouldChange(node, SyntaxFactory.BinaryExpression(
+                return CommonConversions.ParenthesizeIfPrecedenceCouldChange(node, SyntaxFactory.BinaryExpression(
                     SyntaxKind.AsExpression,
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
                     (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)
                 ));
-            }
-
-            private static CSharpSyntaxNode ParenthesizeIfPrecedenceCouldChange(VBasic.VisualBasicSyntaxNode node, ExpressionSyntax expression)
-            {
-                return PrecedenceCouldChange(node) ? SyntaxFactory.ParenthesizedExpression(expression) : expression;
-            }
-
-            private static bool PrecedenceCouldChange(VBasic.VisualBasicSyntaxNode node)
-            {
-                bool parentIsSameBinaryKind = node is VBSyntax.BinaryExpressionSyntax && node.Parent is VBSyntax.BinaryExpressionSyntax parent && parent.Kind() == node.Kind();
-                bool parentIsReturn = node.Parent is VBSyntax.ReturnStatementSyntax;
-                bool parentIsLambda = node.Parent is VBSyntax.LambdaExpressionSyntax;
-                bool parentIsNonArgumentExpression = node.Parent is VBSyntax.ExpressionSyntax && !(node.Parent is VBSyntax.ArgumentSyntax);
-                bool parentIsParenthesis = node.Parent is VBSyntax.ParenthesizedExpressionSyntax;
-
-                // Could be a full C# precedence table - this is just a common case
-                bool parentIsAndOr = node.Parent.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression);
-                bool nodeIsRelationalOrEqual = node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression,
-                                                           VBasic.SyntaxKind.LessThanExpression, VBasic.SyntaxKind.LessThanOrEqualExpression,
-                                                           VBasic.SyntaxKind.GreaterThanExpression, VBasic.SyntaxKind.GreaterThanOrEqualExpression);
-                bool csharpPrecedenceSame = parentIsAndOr && nodeIsRelationalOrEqual;
-
-                return parentIsNonArgumentExpression && !parentIsSameBinaryKind && !parentIsReturn && !parentIsLambda && !parentIsParenthesis && !csharpPrecedenceSame;
             }
 
             public override CSharpSyntaxNode VisitLiteralExpression(VBSyntax.LiteralExpressionSyntax node)
@@ -1563,7 +1540,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     (ExpressionSyntax)node.WhenFalse.Accept(TriviaConvertingVisitor)
                 );
 
-                if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || PrecedenceCouldChange(node))
+                if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || CommonConversions.PrecedenceCouldChange(node))
                     return SyntaxFactory.ParenthesizedExpression(expr);
 
                 return expr;
@@ -1648,7 +1625,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var csBinExp = SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
                 var convertedNode = AddExplicitConversion(node, csBinExp, addParenthesisIfNeeded: true);
                 if (convertedNode == csBinExp) {
-                    return ParenthesizeIfPrecedenceCouldChange(node, csBinExp);
+                    return CommonConversions.ParenthesizeIfPrecedenceCouldChange(node, csBinExp);
                 } else {
                     return convertedNode;
                 }
@@ -1706,7 +1683,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         return csNode;
                     }
 
-                    csNode = addParenthesisIfNeeded ? (ExpressionSyntax)ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
+                    csNode = addParenthesisIfNeeded ? (ExpressionSyntax)CommonConversions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
                     return SyntaxFactory.CastExpression(typeName, csNode);
                 }
 
