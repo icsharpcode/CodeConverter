@@ -668,11 +668,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 if (!AllowsImplicitReturn(node)) return null;
 
-                string methodName = node.SubOrFunctionStatement.Identifier.ValueText;
-                bool assignsToMethodNameVariable = node.Statements.Any(s => s.DescendantNodesAndSelf()
-                    .OfType<VBSyntax.AssignmentStatementSyntax>().Any(assignment =>
-                        (assignment.Left as VBSyntax.SimpleNameSyntax)?.Identifier.ValueText.Equals(methodName,
-                            StringComparison.OrdinalIgnoreCase) == true));
+                bool assignsToMethodNameVariable = false;
+
+                if (!node.Statements.IsEmpty()) {
+                    string methodName = node.SubOrFunctionStatement.Identifier.ValueText;
+                    Func<ISymbol, bool> equalsMethodName = s => s.IsKind(SymbolKind.Local) && s.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase);
+                    var flow = _semanticModel.AnalyzeDataFlow(node.Statements.First(), node.Statements.Last());
+
+                    assignsToMethodNameVariable = flow.ReadInside.Any(equalsMethodName) || flow.WrittenInside.Any(equalsMethodName);
+                }
 
                 IdentifierNameSyntax csReturnVariable = null;
 
