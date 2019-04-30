@@ -45,16 +45,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var newDecls = new Dictionary<string, VariableDeclarationSyntax>();
 
-            var method = declarator.Ancestors().OfType<MethodBlockBaseSyntax>().SingleOrDefault();
-            DataFlowAnalysis dataFlow = null;
-            IEnumerable<AssignmentStatementSyntax> simpleAssignments = new List<AssignmentStatementSyntax>();
-            if (method != null) {
-                dataFlow = _semanticModel.AnalyzeDataFlow(method.Statements.First(), method.Statements.Last());
-                simpleAssignments = method.Statements
-                                          .SelectMany(s => s.DescendantNodesAndSelf().OfType<AssignmentStatementSyntax>())
-                                          .Where(s => s.IsKind(SyntaxKind.SimpleAssignmentStatement));
-            }
-
             foreach (var name in declarator.Names) {
                 var (type, adjustedInitializer) = AdjustFromName(rawType, name, initializer);
 
@@ -62,12 +52,35 @@ namespace ICSharpCode.CodeConverter.CSharp
                 EqualsValueClauseSyntax equalsValueClauseSyntax;
                 if (adjustedInitializer != null) {
                     equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(adjustedInitializer);
+                } else if (isField) {
+                    equalsValueClauseSyntax = null;
                 } else {
                     Func<string, bool> equalsId = s => s.Equals(name.Identifier.ValueText, StringComparison.OrdinalIgnoreCase);
+
+                    var method = declarator.Ancestors().OfType<MethodBlockBaseSyntax>().SingleOrDefault();
+
+                    // This code is entirely to avoid default initializations - it is not required
+                    //
+                    // 1. Find the first and last statements in the method which contain the identifier
+                    //
+                    // This may overshoot where there are multiple identifiers with the same name - this is ok, it just means we could output an initializer where one is not needed
+                    var statements = method.Statements.Where(s => s.DescendantTokens().Any(id => id.IsKind(SyntaxKind.IdentifierToken) && equalsId(id.ValueText)));
+                    var first = statements.First();
+                    var last = statements.Count() >= 2 ? statements.Skip(1).First() : first;
+
+                    // 2. Analyze the data flow in this block to see if initialization is required
+                    //
+                    // If the last statement where the identifier is used is an if block, we look at the condition rather than the whole statement. This is an easy special
+                    // case which catches eg. the if (TryParse()) pattern. This could happen for any node which allows multiple statements.
+                    var dataFlow = last is MultiLineIfBlockSyntax ifBlock ? _semanticModel.AnalyzeDataFlow(ifBlock.IfStatement.Condition) : _semanticModel.AnalyzeDataFlow(first, last);
+
                     bool alwaysAssigned = dataFlow != null && dataFlow.AlwaysAssigned.Any(s => equalsId(s.Name));
-                    bool simplyAssigned = alwaysAssigned && simpleAssignments.Any(s => s.Left is VBSyntax.IdentifierNameSyntax idName && equalsId(idName.Identifier.ValueText));
-                    bool neverRead = dataFlow != null && !dataFlow.ReadInside.Any(s => equalsId(s.Name)) && !dataFlow.ReadOutside.Any(s => equalsId(s.Name));
-                    if (isField || simplyAssigned || neverRead) {
+                    bool readInside = dataFlow != null && dataFlow.ReadInside.Any(s => equalsId(s.Name));
+                    bool writtenInside = dataFlow != null && dataFlow.WrittenInside.Any(s => equalsId(s.Name));
+                    bool readBeforeWritten = (!alwaysAssigned && readInside) || (alwaysAssigned && readInside && writtenInside);
+
+                    // 3. We default to outputting an initializer. We only skip this if we can show the variable is never read before it is written
+                    if (!readBeforeWritten) {
                         equalsValueClauseSyntax = null;
                     } else {
                         equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(SyntaxFactory.DefaultExpression(type));

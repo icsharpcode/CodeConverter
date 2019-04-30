@@ -363,7 +363,7 @@ End Class", @"public class Class1
         int i = default(int);
         string temp = string.Empty;
         int k = i + 1;
-        i = 1
+        i = 1;
     }
 
     public int State
@@ -554,7 +554,7 @@ End Class", @"class TestClass
 {
     public int? Bar(string value)
     {
-        int result = default(int);
+        int result;
         if (int.TryParse(value, out result))
             return result;
         else

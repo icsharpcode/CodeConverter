@@ -801,7 +801,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int charIndex;
+        int charIndex = default(int);
         // allow only digits and letters
         do
             charIndex = rand.Next(48, 123);
