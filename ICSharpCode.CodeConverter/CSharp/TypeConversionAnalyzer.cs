@@ -28,19 +28,19 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var conversionKind = AnalyzeConversion(vbNode, csNode, out var vbConvertedType);
             csNode = addParenthesisIfNeeded && conversionKind == TypeConversionKind.Implicit
-                ? (ExpressionSyntax)CommonConversions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
+                ? CommonConversions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;
-            return AddExplicitConversion(vbNode, csNode, vbConvertedType, conversionKind);
+            return AddExplicitConversion(vbNode, csNode, vbConvertedType, conversionKind, addParenthesisIfNeeded);
         }
 
         private ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode,
-            ITypeSymbol vbConvertedType, TypeConversionKind conversionKind)
+            ITypeSymbol vbConvertedType, TypeConversionKind conversionKind, bool addParenthesisIfNeeded)
         {
             switch (conversionKind)
             {
                 case TypeConversionKind.Unknown:
                 case TypeConversionKind.Identity:
-                    return csNode;
+                    return addParenthesisIfNeeded ? CommonConversions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
                 case TypeConversionKind.Implicit:
                     return SyntaxFactory.CastExpression(CommonConversions.ToCsTypeSyntax(vbConvertedType, vbNode), csNode);
                 case TypeConversionKind.Explicit:

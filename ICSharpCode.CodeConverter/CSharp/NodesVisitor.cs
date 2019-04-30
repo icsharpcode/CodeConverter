@@ -1624,12 +1624,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
 
                 var csBinExp = SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
-                var convertedNode = _typeConversionAnalyzer.AddExplicitConversion(node, csBinExp, addParenthesisIfNeeded: true);
-                if (convertedNode == csBinExp) {
-                    return CommonConversions.ParenthesizeIfPrecedenceCouldChange(node, csBinExp);
-                } else {
-                    return convertedNode;
-                }
+                return _typeConversionAnalyzer.AddExplicitConversion(node, csBinExp, addParenthesisIfNeeded: true);
             }
 
             public override CSharpSyntaxNode VisitInvocationExpression(VBSyntax.InvocationExpressionSyntax node)

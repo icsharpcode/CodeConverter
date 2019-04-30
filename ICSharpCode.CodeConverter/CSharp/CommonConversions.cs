@@ -469,7 +469,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return variableDeclarationSyntax;
         }
 
-        public static CSharpSyntaxNode ParenthesizeIfPrecedenceCouldChange(Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxNode node, ExpressionSyntax expression)
+        public static ExpressionSyntax ParenthesizeIfPrecedenceCouldChange(Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxNode node, ExpressionSyntax expression)
         {
             return PrecedenceCouldChange(node) ? SyntaxFactory.ParenthesizedExpression(expression) : expression;
         }
