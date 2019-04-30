@@ -121,6 +121,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return csNode;
             }
 
+            var method = typeof(Microsoft.VisualBasic.CompilerServices.Conversions).GetMethod($"To{displayType}");
+            if (method == null) {
+                throw new NotImplementedException($"Unimplemented conversion for {displayType}");
+            }
+
             // Need to use Conversions rather than Convert to match what VB does, eg. True -> -1
             _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
             var memberAccess = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
