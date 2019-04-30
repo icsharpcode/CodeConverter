@@ -52,7 +52,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 EqualsValueClauseSyntax equalsValueClauseSyntax;
                 if (adjustedInitializer != null) {
                     equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(adjustedInitializer);
-                } else if (isField || !PossiblyWrittenBeforeRead(declarator, name)) {
+                } else if (isField || IsDefinitelyWrittenBeforeRead(declarator, name)) {
                     equalsValueClauseSyntax = null;
                 } else {
                     equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(SyntaxFactory.DefaultExpression(type));
@@ -73,7 +73,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// This check is entirely to avoid some unnecessary default initializations so the code looks less cluttered and more like the VB did.
         /// The caller should default to outputting an initializer which is always safe for equivalence/correctness.
         /// </summary>
-        private bool PossiblyWrittenBeforeRead(VariableDeclaratorSyntax declarator, ModifiedIdentifierSyntax name)
+        private bool IsDefinitelyWrittenBeforeRead(VariableDeclaratorSyntax declarator, ModifiedIdentifierSyntax name)
         {
             Func<string, bool> equalsId = s => s.Equals(name.Identifier.ValueText, StringComparison.OrdinalIgnoreCase);
 
@@ -96,8 +96,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool alwaysAssigned = dataFlow != null && dataFlow.AlwaysAssigned.Any(s => equalsId(s.Name));
             bool readInside = dataFlow != null && dataFlow.ReadInside.Any(s => equalsId(s.Name));
             bool writtenInside = dataFlow != null && dataFlow.WrittenInside.Any(s => equalsId(s.Name));
-            bool readBeforeWritten = (!alwaysAssigned && readInside) || (alwaysAssigned && readInside && writtenInside);
-            return readBeforeWritten;
+            return alwaysAssigned && !writtenInside || !readInside;
         }
 
         private TypeSyntax ConvertDeclaratorType(VariableDeclaratorSyntax declarator, bool preferExplicitType)
