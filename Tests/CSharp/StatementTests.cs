@@ -1321,6 +1321,53 @@ End Class", @"public class TestClass
         }
 
         [Fact]
+        public void SelectCaseWithString()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass
+    Shared Function TimeAgo(x As String) As String
+        Select Case UCase(x)
+            Case UCase(""a""), UCase(""b"")
+                Return ""ab""
+            Case UCase(""c"")
+                Return ""c""
+            Case ""d""
+                Return ""d""
+            Case Else
+                Return ""e""
+        End Select
+    End Function
+End Class", @"public class TestClass
+{
+    public static string TimeAgo(string x)
+    {
+        switch (Microsoft.VisualBasic.Strings.UCase(x))
+        {
+            case var @case when @case == Microsoft.VisualBasic.Strings.UCase(""a""):
+            case var case1 when case1 == Microsoft.VisualBasic.Strings.UCase(""b""):
+                {
+                    return ""ab"";
+                }
+
+            case var case2 when case2 == Microsoft.VisualBasic.Strings.UCase(""c""):
+                {
+                    return ""c"";
+                }
+
+            case ""d"":
+                {
+                    return ""d"";
+                }
+
+            default:
+                {
+                    return ""e"";
+                }
+        }
+    }
+}");
+        }
+
+        [Fact]
         public void SelectCaseWithExpression2()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass2
