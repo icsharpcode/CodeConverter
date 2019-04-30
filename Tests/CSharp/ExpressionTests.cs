@@ -324,6 +324,27 @@ End Class", @"class TestClass
         Dim y = needsInitialization
     End Sub
 
+    Sub Bar()
+        Dim i As Integer, temp As String = String.Empty
+        i += 1
+    End Sub
+
+    Sub Bar2()
+        Dim i As Integer, temp As String = String.Empty
+        i = i + 1
+    End Sub
+
+    Sub Bar3()
+        Dim i As Integer, temp As String = String.Empty
+        Dim k As Integer = i + 1
+    End Sub
+
+    Sub Bar4()
+        Dim i As Integer, temp As String = String.Empty
+        Dim k As Integer = i + 1
+        i = 1
+    End Sub
+
     Public ReadOnly Property State As Integer
         Get
             Dim needsInitialization As Integer
@@ -346,6 +367,35 @@ End Class", @"public class Class1
         int needsInitialization = default(int);
         int notUsed;
         var y = needsInitialization;
+    }
+
+    public void Bar()
+    {
+        int i = default(int);
+        string temp = string.Empty;
+        i += 1;
+    }
+
+    public void Bar2()
+    {
+        int i = default(int);
+        string temp = string.Empty;
+        i = i + 1;
+    }
+
+    public void Bar3()
+    {
+        int i = default(int);
+        string temp = string.Empty;
+        int k = i + 1;
+    }
+
+    public void Bar4()
+    {
+        int i = default(int);
+        string temp = string.Empty;
+        int k = i + 1;
+        i = 1;
     }
 
     public int State

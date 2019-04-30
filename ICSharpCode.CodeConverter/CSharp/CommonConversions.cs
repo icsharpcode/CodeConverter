@@ -45,12 +45,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var newDecls = new Dictionary<string, VariableDeclarationSyntax>();
 
-            var method = declarator.Ancestors().OfType<MethodBlockBaseSyntax>().SingleOrDefault();
-            DataFlowAnalysis dataFlow = null;
-            if (method != null) {
-                dataFlow = _semanticModel.AnalyzeDataFlow(method.Statements.First(), method.Statements.Last());
-            }
-
             foreach (var name in declarator.Names) {
                 var (type, adjustedInitializer) = AdjustFromName(rawType, name, initializer);
 
@@ -58,15 +52,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 EqualsValueClauseSyntax equalsValueClauseSyntax;
                 if (adjustedInitializer != null) {
                     equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(adjustedInitializer);
+                } else if (isField || _semanticModel.IsDefinitelyAssignedBeforeRead(declarator, name)) {
+                    equalsValueClauseSyntax = null;
                 } else {
-                    Func<ISymbol, bool> equalsId = s => s.Name.Equals(name.Identifier.ValueText, StringComparison.OrdinalIgnoreCase);
-                    bool alwaysAssigned = dataFlow != null && dataFlow.AlwaysAssigned.Any(equalsId);
-                    bool neverRead = dataFlow != null && !dataFlow.ReadInside.Any(equalsId) && !dataFlow.ReadOutside.Any(equalsId);
-                    if (isField || alwaysAssigned || neverRead) {
-                        equalsValueClauseSyntax = null;
-                    } else {
-                        equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(SyntaxFactory.DefaultExpression(type));
-                    }
+                    // VB initializes variables to their default
+                    equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(SyntaxFactory.DefaultExpression(type));
                 }
 
                 var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier), null, equalsValueClauseSyntax);
