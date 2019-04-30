@@ -505,7 +505,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             SwitchLabelSyntax caseSwitchLabelSyntax = SyntaxFactory.CaseSwitchLabel(expressionSyntax);
                             if (!_semanticModel.GetConstantValue(s.Value).HasValue) {
                                 caseSwitchLabelSyntax =
-                                    WrapInCasePatternSwitchLabelSyntax(expressionSyntax);
+                                    WrapInCasePatternSwitchLabelSyntax(node, expressionSyntax);
                             }
 
                             labels.Add(caseSwitchLabelSyntax);
@@ -514,12 +514,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                         } else if (c is VBSyntax.RelationalCaseClauseSyntax relational) {
                             var operatorKind = VBasic.VisualBasicExtensions.Kind(relational);
                             var cSharpSyntaxNode = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(TokenContext.Local), exprWithoutTrivia, (ExpressionSyntax) relational.Value.Accept(_nodesVisitor));
-                            labels.Add(WrapInCasePatternSwitchLabelSyntax(cSharpSyntaxNode));
+                            labels.Add(WrapInCasePatternSwitchLabelSyntax(node, cSharpSyntaxNode, treatAsBoolean: true));
                         } else if (c is VBSyntax.RangeCaseClauseSyntax range) {
                             var lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, (ExpressionSyntax) range.LowerBound.Accept(_nodesVisitor), exprWithoutTrivia);
                             var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, exprWithoutTrivia, (ExpressionSyntax) range.UpperBound.Accept(_nodesVisitor));
                             var withinBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LogicalAndExpression, lowerBoundCheck, upperBoundCheck);
-                            labels.Add(WrapInCasePatternSwitchLabelSyntax(withinBounds));
+                            labels.Add(WrapInCasePatternSwitchLabelSyntax(node, withinBounds, treatAsBoolean: true));
                         } else throw new NotSupportedException(c.Kind().ToString());
                     }
 
@@ -536,12 +536,23 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SingleStatement(switchStatementSyntax);
             }
 
-            private static CasePatternSwitchLabelSyntax WrapInCasePatternSwitchLabelSyntax(ExpressionSyntax cSharpSyntaxNode)
+            private CasePatternSwitchLabelSyntax WrapInCasePatternSwitchLabelSyntax(VBSyntax.SelectBlockSyntax node, ExpressionSyntax cSharpSyntaxNode, bool treatAsBoolean = false)
             {
-                var discardPatternMatch = SyntaxFactory.DeclarationPattern(
-                    SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)),
-                    SyntaxFactory.DiscardDesignation());
-                var casePatternSwitchLabelSyntax = SyntaxFactory.CasePatternSwitchLabel(discardPatternMatch,
+                var typeInfo = _semanticModel.GetTypeInfo(node.SelectStatement.Expression);
+
+                DeclarationPatternSyntax patternMatch;
+                if (typeInfo.ConvertedType.SpecialType == SpecialType.System_Boolean || treatAsBoolean) {
+                    patternMatch = SyntaxFactory.DeclarationPattern(
+                        SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)),
+                        SyntaxFactory.DiscardDesignation());
+                } else {
+                    var varName = CommonConversions.ConvertIdentifier(SyntaxFactory.Identifier(GetUniqueVariableNameInScope(node, "case"))).ValueText;
+                    patternMatch = SyntaxFactory.DeclarationPattern(
+                        SyntaxFactory.ParseTypeName("var"), SyntaxFactory.SingleVariableDesignation(SyntaxFactory.Identifier(varName)));
+                    cSharpSyntaxNode = SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, SyntaxFactory.IdentifierName(varName), cSharpSyntaxNode);
+                }
+
+                var casePatternSwitchLabelSyntax = SyntaxFactory.CasePatternSwitchLabel(patternMatch,
                     SyntaxFactory.WhenClause(cSharpSyntaxNode), SyntaxFactory.Token(SyntaxKind.ColonToken));
                 return casePatternSwitchLabelSyntax;
             }
