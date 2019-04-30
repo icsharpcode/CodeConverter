@@ -55,29 +55,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 } else if (isField) {
                     equalsValueClauseSyntax = null;
                 } else {
-                    Func<string, bool> equalsId = s => s.Equals(name.Identifier.ValueText, StringComparison.OrdinalIgnoreCase);
-
-                    var method = declarator.Ancestors().OfType<MethodBlockBaseSyntax>().SingleOrDefault();
-
-                    // This code is entirely to avoid default initializations - it is not required
-                    //
-                    // 1. Find the first and last statements in the method which contain the identifier
-                    //
-                    // This may overshoot where there are multiple identifiers with the same name - this is ok, it just means we could output an initializer where one is not needed
-                    var statements = method.Statements.Where(s => s.DescendantTokens().Any(id => id.IsKind(SyntaxKind.IdentifierToken) && equalsId(id.ValueText)));
-                    var first = statements.First();
-                    var last = statements.Count() >= 2 ? statements.Skip(1).First() : first;
-
-                    // 2. Analyze the data flow in this block to see if initialization is required
-                    //
-                    // If the last statement where the identifier is used is an if block, we look at the condition rather than the whole statement. This is an easy special
-                    // case which catches eg. the if (TryParse()) pattern. This could happen for any node which allows multiple statements.
-                    var dataFlow = last is MultiLineIfBlockSyntax ifBlock ? _semanticModel.AnalyzeDataFlow(ifBlock.IfStatement.Condition) : _semanticModel.AnalyzeDataFlow(first, last);
-
-                    bool alwaysAssigned = dataFlow != null && dataFlow.AlwaysAssigned.Any(s => equalsId(s.Name));
-                    bool readInside = dataFlow != null && dataFlow.ReadInside.Any(s => equalsId(s.Name));
-                    bool writtenInside = dataFlow != null && dataFlow.WrittenInside.Any(s => equalsId(s.Name));
-                    bool readBeforeWritten = (!alwaysAssigned && readInside) || (alwaysAssigned && readInside && writtenInside);
+                    bool readBeforeWritten = CouldBeWrittenBeforeRead(declarator, name);
 
                     // 3. We default to outputting an initializer. We only skip this if we can show the variable is never read before it is written
                     if (!readBeforeWritten) {
@@ -96,6 +74,38 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return newDecls;
+        }
+
+        private bool CouldBeWrittenBeforeRead(VariableDeclaratorSyntax declarator, ModifiedIdentifierSyntax name)
+        {
+            Func<string, bool> equalsId = s => s.Equals(name.Identifier.ValueText, StringComparison.OrdinalIgnoreCase);
+
+            var method = declarator.Ancestors().OfType<MethodBlockBaseSyntax>().SingleOrDefault();
+
+            // This code is entirely to avoid default initializations - it is not required
+            //
+            // 1. Find the first and last statements in the method which contain the identifier
+            //
+            // This may overshoot where there are multiple identifiers with the same name - this is ok, it just means we could output an initializer where one is not needed
+            var statements = method.Statements.Where(s =>
+                s.DescendantTokens().Any(id => id.IsKind(SyntaxKind.IdentifierToken) && equalsId(id.ValueText)));
+            var first = statements.First();
+            var last = statements.Count() >= 2 ? statements.Skip(1).First() : first;
+
+            // 2. Analyze the data flow in this block to see if initialization is required
+            //
+            // If the last statement where the identifier is used is an if block, we look at the condition rather than the whole statement. This is an easy special
+            // case which catches eg. the if (TryParse()) pattern. This could happen for any node which allows multiple statements.
+            var dataFlow = last is MultiLineIfBlockSyntax ifBlock
+                ? _semanticModel.AnalyzeDataFlow(ifBlock.IfStatement.Condition)
+                : _semanticModel.AnalyzeDataFlow(first, last);
+
+            bool alwaysAssigned = dataFlow != null && dataFlow.AlwaysAssigned.Any(s => equalsId(s.Name));
+            bool readInside = dataFlow != null && dataFlow.ReadInside.Any(s => equalsId(s.Name));
+            bool writtenInside = dataFlow != null && dataFlow.WrittenInside.Any(s => equalsId(s.Name));
+            bool readBeforeWritten = (!alwaysAssigned && readInside) || (alwaysAssigned && readInside && writtenInside);
+            //bool mayBeWrittenBeforeRead = alwaysAssigned && !writtenInside || !readInside;
+            return readBeforeWritten;
         }
 
         private TypeSyntax ConvertDeclaratorType(VariableDeclaratorSyntax declarator, bool preferExplicitType)
