@@ -21,6 +21,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         class NodesVisitor : VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
         {
+            private readonly CSharpCompilation _csCompilation;
             private readonly SemanticModel _semanticModel;
             private readonly Dictionary<ITypeSymbol, string> _createConvertMethodsLookupByReturnType;
             private List<MethodWithHandles> _methodsWithHandles;
@@ -33,16 +34,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             private uint failedMemberConversionMarkerCount;
             private HashSet<string> _extraUsingDirectives = new HashSet<string>();
             private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
+            private readonly TypeConversionAnalyzer _typeConversionAnalyzer;
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
 
             private CommonConversions CommonConversions { get; }
 
-            public NodesVisitor(SemanticModel semanticModel)
+            public NodesVisitor(SemanticModel semanticModel, CSharpCompilation csCompilation)
             {
                 this._semanticModel = semanticModel;
+                this._csCompilation = csCompilation;
                 TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
                 _createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
                 CommonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor);
+                _typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, CommonConversions, _extraUsingDirectives);
                 _queryConverter = new QueryConverter(CommonConversions, TriviaConvertingVisitor);
                 _additionalInitializers = new AdditionalInitializers();
             }
@@ -1169,34 +1173,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitTryCastExpression(VBSyntax.TryCastExpressionSyntax node)
             {
-                return ParenthesizeIfPrecedenceCouldChange(node, SyntaxFactory.BinaryExpression(
+                return CommonConversions.ParenthesizeIfPrecedenceCouldChange(node, SyntaxFactory.BinaryExpression(
                     SyntaxKind.AsExpression,
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
                     (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)
                 ));
-            }
-
-            private static CSharpSyntaxNode ParenthesizeIfPrecedenceCouldChange(VBasic.VisualBasicSyntaxNode node, ExpressionSyntax expression)
-            {
-                return PrecedenceCouldChange(node) ? SyntaxFactory.ParenthesizedExpression(expression) : expression;
-            }
-
-            private static bool PrecedenceCouldChange(VBasic.VisualBasicSyntaxNode node)
-            {
-                bool parentIsSameBinaryKind = node is VBSyntax.BinaryExpressionSyntax && node.Parent is VBSyntax.BinaryExpressionSyntax parent && parent.Kind() == node.Kind();
-                bool parentIsReturn = node.Parent is VBSyntax.ReturnStatementSyntax;
-                bool parentIsLambda = node.Parent is VBSyntax.LambdaExpressionSyntax;
-                bool parentIsNonArgumentExpression = node.Parent is VBSyntax.ExpressionSyntax && !(node.Parent is VBSyntax.ArgumentSyntax);
-                bool parentIsParenthesis = node.Parent is VBSyntax.ParenthesizedExpressionSyntax;
-
-                // Could be a full C# precendence table - this is just a common case
-                bool parentIsAndOr = node.Parent.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression);
-                bool nodeIsRelationalOrEqual = node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression,
-                                                           VBasic.SyntaxKind.LessThanExpression, VBasic.SyntaxKind.LessThanOrEqualExpression,
-                                                           VBasic.SyntaxKind.GreaterThanExpression, VBasic.SyntaxKind.GreaterThanOrEqualExpression);
-                bool csharpPrecedenceSame = parentIsAndOr && nodeIsRelationalOrEqual;
-
-                return parentIsNonArgumentExpression && !parentIsSameBinaryKind && !parentIsReturn && !parentIsLambda && !parentIsParenthesis && !csharpPrecedenceSame;
             }
 
             public override CSharpSyntaxNode VisitLiteralExpression(VBSyntax.LiteralExpressionSyntax node)
@@ -1416,8 +1397,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
                 return SyntaxFactory.Argument(
                     node.IsNamed ? SyntaxFactory.NameColon((IdentifierNameSyntax)node.NameColonEquals.Name.Accept(TriviaConvertingVisitor)) : null,
-                    token,
-                    (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor)
+                    token, _typeConversionAnalyzer.AddExplicitConversion(node.Expression, (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor))
                 );
             }
 
@@ -1561,7 +1541,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     (ExpressionSyntax)node.WhenFalse.Accept(TriviaConvertingVisitor)
                 );
 
-                if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || PrecedenceCouldChange(node))
+                if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || CommonConversions.PrecedenceCouldChange(node))
                     return SyntaxFactory.ParenthesizedExpression(expr);
 
                 return expr;
@@ -1618,14 +1598,19 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
 
-                var lhs = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
-                var rhs = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
+                var lhs = _typeConversionAnalyzer.AddExplicitConversion(node.Left, (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor));
+                var rhs = _typeConversionAnalyzer.AddExplicitConversion(node.Right, (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor));
 
-                // e.g. VB DivideExpression "/" returns a double result for integer types (integer division is the "\" IntegerDivideExpression), so need to cast in C#
-                // see: https://docs.microsoft.com/en-us/dotnet/visual-basic/language-reference/operators/floating-point-division-operator#remarks
-                if (node.IsKind(VBasic.SyntaxKind.DivideExpression) && node.Left.IsIntegralType(_semanticModel) && node.Right.IsIntegralType(_semanticModel)) {
-                    var doubleType = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword));
-                    rhs = SyntaxFactory.CastExpression(doubleType, rhs);
+                if (node.IsKind(VBasic.SyntaxKind.ConcatenateExpression)) {
+                    var stringType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
+                    var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
+                    var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
+                    if (lhsTypeInfo.Type.SpecialType != SpecialType.System_String &&
+                        lhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String &&
+                        rhsTypeInfo.Type.SpecialType != SpecialType.System_String &&
+                        rhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String) {
+                        lhs = _typeConversionAnalyzer.AddExplicitConvertTo(node.Left, lhs, stringType);
+                    }
                 }
 
                 if (node.IsKind(VBasic.SyntaxKind.ExponentiateExpression,
@@ -1638,7 +1623,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
                 var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
 
-                return ParenthesizeIfPrecedenceCouldChange(node, SyntaxFactory.BinaryExpression(kind, lhs, op, rhs));
+                var csBinExp = SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
+                return _typeConversionAnalyzer.AddExplicitConversion(node, csBinExp, addParenthesisIfNeeded: true);
             }
 
             public override CSharpSyntaxNode VisitInvocationExpression(VBSyntax.InvocationExpressionSyntax node)

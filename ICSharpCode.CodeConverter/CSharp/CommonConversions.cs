@@ -305,7 +305,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
                 var symbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol;
-                if (symbol != null && !string.IsNullOrWhiteSpace(symbol.Name)) {
+                if (symbol != null && !String.IsNullOrWhiteSpace(symbol.Name)) {
                     if (text.Equals(symbol.Name, StringComparison.OrdinalIgnoreCase)) {
                         text = symbol.Name;
                     }
@@ -467,6 +467,29 @@ namespace ICSharpCode.CodeConverter.CSharp
                 explicitType ?? SyntaxFactory.IdentifierName("var"),
                 SyntaxFactory.SingletonSeparatedList(variableDeclaratorSyntax));
             return variableDeclarationSyntax;
+        }
+
+        public static ExpressionSyntax ParenthesizeIfPrecedenceCouldChange(Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxNode node, ExpressionSyntax expression)
+        {
+            return PrecedenceCouldChange(node) ? SyntaxFactory.ParenthesizedExpression(expression) : expression;
+        }
+
+        public static bool PrecedenceCouldChange(Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxNode node)
+        {
+            bool parentIsSameBinaryKind = node is VBSyntax.BinaryExpressionSyntax && node.Parent is VBSyntax.BinaryExpressionSyntax parent && parent.Kind() == node.Kind();
+            bool parentIsReturn = node.Parent is VBSyntax.ReturnStatementSyntax;
+            bool parentIsLambda = node.Parent is VBSyntax.LambdaExpressionSyntax;
+            bool parentIsNonArgumentExpression = node.Parent is VBSyntax.ExpressionSyntax && !(node.Parent is VBSyntax.ArgumentSyntax);
+            bool parentIsParenthesis = node.Parent is VBSyntax.ParenthesizedExpressionSyntax;
+
+            // Could be a full C# precedence table - this is just a common case
+            bool parentIsAndOr = node.Parent.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AndAlsoExpression, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.OrElseExpression);
+            bool nodeIsRelationalOrEqual = node.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.EqualsExpression, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NotEqualsExpression,
+                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.LessThanExpression, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.LessThanOrEqualExpression,
+                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.GreaterThanExpression, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.GreaterThanOrEqualExpression);
+            bool csharpPrecedenceSame = parentIsAndOr && nodeIsRelationalOrEqual;
+
+            return parentIsNonArgumentExpression && !parentIsSameBinaryKind && !parentIsReturn && !parentIsLambda && !parentIsParenthesis && !csharpPrecedenceSame;
         }
     }
 }

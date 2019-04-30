@@ -78,7 +78,9 @@ World!"";
     Shared Function GetDeltaPoint(pDelta As Integer) As String
         Return (""{""""delta"""": """""" & pDelta & """"""}"")
     End Function
-End Class", @"class TestClass
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+class TestClass
 {
     public static string GetTextFeedInput(string pStream, string pTitle, string pText)
     {
@@ -92,7 +94,7 @@ End Class", @"class TestClass
 
     public static string GetNameValuePair(string pName, int pValue)
     {
-        return (""{\""name\"": \"""" + pName + ""\"", \""value\"": \"""" + pValue + ""\""}"");
+        return (""{\""name\"": \"""" + pName + ""\"", \""value\"": \"""" + Conversions.ToString(pValue) + ""\""}"");
     }
 
     public static string GetNameValuePair(string pName, string pValue)
@@ -106,7 +108,7 @@ End Class", @"class TestClass
     }
     public static string GetDeltaPoint(int pDelta)
     {
-        return (""{\""delta\"": \"""" + pDelta + ""\""}"");
+        return (""{\""delta\"": \"""" + Conversions.ToString(pDelta) + ""\""}"");
     }
 }");
         }
@@ -153,6 +155,36 @@ class TestClass
 }");
         }
 
+        [Fact]
+        public void MethodCallWithImplicitConversion()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Foo()
+        Bar(True)
+        Me.Bar(""4"")
+        Dim ss(1) As String
+        Dim y = ss(""0"")
+    End Sub
+
+    Sub Bar(x as Integer)
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+public class Class1
+{
+    public void Foo()
+    {
+        Bar(Conversions.ToInteger(true));
+        this.Bar(Conversions.ToInteger(""4""));
+        string[] ss = new string[2];
+        var y = ss[Conversions.ToInteger(""0"")];
+    }
+
+    public void Bar(int x)
+    {
+    }
+}");
+        }
 
         [Fact]
         public void MethodCallWithoutParens()
@@ -356,11 +388,13 @@ End Class", @"class TestClass
     Sub Foo()
         Dim x = ""x "" & 5 - 4 & "" y""
     End Sub
-End Class", @"public class Class1
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+public class Class1
 {
     public void Foo()
     {
-        var x = ""x "" + (5 - 4) + "" y"";
+        var x = ""x "" + Conversions.ToString(5 - 4) + "" y"";
     }
 }");
         }
@@ -383,7 +417,7 @@ class TestClass
 {
     private void TestMethod()
     {
-        var x = (Math.Pow(7, 6) % (5 / 4)) + (3 * 2);
+        var x = (Math.Pow((double)7, (double)6) % (double)(5 / 4)) + (double)(3 * 2);
         x += 1;
         x -= 2;
         x *= 3;
@@ -391,6 +425,37 @@ class TestClass
         x = Math.Pow(x, 5);
     }
 }");
+        }
+
+        [Fact]
+        public void ImplicitConversions()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+    Private Sub TestMethod()
+        Dim x As Double = 1
+        Dim y As Decimal = 2
+        Dim i1 As Integer = 1
+        Dim i2 As Integer = 2
+        Dim d1 = i1 / i2
+        Dim z = x + y
+        Dim z2 = y + x
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+class TestClass
+{
+    private void TestMethod()
+    {
+        double x = 1;
+        decimal y = 2;
+        int i1 = 1;
+        int i2 = 2;
+        var d1 = (double)i1 / (double)i2;
+        var z = x + Conversions.ToDouble(y);
+        var z2 = Conversions.ToDouble(y) + x;
+    }
+}
+");
         }
 
         [Fact]
@@ -409,9 +474,9 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var x = 10 / (double)3;
+        var x = (double)10 / (double)3;
         x /= 2;
-        var y = 10.0 / 3;
+        var y = 10.0 / (double)3;
         y /= 2;
         int z = 8;
         z /= 3;
@@ -682,6 +747,7 @@ public static class MyExtensions
         Console.ReadKey()
     End Sub
 End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices;
 
 class TestClass
 {
@@ -689,7 +755,7 @@ class TestClass
     {
         int length;
         length = str.Length;
-        Console.WriteLine(""Test"" + length);
+        Console.WriteLine(""Test"" + Conversions.ToString(length));
         Console.ReadKey();
     }
 }");
@@ -937,7 +1003,7 @@ class TestClass
         Func<int, int, double> test2 = (a, b) =>
         {
             if (b > 0)
-                return a / (double)b;
+                return (double)a / (double)b;
             return 0;
         };
 
@@ -1253,7 +1319,7 @@ public class Class1
 {
     public void Foo()
     {
-        var x = DateAndTime.DateAdd(""m"", 5, DateAndTime.Now);
+        var x = DateAndTime.DateAdd(""m"", (double)5, DateAndTime.Now);
     }
 }");
         }

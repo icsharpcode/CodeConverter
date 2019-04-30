@@ -25,9 +25,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     public partial class VisualBasicConverter
     {
-        public static CSharpSyntaxNode ConvertCompilationTree(VBasic.VisualBasicCompilation compilation, VBasic.VisualBasicSyntaxTree tree)
+        public static CSharpSyntaxNode ConvertCompilationTree(VBasic.VisualBasicCompilation compilation, CSharpCompilation csCompilation, VBasic.VisualBasicSyntaxTree tree)
         {
-            var visualBasicSyntaxVisitor = new VisualBasicConverter.NodesVisitor(compilation.GetSemanticModel(tree, true));
+            var visualBasicSyntaxVisitor = new VisualBasicConverter.NodesVisitor(compilation.GetSemanticModel(tree, true), csCompilation);
             return tree.GetRoot().Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
         }
     }
