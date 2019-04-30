@@ -52,17 +52,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 EqualsValueClauseSyntax equalsValueClauseSyntax;
                 if (adjustedInitializer != null) {
                     equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(adjustedInitializer);
-                } else if (isField) {
+                } else if (isField || !PossiblyWrittenBeforeRead(declarator, name)) {
                     equalsValueClauseSyntax = null;
                 } else {
-                    bool readBeforeWritten = CouldBeWrittenBeforeRead(declarator, name);
-
-                    // 3. We default to outputting an initializer. We only skip this if we can show the variable is never read before it is written
-                    if (!readBeforeWritten) {
-                        equalsValueClauseSyntax = null;
-                    } else {
-                        equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(SyntaxFactory.DefaultExpression(type));
-                    }
+                    equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(SyntaxFactory.DefaultExpression(type));
                 }
 
                 var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier), null, equalsValueClauseSyntax);
@@ -76,24 +69,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             return newDecls;
         }
 
-        private bool CouldBeWrittenBeforeRead(VariableDeclaratorSyntax declarator, ModifiedIdentifierSyntax name)
+        /// <summary>
+        /// This check is entirely to avoid some unnecessary default initializations so the code looks less cluttered and more like the VB did.
+        /// The caller should default to outputting an initializer which is always safe for equivalence/correctness.
+        /// </summary>
+        private bool PossiblyWrittenBeforeRead(VariableDeclaratorSyntax declarator, ModifiedIdentifierSyntax name)
         {
             Func<string, bool> equalsId = s => s.Equals(name.Identifier.ValueText, StringComparison.OrdinalIgnoreCase);
 
             var method = declarator.Ancestors().OfType<MethodBlockBaseSyntax>().SingleOrDefault();
 
-            // This code is entirely to avoid default initializations - it is not required
-            //
-            // 1. Find the first and last statements in the method which contain the identifier
-            //
+            // Find the first and last statements in the method which contain the identifier
             // This may overshoot where there are multiple identifiers with the same name - this is ok, it just means we could output an initializer where one is not needed
             var statements = method.Statements.Where(s =>
                 s.DescendantTokens().Any(id => id.IsKind(SyntaxKind.IdentifierToken) && equalsId(id.ValueText)));
             var first = statements.First();
             var last = statements.Count() >= 2 ? statements.Skip(1).First() : first;
 
-            // 2. Analyze the data flow in this block to see if initialization is required
-            //
+            // Analyze the data flow in this block to see if initialization is required
             // If the last statement where the identifier is used is an if block, we look at the condition rather than the whole statement. This is an easy special
             // case which catches eg. the if (TryParse()) pattern. This could happen for any node which allows multiple statements.
             var dataFlow = last is MultiLineIfBlockSyntax ifBlock
@@ -104,7 +97,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool readInside = dataFlow != null && dataFlow.ReadInside.Any(s => equalsId(s.Name));
             bool writtenInside = dataFlow != null && dataFlow.WrittenInside.Any(s => equalsId(s.Name));
             bool readBeforeWritten = (!alwaysAssigned && readInside) || (alwaysAssigned && readInside && writtenInside);
-            //bool mayBeWrittenBeforeRead = alwaysAssigned && !writtenInside || !readInside;
             return readBeforeWritten;
         }
 
