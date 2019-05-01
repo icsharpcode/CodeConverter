@@ -37,7 +37,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private CommonConversions CommonConversions { get; }
 
-            public MethodBodyVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
+            public MethodBodyVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel, CSharpCompilation csCompilation,
                 VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
                 Stack<string> withBlockTempVariableNames, HashSet<string> extraUsingDirectives,
                 TriviaConverter triviaConverter)
@@ -49,6 +49,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 _extraUsingDirectives = extraUsingDirectives;
                 CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
                 CommonConversions = new CommonConversions(semanticModel, _nodesVisitor);
+                CommonConversions.TypeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, CommonConversions, extraUsingDirectives);
             }
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)

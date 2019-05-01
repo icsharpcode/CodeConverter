@@ -496,8 +496,8 @@ class TestClass
 {
     private void TestMethod()
     {
-        double x = 1;
-        decimal y = 2;
+        double x = (double)1;
+        decimal y = (decimal)2;
         int i1 = 1;
         int i2 = 2;
         var d1 = (double)i1 / (double)i2;

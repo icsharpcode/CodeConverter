@@ -30,6 +30,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private readonly SemanticModel _semanticModel;
         private readonly VisualBasicSyntaxVisitor<CSharpSyntaxNode> _nodesVisitor;
+        public TypeConversionAnalyzer TypeConversionAnalyzer { get; set; }
 
         public CommonConversions(SemanticModel semanticModel, VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor)
         {
@@ -51,7 +52,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 bool isField = declarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
                 EqualsValueClauseSyntax equalsValueClauseSyntax;
                 if (adjustedInitializer != null) {
-                    equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(adjustedInitializer);
+                    var vbInitializer = declarator.Initializer?.Value;
+                    var convertedInitializer = vbInitializer == null ? adjustedInitializer : TypeConversionAnalyzer.AddExplicitConversion(vbInitializer, adjustedInitializer);
+                    equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
                 } else if (isField || _semanticModel.IsDefinitelyAssignedBeforeRead(declarator, name)) {
                     equalsValueClauseSyntax = null;
                 } else {

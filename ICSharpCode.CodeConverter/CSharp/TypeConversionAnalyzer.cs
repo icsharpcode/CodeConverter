@@ -20,6 +20,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csCompilation = csCompilation;
             _extraUsingDirectives = extraUsingDirectives;
             CommonConversions = commonConversions;
+            commonConversions.TypeConversionAnalyzer = this;
         }
 
         private CommonConversions CommonConversions { get; }

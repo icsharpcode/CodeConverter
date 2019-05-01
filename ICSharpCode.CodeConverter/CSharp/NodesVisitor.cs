@@ -909,7 +909,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
             {
-                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, _withBlockTempVariableNames, _extraUsingDirectives, TriviaConvertingVisitor.TriviaConverter) {
+                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, _csCompilation, TriviaConvertingVisitor, _withBlockTempVariableNames, _extraUsingDirectives, TriviaConvertingVisitor.TriviaConverter) {
                     IsIterator = isIterator,
                     ReturnVariable = csReturnVariable,
                 };
