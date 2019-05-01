@@ -24,9 +24,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CommonConversions CommonConversions { get; }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = false)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = false, bool alwaysExplicit = false)
         {
-            var conversionKind = AnalyzeConversion(vbNode, csNode, out var vbConvertedType);
+            var conversionKind = AnalyzeConversion(vbNode, csNode, alwaysExplicit, out var vbConvertedType);
             csNode = addParenthesisIfNeeded && conversionKind == TypeConversionKind.Implicit
                 ? CommonConversions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;
@@ -50,7 +50,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        private TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, out ITypeSymbol vbConvertedType)
+        private TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool alwaysExplicit, out ITypeSymbol vbConvertedType)
         {
             var typeInfo = _semanticModel.GetTypeInfo(vbNode);
             var vbType = typeInfo.Type;
@@ -68,6 +68,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (csType is null || csConvertedType is null)
             {
+                if (alwaysExplicit && vbType != vbConvertedType) {
+                    return TypeConversionKind.Implicit;
+                }
                 return TypeConversionKind.Unknown;
             }
 
@@ -106,6 +109,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 {
                     return TypeConversionKind.Explicit;
                 }
+            } else if (alwaysExplicit && vbType != vbConvertedType) {
+                return TypeConversionKind.Implicit;
             }
 
             return TypeConversionKind.Identity;

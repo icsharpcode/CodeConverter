@@ -156,6 +156,54 @@ class TestClass
         }
 
         [Fact]
+        public void RefArgumentRValue()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Private Property C1 As Class1
+    Private _c2 As Class1
+    Private _o1 As Object
+
+    Sub Foo()
+        Bar(New Class1)
+        Bar(C1)
+        Bar(Me.C1)
+        Bar(_c2)
+        Bar(Me._c2)
+        Bar(_o1)
+        Bar(Me._o1)
+    End Sub
+
+    Sub Bar(ByRef class1)
+    End Sub
+End Class", @"public class Class1
+{
+    private Class1 C1 { get; set; }
+    private Class1 _c2;
+    private object _o1;
+
+    public void Foo()
+    {
+        var argclass1 = (object)new Class1();
+        var argclass11 = (object)C1;
+        var argclass12 = (object)this.C1;
+        var argclass13 = (object)_c2;
+        var argclass14 = (object)this._c2;
+        Bar(ref argclass1);
+        Bar(ref argclass11);
+        Bar(ref argclass12);
+        Bar(ref argclass13);
+        Bar(ref argclass14);
+        Bar(ref _o1);
+        Bar(ref this._o1);
+    }
+
+    public void Bar(ref object class1)
+    {
+    }
+}");
+        }
+
+        [Fact]
         public void MethodCallWithImplicitConversion()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1

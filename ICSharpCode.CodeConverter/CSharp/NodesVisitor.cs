@@ -30,6 +30,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(SyntaxKind.SemicolonToken);
             private static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
             private readonly AdditionalInitializers _additionalInitializers;
+            private readonly Dictionary<string, AdditionalLocal> _additionalLocals = new Dictionary<string, AdditionalLocal>();
             private readonly QueryConverter _queryConverter;
             private uint failedMemberConversionMarkerCount;
             private HashSet<string> _extraUsingDirectives = new HashSet<string>();
@@ -615,9 +616,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 var csReturnVariableOrNull = GetRetVariableNameOrNull(node);
-                var visualBasicSyntaxVisitor = CreateMethodBodyVisitor(node, IsIterator(node), csReturnVariableOrNull);
+                var generatedNames = new HashSet<string>();
+                var visualBasicSyntaxVisitor = CreateMethodBodyVisitor(node, IsIterator(node), csReturnVariableOrNull, generatedNames);
                 var convertedStatements = ConvertStatements(node.Statements, visualBasicSyntaxVisitor);
                 var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
+                body = WithAdditionalLocalVariables(node, body, generatedNames);
 
                 return methodBlock.WithBody(body);
             }
@@ -630,6 +633,27 @@ namespace ICSharpCode.CodeConverter.CSharp
             private static bool IsIterator(VBSyntax.MethodBlockSyntax node)
             {
                 return node.SubOrFunctionStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
+            }
+
+            private BlockSyntax WithAdditionalLocalVariables(VBasic.VisualBasicSyntaxNode vbNode, BlockSyntax block, HashSet<string> generatedNames)
+            {
+                var additionalDeclarations = new List<StatementSyntax>();
+
+                var newNames = new Dictionary<string, string>();
+
+                block = block.ReplaceNodes(block.GetAnnotatedNodes(AdditionalLocal.Annotation), (an, _) => {
+                    var id = (an as IdentifierNameSyntax).Identifier.ValueText;
+                    newNames[id] = NameGenerator.GetUniqueVariableNameInScope(_semanticModel, generatedNames, vbNode, _additionalLocals[id].Prefix);
+                    return SyntaxFactory.IdentifierName(newNames[id]);
+                });
+
+                foreach (var additionalLocal in _additionalLocals) {
+                    var decl = CommonConversions.CreateVariableDeclarationAndAssignment(newNames[additionalLocal.Key], additionalLocal.Value.Initializer);
+                    additionalDeclarations.Add(SyntaxFactory.LocalDeclarationStatement(decl));
+                }
+                _additionalLocals.Clear();
+
+                return SyntaxFactory.Block(additionalDeclarations.Concat(block.Statements));
             }
 
             private BlockSyntax WithImplicitReturnStatements(VBSyntax.MethodBlockSyntax node, BlockSyntax convertedStatements,
@@ -907,9 +931,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.OperatorDeclaration(attributes, nonConversionModifiers, returnType, node.OperatorToken.ConvertToken(), parameterList, body, null);
             }
 
-            private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
+            private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null, HashSet<string> generatedNames = null)
             {
-                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, _withBlockTempVariableNames, _extraUsingDirectives, TriviaConvertingVisitor.TriviaConverter) {
+                if (generatedNames == null) {
+                    generatedNames = new HashSet<string>();
+                }
+                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, _withBlockTempVariableNames, _extraUsingDirectives, generatedNames, TriviaConvertingVisitor.TriviaConverter) {
                     IsIterator = isIterator,
                     ReturnVariable = csReturnVariable,
                 };
@@ -1337,8 +1364,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (node.Parent.IsKind(VBasic.SyntaxKind.Attribute)) {
                     return CommonConversions.CreateAttributeArgumentList(node.Arguments.Select(ToAttributeArgument).ToArray());
                 }
-                var argumentSyntaxs = ConvertArguments(node);
-                return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(argumentSyntaxs));
+                var argumentSyntaxes = ConvertArguments(node);
+                return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(argumentSyntaxes));
             }
 
             private IEnumerable<ArgumentSyntax> ConvertArguments(VBSyntax.ArgumentListSyntax node)
@@ -1380,11 +1407,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return node.Expression.Accept(TriviaConvertingVisitor);
                 var symbol = GetInvocationSymbol(invocation);
                 SyntaxToken token = default(SyntaxToken);
+                string argName = null;
+                RefKind refKind = RefKind.None;
                 if (symbol != null) {
                     int argId = ((VBSyntax.ArgumentListSyntax)node.Parent).Arguments.IndexOf(node);
-                    var parameterKinds = symbol.GetParameters().Select(param => param.RefKind).ToList();
+                    var parameters = symbol.GetParameters();
                     //WARNING: If named parameters can reach here it won't work properly for them
-                    var refKind = argId >= parameterKinds.Count ? RefKind.None : parameterKinds[argId];
+                    if (argId < parameters.Count()) {
+                        refKind = parameters[argId].RefKind;
+                        argName = parameters[argId].Name;
+                    }
                     switch (refKind) {
                         case RefKind.None:
                             token = default(SyntaxToken);
@@ -1399,10 +1431,32 @@ namespace ICSharpCode.CodeConverter.CSharp
                             throw new ArgumentOutOfRangeException();
                     }
                 }
-                return SyntaxFactory.Argument(
-                    node.IsNamed ? SyntaxFactory.NameColon((IdentifierNameSyntax)node.NameColonEquals.Name.Accept(TriviaConvertingVisitor)) : null,
-                    token, _typeConversionAnalyzer.AddExplicitConversion(node.Expression, (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor))
-                );
+                var expression = _typeConversionAnalyzer.AddExplicitConversion(node.Expression, (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor), alwaysExplicit: refKind != RefKind.None);
+                AdditionalLocal local = null;
+                if (refKind != RefKind.None && NeedsVariableForArgument(node)) {
+                    local = new AdditionalLocal($"arg{argName}", expression);
+                    _additionalLocals.Add(local.ID, local);
+                }
+                var nameColon = node.IsNamed ? SyntaxFactory.NameColon((IdentifierNameSyntax)node.NameColonEquals.Name.Accept(TriviaConvertingVisitor)) : null;
+                if (local == null) {
+                    return SyntaxFactory.Argument(nameColon, token, expression);
+                } else {
+                    return SyntaxFactory.Argument(nameColon, token, SyntaxFactory.IdentifierName(local.ID).WithAdditionalAnnotations(AdditionalLocal.Annotation));
+                }
+            }
+
+            private bool NeedsVariableForArgument(VBSyntax.SimpleArgumentSyntax node)
+            {
+                bool isIdentifier = node.Expression is VBSyntax.IdentifierNameSyntax;
+                bool isMemberAccess = node.Expression is VBSyntax.MemberAccessExpressionSyntax;
+
+                var symbolInfo = GetSymbolInfoInDocument(node.Expression);
+                bool isProperty = symbolInfo != null && symbolInfo.IsKind(SymbolKind.Property);
+
+                var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
+                bool isTypeMismatch = !typeInfo.Type.Equals(typeInfo.ConvertedType);
+
+                return (!isIdentifier && !isMemberAccess) || isProperty || isTypeMismatch;
             }
 
             private ISymbol GetInvocationSymbol(SyntaxNode invocation)
