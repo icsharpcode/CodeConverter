@@ -61,6 +61,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return TypeConversionKind.Unknown;
             }
 
+            if (vbType.IsEnumType()) {
+                if (vbConvertedType.IsNumericType()) {
+                    return TypeConversionKind.Implicit;
+                } else if (vbType.Equals(vbConvertedType) || vbConvertedType.SpecialType == SpecialType.System_Object) {
+                    return TypeConversionKind.Identity;
+                } else {
+                    return TypeConversionKind.Explicit;
+                }
+            }
+
             var vbCompilation = _semanticModel.Compilation as Microsoft.CodeAnalysis.VisualBasic.VisualBasicCompilation;
             var vbConversion = vbCompilation.ClassifyConversion(vbType, vbConvertedType);
 
