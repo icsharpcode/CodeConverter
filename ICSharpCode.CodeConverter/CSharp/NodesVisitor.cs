@@ -637,8 +637,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private BlockSyntax WithAdditionalLocalVariables(VBasic.VisualBasicSyntaxNode vbNode, BlockSyntax block, HashSet<string> generatedNames)
             {
-                var additionalDeclarations = new List<StatementSyntax>();
-
                 var newNames = new Dictionary<string, string>();
 
                 block = block.ReplaceNodes(block.GetAnnotatedNodes(AdditionalLocal.Annotation), (an, _) => {
@@ -647,13 +645,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxFactory.IdentifierName(newNames[id]);
                 });
 
+                var newStatements = block.Statements;
+
                 foreach (var additionalLocal in _additionalLocals) {
                     var decl = CommonConversions.CreateVariableDeclarationAndAssignment(newNames[additionalLocal.Key], additionalLocal.Value.Initializer);
-                    additionalDeclarations.Add(SyntaxFactory.LocalDeclarationStatement(decl));
+                    int index = newStatements.IndexOf(s => s.DescendantNodes().OfType<IdentifierNameSyntax>().Any(id => id.Identifier.ValueText == newNames[additionalLocal.Key]));
+                    newStatements = newStatements.Insert(index, SyntaxFactory.LocalDeclarationStatement(decl));
                 }
                 _additionalLocals.Clear();
 
-                return SyntaxFactory.Block(additionalDeclarations.Concat(block.Statements));
+                return SyntaxFactory.Block(newStatements);
             }
 
             private BlockSyntax WithImplicitReturnStatements(VBSyntax.MethodBlockSyntax node, BlockSyntax convertedStatements,

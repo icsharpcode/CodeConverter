@@ -184,20 +184,46 @@ End Class", @"public class Class1
     public void Foo()
     {
         var argclass1 = (object)new Class1();
-        var argclass11 = (object)C1;
-        var argclass12 = (object)this.C1;
-        var argclass13 = (object)_c2;
-        var argclass14 = (object)this._c2;
         Bar(ref argclass1);
+        var argclass11 = (object)C1;
         Bar(ref argclass11);
+        var argclass12 = (object)this.C1;
         Bar(ref argclass12);
+        var argclass13 = (object)_c2;
         Bar(ref argclass13);
+        var argclass14 = (object)this._c2;
         Bar(ref argclass14);
         Bar(ref _o1);
         Bar(ref this._o1);
     }
 
     public void Bar(ref object class1)
+    {
+    }
+}");
+        }
+
+        [Fact]
+        public void RefArgumentRValue2()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Foo()
+        Dim x = True
+        Bar(x = True)
+    End Sub
+
+    Sub Bar(ByRef b As Boolean)
+    End Sub
+End Class", @"public class Class1
+{
+    public void Foo()
+    {
+        var x = true;
+        var argb = x == true;
+        Bar(ref argb);
+    }
+
+    public void Bar(ref bool b)
     {
     }
 }");
