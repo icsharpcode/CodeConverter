@@ -230,6 +230,38 @@ End Class", @"public class Class1
         }
 
         [Fact]
+        public void RefArgumentUsing()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Data.SqlClient
+
+Public Class Class1
+    Sub Foo()
+        Using x = New SqlConnection
+            Bar(x)
+        End Using
+    End Sub
+    Sub Bar(ByRef x As SqlConnection)
+
+    End Sub
+End Class", @"using System.Data.SqlClient;
+
+public class Class1
+{
+    public void Foo()
+    {
+        using (var x = new SqlConnection())
+        {
+            var argx = x;
+            Bar(ref argx);
+        }
+    }
+    public void Bar(ref SqlConnection x)
+    {
+    }
+}");
+        }
+
+        [Fact]
         public void MethodCallWithImplicitConversion()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1

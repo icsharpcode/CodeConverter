@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -164,19 +163,5 @@ namespace ICSharpCode.CodeConverter.Util
             return name;
         }
 
-        public static string GetUniqueVariableNameInScope(Microsoft.CodeAnalysis.SemanticModel semanticModel, HashSet<string> generatedNames,
-            Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxNode node, string variableNameBase)
-        {
-            // Need to check not just the symbols this node has access to, but whether there are any nested blocks which have access to this node and contain a conflicting name
-            var scopeStarts = node.GetAncestorOrThis<VBSyntax.StatementSyntax>().DescendantNodesAndSelf()
-                    .OfType<VBSyntax.StatementSyntax>().Select(n => n.SpanStart).ToList();
-            string uniqueName = GenerateUniqueName(variableNameBase, string.Empty,
-                n => {
-                    var matchingSymbols = scopeStarts.SelectMany(scopeStart => semanticModel.LookupSymbols(scopeStart, name: n));
-                    return !generatedNames.Contains(n) && !matchingSymbols.Any();
-                });
-            generatedNames.Add(uniqueName);
-            return uniqueName;
-        }
     }
 }
