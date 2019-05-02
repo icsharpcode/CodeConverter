@@ -288,11 +288,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false)
         {
             string text = id.ValueText;
-
-            var keywordKind = SyntaxFacts.GetKeywordKind(text);
-            if (keywordKind != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None)
-                return SyntaxFactory.Identifier("@" + text);
-
+            
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
                 var symbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol;
                 if (symbol != null && !String.IsNullOrWhiteSpace(symbol.Name)) {
@@ -315,6 +311,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
             }
+
+            return CsEscapedIdentifier(text);
+        }
+
+        private static SyntaxToken CsEscapedIdentifier(string text)
+        {
+            if (SyntaxFacts.GetKeywordKind(text) != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None) text = "@" + text;
             return SyntaxFactory.Identifier(text);
         }
 
