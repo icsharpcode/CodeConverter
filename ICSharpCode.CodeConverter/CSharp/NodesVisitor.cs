@@ -565,7 +565,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 SyntaxKind blockKind;
                 bool isIterator = node.GetModifiers().Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
-                var body = ConvertStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator));
+                var csReturnVariableOrNull = GetRetVariableNameOrNull(node);
+                var convertedStatements = ConvertStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator));
+                var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
                 var attributes = ConvertAttributes(node.AccessorStatement.AttributeLists);
                 var modifiers = CommonConversions.ConvertModifiers(node.AccessorStatement.Modifiers, TokenContext.Local);
 
@@ -622,17 +624,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return methodBlock.WithBody(body);
             }
 
-            private static bool AllowsImplicitReturn(VBSyntax.MethodBlockSyntax node)
+            private static bool AllowsImplicitReturn(VBSyntax.MethodBlockBaseSyntax node)
             {
-                return !IsIterator(node) && node.IsKind(VBasic.SyntaxKind.FunctionBlock);
+                return !IsIterator(node) && node.IsKind(VBasic.SyntaxKind.FunctionBlock, VBasic.SyntaxKind.GetAccessorBlock);
             }
 
-            private static bool IsIterator(VBSyntax.MethodBlockSyntax node)
+            private static bool IsIterator(VBSyntax.MethodBlockBaseSyntax node)
             {
-                return node.SubOrFunctionStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
+                return node.BlockStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
             }
 
-            private BlockSyntax WithImplicitReturnStatements(VBSyntax.MethodBlockSyntax node, BlockSyntax convertedStatements,
+            private BlockSyntax WithImplicitReturnStatements(VBSyntax.MethodBlockBaseSyntax node, BlockSyntax convertedStatements,
                 IdentifierNameSyntax csReturnVariableOrNull)
             {
                 if (!AllowsImplicitReturn(node)) return convertedStatements;
@@ -668,14 +670,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.Block(statements);
             }
 
-            private IdentifierNameSyntax GetRetVariableNameOrNull(VBSyntax.MethodBlockSyntax node)
+            private IdentifierNameSyntax GetRetVariableNameOrNull(VBSyntax.MethodBlockBaseSyntax node)
             {
                 if (!AllowsImplicitReturn(node)) return null;
 
                 bool assignsToMethodNameVariable = false;
 
                 if (!node.Statements.IsEmpty()) {
-                    string methodName = node.SubOrFunctionStatement.Identifier.ValueText;
+                    string methodName = GetMethodBlockBaseIdentifierForImplicitReturn(node).ValueText;
                     Func<ISymbol, bool> equalsMethodName = s => s.IsKind(SymbolKind.Local) && s.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase);
                     var flow = _semanticModel.AnalyzeDataFlow(node.Statements.First(), node.Statements.Last());
 
@@ -688,7 +690,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 {
                     // In VB, assigning to the method name implicitly creates a variable that is returned when the method exits
                     var csReturnVariableName =
-                        CommonConversions.ConvertIdentifier(node.SubOrFunctionStatement.Identifier).ValueText + "Ret";
+                        CommonConversions.ConvertIdentifier(GetMethodBlockBaseIdentifierForImplicitReturn(node)).ValueText + "Ret";
                     csReturnVariable = SyntaxFactory.IdentifierName(csReturnVariableName);
                 }
 
@@ -1849,10 +1851,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var withArgList = AddEmptyArgumentListIfImplicit(node, qualifiedIdentifier);
                 var sym = GetSymbolInfoInDocument(node);
                 if (sym != null && sym.Kind == SymbolKind.Local) {
-                    var vbMethodBlock = node.Ancestors().OfType<VBSyntax.MethodBlockSyntax>().FirstOrDefault();
+                    var vbMethodBlock = node.Ancestors().OfType<VBSyntax.MethodBlockBaseSyntax>().FirstOrDefault();
                     if (vbMethodBlock != null &&
                         !node.Parent.IsKind(VBasic.SyntaxKind.NameOfExpression) &&
-                        node.Identifier.ValueText.Equals(vbMethodBlock.SubOrFunctionStatement.Identifier.ValueText, StringComparison.OrdinalIgnoreCase)) {
+                        node.Identifier.ValueText.Equals(GetMethodBlockBaseIdentifierForImplicitReturn(vbMethodBlock).ValueText, StringComparison.OrdinalIgnoreCase)) {
                         var retVar = GetRetVariableNameOrNull(vbMethodBlock);
                         if (retVar != null) {
                             return retVar;
@@ -1860,6 +1862,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
                 return withArgList;
+            }
+
+            private static SyntaxToken GetMethodBlockBaseIdentifierForImplicitReturn(VBSyntax.MethodBlockBaseSyntax vbMethodBlock)
+            {
+                if (vbMethodBlock.Parent is VBSyntax.PropertyBlockSyntax pb) {
+                    return pb.PropertyStatement.Identifier;
+                } else if (vbMethodBlock is VBSyntax.MethodBlockSyntax mb) {
+                    return mb.SubOrFunctionStatement.Identifier;
+                } else {
+                    return VBasic.SyntaxFactory.Token(VBasic.SyntaxKind.EmptyToken);
+                }
             }
 
             private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(VBSyntax.IdentifierNameSyntax node, ExpressionSyntax id)

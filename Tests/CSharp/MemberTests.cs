@@ -120,6 +120,71 @@ End Class", @"class Class1
         }
 
         [Fact]
+        public void TestPropertyAssignmentReturn()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Public Class Class1
+    Public ReadOnly Property Foo() As String
+        Get
+            Foo = """"
+        End Get
+    End Property
+    Public ReadOnly Property X As String
+        Get
+            X = 4
+            X = X * 2
+            Dim y = ""random variable to check it isn't just using the value of the last statement""
+        End Get
+    End Property
+    Public _y As String
+    Public WriteOnly Property Y As String
+        Set(value As String)
+            If value <> """" Then
+                Y = """"
+            Else
+                _y = """"
+            End If
+        End Set
+    End Property
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+public class Class1
+{
+    public string Foo
+    {
+        get
+        {
+            string FooRet = default(string);
+            FooRet = """";
+            return FooRet;
+        }
+    }
+    public string X
+    {
+        get
+        {
+            string XRet = default(string);
+            XRet = 4;
+            XRet = Conversions.ToString(Conversions.ToDouble(XRet) * (double)2);
+            var y = ""random variable to check it isn't just using the value of the last statement"";
+            return XRet;
+        }
+    }
+    public string _y;
+    public string Y
+    {
+        set
+        {
+            if (value != """")
+                Y = """";
+            else
+                _y = """";
+        }
+    }
+}");
+        }
+
+        [Fact]
         public void TestMethodAssignmentReturn293()
         {
             TestConversionVisualBasicToCSharpWithoutComments(
