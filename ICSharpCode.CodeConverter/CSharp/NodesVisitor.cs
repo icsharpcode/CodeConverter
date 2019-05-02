@@ -429,7 +429,43 @@ namespace ICSharpCode.CodeConverter.CSharp
                                 convertedModifiers, SyntaxFactory.List(attributes), _methodsWithHandles);
                             declarations.AddRange(fieldDecls);
                         } else {
-                            var baseFieldDeclarationSyntax = SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, decl);
+                            FieldDeclarationSyntax baseFieldDeclarationSyntax;
+                            if (_additionalLocals.Count() > 0) {
+                                if (decl.Variables.Count > 1) {
+                                    // Currently no way to tell which _additionalLocals would apply to which initializer
+                                    throw new NotImplementedException("Fields with multiple declarations and initializers with ByRef parameters not currently supported");
+                                }
+                                var v = decl.Variables.First();
+                                if (v.Initializer.Value.DescendantNodes().OfType<InvocationExpressionSyntax>().Count() > 1) {
+                                    throw new NotImplementedException("Field initializers with nested method calls not currently supported");
+                                }
+                                var calledMethodName = v.Initializer.Value.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>().First().DescendantNodes().OfType<IdentifierNameSyntax>().First();
+                                var newMethodName = $"{calledMethodName.Identifier.ValueText}_{v.Identifier.ValueText}";
+                                var localVars = _additionalLocals.Values
+                                    .Select(al => SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(al.Prefix, al.Initializer)))
+                                    .Cast<StatementSyntax>().ToList();
+                                var newInitializer = v.Initializer.Value.ReplaceNodes(v.Initializer.Value.GetAnnotatedNodes(AdditionalLocal.Annotation), (an, _) => {
+                                    // This should probably use a unique name like in MethodBodyVisitor - a collision is far less likely here
+                                    var id = (an as IdentifierNameSyntax).Identifier.ValueText;
+                                    return SyntaxFactory.IdentifierName(_additionalLocals[id].Prefix);
+                                });
+                                _additionalLocals.Clear();
+                                var body = SyntaxFactory.Block(localVars.Concat(SyntaxFactory.SingletonList(SyntaxFactory.ReturnStatement(newInitializer))));
+                                var methodAttrs = SyntaxFactory.List<AttributeListSyntax>();
+                                // Method calls in initializers must be static in C# - Supporting this is #281
+                                var modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword));
+                                var typeConstraints = SyntaxFactory.List<TypeParameterConstraintClauseSyntax>();
+                                var parameterList = SyntaxFactory.ParameterList();
+                                var methodDecl = SyntaxFactory.MethodDeclaration(methodAttrs, modifiers, decl.Type, null, SyntaxFactory.Identifier(newMethodName), null, parameterList, typeConstraints, body, null);
+                                declarations.Add(methodDecl);
+
+                                var newVar = v.WithInitializer(SyntaxFactory.EqualsValueClause(SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(newMethodName))));
+                                var newVarDecl = SyntaxFactory.VariableDeclaration(decl.Type, SyntaxFactory.SingletonSeparatedList(newVar));
+
+                                baseFieldDeclarationSyntax = SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, newVarDecl);
+                            } else {
+                                baseFieldDeclarationSyntax = SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, decl);
+                            }
                             declarations.Add(baseFieldDeclarationSyntax);
                         }
                     }
@@ -680,7 +716,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     Func<ISymbol, bool> equalsMethodName = s => s.IsKind(SymbolKind.Local) && s.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase);
                     var flow = _semanticModel.AnalyzeDataFlow(node.Statements.First(), node.Statements.Last());
 
-                    assignsToMethodNameVariable = flow.ReadInside.Any(equalsMethodName) || flow.WrittenInside.Any(equalsMethodName);
+                    if (flow.Succeeded) {
+                        assignsToMethodNameVariable = flow.ReadInside.Any(equalsMethodName) || flow.WrittenInside.Any(equalsMethodName);
+                    }
                 }
 
                 IdentifierNameSyntax csReturnVariable = null;

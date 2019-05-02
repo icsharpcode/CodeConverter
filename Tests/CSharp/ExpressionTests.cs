@@ -262,6 +262,31 @@ public class Class1
         }
 
         [Fact]
+        public void RefArgumentPropertyInitializer()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Private _p1 As Class1 = Foo(New Class1)
+    Public Shared Function Foo(ByRef c1 As Class1) As Class1
+        Return c1
+    End Function
+End Class", @"public class Class1
+{
+    static Class1 Foo__p1()
+    {
+        var argc1 = new Class1();
+        return Foo(ref argc1);
+    }
+
+    private Class1 _p1 = Foo__p1();
+
+    public static Class1 Foo(ref Class1 c1)
+    {
+        return c1;
+    }
+}");
+        }
+
+        [Fact]
         public void MethodCallWithImplicitConversion()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
