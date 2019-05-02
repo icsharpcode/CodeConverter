@@ -654,6 +654,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var csReturnVariableOrNull = GetRetVariableNameOrNull(node);
                 var visualBasicSyntaxVisitor = CreateMethodBodyVisitor(node, IsIterator(node), csReturnVariableOrNull);
                 var convertedStatements = ConvertStatements(node.Statements, visualBasicSyntaxVisitor);
+                if (_additionalLocals.Count > 0)
+                    throw new Exception("Failed to convert method with call to method with ByRef parameters");
                 var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
 
                 return methodBlock.WithBody(body);

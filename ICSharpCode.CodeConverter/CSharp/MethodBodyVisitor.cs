@@ -122,7 +122,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return new SyntaxList<StatementSyntax>();
                 }
 
-                var csExpression = (ExpressionSyntax)node.Expression.Accept(_nodesVisitor);
+                return WithAdditionalLocals(node, (ExpressionSyntax)node.Expression.Accept(_nodesVisitor), SingleStatement);
+            }
+
+            private SyntaxList<StatementSyntax> WithAdditionalLocals(VBasic.VisualBasicSyntaxNode node, ExpressionSyntax csExpression, Func<ExpressionSyntax, SyntaxList<StatementSyntax>> toStatement)
+            {
                 if (_additionalLocals.Count() > 0) {
                     var newNames = new Dictionary<string, string>();
                     csExpression = csExpression.ReplaceNodes(csExpression.GetAnnotatedNodes(AdditionalLocal.Annotation), (an, _) => {
@@ -138,9 +142,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                     _additionalLocals.Clear();
 
-                    return SyntaxFactory.List(additionalDeclarations.Concat(SingleStatement(csExpression)));
+                    return SyntaxFactory.List(additionalDeclarations.Concat(toStatement(csExpression)));
                 } else {
-                    return SingleStatement(csExpression);
+                    return toStatement(csExpression);
                 }
             }
 
@@ -321,7 +325,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 if (IsIterator)
                     return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
-                return SingleStatement(SyntaxFactory.ReturnStatement((ExpressionSyntax)node.Expression?.Accept(_nodesVisitor)));
+
+                return WithAdditionalLocals(node, (ExpressionSyntax)node.Expression?.Accept(_nodesVisitor), es => SingleStatement(SyntaxFactory.ReturnStatement(es)));
             }
 
             public override SyntaxList<StatementSyntax> VisitContinueStatement(VBSyntax.ContinueStatementSyntax node)

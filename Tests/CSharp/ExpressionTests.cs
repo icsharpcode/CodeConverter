@@ -212,6 +212,10 @@ End Class", @"public class Class1
         Bar(x = True)
     End Sub
 
+    Sub Foo2()
+        Return Bar(True = False)
+    End Sub
+
     Sub Bar(ByRef b As Boolean)
     End Sub
 End Class", @"public class Class1
@@ -221,6 +225,12 @@ End Class", @"public class Class1
         var x = true;
         var argb = x == true;
         Bar(ref argb);
+    }
+
+    public void Foo2()
+    {
+        var argb = true == false;
+        return Bar(ref argb);
     }
 
     public void Bar(ref bool b)
