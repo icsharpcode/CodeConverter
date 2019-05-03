@@ -29,6 +29,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private readonly Stack<string> _withBlockTempVariableNames;
             private readonly HashSet<string> _extraUsingDirectives;
             private readonly HashSet<string> _generatedNames = new HashSet<string>();
+            private readonly TypeConversionAnalyzer _typeConversionAnalyzer;
 
             public bool IsIterator { get; set; }
             public IdentifierNameSyntax ReturnVariable { get; set; }
@@ -38,7 +39,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private CommonConversions CommonConversions { get; }
 
             public MethodBodyVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel, CSharpCompilation csCompilation,
-                VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
+                VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, TypeConversionAnalyzer typeConversionAnalyzer,
                 Stack<string> withBlockTempVariableNames, HashSet<string> extraUsingDirectives,
                 TriviaConverter triviaConverter)
             {
@@ -47,6 +48,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 this._nodesVisitor = nodesVisitor;
                 this._withBlockTempVariableNames = withBlockTempVariableNames;
                 _extraUsingDirectives = extraUsingDirectives;
+                _typeConversionAnalyzer = typeConversionAnalyzer;
                 CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
                 CommonConversions = new CommonConversions(semanticModel, _nodesVisitor);
                 CommonConversions.TypeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, CommonConversions, extraUsingDirectives);
@@ -502,9 +504,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var labels = new List<SwitchLabelSyntax>();
                     foreach (var c in block.CaseStatement.Cases) {
                         if (c is VBSyntax.SimpleCaseClauseSyntax s) {
-                            var expressionSyntax = (ExpressionSyntax)s.Value.Accept(_nodesVisitor);
+                            var originalExpressionSyntax = (ExpressionSyntax)s.Value.Accept(_nodesVisitor);
+                            var expressionSyntax = _typeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax);
                             SwitchLabelSyntax caseSwitchLabelSyntax = SyntaxFactory.CaseSwitchLabel(expressionSyntax);
-                            if (!_semanticModel.GetConstantValue(s.Value).HasValue) {
+                            if (!_semanticModel.GetConstantValue(s.Value).HasValue || originalExpressionSyntax != expressionSyntax) {
                                 caseSwitchLabelSyntax =
                                     WrapInCasePatternSwitchLabelSyntax(node, expressionSyntax);
                             }

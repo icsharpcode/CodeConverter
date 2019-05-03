@@ -187,6 +187,58 @@ public class Class1
         }
 
         [Fact]
+        public void EnumSwitch()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Enum E
+        A
+    End Enum
+
+    Sub Main()
+        Dim e1 = E.A
+        Dim e2 As Integer
+        Select Case e1
+            Case 0
+        End Select
+
+        Select Case e2
+            Case E.A
+        End Select
+
+    End Sub
+End Class",
+@"public class Class1
+{
+    enum E
+    {
+        A
+    }
+
+    public void Main()
+    {
+        var e1 = E.A;
+        int e2 = default(int);
+        switch (e1)
+        {
+            case 0:
+                {
+                    break;
+                }
+        }
+
+        switch (e2)
+        {
+            case var @case when @case == (int)E.A:
+                {
+                    break;
+                }
+        }
+    }
+}");
+        }
+
+
+        [Fact]
         public void MethodCallWithoutParens()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1

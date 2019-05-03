@@ -53,6 +53,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 EqualsValueClauseSyntax equalsValueClauseSyntax;
                 if (adjustedInitializer != null) {
                     var vbInitializer = declarator.Initializer?.Value;
+                    // Explicit conversions are never needed for AsClause, since the type is inferred from the RHS
                     var convertedInitializer = vbInitializer == null ? adjustedInitializer : TypeConversionAnalyzer.AddExplicitConversion(vbInitializer, adjustedInitializer);
                     equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
                 } else if (isField || _semanticModel.IsDefinitelyAssignedBeforeRead(declarator, name)) {
