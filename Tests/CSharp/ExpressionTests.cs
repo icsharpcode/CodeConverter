@@ -360,6 +360,34 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void EnumNullableConversion()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Main()
+        Dim x = DayOfWeek.Monday
+        Foo(x)
+    End Sub
+
+    Sub Foo(x As DayOfWeek?)
+
+    End Sub
+End Class", @"using System;
+
+public class Class1
+{
+    public void Main()
+    {
+        var x = DayOfWeek.Monday;
+        Foo(x);
+    }
+
+    public void Foo(DayOfWeek? x)
+    {
+    }
+}");
+        }
+
+        [Fact]
         public void UninitializedVariable()
         {
             //TODO: Fix comment to be ported to top of property rather than bottom

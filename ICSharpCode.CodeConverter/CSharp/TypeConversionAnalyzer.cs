@@ -64,7 +64,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (vbType.IsEnumType()) {
                 if (vbConvertedType.IsNumericType()) {
                     return TypeConversionKind.Implicit;
-                } else if (vbType.Equals(vbConvertedType) || vbConvertedType.SpecialType == SpecialType.System_Object) {
+                } else if (vbType.Equals(vbConvertedType) ||
+                            (vbConvertedType.IsNullable() && vbType.Equals(vbConvertedType.GetNullableUnderlyingType())) ||
+                            vbConvertedType.SpecialType == SpecialType.System_Object) {
                     return TypeConversionKind.Identity;
                 } else {
                     return TypeConversionKind.Explicit;
