@@ -175,7 +175,7 @@ public class Class1
     {
         set
         {
-            if (value != """")
+            if (!string.IsNullOrEmpty(value))
                 Y = """";
             else
                 _y = """";

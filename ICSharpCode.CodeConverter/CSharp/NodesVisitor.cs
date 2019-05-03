@@ -37,6 +37,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
             private readonly TypeConversionAnalyzer _typeConversionAnalyzer;
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
+            private bool _optionCompareText = false;
 
             private CommonConversions CommonConversions { get; }
 
@@ -117,6 +118,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     .Concat(_extraUsingDirectives.Select(u => SyntaxFactory.UsingDirective(SyntaxFactory.ParseName(u))))
                     .GroupBy(u => u.ToString())
                     .Select(g => g.First());
+
+                _optionCompareText = node.Options.Any(x => x.NameKeyword.ValueText.Equals("Compare", StringComparison.OrdinalIgnoreCase) &&
+                                                           x.ValueKeyword.ValueText.Equals("Text", StringComparison.OrdinalIgnoreCase));
 
                 return SyntaxFactory.CompilationUnit(
                     SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
@@ -1674,15 +1678,46 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var lhs = _typeConversionAnalyzer.AddExplicitConversion(node.Left, (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor));
                 var rhs = _typeConversionAnalyzer.AddExplicitConversion(node.Right, (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor));
 
+                var stringType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
+                var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
+                var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
+
                 if (node.IsKind(VBasic.SyntaxKind.ConcatenateExpression)) {
-                    var stringType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
-                    var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
-                    var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
                     if (lhsTypeInfo.Type.SpecialType != SpecialType.System_String &&
                         lhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String &&
                         rhsTypeInfo.Type.SpecialType != SpecialType.System_String &&
                         rhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String) {
                         lhs = _typeConversionAnalyzer.AddExplicitConvertTo(node.Left, lhs, stringType);
+                    }
+                }
+
+                if (node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression)) {
+                    if (lhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String &&
+                        rhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String) {
+                        bool lhsEmpty = lhs is LiteralExpressionSyntax les &&
+                                        (les.IsKind(SyntaxKind.NullLiteralExpression) ||
+                                        (les.IsKind(SyntaxKind.StringLiteralExpression) && string.IsNullOrEmpty(les.Token.ValueText)));
+                        bool rhsEmpty = rhs is LiteralExpressionSyntax res &&
+                                        (res.IsKind(SyntaxKind.NullLiteralExpression) ||
+                                        (res.IsKind(SyntaxKind.StringLiteralExpression) && string.IsNullOrEmpty(res.Token.ValueText)));
+
+                        if (lhsEmpty || rhsEmpty) {
+                            var arg = lhsEmpty ? rhs : lhs;
+                            var nullOrEmpty = SyntaxFactory.InvocationExpression(
+                                SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName("string"), SyntaxFactory.IdentifierName("IsNullOrEmpty")),
+                                SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[] { SyntaxFactory.Argument(arg) })));
+                            return node.IsKind(VBasic.SyntaxKind.EqualsExpression) ? (CSharpSyntaxNode)nullOrEmpty : SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, nullOrEmpty);
+                        } else {
+                            _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
+                            var textCompare = SyntaxFactory.Argument(SyntaxFactory.NameColon("TextCompare"),
+                                default(SyntaxToken), 
+                                _optionCompareText ? SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression) : SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression));
+                            var compareString = SyntaxFactory.InvocationExpression(
+                                SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName("Operators"), SyntaxFactory.IdentifierName("CompareString")),
+                                SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[] { SyntaxFactory.Argument(lhs), SyntaxFactory.Argument(rhs), textCompare })));
+                            lhs = compareString;
+                            rhs = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(0));
+                        }
                     }
                 }
 
@@ -1692,6 +1727,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.ParseExpression($"{nameof(Math)}.{nameof(Math.Pow)}"),
                         ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
                 }
+
 
                 var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
                 var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
