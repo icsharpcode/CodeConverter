@@ -28,7 +28,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             private readonly VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> _nodesVisitor;
             private readonly Stack<string> _withBlockTempVariableNames;
             private readonly HashSet<string> _extraUsingDirectives;
-            private readonly Dictionary<string, AdditionalLocal> _additionalLocals;
             private readonly HashSet<string> _generatedNames = new HashSet<string>();
 
             public bool IsIterator { get; set; }
@@ -41,15 +40,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             public MethodBodyVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
                 VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
                 Stack<string> withBlockTempVariableNames, HashSet<string> extraUsingDirectives,
-                Dictionary<string, AdditionalLocal> additionalLocals, TriviaConverter triviaConverter)
+                AdditionalLocals additionalLocals, TriviaConverter triviaConverter)
             {
                 _methodNode = methodNode;
                 this._semanticModel = semanticModel;
                 this._nodesVisitor = nodesVisitor;
                 this._withBlockTempVariableNames = withBlockTempVariableNames;
                 _extraUsingDirectives = extraUsingDirectives;
-                _additionalLocals = additionalLocals;
-                CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
+                var byRefParameterVisitor = new ByRefParameterVisitor(this, additionalLocals, semanticModel, _generatedNames);
+                CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor, triviaConverter);
                 CommonConversions = new CommonConversions(semanticModel, _nodesVisitor);
             }
 
@@ -122,30 +121,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return new SyntaxList<StatementSyntax>();
                 }
 
-                return WithAdditionalLocals(node, (ExpressionSyntax)node.Expression.Accept(_nodesVisitor), SingleStatement);
-            }
-
-            private SyntaxList<StatementSyntax> WithAdditionalLocals(VBasic.VisualBasicSyntaxNode node, ExpressionSyntax csExpression, Func<ExpressionSyntax, SyntaxList<StatementSyntax>> toStatement)
-            {
-                if (_additionalLocals.Count() > 0) {
-                    var newNames = new Dictionary<string, string>();
-                    csExpression = csExpression.ReplaceNodes(csExpression.GetAnnotatedNodes(AdditionalLocal.Annotation), (an, _) => {
-                        var id = (an as IdentifierNameSyntax).Identifier.ValueText;
-                        newNames[id] = GetUniqueVariableNameInScope(node, _additionalLocals[id].Prefix);
-                        return SyntaxFactory.IdentifierName(newNames[id]);
-                    });
-
-                    var additionalDeclarations = new List<StatementSyntax>();
-                    foreach (var additionalLocal in _additionalLocals) {
-                        var decl = CommonConversions.CreateVariableDeclarationAndAssignment(newNames[additionalLocal.Key], additionalLocal.Value.Initializer);
-                        additionalDeclarations.Add(SyntaxFactory.LocalDeclarationStatement(decl));
-                    }
-                    _additionalLocals.Clear();
-
-                    return SyntaxFactory.List(additionalDeclarations.Concat(toStatement(csExpression)));
-                } else {
-                    return toStatement(csExpression);
-                }
+                return SingleStatement((ExpressionSyntax)node.Expression.Accept(_nodesVisitor));
             }
 
             public override SyntaxList<StatementSyntax> VisitAssignmentStatement(VBSyntax.AssignmentStatementSyntax node)
@@ -326,7 +302,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (IsIterator)
                     return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
 
-                return WithAdditionalLocals(node, (ExpressionSyntax)node.Expression?.Accept(_nodesVisitor), es => SingleStatement(SyntaxFactory.ReturnStatement(es)));
+                return SingleStatement(SyntaxFactory.ReturnStatement((ExpressionSyntax)node.Expression?.Accept(_nodesVisitor)));
             }
 
             public override SyntaxList<StatementSyntax> VisitContinueStatement(VBSyntax.ContinueStatementSyntax node)
@@ -606,16 +582,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private string GetUniqueVariableNameInScope(VBasic.VisualBasicSyntaxNode node, string variableNameBase)
             {
-                // Need to check not just the symbols this node has access to, but whether there are any nested blocks which have access to this node and contain a conflicting name
-                var scopeStarts = node.GetAncestorOrThis<VBSyntax.StatementSyntax>().DescendantNodesAndSelf()
-                        .OfType<VBSyntax.StatementSyntax>().Select(n => n.SpanStart).ToList();
-                string uniqueName = NameGenerator.GenerateUniqueName(variableNameBase, string.Empty,
-                    n => {
-                        var matchingSymbols = scopeStarts.SelectMany(scopeStart => _semanticModel.LookupSymbols(scopeStart, name: n));
-                        return !_generatedNames.Contains(n) && !matchingSymbols.Any();
-                    });
-                _generatedNames.Add(uniqueName);
-                return uniqueName;
+                return NameGenerator.GetUniqueVariableNameInScope(_semanticModel, _generatedNames, node, variableNameBase);
             }
 
             public override SyntaxList<StatementSyntax> VisitTryBlock(VBSyntax.TryBlockSyntax node)

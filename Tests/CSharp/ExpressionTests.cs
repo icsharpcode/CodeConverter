@@ -216,8 +216,34 @@ End Class", @"public class Class1
         Return Bar(True = False)
     End Sub
 
+    Sub Foo3()
+        If Bar(True = False) Then Bar(True = False)
+    End Sub
+
+    Sub Foo4()
+        If Bar(True = False) Then
+            Bar(True = False)
+        ElseIf Bar(True = False) Then
+            Bar(True = False)
+        Else
+            Bar(True = False)
+        End If
+    End Sub
+
     Sub Bar(ByRef b As Boolean)
     End Sub
+
+    Function Bar2(ByRef c1 As Class1) As Integer
+        If c1 IsNot Nothing AndAlso Len(Bar3(Me)) <> 0 Then
+            Return 1
+        End If
+        Return 0
+    End Function
+
+    Function Bar3(ByRef c1 As Class1) As String
+        Return """"
+    End Function
+
 End Class", @"public class Class1
 {
     public void Foo()
@@ -233,8 +259,52 @@ End Class", @"public class Class1
         return Bar(ref argb);
     }
 
+    public void Foo3()
+    {
+        var argb1 = true == false;
+        if (Bar(ref argb1))
+        {
+            var argb = true == false;
+            Bar(ref argb);
+        }
+    }
+
+    public void Foo4()
+    {
+        var argb3 = true == false;
+        var argb4 = true == false;
+        if (Bar(ref argb3))
+        {
+            var argb = true == false;
+            Bar(ref argb);
+        }
+        else if (Bar(ref argb4))
+        {
+            var argb2 = true == false;
+            Bar(ref argb2);
+        }
+        else
+        {
+            var argb1 = true == false;
+            Bar(ref argb1);
+        }
+    }
+
     public void Bar(ref bool b)
     {
+    }
+
+    public int Bar2(ref Class1 c1)
+    {
+        var argc1 = this;
+        if (c1 != null && Microsoft.VisualBasic.Strings.Len(Bar3(ref argc1)) != 0)
+            return 1;
+        return 0;
+    }
+
+    public string Bar3(ref Class1 c1)
+    {
+        return """";
     }
 }");
         }

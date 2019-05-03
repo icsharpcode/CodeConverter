@@ -30,7 +30,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(SyntaxKind.SemicolonToken);
             private static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
             private readonly AdditionalInitializers _additionalInitializers;
-            private readonly Dictionary<string, AdditionalLocal> _additionalLocals = new Dictionary<string, AdditionalLocal>();
+            private readonly AdditionalLocals _additionalLocals = new AdditionalLocals();
             private readonly QueryConverter _queryConverter;
             private uint failedMemberConversionMarkerCount;
             private HashSet<string> _extraUsingDirectives = new HashSet<string>();
@@ -404,6 +404,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitFieldDeclaration(VBSyntax.FieldDeclarationSyntax node)
             {
+                _additionalLocals.PushScope();
                 var attributes = node.AttributeLists.SelectMany(ConvertAttribute).ToList();
                 var convertableModifiers = node.Modifiers.Where(m => !SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
                 var isWithEvents = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
@@ -441,15 +442,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                                 }
                                 var calledMethodName = v.Initializer.Value.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>().First().DescendantNodes().OfType<IdentifierNameSyntax>().First();
                                 var newMethodName = $"{calledMethodName.Identifier.ValueText}_{v.Identifier.ValueText}";
-                                var localVars = _additionalLocals.Values
+                                var localVars = _additionalLocals.Select(l => l.Value)
                                     .Select(al => SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(al.Prefix, al.Initializer)))
                                     .Cast<StatementSyntax>().ToList();
-                                var newInitializer = v.Initializer.Value.ReplaceNodes(v.Initializer.Value.GetAnnotatedNodes(AdditionalLocal.Annotation), (an, _) => {
+                                var newInitializer = v.Initializer.Value.ReplaceNodes(v.Initializer.Value.GetAnnotatedNodes(AdditionalLocals.Annotation), (an, _) => {
                                     // This should probably use a unique name like in MethodBodyVisitor - a collision is far less likely here
                                     var id = (an as IdentifierNameSyntax).Identifier.ValueText;
                                     return SyntaxFactory.IdentifierName(_additionalLocals[id].Prefix);
                                 });
-                                _additionalLocals.Clear();
                                 var body = SyntaxFactory.Block(localVars.Concat(SyntaxFactory.SingletonList(SyntaxFactory.ReturnStatement(newInitializer))));
                                 var methodAttrs = SyntaxFactory.List<AttributeListSyntax>();
                                 // Method calls in initializers must be static in C# - Supporting this is #281
@@ -471,6 +471,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
 
+                _additionalLocals.PopScope();
                 _additionalDeclarations.Add(node, declarations.Skip(1).ToArray());
                 return declarations.First();
             }
@@ -654,8 +655,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var csReturnVariableOrNull = GetRetVariableNameOrNull(node);
                 var visualBasicSyntaxVisitor = CreateMethodBodyVisitor(node, IsIterator(node), csReturnVariableOrNull);
                 var convertedStatements = ConvertStatements(node.Statements, visualBasicSyntaxVisitor);
-                if (_additionalLocals.Count > 0)
-                    throw new Exception("Failed to convert method with call to method with ByRef parameters");
                 var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
 
                 return methodBlock.WithBody(body);
@@ -1446,16 +1445,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
                 var expression = _typeConversionAnalyzer.AddExplicitConversion(node.Expression, (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor), alwaysExplicit: refKind != RefKind.None);
-                AdditionalLocal local = null;
+                AdditionalLocals.AdditionalLocal local = null;
                 if (refKind != RefKind.None && NeedsVariableForArgument(node)) {
-                    local = new AdditionalLocal($"arg{argName}", expression);
-                    _additionalLocals.Add(local.ID, local);
+                    local = _additionalLocals.AddAdditionalLocal($"arg{argName}", expression);
                 }
                 var nameColon = node.IsNamed ? SyntaxFactory.NameColon((IdentifierNameSyntax)node.NameColonEquals.Name.Accept(TriviaConvertingVisitor)) : null;
                 if (local == null) {
                     return SyntaxFactory.Argument(nameColon, token, expression);
                 } else {
-                    return SyntaxFactory.Argument(nameColon, token, SyntaxFactory.IdentifierName(local.ID).WithAdditionalAnnotations(AdditionalLocal.Annotation));
+                    return SyntaxFactory.Argument(nameColon, token, SyntaxFactory.IdentifierName(local.ID).WithAdditionalAnnotations(AdditionalLocals.Annotation));
                 }
             }
 
