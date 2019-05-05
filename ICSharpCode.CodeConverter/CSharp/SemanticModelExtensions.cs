@@ -41,9 +41,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return alwaysAssigned && !writtenInside || !readInside;
         }
 
-        public static TypeSyntax ToCsTypeSyntax(this SemanticModel vbSemanticModel, ITypeSymbol typeSymbol, VisualBasicSyntaxNode contextNode)
+        public static TypeSyntax GetCsTypeSyntax(this SemanticModel vbSemanticModel, ITypeSymbol typeSymbol, VisualBasicSyntaxNode contextNode)
         {
-            if (typeSymbol.IsNullable()) return SyntaxFactory.NullableType(ToCsTypeSyntax(vbSemanticModel, typeSymbol.GetNullableUnderlyingType(), contextNode));
+            if (typeSymbol.IsNullable()) return SyntaxFactory.NullableType(GetCsTypeSyntax(vbSemanticModel, typeSymbol.GetNullableUnderlyingType(), contextNode));
             var predefined = typeSymbol.SpecialType.GetPredefinedKeywordKind();
             if (predefined != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None)
             {

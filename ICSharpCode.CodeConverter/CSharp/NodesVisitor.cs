@@ -641,7 +641,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var postBodyStatements = new List<StatementSyntax>();
 
                 var functionSym = _semanticModel.GetDeclaredSymbol(node);
-                var returnType = _semanticModel.ToCsTypeSyntax(functionSym.GetReturnType(), node);
+                var returnType = _semanticModel.GetCsTypeSyntax(functionSym.GetReturnType(), node);
 
                 if (csReturnVariableOrNull != null)
                 {
@@ -1194,7 +1194,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                 SyntaxFactory.Comment("/* TODO Change to default(_) if this is not a reference type */"));
                     }
 
-                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(_semanticModel.ToCsTypeSyntax(type, node)) : CommonConversions.Literal(null);
+                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(_semanticModel.GetCsTypeSyntax(type, node)) : CommonConversions.Literal(null);
                 }
                 return CommonConversions.Literal(node.Token.Value, node.Token.Text);
             }
@@ -1257,7 +1257,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (node.Expression is VBSyntax.MyClassExpressionSyntax) {
                     if (symbolInfo.Symbol.IsStatic) {
                         var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
-                        left = _semanticModel.ToCsTypeSyntax(typeInfo.Type, node);
+                        left = _semanticModel.GetCsTypeSyntax(typeInfo.Type, node);
                     } else {
                         left = SyntaxFactory.ThisExpression();
                         if (symbolInfo.Symbol.IsVirtual && !symbolInfo.Symbol.IsAbstract) {
@@ -1269,7 +1269,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
                     var symbol = _semanticModel.GetSymbolInfo(node.Expression);
                     if (typeInfo.Type != null && !symbol.Symbol.IsType()) {
-                        left = _semanticModel.ToCsTypeSyntax(typeInfo.Type, node);
+                        left = _semanticModel.GetCsTypeSyntax(typeInfo.Type, node);
                     }
                 }
                 if (left == null) {
