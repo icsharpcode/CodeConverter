@@ -23,7 +23,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             // Find the first and second statements in the method (property, constructor, etc.) which contain the identifier
             // This may overshoot where there are multiple identifiers with the same name - this is ok, it just means we could output an initializer where one is not needed
             var statements = localDeclarator.GetAncestor<MethodBlockBaseSyntax>().Statements.Where(s =>
-                s.DescendantTokens().Any(id => VisualBasicExtensions.IsKind((SyntaxToken) id, SyntaxKind.IdentifierToken) && equalsId(id.ValueText))
+                s.DescendantTokens().Any(id => ((SyntaxToken) id).IsKind(SyntaxKind.IdentifierToken) && equalsId(id.ValueText))
             ).Take(2).ToList();
             var first = statements.First();
             var second = statements.Last();
@@ -41,7 +41,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return alwaysAssigned && !writtenInside || !readInside;
         }
 
-        public static TypeSyntax ToCsTypeSyntax(SemanticModel vbSemanticModel, ITypeSymbol typeSymbol, VisualBasicSyntaxNode contextNode)
+        public static TypeSyntax ToCsTypeSyntax(this SemanticModel vbSemanticModel, ITypeSymbol typeSymbol, VisualBasicSyntaxNode contextNode)
         {
             if (typeSymbol.IsNullable()) return SyntaxFactory.NullableType(ToCsTypeSyntax(vbSemanticModel, typeSymbol.GetNullableUnderlyingType(), contextNode));
             var predefined = typeSymbol.SpecialType.GetPredefinedKeywordKind();

@@ -116,7 +116,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var typeInf = _semanticModel.GetTypeInfo(declarator.Initializer.Value);
             if (typeInf.ConvertedType == null) return CreateVarTypeName();
 
-            return SemanticModelExtensions.ToCsTypeSyntax(_semanticModel, typeInf.ConvertedType, declarator);
+            return _semanticModel.ToCsTypeSyntax(typeInf.ConvertedType, declarator);
         }
 
         private static TypeSyntax CreateVarTypeName()
