@@ -4,6 +4,8 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasicExtensions;
 
 namespace ICSharpCode.CodeConverter.CSharp
@@ -37,6 +39,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool readInside = dataFlow.ReadInside.Any(s => equalsId(s.Name));
             bool writtenInside = dataFlow.WrittenInside.Any(s => equalsId(s.Name));
             return alwaysAssigned && !writtenInside || !readInside;
+        }
+
+        public static TypeSyntax ToCsTypeSyntax(SemanticModel vbSemanticModel, ITypeSymbol typeSymbol, VisualBasicSyntaxNode contextNode)
+        {
+            if (typeSymbol.IsNullable()) return SyntaxFactory.NullableType(ToCsTypeSyntax(vbSemanticModel, typeSymbol.GetNullableUnderlyingType(), contextNode));
+            var predefined = typeSymbol.SpecialType.GetPredefinedKeywordKind();
+            if (predefined != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None)
+            {
+                return SyntaxFactory.PredefinedType(SyntaxFactory.Token(predefined));
+            }
+
+            var typeName = typeSymbol.ToMinimalCSharpDisplayString(vbSemanticModel, contextNode.SpanStart);
+            return SyntaxFactory.ParseTypeName(typeName);
         }
     }
 }

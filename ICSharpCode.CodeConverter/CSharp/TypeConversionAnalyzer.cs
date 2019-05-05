@@ -29,7 +29,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var conversionKind = AnalyzeConversion(vbNode, csNode, out var vbConvertedType);
             csNode = addParenthesisIfNeeded && conversionKind == TypeConversionKind.Implicit
-                ? CommonConversions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
+                ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;
             return AddExplicitConversion(vbNode, csNode, vbConvertedType, conversionKind, addParenthesisIfNeeded);
         }
@@ -41,9 +41,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 case TypeConversionKind.Unknown:
                 case TypeConversionKind.Identity:
-                    return addParenthesisIfNeeded ? CommonConversions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
+                    return addParenthesisIfNeeded ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
                 case TypeConversionKind.Implicit:
-                    return SyntaxFactory.CastExpression(CommonConversions.ToCsTypeSyntax(vbConvertedType, vbNode), csNode);
+                    return SyntaxFactory.CastExpression(SemanticModelExtensions.ToCsTypeSyntax(_semanticModel, vbConvertedType, vbNode), csNode);
                 case TypeConversionKind.Explicit:
                     return AddExplicitConvertTo(vbNode, csNode, vbConvertedType);
                 default:
@@ -101,7 +101,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 // Safe overapproximation: A cast is really only needed to help resolve the overload for the operator/method used.
                 // e.g. When VB "&" changes to C# "+", there are lots more overloads available that implicit casts could match.
                 // e.g. sbyte * ulong uses the decimal * operator in VB. In C# it's ambiguous - see ExpressionTests.vb "TestMul".
-                var typeName = CommonConversions.ToCsTypeSyntax(vbConvertedType, vbNode);
+                var typeName = SemanticModelExtensions.ToCsTypeSyntax(_semanticModel, vbConvertedType, vbNode);
                 if (csNode is CastExpressionSyntax cast && cast.Type.IsEquivalentTo(typeName)) {
                     return TypeConversionKind.Identity;
                 }
