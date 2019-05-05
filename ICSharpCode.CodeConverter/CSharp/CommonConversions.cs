@@ -56,10 +56,12 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private readonly SemanticModel _semanticModel;
         private readonly VisualBasicSyntaxVisitor<CSharpSyntaxNode> _nodesVisitor;
-        public TypeConversionAnalyzer TypeConversionAnalyzer { get; set; }
+        public TypeConversionAnalyzer TypeConversionAnalyzer { get; }
 
-        public CommonConversions(SemanticModel semanticModel, VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor)
+        public CommonConversions(SemanticModel semanticModel, VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
+            TypeConversionAnalyzer typeConversionAnalyzer)
         {
+            TypeConversionAnalyzer = typeConversionAnalyzer;
             _semanticModel = semanticModel;
             _nodesVisitor = nodesVisitor;
         }

@@ -29,7 +29,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             private readonly Stack<string> _withBlockTempVariableNames;
             private readonly HashSet<string> _extraUsingDirectives;
             private readonly HashSet<string> _generatedNames = new HashSet<string>();
-            private readonly TypeConversionAnalyzer _typeConversionAnalyzer;
 
             public bool IsIterator { get; set; }
             public IdentifierNameSyntax ReturnVariable { get; set; }
@@ -38,20 +37,18 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private CommonConversions CommonConversions { get; }
 
-            public MethodBodyVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel, CSharpCompilation csCompilation,
-                VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, TypeConversionAnalyzer typeConversionAnalyzer,
+            public MethodBodyVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
+                VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, CommonConversions commonConversions,
                 Stack<string> withBlockTempVariableNames, HashSet<string> extraUsingDirectives,
                 TriviaConverter triviaConverter)
             {
                 _methodNode = methodNode;
-                this._semanticModel = semanticModel;
-                this._nodesVisitor = nodesVisitor;
-                this._withBlockTempVariableNames = withBlockTempVariableNames;
+                _semanticModel = semanticModel;
+                _nodesVisitor = nodesVisitor;
+                CommonConversions = commonConversions;
+                _withBlockTempVariableNames = withBlockTempVariableNames;
                 _extraUsingDirectives = extraUsingDirectives;
-                _typeConversionAnalyzer = typeConversionAnalyzer;
                 CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
-                CommonConversions = new CommonConversions(semanticModel, _nodesVisitor);
-                CommonConversions.TypeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, CommonConversions, extraUsingDirectives);
             }
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
@@ -82,7 +79,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override SyntaxList<StatementSyntax> VisitLocalDeclarationStatement(VBSyntax.LocalDeclarationStatementSyntax node)
             {
                 var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Local);
-                var isConst = modifiers.Any(a => a.Kind() == Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
+                var isConst = modifiers.Any(a => a.Kind() == SyntaxKind.ConstKeyword);
 
                 var declarations = new List<LocalDeclarationStatementSyntax>();
 
@@ -505,7 +502,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     foreach (var c in block.CaseStatement.Cases) {
                         if (c is VBSyntax.SimpleCaseClauseSyntax s) {
                             var originalExpressionSyntax = (ExpressionSyntax)s.Value.Accept(_nodesVisitor);
-                            var expressionSyntax = _typeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax);
+                            var expressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax);
                             SwitchLabelSyntax caseSwitchLabelSyntax = SyntaxFactory.CaseSwitchLabel(expressionSyntax);
                             if (!_semanticModel.GetConstantValue(s.Value).HasValue || originalExpressionSyntax != expressionSyntax) {
                                 caseSwitchLabelSyntax =

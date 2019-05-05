@@ -13,17 +13,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _extraUsingDirectives;
 
-        public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation,
-            CommonConversions commonConversions, HashSet<string> extraUsingDirectives)
+        public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation, HashSet<string> extraUsingDirectives)
         {
             _semanticModel = semanticModel;
             _csCompilation = csCompilation;
             _extraUsingDirectives = extraUsingDirectives;
-            CommonConversions = commonConversions;
-            commonConversions.TypeConversionAnalyzer = this;
         }
-
-        private CommonConversions CommonConversions { get; }
 
         public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = false)
         {

@@ -45,8 +45,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 this._csCompilation = csCompilation;
                 TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
                 _createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
-                CommonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor);
-                _typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, CommonConversions, _extraUsingDirectives);
+                _typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives);
+                CommonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor, _typeConversionAnalyzer);
                 _queryConverter = new QueryConverter(CommonConversions, TriviaConvertingVisitor);
                 _additionalInitializers = new AdditionalInitializers();
             }
@@ -909,7 +909,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
             {
-                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, _csCompilation, TriviaConvertingVisitor, _typeConversionAnalyzer, _withBlockTempVariableNames, _extraUsingDirectives, TriviaConvertingVisitor.TriviaConverter) {
+                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, CommonConversions, _withBlockTempVariableNames, _extraUsingDirectives, TriviaConvertingVisitor.TriviaConverter) {
                     IsIterator = isIterator,
                     ReturnVariable = csReturnVariable,
                 };
