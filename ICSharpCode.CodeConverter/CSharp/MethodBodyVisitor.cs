@@ -40,14 +40,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             public MethodBodyVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
                 VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
                 Stack<string> withBlockTempVariableNames, HashSet<string> extraUsingDirectives,
-                TriviaConverter triviaConverter)
+                AdditionalLocals additionalLocals, TriviaConverter triviaConverter)
             {
                 _methodNode = methodNode;
                 this._semanticModel = semanticModel;
                 this._nodesVisitor = nodesVisitor;
                 this._withBlockTempVariableNames = withBlockTempVariableNames;
                 _extraUsingDirectives = extraUsingDirectives;
-                CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
+                var byRefParameterVisitor = new ByRefParameterVisitor(this, additionalLocals, semanticModel, _generatedNames);
+                CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor, triviaConverter);
                 CommonConversions = new CommonConversions(semanticModel, _nodesVisitor);
             }
 
@@ -112,12 +113,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> VisitExpressionStatement(VBSyntax.ExpressionStatementSyntax node)
             {
-                if (node.Expression is VBSyntax.InvocationExpressionSyntax invoke &&
+                var invoke = node.Expression as VBSyntax.InvocationExpressionSyntax;
+                if (invoke != null &&
                     invoke.Expression is VBSyntax.MemberAccessExpressionSyntax expr &&
                     expr.Expression is VBSyntax.MyBaseExpressionSyntax &&
                     expr.Name.Identifier.ValueText.Equals("Finalize", StringComparison.OrdinalIgnoreCase)) {
                     return new SyntaxList<StatementSyntax>();
                 }
+
                 return SingleStatement((ExpressionSyntax)node.Expression.Accept(_nodesVisitor));
             }
 
@@ -298,6 +301,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 if (IsIterator)
                     return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
+
                 return SingleStatement(SyntaxFactory.ReturnStatement((ExpressionSyntax)node.Expression?.Accept(_nodesVisitor)));
             }
 
@@ -578,16 +582,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private string GetUniqueVariableNameInScope(VBasic.VisualBasicSyntaxNode node, string variableNameBase)
             {
-                // Need to check not just the symbols this node has access to, but whether there are any nested blocks which have access to this node and contain a conflicting name
-                var scopeStarts = node.GetAncestorOrThis<VBSyntax.StatementSyntax>().DescendantNodesAndSelf()
-                    .OfType<VBSyntax.StatementSyntax>().Select(n => n.SpanStart).ToList();
-                string uniqueName = NameGenerator.GenerateUniqueName(variableNameBase, string.Empty,
-                    n => {
-                        var matchingSymbols = scopeStarts.SelectMany(scopeStart => _semanticModel.LookupSymbols(scopeStart, name: n));
-                        return !_generatedNames.Contains(n) && !matchingSymbols.Any();
-                    });
-                _generatedNames.Add(uniqueName);
-                return uniqueName;
+                return NameGenerator.GetUniqueVariableNameInScope(_semanticModel, _generatedNames, node, variableNameBase);
             }
 
             public override SyntaxList<StatementSyntax> VisitTryBlock(VBSyntax.TryBlockSyntax node)

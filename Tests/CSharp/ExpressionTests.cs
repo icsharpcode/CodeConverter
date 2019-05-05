@@ -156,6 +156,217 @@ class TestClass
         }
 
         [Fact]
+        public void RefArgumentRValue()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Private Property C1 As Class1
+    Private _c2 As Class1
+    Private _o1 As Object
+
+    Sub Foo()
+        Bar(New Class1)
+        Bar(C1)
+        Bar(Me.C1)
+        Bar(_c2)
+        Bar(Me._c2)
+        Bar(_o1)
+        Bar(Me._o1)
+    End Sub
+
+    Sub Bar(ByRef class1)
+    End Sub
+End Class", @"public class Class1
+{
+    private Class1 C1 { get; set; }
+    private Class1 _c2;
+    private object _o1;
+
+    public void Foo()
+    {
+        var argclass1 = (object)new Class1();
+        Bar(ref argclass1);
+        var argclass11 = (object)C1;
+        Bar(ref argclass11);
+        var argclass12 = (object)this.C1;
+        Bar(ref argclass12);
+        var argclass13 = (object)_c2;
+        Bar(ref argclass13);
+        var argclass14 = (object)this._c2;
+        Bar(ref argclass14);
+        Bar(ref _o1);
+        Bar(ref this._o1);
+    }
+
+    public void Bar(ref object class1)
+    {
+    }
+}");
+        }
+
+        [Fact]
+        public void RefArgumentRValue2()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Foo()
+        Dim x = True
+        Bar(x = True)
+    End Sub
+
+    Sub Foo2()
+        Return Bar(True = False)
+    End Sub
+
+    Sub Foo3()
+        If Bar(True = False) Then Bar(True = False)
+    End Sub
+
+    Sub Foo4()
+        If Bar(True = False) Then
+            Bar(True = False)
+        ElseIf Bar(True = False) Then
+            Bar(True = False)
+        Else
+            Bar(True = False)
+        End If
+    End Sub
+
+    Sub Bar(ByRef b As Boolean)
+    End Sub
+
+    Function Bar2(ByRef c1 As Class1) As Integer
+        If c1 IsNot Nothing AndAlso Len(Bar3(Me)) <> 0 Then
+            Return 1
+        End If
+        Return 0
+    End Function
+
+    Function Bar3(ByRef c1 As Class1) As String
+        Return """"
+    End Function
+
+End Class", @"public class Class1
+{
+    public void Foo()
+    {
+        var x = true;
+        var argb = x == true;
+        Bar(ref argb);
+    }
+
+    public void Foo2()
+    {
+        var argb = true == false;
+        return Bar(ref argb);
+    }
+
+    public void Foo3()
+    {
+        var argb1 = true == false;
+        if (Bar(ref argb1))
+        {
+            var argb = true == false;
+            Bar(ref argb);
+        }
+    }
+
+    public void Foo4()
+    {
+        var argb3 = true == false;
+        var argb4 = true == false;
+        if (Bar(ref argb3))
+        {
+            var argb = true == false;
+            Bar(ref argb);
+        }
+        else if (Bar(ref argb4))
+        {
+            var argb2 = true == false;
+            Bar(ref argb2);
+        }
+        else
+        {
+            var argb1 = true == false;
+            Bar(ref argb1);
+        }
+    }
+
+    public void Bar(ref bool b)
+    {
+    }
+
+    public int Bar2(ref Class1 c1)
+    {
+        var argc1 = this;
+        if (c1 != null && Microsoft.VisualBasic.Strings.Len(Bar3(ref argc1)) != 0)
+            return 1;
+        return 0;
+    }
+
+    public string Bar3(ref Class1 c1)
+    {
+        return """";
+    }
+}");
+        }
+
+        [Fact]
+        public void RefArgumentUsing()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Data.SqlClient
+
+Public Class Class1
+    Sub Foo()
+        Using x = New SqlConnection
+            Bar(x)
+        End Using
+    End Sub
+    Sub Bar(ByRef x As SqlConnection)
+
+    End Sub
+End Class", @"using System.Data.SqlClient;
+
+public class Class1
+{
+    public void Foo()
+    {
+        using (var x = new SqlConnection())
+        {
+            var argx = x;
+            Bar(ref argx);
+        }
+    }
+    public void Bar(ref SqlConnection x)
+    {
+    }
+}");
+        }
+
+        [Fact]
+        public void RefArgumentPropertyInitializer()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Private _p1 As Class1 = Foo(New Class1)
+    Public Shared Function Foo(ByRef c1 As Class1) As Class1
+        Return c1
+    End Function
+End Class", @"public class Class1
+{
+    static Class1 Foo__p1()
+    {
+        var argc1 = new Class1();
+        return Foo(ref argc1);
+    }
+
+    private Class1 _p1 = Foo__p1();
+
+    public static Class1 Foo(ref Class1 c1)
+    {
+        return c1;
+    }
+}");
+        }
+
+        [Fact]
         public void MethodCallWithImplicitConversion()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
