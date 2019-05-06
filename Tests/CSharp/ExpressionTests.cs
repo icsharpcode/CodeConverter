@@ -645,12 +645,24 @@ End Class", @"class TestClass
         [Fact]
         public void StringCompare()
         {
-            TestConversionVisualBasicToCSharp(@"Public Class Class1
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Sub Foo()
         Dim s1 As String = Nothing
         Dim s2 As String = """"
         If s1 <> s2 Then
             Throw New Exception()
+        End If
+        If s1 = ""something"" Then
+            Throw New Exception()
+        End If
+        If ""something"" = s1 Then
+            Throw New Exception()
+        End If
+        If s1 = Nothing Then
+            '
+        End If
+        If s1 = """" Then
+            '
         End If
     End Sub
 End Class", @"using System;
@@ -664,11 +676,68 @@ public class Class1
         string s2 = """";
         if (Operators.CompareString(s1, s2, TextCompare: false) != 0)
             throw new Exception();
+        if (s1 == ""something"")
+            throw new Exception();
+        if (""something"" == s1)
+            throw new Exception();
+        if (string.IsNullOrEmpty(s1))
+        {
+        }
+        if (string.IsNullOrEmpty(s1))
+        {
+        }
     }
 }");
         }
 
+        [Fact]
+        public void StringCompareText()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Option Compare Text
+Public Class Class1
+    Sub Foo()
+        Dim s1 As String = Nothing
+        Dim s2 As String = """"
+        If s1 <> s2 Then
+            Throw New Exception()
+        End If
+        If s1 = ""something"" Then
+            Throw New Exception()
+        End If
+        If ""something"" = s1 Then
+            Throw New Exception()
+        End If
+        If s1 = Nothing Then
+            '
+        End If
+        If s1 = """" Then
+            '
+        End If
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices;
 
+public class Class1
+{
+    public void Foo()
+    {
+        string s1 = null;
+        string s2 = """";
+        if (Operators.CompareString(s1, s2, TextCompare: true) != 0)
+            throw new Exception();
+        if (Operators.CompareString(s1, ""something"", TextCompare: true) == 0)
+            throw new Exception();
+        if (Operators.CompareString(""something"", s1, TextCompare: true) == 0)
+            throw new Exception();
+        if (string.IsNullOrEmpty(s1))
+        {
+        }
+        if (string.IsNullOrEmpty(s1))
+        {
+        }
+    }
+}");
+        }
 
         [Fact]
         public void StringConcatPrecedence()

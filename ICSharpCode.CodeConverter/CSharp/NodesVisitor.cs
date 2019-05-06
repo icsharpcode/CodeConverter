@@ -107,6 +107,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var options = (VBasic.VisualBasicCompilationOptions)_semanticModel.Compilation.Options;
                 var importsClauses = options.GlobalImports.Select(gi => gi.Clause).Concat(node.Imports.SelectMany(imp => imp.ImportsClauses)).ToList();
 
+                _optionCompareText = node.Options.Any(x => x.NameKeyword.ValueText.Equals("Compare", StringComparison.OrdinalIgnoreCase) &&
+                                                           x.ValueKeyword.ValueText.Equals("Text", StringComparison.OrdinalIgnoreCase));
+
                 var attributes = SyntaxFactory.List(node.Attributes.SelectMany(a => a.AttributeLists).SelectMany(ConvertAttribute));
                 var sourceAndConverted = node.Members.Select(m => (Source: m, Converted: ConvertMember(m))).ToReadOnlyCollection();
                 var convertedMembers = string.IsNullOrEmpty(options.RootNamespace)
@@ -118,9 +121,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     .Concat(_extraUsingDirectives.Select(u => SyntaxFactory.UsingDirective(SyntaxFactory.ParseName(u))))
                     .GroupBy(u => u.ToString())
                     .Select(g => g.First());
-
-                _optionCompareText = node.Options.Any(x => x.NameKeyword.ValueText.Equals("Compare", StringComparison.OrdinalIgnoreCase) &&
-                                                           x.ValueKeyword.ValueText.Equals("Text", StringComparison.OrdinalIgnoreCase));
 
                 return SyntaxFactory.CompilationUnit(
                     SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
@@ -1697,9 +1697,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                         bool lhsEmpty = lhs is LiteralExpressionSyntax les &&
                                         (les.IsKind(SyntaxKind.NullLiteralExpression) ||
                                         (les.IsKind(SyntaxKind.StringLiteralExpression) && string.IsNullOrEmpty(les.Token.ValueText)));
+                        bool lhsLiteral = lhs is LiteralExpressionSyntax && lhs.IsKind(SyntaxKind.StringLiteralExpression);
                         bool rhsEmpty = rhs is LiteralExpressionSyntax res &&
                                         (res.IsKind(SyntaxKind.NullLiteralExpression) ||
                                         (res.IsKind(SyntaxKind.StringLiteralExpression) && string.IsNullOrEmpty(res.Token.ValueText)));
+                        bool rhsLiteral = rhs is LiteralExpressionSyntax && rhs.IsKind(SyntaxKind.StringLiteralExpression);
 
                         if (lhsEmpty || rhsEmpty) {
                             var arg = lhsEmpty ? rhs : lhs;
@@ -1707,6 +1709,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                                 SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName("string"), SyntaxFactory.IdentifierName("IsNullOrEmpty")),
                                 SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[] { SyntaxFactory.Argument(arg) })));
                             return node.IsKind(VBasic.SyntaxKind.EqualsExpression) ? (CSharpSyntaxNode)nullOrEmpty : SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, nullOrEmpty);
+                        } else if (!_optionCompareText && (lhsLiteral || rhsLiteral)) {
+                            // If either side is a literal, and we're in binary comparison mode, we can use normal comparison logic
                         } else {
                             _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
                             var textCompare = SyntaxFactory.Argument(SyntaxFactory.NameColon("TextCompare"),
