@@ -230,6 +230,10 @@ End Class", @"public class Class1
         End If
     End Sub
 
+    Sub Foo5()
+        Bar(Nothing)
+    End Sub
+
     Sub Bar(ByRef b As Boolean)
     End Sub
 
@@ -288,6 +292,12 @@ End Class", @"public class Class1
             var argb1 = true == false;
             Bar(ref argb1);
         }
+    }
+
+    public void Foo5()
+    {
+        var argb = default(bool);
+        Bar(ref argb);
     }
 
     public void Bar(ref bool b)
@@ -396,6 +406,34 @@ public class Class1
     }
 }");
         }
+
+        [Fact]
+        public void IntToEnumArg()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Foo(ByVal arg As TriState)
+    End Sub
+
+    Sub Main()
+        Foo(0)
+    End Sub
+End Class",
+@"using Microsoft.VisualBasic;
+
+public class Class1
+{
+    public void Foo(TriState arg)
+    {
+    }
+
+    public void Main()
+    {
+        Foo((TriState)0);
+    }
+}");
+        }
+
+
 
         [Fact]
         public void EnumSwitch()

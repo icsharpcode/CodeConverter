@@ -105,6 +105,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
                 return TypeConversionKind.Implicit;
             }
+            else if (csConversion.IsExplicit && csConversion.IsEnumeration)
+            {
+                return TypeConversionKind.Implicit;
+            }
             else if (csConversion.IsExplicit && vbConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum)
             {
                 return TypeConversionKind.Explicit;

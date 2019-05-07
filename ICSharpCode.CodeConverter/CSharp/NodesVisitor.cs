@@ -1474,7 +1474,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 bool isUsing = symbolInfo?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()?.Parent?.Parent?.IsKind(VBasic.SyntaxKind.UsingStatement) == true;
 
                 var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
-                bool isTypeMismatch = !typeInfo.Type.Equals(typeInfo.ConvertedType);
+                bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType);
 
                 return (!isIdentifier && !isMemberAccess) || isProperty || isTypeMismatch || isUsing;
             }
