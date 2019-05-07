@@ -408,6 +408,34 @@ public class Class1
         }
 
         [Fact]
+        public void IntToEnumArg()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Foo(ByVal arg As TriState)
+    End Sub
+
+    Sub Main()
+        Foo(0)
+    End Sub
+End Class",
+@"using Microsoft.VisualBasic;
+
+public class Class1
+{
+    public void Foo(TriState arg)
+    {
+    }
+
+    public void Main()
+    {
+        Foo((TriState)0);
+    }
+}");
+        }
+
+
+
+        [Fact]
         public void EnumSwitch()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
