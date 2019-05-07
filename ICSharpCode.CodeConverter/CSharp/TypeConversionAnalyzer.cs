@@ -13,22 +13,18 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _extraUsingDirectives;
 
-        public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation,
-            CommonConversions commonConversions, HashSet<string> extraUsingDirectives)
+        public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation, HashSet<string> extraUsingDirectives)
         {
             _semanticModel = semanticModel;
             _csCompilation = csCompilation;
             _extraUsingDirectives = extraUsingDirectives;
-            CommonConversions = commonConversions;
         }
-
-        private CommonConversions CommonConversions { get; }
 
         public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = false, bool alwaysExplicit = false)
         {
             var conversionKind = AnalyzeConversion(vbNode, csNode, alwaysExplicit, out var vbConvertedType);
             csNode = addParenthesisIfNeeded && conversionKind == TypeConversionKind.Implicit
-                ? CommonConversions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
+                ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;
             return AddExplicitConversion(vbNode, csNode, vbConvertedType, conversionKind, addParenthesisIfNeeded);
         }
@@ -40,9 +36,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 case TypeConversionKind.Unknown:
                 case TypeConversionKind.Identity:
-                    return addParenthesisIfNeeded ? CommonConversions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
+                    return addParenthesisIfNeeded ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
                 case TypeConversionKind.Implicit:
-                    return SyntaxFactory.CastExpression(CommonConversions.ToCsTypeSyntax(vbConvertedType, vbNode), csNode);
+                    return SyntaxFactory.CastExpression(_semanticModel.GetCsTypeSyntax(vbConvertedType, vbNode), csNode);
                 case TypeConversionKind.Explicit:
                     return AddExplicitConvertTo(vbNode, csNode, vbConvertedType);
                 default:
@@ -58,6 +54,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (vbType is null || vbConvertedType is null)
             {
                 return TypeConversionKind.Unknown;
+            }
+
+            if (vbType.IsEnumType()) {
+                if (vbConvertedType.IsNumericType()) {
+                    return TypeConversionKind.Implicit;
+                } else if (vbType.Equals(vbConvertedType) ||
+                            (vbConvertedType.IsNullable() && vbType.Equals(vbConvertedType.GetNullableUnderlyingType())) ||
+                            vbConvertedType.SpecialType == SpecialType.System_Object) {
+                    return TypeConversionKind.Identity;
+                } else {
+                    return TypeConversionKind.Explicit;
+                }
             }
 
             var vbCompilation = _semanticModel.Compilation as Microsoft.CodeAnalysis.VisualBasic.VisualBasicCompilation;
@@ -91,7 +99,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 // Safe overapproximation: A cast is really only needed to help resolve the overload for the operator/method used.
                 // e.g. When VB "&" changes to C# "+", there are lots more overloads available that implicit casts could match.
                 // e.g. sbyte * ulong uses the decimal * operator in VB. In C# it's ambiguous - see ExpressionTests.vb "TestMul".
-                var typeName = CommonConversions.ToCsTypeSyntax(vbConvertedType, vbNode);
+                var typeName = _semanticModel.GetCsTypeSyntax(vbConvertedType, vbNode);
                 if (csNode is CastExpressionSyntax cast && cast.Type.IsEquivalentTo(typeName)) {
                     return TypeConversionKind.Identity;
                 }

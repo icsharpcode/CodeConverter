@@ -4,6 +4,8 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasicExtensions;
 
 namespace ICSharpCode.CodeConverter.CSharp
@@ -21,7 +23,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             // Find the first and second statements in the method (property, constructor, etc.) which contain the identifier
             // This may overshoot where there are multiple identifiers with the same name - this is ok, it just means we could output an initializer where one is not needed
             var statements = localDeclarator.GetAncestor<MethodBlockBaseSyntax>().Statements.Where(s =>
-                s.DescendantTokens().Any(id => VisualBasicExtensions.IsKind((SyntaxToken) id, SyntaxKind.IdentifierToken) && equalsId(id.ValueText))
+                s.DescendantTokens().Any(id => ((SyntaxToken) id).IsKind(SyntaxKind.IdentifierToken) && equalsId(id.ValueText))
             ).Take(2).ToList();
             var first = statements.First();
             var second = statements.Last();
@@ -37,6 +39,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool readInside = dataFlow.ReadInside.Any(s => equalsId(s.Name));
             bool writtenInside = dataFlow.WrittenInside.Any(s => equalsId(s.Name));
             return alwaysAssigned && !writtenInside || !readInside;
+        }
+
+        public static TypeSyntax GetCsTypeSyntax(this SemanticModel vbSemanticModel, ITypeSymbol typeSymbol, VisualBasicSyntaxNode contextNode)
+        {
+            if (typeSymbol.IsNullable()) return SyntaxFactory.NullableType(GetCsTypeSyntax(vbSemanticModel, typeSymbol.GetNullableUnderlyingType(), contextNode));
+            var predefined = typeSymbol.SpecialType.GetPredefinedKeywordKind();
+            if (predefined != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None)
+            {
+                return SyntaxFactory.PredefinedType(SyntaxFactory.Token(predefined));
+            }
+
+            var typeName = typeSymbol.ToMinimalCSharpDisplayString(vbSemanticModel, contextNode.SpanStart);
+            return SyntaxFactory.ParseTypeName(typeName);
         }
     }
 }

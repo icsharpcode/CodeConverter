@@ -46,8 +46,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 this._csCompilation = csCompilation;
                 TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
                 _createConvertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
-                CommonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor);
-                _typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, CommonConversions, _extraUsingDirectives);
+                _typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives);
+                CommonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor, _typeConversionAnalyzer);
                 _queryConverter = new QueryConverter(CommonConversions, TriviaConvertingVisitor);
                 _additionalInitializers = new AdditionalInitializers();
             }
@@ -681,7 +681,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var postBodyStatements = new List<StatementSyntax>();
 
                 var functionSym = _semanticModel.GetDeclaredSymbol(node);
-                var returnType = CommonConversions.ToCsTypeSyntax(functionSym.GetReturnType(), node);
+                var returnType = _semanticModel.GetCsTypeSyntax(functionSym.GetReturnType(), node);
 
                 if (csReturnVariableOrNull != null)
                 {
@@ -951,7 +951,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
             {
-                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, _withBlockTempVariableNames, _extraUsingDirectives, _additionalLocals, TriviaConvertingVisitor.TriviaConverter) {
+                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, CommonConversions, _withBlockTempVariableNames, _extraUsingDirectives, _additionalLocals, TriviaConvertingVisitor.TriviaConverter) {
                     IsIterator = isIterator,
                     ReturnVariable = csReturnVariable,
                 };
@@ -1219,7 +1219,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitTryCastExpression(VBSyntax.TryCastExpressionSyntax node)
             {
-                return CommonConversions.ParenthesizeIfPrecedenceCouldChange(node, SyntaxFactory.BinaryExpression(
+                return VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(node, SyntaxFactory.BinaryExpression(
                     SyntaxKind.AsExpression,
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
                     (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)
@@ -1235,7 +1235,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                             .WithTrailingTrivia(
                                 SyntaxFactory.Comment("/* TODO Change to default(_) if this is not a reference type */"));
                     }
-                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(CommonConversions.ToCsTypeSyntax(type, node)) : CommonConversions.Literal(null);
+
+                    return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(_semanticModel.GetCsTypeSyntax(type, node)) : CommonConversions.Literal(null);
                 }
                 return CommonConversions.Literal(node.Token.Value, node.Token.Text);
             }
@@ -1298,7 +1299,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (node.Expression is VBSyntax.MyClassExpressionSyntax) {
                     if (symbolInfo.Symbol.IsStatic) {
                         var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
-                        left = CommonConversions.ToCsTypeSyntax(typeInfo.Type, node);
+                        left = _semanticModel.GetCsTypeSyntax(typeInfo.Type, node);
                     } else {
                         left = SyntaxFactory.ThisExpression();
                         if (symbolInfo.Symbol.IsVirtual && !symbolInfo.Symbol.IsAbstract) {
@@ -1310,7 +1311,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
                     var symbol = _semanticModel.GetSymbolInfo(node.Expression);
                     if (typeInfo.Type != null && !symbol.Symbol.IsType()) {
-                        left = CommonConversions.ToCsTypeSyntax(typeInfo.Type, node);
+                        left = _semanticModel.GetCsTypeSyntax(typeInfo.Type, node);
                     }
                 }
                 if (left == null) {
@@ -1614,7 +1615,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     (ExpressionSyntax)node.WhenFalse.Accept(TriviaConvertingVisitor)
                 );
 
-                if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || CommonConversions.PrecedenceCouldChange(node))
+                if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || VbSyntaxNodeExtensions.PrecedenceCouldChange(node))
                     return SyntaxFactory.ParenthesizedExpression(expr);
 
                 return expr;

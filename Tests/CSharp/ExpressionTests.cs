@@ -398,6 +398,58 @@ public class Class1
         }
 
         [Fact]
+        public void EnumSwitch()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Enum E
+        A
+    End Enum
+
+    Sub Main()
+        Dim e1 = E.A
+        Dim e2 As Integer
+        Select Case e1
+            Case 0
+        End Select
+
+        Select Case e2
+            Case E.A
+        End Select
+
+    End Sub
+End Class",
+@"public class Class1
+{
+    enum E
+    {
+        A
+    }
+
+    public void Main()
+    {
+        var e1 = E.A;
+        int e2 = default(int);
+        switch (e1)
+        {
+            case 0:
+                {
+                    break;
+                }
+        }
+
+        switch (e2)
+        {
+            case var @case when @case == (int)E.A:
+                {
+                    break;
+                }
+        }
+    }
+}");
+        }
+
+
+        [Fact]
         public void MethodCallWithoutParens()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
@@ -515,6 +567,34 @@ End Class", @"class TestClass
     private bool bIsNot = new object() != new object();
     private int bLeftShift = 1 << 3;
     private int bRightShift = 8 >> 3;
+}");
+        }
+
+        [Fact]
+        public void EnumNullableConversion()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Main()
+        Dim x = DayOfWeek.Monday
+        Foo(x)
+    End Sub
+
+    Sub Foo(x As DayOfWeek?)
+
+    End Sub
+End Class", @"using System;
+
+public class Class1
+{
+    public void Main()
+    {
+        var x = DayOfWeek.Monday;
+        Foo(x);
+    }
+
+    public void Foo(DayOfWeek? x)
+    {
+    }
 }");
         }
 
@@ -707,8 +787,8 @@ class TestClass
 {
     private void TestMethod()
     {
-        double x = 1;
-        decimal y = 2;
+        double x = (double)1;
+        decimal y = (decimal)2;
         int i1 = 1;
         int i2 = 2;
         var d1 = (double)i1 / (double)i2;

@@ -38,18 +38,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             private CommonConversions CommonConversions { get; }
 
             public MethodBodyVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
-                VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
+                VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, CommonConversions commonConversions,
                 Stack<string> withBlockTempVariableNames, HashSet<string> extraUsingDirectives,
                 AdditionalLocals additionalLocals, TriviaConverter triviaConverter)
             {
                 _methodNode = methodNode;
-                this._semanticModel = semanticModel;
-                this._nodesVisitor = nodesVisitor;
-                this._withBlockTempVariableNames = withBlockTempVariableNames;
+                _semanticModel = semanticModel;
+                _nodesVisitor = nodesVisitor;
+                CommonConversions = commonConversions;
+                _withBlockTempVariableNames = withBlockTempVariableNames;
                 _extraUsingDirectives = extraUsingDirectives;
                 var byRefParameterVisitor = new ByRefParameterVisitor(this, additionalLocals, semanticModel, _generatedNames);
                 CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor, triviaConverter);
-                CommonConversions = new CommonConversions(semanticModel, _nodesVisitor);
             }
 
             public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
@@ -80,7 +80,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override SyntaxList<StatementSyntax> VisitLocalDeclarationStatement(VBSyntax.LocalDeclarationStatementSyntax node)
             {
                 var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Local);
-                var isConst = modifiers.Any(a => a.Kind() == Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
+                var isConst = modifiers.Any(a => a.Kind() == SyntaxKind.ConstKeyword);
 
                 var declarations = new List<LocalDeclarationStatementSyntax>();
 
@@ -505,9 +505,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var labels = new List<SwitchLabelSyntax>();
                     foreach (var c in block.CaseStatement.Cases) {
                         if (c is VBSyntax.SimpleCaseClauseSyntax s) {
-                            var expressionSyntax = (ExpressionSyntax)s.Value.Accept(_nodesVisitor);
+                            var originalExpressionSyntax = (ExpressionSyntax)s.Value.Accept(_nodesVisitor);
+                            var expressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax);
                             SwitchLabelSyntax caseSwitchLabelSyntax = SyntaxFactory.CaseSwitchLabel(expressionSyntax);
-                            if (!_semanticModel.GetConstantValue(s.Value).HasValue) {
+                            if (!_semanticModel.GetConstantValue(s.Value).HasValue || originalExpressionSyntax != expressionSyntax) {
                                 caseSwitchLabelSyntax =
                                     WrapInCasePatternSwitchLabelSyntax(node, expressionSyntax);
                             }

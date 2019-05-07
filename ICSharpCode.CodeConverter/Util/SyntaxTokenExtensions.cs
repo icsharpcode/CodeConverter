@@ -699,8 +699,8 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsKind(this SyntaxToken token, SyntaxKind kind1, SyntaxKind kind2)
         {
-            return CSharpExtensions.Kind(token) == kind1
-                || CSharpExtensions.Kind(token) == kind2;
+            return token.Kind() == kind1
+                || token.Kind() == kind2;
         }
 
         public static bool IsKind(this SyntaxToken token, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind kind1, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind kind2)
@@ -711,9 +711,9 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsKind(this SyntaxToken token, SyntaxKind kind1, SyntaxKind kind2, SyntaxKind kind3)
         {
-            return CSharpExtensions.Kind(token) == kind1
-                || CSharpExtensions.Kind(token) == kind2
-                || CSharpExtensions.Kind(token) == kind3;
+            return token.Kind() == kind1
+                || token.Kind() == kind2
+                || token.Kind() == kind3;
         }
 
         public static bool IsKind(this SyntaxToken token, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind kind1, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind kind2, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind kind3)
@@ -725,7 +725,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsKind(this SyntaxToken token, params SyntaxKind[] kinds)
         {
-            return kinds.Contains(CSharpExtensions.Kind(token));
+            return kinds.Contains(token.Kind());
         }
 
         public static bool IsKind(this SyntaxToken token, params Microsoft.CodeAnalysis.VisualBasic.SyntaxKind[] kinds)
