@@ -25,6 +25,13 @@ Module Program
         End Sub
 
         <Fact>
+        Public Sub TestStringComparison()
+            Dim s1 As String = Nothing
+            Dim s2 As String = ""
+            Assert.True(s1 = s2)
+        End Sub
+
+        <Fact>
         Sub TestCat()
             Dim vBoolean As Boolean = Nothing
             Dim vSByte As SByte = Nothing

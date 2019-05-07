@@ -732,19 +732,21 @@ End Class", @"class TestClass
         Next
         Return -1
     End Function
-End Class", @"class TestClass
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+class TestClass
 {
     public static int FindTextInCol(string w, int pTitleRow, int startCol, string needle)
     {
         var loopTo = w.Length;
         for (int c = startCol; c <= loopTo; c++)
         {
-            if (needle == """")
+            if (string.IsNullOrEmpty(needle))
             {
                 if (string.IsNullOrWhiteSpace(w[c].ToString()))
                     return c;
             }
-            else if (w[c].ToString() == needle)
+            else if (Operators.CompareString(w[c].ToString(), needle, TextCompare: false) == 0)
                 return c;
         }
         return -1;
