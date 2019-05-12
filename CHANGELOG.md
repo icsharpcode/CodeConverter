@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
-# 6.8.0 12/05/2019
+# 6.8.0 13/05/2019
 
 ### VB -> C#
 * Assignment return now converted
