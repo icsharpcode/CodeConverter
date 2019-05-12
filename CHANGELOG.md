@@ -1,7 +1,23 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
-# 6.7.0 TBC
+# 6.8.0 12/05/2019
+
+### VB -> C#
+* Assignment return now converted
+* Enum implicit casts now converted
+* Access to shared variables through instance now converted
+* MyClass references now converted
+* Variables explicitly initialised to their default (as is implicit in VB)
+* Adds project reference to Microsoft.VisualBasic
+  * Uses Operators.CompareString for string equality comparison to match VB logic
+  * Uses DateAndTime for built-in date functions
+  * CDate() now converted to "Conversions.ToDate"
+* Improvements to parenthesization
+* Select Case with non-constant strings now converted correctly
+* Interface readonly properties now converted correctly
+
+# 6.7.0 09/04/2019
 
 * Downgrade Roslyn requirement in attempt to work with VS2017 15.3+
 
