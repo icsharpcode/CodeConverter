@@ -18,4 +18,5 @@ At the moment there's just a very small amount of quite bad documentation...so m
 * Avoid using the `SyntaxFactory.Parse*` methods in general - it leads to getting mixed up between which language a string is from, and means you don't learn how the syntax trees are formed. You can use https://roslynquoter.azurewebsites.net/ to help find the correct methods to use.
 
 ## Resources
+* https://en.wikipedia.org/wiki/Comparison_of_C_Sharp_and_Visual_Basic_.NET#Features_of_Visual_Basic_.NET_not_found_in_C#
 * Lots of high level introductions exist, e.g. https://github.com/dotnet/roslyn/wiki/Roslyn-Overview Getting deeper information is a lot harder. If you see good resources, PR them to this document!
