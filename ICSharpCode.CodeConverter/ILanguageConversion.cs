@@ -24,6 +24,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         string TargetLanguage { get; }
         string RootNamespace { get; set; }
         void Initialize(Compilation convertedCompilation);
-        string PostTransformProjectFile(string s);
+        string PostTransformProjectFile(string xml);
     }
 }

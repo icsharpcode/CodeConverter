@@ -60,25 +60,25 @@ namespace ICSharpCode.CodeConverter.CSharp
             };
         }
 
-        public string PostTransformProjectFile(string s)
+        public string PostTransformProjectFile(string xml)
         {
-            s = ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(s, "cs", "vb");
+            xml = ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(xml, "cs", "vb");
 
-            if (!Regex.IsMatch(s, @"<Reference\s+Include=""Microsoft.VisualBasic""\s*/>")) {
-                s = Regex.Replace(s, @"(<Reference\s+Include=""System""\s*/>)", "<Reference Include=\"Microsoft.VisualBasic\" />\r\n    $1");
+            if (!Regex.IsMatch(xml, @"<Reference\s+Include=""Microsoft.VisualBasic""\s*/>")) {
+                xml = Regex.Replace(xml, @"(<Reference\s+Include=""System""\s*/>)", "<Reference Include=\"Microsoft.VisualBasic\" />\r\n    $1");
             }
 
             // TODO Find API to, or parse project file sections to remove "<DefineDebug>true</DefineDebug>" + "<DefineTrace>true</DefineTrace>"
             // Then add them to the define constants in the same section, or create one if necessary.
 
-            var defineConstantsStart = s.IndexOf("<DefineConstants>");
-            var defineConstantsEnd = s.IndexOf("</DefineConstants>");
+            var defineConstantsStart = xml.IndexOf("<DefineConstants>");
+            var defineConstantsEnd = xml.IndexOf("</DefineConstants>");
             if (defineConstantsStart == -1 || defineConstantsEnd == -1)
-                return s;
+                return xml;
 
-            return s.Substring(0, defineConstantsStart) +
-                   s.Substring(defineConstantsStart, defineConstantsEnd - defineConstantsStart).Replace(",", ";") +
-                   s.Substring(defineConstantsEnd);
+            return xml.Substring(0, defineConstantsStart) +
+                   xml.Substring(defineConstantsStart, defineConstantsEnd - defineConstantsStart).Replace(",", ";") +
+                   xml.Substring(defineConstantsEnd);
         }
 
         public string TargetLanguage { get; } = LanguageNames.CSharp;

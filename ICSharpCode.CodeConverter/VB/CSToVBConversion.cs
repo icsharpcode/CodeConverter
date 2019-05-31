@@ -57,10 +57,29 @@ namespace ICSharpCode.CodeConverter.VB
                 ("\\.cs<", ".vb<")
             };
         }
-        public string PostTransformProjectFile(string s)
+        public string PostTransformProjectFile(string xml)
         {
-            s = ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(s, "vb", "cs");
+            xml = ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(xml, "vb", "cs");
+            xml = TweakDefineConstantsSeparator(xml);
+            xml = AddInfer(xml);
+            return xml;
+        }
 
+        private string AddInfer(string xml)
+        {
+            if (xml.IndexOf("<OptionInfer>") > -1) return xml;
+
+            string propertygroup = "<PropertyGroup>";
+            var startOfFirstPropertyGroup = xml.IndexOf(propertygroup);
+            if (startOfFirstPropertyGroup == -1) return xml;
+
+            int endOfFirstPropertyGroupStartTag = startOfFirstPropertyGroup + propertygroup.Length;
+            return xml.Substring(0, endOfFirstPropertyGroupStartTag) + Environment.NewLine + "    <OptionInfer>On</OptionInfer>" +
+                   xml.Substring(endOfFirstPropertyGroupStartTag);
+        }
+
+        private static string TweakDefineConstantsSeparator(string s)
+        {
             var startTag = "<DefineConstants>";
             var endTag = "</DefineConstants>";
             var defineConstantsStart = s.IndexOf(startTag);
