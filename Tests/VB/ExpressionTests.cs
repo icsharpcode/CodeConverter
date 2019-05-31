@@ -48,7 +48,7 @@ namespace Global.InnerNamespace
 }",
                 @"Imports System
 
-Namespace [Global].InnerNamespace
+Namespace Global.InnerNamespace
     Public Class Test
         Public Function StringInter(ByVal t As String, ByVal dt As DateTime) As String
             Dim a = $""pre{t} t""
