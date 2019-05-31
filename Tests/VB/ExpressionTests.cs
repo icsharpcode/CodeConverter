@@ -30,7 +30,7 @@ End Class");
             TestConversionCSharpToVisualBasic(
                 @"using System;
 
-namespace Global.InnerNamespace
+namespace global::InnerNamespace
 {
     public class Test
     {

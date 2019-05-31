@@ -493,6 +493,20 @@ End Class
         }
 
         [Fact]
+        public void TestClassWithGlobalAttribute()
+        {
+            TestConversionCSharpToVisualBasic(
+                @"[global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+internal class Resources
+{
+}", @"
+<Global.System.Runtime.CompilerServices.CompilerGeneratedAttribute()>
+Friend Class Resources
+End Class
+");
+        }
+
+        [Fact]
         public void TestConstructor()
         {
             TestConversionCSharpToVisualBasic(

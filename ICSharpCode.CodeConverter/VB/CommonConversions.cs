@@ -409,7 +409,12 @@ namespace ICSharpCode.CodeConverter.VB
             var idText = IsEventHandlerIdentifier(parent) && !IsEventHandlerAssignLhs(parent) ? id.ValueText + "Event" : id.ValueText;
             // Underscore is a special character in VB lexer which continues lines - not sure where to find the whole set of other similar tokens if any
             // Rather than a complicated contextual rename, just add an extra dash to all identifiers and hope this method is consistently used
-            bool keywordRequiresEscaping = KeywordRequiresEscaping(id);
+            bool keywordRequiresEscaping = id.IsKind(CSSyntaxKind.IdentifierToken) && KeywordRequiresEscaping(id);
+            switch (CSharpExtensions.Kind(id)) {
+                case CSSyntaxKind.GlobalKeyword:
+                    idText = "Global";
+                    break;
+            }
             return Identifier(idText, keywordRequiresEscaping);
         }
 
