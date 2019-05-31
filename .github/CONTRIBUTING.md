@@ -4,6 +4,9 @@
 3. Check how the code in the opposite conversion works - there may already be a solution to the problem.
 4. Implement a solution. If it involves a lot of code changes, discuss on the issue to avoid conflicts and check it's the best approach before putting lots of work in.
 
+## How to get started changing code
+At its heart, there is a visitor pattern with a method for each syntax type. If you don't know what a Syntax Tree is, that's definitely worth [looking up](https://github.com/dotnet/roslyn/wiki/Roslyn-Overview). There are lots of tests, set a breakpoint somewhere like `VisitCompilationUnit`, then run them in debug mode. If you step through the code, you'll see how it walks down the syntax tree converting piece by piece. If you want to find the name of the syntax for some specific code, use [Roslyn Quoter](https://roslynquoter.azurewebsites.net/)
+
 ## For documentation, prefer:
 * Anything process/project related to be visible on GitHub (e.g. these bullet points)
 * Anything code-related (i.e. why things are done a certain way, or broad overviews) to be xmldoc in the relevant part of code
