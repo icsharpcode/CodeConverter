@@ -1749,7 +1749,7 @@ public class Foo
             TestConversionVisualBasicToCSharp(
 @"Imports System
 
-Namespace [Global].InnerNamespace
+Namespace Global.InnerNamespace
     Public Class Test
         Public Function StringInter(t As String, dt As DateTime) As String
             Dim a = $""pre{t} t""
@@ -1764,7 +1764,7 @@ Namespace [Global].InnerNamespace
 End Namespace",
 @"using System;
 
-namespace Global.InnerNamespace
+namespace InnerNamespace
 {
     public class Test
     {
