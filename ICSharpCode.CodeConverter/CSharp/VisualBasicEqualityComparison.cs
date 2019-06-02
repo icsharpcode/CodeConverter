@@ -6,6 +6,7 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.VisualBasic.CompilerServices;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -20,28 +21,45 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// There are therefore some surprising results such as "" = Nothing being true.
     /// Here we try to coerce the arguments for the CSharp equals method to get as close to the runtime behaviour as possible without inlining hundreds of lines of code.
     /// </summary>
-    internal class VisualBasicStringComparison
+    internal class VisualBasicEqualityComparison
     {
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _extraUsingDirectives;
 
-        public VisualBasicStringComparison(SemanticModel semanticModel, HashSet<string> extraUsingDirectives, bool optionCompareTextCaseInsensitive)
+        public VisualBasicEqualityComparison(SemanticModel semanticModel, HashSet<string> extraUsingDirectives, bool optionCompareTextCaseInsensitive)
         {
             OptionCompareTextCaseInsensitive = optionCompareTextCaseInsensitive;
             _extraUsingDirectives = extraUsingDirectives;
             _semanticModel = semanticModel;
         }
 
+        public enum RequiredType
+        {
+            None,
+            StringOnly,
+            Object
+        }
+
         public bool OptionCompareTextCaseInsensitive { get; }
         
-        public bool RequiresVbStringEqualityLogic(VBSyntax.BinaryExpressionSyntax node, TypeInfo leftType, TypeInfo rightType)
+        public RequiredType GetObjectEqualityType(VBSyntax.BinaryExpressionSyntax node, TypeInfo leftType, TypeInfo rightType)
         {
-            return node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression) &&
-                   new[] {leftType, rightType}.All(t =>
-                       t.Type != null && (
-                           t.Type.SpecialType == SpecialType.System_String ||
-                           t.Type.SpecialType == SpecialType.System_Object ||
-                           t.Type.IsArrayOf(SpecialType.System_Char)));
+            var typeInfos = new[] {leftType, rightType};
+            if (!node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression) ||
+                typeInfos.Any(t => t.Type == null)) {
+                return RequiredType.None;
+            }
+
+            if (typeInfos.All(t => t.Type.SpecialType == SpecialType.System_Object)) return RequiredType.Object;
+
+            if (typeInfos.All(
+                t => t.Type.SpecialType == SpecialType.System_String ||
+                     t.Type.SpecialType == SpecialType.System_Object ||
+                     t.Type.IsArrayOf(SpecialType.System_Char))) {
+                return RequiredType.StringOnly;
+            };
+
+            return RequiredType.None;
         }
 
         public ExpressionSyntax VbCoerceToString(ExpressionSyntax baseExpression, TypeInfo typeInfo)
@@ -128,9 +146,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
                         {SyntaxFactory.Argument(arg)})));
                 {
-                    visitBinaryExpression = node.IsKind(VBasic.SyntaxKind.EqualsExpression)
-                        ? (CSharpSyntaxNode) nullOrEmpty
-                        : SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, nullOrEmpty);
+                    visitBinaryExpression = NegateIfNeeded(node, nullOrEmpty);
                     return true;
                 }
             }
@@ -139,8 +155,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             return false;
         }
 
+        private static ExpressionSyntax NegateIfNeeded(VBSyntax.BinaryExpressionSyntax node, InvocationExpressionSyntax positiveExpression)
+        {
+            return node.IsKind(VBasic.SyntaxKind.EqualsExpression)
+                ? (ExpressionSyntax) positiveExpression
+                : SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, positiveExpression);
+        }
 
-        public (ExpressionSyntax lhs, ExpressionSyntax rhs) AdjustForComparisonOptions(ExpressionSyntax lhs, ExpressionSyntax rhs)
+        public (ExpressionSyntax lhs, ExpressionSyntax rhs) AdjustForVbStringComparison(ExpressionSyntax lhs, ExpressionSyntax rhs)
         {
             if (OptionCompareTextCaseInsensitive) {
                 _extraUsingDirectives.Add("System.Globalization");
@@ -156,6 +178,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return (lhs, rhs);
+        }
+
+        public ExpressionSyntax GetFullExpressionForVbObjectComparison(VBSyntax.BinaryExpressionSyntax node, ExpressionSyntax lhs, ExpressionSyntax rhs)
+        {
+                _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
+                var optionCompareTextCaseInsensitive = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(OptionCompareTextCaseInsensitive ? SyntaxKind.TrueKeyword : SyntaxKind.FalseLiteralExpression));
+                var compareObject = SyntaxFactory.InvocationExpression(
+                    MemberAccess(nameof(Operators), nameof(Operators.ConditionalCompareObjectEqual)),
+                    SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
+                        {SyntaxFactory.Argument(lhs), SyntaxFactory.Argument(rhs), optionCompareTextCaseInsensitive})));
+                return NegateIfNeeded(node, compareObject);
         }
 
         private static BinaryExpressionSyntax GetCompareTextCaseInsensitiveCompareOptions()

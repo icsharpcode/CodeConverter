@@ -22,8 +22,8 @@ Public Class StringEqualityTests
     Private nullObject As Object = Nothing
     Private nullString As String = Nothing
     Private emptyStringObject As Object = ""
-    Private emptyString = ""
-    Private nonEmptyString = "a"
+    Private emptyString As String = ""
+    Private nonEmptyString As String = "a"
     Private emptyCharArray = New Char(){}
     Private nullCharArray As Char() = Nothing
 

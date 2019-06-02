@@ -40,7 +40,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private readonly TypeConversionAnalyzer _typeConversionAnalyzer;
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
             private bool _optionCompareText = false;
-            private VisualBasicStringComparison _visualBasicStringComparison;
+            private VisualBasicEqualityComparison _visualBasicEqualityComparison;
 
             private CommonConversions CommonConversions { get; }
 
@@ -112,7 +112,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 _optionCompareText = node.Options.Any(x => x.NameKeyword.ValueText.Equals("Compare", StringComparison.OrdinalIgnoreCase) &&
                                                            x.ValueKeyword.ValueText.Equals("Text", StringComparison.OrdinalIgnoreCase));
-                _visualBasicStringComparison = new VisualBasicStringComparison(_semanticModel, _extraUsingDirectives, _optionCompareText);
+                _visualBasicEqualityComparison = new VisualBasicEqualityComparison(_semanticModel, _extraUsingDirectives, _optionCompareText);
 
                 var attributes = SyntaxFactory.List(node.Attributes.SelectMany(a => a.AttributeLists).SelectMany(ConvertAttribute));
                 var sourceAndConverted = node.Members.Select(m => (Source: m, Converted: ConvertMember(m))).ToReadOnlyCollection();
@@ -1696,17 +1696,22 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
 
-                if (_visualBasicStringComparison.RequiresVbStringEqualityLogic(node,  lhsTypeInfo, rhsTypeInfo)) {
-                    lhs = _visualBasicStringComparison.VbCoerceToString(lhs, lhsTypeInfo);
-                    rhs = _visualBasicStringComparison.VbCoerceToString(rhs, rhsTypeInfo);
-                    if (lhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String &&
-                        rhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String) {
-                        if (VisualBasicStringComparison.TryConvertToNullOrEmptyCheck(node, lhs, rhs, out CSharpSyntaxNode visitBinaryExpression)) {
-                            return visitBinaryExpression;
-                        }
+                var objectEqualityType = _visualBasicEqualityComparison.GetObjectEqualityType(node,  lhsTypeInfo, rhsTypeInfo);
+                switch(objectEqualityType) {
+                    case VisualBasicEqualityComparison.RequiredType.StringOnly:
+                        lhs = _visualBasicEqualityComparison.VbCoerceToString(lhs, lhsTypeInfo);
+                        rhs = _visualBasicEqualityComparison.VbCoerceToString(rhs, rhsTypeInfo);
+                        if (lhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String &&
+                            rhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String) {
+                            if (VisualBasicEqualityComparison.TryConvertToNullOrEmptyCheck(node, lhs, rhs, out CSharpSyntaxNode visitBinaryExpression)) {
+                                return visitBinaryExpression;
+                            }
 
-                        (lhs, rhs) = _visualBasicStringComparison.AdjustForComparisonOptions(lhs, rhs);
-                    }
+                            (lhs, rhs) = _visualBasicEqualityComparison.AdjustForVbStringComparison(lhs, rhs);
+                        }
+                        break;
+                    case VisualBasicEqualityComparison.RequiredType.Object:
+                        return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(node, lhs, rhs);
                 }
 
                 if (node.IsKind(VBasic.SyntaxKind.ExponentiateExpression,
