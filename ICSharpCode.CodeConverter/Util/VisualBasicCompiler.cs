@@ -47,7 +47,8 @@ namespace ICSharpCode.CodeConverter.Util
                     "System.Security",
                     "System.Text",
                     "System.Threading.Tasks",
-                    "Microsoft.VisualBasic"));
+                    "Microsoft.VisualBasic"))
+                .WithOptionInfer(true);
             var compilation = VisualBasicCompilation.Create("Conversion", references: references)
                 .WithOptions(compilationOptions);
             return compilation;

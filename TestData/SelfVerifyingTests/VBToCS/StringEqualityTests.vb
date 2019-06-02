@@ -4,6 +4,13 @@ Imports Xunit
 
 
 Public Class StringEqualityTests
+     
+    <Fact>
+    Public Sub TestStringComparison()
+        Dim s1 As String = Nothing
+        Dim s2 As String = ""
+        Assert.True(s1 = s2)
+    End Sub
 
     <Fact>
     Public Sub VisualBasicEqualityOfCharArrays()
@@ -24,7 +31,7 @@ Public Class StringEqualityTests
     Private emptyStringObject As Object = ""
     Private emptyString As String = ""
     Private nonEmptyString As String = "a"
-    Private emptyCharArray = New Char(){}
+    Private emptyCharArray As Char() = New Char(){}
     Private nullCharArray As Char() = Nothing
 
     <Fact> 'https://github.com/icsharpcode/CodeConverter/issues/105
