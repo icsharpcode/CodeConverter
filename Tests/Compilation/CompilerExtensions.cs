@@ -15,17 +15,21 @@ namespace CodeConverter.Tests.Compilation
         /// Compiles the given string of source code into an IL byte array.
         /// </summary>
         /// <remarks>The transitive closure of the references for <paramref name="requiredAssemblies"/> are added.</remarks>
-        public static Assembly AssemblyFromCode(this ICompiler compiler, string code, params Assembly[] requiredAssemblies)
+        public static Assembly AssemblyFromCode(this ICompiler compiler, SyntaxTree syntaxTree, params Assembly[] requiredAssemblies)
         {
             var allReferences = DefaultReferences.NetStandard2.Concat(GetMetadataReferences(requiredAssemblies));
-            var parsedSyntaxTree = compiler.CreateTree(code);
-            var compilation = compiler.CreateCompilationFromTree(parsedSyntaxTree, allReferences);
+            var compilation = compiler.CreateCompilationFromTree(syntaxTree, allReferences);
 
             using (var dllStream = new MemoryStream())
             using (var pdbStream = new MemoryStream()) {
                 var result = compilation.Emit(dllStream, pdbStream);
                 if (!result.Success) {
-                    throw new CompilationException($"{compiler.GetType().Name} error:\r\n{string.Join("\r\n", result.Diagnostics)}");
+                    string codeLines = string.Join("\r\n", Utils.HomogenizeEol(syntaxTree.ToString())
+                        .Split(new string[]{"\r\n"}, StringSplitOptions.None)
+                        .Select((l, i) => $"{i+1:000}: {l}"));
+                    throw new CompilationException(
+                        $"{compiler.GetType().Name} error:\r\n{string.Join("\r\n", result.Diagnostics)}\r\n\r\nSource code:\r\n{codeLines}"
+                    );
                 }
 
                 dllStream.Seek(0, SeekOrigin.Begin);

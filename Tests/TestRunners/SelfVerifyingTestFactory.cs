@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using CodeConverter.Tests.Compilation;
 using CodeConverter.Tests.CSharp;
@@ -10,6 +11,7 @@ using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
+using Microsoft.CodeAnalysis;
 using Xunit;
 using Xunit.Sdk;
 
@@ -24,7 +26,9 @@ namespace CodeConverter.Tests.TestRunners
             where TSourceCompiler : ICompiler, new() where TTargetCompiler : ICompiler, new() where TLanguageConversion : ILanguageConversion, new()
         {
             var sourceFileText = File.ReadAllText(testFilepath);
-            var compiledSource = new TSourceCompiler().AssemblyFromCode(sourceFileText, AdditionalReferences);
+            var sourceCompiler = new TSourceCompiler();
+            var syntaxTree = sourceCompiler.CreateTree(sourceFileText).WithFilePath(Path.GetFullPath(testFilepath));
+            var compiledSource = sourceCompiler.AssemblyFromCode(syntaxTree, AdditionalReferences);
             var runnableTestsInSource = XUnitFactDiscoverer.GetNamedFacts(compiledSource).ToList();
             Assert.NotEmpty(runnableTestsInSource);
 
@@ -73,7 +77,9 @@ namespace CodeConverter.Tests.TestRunners
         private static Dictionary<string, NamedFact> GetConvertedNamedFacts<TTargetCompiler>(List<NamedFact> runnableTestsInSource, ConversionResult convertedText)
             where TTargetCompiler : ICompiler, new()
         {
-            var compiledTarget = new TTargetCompiler().AssemblyFromCode(convertedText.ConvertedCode, AdditionalReferences);
+            string code = convertedText.ConvertedCode;
+            var targetCompiler = new TTargetCompiler();
+            var compiledTarget = targetCompiler.AssemblyFromCode(targetCompiler.CreateTree(code), AdditionalReferences);
             var runnableTestsInTarget = XUnitFactDiscoverer.GetNamedFacts(compiledTarget).ToDictionary(f => f.Name);
 
             Assert.Equal(runnableTestsInSource.Select(f => f.Name), runnableTestsInTarget.Keys);

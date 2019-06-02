@@ -363,6 +363,11 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return typeSymbol.ImplementsSpecialTypeInterface(SpecialType.System_Collections_IEnumerable);
         }
+
+        public static bool IsArrayOf(this ITypeSymbol t, SpecialType specialType)
+        {
+            return t is IArrayTypeSymbol ats && ats.ElementType.SpecialType == specialType;
+        }
     }
 }
 

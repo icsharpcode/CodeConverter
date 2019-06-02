@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -9,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
+using Microsoft.VisualBasic.CompilerServices;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -38,6 +40,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private readonly TypeConversionAnalyzer _typeConversionAnalyzer;
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
             private bool _optionCompareText = false;
+            private VisualBasicEqualityComparison _visualBasicEqualityComparison;
 
             private CommonConversions CommonConversions { get; }
 
@@ -109,6 +112,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 _optionCompareText = node.Options.Any(x => x.NameKeyword.ValueText.Equals("Compare", StringComparison.OrdinalIgnoreCase) &&
                                                            x.ValueKeyword.ValueText.Equals("Text", StringComparison.OrdinalIgnoreCase));
+                _visualBasicEqualityComparison = new VisualBasicEqualityComparison(_semanticModel, _extraUsingDirectives, _optionCompareText);
 
                 var attributes = SyntaxFactory.List(node.Attributes.SelectMany(a => a.AttributeLists).SelectMany(ConvertAttribute));
                 var sourceAndConverted = node.Members.Select(m => (Source: m, Converted: ConvertMember(m))).ToReadOnlyCollection();
@@ -1692,38 +1696,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
 
-                if (node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression)) {
-                    if (lhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String &&
-                        rhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String) {
-                        bool lhsEmpty = lhs is LiteralExpressionSyntax les &&
-                                        (les.IsKind(SyntaxKind.NullLiteralExpression) ||
-                                        (les.IsKind(SyntaxKind.StringLiteralExpression) && string.IsNullOrEmpty(les.Token.ValueText)));
-                        bool lhsLiteral = lhs is LiteralExpressionSyntax && lhs.IsKind(SyntaxKind.StringLiteralExpression);
-                        bool rhsEmpty = rhs is LiteralExpressionSyntax res &&
-                                        (res.IsKind(SyntaxKind.NullLiteralExpression) ||
-                                        (res.IsKind(SyntaxKind.StringLiteralExpression) && string.IsNullOrEmpty(res.Token.ValueText)));
-                        bool rhsLiteral = rhs is LiteralExpressionSyntax && rhs.IsKind(SyntaxKind.StringLiteralExpression);
-
-                        if (lhsEmpty || rhsEmpty) {
-                            var arg = lhsEmpty ? rhs : lhs;
-                            var nullOrEmpty = SyntaxFactory.InvocationExpression(
-                                SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName("string"), SyntaxFactory.IdentifierName("IsNullOrEmpty")),
-                                SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[] { SyntaxFactory.Argument(arg) })));
-                            return node.IsKind(VBasic.SyntaxKind.EqualsExpression) ? (CSharpSyntaxNode)nullOrEmpty : SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, nullOrEmpty);
-                        } else if (!_optionCompareText && (lhsLiteral || rhsLiteral)) {
-                            // If either side is a literal, and we're in binary comparison mode, we can use normal comparison logic
-                        } else {
-                            _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
-                            var textCompare = SyntaxFactory.Argument(SyntaxFactory.NameColon("TextCompare"),
-                                default(SyntaxToken), 
-                                _optionCompareText ? SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression) : SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression));
-                            var compareString = SyntaxFactory.InvocationExpression(
-                                SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName("Operators"), SyntaxFactory.IdentifierName("CompareString")),
-                                SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[] { SyntaxFactory.Argument(lhs), SyntaxFactory.Argument(rhs), textCompare })));
-                            lhs = compareString;
-                            rhs = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(0));
+                var objectEqualityType = _visualBasicEqualityComparison.GetObjectEqualityType(node,  lhsTypeInfo, rhsTypeInfo);
+                switch(objectEqualityType) {
+                    case VisualBasicEqualityComparison.RequiredType.StringOnly:
+                        if (lhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String &&
+                            rhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String && 
+                            _visualBasicEqualityComparison.TryConvertToNullOrEmptyCheck(node, lhs, rhs, out CSharpSyntaxNode visitBinaryExpression)) {
+                            return visitBinaryExpression;
                         }
-                    }
+                        (lhs, rhs) = _visualBasicEqualityComparison.AdjustForVbStringComparison(node.Left, lhs, lhsTypeInfo, node.Right, rhs, rhsTypeInfo);
+                        break;
+                    case VisualBasicEqualityComparison.RequiredType.Object:
+                        return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(node, lhs, rhs);
                 }
 
                 if (node.IsKind(VBasic.SyntaxKind.ExponentiateExpression,
@@ -1732,7 +1716,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.ParseExpression($"{nameof(Math)}.{nameof(Math.Pow)}"),
                         ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
                 }
-
 
                 var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
                 var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));

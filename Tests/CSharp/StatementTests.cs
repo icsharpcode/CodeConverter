@@ -732,9 +732,7 @@ End Class", @"class TestClass
         Next
         Return -1
     End Function
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
-
-class TestClass
+End Class", @"class TestClass
 {
     public static int FindTextInCol(string w, int pTitleRow, int startCol, string needle)
     {
@@ -746,7 +744,7 @@ class TestClass
                 if (string.IsNullOrWhiteSpace(w[c].ToString()))
                     return c;
             }
-            else if (Operators.CompareString(w[c].ToString(), needle, TextCompare: false) == 0)
+            else if ((w[c].ToString() ?? """") == (needle ?? """"))
                 return c;
         }
         return -1;
