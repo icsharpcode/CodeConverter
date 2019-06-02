@@ -2380,11 +2380,83 @@ Module Program
             Assert.Equal(-31, Int(f))
         End Sub
 
-        <Fact(Skip := "https://github.com/icsharpcode/CodeConverter/issues/105")>
-        Public Sub EmptyStringEqualityToNull()
-            Dim s As String = ""
-            Dim areEqual As Boolean = s = Nothing
-            Assert.True(areEqual)
+        <Fact> 'https://github.com/icsharpcode/CodeConverter/issues/105
+        Public Sub VisualBasicEqualityOfEmptyStringAndNothingIsPreserved()
+            Dim record = ""
+
+            Dim nullObject As Object = Nothing
+            Dim nullString As String = Nothing
+            Dim emptyStringObject As Object = ""
+            Dim emptyString = ""
+            Dim nonEmptyString = "a"
+            Dim emptyCharArray = New Char(){}
+            Dim nullCharArray As Char() = Nothing
+
+            If nullObject = nullObject Then record &= "1" Else record &= "0"
+            If nullObject = nullString Then record &= "1" Else record &= "0"
+            If nullObject = emptyStringObject Then record &= "1" Else record &= "0"
+            If nullObject = emptyString Then record &= "1" Else record &= "0"
+            If nullObject = nonEmptyString Then record &= "1" Else record &= "0"
+            If nullObject = emptyCharArray Then record &= "1" Else record &= "0"
+            If nullObject = nullCharArray Then record &= "1" Else record &= "0"
+            record &= " "
+            If nullString = nullObject Then record &= "1" Else record &= "0"
+            If nullString = nullString Then record &= "1" Else record &= "0"
+            If nullString = emptyStringObject Then record &= "1" Else record &= "0"
+            If nullString = emptyString Then record &= "1" Else record &= "0"
+            If nullString = nonEmptyString Then record &= "1" Else record &= "0"
+            If nullString = emptyCharArray Then record &= "1" Else record &= "0"
+            If nullString = nullCharArray Then record &= "1" Else record &= "0"
+            record &= " "
+            If emptyStringObject = nullObject Then record &= "1" Else record &= "0"
+            If emptyStringObject = nullString Then record &= "1" Else record &= "0"
+            If emptyStringObject = emptyStringObject Then record &= "1" Else record &= "0"
+            If emptyStringObject = emptyString Then record &= "1" Else record &= "0"
+            If emptyStringObject = nonEmptyString Then record &= "1" Else record &= "0"
+            If emptyStringObject = emptyCharArray Then record &= "1" Else record &= "0"
+            If emptyStringObject = nullCharArray Then record &= "1" Else record &= "0"
+            record &= " "
+            If emptyString = nullObject Then record &= "1" Else record &= "0"
+            If emptyString = nullString Then record &= "1" Else record &= "0"
+            If emptyString = emptyStringObject Then record &= "1" Else record &= "0"
+            If emptyString = emptyString Then record &= "1" Else record &= "0"
+            If emptyString = nonEmptyString Then record &= "1" Else record &= "0"
+            If emptyString = emptyCharArray Then record &= "1" Else record &= "0"
+            If emptyString = nullCharArray Then record &= "1" Else record &= "0"
+            record &= " "
+            If nonEmptyString = nullObject Then record &= "1" Else record &= "0"
+            If nonEmptyString = nullString Then record &= "1" Else record &= "0"
+            If nonEmptyString = emptyStringObject Then record &= "1" Else record &= "0"
+            If nonEmptyString = emptyString Then record &= "1" Else record &= "0"
+            If nonEmptyString = nonEmptyString Then record &= "1" Else record &= "0"
+            If nonEmptyString = emptyCharArray Then record &= "1" Else record &= "0"
+            If nonEmptyString = nullCharArray Then record &= "1" Else record &= "0"
+            record &= " "
+            If emptyCharArray = nullObject Then record &= "1" Else record &= "0"
+            If emptyCharArray = nullString Then record &= "1" Else record &= "0"
+            If emptyCharArray = emptyStringObject Then record &= "1" Else record &= "0"
+            If emptyCharArray = emptyString Then record &= "1" Else record &= "0"
+            If emptyCharArray = nonEmptyString Then record &= "1" Else record &= "0"
+            If emptyCharArray = emptyCharArray Then record &= "1" Else record &= "0"
+            If emptyCharArray = nullCharArray Then record &= "1" Else record &= "0"
+            record &= " "
+            If nullCharArray = nullObject Then record &= "1" Else record &= "0"
+            If nullCharArray = nullString Then record &= "1" Else record &= "0"
+            If nullCharArray = emptyStringObject Then record &= "1" Else record &= "0"
+            If nullCharArray = emptyString Then record &= "1" Else record &= "0"
+            If nullCharArray = nonEmptyString Then record &= "1" Else record &= "0"
+            If nullCharArray = emptyCharArray Then record &= "1" Else record &= "0"
+            If nullCharArray = nullCharArray Then record &= "1" Else record &= "0"
+            
+            Assert.Equal("1111011 1111011 1111011 1111011 0000100 1111011 1111011", record)
+
+            Assert.True(emptyCharArray = New Char(){}, "Char arrays should be compared as strings because that's what happens in VB")
+
+            Dim a1 As Object = 3
+            Dim a2 As Object = 3
+            Dim b As Object = 4
+            Assert.True(a1 = a2, "Identical values stored in objects should be equal")
+            Assert.False(a1 = b, "Different values stored in objects should not be equal")
         End Sub
 
         <Fact()>

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
@@ -21,7 +22,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public SyntaxTree CreateTree(string text)
         {
-            return Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.ParseSyntaxTree(SourceText.From(text));
+            return SyntaxFactory.ParseSyntaxTree(text, encoding: Encoding.UTF8);
         }
 
         public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
