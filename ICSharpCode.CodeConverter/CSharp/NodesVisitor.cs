@@ -1701,10 +1701,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     case VisualBasicEqualityComparison.RequiredType.StringOnly:
                         if (lhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String &&
                             rhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String && 
-                            VisualBasicEqualityComparison.TryConvertToNullOrEmptyCheck(node, lhs, rhs, out CSharpSyntaxNode visitBinaryExpression)) {
+                            _visualBasicEqualityComparison.TryConvertToNullOrEmptyCheck(node, lhs, rhs, out CSharpSyntaxNode visitBinaryExpression)) {
                             return visitBinaryExpression;
                         }
-                        (lhs, rhs) = _visualBasicEqualityComparison.AdjustForVbStringComparison(lhs, lhsTypeInfo, rhs, rhsTypeInfo);
+                        (lhs, rhs) = _visualBasicEqualityComparison.AdjustForVbStringComparison(node.Left, lhs, lhsTypeInfo, node.Right, rhs, rhsTypeInfo);
                         break;
                     case VisualBasicEqualityComparison.RequiredType.Object:
                         return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(node, lhs, rhs);

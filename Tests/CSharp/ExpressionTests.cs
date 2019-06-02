@@ -793,9 +793,9 @@ public class Class1
         string s2 = """";
         if ((s1 ?? """") != (s2 ?? """"))
             throw new Exception();
-        if ((s1 ?? """") == (""something"" ?? """"))
+        if ((s1 ?? """") == ""something"")
             throw new Exception();
-        if ((""something"" ?? """") == (s1 ?? """"))
+        if (""something"" == (s1 ?? """"))
             throw new Exception();
         if (s1 == null)
         {
