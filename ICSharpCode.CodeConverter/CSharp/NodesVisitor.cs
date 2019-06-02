@@ -1699,16 +1699,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var objectEqualityType = _visualBasicEqualityComparison.GetObjectEqualityType(node,  lhsTypeInfo, rhsTypeInfo);
                 switch(objectEqualityType) {
                     case VisualBasicEqualityComparison.RequiredType.StringOnly:
-                        lhs = _visualBasicEqualityComparison.VbCoerceToString(lhs, lhsTypeInfo);
-                        rhs = _visualBasicEqualityComparison.VbCoerceToString(rhs, rhsTypeInfo);
                         if (lhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String &&
-                            rhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String) {
-                            if (VisualBasicEqualityComparison.TryConvertToNullOrEmptyCheck(node, lhs, rhs, out CSharpSyntaxNode visitBinaryExpression)) {
-                                return visitBinaryExpression;
-                            }
-
-                            (lhs, rhs) = _visualBasicEqualityComparison.AdjustForVbStringComparison(lhs, rhs);
+                            rhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String && 
+                            VisualBasicEqualityComparison.TryConvertToNullOrEmptyCheck(node, lhs, rhs, out CSharpSyntaxNode visitBinaryExpression)) {
+                            return visitBinaryExpression;
                         }
+                        (lhs, rhs) = _visualBasicEqualityComparison.AdjustForVbStringComparison(lhs, lhsTypeInfo, rhs, rhsTypeInfo);
                         break;
                     case VisualBasicEqualityComparison.RequiredType.Object:
                         return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(node, lhs, rhs);

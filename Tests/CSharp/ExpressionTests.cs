@@ -784,7 +784,6 @@ End Class", @"class TestClass
         End If
     End Sub
 End Class", @"using System;
-using Microsoft.VisualBasic.CompilerServices;
 
 public class Class1
 {
@@ -792,13 +791,13 @@ public class Class1
     {
         string s1 = null;
         string s2 = """";
-        if (Operators.CompareString(s1, s2, TextCompare: false) != 0)
+        if ((s1 ?? """") != (s2 ?? """"))
             throw new Exception();
-        if (s1 == ""something"")
+        if ((s1 ?? """") == (""something"" ?? """"))
             throw new Exception();
-        if (""something"" == s1)
+        if ((""something"" ?? """") == (s1 ?? """"))
             throw new Exception();
-        if (string.IsNullOrEmpty(s1))
+        if (s1 == null)
         {
         }
         if (string.IsNullOrEmpty(s1))
@@ -833,7 +832,7 @@ Public Class Class1
         End If
     End Sub
 End Class", @"using System;
-using Microsoft.VisualBasic.CompilerServices;
+using System.Globalization;
 
 public class Class1
 {
@@ -841,13 +840,13 @@ public class Class1
     {
         string s1 = null;
         string s2 = """";
-        if (Operators.CompareString(s1, s2, TextCompare: true) != 0)
+        if (CultureInfo.CurrentCulture.CompareInfo.Compare(s1, s2, CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) != 0)
             throw new Exception();
-        if (Operators.CompareString(s1, ""something"", TextCompare: true) == 0)
+        if (CultureInfo.CurrentCulture.CompareInfo.Compare(s1, ""something"", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0)
             throw new Exception();
-        if (Operators.CompareString(""something"", s1, TextCompare: true) == 0)
+        if (CultureInfo.CurrentCulture.CompareInfo.Compare(""something"", s1, CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0)
             throw new Exception();
-        if (string.IsNullOrEmpty(s1))
+        if (s1 == null)
         {
         }
         if (string.IsNullOrEmpty(s1))
