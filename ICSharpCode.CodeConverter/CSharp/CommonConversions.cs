@@ -23,6 +23,7 @@ using VariableDeclaratorSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.Varia
 using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -343,8 +344,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         public SyntaxTokenList ConvertModifiers(SyntaxNode node, IEnumerable<SyntaxToken> modifiers,
             TokenContext context = TokenContext.Global, bool isVariableOrConst = false, bool isConstructor = false)
         {
-            var declaredAccessibility = _semanticModel.GetDeclaredSymbol(node).DeclaredAccessibility;
-            return SyntaxFactory.TokenList(ConvertModifiersCore(declaredAccessibility, modifiers, context, isVariableOrConst, isConstructor).Where(t => CSharpExtensions.Kind(t) != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None));
+            ISymbol declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
+            var declaredAccessibility = declaredSymbol.DeclaredAccessibility;
+
+            var contextsWithIdenticalDefaults = new[] { TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface };
+            bool isPartial = declaredSymbol.IsPartialClassDefinition() || declaredSymbol.IsPartialMethodDefinition() || declaredSymbol.IsPartialMethodImplementation();
+            bool implicitVisibility = contextsWithIdenticalDefaults.Contains(context) || isVariableOrConst || isConstructor;
+            if (implicitVisibility && !isPartial) declaredAccessibility = Accessibility.NotApplicable;
+            return SyntaxFactory.TokenList(ConvertModifiersCore(declaredAccessibility, modifiers, context).Where(t => CSharpExtensions.Kind(t) != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None));
         }
 
         private SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)
@@ -359,28 +366,50 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         private IEnumerable<SyntaxToken> ConvertModifiersCore(Accessibility declaredAccessibility,
-            IEnumerable<SyntaxToken> modifiers, TokenContext context,
-            bool isVariableOrConst = false, bool isConstructor = false)
+            IEnumerable<SyntaxToken> modifiers, TokenContext context)
         {
-            var contextsWithIdenticalDefaults = new[] {TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface };
-            if (!contextsWithIdenticalDefaults.Contains(context)) {
-                bool visibility = false;
-                foreach (var token in modifiers) {
-                    if (token.IsVbVisibility(isVariableOrConst, isConstructor)) {
-                        visibility = true;
-                        break;
-                    }
+            var remainingModifiers = modifiers.ToList();
+            if (declaredAccessibility != Accessibility.NotApplicable) {
+                remainingModifiers = remainingModifiers.Where(m => !m.IsVbVisibility(false, false)).ToList();
+                foreach (var visibilitySyntaxKind in CsSyntaxAccessibilityKindForContext(declaredAccessibility, context)) {
+                    yield return SyntaxFactory.Token(visibilitySyntaxKind);
                 }
-                if (!visibility)
-                    yield return VisualBasicDefaultVisibility(context, isVariableOrConst);
             }
-            foreach (var token in modifiers.Where(m => !IgnoreInContext(m, context)).OrderBy(m => SyntaxTokenExtensions.IsKind(m, SyntaxKind.PartialKeyword))) {
+
+            foreach (var token in remainingModifiers.Where(m => !IgnoreInContext(m, context)).OrderBy(m => SyntaxTokenExtensions.IsKind(m, SyntaxKind.PartialKeyword))) {
                 var m = ConvertModifier(token, context);
                 if (m.HasValue) yield return m.Value;
             }
             if (context == TokenContext.MemberInModule &&
-                    !modifiers.Any(a => VisualBasicExtensions.Kind(a) == SyntaxKind.ConstKeyword ))
+                    !remainingModifiers.Any(a => VisualBasicExtensions.Kind(a) == SyntaxKind.ConstKeyword ))
                 yield return SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
+        }
+
+        private IEnumerable<CSSyntaxKind> CsSyntaxAccessibilityKindForContext(Accessibility declaredAccessibility,
+            TokenContext context)
+        {
+            return CsSyntaxAccessibilityKind(declaredAccessibility);
+
+        }
+
+        private IEnumerable<CSSyntaxKind> CsSyntaxAccessibilityKind(Accessibility declaredAccessibility)
+        {
+            switch (declaredAccessibility) {
+                case Accessibility.Private:
+                    return new[] { CSSyntaxKind.PrivateKeyword };
+                case Accessibility.Protected:
+                    return new[] { CSSyntaxKind.ProtectedKeyword };
+                case Accessibility.Internal:
+                    return new[] { CSSyntaxKind.InternalKeyword };
+                case Accessibility.ProtectedOrInternal:
+                    return new[] { CSSyntaxKind.ProtectedKeyword, CSSyntaxKind.InternalKeyword };
+                case Accessibility.Public:
+                    return new[] { CSSyntaxKind.PublicKeyword };
+                case Accessibility.ProtectedAndInternal:
+                case Accessibility.NotApplicable:
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(declaredAccessibility), declaredAccessibility, null);
+            }
         }
 
         private bool IgnoreInContext(SyntaxToken m, TokenContext context)
@@ -401,26 +430,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool isConvOp= token.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ExplicitKeyword, Microsoft.CodeAnalysis.CSharp.SyntaxKind.ImplicitKeyword)
                            ||token.IsKind(SyntaxKind.NarrowingKeyword, SyntaxKind.WideningKeyword);
             return isConvOp;
-        }
-
-        private SyntaxToken VisualBasicDefaultVisibility(TokenContext context, bool isVariableOrConst)
-        {
-            switch (context) {
-                case TokenContext.Global:
-                case TokenContext.InterfaceOrModule:
-                    return SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.InternalKeyword);
-                case TokenContext.MemberInModule:
-                case TokenContext.MemberInClass:
-                case TokenContext.MemberInInterface:
-                    return SyntaxFactory.Token(isVariableOrConst
-                        ? Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword
-                        : Microsoft.CodeAnalysis.CSharp.SyntaxKind.PublicKeyword);
-                case TokenContext.MemberInStruct:
-                    return SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PublicKeyword);
-                case TokenContext.Local:
-                    return SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword);
-            }
-            throw new ArgumentOutOfRangeException(nameof(context), context, "Specified argument was out of the range of valid values.");
         }
 
         internal SyntaxList<ArrayRankSpecifierSyntax> ConvertArrayRankSpecifierSyntaxes(

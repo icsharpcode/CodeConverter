@@ -18,7 +18,7 @@ namespace CodeConverter.Tests.CSharp
     ReadOnly v As Integer = 15
 End Class", @"class TestClass
 {
-    const int answer = 42;
+    private const int answer = 42;
     private int value = 10;
     private readonly int v = 15;
 }");
@@ -32,7 +32,7 @@ End Class", @"class TestClass
     Const answer As Integer = 42
 End Module", @"static class TestModule
 {
-    const int answer = 42;
+    private const int answer = 42;
 }");
         }
 
@@ -49,7 +49,7 @@ End Class", @"using System;
 
 class TestClass
 {
-    const int someConstField = 42;
+    private const int someConstField = 42;
     public void TestMethod()
     {
         const DateTimeKind someConst = System.DateTimeKind.Local;
@@ -534,7 +534,7 @@ End Class", @"class TestClass<T, T2, T3>
         {
             TestConversionVisualBasicToCSharp(
 @"Sub New()
-End Sub", @"public SurroundingClass()
+End Sub", @"SurroundingClass()
 {
 }");
         }
@@ -800,7 +800,6 @@ class Class1
     {
         NonSharedEventClassInstance = new MyEventClass();
     }
-
     private static MyEventClass _SharedEventClassInstance;
 
     private static MyEventClass SharedEventClassInstance
@@ -1371,7 +1370,7 @@ End Class",
         {
             // Can't auto test comments when there are already manual comments used
             TestConversionVisualBasicToCSharpWithoutComments(
-@"Partial Class TestClass
+@"Public Partial Class TestClass
     Private Sub DoNothing()
         Console.WriteLine(""Hello"")
     End Sub
@@ -1383,7 +1382,7 @@ Class TestClass ' VB doesn't require partial here (when just a single class omit
 End Class",
 @"using System;
 
-partial class TestClass
+public partial class TestClass
 {
     partial void DoNothing()
     {
@@ -1391,7 +1390,7 @@ partial class TestClass
     }
 }
 
-partial class TestClass // VB doesn't require partial here (when just a single class omits it)
+public partial class TestClass // VB doesn't require partial here (when just a single class omits it)
 {
     partial void DoNothing();
 }");

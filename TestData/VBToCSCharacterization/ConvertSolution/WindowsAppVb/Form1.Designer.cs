@@ -1,7 +1,7 @@
 namespace WindowsAppVb
 {
     [global::Microsoft.VisualBasic.CompilerServices.DesignerGenerated()]
-    partial class Form1 : System.Windows.Forms.Form
+    public partial class Form1 : System.Windows.Forms.Form
     {
 
         // Form overrides dispose to clean up the component list.

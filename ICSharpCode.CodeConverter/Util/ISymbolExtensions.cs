@@ -231,14 +231,19 @@ namespace ICSharpCode.CodeConverter.Util
             return TypesToConvertToDateTime.Contains(symbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
         }
 
-        public static bool IsPartialImplementation(this ISymbol declaredSymbol)
+        public static bool IsPartialMethodImplementation(this ISymbol declaredSymbol)
         {
             return declaredSymbol is IMethodSymbol ms && ms.PartialDefinitionPart != null;
         }
 
-        public static bool IsPartialDefinition(this ISymbol declaredSymbol)
+        public static bool IsPartialMethodDefinition(this ISymbol declaredSymbol)
         {
             return declaredSymbol is IMethodSymbol ms && ms.PartialImplementationPart != null;
+        }
+
+        public static bool IsPartialClassDefinition(this ISymbol declaredSymbol)
+        {
+            return declaredSymbol is ITypeSymbol ts && ts.DeclaringSyntaxReferences.Length > 1;
         }
     }
 }

@@ -416,7 +416,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var attributes = node.AttributeLists.SelectMany(ConvertAttribute).ToList();
                 var convertableModifiers = node.Modifiers.Where(m => !SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
                 var isWithEvents = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
-                var convertedModifiers = CommonConversions.ConvertModifiers(node, convertableModifiers, GetMemberContext(node), isVariableOrConst: true);
+                var convertedModifiers = CommonConversions.ConvertModifiers(node.Declarators[0].Names[0], convertableModifiers, GetMemberContext(node));
                 var isConst = convertedModifiers.Any(a => a.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword));
                 var declarations = new List<MemberDeclarationSyntax>(node.Declarators.Count);
 
@@ -658,7 +658,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var methodBlock = (BaseMethodDeclarationSyntax)node.SubOrFunctionStatement.Accept(TriviaConvertingVisitor);
 
-                if (_semanticModel.GetDeclaredSymbol(node).IsPartialDefinition()) {
+                if (_semanticModel.GetDeclaredSymbol(node).IsPartialMethodDefinition()) {
                     return methodBlock;
                 }
 
@@ -786,9 +786,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
                     bool accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, declaredSymbol);
 
-                    var isPartialDefinition = declaredSymbol.IsPartialDefinition();
+                    var isPartialDefinition = declaredSymbol.IsPartialMethodDefinition();
 
-                    if (declaredSymbol.IsPartialImplementation() || isPartialDefinition) {
+                    if (declaredSymbol.IsPartialMethodImplementation() || isPartialDefinition) {
                         var privateModifier = convertedModifiers.SingleOrDefault(m => m.IsKind(SyntaxKind.PrivateKeyword));
                         if (privateModifier != default(SyntaxToken)) {
                             convertedModifiers = convertedModifiers.Remove(privateModifier);

@@ -684,7 +684,7 @@ public class Class1
     End Property
 End Class", @"public class Class1
 {
-    public Class1()
+    Class1()
     {
         int needsInitialization = default(int);
         int notUsed;
