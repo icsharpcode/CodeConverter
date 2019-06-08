@@ -48,6 +48,9 @@ namespace ICSharpCode.CodeConverter.Util
                     "System.Text",
                     "System.Threading.Tasks",
                     "Microsoft.VisualBasic"))
+                .WithOptionExplicit(true)
+                .WithOptionCompareText(false)
+                .WithOptionStrict(OptionStrict.Off)
                 .WithOptionInfer(true);
             var compilation = VisualBasicCompilation.Create("Conversion", references: references)
                 .WithOptions(compilationOptions);

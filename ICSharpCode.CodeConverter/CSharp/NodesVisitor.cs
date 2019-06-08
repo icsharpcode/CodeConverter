@@ -1719,7 +1719,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 if (node.IsKind(VBasic.SyntaxKind.LikeExpression)) {
-                    var compareText = ValidSyntaxFactory.MemberAccess("CompareMethod", "Text");
+                    var compareText = ValidSyntaxFactory.MemberAccess("CompareMethod", _optionCompareText ? "Text" : "Binary");
                     var likeString = ValidSyntaxFactory.MemberAccess("LikeOperator", "LikeString");
                     _extraUsingDirectives.Add("Microsoft.VisualBasic");
                     _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");

@@ -154,12 +154,17 @@ End Class";
 
         public SyntaxTree CreateTree(string text)
         {
-            return new VisualBasicCompiler(RootNamespace).CreateTree(text);
+            return CreateCompiler().CreateTree(text);
+        }
+
+        private VisualBasicCompiler CreateCompiler()
+        {
+            return new VisualBasicCompiler(RootNamespace);
         }
 
         public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
-            return new VisualBasicCompiler(RootNamespace).CreateCompilationFromTree(tree, references);
+            return CreateCompiler().CreateCompilationFromTree(tree, references);
         }
     }
 }

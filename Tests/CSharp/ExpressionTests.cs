@@ -622,7 +622,7 @@ public class Class1
 {
     public void Foo()
     {
-        var x = LikeOperator.LikeString("""", ""*x*"", CompareMethod.Text);
+        var x = LikeOperator.LikeString("""", ""*x*"", CompareMethod.Binary);
     }
 }");
         }
