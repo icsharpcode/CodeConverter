@@ -18,7 +18,7 @@ namespace CodeConverter.Tests.CSharp
     ReadOnly v As Integer = 15
 End Class", @"class TestClass
 {
-    const int answer = 42;
+    private const int answer = 42;
     private int value = 10;
     private readonly int v = 15;
 }");
@@ -32,7 +32,7 @@ End Class", @"class TestClass
     Const answer As Integer = 42
 End Module", @"static class TestModule
 {
-    const int answer = 42;
+    private const int answer = 42;
 }");
         }
 
@@ -49,7 +49,7 @@ End Class", @"using System;
 
 class TestClass
 {
-    const int someConstField = 42;
+    private const int someConstField = 42;
     public void TestMethod()
     {
         const DateTimeKind someConst = System.DateTimeKind.Local;
@@ -534,7 +534,7 @@ End Class", @"class TestClass<T, T2, T3>
         {
             TestConversionVisualBasicToCSharp(
 @"Sub New()
-End Sub", @"public SurroundingClass()
+End Sub", @"SurroundingClass()
 {
 }");
         }
@@ -684,7 +684,7 @@ static class Module1
         }
 
         [Fact]
-        public void TestWitheventsWithoutInitializer()
+        public void TestWithEventsWithoutInitializer()
         {
             TestConversionVisualBasicToCSharpWithoutComments(
 @"Class MyEventClass
@@ -743,7 +743,7 @@ class Class1
         {
             // Too much auto-generated code to auto-test comments
             TestConversionVisualBasicToCSharpWithoutComments(
-@"Class MyEventClass
+                @"Class MyEventClass
     Public Event TestEvent()
 
     Sub RaiseEvents()
@@ -859,6 +859,135 @@ class Class1
     }
 
     public static void PrintTestMessage2()
+    {
+    }
+
+    public void PrintTestMessage3()
+    {
+    }
+}");
+        }
+
+        [Fact]
+        public void TestPartialClassHandlesWithEvents()
+        {
+            // Too much auto-generated code to auto-test comments
+            TestConversionVisualBasicToCSharpWithoutComments(
+                @"Class MyEventClass
+    Public Event TestEvent()
+
+    Sub RaiseEvents()
+        RaiseEvent TestEvent()
+    End Sub
+End Class
+
+Partial Class Class1
+    WithEvents EventClassInstance, EventClassInstance2 As New MyEventClass
+
+    Public Sub New()
+    End Sub
+
+    Public Sub New(num As Integer)
+    End Sub
+
+    Public Sub New(obj As Object)
+        MyClass.New()
+    End Sub
+End Class
+
+Public Partial Class Class1
+    Sub PrintTestMessage2() Handles EventClassInstance.TestEvent, EventClassInstance2.TestEvent
+    End Sub
+
+    Sub PrintTestMessage3() Handles EventClassInstance.TestEvent
+    End Sub
+End Class", @"using System.Runtime.CompilerServices;
+
+class MyEventClass
+{
+    public event TestEventEventHandler TestEvent;
+
+    public delegate void TestEventEventHandler();
+
+    public void RaiseEvents()
+    {
+        TestEvent?.Invoke();
+    }
+}
+
+public partial class Class1
+{
+    public Class1(int num)
+    {
+        EventClassInstance = new MyEventClass();
+        EventClassInstance2 = new MyEventClass();
+    }
+
+    public Class1()
+    {
+        EventClassInstance = new MyEventClass();
+        EventClassInstance2 = new MyEventClass();
+    }
+    private MyEventClass _EventClassInstance, _EventClassInstance2;
+
+    private MyEventClass EventClassInstance
+    {
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        get
+        {
+            return _EventClassInstance;
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        set
+        {
+            if (_EventClassInstance != null)
+            {
+                _EventClassInstance.TestEvent -= PrintTestMessage2;
+                _EventClassInstance.TestEvent -= PrintTestMessage3;
+            }
+
+            _EventClassInstance = value;
+            if (_EventClassInstance != null)
+            {
+                _EventClassInstance.TestEvent += PrintTestMessage2;
+                _EventClassInstance.TestEvent += PrintTestMessage3;
+            }
+        }
+    }
+
+    private MyEventClass EventClassInstance2
+    {
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        get
+        {
+            return _EventClassInstance2;
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        set
+        {
+            if (_EventClassInstance2 != null)
+            {
+                _EventClassInstance2.TestEvent -= PrintTestMessage2;
+            }
+
+            _EventClassInstance2 = value;
+            if (_EventClassInstance2 != null)
+            {
+                _EventClassInstance2.TestEvent += PrintTestMessage2;
+            }
+        }
+    }
+
+    public Class1(object obj) : this()
+    {
+    }
+}
+
+public partial class Class1
+{
+    public void PrintTestMessage2()
     {
     }
 
@@ -1240,7 +1369,7 @@ End Class",
         {
             // Can't auto test comments when there are already manual comments used
             TestConversionVisualBasicToCSharpWithoutComments(
-@"Partial Class TestClass
+@"Public Partial Class TestClass
     Private Sub DoNothing()
         Console.WriteLine(""Hello"")
     End Sub
@@ -1252,7 +1381,7 @@ Class TestClass ' VB doesn't require partial here (when just a single class omit
 End Class",
 @"using System;
 
-partial class TestClass
+public partial class TestClass
 {
     partial void DoNothing()
     {
@@ -1260,7 +1389,7 @@ partial class TestClass
     }
 }
 
-partial class TestClass // VB doesn't require partial here (when just a single class omits it)
+public partial class TestClass // VB doesn't require partial here (when just a single class omits it)
 {
     partial void DoNothing();
 }");

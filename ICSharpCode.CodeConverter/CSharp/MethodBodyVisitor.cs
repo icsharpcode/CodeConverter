@@ -79,7 +79,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> VisitLocalDeclarationStatement(VBSyntax.LocalDeclarationStatementSyntax node)
             {
-                var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Local);
+                var modifiers = CommonConversions.ConvertModifiers(node.Declarators[0].Names[0], node.Modifiers, TokenContext.Local);
                 var isConst = modifiers.Any(a => a.Kind() == SyntaxKind.ConstKeyword);
 
                 var declarations = new List<LocalDeclarationStatementSyntax>();
