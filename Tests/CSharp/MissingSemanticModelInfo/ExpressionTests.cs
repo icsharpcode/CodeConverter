@@ -24,5 +24,43 @@ End Class", @"class TestClass
     }
 }");
         }
+        [Fact]
+        public void InvokeMethodWithUnknownReturnType()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Foo()
+        Bar(Nothing)
+    End Sub
+
+    Private Function Bar(x As SomeClass) As SomeClass
+        Return x
+    End Function
+
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Security;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.VisualBasic;
+
+public class Class1
+{
+    public void Foo()
+    {
+        Bar(null);
+    }
+
+    private SomeClass Bar(SomeClass x)
+    {
+        return x;
+    }
+}");
+        }
     }
 }

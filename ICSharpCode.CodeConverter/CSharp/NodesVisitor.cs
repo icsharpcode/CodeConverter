@@ -1242,9 +1242,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (node.Token.Value == null) {
                     var type = _semanticModel.GetTypeInfo(node).ConvertedType;
                     if (type == null) {
-                        return CommonConversions.Literal(null)
-                            .WithTrailingTrivia(
-                                SyntaxFactory.Comment("/* TODO Change to default(_) if this is not a reference type */"));
+                        return CommonConversions.Literal(null); //In future, we'll be able to just say "default" instead of guessing at "null" in this case
                     }
 
                     return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(_semanticModel.GetCsTypeSyntax(type, node)) : CommonConversions.Literal(null);
@@ -1748,39 +1746,56 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return csEquivalent;
                 }
 
-                if(TryGetElementAccessExpressionToConvert(out var expressionToConvert)) {
+                if (TryGetElementAccessExpressionToConvert(out var convertedExpression)) {
                     return SyntaxFactory.ElementAccessExpression(
-                        (ExpressionSyntax)expressionToConvert.Accept(TriviaConvertingVisitor),
+                        convertedExpression,
                         SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(node.ArgumentList.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor)))));
                 }
+                convertedExpression = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
 
                 if (symbol != null && symbol.IsKind(SymbolKind.Property)) {
-                    return node.Expression.Accept(TriviaConvertingVisitor);
-                } else {
-                    return SyntaxFactory.InvocationExpression(
-                        (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
-                        ConvertArgumentListOrEmpty(node.ArgumentList)
-                    );
+                    return convertedExpression;
                 }
 
-                bool TryGetElementAccessExpressionToConvert(out VBSyntax.ExpressionSyntax toConvert)
-                {
-                    toConvert = null;
+                if (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault)) {
+                    _extraUsingDirectives.Add(nameof(System) + "." + nameof(System.Linq));
+                    convertedExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, convertedExpression,
+                        SyntaxFactory.IdentifierName(nameof(Enumerable.ElementAtOrDefault)));
+                }
 
-                    if (invocationSymbol?.IsIndexer() == true
-                        // Chances of having an unknown delegate stored as a field/local seem lower than having an unknown non-delegate type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
-                        || symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax
-                        || symbolReturnType.IsArrayType() && !(symbol is IMethodSymbol)
-                    ) {
+
+                return SyntaxFactory.InvocationExpression(convertedExpression, ConvertArgumentListOrEmpty(node.ArgumentList));
+
+                bool TryGetElementAccessExpressionToConvert(out ExpressionSyntax converted)
+                {
+                    VBSyntax.ExpressionSyntax toConvert = null;
+                    converted = null;
+
+                    if (invocationSymbol?.IsIndexer() == true || ProbablyNotAMethodCall(node, symbol, symbolReturnType)) {
                         toConvert = node.Expression;
                     }
 
                     // VB can use an imaginary member "Item" when an object has an indexer
-                    if ((toConvert != null || invocationSymbol.IsErrorType()) && node.Expression is VBSyntax.MemberAccessExpressionSyntax memberAccessExpression && memberAccessExpression.Name.Identifier.Text == "Item") {
+                    if ((toConvert != null || invocationSymbol?.IsErrorType() == true) && node.Expression is VBSyntax.MemberAccessExpressionSyntax memberAccessExpression && memberAccessExpression.Name.Identifier.Text == "Item") {
                         toConvert = memberAccessExpression.Expression;
                     }
-                    return toConvert != null;
+
+                    if (toConvert != null) {
+                        converted = (ExpressionSyntax)toConvert.Accept(TriviaConvertingVisitor);
+                    }
+
+                    return converted != null;
                 }
+            }
+
+            /// <summary>
+            /// Chances of having an unknown delegate stored as a field/local seem lower than having an unknown non-delegate type with an indexer stored.
+            /// So for a standalone identifier err on the side of assuming it's an indexer.
+            /// </summary>
+            private static bool ProbablyNotAMethodCall(VBSyntax.InvocationExpressionSyntax node, ISymbol symbol, ITypeSymbol symbolReturnType)
+            {
+                return !(symbol is IMethodSymbol) && (symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax
+                                                               || symbolReturnType.IsArrayType());
             }
 
             private ArgumentListSyntax ConvertArgumentListOrEmpty(VBSyntax.ArgumentListSyntax argumentListSyntax)
