@@ -1716,8 +1716,19 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (node.IsKind(VBasic.SyntaxKind.ExponentiateExpression,
                     VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
                     return SyntaxFactory.InvocationExpression(
-                        SyntaxFactory.ParseExpression($"{nameof(Math)}.{nameof(Math.Pow)}"),
+                        ValidSyntaxFactory.MemberAccess(nameof(Math), nameof(Math.Pow)),
                         ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
+                }
+
+                if (node.IsKind(VBasic.SyntaxKind.LikeExpression)) {
+                    var compareText = ValidSyntaxFactory.MemberAccess("CompareMethod", "Text");
+                    var likeString = ValidSyntaxFactory.MemberAccess("LikeOperator", "LikeString");
+                    _extraUsingDirectives.Add("Microsoft.VisualBasic");
+                    _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
+                    return SyntaxFactory.InvocationExpression(
+                        likeString,
+                        ExpressionSyntaxExtensions.CreateArgList(lhs, rhs, compareText)
+                    );
                 }
 
                 var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);

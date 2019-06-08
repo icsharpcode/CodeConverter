@@ -181,8 +181,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (OptionCompareTextCaseInsensitive) {
                     _extraUsingDirectives.Add("System.Globalization");
                     var compareOptions = SyntaxFactory.Argument(GetCompareTextCaseInsensitiveCompareOptions());
-                    var compareString = SyntaxFactory.InvocationExpression(
-                        MemberAccess(nameof(CultureInfo), nameof(CultureInfo.CurrentCulture),
+                    var compareString = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(CultureInfo), nameof(CultureInfo.CurrentCulture),
                             nameof(CultureInfo.CompareInfo), nameof(CompareInfo.Compare)),
                         SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
                             {SyntaxFactory.Argument(csLeft), SyntaxFactory.Argument(csRight), compareOptions})));
@@ -200,8 +199,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
                 _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
                 var optionCompareTextCaseInsensitive = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(OptionCompareTextCaseInsensitive ? SyntaxKind.TrueKeyword : SyntaxKind.FalseLiteralExpression));
-                var compareObject = SyntaxFactory.InvocationExpression(
-                    MemberAccess(nameof(Operators), nameof(Operators.ConditionalCompareObjectEqual)),
+                var compareObject = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Operators), nameof(Operators.ConditionalCompareObjectEqual)),
                     SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
                         {SyntaxFactory.Argument(lhs), SyntaxFactory.Argument(rhs), optionCompareTextCaseInsensitive})));
                 return NegateIfNeeded(node, compareObject);
@@ -210,25 +208,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static BinaryExpressionSyntax GetCompareTextCaseInsensitiveCompareOptions()
         {
             return SyntaxFactory.BinaryExpression(SyntaxKind.BitwiseOrExpression,
-                SyntaxFactory.BinaryExpression(SyntaxKind.BitwiseOrExpression,
-                    MemberAccess(nameof(CompareOptions), nameof(CompareOptions.IgnoreCase)),
-                    MemberAccess(nameof(CompareOptions), nameof(CompareOptions.IgnoreKanaType))),
-                MemberAccess(nameof(CompareOptions), nameof(CompareOptions.IgnoreWidth))
+                SyntaxFactory.BinaryExpression(SyntaxKind.BitwiseOrExpression, ValidSyntaxFactory.MemberAccess(nameof(CompareOptions), nameof(CompareOptions.IgnoreCase)), ValidSyntaxFactory.MemberAccess(nameof(CompareOptions), nameof(CompareOptions.IgnoreKanaType))), ValidSyntaxFactory.MemberAccess(nameof(CompareOptions), nameof(CompareOptions.IgnoreWidth))
             );
-        }
-
-        private static ExpressionSyntax MemberAccess(params string[] nameParts)
-        {
-            ExpressionSyntax lhs = null;
-            foreach (var namePart in nameParts) {
-                if (lhs == null) lhs = SyntaxFactory.IdentifierName(namePart);
-                else {
-                    lhs = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        lhs, SyntaxFactory.IdentifierName(namePart));
-                }
-            }
-
-            return lhs;
         }
     }
 }

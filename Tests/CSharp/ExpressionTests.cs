@@ -609,6 +609,25 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void LikeOperator()
+        {
+            TestConversionVisualBasicToCSharp(@"Public Class Class1
+    Sub Foo()
+        Dim x = """" Like ""*x*""
+    End Sub
+End Class", @"using Microsoft.VisualBasic;
+using Microsoft.VisualBasic.CompilerServices;
+
+public class Class1
+{
+    public void Foo()
+    {
+        var x = LikeOperator.LikeString("""", ""*x*"", CompareMethod.Text);
+    }
+}");
+        }
+
+        [Fact]
         public void EnumNullableConversion()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1

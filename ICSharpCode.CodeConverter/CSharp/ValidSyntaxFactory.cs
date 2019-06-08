@@ -23,5 +23,19 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxFactory.Token(SyntaxKind.CloseParenToken), SyntaxFactory.Token(SyntaxKind.OpenBraceToken),
                 SyntaxFactory.List(sections), SyntaxFactory.Token(SyntaxKind.CloseBraceToken));
         }
+
+        public static ExpressionSyntax MemberAccess(params string[] nameParts)
+        {
+            ExpressionSyntax lhs = null;
+            foreach (var namePart in nameParts) {
+                if (lhs == null) lhs = SyntaxFactory.IdentifierName(namePart);
+                else {
+                    lhs = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        lhs, SyntaxFactory.IdentifierName(namePart));
+                }
+            }
+
+            return lhs;
+        }
     }
 }
