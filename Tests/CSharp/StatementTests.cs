@@ -1012,6 +1012,31 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void ForNextMutatingField()
+        {
+            // Comment from "Next" gets pushed up to previous line
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Private Index As Integer
+
+    Sub Foo()
+        For Me.Index = 0 To 10
+
+        Next
+    End Sub
+End Class", @"public class Class1
+{
+    private int Index;
+
+    public void Foo()
+    {
+        for (this.Index = 0; this.Index <= 10; this.Index++)
+        {
+        }
+    }
+}");
+        }
+
+        [Fact]
         public void ForRequiringExtraVariable()
         {
             // Comment from "Next" gets pushed up to previous line

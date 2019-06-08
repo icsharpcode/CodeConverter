@@ -415,7 +415,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 } else {
                     id = (ExpressionSyntax)stmt.ControlVariable.Accept(_nodesVisitor);
                     var symbol = _semanticModel.GetSymbolInfo(stmt.ControlVariable).Symbol;
-                    if (!_semanticModel.LookupSymbols(node.FullSpan.Start, name: symbol.Name).Any()) {
+                    if (symbol != null && !_semanticModel.LookupSymbols(node.FullSpan.Start, name: symbol.Name).Any()) {
                         declaration = CommonConversions.CreateVariableDeclarationAndAssignment(symbol.Name, startValue);
                     } else {
                         startValue = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, id, startValue);

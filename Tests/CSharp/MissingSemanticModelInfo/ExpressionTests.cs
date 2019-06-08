@@ -62,5 +62,26 @@ public class Class1
     }
 }");
         }
+
+        [Fact]
+        public void ForNextMutatingMissingField()
+        {
+            // Comment from "Next" gets pushed up to previous line
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Foo()
+        For Me.Index = 0 To 10
+
+        Next
+    End Sub
+End Class", @"public class Class1
+{
+    public void Foo()
+    {
+        for (this.Index = 0; this.Index <= 10; this.Index++)
+        {
+        }
+    }
+}");
+        }
     }
 }
