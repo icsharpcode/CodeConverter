@@ -37,6 +37,23 @@ End Module", @"static class TestModule
         }
 
         [Fact]
+        public void TestModuleConstructor()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Module Module1
+    Sub New()
+        Dim someValue As Integer = 0
+    End Sub
+End Module", @"static class Module1
+{
+    static Module1()
+    {
+        int someValue = 0;
+    }
+}");
+        }
+
+        [Fact]
         public void TestTypeInferredConst()
         {
             TestConversionVisualBasicToCSharp(
