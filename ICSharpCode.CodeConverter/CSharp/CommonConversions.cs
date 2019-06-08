@@ -340,9 +340,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.Identifier(text);
         }
 
-        public SyntaxTokenList ConvertModifiers(IEnumerable<SyntaxToken> modifiers, TokenContext context = TokenContext.Global, bool isVariableOrConst = false, bool isConstructor = false)
+        public SyntaxTokenList ConvertModifiers(SyntaxNode node, IEnumerable<SyntaxToken> modifiers,
+            TokenContext context = TokenContext.Global, bool isVariableOrConst = false, bool isConstructor = false)
         {
-            return SyntaxFactory.TokenList(ConvertModifiersCore(modifiers, context, isVariableOrConst, isConstructor).Where(t => CSharpExtensions.Kind(t) != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None));
+            var declaredAccessibility = _semanticModel.GetDeclaredSymbol(node).DeclaredAccessibility;
+            return SyntaxFactory.TokenList(ConvertModifiersCore(declaredAccessibility, modifiers, context, isVariableOrConst, isConstructor).Where(t => CSharpExtensions.Kind(t) != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None));
         }
 
         private SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)
@@ -356,7 +358,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             return token == Microsoft.CodeAnalysis.CSharp.SyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));
         }
 
-        private IEnumerable<SyntaxToken> ConvertModifiersCore(IEnumerable<SyntaxToken> modifiers, TokenContext context,
+        private IEnumerable<SyntaxToken> ConvertModifiersCore(Accessibility declaredAccessibility,
+            IEnumerable<SyntaxToken> modifiers, TokenContext context,
             bool isVariableOrConst = false, bool isConstructor = false)
         {
             var contextsWithIdenticalDefaults = new[] {TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface };

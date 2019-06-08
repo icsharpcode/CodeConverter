@@ -321,7 +321,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var extraModifiers = IsPartialType(stmt) && !HasPartialKeyword(stmt.Modifiers)
                     ? new[] {SyntaxFactory.Token(SyntaxKind.PartialKeyword)}
                     : new SyntaxToken[0];
-                return CommonConversions.ConvertModifiers(stmt.Modifiers, interfaceOrModule).AddRange(extraModifiers);
+                return CommonConversions.ConvertModifiers(stmt, stmt.Modifiers, interfaceOrModule).AddRange(extraModifiers);
             }
 
             private static bool HasPartialKeyword(SyntaxTokenList modifiers)
@@ -355,7 +355,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
                 var members = SyntaxFactory.SeparatedList(node.Members.Select(m => (EnumMemberDeclarationSyntax)m.Accept(TriviaConvertingVisitor)));
                 return SyntaxFactory.EnumDeclaration(
-                    SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(stmt.Modifiers, TokenContext.Global),
+                    SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(stmt, stmt.Modifiers, TokenContext.Global),
                     ConvertIdentifier(stmt.Identifier),
                     baseList,
                     members
@@ -397,7 +397,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 return SyntaxFactory.DelegateDeclaration(
-                    SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Global),
+                    SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Global),
                     returnType,
                     ConvertIdentifier(node.Identifier),
                     typeParameters,
@@ -416,7 +416,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var attributes = node.AttributeLists.SelectMany(ConvertAttribute).ToList();
                 var convertableModifiers = node.Modifiers.Where(m => !SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
                 var isWithEvents = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
-                var convertedModifiers = CommonConversions.ConvertModifiers(convertableModifiers, GetMemberContext(node), true);
+                var convertedModifiers = CommonConversions.ConvertModifiers(node, convertableModifiers, GetMemberContext(node), isVariableOrConst: true);
                 var isConst = convertedModifiers.Any(a => a.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword));
                 var declarations = new List<MemberDeclarationSyntax>(node.Declarators.Count);
 
@@ -509,7 +509,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var isReadonly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.ReadOnlyKeyword));
                 var isWriteOnly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WriteOnlyKeyword));
                 var convertibleModifiers = node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword, VBasic.SyntaxKind.WriteOnlyKeyword, VBasic.SyntaxKind.DefaultKeyword));
-                var modifiers = CommonConversions.ConvertModifiers(convertibleModifiers, GetMemberContext(node));
+                var modifiers = CommonConversions.ConvertModifiers(node, convertibleModifiers, GetMemberContext(node));
                 var isIndexer = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.DefaultKeyword));
                 var accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, _semanticModel.GetDeclaredSymbol(node));
                 bool isInInterface = node.Ancestors().OfType<VBSyntax.InterfaceBlockSyntax>().FirstOrDefault() != null;
@@ -615,7 +615,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var convertedStatements = ConvertStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator));
                 var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
                 var attributes = ConvertAttributes(node.AccessorStatement.AttributeLists);
-                var modifiers = CommonConversions.ConvertModifiers(node.AccessorStatement.Modifiers, TokenContext.Local);
+                var modifiers = CommonConversions.ConvertModifiers(node, node.AccessorStatement.Modifiers, TokenContext.Local);
 
                 switch (node.Kind()) {
                     case VBasic.SyntaxKind.GetAccessorBlock:
@@ -782,7 +782,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return decl.WithSemicolonToken(SemicolonToken);
                 } else {
                     var tokenContext = GetMemberContext(node);
-                    var convertedModifiers = CommonConversions.ConvertModifiers(node.Modifiers, tokenContext);
+                    var convertedModifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext);
                     var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
                     bool accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, declaredSymbol);
 
@@ -875,7 +875,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var block = node.EventStatement;
                 var attributes = block.AttributeLists.SelectMany(ConvertAttribute);
-                var modifiers = CommonConversions.ConvertModifiers(block.Modifiers, GetMemberContext(node));
+                var modifiers = CommonConversions.ConvertModifiers(block, block.Modifiers, GetMemberContext(node));
 
                 var rawType = (TypeSyntax)block.AsClause?.Type.Accept(TriviaConvertingVisitor) ?? VarType;
 
@@ -894,7 +894,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitEventStatement(VBSyntax.EventStatementSyntax node)
             {
                 var attributes = node.AttributeLists.SelectMany(ConvertAttribute);
-                var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node));
+                var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, GetMemberContext(node));
                 var id = ConvertIdentifier(node.Identifier);
 
                 if (node.AsClause == null) {
@@ -944,7 +944,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var parameterList = (ParameterListSyntax)node.ParameterList.Accept(TriviaConvertingVisitor);
                 var methodBodyVisitor = CreateMethodBodyVisitor(node);
                 var body = SyntaxFactory.Block(containingBlock.Statements.SelectMany(s => s.Accept(methodBodyVisitor)));
-                var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node));
+                var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, GetMemberContext(node));
 
                 var conversionModifiers = modifiers.Where(CommonConversions.IsConversionOperator).ToList();
                 var nonConversionModifiers = SyntaxFactory.TokenList(modifiers.Except(conversionModifiers));
@@ -970,7 +970,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var block = node.BlockStatement;
                 var attributes = block.AttributeLists.SelectMany(ConvertAttribute);
-                var modifiers = CommonConversions.ConvertModifiers(block.Modifiers, GetMemberContext(node), isConstructor: true);
+                var modifiers = CommonConversions.ConvertModifiers(block, block.Modifiers, GetMemberContext(node), isConstructor: true);
 
                 var ctor = (node.Statements.FirstOrDefault() as VBSyntax.ExpressionStatementSyntax)?.Expression as VBSyntax.InvocationExpressionSyntax;
                 var ctorExpression = ctor?.Expression as VBSyntax.MemberAccessExpressionSyntax;
@@ -1027,7 +1027,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var attributeLists = ConvertAttributes(node.AttributeLists).Add(dllImportAttributeList);
 
-                var modifiers = CommonConversions.ConvertModifiers(node.Modifiers).Add(SyntaxFactory.Token(SyntaxKind.StaticKeyword)).Add(SyntaxFactory.Token(SyntaxKind.ExternKeyword));
+                var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers).Add(SyntaxFactory.Token(SyntaxKind.StaticKeyword)).Add(SyntaxFactory.Token(SyntaxKind.ExternKeyword));
                 var returnType = (TypeSyntax)node.AsClause?.Type.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ParseTypeName("void");
                 var parameterListSyntax = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor) ??
                                           SyntaxFactory.ParameterList();
@@ -1078,7 +1078,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var attributes = node.AttributeLists.SelectMany(ConvertAttribute).ToList();
                 int outAttributeIndex = attributes.FindIndex(a => a.Attributes.Single().Name.ToString() == "Out");
-                var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Local);
+                var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Local);
                 if (outAttributeIndex > -1) {
                     attributes.RemoveAt(outAttributeIndex);
                     modifiers = modifiers.Replace(SyntaxFactory.Token(SyntaxKind.RefKeyword), SyntaxFactory.Token(SyntaxKind.OutKeyword));
