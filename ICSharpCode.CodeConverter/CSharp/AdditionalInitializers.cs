@@ -4,6 +4,8 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -12,25 +14,33 @@ namespace ICSharpCode.CodeConverter.CSharp
         public Dictionary<string, ExpressionSyntax> AdditionalStaticInitializers { get; } = new Dictionary<string, ExpressionSyntax>();
         public Dictionary<string, ExpressionSyntax> AdditionalInstanceInitializers { get; } = new Dictionary<string, ExpressionSyntax>();
 
-        public IReadOnlyCollection<MemberDeclarationSyntax> WithAdditionalInitializers(List<MemberDeclarationSyntax> convertedMembers, SyntaxToken parentTypeName)
+        public IReadOnlyCollection<MemberDeclarationSyntax> WithAdditionalInitializers(ITypeSymbol parentType,
+            List<MemberDeclarationSyntax> convertedMembers, SyntaxToken parentTypeName)
         {
-            var parameterlessConstructors = convertedMembers.OfType<ConstructorDeclarationSyntax>()
+            var constructorsInAllParts = parentType.GetMembers().OfType<IMethodSymbol>().Where(m => m.IsConstructor()).ToList();
+            var hasInstanceConstructors = constructorsInAllParts.Any(c => !c.IsStatic);
+            var hasStaticConstructors = constructorsInAllParts.Any(c => c.IsStatic);
+
+            var rootConstructors = convertedMembers.OfType<ConstructorDeclarationSyntax>()
                 .Where(cds => !cds.Initializer.IsKind(SyntaxKind.ThisConstructorInitializer))
                 .ToLookup(cds => cds.IsInStaticCsContext());
 
-            convertedMembers = WithAdditionalInitializers(convertedMembers, parameterlessConstructors, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(), false);
-            return WithAdditionalInitializers(convertedMembers, parameterlessConstructors, parentTypeName, AdditionalStaticInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword)), true);
+            convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(), rootConstructors[false], !hasInstanceConstructors);
+
+            convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName,
+                AdditionalStaticInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword)), rootConstructors[true], !hasStaticConstructors);
+
+            return convertedMembers;
         }
 
         private List<MemberDeclarationSyntax> WithAdditionalInitializers(List<MemberDeclarationSyntax> convertedMembers,
-            ILookup<bool, ConstructorDeclarationSyntax> parameterlessConstructors,
             SyntaxToken convertIdentifier, Dictionary<string, ExpressionSyntax> additionalInitializers,
-            SyntaxTokenList modifiers, bool isStatic)
+            SyntaxTokenList modifiers, IEnumerable<ConstructorDeclarationSyntax> constructorsEnumerable, bool addConstructor)
         {
             if (!additionalInitializers.Any()) return convertedMembers;
-            var constructors = new HashSet<ConstructorDeclarationSyntax>(parameterlessConstructors[isStatic]);
+            var constructors = new HashSet<ConstructorDeclarationSyntax>(constructorsEnumerable);
             convertedMembers = convertedMembers.Except(constructors).ToList();
-            if (!constructors.Any()) {
+            if (addConstructor) {
                 constructors.Add(SyntaxFactory.ConstructorDeclaration(convertIdentifier)
                     .WithBody(SyntaxFactory.Block())
                     .WithModifiers(modifiers));

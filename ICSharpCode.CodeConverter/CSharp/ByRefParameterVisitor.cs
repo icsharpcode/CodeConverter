@@ -18,7 +18,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private readonly VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> _wrappedVisitor;
             private readonly AdditionalLocals _additionalLocals;
             private readonly SemanticModel _semanticModel;
-            private readonly HashSet<string> _generatedNames = new HashSet<string>();
+            private readonly HashSet<string> _generatedNames;
 
             public ByRefParameterVisitor(VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> wrappedVisitor, AdditionalLocals additionalLocals,
                 SemanticModel semanticModel, HashSet<string> generatedNames)

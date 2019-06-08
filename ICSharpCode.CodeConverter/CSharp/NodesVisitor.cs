@@ -189,7 +189,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return GetDirectlyConvertMembers();
                 }
 
-                return _additionalInitializers.WithAdditionalInitializers(GetDirectlyConvertMembers().ToList(), ConvertIdentifier(parentType.BlockStatement.Identifier));
+                var typeSymbol = (ITypeSymbol) _semanticModel.GetDeclaredSymbol(parentType);
+                return _additionalInitializers.WithAdditionalInitializers(typeSymbol, GetDirectlyConvertMembers().ToList(), ConvertIdentifier(parentType.BlockStatement.Identifier));
 
                 IEnumerable<MemberDeclarationSyntax> GetDirectlyConvertMembers()
                 {
@@ -487,16 +488,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             private List<MethodWithHandles> GetMethodWithHandles(VBSyntax.TypeBlockSyntax parentType)
             {
                 if (parentType == null) return new List<MethodWithHandles>();
-                return parentType.Members.OfType<VBSyntax.MethodBlockSyntax>()
+
+
+
+                var containingType = (ITypeSymbol) _semanticModel.GetDeclaredSymbol(parentType);
+                return containingType.GetMembers().OfType<IMethodSymbol>()
+                    .Where(m => VBasic.VisualBasicExtensions.HandledEvents(m).Any())
                     .Select(m => {
-                        var handlesClauseSyntax = m.SubOrFunctionStatement.HandlesClause;
-                        if (handlesClauseSyntax == null) return null;
-                        var csPropIds = handlesClauseSyntax.Events
-                            .Where(e => e.EventContainer is VBSyntax.WithEventsEventContainerSyntax)
-                            .Select(p => (ConvertIdentifier(((VBSyntax.WithEventsEventContainerSyntax) p.EventContainer).Identifier), ConvertIdentifier(p.EventMember.Identifier)))
+                        var csPropIds = VBasic.VisualBasicExtensions.HandledEvents(m)
+                            .Select(p => (SyntaxFactory.Identifier(p.EventContainer.Name), SyntaxFactory.Identifier(p.EventSymbol.Name)))
                             .ToList();
                         if (!csPropIds.Any()) return null;
-                        var csMethodId = ConvertIdentifier(m.SubOrFunctionStatement.Identifier);
+                        var csMethodId = SyntaxFactory.Identifier(m.Name);
                         return new MethodWithHandles(csMethodId, csPropIds);
                     }).Where(x => x != null)
                     .ToList();
