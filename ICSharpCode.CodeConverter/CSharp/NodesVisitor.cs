@@ -1757,7 +1757,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return convertedExpression;
                 }
 
-                if (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault)) {
+                if (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault) && !symbol.Equals(invocationSymbol)) {
                     _extraUsingDirectives.Add(nameof(System) + "." + nameof(System.Linq));
                     convertedExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, convertedExpression,
                         SyntaxFactory.IdentifierName(nameof(Enumerable.ElementAtOrDefault)));

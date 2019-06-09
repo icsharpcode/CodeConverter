@@ -650,6 +650,28 @@ public class Class1
         }
 
         [Fact]
+        public void ElementAtOrDefaultInvocationIsNotDuplicated()
+        {
+            TestConversionVisualBasicToCSharp(@"Imports System.Linq
+
+Public Class Class1
+    Sub Foo()
+        Dim y = """".Split("",""c).Select(Function(x) x)
+        Dim z = y.ElementAtOrDefault(0)
+    End Sub
+End Class", @"using System.Linq;
+
+public class Class1
+{
+    public void Foo()
+    {
+        var y = """".Split(',').Select(x => x);
+        var z = y.ElementAtOrDefault(0);
+    }
+}");
+        }
+
+        [Fact]
         public void EnumNullableConversion()
         {
             TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
