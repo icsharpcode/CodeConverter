@@ -1,6 +1,20 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
+# 6.9.0 TBC/06/2019
+
+### VB -> C#
+* String comparison conversion now often avoids referencing VB library in output (when TextCompare is set to Binary)
+* Convert WithEvents/Handles correctly for partial classes
+* Convert Like operator
+* Convert VB indexer to ElementAtOrDefault to make behaviour consistent
+* Improve accuracy of choosing square brackets or parentheses
+* Avoid nullref when converting for loop
+
+### C# -> VB
+* Enable OptionInfer on converted projects
+* Convert global namespace correctly
+
 # 6.8.0 13/05/2019
 
 ### VB -> C#
