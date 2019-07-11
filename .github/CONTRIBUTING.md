@@ -19,6 +19,8 @@ At the moment there's just a very small amount of quite bad documentation...so m
 * Always try to convert directly between the VB and C# model, avoid converting then post-processing the converted result. This prevents the code getting tangled interdependencies, and means you have the full semantic model available to make an accurate conversion.
 * Aim to use symbols rather than syntax wherever possible. Remember, lots of the problems you need to solve have already been solved by the compiler - finding it is the hard part. http://source.roslyn.io helps a bit
 * Avoid using the `SyntaxFactory.Parse*` methods in general - it leads to getting mixed up between which language a string is from, and means you don't learn how the syntax trees are formed. You can use https://roslynquoter.azurewebsites.net/ to help find the correct methods to use.
+* The code heavily uses SyntaxFactory at the moment. In future I intend to investigate making some use of [`SyntaxGenerator`](https://docs.microsoft.com/en-us/dotnet/api/microsoft.codeanalysis.editing.syntaxgenerator?view=roslyn-dotnet).
+* The code currently has to care about both a correct conversion, and creating readable output. In future I hope to use more built-in functions to simplify the code (e.g. `ReduceAsync`). That will allow most of the code to focus on generating code that's correct, and then automatically tidy up the result to remove redundant qualification, parentheses etc.
 
 ## Resources
 * https://en.wikipedia.org/wiki/Comparison_of_C_Sharp_and_Visual_Basic_.NET#Features_of_Visual_Basic_.NET_not_found_in_C#
