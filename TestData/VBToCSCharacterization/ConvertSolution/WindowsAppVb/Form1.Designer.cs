@@ -1,3 +1,15 @@
+using Microsoft.VisualBasic;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Data;
+using System.Drawing;
+using System.Diagnostics;
+using System.Windows.Forms;
+using System.Linq;
+using System.Xml.Linq;
+using System.Threading.Tasks;
+
 namespace WindowsAppVb
 {
     [global::Microsoft.VisualBasic.CompilerServices.DesignerGenerated()]
@@ -28,14 +40,59 @@ namespace WindowsAppVb
         [System.Diagnostics.DebuggerStepThrough()]
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
+            this._Button1 = new System.Windows.Forms.Button(); // In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
+            this._Button1.Click += Button1_Click;
+            this.SuspendLayout();
+            // 
+            // Button1
+            // 
+            this._Button1.Location = new System.Drawing.Point(95, 80);
+            this._Button1.Name = "Button1";
+            this._Button1.Size = new System.Drawing.Size(75, 23);
+            this._Button1.TabIndex = 0;
+            this._Button1.Text = "Button1";
+            this._Button1.UseVisualStyleBackColor = true;
+            // 
+            // Form1
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this._Button1);
+            this.Name = "Form1";
             this.Text = "Form1";
+            this.ResumeLayout(false);
         }
 
         public static bool TestSub(ref bool IsDefault = false)
         {
             return default(bool);
+        }
+
+        private Button _Button1;
+
+        internal Button Button1
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get
+            {
+                return _Button1;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            set
+            {
+                if (_Button1 != null)
+                {
+                    _Button1.Click -= Button1_Click;
+                }
+
+                _Button1 = value;
+                if (_Button1 != null)
+                {
+                    _Button1.Click += Button1_Click;
+                }
+            }
         }
     }
 }

@@ -488,8 +488,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 if (parentType == null) return new List<MethodWithHandles>();
 
-
-
                 var containingType = (ITypeSymbol) _semanticModel.GetDeclaredSymbol(parentType);
                 return containingType.GetMembers().OfType<IMethodSymbol>()
                     .Where(m => VBasic.VisualBasicExtensions.HandledEvents(m).Any())
