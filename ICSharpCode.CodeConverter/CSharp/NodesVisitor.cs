@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.VisualBasic.CompilerServices;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
@@ -1341,7 +1342,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left, simpleNameSyntax);
-                if (_semanticModel.GetSymbolInfo(node).Symbol.IsKind(SymbolKind.Method) && node.Parent?.IsKind(VBasic.SyntaxKind.InvocationExpression) != true) {
+                if (_semanticModel.GetOperation(node)?.Kind == OperationKind.Invocation) {
                     var visitMemberAccessExpression = SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax, SyntaxFactory.ArgumentList());
                     return visitMemberAccessExpression;
                 }
@@ -1741,17 +1742,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch();
                 var expressionSymbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
                 var expressionReturnType = expressionSymbol?.GetReturnType() ?? _semanticModel.GetTypeInfo(node.Expression).Type;
-                var operationKind = _semanticModel.GetOperation(node)?.Kind;
+                var operation = _semanticModel.GetOperation(node);
                 if (expressionSymbol?.ContainingNamespace.MetadataName == "VisualBasic" && TrySubstituteVisualBasicMethod(node, out var csEquivalent)) {
                     return csEquivalent;
                 }
 
-                if (TryGetElementAccessExpressionToConvert(out var convertedExpression)) {
+                var convertedExpression = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
+
+                if (IsElementAccess()) {
                     return SyntaxFactory.ElementAccessExpression(
                         convertedExpression,
                         SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(node.ArgumentList.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor)))));
                 }
-                convertedExpression = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
 
                 if (expressionSymbol != null && expressionSymbol.IsKind(SymbolKind.Property)) {
                     return convertedExpression;
@@ -1766,62 +1768,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 return SyntaxFactory.InvocationExpression(convertedExpression, ConvertArgumentListOrEmpty(node.ArgumentList));
 
-                bool TryGetElementAccessExpressionToConvert(out ExpressionSyntax converted)
+                bool IsElementAccess()
                 {
-                    VBSyntax.ExpressionSyntax toConvert = null;
-                    converted = null;
-
                     var elementAccessOperationKinds = new[] {
-                        OperationKind.ArrayElementReferenceExpression, OperationKind.IndexedPropertyReferenceExpression,
-                        // ArrayElementReference and PropertyReference from a later version of the library:
-                        (OperationKind) 0x17, (OperationKind) 0x1c
+                        OperationKind.ArrayElementReference, OperationKind.PropertyReference,
                     };
-                    if (invocationSymbol?.IsIndexer() == true ||
-                        operationKind.HasValue && elementAccessOperationKinds.Contains(operationKind.Value) || 
-                        ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType)) {
-                        toConvert = node.Expression;
-                    }
-
-                    // VB can use an imaginary member "Item" when an object has an indexer
-                    if ((toConvert != null || invocationSymbol?.IsErrorType() == true) && node.Expression is VBSyntax.MemberAccessExpressionSyntax memberAccessExpression && memberAccessExpression.Name.Identifier.Text == "Item") {
-                        toConvert = memberAccessExpression.Expression;
-                    }
-
-                    if (toConvert != null) {
-                        converted = (ExpressionSyntax)toConvert.Accept(TriviaConvertingVisitor);
-                    }
-
-                    // If ambiguous, method(0) is treated as passing 0 to the method, rather than calling method with no parameters and indexing into the result.
-                    // VB doesn't have a specialized node for element access because the syntax is ambiguous. Instead, it just uses an invocation expression or dictionary access expression, then figures out using the semantic model which one is most likely intended. 
-                    // https://github.com/dotnet/roslyn/blob/master/src/Workspaces/VisualBasic/Portable/LanguageServices/VisualBasicSyntaxFactsService.vb#L768
-                    if (expressionSymbol is IMethodSymbol methodSymbol &&
-                        methodSymbol.Parameters.Length == 0 &&
-                        CouldAcceptElementAccessWithArgs(expressionReturnType, node.ArgumentList.Arguments)) {
-
-                        // assume expression is already an invocation, as in: GetStrings()(1)
-                        converted = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
-                        if (node.Expression.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IdentifierName) ||
-                            node.Expression.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.SimpleMemberAccessExpression)) {
-                            // expression consists of just a method name, as in: GetStrings(1) where (1) is indexing into the return value of GetStrings()
-                            converted = SyntaxFactory.InvocationExpression(converted);
-                        }
-
-                    }
-
-                    return converted != null;
+                    return invocationSymbol?.IsIndexer() == true ||
+                           operation != null && elementAccessOperationKinds.Contains(operation.Kind) || 
+                           ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
                 }
-            }
-
-            private bool CouldAcceptElementAccessWithArgs(ITypeSymbol theType, SeparatedSyntaxList<VBSyntax.ArgumentSyntax> args)
-            {
-                var orderedArgTypes = args.Select(a => _semanticModel.GetTypeInfo(a.GetExpression()).ConvertedType);
-                if (theType is IArrayTypeSymbol arrayReturnType
-                    && args.Count == arrayReturnType.Rank) {
-                    return orderedArgTypes.All(a => a.SpecialType == SpecialType.System_Int32);
-                }
-
-                return theType.GetIndexers().Where(x => args.Count == x.Parameters.Length)
-                    .Any(x => orderedArgTypes.SequenceEqual(x.Parameters.Select(p => p.Type)));
             }
 
             /// <summary>
@@ -2032,11 +1987,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(VBSyntax.IdentifierNameSyntax node, ExpressionSyntax id)
             {
-                var symbol = GetSymbolInfoInDocument(node);
-                if (symbol != null &&
-                    (symbol.IsOrdinaryMethod() || symbol.IsExtensionMethod()) &&
-                    !node.Parent.IsKind(VBasic.SyntaxKind.InvocationExpression, VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.AddressOfExpression)) {
-                    return SyntaxFactory.InvocationExpression(id);
+                if (_semanticModel.GetOperation(node)?.Kind == OperationKind.Invocation) {
+                    return SyntaxFactory.InvocationExpression(id, SyntaxFactory.ArgumentList());
                 }
 
                 return id;
