@@ -75,6 +75,36 @@ class TestClass
         }
 
         [Fact]
+        public void TestTypeInferredVar()
+        {
+            TestConversionVisualBasicToCSharp(
+@"Class TestClass
+    Public Enum TestEnum As Integer
+        Test1
+    End Enum
+
+    Dim EnumVariable = TestEnum.Test1
+    Public Sub AMethod()
+        Dim t1 As Integer = EnumVariable
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+class TestClass
+{
+    public enum TestEnum : int
+    {
+        Test1
+    }
+
+    private object EnumVariable = TestEnum.Test1;" /* VB doesn't infer the type like you'd think, it just uses object */ + @"
+    public void AMethod()
+    {
+        int t1 = Conversions.ToInteger(EnumVariable);" /* VB compiler uses Conversions rather than any plainer casting */ + @"
+    }
+}");
+        }
+
+        [Fact]
         public void TestMethod()
         {
             TestConversionVisualBasicToCSharp(
