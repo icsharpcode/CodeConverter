@@ -1739,10 +1739,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitInvocationExpression(VBSyntax.InvocationExpressionSyntax node)
             {
                 var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch();
-                var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
-                var symbolReturnType = symbol?.GetReturnType();
-
-                if (symbol?.ContainingNamespace.MetadataName == "VisualBasic" && TrySubstituteVisualBasicMethod(node, out var csEquivalent)) {
+                var expressionSymbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
+                var expressionReturnType = expressionSymbol?.GetReturnType() ?? _semanticModel.GetTypeInfo(node.Expression).Type;
+                var operationKind = _semanticModel.GetOperation(node)?.Kind;
+                if (expressionSymbol?.ContainingNamespace.MetadataName == "VisualBasic" && TrySubstituteVisualBasicMethod(node, out var csEquivalent)) {
                     return csEquivalent;
                 }
 
@@ -1753,11 +1753,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
                 convertedExpression = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
 
-                if (symbol != null && symbol.IsKind(SymbolKind.Property)) {
+                if (expressionSymbol != null && expressionSymbol.IsKind(SymbolKind.Property)) {
                     return convertedExpression;
                 }
 
-                if (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault) && !symbol.Equals(invocationSymbol)) {
+                if (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault) && !expressionSymbol.Equals(invocationSymbol)) {
                     _extraUsingDirectives.Add(nameof(System) + "." + nameof(System.Linq));
                     convertedExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, convertedExpression,
                         SyntaxFactory.IdentifierName(nameof(Enumerable.ElementAtOrDefault)));
@@ -1771,7 +1771,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                     VBSyntax.ExpressionSyntax toConvert = null;
                     converted = null;
 
-                    if (invocationSymbol?.IsIndexer() == true || ProbablyNotAMethodCall(node, symbol, symbolReturnType)) {
+                    var elementAccessOperationKinds = new[] {
+                        OperationKind.ArrayElementReferenceExpression, OperationKind.IndexedPropertyReferenceExpression,
+                        // ArrayElementReference and PropertyReference from a later version of the library:
+                        (OperationKind) 0x17, (OperationKind) 0x1c
+                    };
+                    if (invocationSymbol?.IsIndexer() == true ||
+                        operationKind.HasValue && elementAccessOperationKinds.Contains(operationKind.Value) || 
+                        ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType)) {
                         toConvert = node.Expression;
                     }
 
@@ -1787,9 +1794,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     // If ambiguous, method(0) is treated as passing 0 to the method, rather than calling method with no parameters and indexing into the result.
                     // VB doesn't have a specialized node for element access because the syntax is ambiguous. Instead, it just uses an invocation expression or dictionary access expression, then figures out using the semantic model which one is most likely intended. 
                     // https://github.com/dotnet/roslyn/blob/master/src/Workspaces/VisualBasic/Portable/LanguageServices/VisualBasicSyntaxFactsService.vb#L768
-                    if (symbol is IMethodSymbol methodSymbol &&
+                    if (expressionSymbol is IMethodSymbol methodSymbol &&
                         methodSymbol.Parameters.Length == 0 &&
-                        CouldAcceptElementAccessWithArgs(symbolReturnType, node.ArgumentList.Arguments)) {
+                        CouldAcceptElementAccessWithArgs(expressionReturnType, node.ArgumentList.Arguments)) {
 
                         // assume expression is already an invocation, as in: GetStrings()(1)
                         converted = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
@@ -1823,8 +1830,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             /// </summary>
             private static bool ProbablyNotAMethodCall(VBSyntax.InvocationExpressionSyntax node, ISymbol symbol, ITypeSymbol symbolReturnType)
             {
-                return !(symbol is IMethodSymbol) && (symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax
-                                                               || symbolReturnType.IsArrayType());
+                return !(symbol is IMethodSymbol) && symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax;
             }
 
             private ArgumentListSyntax ConvertArgumentListOrEmpty(VBSyntax.ArgumentListSyntax argumentListSyntax)
