@@ -1785,7 +1785,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             /// </summary>
             private static bool ProbablyNotAMethodCall(VBSyntax.InvocationExpressionSyntax node, ISymbol symbol, ITypeSymbol symbolReturnType)
             {
-                return !(symbol is IMethodSymbol) && symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax;
+                return !(symbol is IMethodSymbol) && symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax && node.ArgumentList.Arguments.Any();
             }
 
             private ArgumentListSyntax ConvertArgumentListOrEmpty(VBSyntax.ArgumentListSyntax argumentListSyntax)
