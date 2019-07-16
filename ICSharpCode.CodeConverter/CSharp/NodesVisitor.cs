@@ -1789,8 +1789,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     // https://github.com/dotnet/roslyn/blob/master/src/Workspaces/VisualBasic/Portable/LanguageServices/VisualBasicSyntaxFactsService.vb#L768
                     if (symbol?.Kind == SymbolKind.Method &&
                         symbolReturnType?.Kind == SymbolKind.ArrayType && 
-                        node.ArgumentList.Arguments.Count == ((IArrayTypeSymbol)symbolReturnType).Rank &&
-                        node.HasTrailingTrivia) {
+                        node.ArgumentList.Arguments.Count == ((IArrayTypeSymbol)symbolReturnType).Rank) {
 
                         // assume expression is already an invocation, as in: GetStrings()(1)
                         converted = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
