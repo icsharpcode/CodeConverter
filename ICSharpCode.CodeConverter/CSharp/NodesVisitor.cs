@@ -1784,7 +1784,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                         converted = (ExpressionSyntax)toConvert.Accept(TriviaConvertingVisitor);
                     }
 
-                    // is (1) a method and (2) returns array type and (3) array index is specified as invocation parameter in round brackets?
+                    // If ambiguous, method(0) is treated as passing 0 to the method, rather than calling method with no parameters and indexing into the result.
+                    // VB doesn't have a specialized node for element access because the syntax is ambiguous. Instead, it just uses an invocation expression or dictionary access expression, then figures out using the semantic model which one is most likely intended. 
+                    // https://github.com/dotnet/roslyn/blob/master/src/Workspaces/VisualBasic/Portable/LanguageServices/VisualBasicSyntaxFactsService.vb#L768
                     if (symbol?.Kind == SymbolKind.Method &&
                         symbolReturnType?.Kind == SymbolKind.ArrayType && 
                         node.ArgumentList.Arguments.Count == ((IArrayTypeSymbol)symbolReturnType).Rank &&
