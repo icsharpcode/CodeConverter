@@ -1788,22 +1788,33 @@ namespace ICSharpCode.CodeConverter.CSharp
                     // VB doesn't have a specialized node for element access because the syntax is ambiguous. Instead, it just uses an invocation expression or dictionary access expression, then figures out using the semantic model which one is most likely intended. 
                     // https://github.com/dotnet/roslyn/blob/master/src/Workspaces/VisualBasic/Portable/LanguageServices/VisualBasicSyntaxFactsService.vb#L768
                     if (symbol is IMethodSymbol methodSymbol &&
-                        symbolReturnType is IArrayTypeSymbol arrayReturnType && 
-                        node.ArgumentList.Arguments.Count == arrayReturnType.Rank) {
+                        methodSymbol.Parameters.Length == 0 &&
+                        CouldAcceptElementAccessWithArgs(symbolReturnType, node.ArgumentList.Arguments)) {
 
                         // assume expression is already an invocation, as in: GetStrings()(1)
                         converted = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
                         if (node.Expression.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IdentifierName) ||
                             node.Expression.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.SimpleMemberAccessExpression)) {
-                            // expression consists of just a method name, as in: GetStrings(1)
-                            // append method call brackets, but only if method has no arguments, otherwise back off
-                            converted = methodSymbol.Parameters.Length == 0 ? SyntaxFactory.InvocationExpression(converted) : null;
+                            // expression consists of just a method name, as in: GetStrings(1) where (1) is indexing into the return value of GetStrings()
+                            converted = SyntaxFactory.InvocationExpression(converted);
                         }
 
                     }
 
                     return converted != null;
                 }
+            }
+
+            private bool CouldAcceptElementAccessWithArgs(ITypeSymbol theType, SeparatedSyntaxList<VBSyntax.ArgumentSyntax> args)
+            {
+                var orderedArgTypes = args.Select(a => _semanticModel.GetTypeInfo(a.GetExpression()).ConvertedType);
+                if (theType is IArrayTypeSymbol arrayReturnType
+                    && args.Count == arrayReturnType.Rank) {
+                    return orderedArgTypes.All(a => a.SpecialType == SpecialType.System_Int32);
+                }
+
+                return theType.GetIndexers().Where(x => args.Count == x.Parameters.Length)
+                    .Any(x => orderedArgTypes.SequenceEqual(x.Parameters.Select(p => p.Type)));
             }
 
             /// <summary>
