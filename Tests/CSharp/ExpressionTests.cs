@@ -574,6 +574,50 @@ End Class", @"public class A
         }
 
         [Fact]
+        public void MethodCallArrayIndexerBrackets()
+        {
+            TestConversionVisualBasicToCSharp(@"Public Class A
+  Public Sub Test()
+    Dim str1 = Me.GetStrings(0)
+    str1 = GetStrings(0)
+    Dim str2 = GetStrings()(1)
+    Dim str3 = Me.GetStrings2(""abc"")
+    str3 = GetStrings2(""abc"")
+    Dim str4 = GetStrings2(""abc"")(1)
+  End Sub
+
+  Function GetStrings() As String()
+    Return New String() { ""A"", ""B"", ""C""}
+  End Function
+
+  Function GetStrings2(parm As String) As String()
+    Return New String() { ""1"", ""2"", ""3""}
+  End Function
+End Class", @"public class A
+{
+    public void Test()
+    {
+        var str1 = this.GetStrings()[0];
+        str1 = GetStrings()[0];
+        var str2 = GetStrings()[1];
+        var str3 = this.GetStrings2(""abc"");
+        str3 = GetStrings2(""abc"");
+        var str4 = GetStrings2(""abc"")[1];
+    }
+
+    public string[] GetStrings()
+    {
+        return new string[] { ""A"", ""B"", ""C"" };
+    }
+
+    public string[] GetStrings2(string parm)
+    {
+        return new string[] { ""1"", ""2"", ""3"" };
+    }
+}");
+        }
+
+        [Fact]
         public void UnknownTypeInvocation()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
