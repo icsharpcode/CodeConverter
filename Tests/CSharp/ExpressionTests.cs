@@ -577,42 +577,75 @@ End Class", @"public class A
         public void MethodCallArrayIndexerBrackets()
         {
             TestConversionVisualBasicToCSharp(@"Public Class A
-  Public Sub Test()
-    Dim str1 = Me.GetStrings(0)
-    str1 = GetStrings(0)
-    Dim str2 = GetStrings()(1)
-    Dim str3 = Me.GetStrings2(""abc"")
-    str3 = GetStrings2(""abc"")
-    Dim str4 = GetStrings2(""abc"")(1)
-  End Sub
+    Public Sub Test()
+        Dim str1 = Me.GetStringFromNone(0)
+        str1 = GetStringFromNone(0)
+        Dim str2 = GetStringFromNone()(1)
+        Dim str3 = Me.GetStringsFromString(""abc"")
+        str3 = GetStringsFromString(""abc"")
+        Dim str4 = GetStringsFromString(""abc"")(1)
+        Dim fromStr3 = GetMoreStringsFromString(""bc"")(1)(0)
+        Dim explicitNoParameter = GetStringsFromAmbiguous()(0)(1)
+        Dim usesParameter1 = GetStringsFromAmbiguous(0)(1)(2)
+    End Sub
 
-  Function GetStrings() As String()
-    Return New String() { ""A"", ""B"", ""C""}
-  End Function
+    Function GetStringFromNone() As String()
+        Return New String() { ""A"", ""B"", ""C""}
+    End Function
 
-  Function GetStrings2(parm As String) As String()
-    Return New String() { ""1"", ""2"", ""3""}
-  End Function
+    Function GetStringsFromString(parm As String) As String()
+        Return New String() { ""1"", ""2"", ""3""}
+    End Function
+
+    Function GetMoreStringsFromString(parm As String) As String()()
+        Return New String()() { New String() { ""1"" }}
+    End Function
+
+    Function GetStringsFromAmbiguous() As String()()
+        Return New String()() { New String() { ""1"" }}
+    End Function
+
+    Function GetStringsFromAmbiguous(amb As Integer) As String()()
+        Return New String()() { New String() { ""1"" }}
+    End Function
 End Class", @"public class A
 {
     public void Test()
     {
-        var str1 = this.GetStrings()[0];
-        str1 = GetStrings()[0];
-        var str2 = GetStrings()[1];
-        var str3 = this.GetStrings2(""abc"");
-        str3 = GetStrings2(""abc"");
-        var str4 = GetStrings2(""abc"")[1];
+        var str1 = this.GetStringFromNone()[0];
+        str1 = GetStringFromNone()[0];
+        var str2 = GetStringFromNone()[1];
+        var str3 = this.GetStringsFromString(""abc"");
+        str3 = GetStringsFromString(""abc"");
+        var str4 = GetStringsFromString(""abc"")[1];
+        var fromStr3 = GetMoreStringsFromString(""bc"")[1][0];
+        var explicitNoParameter = GetStringsFromAmbiguous()[0][1];
+        var usesParameter1 = GetStringsFromAmbiguous(0)[1][2];
     }
 
-    public string[] GetStrings()
+    public string[] GetStringFromNone()
     {
         return new string[] { ""A"", ""B"", ""C"" };
     }
 
-    public string[] GetStrings2(string parm)
+    public string[] GetStringsFromString(string parm)
     {
         return new string[] { ""1"", ""2"", ""3"" };
+    }
+
+    public string[][] GetMoreStringsFromString(string parm)
+    {
+        return new string[][] { new string[] { ""1"" } };
+    }
+
+    public string[][] GetStringsFromAmbiguous()
+    {
+        return new string[][] { new string[] { ""1"" } };
+    }
+
+    public string[][] GetStringsFromAmbiguous(int amb)
+    {
+        return new string[][] { new string[] { ""1"" } };
     }
 }");
         }
