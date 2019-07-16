@@ -1987,11 +1987,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(VBSyntax.IdentifierNameSyntax node, ExpressionSyntax id)
             {
-                if (_semanticModel.GetOperation(node)?.Kind == OperationKind.Invocation) {
-                    return SyntaxFactory.InvocationExpression(id, SyntaxFactory.ArgumentList());
-                }
-
-                return id;
+                return _semanticModel.GetOperation(node)?.Kind == OperationKind.Invocation 
+                    ? SyntaxFactory.InvocationExpression(id, SyntaxFactory.ArgumentList())
+                    : id;
             }
 
             private ExpressionSyntax QualifyNode(SyntaxNode node, SimpleNameSyntax left)
