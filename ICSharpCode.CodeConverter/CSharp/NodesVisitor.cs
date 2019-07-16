@@ -1764,15 +1764,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 ExpressionSyntax ConvertExpression(out bool isElementAccess)
                 {
-                    isElementAccess = false;
-                    bool isDefault = false;
-                    if (IsArrayElementAccess(operation) ||
-                        IsPropertyElementAccess(operation, out isDefault) ||
-                        ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType)) {
-                        isElementAccess = true;
-                        if (node.Expression is VBSyntax.MemberAccessExpressionSyntax maes && isDefault) {
+                    isElementAccess = IsPropertyElementAccess(operation, out bool isDefault) ||
+                                      IsArrayElementAccess(operation) ||
+                                      ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
+
+                    if (isDefault && node.Expression is VBSyntax.MemberAccessExpressionSyntax maes) {
                             return (ExpressionSyntax)maes.Expression.Accept(TriviaConvertingVisitor);
-                        }
                     }
                     return (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
                 }
@@ -1781,11 +1778,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             private static bool IsPropertyElementAccess(IOperation operation, out bool isDefaultProperty)
             {
                 isDefaultProperty = false;
-                if (operation is IPropertyReferenceOperation pro && pro.Arguments.Any()) {
-                    isDefaultProperty = VBasic.VisualBasicExtensions.IsDefault(pro.Property);
-                    return true;
+                if (!(operation is IPropertyReferenceOperation pro) || !pro.Arguments.Any()) {
+                    return false;
                 }
-                return false;
+
+                isDefaultProperty = VBasic.VisualBasicExtensions.IsDefault(pro.Property);
+                return true;
             }
 
             private static bool IsArrayElementAccess(IOperation operation)
