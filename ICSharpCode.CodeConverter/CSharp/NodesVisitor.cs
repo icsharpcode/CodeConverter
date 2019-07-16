@@ -1796,8 +1796,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             node.Expression.RawKind == (ushort)Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.SimpleMemberAccessExpression) {
                             // expression consists of just a method name, as in: GetStrings(1)
                             // append method call brackets, but only if method has no arguments, otherwise back off
-                            var symbArgCount = ((IMethodSymbol)symbol).Parameters.Length;
-                            if (symbArgCount == 0) {
+                            if (((IMethodSymbol)symbol).Parameters.Length == 0) {
                                 converted = SyntaxFactory.InvocationExpression(converted);
                             } else {
                                 // do not convert function call with parameter to array indexer
