@@ -1742,9 +1742,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return csEquivalent;
                 }
 
-                var convertedExpression = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
-
-                if (IsElementAccess()) {
+                var convertedExpression = ConvertExpression(out var shouldBeElementAccess);
+                if (shouldBeElementAccess) {
                     return SyntaxFactory.ElementAccessExpression(
                         convertedExpression,
                         SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(node.ArgumentList.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor)))));
@@ -1763,13 +1762,35 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 return SyntaxFactory.InvocationExpression(convertedExpression, ConvertArgumentListOrEmpty(node.ArgumentList));
 
-                bool IsElementAccess()
+                ExpressionSyntax ConvertExpression(out bool isElementAccess)
                 {
-                    return invocationSymbol?.IsIndexer() == true ||
-                           operation != null && operation.Kind == OperationKind.ArrayElementReference ||
-                           operation is IPropertyReferenceOperation pro && pro.Arguments.Any() ||
-                           ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
+                    isElementAccess = false;
+                    bool isDefault = false;
+                    if (IsArrayElementAccess(operation) ||
+                        IsPropertyElementAccess(operation, out isDefault) ||
+                        ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType)) {
+                        isElementAccess = true;
+                        if (node.Expression is VBSyntax.MemberAccessExpressionSyntax maes && isDefault) {
+                            return (ExpressionSyntax)maes.Expression.Accept(TriviaConvertingVisitor);
+                        }
+                    }
+                    return (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
                 }
+            }
+
+            private static bool IsPropertyElementAccess(IOperation operation, out bool isDefaultProperty)
+            {
+                isDefaultProperty = false;
+                if (operation is IPropertyReferenceOperation pro && pro.Arguments.Any()) {
+                    isDefaultProperty = VBasic.VisualBasicExtensions.IsDefault(pro.Property);
+                    return true;
+                }
+                return false;
+            }
+
+            private static bool IsArrayElementAccess(IOperation operation)
+            {
+                return operation != null && operation.Kind == OperationKind.ArrayElementReference;
             }
 
             /// <summary>
