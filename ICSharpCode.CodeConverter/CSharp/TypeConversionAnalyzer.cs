@@ -90,7 +90,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.MultiplyExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DivideExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IntegerDivideExpression);
-            if (!csConversion.Exists)
+            if (!csConversion.Exists || csConversion.IsUnboxing)
             {
                 if (isConvertToString || vbConversion.IsNarrowing) return TypeConversionKind.Explicit;
             }

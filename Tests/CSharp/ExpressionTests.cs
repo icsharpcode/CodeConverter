@@ -433,6 +433,37 @@ public class Class1
 }");
         }
 
+        [Fact]
+        public void EnumToIntCast()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class MyTest
+    Public Enum TestEnum As Integer
+        Test1 = 0
+        Test2 = 1
+    End Enum
+
+    Sub Main()
+        Dim EnumVariable = TestEnum.Test1 
+        Dim t1 As Integer = EnumVariable
+    End Sub
+End Class",
+@"public class MyTest
+{
+    public enum TestEnum : int
+    {
+        Test1 = 0,
+        Test2 = 1
+    }
+
+    public void Main()
+    {
+        var EnumVariable = TestEnum.Test1;
+        int t1 = (int)EnumVariable;
+    }
+}
+");
+        }
+
 
 
         [Fact]

@@ -1070,7 +1070,7 @@ class TestClass
         {
             // Comment from "Next" gets pushed up to previous line
             TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
-    Private Sub TestMethod()
+    Private Sub TestMethod([end] As Integer)
         Dim b, s As Integer()
         For i = 0 To [end] - 1
             b(i) = s(i)
@@ -1078,7 +1078,7 @@ class TestClass
     End Sub
 End Class", @"class TestClass
 {
-    private void TestMethod()
+    private void TestMethod(int end)
     {
         int[] b = default(int[]), s = default(int[]);
         var loopTo = end - 1;
