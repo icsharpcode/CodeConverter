@@ -1342,12 +1342,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left, simpleNameSyntax);
-                if (_semanticModel.GetOperation(node)?.Kind == OperationKind.Invocation) {
-                    var visitMemberAccessExpression = SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax, SyntaxFactory.ArgumentList());
-                    return visitMemberAccessExpression;
-                }
-
-                return memberAccessExpressionSyntax;
+                return AddEmptyArgumentListIfImplicit(node, memberAccessExpressionSyntax);
             }
 
             /// <remarks>https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/declared-elements/type-promotion</remarks>
@@ -1770,11 +1765,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 bool IsElementAccess()
                 {
-                    var elementAccessOperationKinds = new[] {
-                        OperationKind.ArrayElementReference, OperationKind.PropertyReference,
-                    };
                     return invocationSymbol?.IsIndexer() == true ||
-                           operation != null && elementAccessOperationKinds.Contains(operation.Kind) || 
+                           operation != null && operation.Kind == OperationKind.ArrayElementReference ||
+                           operation is IPropertyReferenceOperation pro && pro.Arguments.Any() ||
                            ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
                 }
             }
@@ -1985,7 +1978,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(VBSyntax.IdentifierNameSyntax node, ExpressionSyntax id)
+            private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(SyntaxNode node, ExpressionSyntax id)
             {
                 return _semanticModel.GetOperation(node)?.Kind == OperationKind.Invocation 
                     ? SyntaxFactory.InvocationExpression(id, SyntaxFactory.ArgumentList())
