@@ -28,6 +28,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private readonly VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> _nodesVisitor;
             private readonly Stack<string> _withBlockTempVariableNames;
             private readonly HashSet<string> _extraUsingDirectives;
+            private readonly ILookup<string, MethodWithHandles> _handledMethodsFromPropertyWithEventName;
             private readonly HashSet<string> _generatedNames = new HashSet<string>();
 
             public bool IsIterator { get; set; }
@@ -40,7 +41,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             public MethodBodyVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
                 VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, CommonConversions commonConversions,
                 Stack<string> withBlockTempVariableNames, HashSet<string> extraUsingDirectives,
-                AdditionalLocals additionalLocals, TriviaConverter triviaConverter)
+                AdditionalLocals additionalLocals, ILookup<string, MethodWithHandles> handledMethodsFromPropertyWithEventName,
+                TriviaConverter triviaConverter)
             {
                 _methodNode = methodNode;
                 _semanticModel = semanticModel;
@@ -48,6 +50,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 CommonConversions = commonConversions;
                 _withBlockTempVariableNames = withBlockTempVariableNames;
                 _extraUsingDirectives = extraUsingDirectives;
+                _handledMethodsFromPropertyWithEventName = handledMethodsFromPropertyWithEventName;
                 var byRefParameterVisitor = new ByRefParameterVisitor(this, additionalLocals, semanticModel, _generatedNames);
                 CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor, triviaConverter);
             }
@@ -142,6 +145,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                         ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
                 }
                 var kind = node.Kind().ConvertToken(TokenContext.Local);
+
+                ISymbol potentialPropertySymbol = _semanticModel.GetSymbolInfo(node.Left).ExtractBestMatch();
+                if (CommonConversions.MustInlinePropertyWithEventsAccess(node,
+                    potentialPropertySymbol)) {
+                    var handledMethods = _handledMethodsFromPropertyWithEventName[potentialPropertySymbol.Name];
+                    if (handledMethods.Any()) {
+
+                    }
+                }
+
                 return SingleStatement(SyntaxFactory.AssignmentExpression(kind, lhs, rhs));
             }
 

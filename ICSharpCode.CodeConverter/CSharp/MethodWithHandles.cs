@@ -13,7 +13,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public SyntaxToken MethodCSharpId { get; }
         public List<(SyntaxToken, SyntaxToken)> HandledEventCSharpIds { get; }
 
-        public MethodWithHandles(SyntaxToken methodCSharpId, List<(SyntaxToken, SyntaxToken)> handledEventCSharpIds)
+        public MethodWithHandles(SyntaxToken methodCSharpId, List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName)> handledEventCSharpIds)
         {
             MethodCSharpId = methodCSharpId;
             HandledEventCSharpIds = handledEventCSharpIds;

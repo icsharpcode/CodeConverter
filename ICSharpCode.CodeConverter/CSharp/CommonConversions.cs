@@ -328,11 +328,19 @@ namespace ICSharpCode.CodeConverter.CSharp
                         text = propertyFieldSymbol.AssociatedSymbol.Name;
                     } else if (text.EndsWith("Event", StringComparison.OrdinalIgnoreCase) && symbol is IFieldSymbol eventFieldSymbol && eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
                         text = eventFieldSymbol.AssociatedSymbol.Name;
+                    } else if (MustInlinePropertyWithEventsAccess(id.Parent, symbol)) {
+                        // For C# Winforms designer, we need to use direct field access (and inline any event handlers)
+                        text = "_" + text;
                     }
                 }
             }
 
             return CsEscapedIdentifier(text);
+        }
+
+        public static bool MustInlinePropertyWithEventsAccess(SyntaxNode anyNodePossiblyWithinMethod, ISymbol potentialPropertySymbol)
+        {
+            return anyNodePossiblyWithinMethod.GetAncestor<MethodBlockSyntax>()?.SubOrFunctionStatement.Identifier.Text == "InitializeComponent" && potentialPropertySymbol is IPropertySymbol prop && prop.IsWithEvents;
         }
 
         private static SyntaxToken CsEscapedIdentifier(string text)

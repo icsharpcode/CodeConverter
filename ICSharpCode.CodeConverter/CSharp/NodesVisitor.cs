@@ -41,6 +41,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
             private bool _optionCompareText = false;
             private VisualBasicEqualityComparison _visualBasicEqualityComparison;
+            private ILookup<string, MethodWithHandles> _handledMethodsFromPropertyWithEventName;
 
             private CommonConversions CommonConversions { get; }
 
@@ -184,6 +185,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var parentType = members.FirstOrDefault()?.GetAncestor<VBSyntax.TypeBlockSyntax>();
                 _methodsWithHandles = GetMethodWithHandles(parentType);
+                _handledMethodsFromPropertyWithEventName = _methodsWithHandles
+                    .SelectMany(m => m.HandledEventCSharpIds.Select(h => (EventPropertyName: h.Item2.Text, MethodWithHandles: m)))
+                    .ToLookup(m => m.EventPropertyName, m => m.MethodWithHandles);
 
                 if (parentType == null || !_methodsWithHandles.Any()) {
                     return GetDirectlyConvertMembers();
@@ -959,7 +963,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
             {
-                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, CommonConversions, _withBlockTempVariableNames, _extraUsingDirectives, _additionalLocals, TriviaConvertingVisitor.TriviaConverter) {
+                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, CommonConversions, _withBlockTempVariableNames, _extraUsingDirectives, _additionalLocals, _handledMethodsFromPropertyWithEventName, TriviaConvertingVisitor.TriviaConverter) {
                     IsIterator = isIterator,
                     ReturnVariable = csReturnVariable,
                 };
