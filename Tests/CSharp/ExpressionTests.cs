@@ -605,6 +605,24 @@ End Class", @"public class A
         }
 
         [Fact]
+        public void MethodCallDictionaryAccessConditional()
+        {
+            TestConversionVisualBasicToCSharp(@"Public Class A
+    Public Sub Test()
+        Dim dict = New Dictionary(Of String, String) From {{""a"", ""AAA""}, {""b"", ""bbb""}}
+        Dim v = dict?.Item(""a"")
+    End Sub
+End Class", @"public class A
+{
+    public void Test()
+    {
+        var dict = new Dictionary<string, string>() { { ""a"", ""AAA"" }, { ""b"", ""bbb"" } };
+        var v = dict?[""a""];
+    }
+}");
+        }
+
+        [Fact]
         public void MethodCallArrayIndexerBrackets()
         {
             TestConversionVisualBasicToCSharp(@"Public Class A
