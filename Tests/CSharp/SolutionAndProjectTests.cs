@@ -22,7 +22,7 @@ namespace CodeConverter.Tests.CSharp
         [Fact]
         public async Task ConvertSingleProject()
         {
-            await ConvertProjectsWhere<VBToCSConversion>(p => p.Name == "VisualBasicLibrary");
+            await ConvertProjectsWhere<VBToCSConversion>(p => p.Name == "EmptyVb");
         }
     }
 }
