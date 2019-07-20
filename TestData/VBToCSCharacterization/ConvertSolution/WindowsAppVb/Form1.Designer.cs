@@ -40,8 +40,8 @@ namespace WindowsAppVb
         [System.Diagnostics.DebuggerStepThrough()]
         private void InitializeComponent()
         {
-            this._Button1 = new System.Windows.Forms.Button(); // In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
-            this._Button1.Click += Button1_Click;
+            this._Button1 = new System.Windows.Forms.Button();
+            _Button1.Click += Button1_Click; // In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
             this.SuspendLayout();
             // 
             // Button1
