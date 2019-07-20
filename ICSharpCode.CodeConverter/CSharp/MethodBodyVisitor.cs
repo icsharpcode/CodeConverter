@@ -146,16 +146,34 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
                 var kind = node.Kind().ConvertToken(TokenContext.Local);
 
-                ISymbol potentialPropertySymbol = _semanticModel.GetSymbolInfo(node.Left).ExtractBestMatch();
-                if (CommonConversions.MustInlinePropertyWithEventsAccess(node,
-                    potentialPropertySymbol)) {
-                    var handledMethods = _handledMethodsFromPropertyWithEventName[potentialPropertySymbol.Name];
-                    if (handledMethods.Any()) {
+                var assignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
 
+                var postAssignment = GetPostAssignmentStatements(node);
+                return postAssignment.Insert(0, SyntaxFactory.ExpressionStatement(assignment));
+            }
+
+            private SyntaxList<StatementSyntax> GetPostAssignmentStatements(VBSyntax.AssignmentStatementSyntax node)
+            {
+                var potentialPropertySymbol = _semanticModel.GetSymbolInfo(node.Left).ExtractBestMatch();
+                if (CommonConversions.MustInlinePropertyWithEventsAccess(node, potentialPropertySymbol)) {
+                    var fieldName = SyntaxFactory.IdentifierName("_" + potentialPropertySymbol.Name);
+                    var handledMethods = _handledMethodsFromPropertyWithEventName[potentialPropertySymbol.Name].ToArray();
+                    if (handledMethods.Any()) {
+                        var postAssignmentStatements = handledMethods.SelectMany(h => h.GetPostInitializationStatements(potentialPropertySymbol.Name, fieldName));
+                        return SyntaxFactory.List(postAssignmentStatements);
                     }
                 }
 
-                return SingleStatement(SyntaxFactory.AssignmentExpression(kind, lhs, rhs));
+                return SyntaxFactory.List<StatementSyntax>();
+            }
+
+            private SyntaxList<StatementSyntax> GetPostAssignmentStatements(ISymbol potentialPropertySymbol)
+            {
+                var handledMethods = _handledMethodsFromPropertyWithEventName[potentialPropertySymbol.Name];
+                if (handledMethods.Any()) {
+                    return SyntaxFactory.List<StatementSyntax>();
+                }
+                return SyntaxFactory.List<StatementSyntax>();
             }
 
             public override SyntaxList<StatementSyntax> VisitEraseStatement(VBSyntax.EraseStatementSyntax node)

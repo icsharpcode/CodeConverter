@@ -75,17 +75,22 @@ namespace ICSharpCode.CodeConverter.CSharp
             };
         }
 
-        private static IEnumerable<StatementSyntax> CreateHandlesUpdaters(string propertyIdentifier,
+        public static IEnumerable<StatementSyntax> CreateHandlesUpdaters(string propertyIdentifier,
             IdentifierNameSyntax fieldIdSyntax,
             List<MethodWithHandles> handlesSpecs,
             SyntaxKind assignmentExpressionKind)
         {
-            return handlesSpecs.SelectMany(hs => hs.CreateHandlesUpdater(propertyIdentifier, fieldIdSyntax, assignmentExpressionKind, hs));
+            return handlesSpecs.SelectMany(hs => hs.CreateHandlesUpdater(propertyIdentifier, fieldIdSyntax, assignmentExpressionKind));
+        }
+        
+        public IEnumerable<StatementSyntax> GetPostInitializationStatements(string propertyIdentifier,
+            IdentifierNameSyntax fieldIdSyntax)
+        {
+            return CreateHandlesUpdater(propertyIdentifier, fieldIdSyntax, SyntaxKind.AddAssignmentExpression);
         }
 
         private IEnumerable<ExpressionStatementSyntax> CreateHandlesUpdater(string propertyIdentifier,
-            IdentifierNameSyntax fieldIdSyntax, SyntaxKind assignmentExpressionKind,
-            MethodWithHandles hs)
+            IdentifierNameSyntax fieldIdSyntax, SyntaxKind assignmentExpressionKind)
         {
             var methodId = SyntaxFactory.IdentifierName(MethodCSharpId);
             return HandledEventCSharpIds
