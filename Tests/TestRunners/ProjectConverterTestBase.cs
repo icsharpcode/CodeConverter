@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
 using Xunit;
@@ -28,15 +29,11 @@ namespace CodeConverter.Tests.TestRunners
         /// Turn it on to manually check the output loads in VS.
         /// Commit only the modified files.
         /// </summary>
-        private bool _writeNewCharacterization = false;
+        private readonly bool _writeNewCharacterization = false;
 
         public async Task ConvertProjectsWhere<TLanguageConversion>(Func<Project, bool> shouldConvertProject, [CallerMemberName] string testName = "") where TLanguageConversion : ILanguageConversion, new()
         {
-            using (var workspace = MSBuildWorkspace.Create(new Dictionary<string, string>()
-            {
-                {"Configuration", "Debug"},
-                {"Platform", "AnyCPU"}
-            }))
+            using (var workspace = CreateWorkspace())
             {
                 var originalSolutionDir = Path.Combine(GetTestDataDirectory(), "CharacterizationTestSolution");
                 var solutionFile = Path.Combine(originalSolutionDir, "CharacterizationTestSolution.sln");
@@ -46,6 +43,7 @@ namespace CodeConverter.Tests.TestRunners
                     ? LanguageNames.VisualBasic
                     : LanguageNames.CSharp;
                 var projectsToConvert = solution.Projects.Where(p => p.Language == languageNameToConvert && shouldConvertProject(p)).ToArray();
+                await AssertMSBuildIsWorkingAndProjectsValid(projectsToConvert);
                 var conversionResults = SolutionConverter.CreateFor<TLanguageConversion>(projectsToConvert).Convert().GetAwaiter().GetResult().ToDictionary(c => c.TargetPathOrNull, StringComparer.OrdinalIgnoreCase);
                 var expectedResultDirectory = GetExpectedResultDirectory<TLanguageConversion>(testName);
 
@@ -72,6 +70,36 @@ namespace CodeConverter.Tests.TestRunners
             }
 
             Assert.False(_writeNewCharacterization, $"Test setup issue: Set {nameof(_writeNewCharacterization)} to false after using it");
+        }
+
+        private static MSBuildWorkspace CreateWorkspace()
+        {
+            try {
+                return CreateWorkspaceUnhandled();
+            } catch (NullReferenceException e){
+                Assert.True(false, "MSBuild nullrefs sometimes, just run the test again." + e);
+                return null;
+            }
+        }
+
+        private static MSBuildWorkspace CreateWorkspaceUnhandled()
+        {
+            return MSBuildWorkspace.Create(new Dictionary<string, string>()
+            {
+                {"Configuration", "Debug"},
+                {"Platform", "AnyCPU"}
+            });
+        }
+
+        /// <summary>
+        /// If you've changed the source project not to compile, the results will be very confusing
+        /// If this happens randomly, updating the Microsoft.Build dependency may help - it may have to line up with a version installed on the machine in some way.
+        /// </summary>
+        private static async Task AssertMSBuildIsWorkingAndProjectsValid(Project[] projectsToConvert)
+        {
+            var compilations = await Task.WhenAll(projectsToConvert.Select(x => x.GetCompilationAsync()));
+            var compilationErrors = string.Join("\r\n", compilations.Select(c => CompilationWarnings.WarningsForCompilation(c, c.AssemblyName)).Where(w => w != null));
+            Assert.True(compilationErrors == "", compilationErrors);
         }
 
         private static void AssertAllConvertedFilesWereExpected(FileInfo[] expectedFiles,
