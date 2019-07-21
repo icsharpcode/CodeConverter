@@ -185,6 +185,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var parentType = members.FirstOrDefault()?.GetAncestor<VBSyntax.TypeBlockSyntax>();
                 _methodsWithHandles = GetMethodWithHandles(parentType);
+                if (_methodsWithHandles.Any()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
                 _handledMethodsFromPropertyWithEventName = _methodsWithHandles
                     .SelectMany(m => m.HandledEventCSharpIds.Select(h => (EventPropertyName: h.Item1.Text, MethodWithHandles: m)))
                     .ToLookup(m => m.EventPropertyName, m => m.MethodWithHandles);
