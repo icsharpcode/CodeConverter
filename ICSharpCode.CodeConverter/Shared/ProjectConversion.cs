@@ -120,12 +120,15 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private static IEnumerable<ConversionResult> ConvertProjectContents(ProjectConversion projectConversion)
         {
-            foreach (var pathNodePair in projectConversion.Convert())
+            using (var adhocWorkspace = new AdhocWorkspace())
             {
-                var errors = projectConversion._errors.TryRemove(pathNodePair.Key, out var nonFatalException)
-                    ? new[] {nonFatalException}
-                    : new string[0];
-                yield return new ConversionResult(pathNodePair.Value.ToFullString()) { SourcePathOrNull = pathNodePair.Key, Exceptions = errors };
+                foreach (var pathNodePair in projectConversion.Convert(adhocWorkspace))
+                {
+                    var errors = projectConversion._errors.TryRemove(pathNodePair.Key, out var nonFatalException)
+                        ? new[] {nonFatalException}
+                        : new string[0];
+                    yield return new ConversionResult(pathNodePair.Value.ToFullString()) { SourcePathOrNull = pathNodePair.Key, Exceptions = errors };
+                }
             }
 
             foreach (var error in projectConversion._errors)
@@ -134,24 +137,23 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        private Dictionary<string, SyntaxNode> Convert()
+        private Dictionary<string, SyntaxNode> Convert(AdhocWorkspace adhocWorkspace)
         {
             FirstPass();
-            var secondPassByFilePath = SecondPass();
+            var secondPassByFilePath = SecondPass(adhocWorkspace);
             if (_showCompilationErrors) AddProjectWarnings();
             return secondPassByFilePath;
         }
 
-        private Dictionary<string, SyntaxNode> SecondPass()
+        private Dictionary<string, SyntaxNode> SecondPass(AdhocWorkspace workspace)
         {
             var secondPassByFilePath = new Dictionary<string, SyntaxNode>();
-            var adhocWorkspace = new AdhocWorkspace();
             foreach (var firstPassResult in _firstPassResults) {
                 var treeFilePath = firstPassResult.Key;
                 try {
-                    secondPassByFilePath.Add(treeFilePath, SingleSecondPass(firstPassResult, adhocWorkspace));
+                    secondPassByFilePath.Add(treeFilePath, SingleSecondPass(firstPassResult, workspace));
                 }  catch (Exception e) {
-                    secondPassByFilePath.Add(treeFilePath, Format(firstPassResult.Value.GetRoot(), adhocWorkspace));
+                    secondPassByFilePath.Add(treeFilePath, Format(firstPassResult.Value.GetRoot(), workspace));
                     _errors.TryAdd(treeFilePath, e.ToString());
                 }
             }
