@@ -1303,23 +1303,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var simpleNameSyntax = (SimpleNameSyntax)node.Name.Accept(TriviaConvertingVisitor);
 
-                var symbolInfo = _semanticModel.GetSymbolInfo(node.Name);
+                var nodeSymbol = _semanticModel.GetSymbolInfo(node.Name).Symbol;
+                var isDefaultProperty = nodeSymbol is IPropertySymbol p && VBasic.VisualBasicExtensions.IsDefault(p);
                 ExpressionSyntax left = null;
                 if (node.Expression is VBSyntax.MyClassExpressionSyntax) {
-                    if (symbolInfo.Symbol.IsStatic) {
+                    if (nodeSymbol.IsStatic) {
                         var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
                         left = _semanticModel.GetCsTypeSyntax(typeInfo.Type, node);
                     } else {
                         left = SyntaxFactory.ThisExpression();
-                        if (symbolInfo.Symbol.IsVirtual && !symbolInfo.Symbol.IsAbstract) {
+                        if (nodeSymbol.IsVirtual && !nodeSymbol.IsAbstract) {
                             simpleNameSyntax = SyntaxFactory.IdentifierName($"MyClass{ConvertIdentifier(node.Name.Identifier).ValueText}");
                         }
                     }
                 }
-                if (left == null && symbolInfo.Symbol?.IsStatic == true) {
+                if (left == null && nodeSymbol?.IsStatic == true) {
                     var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
-                    var symbol = _semanticModel.GetSymbolInfo(node.Expression);
-                    if (typeInfo.Type != null && !symbol.Symbol.IsType()) {
+                    var expressionSymbolInfo = _semanticModel.GetSymbolInfo(node.Expression);
+                    if (typeInfo.Type != null && !expressionSymbolInfo.Symbol.IsType()) {
                         left = _semanticModel.GetCsTypeSyntax(typeInfo.Type, node);
                     }
                 }
@@ -1328,16 +1329,21 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
                 if (left == null) {
                     if (IsSubPartOfConditionalAccess(node)) {
-                        return SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
+                        return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
+                            : (ExpressionSyntax) SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
                     }
                     left = SyntaxFactory.IdentifierName(_withBlockTempVariableNames.Peek());
                 } else if (TryGetTypePromotedModuleSymbol(node, out var promotedModuleSymbol)) {
                     left = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left,
                         SyntaxFactory.IdentifierName(promotedModuleSymbol.Name));
                 }
-
+                
                 if (node.Expression.IsKind(VBasic.SyntaxKind.GlobalName)) {
                     return SyntaxFactory.AliasQualifiedName((IdentifierNameSyntax)left, simpleNameSyntax);
+                }
+                
+                if (isDefaultProperty && left != null) {
+                    return left;
                 }
 
                 var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left, simpleNameSyntax);
@@ -1745,9 +1751,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 // https://github.com/dotnet/roslyn/blob/master/src/Workspaces/VisualBasic/Portable/LanguageServices/VisualBasicSyntaxFactsService.vb#L768
                 var convertedExpression = ConvertInvocationSubExpression(out var shouldBeElementAccess);
                 if (shouldBeElementAccess) {
-                    return SyntaxFactory.ElementAccessExpression(
-                        convertedExpression,
-                        SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(node.ArgumentList.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor)))));
+                    return CreateElementAccess();
                 }
 
                 if (expressionSymbol != null && expressionSymbol.IsKind(SymbolKind.Property)) {
@@ -1765,26 +1769,33 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 ExpressionSyntax ConvertInvocationSubExpression(out bool isElementAccess)
                 {
-                    isElementAccess = IsPropertyElementAccess(operation, out bool isDefault) ||
+                    isElementAccess = IsPropertyElementAccess(operation) ||
                                       IsArrayElementAccess(operation) ||
                                       ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
 
-                    if (isDefault && node.Expression is VBSyntax.MemberAccessExpressionSyntax maes) {
-                            return (ExpressionSyntax)maes.Expression.Accept(TriviaConvertingVisitor);
-                    }
                     return (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
+                }
+
+                CSharpSyntaxNode CreateElementAccess()
+                {
+                    var bracketedArgumentListSyntax = SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(
+                        node.ArgumentList.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor))
+                    ));
+                    if (convertedExpression is ElementBindingExpressionSyntax binding && !binding.ArgumentList.Arguments.Any())
+                    {
+                        // Special case where structure changes due to conditional access (See VisitMemberAccessExpression)
+                        return binding.WithArgumentList(bracketedArgumentListSyntax);
+                    }
+                    else
+                    {
+                        return SyntaxFactory.ElementAccessExpression(convertedExpression,bracketedArgumentListSyntax);
+                    }
                 }
             }
 
-            private static bool IsPropertyElementAccess(IOperation operation, out bool isDefaultProperty)
+            private static bool IsPropertyElementAccess(IOperation operation)
             {
-                isDefaultProperty = false;
-                if (!(operation is IPropertyReferenceOperation pro) || !pro.Arguments.Any()) {
-                    return false;
-                }
-
-                isDefaultProperty = VBasic.VisualBasicExtensions.IsDefault(pro.Property);
-                return true;
+                return operation is IPropertyReferenceOperation pro && pro.Arguments.Any();
             }
 
             private static bool IsArrayElementAccess(IOperation operation)

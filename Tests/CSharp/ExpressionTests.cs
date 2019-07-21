@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using CodeConverter.Tests.TestRunners;
@@ -612,12 +613,39 @@ End Class", @"public class A
         Dim dict = New Dictionary(Of String, String) From {{""a"", ""AAA""}, {""b"", ""bbb""}}
         Dim v = dict?.Item(""a"")
     End Sub
-End Class", @"public class A
+End Class", @"using System.Collections.Generic;
+
+public class A
 {
     public void Test()
     {
         var dict = new Dictionary<string, string>() { { ""a"", ""AAA"" }, { ""b"", ""bbb"" } };
         var v = dict?[""a""];
+    }
+}");
+        }
+
+        [Fact]
+        public void IndexerWithParameter()
+        {
+            TestConversionVisualBasicToCSharp(@"Imports System.Data
+
+Public Class A
+    Public Function ReadDataSet(myData As DataSet) As String
+        With myData.Tables(0).Rows(0)
+            Return .Item(""MY_COLUMN_NAME"").ToString()
+        End With
+    End Function
+End Class", @"using System.Data;
+
+public class A
+{
+    public string ReadDataSet(DataSet myData)
+    {
+        {
+            var withBlock = myData.Tables[0].Rows[0];
+            return withBlock[""MY_COLUMN_NAME""].ToString();
+        }
     }
 }");
         }
