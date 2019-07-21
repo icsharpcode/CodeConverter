@@ -1,154 +1,30 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{21DBA1CE-AF55-4159-B04B-B8C621BE8921}</ProjectGuid>
+    <TargetFramework>net472</TargetFramework>
     <OutputType>Library</OutputType>
     <AssemblyName>CodeConverter.Tests</AssemblyName>
     <RootNamespace>CodeConverter.Tests</RootNamespace>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;RE2017;UNIMPLEMENTED_CONVERTER_FEATURE_TESTS</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ConsolePause>false</ConsolePause>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>full</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ConsolePause>false</ConsolePause>
-    <DefineConstants>RE2017</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>false</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>
-    </AssemblyOriginatorKeyFile>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ManagedEsent" Version="1.9.4" />
-    <PackageReference Include="Microsoft.Build">
-      <Version>16.0.461</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Build.Framework">
-      <Version>15.9.20</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Build.Tasks.Core">
-      <Version>15.9.20</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Build.Utilities.Core">
-      <Version>15.9.20</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="3.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="2.6.3">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Elfie" Version="0.10.6" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="3.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="3.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="3.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild">
-      <Version>3.1.0</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Composition" Version="1.0.31" />
-    <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.7.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Threading">
-      <Version>16.0.102</Version>
-    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.0.102" />
     <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xunit.abstractions" Version="2.0.3" />
-    <PackageReference Include="xunit.analyzers" Version="0.10.0" />
-    <PackageReference Include="xunit.assert" Version="2.4.1" />
-    <PackageReference Include="xunit.core" Version="2.4.1" />
-    <PackageReference Include="xunit.extensibility.core" Version="2.4.1" />
-    <PackageReference Include="xunit.extensibility.execution" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.console" Version="2.4.1">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="Microsoft.VisualBasic" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Web" />
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Xml.Linq" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ICSharpCode.CodeConverter\ICSharpCode.CodeConverter.csproj">
-      <Project>{7ea075c6-6406-445c-ab77-6c47aff88d58}</Project>
-      <Name>ICSharpCode.CodeConverter</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\ICSharpCode.CodeConverter\ICSharpCode.CodeConverter.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\ICSharpCode.CodeConverter\Shared\DefaultReferences.cs">
-      <Link>DefaultReferences.cs</Link>
-    </Compile>
-    <Compile Include="Compilation\CompilationException.cs" />
-    <Compile Include="Compilation\CompilerExtensions.cs" />
-    <Compile Include="LanguageAgnostic\ProjectFileTextEditorTests.cs" />
-    <Compile Include="TestRunners\XUnitFactDiscoverer.cs" />
-    <Compile Include="TestRunners\ConverterTestBase.cs" />
-    <Compile Include="CSharp\NamedFact.cs" />
-    <Compile Include="CSharp\LinqExpressionTests.cs" />
-    <Compile Include="CSharp\MissingSemanticModelInfo\ExpressionTests.cs" />
-    <Compile Include="CSharp\RootNamespaceTests.cs" />
-    <Compile Include="TestRunners\SelfVerifyingTestFactory.cs" />
-    <Compile Include="CSharp\SelfVerifyingTests.cs" />
-    <Compile Include="CSharp\SolutionAndProjectTests.cs" />
-    <Compile Include="CSharp\StandaloneStatementTests.cs" />
-    <Compile Include="CSharp\ExpressionTests.cs" />
-    <Compile Include="CSharp\MemberTests.cs" />
-    <Compile Include="CSharp\NamespaceLevelTests.cs" />
-    <Compile Include="CSharp\SpecialConversionTests.cs" />
-    <Compile Include="CSharp\StatementTests.cs" />
-    <Compile Include="CSharp\TypeCastTests.cs" />
-    <Compile Include="TestRunners\MsBuildFixture.cs" />
-    <Compile Include="UnicodeNewline.cs" />
-    <Compile Include="Utils.cs" />
-    <Compile Include="VB\ExpressionTests.cs" />
-    <Compile Include="VB\MemberTests.cs" />
-    <Compile Include="VB\NamespaceLevelTests.cs" />
-    <Compile Include="VB\SolutionAndProjectTests.cs" />
-    <Compile Include="VB\SpecialConversionTests.cs" />
-    <Compile Include="VB\StandaloneStatementTests.cs" />
-    <Compile Include="VB\StatementTests.cs" />
-    <Compile Include="VB\TypeCastTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
+    <Compile Include="..\ICSharpCode.CodeConverter\Shared\DefaultReferences.cs" Link="DefaultReferences.cs" />
     <None Include="..\TestData\**\*.*">
       <Link>TestData\%(RecursiveDir)%(FileName)%(Extension)</Link>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Readme.txt" />
+    <Reference Include="System.Web" />
   </ItemGroup>
-  <ItemGroup />
 </Project>
