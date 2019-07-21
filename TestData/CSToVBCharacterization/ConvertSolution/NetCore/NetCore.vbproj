@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OptionInfer>On</OptionInfer>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <DefaultItemExcludes>$(DefaultItemExcludes);$(ProjectDir)**\*.cs</DefaultItemExcludes>
   </PropertyGroup>
 

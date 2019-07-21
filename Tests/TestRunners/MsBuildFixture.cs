@@ -15,6 +15,7 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
+using Microsoft.VisualBasic.FileIO;
 using Microsoft.VisualStudio.Threading;
 using Xunit;
 using SearchOption = System.IO.SearchOption;
@@ -33,10 +34,13 @@ namespace CodeConverter.Tests.TestRunners
         public const string Collection = "Uses MSBuild";
         /// <summary>
         /// Leave this set to false when committing.
-        /// Turn it on to manually check the output loads in VS.
         /// Commit only the modified files.
         /// </summary>
         private readonly bool _writeNewCharacterization = false;
+        /// <summary>
+        /// Turn it on to manually check the output loads in VS.
+        /// </summary>
+        private readonly bool _writeAllFilesForManualTesting = false;
 
         private readonly Lazy<MSBuildWorkspace> _msBuildWorkspace;
         private readonly AsyncLazy<Solution> _solution;
@@ -80,7 +84,7 @@ namespace CodeConverter.Tests.TestRunners
             } finally {
                 if (_writeNewCharacterization) {
                     if (expectedResultDirectory.Exists) expectedResultDirectory.Delete(true);
-                    //FileSystem.CopyDirectory(originalSolutionDir, expectedResultDirectory.FullName); //Uncomment to copy all source files too so the sln is runnable
+                    if (_writeAllFilesForManualTesting) FileSystem.CopyDirectory(OriginalSolutionDir, expectedResultDirectory.FullName);
 
                     foreach (var conversionResult in conversionResults) {
                         var expectedFilePath =
