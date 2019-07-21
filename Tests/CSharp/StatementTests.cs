@@ -95,7 +95,7 @@ End Class", @"class TestClass
             TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b = <someXmlTag></someXmlTag>
-        Dim c = <someXmlTag><bla>tata</bla><someContent>tata</someContent></someXmlTag>
+        Dim c = <someXmlTag><bla anAttribute=""itsValue"">tata</bla><someContent>tata</someContent></someXmlTag>
     End Sub
 End Class", @"using System.Xml.Linq;
 
@@ -104,7 +104,7 @@ class TestClass
     private void TestMethod()
     {
         var b = XElement.Parse(""<someXmlTag></someXmlTag>"");
-        var c = XElement.Parse(""<someXmlTag><bla>tata</bla><someContent>tata</someContent></someXmlTag>"");
+        var c = XElement.Parse(""<someXmlTag><bla anAttribute=\""itsValue\"">tata</bla><someContent>tata</someContent></someXmlTag>"");
     }
 }");
         }
