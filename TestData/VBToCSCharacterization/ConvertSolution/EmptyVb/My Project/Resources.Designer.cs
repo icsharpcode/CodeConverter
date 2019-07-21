@@ -10,7 +10,7 @@ namespace EmptyVb
         /// <summary>
     /// A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
-        [global::System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+        [global::System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
         [global::System.Diagnostics.DebuggerNonUserCode()]
         [global::System.Runtime.CompilerServices.CompilerGenerated()]
         [global::Microsoft.VisualBasic.HideModuleName()]

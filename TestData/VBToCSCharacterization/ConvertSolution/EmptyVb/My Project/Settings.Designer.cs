@@ -3,7 +3,7 @@ namespace EmptyVb
     namespace My
     {
         [global::System.Runtime.CompilerServices.CompilerGenerated()]
-        [global::System.CodeDom.Compiler.GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "15.5.0.0")]
+        [global::System.CodeDom.Compiler.GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "11.0.0.0")]
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Advanced)]
         internal sealed partial class MySettings : global::System.Configuration.ApplicationSettingsBase
         {

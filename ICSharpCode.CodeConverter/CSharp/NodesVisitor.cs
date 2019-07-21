@@ -42,6 +42,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
             private bool _optionCompareText = false;
             private VisualBasicEqualityComparison _visualBasicEqualityComparison;
+            private ILookup<string, MethodWithHandles> _handledMethodsFromPropertyWithEventName;
 
             private CommonConversions CommonConversions { get; }
 
@@ -185,6 +186,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var parentType = members.FirstOrDefault()?.GetAncestor<VBSyntax.TypeBlockSyntax>();
                 _methodsWithHandles = GetMethodWithHandles(parentType);
+                if (_methodsWithHandles.Any()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
+                _handledMethodsFromPropertyWithEventName = _methodsWithHandles
+                    .SelectMany(m => m.HandledEventCSharpIds.Select(h => (EventPropertyName: h.Item1.Text, MethodWithHandles: m)))
+                    .ToLookup(m => m.EventPropertyName, m => m.MethodWithHandles);
 
                 if (parentType == null || !_methodsWithHandles.Any()) {
                     return GetDirectlyConvertMembers();
@@ -488,8 +493,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             private List<MethodWithHandles> GetMethodWithHandles(VBSyntax.TypeBlockSyntax parentType)
             {
                 if (parentType == null) return new List<MethodWithHandles>();
-
-
 
                 var containingType = (ITypeSymbol) _semanticModel.GetDeclaredSymbol(parentType);
                 return containingType.GetMembers().OfType<IMethodSymbol>()
@@ -962,7 +965,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
             {
-                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, CommonConversions, _withBlockTempVariableNames, _extraUsingDirectives, _additionalLocals, TriviaConvertingVisitor.TriviaConverter) {
+                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, CommonConversions, _withBlockTempVariableNames, _extraUsingDirectives, _additionalLocals, _handledMethodsFromPropertyWithEventName, TriviaConvertingVisitor.TriviaConverter) {
                     IsIterator = isIterator,
                     ReturnVariable = csReturnVariable,
                 };

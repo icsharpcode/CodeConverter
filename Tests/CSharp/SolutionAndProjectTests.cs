@@ -11,18 +11,26 @@ using Xunit;
 
 namespace CodeConverter.Tests.CSharp
 {
-    public class SolutionAndProjectTests : ProjectConverterTestBase
+    [Collection(MsBuildFixture.Collection)]
+    public class SolutionAndProjectTests
     {
+        private readonly MsBuildFixture _msBuildFixture;
+
+        public SolutionAndProjectTests(MsBuildFixture msBuildFixture)
+        {
+            _msBuildFixture = msBuildFixture;
+        }
+
         [Fact]
         public async Task ConvertSolution()
         {
-            await ConvertProjectsWhere<VBToCSConversion>(p => true);
+            await _msBuildFixture.ConvertProjectsWhere<VBToCSConversion>(p => true);
         }
 
         [Fact]
         public async Task ConvertSingleProject()
         {
-            await ConvertProjectsWhere<VBToCSConversion>(p => p.Name == "VisualBasicLibrary");
+            await _msBuildFixture.ConvertProjectsWhere<VBToCSConversion>(p => p.Name == "EmptyVb");
         }
     }
 }
