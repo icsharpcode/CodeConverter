@@ -69,6 +69,11 @@ End Sub",
 End Class
 
 Class Test
+
+    Public Function GetProductList As Product()
+        Return Nothing
+    End Function
+
     Public Sub Linq102()
         Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
         Dim products As Product() = GetProductList()
@@ -90,6 +95,11 @@ class Product
 
 class Test
 {
+    public Product[] GetProductList()
+    {
+        return null;
+    }
+
     public void Linq102()
     {
         string[] categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
@@ -107,32 +117,60 @@ class Test
         [Fact]
         public void Linq4()
         {
-            TestConversionVisualBasicToCSharp(@"Public Sub Linq103()
-    Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
-    Dim products = GetProductList()
-    Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {Key .Category = c, Key .Products = ps}
+            TestConversionVisualBasicToCSharpWithoutComments(@"Class Product
+    Public Category As String
+    Public ProductName As String
+End Class
 
-    For Each v In q
-        Console.WriteLine(v.Category & "":"")
+Class Test
+    Public Function GetProductList As Product()
+        Return Nothing
+    End Function
 
-        For Each p In v.Products
-            Console.WriteLine(""   "" & p.ProductName)
+    Public Sub Linq103()
+        Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
+        Dim products = GetProductList()
+        Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {Key .Category = c, Key .Products = ps}
+
+        For Each v In q
+            Console.WriteLine(v.Category & "":"")
+
+            For Each p In v.Products
+                Console.WriteLine(""   "" & p.ProductName)
+            Next
         Next
-    Next
-End Sub", @"public void Linq103()
+    End Sub
+End Class", @"using System;
+using System.Linq;
+
+class Product
 {
-    string[] categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
-    var products = GetProductList();
-    var q = from c in categories
-            join p in products on c equals p.Category into ps
-            select new { Category = c, Products = ps };
+    public string Category;
+    public string ProductName;
+}
 
-    foreach (var v in q)
+class Test
+{
+    public Product[] GetProductList()
     {
-        Console.WriteLine(v.Category + "":"");
+        return null;
+    }
 
-        foreach (var p in v.Products)
-            Console.WriteLine(""   "" + p.ProductName);
+    public void Linq103()
+    {
+        string[] categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
+        var products = GetProductList();
+        var q = from c in categories
+                join p in products on c equals p.Category into ps
+                select new { Category = c, Products = ps };
+
+        foreach (var v in q)
+        {
+            Console.WriteLine(v.Category + "":"");
+
+            foreach (var p in v.Products)
+                Console.WriteLine(""   "" + p.ProductName);
+        }
     }
 }");
         }

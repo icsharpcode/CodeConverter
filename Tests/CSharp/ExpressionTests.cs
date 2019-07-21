@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using CodeConverter.Tests.TestRunners;
@@ -600,6 +601,129 @@ End Class", @"public class A
         var tmp = this;
         var y = A.x;
         var z = A.x;
+    }
+}");
+        }
+
+        [Fact]
+        public void MethodCallDictionaryAccessConditional()
+        {
+            TestConversionVisualBasicToCSharp(@"Public Class A
+    Public Sub Test()
+        Dim dict = New Dictionary(Of String, String) From {{""a"", ""AAA""}, {""b"", ""bbb""}}
+        Dim v = dict?.Item(""a"")
+    End Sub
+End Class", @"using System.Collections.Generic;
+
+public class A
+{
+    public void Test()
+    {
+        var dict = new Dictionary<string, string>() { { ""a"", ""AAA"" }, { ""b"", ""bbb"" } };
+        var v = dict?[""a""];
+    }
+}");
+        }
+
+        [Fact]
+        public void IndexerWithParameter()
+        {
+            //BUG Semicolon ends up on newline after comment instead of before it
+            TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Data
+
+Public Class A
+    Public Function ReadDataSet(myData As DataSet) As String
+        With myData.Tables(0).Rows(0)
+            Return .Item(""MY_COLUMN_NAME"").ToString()
+        End With
+    End Function
+End Class", @"using System.Data;
+
+public class A
+{
+    public string ReadDataSet(DataSet myData)
+    {
+        {
+            var withBlock = myData.Tables[0].Rows[0];
+            return withBlock[""MY_COLUMN_NAME""].ToString();
+        }
+    }
+}");
+        }
+
+        [Fact]
+        public void MethodCallArrayIndexerBrackets()
+        {
+            TestConversionVisualBasicToCSharp(@"Public Class A
+    Public Sub Test()
+        Dim str1 = Me.GetStringFromNone(0)
+        str1 = GetStringFromNone(0)
+        Dim str2 = GetStringFromNone()(1)
+        Dim str3 = Me.GetStringsFromString(""abc"")
+        str3 = GetStringsFromString(""abc"")
+        Dim str4 = GetStringsFromString(""abc"")(1)
+        Dim fromStr3 = GetMoreStringsFromString(""bc"")(1)(0)
+        Dim explicitNoParameter = GetStringsFromAmbiguous()(0)(1)
+        Dim usesParameter1 = GetStringsFromAmbiguous(0)(1)(2)
+    End Sub
+
+    Function GetStringFromNone() As String()
+        Return New String() { ""A"", ""B"", ""C""}
+    End Function
+
+    Function GetStringsFromString(parm As String) As String()
+        Return New String() { ""1"", ""2"", ""3""}
+    End Function
+
+    Function GetMoreStringsFromString(parm As String) As String()()
+        Return New String()() { New String() { ""1"" }}
+    End Function
+
+    Function GetStringsFromAmbiguous() As String()()
+        Return New String()() { New String() { ""1"" }}
+    End Function
+
+    Function GetStringsFromAmbiguous(amb As Integer) As String()()
+        Return New String()() { New String() { ""1"" }}
+    End Function
+End Class", @"public class A
+{
+    public void Test()
+    {
+        var str1 = this.GetStringFromNone()[0];
+        str1 = GetStringFromNone()[0];
+        var str2 = GetStringFromNone()[1];
+        var str3 = this.GetStringsFromString(""abc"");
+        str3 = GetStringsFromString(""abc"");
+        var str4 = GetStringsFromString(""abc"")[1];
+        var fromStr3 = GetMoreStringsFromString(""bc"")[1][0];
+        var explicitNoParameter = GetStringsFromAmbiguous()[0][1];
+        var usesParameter1 = GetStringsFromAmbiguous(0)[1][2];
+    }
+
+    public string[] GetStringFromNone()
+    {
+        return new string[] { ""A"", ""B"", ""C"" };
+    }
+
+    public string[] GetStringsFromString(string parm)
+    {
+        return new string[] { ""1"", ""2"", ""3"" };
+    }
+
+    public string[][] GetMoreStringsFromString(string parm)
+    {
+        return new string[][] { new string[] { ""1"" } };
+    }
+
+    public string[][] GetStringsFromAmbiguous()
+    {
+        return new string[][] { new string[] { ""1"" } };
+    }
+
+    public string[][] GetStringsFromAmbiguous(int amb)
+    {
+        return new string[][] { new string[] { ""1"" } };
     }
 }");
         }

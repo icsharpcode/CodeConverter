@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.VisualBasic.CompilerServices;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
@@ -1302,23 +1303,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var simpleNameSyntax = (SimpleNameSyntax)node.Name.Accept(TriviaConvertingVisitor);
 
-                var symbolInfo = _semanticModel.GetSymbolInfo(node.Name);
+                var nodeSymbol = _semanticModel.GetSymbolInfo(node.Name).Symbol;
+                var isDefaultProperty = nodeSymbol is IPropertySymbol p && VBasic.VisualBasicExtensions.IsDefault(p);
                 ExpressionSyntax left = null;
                 if (node.Expression is VBSyntax.MyClassExpressionSyntax) {
-                    if (symbolInfo.Symbol.IsStatic) {
+                    if (nodeSymbol.IsStatic) {
                         var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
                         left = _semanticModel.GetCsTypeSyntax(typeInfo.Type, node);
                     } else {
                         left = SyntaxFactory.ThisExpression();
-                        if (symbolInfo.Symbol.IsVirtual && !symbolInfo.Symbol.IsAbstract) {
+                        if (nodeSymbol.IsVirtual && !nodeSymbol.IsAbstract) {
                             simpleNameSyntax = SyntaxFactory.IdentifierName($"MyClass{ConvertIdentifier(node.Name.Identifier).ValueText}");
                         }
                     }
                 }
-                if (left == null && symbolInfo.Symbol?.IsStatic == true) {
+                if (left == null && nodeSymbol?.IsStatic == true) {
                     var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
-                    var symbol = _semanticModel.GetSymbolInfo(node.Expression);
-                    if (typeInfo.Type != null && !symbol.Symbol.IsType()) {
+                    var expressionSymbolInfo = _semanticModel.GetSymbolInfo(node.Expression);
+                    if (typeInfo.Type != null && !expressionSymbolInfo.Symbol.IsType()) {
                         left = _semanticModel.GetCsTypeSyntax(typeInfo.Type, node);
                     }
                 }
@@ -1327,25 +1329,25 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
                 if (left == null) {
                     if (IsSubPartOfConditionalAccess(node)) {
-                        return SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
+                        return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
+                            : (ExpressionSyntax) SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
                     }
                     left = SyntaxFactory.IdentifierName(_withBlockTempVariableNames.Peek());
                 } else if (TryGetTypePromotedModuleSymbol(node, out var promotedModuleSymbol)) {
                     left = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left,
                         SyntaxFactory.IdentifierName(promotedModuleSymbol.Name));
                 }
-
+                
                 if (node.Expression.IsKind(VBasic.SyntaxKind.GlobalName)) {
                     return SyntaxFactory.AliasQualifiedName((IdentifierNameSyntax)left, simpleNameSyntax);
                 }
-
-                var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left, simpleNameSyntax);
-                if (_semanticModel.GetSymbolInfo(node).Symbol.IsKind(SymbolKind.Method) && node.Parent?.IsKind(VBasic.SyntaxKind.InvocationExpression) != true) {
-                    var visitMemberAccessExpression = SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax, SyntaxFactory.ArgumentList());
-                    return visitMemberAccessExpression;
+                
+                if (isDefaultProperty && left != null) {
+                    return left;
                 }
 
-                return memberAccessExpressionSyntax;
+                var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left, simpleNameSyntax);
+                return AddEmptyArgumentListIfImplicit(node, memberAccessExpressionSyntax);
             }
 
             /// <remarks>https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/declared-elements/type-promotion</remarks>
@@ -1738,25 +1740,25 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitInvocationExpression(VBSyntax.InvocationExpressionSyntax node)
             {
                 var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch();
-                var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
-                var symbolReturnType = symbol?.GetReturnType();
-
-                if (symbol?.ContainingNamespace.MetadataName == "VisualBasic" && TrySubstituteVisualBasicMethod(node, out var csEquivalent)) {
+                var expressionSymbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
+                var expressionReturnType = expressionSymbol?.GetReturnType() ?? _semanticModel.GetTypeInfo(node.Expression).Type;
+                var operation = _semanticModel.GetOperation(node);
+                if (expressionSymbol?.ContainingNamespace.MetadataName == "VisualBasic" && TrySubstituteVisualBasicMethod(node, out var csEquivalent)) {
                     return csEquivalent;
                 }
 
-                if (TryGetElementAccessExpressionToConvert(out var convertedExpression)) {
-                    return SyntaxFactory.ElementAccessExpression(
-                        convertedExpression,
-                        SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(node.ArgumentList.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor)))));
+                // VB doesn't have a specialized node for element access because the syntax is ambiguous. Instead, it just uses an invocation expression or dictionary access expression, then figures out using the semantic model which one is most likely intended.
+                // https://github.com/dotnet/roslyn/blob/master/src/Workspaces/VisualBasic/Portable/LanguageServices/VisualBasicSyntaxFactsService.vb#L768
+                var convertedExpression = ConvertInvocationSubExpression(out var shouldBeElementAccess);
+                if (shouldBeElementAccess) {
+                    return CreateElementAccess();
                 }
-                convertedExpression = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
 
-                if (symbol != null && symbol.IsKind(SymbolKind.Property)) {
+                if (expressionSymbol != null && expressionSymbol.IsKind(SymbolKind.Property)) {
                     return convertedExpression;
                 }
 
-                if (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault) && !symbol.Equals(invocationSymbol)) {
+                if (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault) && !expressionSymbol.Equals(invocationSymbol)) {
                     _extraUsingDirectives.Add(nameof(System) + "." + nameof(System.Linq));
                     convertedExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, convertedExpression,
                         SyntaxFactory.IdentifierName(nameof(Enumerable.ElementAtOrDefault)));
@@ -1765,26 +1767,40 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 return SyntaxFactory.InvocationExpression(convertedExpression, ConvertArgumentListOrEmpty(node.ArgumentList));
 
-                bool TryGetElementAccessExpressionToConvert(out ExpressionSyntax converted)
+                ExpressionSyntax ConvertInvocationSubExpression(out bool isElementAccess)
                 {
-                    VBSyntax.ExpressionSyntax toConvert = null;
-                    converted = null;
+                    isElementAccess = IsPropertyElementAccess(operation) ||
+                                      IsArrayElementAccess(operation) ||
+                                      ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
 
-                    if (invocationSymbol?.IsIndexer() == true || ProbablyNotAMethodCall(node, symbol, symbolReturnType)) {
-                        toConvert = node.Expression;
-                    }
-
-                    // VB can use an imaginary member "Item" when an object has an indexer
-                    if ((toConvert != null || invocationSymbol?.IsErrorType() == true) && node.Expression is VBSyntax.MemberAccessExpressionSyntax memberAccessExpression && memberAccessExpression.Name.Identifier.Text == "Item") {
-                        toConvert = memberAccessExpression.Expression;
-                    }
-
-                    if (toConvert != null) {
-                        converted = (ExpressionSyntax)toConvert.Accept(TriviaConvertingVisitor);
-                    }
-
-                    return converted != null;
+                    return (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
                 }
+
+                CSharpSyntaxNode CreateElementAccess()
+                {
+                    var bracketedArgumentListSyntax = SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(
+                        node.ArgumentList.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor))
+                    ));
+                    if (convertedExpression is ElementBindingExpressionSyntax binding && !binding.ArgumentList.Arguments.Any())
+                    {
+                        // Special case where structure changes due to conditional access (See VisitMemberAccessExpression)
+                        return binding.WithArgumentList(bracketedArgumentListSyntax);
+                    }
+                    else
+                    {
+                        return SyntaxFactory.ElementAccessExpression(convertedExpression,bracketedArgumentListSyntax);
+                    }
+                }
+            }
+
+            private static bool IsPropertyElementAccess(IOperation operation)
+            {
+                return operation is IPropertyReferenceOperation pro && pro.Arguments.Any();
+            }
+
+            private static bool IsArrayElementAccess(IOperation operation)
+            {
+                return operation != null && operation.Kind == OperationKind.ArrayElementReference;
             }
 
             /// <summary>
@@ -1793,8 +1809,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             /// </summary>
             private static bool ProbablyNotAMethodCall(VBSyntax.InvocationExpressionSyntax node, ISymbol symbol, ITypeSymbol symbolReturnType)
             {
-                return !(symbol is IMethodSymbol) && (symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax
-                                                               || symbolReturnType.IsArrayType());
+                return !(symbol is IMethodSymbol) && symbolReturnType.IsErrorType() && node.Expression is VBSyntax.IdentifierNameSyntax && node.ArgumentList.Arguments.Any();
             }
 
             private ArgumentListSyntax ConvertArgumentListOrEmpty(VBSyntax.ArgumentListSyntax argumentListSyntax)
@@ -1994,16 +2009,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(VBSyntax.IdentifierNameSyntax node, ExpressionSyntax id)
+            private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(SyntaxNode node, ExpressionSyntax id)
             {
-                var symbol = GetSymbolInfoInDocument(node);
-                if (symbol != null &&
-                    (symbol.IsOrdinaryMethod() || symbol.IsExtensionMethod()) &&
-                    !node.Parent.IsKind(VBasic.SyntaxKind.InvocationExpression, VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.AddressOfExpression)) {
-                    return SyntaxFactory.InvocationExpression(id);
-                }
-
-                return id;
+                return _semanticModel.GetOperation(node)?.Kind == OperationKind.Invocation 
+                    ? SyntaxFactory.InvocationExpression(id, SyntaxFactory.ArgumentList())
+                    : id;
             }
 
             private ExpressionSyntax QualifyNode(SyntaxNode node, SimpleNameSyntax left)
