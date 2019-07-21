@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,7 @@ using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
+using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.VisualStudio.Threading;
@@ -50,7 +52,7 @@ namespace CodeConverter.Tests.TestRunners
         private async Task<Solution> GetSolutionAsync(string solutionFile)
         {
             var solution = await _msBuildWorkspace.Value.OpenSolutionAsync(solutionFile);
-            await AssertMSBuildIsWorkingAndProjectsValid(solution.Projects);
+            await AssertMSBuildIsWorkingAndProjectsValid(_msBuildWorkspace.Value.Diagnostics, solution.Projects);
             return solution;
         }
 
@@ -104,6 +106,7 @@ namespace CodeConverter.Tests.TestRunners
 
         private static MSBuildWorkspace CreateWorkspaceUnhandled()
         {
+            MSBuildLocator.RegisterDefaults();
             return MSBuildWorkspace.Create(new Dictionary<string, string>()
             {
                 {"Configuration", "Debug"},
@@ -115,11 +118,16 @@ namespace CodeConverter.Tests.TestRunners
         /// If you've changed the source project not to compile, the results will be very confusing
         /// If this happens randomly, updating the Microsoft.Build dependency may help - it may have to line up with a version installed on the machine in some way.
         /// </summary>
-        private static async Task AssertMSBuildIsWorkingAndProjectsValid(IEnumerable<Project> projectsToConvert)
+        private static async Task AssertMSBuildIsWorkingAndProjectsValid(
+            ImmutableList<WorkspaceDiagnostic> valueDiagnostics, IEnumerable<Project> projectsToConvert)
         {
             var compilations = await Task.WhenAll(projectsToConvert.Select(x => x.GetCompilationAsync()));
-            var compilationErrors = string.Join("\r\n", compilations.Select(c => CompilationWarnings.WarningsForCompilation(c, c.AssemblyName)).Where(w => w != null));
-            Assert.True(compilationErrors == "", compilationErrors);
+            IEnumerable<string> errors = compilations
+                .Select(c => CompilationWarnings.WarningsForCompilation(c, c.AssemblyName)).Concat(
+                    valueDiagnostics.Where(d => d.Kind > WorkspaceDiagnosticKind.Warning).Select(d => d.Message)
+                ).Where(w => w != null);
+            var errorString = string.Join("\r\n", errors);
+            Assert.True(errorString == "", errorString);
         }
 
         private static void AssertAllConvertedFilesWereExpected(FileInfo[] expectedFiles,
