@@ -24,20 +24,23 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         class NodesVisitor : VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
         {
+            private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
+            private static Type ConvertType = typeof(Convert);
+            private static readonly Type DllImportType = typeof(DllImportAttribute);
+            private static readonly Type CharSetType = typeof(CharSet);
+            private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(SyntaxKind.SemicolonToken);
+            private static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
             private readonly CSharpCompilation _csCompilation;
             private readonly SemanticModel _semanticModel;
             private readonly Dictionary<ITypeSymbol, string> _createConvertMethodsLookupByReturnType;
             private List<MethodWithHandles> _methodsWithHandles;
             private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
             private readonly Stack<string> _withBlockTempVariableNames = new Stack<string>();
-            private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(SyntaxKind.SemicolonToken);
-            private static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
             private readonly AdditionalInitializers _additionalInitializers;
             private readonly AdditionalLocals _additionalLocals = new AdditionalLocals();
             private readonly QueryConverter _queryConverter;
             private uint failedMemberConversionMarkerCount;
             private HashSet<string> _extraUsingDirectives = new HashSet<string>();
-            private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
             private readonly TypeConversionAnalyzer _typeConversionAnalyzer;
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
             private bool _optionCompareText = false;
@@ -60,7 +63,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private static Dictionary<ITypeSymbol, string> CreateConvertMethodsLookupByReturnType(SemanticModel semanticModel)
             {
-                var systemDotConvert = typeof(Convert).FullName;
+                var systemDotConvert = ConvertType.FullName;
                 var convertMethods = semanticModel.Compilation.GetTypeByMetadataName(systemDotConvert).GetMembers().Where(m =>
                     m.Name.StartsWith("To", StringComparison.Ordinal) && m.GetParameters().Length == 1);
                 var methodsByType = convertMethods.Where(m => m.Name != nameof(Convert.ToBase64String))
@@ -1012,11 +1015,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitDeclareStatement(VBSyntax.DeclareStatementSyntax node)
             {
                 var importAttributes = new List<AttributeArgumentSyntax>();
-                Type dllImportType = typeof(DllImportAttribute);
-                Type charSetType = typeof(CharSet);
-                _extraUsingDirectives.Add(dllImportType.Namespace);
-                _extraUsingDirectives.Add(charSetType.Namespace);
-                var dllImportAttributeName = SyntaxFactory.ParseName(dllImportType.Name.Replace("Attribute", ""));
+                _extraUsingDirectives.Add(DllImportType.Namespace);
+                _extraUsingDirectives.Add(CharSetType.Namespace);
+                var dllImportAttributeName = SyntaxFactory.ParseName(DllImportType.Name.Replace("Attribute", ""));
                 var dllImportLibLiteral = node.LibraryName.Accept(TriviaConvertingVisitor);
                 importAttributes.Add(SyntaxFactory.AttributeArgument((ExpressionSyntax)dllImportLibLiteral));
 
@@ -1025,7 +1026,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 if (!node.CharsetKeyword.IsKind(SyntaxKind.None)) {
-                    importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals(charSetType.Name), null, SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.ParseTypeName(charSetType.Name), SyntaxFactory.IdentifierName(node.CharsetKeyword.Text))));
+                    importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals(CharSetType.Name), null, SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.ParseTypeName(CharSetType.Name), SyntaxFactory.IdentifierName(node.CharsetKeyword.Text))));
                 }
 
                 var attributeArguments = CommonConversions.CreateAttributeArgumentList(importAttributes.ToArray());

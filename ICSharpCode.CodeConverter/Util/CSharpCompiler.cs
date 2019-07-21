@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -8,6 +9,8 @@ namespace ICSharpCode.CodeConverter.Util
 {
     public class CSharpCompiler : ICompiler
     {
+        private static readonly Lazy<CSharpCompilation> LazyCSharpCompilation = new Lazy<CSharpCompilation>(CreateCSharpCompilation);
+
         public SyntaxTree CreateTree(string text)
         {
             return SyntaxFactory.ParseSyntaxTree(text, encoding: Encoding.UTF8);
@@ -18,9 +21,14 @@ namespace ICSharpCode.CodeConverter.Util
             return CreateCSharpCompilation(references).AddSyntaxTrees(tree);
         }
 
-        public static CSharpCompilation CreateCSharpCompilation(IEnumerable<MetadataReference> references)
+        public static Compilation CreateCSharpCompilation(IEnumerable<MetadataReference> references)
         {
-            return CSharpCompilation.Create("Conversion", references: references, options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            return LazyCSharpCompilation.Value.WithReferences(references);
+        }
+
+        private static CSharpCompilation CreateCSharpCompilation()
+        {
+            return CSharpCompilation.Create("Conversion", options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         }
     }
 }
