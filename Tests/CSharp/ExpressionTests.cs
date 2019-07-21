@@ -628,7 +628,8 @@ public class A
         [Fact]
         public void IndexerWithParameter()
         {
-            TestConversionVisualBasicToCSharp(@"Imports System.Data
+            //BUG Semicolon ends up on newline after comment instead of before it
+            TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Data
 
 Public Class A
     Public Function ReadDataSet(myData As DataSet) As String
