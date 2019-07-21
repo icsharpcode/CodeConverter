@@ -78,6 +78,23 @@ namespace ICSharpCode.CodeConverter.CSharp
                     .WithNodeInformation(node);
             }
 
+            public override CSharpSyntaxNode VisitXmlElement(VBSyntax.XmlElementSyntax node)
+            {
+                _extraUsingDirectives.Add("System.Xml.Linq");
+                var aggregatedContent = node.Content.Select(n => n.ToString()).Aggregate(string.Empty, (a, b) => a + b);
+                var xmlAsString = $"{node.StartTag}{aggregatedContent}{node.EndTag}".Trim();
+                return SyntaxFactory.InvocationExpression(
+                    SyntaxFactory.MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        SyntaxFactory.IdentifierName("XElement"),
+                        SyntaxFactory.IdentifierName("Parse")))
+                .WithArgumentList(
+                    SyntaxFactory.ArgumentList(
+                        SyntaxFactory.SingletonSeparatedList<ArgumentSyntax>(
+                            SyntaxFactory.Argument(
+                                SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(xmlAsString))))));
+            }
+
             public override CSharpSyntaxNode VisitGetTypeExpression(VBSyntax.GetTypeExpressionSyntax node)
             {
                 return SyntaxFactory.TypeOfExpression((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor));

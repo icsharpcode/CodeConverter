@@ -90,6 +90,26 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void AssignmentStatementWithXmlElement()
+        {
+            TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Dim b = <someXmlTag></someXmlTag>
+        Dim c = <someXmlTag><bla anAttribute=""itsValue"">tata</bla><someContent>tata</someContent></someXmlTag>
+    End Sub
+End Class", @"using System.Xml.Linq;
+
+class TestClass
+{
+    private void TestMethod()
+    {
+        var b = XElement.Parse(""<someXmlTag></someXmlTag>"");
+        var c = XElement.Parse(""<someXmlTag><bla anAttribute=\""itsValue\"">tata</bla><someContent>tata</someContent></someXmlTag>"");
+    }
+}");
+        }
+
+        [Fact]
         public void ObjectInitializationStatement()
         {
             TestConversionVisualBasicToCSharp(@"Class TestClass
