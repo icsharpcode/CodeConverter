@@ -11,12 +11,12 @@ using Xunit;
 
 namespace CodeConverter.Tests.CSharp
 {
-    [Collection(MSBuildFixture.Collection)]
+    [Collection(MsBuildFixture.Collection)]
     public class SolutionAndProjectTests
     {
-        private readonly MSBuildFixture _msBuildFixture;
+        private readonly MsBuildFixture _msBuildFixture;
 
-        public SolutionAndProjectTests(MSBuildFixture msBuildFixture)
+        public SolutionAndProjectTests(MsBuildFixture msBuildFixture)
         {
             _msBuildFixture = msBuildFixture;
         }

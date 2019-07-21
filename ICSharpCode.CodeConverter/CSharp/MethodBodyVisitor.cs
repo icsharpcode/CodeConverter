@@ -152,6 +152,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return postAssignment.Insert(0, SyntaxFactory.ExpressionStatement(assignment));
             }
 
+            /// <summary>
+            /// Make winforms designer work: https://github.com/icsharpcode/CodeConverter/issues/321
+            /// </summary>
             private SyntaxList<StatementSyntax> GetPostAssignmentStatements(VBSyntax.AssignmentStatementSyntax node)
             {
                 var potentialPropertySymbol = _semanticModel.GetSymbolInfo(node.Left).ExtractBestMatch();
@@ -164,15 +167,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
 
-                return SyntaxFactory.List<StatementSyntax>();
-            }
-
-            private SyntaxList<StatementSyntax> GetPostAssignmentStatements(ISymbol potentialPropertySymbol)
-            {
-                var handledMethods = _handledMethodsFromPropertyWithEventName[potentialPropertySymbol.Name];
-                if (handledMethods.Any()) {
-                    return SyntaxFactory.List<StatementSyntax>();
-                }
                 return SyntaxFactory.List<StatementSyntax>();
             }
 

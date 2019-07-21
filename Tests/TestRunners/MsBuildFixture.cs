@@ -26,7 +26,7 @@ namespace CodeConverter.Tests.TestRunners
     /// https://xunit.net/docs/shared-context
     /// </summary>
     [CollectionDefinition(Collection)]
-    public class MSBuildFixture : ICollectionFixture<MSBuildFixture>, IDisposable
+    public class MsBuildFixture : ICollectionFixture<MsBuildFixture>, IDisposable
     {
         public const string Collection = "Uses MSBuild";
         /// <summary>
@@ -36,12 +36,12 @@ namespace CodeConverter.Tests.TestRunners
         /// </summary>
         private readonly bool _writeNewCharacterization = false;
 
-        private Lazy<MSBuildWorkspace> _msBuildWorkspace;
-        private AsyncLazy<Solution> _solution;
+        private readonly Lazy<MSBuildWorkspace> _msBuildWorkspace;
+        private readonly AsyncLazy<Solution> _solution;
         private static readonly string OriginalSolutionDir = Path.Combine(GetTestDataDirectory(), "CharacterizationTestSolution");
         private static readonly string SolutionFile = Path.Combine(OriginalSolutionDir, "CharacterizationTestSolution.sln");
 
-        public MSBuildFixture()
+        public MsBuildFixture()
         {
             _msBuildWorkspace = new Lazy<MSBuildWorkspace>(CreateWorkspace);
             _solution = new AsyncLazy<Solution>(() => GetSolutionAsync(SolutionFile));
