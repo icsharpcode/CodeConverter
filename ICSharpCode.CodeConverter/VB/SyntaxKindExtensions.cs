@@ -158,9 +158,9 @@ namespace ICSharpCode.CodeConverter.VB
                 case Microsoft.CodeAnalysis.CSharp.SyntaxKind.OrAssignmentExpression:
                     return SyntaxKind.OrExpression;
                 case Microsoft.CodeAnalysis.CSharp.SyntaxKind.LeftShiftAssignmentExpression:
-                    break;
+                    return SyntaxKind.LeftShiftAssignmentStatement;
                 case Microsoft.CodeAnalysis.CSharp.SyntaxKind.RightShiftAssignmentExpression:
-                    break;
+                    return SyntaxKind.RightShiftAssignmentStatement;
                 case Microsoft.CodeAnalysis.CSharp.SyntaxKind.UnaryPlusExpression:
                     return SyntaxKind.UnaryPlusExpression;
                 case Microsoft.CodeAnalysis.CSharp.SyntaxKind.UnaryMinusExpression:

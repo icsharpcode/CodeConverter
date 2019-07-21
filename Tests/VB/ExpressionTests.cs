@@ -217,6 +217,30 @@ End Class");
         }
 
         [Fact]
+        public void ShiftOperators()
+        {
+            TestConversionCSharpToVisualBasic(@"public class Test
+{
+    public static void Main()
+    {
+        int y = 1;
+        y <<= 1;
+        y >>= 1;
+        y = y << 1;
+        y = y >> 1;
+	}
+}", @"Public Class Test
+    Public Shared Sub Main()
+        Dim y As Integer = 1
+        y <<= 1
+        y >>= 1
+        y = y << 1
+        y = y >> 1
+    End Sub
+End Class");
+        }
+
+        [Fact]
         public void ElvisOperatorExpression()
         {
             TestConversionCSharpToVisualBasic(@"class TestClass
