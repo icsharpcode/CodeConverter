@@ -67,15 +67,17 @@ namespace WindowsAppVb
             this._CheckBox1.Text = "CheckBox1";
             this._CheckBox1.UseVisualStyleBackColor = true;
             // 
-            // Form1
+            // WinformsDesignerTest
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 261);
+            this.ClientSize = new System.Drawing.Size(292, 273);
             this.Controls.Add(this._CheckBox1);
             this.Controls.Add(this._Button1);
-            this.Name = "Form1";
+            this.Name = "WinformsDesignerTest";
             this.Text = "Form1";
+            base.Load += WinformsDesignerTest_EnsureSelfEventsWork;
+            this.SizeChanged += WinformsDesignerTest_EnsureSelfEventsWork;
             this.ResumeLayout(false);
             this.PerformLayout();
         }

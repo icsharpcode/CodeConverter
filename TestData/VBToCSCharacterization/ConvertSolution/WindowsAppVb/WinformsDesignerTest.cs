@@ -11,5 +11,9 @@ namespace WindowsAppVb
         private void CheckBox1_CheckedChanged(object sender, EventArgs e)
         {
         }
+
+        private void WinformsDesignerTest_EnsureSelfEventsWork(object sender, EventArgs e)
+        {
+        }
     }
 }

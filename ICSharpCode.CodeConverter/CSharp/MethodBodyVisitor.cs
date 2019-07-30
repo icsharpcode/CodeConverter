@@ -28,7 +28,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private readonly VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> _nodesVisitor;
             private readonly Stack<string> _withBlockTempVariableNames;
             private readonly HashSet<string> _extraUsingDirectives;
-            private readonly ILookup<string, MethodWithHandles> _handledMethodsFromPropertyWithEventName;
+            private readonly MethodsWithHandles _methodsWithHandles;
             private readonly HashSet<string> _generatedNames = new HashSet<string>();
 
             public bool IsIterator { get; set; }
@@ -41,7 +41,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public MethodBodyVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
                 VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor, CommonConversions commonConversions,
                 Stack<string> withBlockTempVariableNames, HashSet<string> extraUsingDirectives,
-                AdditionalLocals additionalLocals, ILookup<string, MethodWithHandles> handledMethodsFromPropertyWithEventName,
+                AdditionalLocals additionalLocals, MethodsWithHandles methodsWithHandles,
                 TriviaConverter triviaConverter)
             {
                 _methodNode = methodNode;
@@ -50,7 +50,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 CommonConversions = commonConversions;
                 _withBlockTempVariableNames = withBlockTempVariableNames;
                 _extraUsingDirectives = extraUsingDirectives;
-                _handledMethodsFromPropertyWithEventName = handledMethodsFromPropertyWithEventName;
+                _methodsWithHandles = methodsWithHandles;
                 var byRefParameterVisitor = new ByRefParameterVisitor(this, additionalLocals, semanticModel, _generatedNames);
                 CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor, triviaConverter);
             }
@@ -116,12 +116,17 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override SyntaxList<StatementSyntax> VisitExpressionStatement(VBSyntax.ExpressionStatementSyntax node)
             {
-                var invoke = node.Expression as VBSyntax.InvocationExpressionSyntax;
-                if (invoke != null &&
-                    invoke.Expression is VBSyntax.MemberAccessExpressionSyntax expr &&
-                    expr.Expression is VBSyntax.MyBaseExpressionSyntax &&
-                    expr.Name.Identifier.ValueText.Equals("Finalize", StringComparison.OrdinalIgnoreCase)) {
-                    return new SyntaxList<StatementSyntax>();
+                if (node.Expression is VBSyntax.InvocationExpressionSyntax invoke && invoke.Expression is VBSyntax.MemberAccessExpressionSyntax access) {
+                    if (access.Expression is VBSyntax.MyBaseExpressionSyntax && access.Name.Identifier.ValueText.Equals("Finalize", StringComparison.OrdinalIgnoreCase)) {
+                        return new SyntaxList<StatementSyntax>();
+                    } else if (CommonConversions.InMethodCalledInitializeComponent(node) &&
+                               access.Name.Identifier.ValueText.Equals("ResumeLayout",
+                                   StringComparison.OrdinalIgnoreCase)) {
+                        var eventSubscriptionStatements = _methodsWithHandles.GetPreResumeLayoutEventHandlers();
+                        if (eventSubscriptionStatements.Any()) {
+                            return SyntaxFactory.List(eventSubscriptionStatements.Concat(SingleStatement((ExpressionSyntax)node.Expression.Accept(_nodesVisitor))));
+                        }
+                    }
                 }
 
                 return SingleStatement((ExpressionSyntax)node.Expression.Accept(_nodesVisitor));
@@ -152,22 +157,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return postAssignment.Insert(0, SyntaxFactory.ExpressionStatement(assignment));
             }
 
-            /// <summary>
-            /// Make winforms designer work: https://github.com/icsharpcode/CodeConverter/issues/321
-            /// </summary>
             private SyntaxList<StatementSyntax> GetPostAssignmentStatements(VBSyntax.AssignmentStatementSyntax node)
             {
                 var potentialPropertySymbol = _semanticModel.GetSymbolInfo(node.Left).ExtractBestMatch();
-                if (CommonConversions.MustInlinePropertyWithEventsAccess(node, potentialPropertySymbol)) {
-                    var fieldName = SyntaxFactory.IdentifierName("_" + potentialPropertySymbol.Name);
-                    var handledMethods = _handledMethodsFromPropertyWithEventName[potentialPropertySymbol.Name].ToArray();
-                    if (handledMethods.Any()) {
-                        var postAssignmentStatements = handledMethods.SelectMany(h => h.GetPostInitializationStatements(potentialPropertySymbol.Name, fieldName));
-                        return SyntaxFactory.List(postAssignmentStatements);
-                    }
-                }
-
-                return SyntaxFactory.List<StatementSyntax>();
+                return _methodsWithHandles.GetPostAssignmentStatements(node, potentialPropertySymbol);
             }
 
             public override SyntaxList<StatementSyntax> VisitEraseStatement(VBSyntax.EraseStatementSyntax node)

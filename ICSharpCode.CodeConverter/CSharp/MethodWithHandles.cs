@@ -10,13 +10,19 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     public class MethodWithHandles
     {
+        private IdentifierNameSyntax _methodId;
         public SyntaxToken MethodCSharpId { get; }
-        public List<(SyntaxToken, SyntaxToken)> HandledEventCSharpIds { get; }
+        public List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName)> HandledPropertyEventCSharpIds { get; }
+        public List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName)> HandledClassEventCSharpIds { get; }
 
-        public MethodWithHandles(SyntaxToken methodCSharpId, List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName)> handledEventCSharpIds)
+        public MethodWithHandles(SyntaxToken methodCSharpId,
+            List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName)> handledPropertyEventCSharpIds,
+            List<(SyntaxToken, SyntaxToken)> handledClassEventCSharpIds)
         {
             MethodCSharpId = methodCSharpId;
-            HandledEventCSharpIds = handledEventCSharpIds;
+            HandledPropertyEventCSharpIds = handledPropertyEventCSharpIds;
+            HandledClassEventCSharpIds = handledClassEventCSharpIds;
+            _methodId = SyntaxFactory.IdentifierName(MethodCSharpId);
         }
 
         public static IEnumerable<MemberDeclarationSyntax> GetDeclarationsForFieldBackedProperty(
@@ -89,22 +95,32 @@ namespace ICSharpCode.CodeConverter.CSharp
             return CreateHandlesUpdater(propertyIdentifier, fieldIdSyntax, SyntaxKind.AddAssignmentExpression);
         }
 
-        private IEnumerable<ExpressionStatementSyntax> CreateHandlesUpdater(string propertyIdentifier,
+        private IEnumerable<StatementSyntax> CreateHandlesUpdater(string propertyIdentifier,
             IdentifierNameSyntax fieldIdSyntax, SyntaxKind assignmentExpressionKind)
         {
-            var methodId = SyntaxFactory.IdentifierName(MethodCSharpId);
-            return HandledEventCSharpIds
-                .Where(h => h.Item1.Text == propertyIdentifier)
-                .Select(e =>
-                {
-                    var handledFieldMember = SyntaxFactory.MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        fieldIdSyntax, SyntaxFactory.IdentifierName(e.Item2));
-                    return SyntaxFactory.ExpressionStatement(
-                        SyntaxFactory.AssignmentExpression(assignmentExpressionKind,
-                            handledFieldMember,
-                            methodId));
-                });
+            return HandledPropertyEventCSharpIds
+                .Where(h => h.EventContainerName.Text == propertyIdentifier)
+                .Select(e => CreateHandlesUpdater(fieldIdSyntax, e, assignmentExpressionKind));
+        }
+
+        private StatementSyntax CreateHandlesUpdater(IdentifierNameSyntax eventSource,
+            (SyntaxToken EventContainerName, SyntaxToken EventSymbolName) e,
+            SyntaxKind assignmentExpressionKind)
+        {
+            var handledFieldMember = SyntaxFactory.MemberAccessExpression(
+                SyntaxKind.SimpleMemberAccessExpression,
+                eventSource, SyntaxFactory.IdentifierName(e.EventSymbolName));
+            return SyntaxFactory.ExpressionStatement(
+                SyntaxFactory.AssignmentExpression(assignmentExpressionKind,
+                    handledFieldMember,
+                    _methodId));
+        }
+
+
+        public IEnumerable<StatementSyntax> GetPreResumeLayoutEventHandlers()
+        {
+            return HandledClassEventCSharpIds.Select(e =>
+                CreateHandlesUpdater(SyntaxFactory.IdentifierName(e.EventContainerName), e, SyntaxKind.AddAssignmentExpression));
         }
 
 

@@ -45,14 +45,14 @@ Partial Class WinformsDesignerTest
         Me.CheckBox1.Text = "CheckBox1"
         Me.CheckBox1.UseVisualStyleBackColor = true
         '
-        'Form1
+        'WinformsDesignerTest
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6!, 13!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(284, 261)
+        Me.ClientSize = New System.Drawing.Size(292, 273)
         Me.Controls.Add(Me.CheckBox1)
         Me.Controls.Add(Me.Button1)
-        Me.Name = "Form1"
+        Me.Name = "WinformsDesignerTest"
         Me.Text = "Form1"
         Me.ResumeLayout(false)
         Me.PerformLayout

@@ -340,7 +340,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public static bool MustInlinePropertyWithEventsAccess(SyntaxNode anyNodePossiblyWithinMethod, ISymbol potentialPropertySymbol)
         {
-            return anyNodePossiblyWithinMethod.GetAncestor<MethodBlockSyntax>()?.SubOrFunctionStatement.Identifier.Text == "InitializeComponent" && potentialPropertySymbol is IPropertySymbol prop && prop.IsWithEvents;
+            return InMethodCalledInitializeComponent(anyNodePossiblyWithinMethod) && potentialPropertySymbol is IPropertySymbol prop && prop.IsWithEvents;
+        }
+
+        public static bool InMethodCalledInitializeComponent(SyntaxNode anyNodePossiblyWithinMethod)
+        {
+            return anyNodePossiblyWithinMethod.GetAncestor<MethodBlockSyntax>()?.SubOrFunctionStatement.Identifier.Text == "InitializeComponent";
         }
 
         private static SyntaxToken CsEscapedIdentifier(string text)

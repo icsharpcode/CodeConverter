@@ -33,7 +33,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private readonly CSharpCompilation _csCompilation;
             private readonly SemanticModel _semanticModel;
             private readonly Dictionary<ITypeSymbol, string> _createConvertMethodsLookupByReturnType;
-            private List<MethodWithHandles> _methodsWithHandles;
+            private MethodsWithHandles _methodsWithHandles;
             private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
             private readonly Stack<string> _withBlockTempVariableNames = new Stack<string>();
             private readonly AdditionalInitializers _additionalInitializers;
@@ -45,7 +45,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
             private bool _optionCompareText = false;
             private VisualBasicEqualityComparison _visualBasicEqualityComparison;
-            private ILookup<string, MethodWithHandles> _handledMethodsFromPropertyWithEventName;
 
             private CommonConversions CommonConversions { get; }
 
@@ -207,10 +206,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var parentType = members.FirstOrDefault()?.GetAncestor<VBSyntax.TypeBlockSyntax>();
                 _methodsWithHandles = GetMethodWithHandles(parentType);
                 if (_methodsWithHandles.Any()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
-                _handledMethodsFromPropertyWithEventName = _methodsWithHandles
-                    .SelectMany(m => m.HandledEventCSharpIds.Select(h => (EventPropertyName: h.Item1.Text, MethodWithHandles: m)))
-                    .ToLookup(m => m.EventPropertyName, m => m.MethodWithHandles);
-
+                
                 if (parentType == null || !_methodsWithHandles.Any()) {
                     return GetDirectlyConvertMembers();
                 }
@@ -460,8 +456,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                                 initializerCollection.Add(initializer.Key, initializer.Value.Value);
                             }
 
-                            var fieldDecls = MethodWithHandles.GetDeclarationsForFieldBackedProperty(fieldDecl,
-                                convertedModifiers, SyntaxFactory.List(attributes), _methodsWithHandles);
+                            var fieldDecls = _methodsWithHandles.GetDeclarationsForFieldBackedProperty(fieldDecl,
+                                convertedModifiers, SyntaxFactory.List(attributes));
                             declarations.AddRange(fieldDecls);
                         } else {
                             FieldDeclarationSyntax baseFieldDeclarationSyntax;
@@ -510,22 +506,43 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return declarations.First();
             }
 
-            private List<MethodWithHandles> GetMethodWithHandles(VBSyntax.TypeBlockSyntax parentType)
+            private MethodsWithHandles GetMethodWithHandles(VBSyntax.TypeBlockSyntax parentType)
             {
-                if (parentType == null) return new List<MethodWithHandles>();
+                if (parentType == null) return new MethodsWithHandles(new List<MethodWithHandles>());
 
                 var containingType = (ITypeSymbol) _semanticModel.GetDeclaredSymbol(parentType);
-                return containingType.GetMembers().OfType<IMethodSymbol>()
+                var methodWithHandleses = containingType.GetMembers().OfType<IMethodSymbol>()
                     .Where(m => VBasic.VisualBasicExtensions.HandledEvents(m).Any())
                     .Select(m => {
                         var csPropIds = VBasic.VisualBasicExtensions.HandledEvents(m)
-                            .Select(p => (SyntaxFactory.Identifier(p.EventContainer.Name), SyntaxFactory.Identifier(p.EventSymbol.Name)))
+                            .Where(p => p.HandlesKind == VBasic.HandledEventKind.WithEvents)
+                            .Select(p => (SyntaxFactory.Identifier(GetCSharpIdentifierText(p)), SyntaxFactory.Identifier(p.EventSymbol.Name)))
+                            .ToList();
+                        var csFormIds = VBasic.VisualBasicExtensions.HandledEvents(m)
+                            .Where(p => p.HandlesKind != VBasic.HandledEventKind.WithEvents)
+                            .Select(p => (SyntaxFactory.Identifier(GetCSharpIdentifierText(p)), SyntaxFactory.Identifier(p.EventSymbol.Name)))
                             .ToList();
                         if (!csPropIds.Any()) return null;
                         var csMethodId = SyntaxFactory.Identifier(m.Name);
-                        return new MethodWithHandles(csMethodId, csPropIds);
+                        return new MethodWithHandles(csMethodId, csPropIds, csFormIds);
                     }).Where(x => x != null)
                     .ToList();
+                return new MethodsWithHandles(methodWithHandleses);
+
+                string GetCSharpIdentifierText(VBasic.HandledEvent p)
+                {
+                    switch (p.HandlesKind) {
+                        case VBasic.HandledEventKind.Me:
+                        case VBasic.HandledEventKind.MyClass:
+                            return "this";
+                        case VBasic.HandledEventKind.MyBase:
+                            return "base";
+                        case VBasic.HandledEventKind.WithEvents:
+                            return p.EventContainer.Name;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
             }
 
             public override CSharpSyntaxNode VisitPropertyStatement(VBSyntax.PropertyStatementSyntax node)
@@ -985,7 +1002,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
             {
-                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, CommonConversions, _withBlockTempVariableNames, _extraUsingDirectives, _additionalLocals, _handledMethodsFromPropertyWithEventName, TriviaConvertingVisitor.TriviaConverter) {
+                var methodBodyVisitor = new MethodBodyVisitor(node, _semanticModel, TriviaConvertingVisitor, CommonConversions, _withBlockTempVariableNames, _extraUsingDirectives, _additionalLocals, _methodsWithHandles, TriviaConvertingVisitor.TriviaConverter) {
                     IsIterator = isIterator,
                     ReturnVariable = csReturnVariable,
                 };
@@ -1784,7 +1801,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     convertedExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, convertedExpression,
                         SyntaxFactory.IdentifierName(nameof(Enumerable.ElementAtOrDefault)));
                 }
-
 
                 return SyntaxFactory.InvocationExpression(convertedExpression, ConvertArgumentListOrEmpty(node.ArgumentList));
 
