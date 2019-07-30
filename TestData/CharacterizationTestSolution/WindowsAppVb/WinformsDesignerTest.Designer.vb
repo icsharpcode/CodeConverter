@@ -1,5 +1,5 @@
 ﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
-Partial Class Form1
+Partial Class WinformsDesignerTest
     Inherits System.Windows.Forms.Form
 
     'Form overrides dispose to clean up the component list.
@@ -23,6 +23,7 @@ Partial Class Form1
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
         Me.Button1 = New System.Windows.Forms.Button() ' In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
+        Me.CheckBox1 = New System.Windows.Forms.CheckBox()
         Me.SuspendLayout
         '
         'Button1
@@ -34,15 +35,27 @@ Partial Class Form1
         Me.Button1.Text = "Button1"
         Me.Button1.UseVisualStyleBackColor = true
         '
+        'CheckBox1
+        '
+        Me.CheckBox1.AutoSize = true
+        Me.CheckBox1.Location = New System.Drawing.Point(89, 28)
+        Me.CheckBox1.Name = "CheckBox1"
+        Me.CheckBox1.Size = New System.Drawing.Size(81, 17)
+        Me.CheckBox1.TabIndex = 1
+        Me.CheckBox1.Text = "CheckBox1"
+        Me.CheckBox1.UseVisualStyleBackColor = true
+        '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6!, 13!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(284, 261)
+        Me.Controls.Add(Me.CheckBox1)
         Me.Controls.Add(Me.Button1)
         Me.Name = "Form1"
         Me.Text = "Form1"
         Me.ResumeLayout(false)
+        Me.PerformLayout
 
 End Sub
 
@@ -50,4 +63,5 @@ End Sub
     End Function
 
     Friend WithEvents Button1 As Button
+    Friend WithEvents CheckBox1 As CheckBox
 End Class

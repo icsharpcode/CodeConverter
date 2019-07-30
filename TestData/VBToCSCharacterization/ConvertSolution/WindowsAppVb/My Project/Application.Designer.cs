@@ -22,7 +22,7 @@ namespace WindowsAppVb
             [global::System.Diagnostics.DebuggerStepThrough()]
             protected override void OnCreateMainForm()
             {
-                this.MainForm = global::WindowsAppVb.Form1;
+                this.MainForm = global::WindowsAppVb.WinformsDesignerTest;
             }
         }
     }

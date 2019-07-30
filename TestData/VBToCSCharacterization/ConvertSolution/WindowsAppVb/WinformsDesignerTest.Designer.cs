@@ -14,7 +14,7 @@ using System.Runtime.CompilerServices;
 namespace WindowsAppVb
 {
     [global::Microsoft.VisualBasic.CompilerServices.DesignerGenerated()]
-    public partial class Form1 : System.Windows.Forms.Form
+    public partial class WinformsDesignerTest : System.Windows.Forms.Form
     {
 
         // Form overrides dispose to clean up the component list.
@@ -42,7 +42,10 @@ namespace WindowsAppVb
         private void InitializeComponent()
         {
             this._Button1 = new System.Windows.Forms.Button();
-            _Button1.Click += Button1_Click; // In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
+            _Button1.Click += Button1_Click;
+            _Button1.Click += CheckBox1_CheckedChanged; // In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
+            this._CheckBox1 = new System.Windows.Forms.CheckBox();
+            _CheckBox1.CheckedChanged += CheckBox1_CheckedChanged;
             this.SuspendLayout();
             // 
             // Button1
@@ -54,15 +57,27 @@ namespace WindowsAppVb
             this._Button1.Text = "Button1";
             this._Button1.UseVisualStyleBackColor = true;
             // 
+            // CheckBox1
+            // 
+            this._CheckBox1.AutoSize = true;
+            this._CheckBox1.Location = new System.Drawing.Point(89, 28);
+            this._CheckBox1.Name = "CheckBox1";
+            this._CheckBox1.Size = new System.Drawing.Size(81, 17);
+            this._CheckBox1.TabIndex = 1;
+            this._CheckBox1.Text = "CheckBox1";
+            this._CheckBox1.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this._CheckBox1);
             this.Controls.Add(this._Button1);
             this.Name = "Form1";
             this.Text = "Form1";
             this.ResumeLayout(false);
+            this.PerformLayout();
         }
 
         public static bool TestSub(ref bool IsDefault = false)
@@ -86,12 +101,40 @@ namespace WindowsAppVb
                 if (_Button1 != null)
                 {
                     _Button1.Click -= Button1_Click;
+                    _Button1.Click -= CheckBox1_CheckedChanged;
                 }
 
                 _Button1 = value;
                 if (_Button1 != null)
                 {
                     _Button1.Click += Button1_Click;
+                    _Button1.Click += CheckBox1_CheckedChanged;
+                }
+            }
+        }
+
+        private CheckBox _CheckBox1;
+
+        internal CheckBox CheckBox1
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get
+            {
+                return _CheckBox1;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            set
+            {
+                if (_CheckBox1 != null)
+                {
+                    _CheckBox1.CheckedChanged -= CheckBox1_CheckedChanged;
+                }
+
+                _CheckBox1 = value;
+                if (_CheckBox1 != null)
+                {
+                    _CheckBox1.CheckedChanged += CheckBox1_CheckedChanged;
                 }
             }
         }
