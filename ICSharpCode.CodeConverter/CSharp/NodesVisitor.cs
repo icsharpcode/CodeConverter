@@ -522,7 +522,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             .Where(p => p.HandlesKind != VBasic.HandledEventKind.WithEvents)
                             .Select(p => (SyntaxFactory.Identifier(GetCSharpIdentifierText(p)), SyntaxFactory.Identifier(p.EventSymbol.Name)))
                             .ToList();
-                        if (!csPropIds.Any()) return null;
+                        if (!csPropIds.Any() && !csFormIds.Any()) return null;
                         var csMethodId = SyntaxFactory.Identifier(m.Name);
                         return new MethodWithHandles(csMethodId, csPropIds, csFormIds);
                     }).Where(x => x != null)
