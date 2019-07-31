@@ -576,12 +576,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                         throw new NotImplementedException("MyClass indexing not implemented");
                     }
 
+                    var parameters = SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(node.ParameterList.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor))));
                     return SyntaxFactory.IndexerDeclaration(
                         SyntaxFactory.List(attributes),
                         modifiers,
                         rawType,
                         null,
-                        SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(node.ParameterList.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor)))),
+                        parameters,
                         accessors
                     );
                 } else {
@@ -592,6 +593,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         csIdentifier = SyntaxFactory.Identifier(csIndentifierName);
                     }
 
+                    var semicolonToken = SyntaxFactory.Token(initializer == null ? SyntaxKind.None : SyntaxKind.SemicolonToken);
                     return SyntaxFactory.PropertyDeclaration(
                         SyntaxFactory.List(attributes),
                         modifiers,
@@ -600,7 +602,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         csIdentifier, accessors,
                         null,
                         initializer,
-                        SyntaxFactory.Token(initializer == null ? SyntaxKind.None : SyntaxKind.SemicolonToken));
+                        semicolonToken);
                 }
             }
 
