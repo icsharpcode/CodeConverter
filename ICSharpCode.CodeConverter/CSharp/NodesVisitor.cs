@@ -532,8 +532,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 string GetCSharpIdentifierText(VBasic.HandledEvent p)
                 {
                     switch (p.HandlesKind) {
-                        case VBasic.HandledEventKind.Me:
+                        //For me, trying to use "MyClass" in a Handles expression is a syntax error. Events aren't overridable anyway so I'm not sure how this would get used.
                         case VBasic.HandledEventKind.MyClass:
+                        case VBasic.HandledEventKind.Me:
                             return "this";
                         case VBasic.HandledEventKind.MyBase:
                             return "base";
