@@ -1879,10 +1879,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return CreateElementAccess();
                 }
 
-                if (expressionSymbol != null && expressionSymbol.IsKind(SymbolKind.Property)) {
-                    return convertedExpression;
-                }
-
                 if (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault) && !expressionSymbol.Equals(invocationSymbol)) {
                     _extraUsingDirectives.Add(nameof(System) + "." + nameof(System.Linq));
                     convertedExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, convertedExpression,
@@ -1897,7 +1893,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                                       IsArrayElementAccess(operation) ||
                                       ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
 
-                    return (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
+                    var expr = node.Expression.Accept(TriviaConvertingVisitor);
+                    var overrideIdentifier = GetIdentifierTextForParameterizedPropertyAccess(operation);
+                    if (expr is IdentifierNameSyntax ins && overrideIdentifier != null) {
+                        return ins.WithIdentifier(SyntaxFactory.Identifier(overrideIdentifier));
+                    }
+                    return (ExpressionSyntax) expr;
                 }
 
                 CSharpSyntaxNode CreateElementAccess()
@@ -1919,7 +1920,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private static bool IsPropertyElementAccess(IOperation operation)
             {
-                return operation is IPropertyReferenceOperation pro && pro.Arguments.Any();
+                return operation is IPropertyReferenceOperation pro && pro.Arguments.Any() && VBasic.VisualBasicExtensions.IsDefault(pro.Property);
+            }
+
+            private static string GetIdentifierTextForParameterizedPropertyAccess(IOperation operation)
+            {
+                if (operation is IPropertyReferenceOperation pro && pro.Arguments.Any() &&
+                    !VBasic.VisualBasicExtensions.IsDefault(pro.Property)) {
+                    return pro.Property.IsWriteOnly ? pro.Property.SetMethod.Name : pro.Property.GetMethod.Name;
+                }
+                return null;
             }
 
             private static bool IsArrayElementAccess(IOperation operation)
