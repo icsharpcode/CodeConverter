@@ -568,32 +568,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
                 )?.Accept(TriviaConvertingVisitor) ?? VarType;
 
-                AccessorListSyntax accessors = null;
-                if (!hasBody) {
-                    var getAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SemicolonToken);
-                    var setAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration).WithSemicolonToken(SemicolonToken);
-                    if (isWriteOnly) {
-                        getAccessor = getAccessor.AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
-                    }
-                    if (isReadonly) {
-                        setAccessor = setAccessor.AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
-                    }
-                    if (isInInterface && isReadonly) {
-                        accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] { getAccessor }));
-                    } else if (isInInterface && isWriteOnly) {
-                        accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] { setAccessor }));
-                    } else {
-                        // In VB, there's a backing field which can always be read and written to even on ReadOnly/WriteOnly properties.
-                        // Our conversion will rewrite usages of that field to use the property accessors which therefore must exist and be private at minimum.
-                        accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] { getAccessor, setAccessor }));
-                    }
-                } else {
-                    accessors = SyntaxFactory.AccessorList(
-                        SyntaxFactory.List(
-                            ((VBSyntax.PropertyBlockSyntax)node.Parent).Accessors.Select(a => (AccessorDeclarationSyntax)a.Accept(TriviaConvertingVisitor))
-                        )
-                    );
-                }
+                AccessorListSyntax accessors = GetPropertyAccesors(node, hasBody, isWriteOnly, isReadonly, isInInterface);
 
                 if (isIndexer) {
                     if (accessedThroughMyClass) {
@@ -612,24 +587,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 } else {
                     var csIdentifier = ConvertIdentifier(node.Identifier);
                     if (accessedThroughMyClass) {
-                        var csIndentifierName = "MyClass" + csIdentifier.ValueText;
-                        ExpressionSyntax thisDotIdentifier = SyntaxFactory.ParseExpression($"this.{csIndentifierName}");
-                        var getReturn = SyntaxFactory.Block(SyntaxFactory.ReturnStatement(thisDotIdentifier));
-                        var getAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration, getReturn);
-                        var setValue = SyntaxFactory.Block(SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, thisDotIdentifier, SyntaxFactory.IdentifierName("value"))));
-                        var setAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration, setValue);
-                        var realAccessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor, setAccessor}));
-                        var realDecl = SyntaxFactory.PropertyDeclaration(
-                            SyntaxFactory.List(attributes),
-                            modifiers,
-                            rawType,
-                            null,
-                            csIdentifier, realAccessors,
-                            null,
-                            null,
-                            SyntaxFactory.Token(SyntaxKind.None));
-
-                        _additionalDeclarations.Add(node, new MemberDeclarationSyntax[] { realDecl });
+                        string csIndentifierName = AddRealPropertyDelegatingToMyClassVersion(node, csIdentifier, attributes, modifiers, rawType);
                         modifiers = modifiers.Remove(modifiers.Single(m => m.IsKind(SyntaxKind.VirtualKeyword)));
                         csIdentifier = SyntaxFactory.Identifier(csIndentifierName);
                     }
@@ -644,6 +602,80 @@ namespace ICSharpCode.CodeConverter.CSharp
                         initializer,
                         SyntaxFactory.Token(initializer == null ? SyntaxKind.None : SyntaxKind.SemicolonToken));
                 }
+            }
+
+            private string AddRealPropertyDelegatingToMyClassVersion(VBSyntax.PropertyStatementSyntax node, SyntaxToken csIdentifier,
+                AttributeListSyntax[] attributes, SyntaxTokenList modifiers, TypeSyntax rawType)
+            {
+                var csIndentifierName = "MyClass" + csIdentifier.ValueText;
+                ExpressionSyntax thisDotIdentifier = SyntaxFactory.ParseExpression($"this.{csIndentifierName}");
+                var getReturn = SyntaxFactory.Block(SyntaxFactory.ReturnStatement(thisDotIdentifier));
+                var getAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration, getReturn);
+                var setValue = SyntaxFactory.Block(SyntaxFactory.ExpressionStatement(
+                    SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, thisDotIdentifier,
+                        SyntaxFactory.IdentifierName("value"))));
+                var setAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration, setValue);
+                var realAccessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor, setAccessor}));
+                var realDecl = SyntaxFactory.PropertyDeclaration(
+                    SyntaxFactory.List(attributes),
+                    modifiers,
+                    rawType,
+                    null,
+                    csIdentifier, realAccessors,
+                    null,
+                    null,
+                    SyntaxFactory.Token(SyntaxKind.None));
+
+                _additionalDeclarations.Add(node, new MemberDeclarationSyntax[] {realDecl});
+                return csIndentifierName;
+            }
+
+            private AccessorListSyntax GetPropertyAccesors(VBSyntax.PropertyStatementSyntax node, bool hasBody, bool isWriteOnly,
+                bool isReadonly, bool isInInterface)
+            {
+                AccessorListSyntax accessors = null;
+                if (!hasBody)
+                {
+                    var getAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
+                        .WithSemicolonToken(SemicolonToken);
+                    var setAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration)
+                        .WithSemicolonToken(SemicolonToken);
+                    if (isWriteOnly)
+                    {
+                        getAccessor = getAccessor.AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
+                    }
+
+                    if (isReadonly)
+                    {
+                        setAccessor = setAccessor.AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
+                    }
+
+                    if (isInInterface && isReadonly)
+                    {
+                        accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor}));
+                    }
+                    else if (isInInterface && isWriteOnly)
+                    {
+                        accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {setAccessor}));
+                    }
+                    else
+                    {
+                        // In VB, there's a backing field which can always be read and written to even on ReadOnly/WriteOnly properties.
+                        // Our conversion will rewrite usages of that field to use the property accessors which therefore must exist and be private at minimum.
+                        accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor, setAccessor}));
+                    }
+                }
+                else
+                {
+                    accessors = SyntaxFactory.AccessorList(
+                        SyntaxFactory.List(
+                            ((VBSyntax.PropertyBlockSyntax) node.Parent).Accessors.Select(a =>
+                                (AccessorDeclarationSyntax) a.Accept(TriviaConvertingVisitor))
+                        )
+                    );
+                }
+
+                return accessors;
             }
 
             public override CSharpSyntaxNode VisitPropertyBlock(VBSyntax.PropertyBlockSyntax node)
