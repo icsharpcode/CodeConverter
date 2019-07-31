@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.VisualBasic.CompilerServices;
+using StringComparer = System.StringComparer;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -45,6 +46,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
             private bool _optionCompareText = false;
             private VisualBasicEqualityComparison _visualBasicEqualityComparison;
+            private static HashSet<string> _accessedThroughMyClass;
 
             private CommonConversions CommonConversions { get; }
 
@@ -254,6 +256,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitClassBlock(VBSyntax.ClassBlockSyntax node)
             {
+                _accessedThroughMyClass = GetMyClassAccessedNames(node);
                 var classStatement = node.ClassStatement;
                 var attributes = ConvertAttributes(classStatement.AttributeLists);
                 SplitTypeParameters(classStatement.TypeParameterList, out var parameters, out var constraints);
@@ -879,16 +882,20 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (symbol.IsVirtual && !symbol.IsAbstract) {
                     var classBlock = node.Ancestors().OfType<VBSyntax.ClassBlockSyntax>().FirstOrDefault();
                     if (classBlock != null) {
-                        var memberAccesses = classBlock.DescendantNodes().OfType<VBSyntax.MemberAccessExpressionSyntax>();
-                        accessedThroughMyClass = memberAccesses.Any(mae => {
-                            bool isMyClass = mae.Expression is VBSyntax.MyClassExpressionSyntax;
-                            bool namesMatch = mae.Name.Identifier.ValueText.Equals(identifier.ValueText, StringComparison.OrdinalIgnoreCase);
-                            return isMyClass && namesMatch;
-                        });
+                        accessedThroughMyClass = _accessedThroughMyClass.Contains(identifier.Text);
                     }
                 }
 
                 return accessedThroughMyClass;
+            }
+
+            private static HashSet<string> GetMyClassAccessedNames(VBSyntax.ClassBlockSyntax classBlock)
+            {
+                var memberAccesses = classBlock.DescendantNodes().OfType<VBSyntax.MemberAccessExpressionSyntax>();
+                var accessedTextNames = new HashSet<string>(memberAccesses
+                    .Where(mae => mae.Expression is VBSyntax.MyClassExpressionSyntax)
+                    .Select(mae => mae.Name.Identifier.Text), StringComparer.OrdinalIgnoreCase);
+                return accessedTextNames;
             }
 
             public override CSharpSyntaxNode VisitMethodStatement(VBSyntax.MethodStatementSyntax node)
