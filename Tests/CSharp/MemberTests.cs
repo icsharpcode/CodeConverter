@@ -553,7 +553,7 @@ End Class", @"class TestClass
     Public Property FirstName As String
     Public Property LastName As String
     
-    Public ReadOnly Property FullName(ByVal lastNameFirst As Boolean) As String
+    Public Property FullName(ByVal lastNameFirst As Boolean, ByVal isFirst As Boolean) As String
         Get
             If lastNameFirst Then
                 Return LastName & "" "" & FirstName
@@ -561,17 +561,21 @@ End Class", @"class TestClass
                 Return FirstName & "" "" & LastName
             End If
         End Get
+        Set
+            If isFirst Then FirstName = Value
+        End Set
     End Property
 
     Public Overrides Function ToString() As String
-        Return FullName(False)
+        FullName(False, True) = ""hello""
+        Return FullName(False, True)
     End Function
 End Class", @"class TestClass
 {
     public string FirstName { get; set; }
     public string LastName { get; set; }
 
-    public string get_FullName(bool lastNameFirst)
+    public string get_FullName(bool lastNameFirst, bool isFirst)
     {
         if (lastNameFirst)
             return LastName + "" "" + FirstName;
@@ -579,9 +583,16 @@ End Class", @"class TestClass
             return FirstName + "" "" + LastName;
     }
 
+    public string set_FullName(bool lastNameFirst, bool isFirst, string value)
+    {
+        if (isFirst)
+            FirstName = value;
+    }
+
     public override string ToString()
     {
-        return get_FullName(false);
+        set_FullName(false, true, ""hello"");
+        return get_FullName(false, true);
     }
 }");
         }
