@@ -583,8 +583,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                         //TODO Handled MyClass on a parameterized property here
                         var accessorMethods = propertyBlock.Accessors.Select(a =>
                             (MethodDeclarationSyntax) a.Accept(TriviaConvertingVisitor))
-                            .Select(m => WithMergedModifiers(m)).ToArray();
-                        _additionalDeclarations.Add(node, accessorMethods.Skip(1).ToArray());
+                            .Select(WithMergedModifiers).ToArray();
+                        _additionalDeclarations.Add(propertyBlock, accessorMethods.Skip(1).ToArray());
                         return accessorMethods[0];
                     }
                 } else {
@@ -719,16 +719,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                         blockKind = SyntaxKind.GetAccessorDeclaration;
                         potentialMethodId = $"get_{(containingProperty.Identifier.Text)}";
 
-                        if (TryConvertAsParameterizedProperty(out var cSharpSyntaxNode)) {
-                            return cSharpSyntaxNode;
+                        if (containingProperty.AsClause is VBSyntax.SimpleAsClauseSyntax getAsClause && 
+                            TryConvertAsParameterizedProperty(out var method)) {
+                            return method.WithReturnType((TypeSyntax)getAsClause.Type.Accept(TriviaConvertingVisitor));
                         }
                         break;
                     case VBasic.SyntaxKind.SetAccessorBlock:
                         blockKind = SyntaxKind.SetAccessorDeclaration;
                         potentialMethodId = $"set_{(containingProperty.Identifier.Text)}";
-
-                        if (TryConvertAsParameterizedProperty(out cSharpSyntaxNode)) {
-                            return cSharpSyntaxNode;
+                        
+                        if (containingProperty.AsClause is VBSyntax.SimpleAsClauseSyntax setAsClause && TryConvertAsParameterizedProperty(out var setMethod)) {
+                            var valueParameterType = (TypeSyntax)setAsClause.Type.Accept(TriviaConvertingVisitor);
+                            return setMethod.AddParameterListParameters(SyntaxFactory.Parameter(SyntaxFactory.Identifier("value")).WithType(valueParameterType));
                         }
                         break;
                     case VBasic.SyntaxKind.AddHandlerAccessorBlock:
@@ -743,22 +745,20 @@ namespace ICSharpCode.CodeConverter.CSharp
                         var eventName = ConvertIdentifier(eventStatement.Identifier).ValueText;
                         potentialMethodId = $"On{eventName}";
                         var parameterListSyntax = (ParameterListSyntax)node.AccessorStatement.ParameterList.Accept(TriviaConvertingVisitor);
-                        var predefinedTypeSyntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword));
-                        return CreateMethodDeclarationSyntax(predefinedTypeSyntax, parameterListSyntax);
+                        return CreateMethodDeclarationSyntax(parameterListSyntax);
                     default:
                         throw new NotSupportedException(node.Kind().ToString());
                 }
 
                 return SyntaxFactory.AccessorDeclaration(blockKind, attributes, modifiers, body);
 
-                bool TryConvertAsParameterizedProperty(out CSharpSyntaxNode methodDeclarationSyntax)
+                bool TryConvertAsParameterizedProperty(out MethodDeclarationSyntax methodDeclarationSyntax)
                 {
-                    if (containingProperty.ParameterList?.Parameters.Any() == true && containingProperty.AsClause is VBSyntax.SimpleAsClauseSyntax asClause)
+                    if (containingProperty.ParameterList?.Parameters.Any() == true)
                     {
                         var parameterListSyntax =
                             (ParameterListSyntax) containingProperty?.ParameterList.Accept(TriviaConvertingVisitor);
-                        var predefinedTypeSyntax = (TypeSyntax) asClause.Type.Accept(TriviaConvertingVisitor);
-                        methodDeclarationSyntax = CreateMethodDeclarationSyntax(predefinedTypeSyntax, parameterListSyntax);
+                        methodDeclarationSyntax = CreateMethodDeclarationSyntax(parameterListSyntax);
                         return true;
                     }
 
@@ -766,10 +766,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return false;
                 }
 
-                MethodDeclarationSyntax CreateMethodDeclarationSyntax(TypeSyntax predefinedTypeSyntax, ParameterListSyntax parameterListSyntax)
+                MethodDeclarationSyntax CreateMethodDeclarationSyntax(ParameterListSyntax parameterListSyntax)
                 {
                     return SyntaxFactory.MethodDeclaration(attributes, modifiers,
-                        predefinedTypeSyntax, null,
+                        SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)), null,
                         SyntaxFactory.Identifier(potentialMethodId), null,
                         parameterListSyntax, SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), body, null);
                 }

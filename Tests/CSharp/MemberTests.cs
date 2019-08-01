@@ -561,7 +561,8 @@ End Class", @"class TestClass
                 Return FirstName & "" "" & LastName
             End If
         End Get
-        Set
+
+        Friend Set
             If isFirst Then FirstName = Value
         End Set
     End Property
@@ -583,7 +584,7 @@ End Class", @"class TestClass
             return FirstName + "" "" + LastName;
     }
 
-    public string set_FullName(bool lastNameFirst, bool isFirst, string value)
+    internal void set_FullName(bool lastNameFirst, bool isFirst, string value)
     {
         if (isFirst)
             FirstName = value;
