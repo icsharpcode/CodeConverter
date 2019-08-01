@@ -546,6 +546,59 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void TestParameterizedProperty()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Class TestClass
+    Public Property FirstName As String
+    Public Property LastName As String
+    
+    Public Property FullName(ByVal lastNameFirst As Boolean, ByVal isFirst As Boolean) As String
+        Get
+            If lastNameFirst Then
+                Return LastName & "" "" & FirstName
+            Else
+                Return FirstName & "" "" & LastName
+            End If
+        End Get
+
+        Friend Set
+            If isFirst Then FirstName = Value
+        End Set
+    End Property
+
+    Public Overrides Function ToString() As String
+        FullName(False, True) = ""hello""
+        Return FullName(False, True)
+    End Function
+End Class", @"class TestClass
+{
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+
+    public string get_FullName(bool lastNameFirst, bool isFirst)
+    {
+        if (lastNameFirst)
+            return LastName + "" "" + FirstName;
+        else
+            return FirstName + "" "" + LastName;
+    }
+
+    internal void set_FullName(bool lastNameFirst, bool isFirst, string value)
+    {
+        if (isFirst)
+            FirstName = value;
+    }
+
+    public override string ToString()
+    {
+        set_FullName(false, true, ""hello"");
+        return get_FullName(false, true);
+    }
+}");
+        }
+
+        [Fact]
         public void TestReadWriteOnlyInterfaceProperty()
         {
             TestConversionVisualBasicToCSharpWithoutComments(

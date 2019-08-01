@@ -135,6 +135,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override SyntaxList<StatementSyntax> VisitAssignmentStatement(VBSyntax.AssignmentStatementSyntax node)
             {
                 var lhs = (ExpressionSyntax)node.Left.Accept(_nodesVisitor);
+                var lOperation = _semanticModel.GetOperation(node.Left);
+                if (CommonConversions.GetParameterizedPropertyAccessMethod(lOperation, out var _) != null) return SingleStatement(lhs);
                 var rhs = (ExpressionSyntax)node.Right.Accept(_nodesVisitor);
 
                 if (node.Left is VBSyntax.IdentifierNameSyntax id &&

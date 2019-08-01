@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.VisualBasic.CompilerServices;
+using StringComparer = System.StringComparer;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -45,6 +46,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
             private bool _optionCompareText = false;
             private VisualBasicEqualityComparison _visualBasicEqualityComparison;
+            private static HashSet<string> _accessedThroughMyClass;
 
             private CommonConversions CommonConversions { get; }
 
@@ -254,6 +256,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitClassBlock(VBSyntax.ClassBlockSyntax node)
             {
+                _accessedThroughMyClass = GetMyClassAccessedNames(node);
                 var classStatement = node.ClassStatement;
                 var attributes = ConvertAttributes(classStatement.AttributeLists);
                 SplitTypeParameters(classStatement.TypeParameterList, out var parameters, out var constraints);
@@ -548,13 +551,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             public override CSharpSyntaxNode VisitPropertyStatement(VBSyntax.PropertyStatementSyntax node)
             {
-                bool hasBody = node.Parent is VBSyntax.PropertyBlockSyntax;
                 var attributes = node.AttributeLists.SelectMany(ConvertAttribute).ToArray();
                 var isReadonly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.ReadOnlyKeyword));
                 var isWriteOnly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WriteOnlyKeyword));
                 var convertibleModifiers = node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword, VBasic.SyntaxKind.WriteOnlyKeyword, VBasic.SyntaxKind.DefaultKeyword));
                 var modifiers = CommonConversions.ConvertModifiers(node, convertibleModifiers, GetMemberContext(node));
-                var isIndexer = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.DefaultKeyword));
+                var isIndexer = CommonConversions.IsDefaultIndexer(node);
                 var accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, _semanticModel.GetDeclaredSymbol(node));
                 bool isInInterface = node.Ancestors().OfType<VBSyntax.InterfaceBlockSyntax>().FirstOrDefault() != null;
 
@@ -569,31 +571,29 @@ namespace ICSharpCode.CodeConverter.CSharp
                 )?.Accept(TriviaConvertingVisitor) ?? VarType;
 
                 AccessorListSyntax accessors = null;
-                if (!hasBody) {
-                    var getAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SemicolonToken);
-                    var setAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration).WithSemicolonToken(SemicolonToken);
-                    if (isWriteOnly) {
-                        getAccessor = getAccessor.AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
+                if (node.Parent is VBSyntax.PropertyBlockSyntax propertyBlock) {
+                    if (node.ParameterList?.Parameters.Any() == true && !isIndexer) {
+                        if (accessedThroughMyClass) {
+                            // Would need to create a delegating implementation to implement this
+                            throw new NotImplementedException("MyClass indexing not implemented");
+                        }
+                        var accessorMethods = propertyBlock.Accessors.Select(a =>
+                                (MethodDeclarationSyntax)a.Accept(TriviaConvertingVisitor))
+                            .Select(WithMergedModifiers).ToArray();
+                        _additionalDeclarations.Add(propertyBlock, accessorMethods.Skip(1).ToArray());
+                        return accessorMethods[0];
                     }
-                    if (isReadonly) {
-                        setAccessor = setAccessor.AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
-                    }
-                    if (isInInterface && isReadonly) {
-                        accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] { getAccessor }));
-                    } else if (isInInterface && isWriteOnly) {
-                        accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] { setAccessor }));
-                    } else {
-                        // In VB, there's a backing field which can always be read and written to even on ReadOnly/WriteOnly properties.
-                        // Our conversion will rewrite usages of that field to use the property accessors which therefore must exist and be private at minimum.
-                        accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] { getAccessor, setAccessor }));
-                    }
-                } else {
+
                     accessors = SyntaxFactory.AccessorList(
                         SyntaxFactory.List(
-                            ((VBSyntax.PropertyBlockSyntax)node.Parent).Accessors.Select(a => (AccessorDeclarationSyntax)a.Accept(TriviaConvertingVisitor))
-                        )
-                    );
+                            (propertyBlock.Accessors.Select(a =>
+                                (AccessorDeclarationSyntax)a.Accept(TriviaConvertingVisitor))
+                            )
+                        ));
+                } else {
+                    accessors = ConvertSimpleAccessors(isWriteOnly, isReadonly, isInInterface);
                 }
+
 
                 if (isIndexer) {
                     if (accessedThroughMyClass) {
@@ -601,39 +601,25 @@ namespace ICSharpCode.CodeConverter.CSharp
                         throw new NotImplementedException("MyClass indexing not implemented");
                     }
 
+                    var parameters = SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(node.ParameterList.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor))));
                     return SyntaxFactory.IndexerDeclaration(
                         SyntaxFactory.List(attributes),
                         modifiers,
                         rawType,
                         null,
-                        SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(node.ParameterList.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor)))),
+                        parameters,
                         accessors
                     );
                 } else {
                     var csIdentifier = ConvertIdentifier(node.Identifier);
-                    if (accessedThroughMyClass) {
-                        var csIndentifierName = "MyClass" + csIdentifier.ValueText;
-                        ExpressionSyntax thisDotIdentifier = SyntaxFactory.ParseExpression($"this.{csIndentifierName}");
-                        var getReturn = SyntaxFactory.Block(SyntaxFactory.ReturnStatement(thisDotIdentifier));
-                        var getAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration, getReturn);
-                        var setValue = SyntaxFactory.Block(SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, thisDotIdentifier, SyntaxFactory.IdentifierName("value"))));
-                        var setAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration, setValue);
-                        var realAccessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor, setAccessor}));
-                        var realDecl = SyntaxFactory.PropertyDeclaration(
-                            SyntaxFactory.List(attributes),
-                            modifiers,
-                            rawType,
-                            null,
-                            csIdentifier, realAccessors,
-                            null,
-                            null,
-                            SyntaxFactory.Token(SyntaxKind.None));
 
-                        _additionalDeclarations.Add(node, new MemberDeclarationSyntax[] { realDecl });
+                    if (accessedThroughMyClass) {
+                        string csIndentifierName = AddRealPropertyDelegatingToMyClassVersion(node, csIdentifier, attributes, modifiers, rawType);
                         modifiers = modifiers.Remove(modifiers.Single(m => m.IsKind(SyntaxKind.VirtualKeyword)));
                         csIdentifier = SyntaxFactory.Identifier(csIndentifierName);
                     }
 
+                    var semicolonToken = SyntaxFactory.Token(initializer == null ? SyntaxKind.None : SyntaxKind.SemicolonToken);
                     return SyntaxFactory.PropertyDeclaration(
                         SyntaxFactory.List(attributes),
                         modifiers,
@@ -642,8 +628,77 @@ namespace ICSharpCode.CodeConverter.CSharp
                         csIdentifier, accessors,
                         null,
                         initializer,
-                        SyntaxFactory.Token(initializer == null ? SyntaxKind.None : SyntaxKind.SemicolonToken));
+                        semicolonToken);
                 }
+
+                MemberDeclarationSyntax WithMergedModifiers(MethodDeclarationSyntax member)
+                {
+                    SyntaxTokenList originalModifiers = member.GetModifiers();
+                    var hasVisibility = originalModifiers.Any(m => m.IsCsVisibility(false, false));
+                    var modifiersToAdd = hasVisibility ? modifiers.Where(m => !m.IsCsVisibility(false, false)) : modifiers;
+                    return member.WithModifiers(SyntaxFactory.TokenList(originalModifiers.Concat(modifiersToAdd)));
+                }
+            }
+
+            private string AddRealPropertyDelegatingToMyClassVersion(VBSyntax.PropertyStatementSyntax node, SyntaxToken csIdentifier,
+                AttributeListSyntax[] attributes, SyntaxTokenList modifiers, TypeSyntax rawType)
+            {
+                var csIndentifierName = "MyClass" + csIdentifier.ValueText;
+                ExpressionSyntax thisDotIdentifier = SyntaxFactory.ParseExpression($"this.{csIndentifierName}");
+                var getReturn = SyntaxFactory.Block(SyntaxFactory.ReturnStatement(thisDotIdentifier));
+                var getAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration, getReturn);
+                var setValue = SyntaxFactory.Block(SyntaxFactory.ExpressionStatement(
+                    SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, thisDotIdentifier,
+                        SyntaxFactory.IdentifierName("value"))));
+                var setAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration, setValue);
+                var realAccessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor, setAccessor}));
+                var realDecl = SyntaxFactory.PropertyDeclaration(
+                    SyntaxFactory.List(attributes),
+                    modifiers,
+                    rawType,
+                    null,
+                    csIdentifier, realAccessors,
+                    null,
+                    null,
+                    SyntaxFactory.Token(SyntaxKind.None));
+
+                _additionalDeclarations.Add(node, new MemberDeclarationSyntax[] {realDecl});
+                return csIndentifierName;
+            }
+
+            private static AccessorListSyntax ConvertSimpleAccessors(bool isWriteOnly, bool isReadonly, bool isInInterface)
+            {
+                AccessorListSyntax accessors;
+                var getAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
+                    .WithSemicolonToken(SemicolonToken);
+                var setAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration)
+                    .WithSemicolonToken(SemicolonToken);
+                if (isWriteOnly)
+                {
+                    getAccessor = getAccessor.AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
+                }
+
+                if (isReadonly)
+                {
+                    setAccessor = setAccessor.AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
+                }
+
+                if (isInInterface && isReadonly)
+                {
+                    accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor}));
+                }
+                else if (isInInterface && isWriteOnly)
+                {
+                    accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {setAccessor}));
+                }
+                else
+                {
+                    // In VB, there's a backing field which can always be read and written to even on ReadOnly/WriteOnly properties.
+                    // Our conversion will rewrite usages of that field to use the property accessors which therefore must exist and be private at minimum.
+                    accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor, setAccessor}));
+                }
+
+                return accessors;
             }
 
             public override CSharpSyntaxNode VisitPropertyBlock(VBSyntax.PropertyBlockSyntax node)
@@ -660,13 +715,26 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
                 var attributes = ConvertAttributes(node.AccessorStatement.AttributeLists);
                 var modifiers = CommonConversions.ConvertModifiers(node, node.AccessorStatement.Modifiers, TokenContext.Local);
-
+                string potentialMethodId = null;
+                var containingProperty = node.GetAncestor<VBSyntax.PropertyBlockSyntax>()?.PropertyStatement;
                 switch (node.Kind()) {
                     case VBasic.SyntaxKind.GetAccessorBlock:
                         blockKind = SyntaxKind.GetAccessorDeclaration;
+                        potentialMethodId = $"get_{(containingProperty.Identifier.Text)}";
+
+                        if (containingProperty.AsClause is VBSyntax.SimpleAsClauseSyntax getAsClause && 
+                            TryConvertAsParameterizedProperty(out var method)) {
+                            return method.WithReturnType((TypeSyntax)getAsClause.Type.Accept(TriviaConvertingVisitor));
+                        }
                         break;
                     case VBasic.SyntaxKind.SetAccessorBlock:
                         blockKind = SyntaxKind.SetAccessorDeclaration;
+                        potentialMethodId = $"set_{(containingProperty.Identifier.Text)}";
+                        
+                        if (containingProperty.AsClause is VBSyntax.SimpleAsClauseSyntax setAsClause && TryConvertAsParameterizedProperty(out var setMethod)) {
+                            var valueParameterType = (TypeSyntax)setAsClause.Type.Accept(TriviaConvertingVisitor);
+                            return setMethod.AddParameterListParameters(SyntaxFactory.Parameter(SyntaxFactory.Identifier("value")).WithType(valueParameterType));
+                        }
                         break;
                     case VBasic.SyntaxKind.AddHandlerAccessorBlock:
                         blockKind = SyntaxKind.AddAccessorDeclaration;
@@ -675,22 +743,38 @@ namespace ICSharpCode.CodeConverter.CSharp
                         blockKind = SyntaxKind.RemoveAccessorDeclaration;
                         break;
                     case VBasic.SyntaxKind.RaiseEventAccessorBlock:
-                        blockKind = SyntaxKind.MethodDeclaration;
-                        break;
+                        var eventStatement = ((VBSyntax.EventBlockSyntax)node.Parent).EventStatement;
+                        var eventName = ConvertIdentifier(eventStatement.Identifier).ValueText;
+                        potentialMethodId = $"On{eventName}";
+                        var parameterListSyntax = (ParameterListSyntax)node.AccessorStatement.ParameterList.Accept(TriviaConvertingVisitor);
+                        return CreateMethodDeclarationSyntax(parameterListSyntax);
                     default:
                         throw new NotSupportedException(node.Kind().ToString());
                 }
 
-                if (blockKind == SyntaxKind.MethodDeclaration) {
-                    var parameterListSyntax = (ParameterListSyntax) node.AccessorStatement.ParameterList.Accept(TriviaConvertingVisitor);
-                    var eventStatement = ((VBSyntax.EventBlockSyntax)node.Parent).EventStatement;
-                    var eventName = ConvertIdentifier(eventStatement.Identifier).ValueText;
+                return SyntaxFactory.AccessorDeclaration(blockKind, attributes, modifiers, body);
+
+                bool TryConvertAsParameterizedProperty(out MethodDeclarationSyntax methodDeclarationSyntax)
+                {
+                    if (containingProperty.ParameterList?.Parameters.Any() == true && !CommonConversions.IsDefaultIndexer(containingProperty))
+                    {
+                        var parameterListSyntax =
+                            (ParameterListSyntax) containingProperty?.ParameterList.Accept(TriviaConvertingVisitor);
+                        methodDeclarationSyntax = CreateMethodDeclarationSyntax(parameterListSyntax);
+                        return true;
+                    }
+
+                    methodDeclarationSyntax = null;
+                    return false;
+                }
+
+                MethodDeclarationSyntax CreateMethodDeclarationSyntax(ParameterListSyntax parameterListSyntax)
+                {
                     return SyntaxFactory.MethodDeclaration(attributes, modifiers,
                         SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)), null,
-                        SyntaxFactory.Identifier($"On{eventName}"), null,
+                        SyntaxFactory.Identifier(potentialMethodId), null,
                         parameterListSyntax, SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), body, null);
                 }
-                return SyntaxFactory.AccessorDeclaration(blockKind, attributes, modifiers, body);
             }
 
             public override CSharpSyntaxNode VisitAccessorStatement(VBSyntax.AccessorStatementSyntax node)
@@ -800,16 +884,20 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (symbol.IsVirtual && !symbol.IsAbstract) {
                     var classBlock = node.Ancestors().OfType<VBSyntax.ClassBlockSyntax>().FirstOrDefault();
                     if (classBlock != null) {
-                        var memberAccesses = classBlock.DescendantNodes().OfType<VBSyntax.MemberAccessExpressionSyntax>();
-                        accessedThroughMyClass = memberAccesses.Any(mae => {
-                            bool isMyClass = mae.Expression is VBSyntax.MyClassExpressionSyntax;
-                            bool namesMatch = mae.Name.Identifier.ValueText.Equals(identifier.ValueText, StringComparison.OrdinalIgnoreCase);
-                            return isMyClass && namesMatch;
-                        });
+                        accessedThroughMyClass = _accessedThroughMyClass.Contains(identifier.Text);
                     }
                 }
 
                 return accessedThroughMyClass;
+            }
+
+            private static HashSet<string> GetMyClassAccessedNames(VBSyntax.ClassBlockSyntax classBlock)
+            {
+                var memberAccesses = classBlock.DescendantNodes().OfType<VBSyntax.MemberAccessExpressionSyntax>();
+                var accessedTextNames = new HashSet<string>(memberAccesses
+                    .Where(mae => mae.Expression is VBSyntax.MyClassExpressionSyntax)
+                    .Select(mae => mae.Name.Identifier.Text), StringComparer.OrdinalIgnoreCase);
+                return accessedTextNames;
             }
 
             public override CSharpSyntaxNode VisitMethodStatement(VBSyntax.MethodStatementSyntax node)
@@ -1089,7 +1177,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitParameterList(VBSyntax.ParameterListSyntax node)
             {
                 var parameterSyntaxs = node.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor));
-                if (node.Parent is VBSyntax.PropertyStatementSyntax) {
+                if (node.Parent is VBSyntax.PropertyStatementSyntax && CommonConversions.IsDefaultIndexer(node.Parent)) {
                     return SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(parameterSyntaxs));
                 }
                 return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameterSyntaxs));
@@ -1786,6 +1874,20 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return csEquivalent;
                 }
 
+                var overrideIdentifier = CommonConversions.GetParameterizedPropertyAccessMethod(operation, out var extraArg);
+                if (overrideIdentifier != null) {
+                    var expr = node.Expression.Accept(TriviaConvertingVisitor);
+                    if (expr is IdentifierNameSyntax ins) {
+                        expr = ins.WithIdentifier(SyntaxFactory.Identifier(overrideIdentifier));
+                    }
+
+                    var args = ConvertArgumentListOrEmpty(node.ArgumentList);
+                    if (extraArg != null) {
+                        args = args.WithArguments(args.Arguments.Add(SyntaxFactory.Argument(extraArg)));
+                    }
+                    return SyntaxFactory.InvocationExpression((ExpressionSyntax) expr, args);
+                }
+
                 // VB doesn't have a specialized node for element access because the syntax is ambiguous. Instead, it just uses an invocation expression or dictionary access expression, then figures out using the semantic model which one is most likely intended.
                 // https://github.com/dotnet/roslyn/blob/master/src/Workspaces/VisualBasic/Portable/LanguageServices/VisualBasicSyntaxFactsService.vb#L768
                 var convertedExpression = ConvertInvocationSubExpression(out var shouldBeElementAccess);
@@ -1794,7 +1896,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 if (expressionSymbol != null && expressionSymbol.IsKind(SymbolKind.Property)) {
-                    return convertedExpression;
+                    return convertedExpression; //Parameterless property access
                 }
 
                 if (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault) && !expressionSymbol.Equals(invocationSymbol)) {
@@ -1811,7 +1913,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                                       IsArrayElementAccess(operation) ||
                                       ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
 
-                    return (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
+                    var expr = node.Expression.Accept(TriviaConvertingVisitor);
+                    return (ExpressionSyntax) expr;
                 }
 
                 CSharpSyntaxNode CreateElementAccess()
@@ -1833,7 +1936,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private static bool IsPropertyElementAccess(IOperation operation)
             {
-                return operation is IPropertyReferenceOperation pro && pro.Arguments.Any();
+                return operation is IPropertyReferenceOperation pro && pro.Arguments.Any() && VBasic.VisualBasicExtensions.IsDefault(pro.Property);
             }
 
             private static bool IsArrayElementAccess(IOperation operation)
