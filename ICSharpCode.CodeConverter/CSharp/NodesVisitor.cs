@@ -580,7 +580,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                 )
                             ));
                     } else {
-                        //TODO Handled MyClass on a parameterized property here
+                        //Logic error: MyClass on a parameterized property should be handled here by creating delegating methods
                         var accessorMethods = propertyBlock.Accessors.Select(a =>
                             (MethodDeclarationSyntax) a.Accept(TriviaConvertingVisitor))
                             .Select(WithMergedModifiers).ToArray();
@@ -740,7 +740,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                         blockKind = SyntaxKind.RemoveAccessorDeclaration;
                         break;
                     case VBasic.SyntaxKind.RaiseEventAccessorBlock:
-                        blockKind = SyntaxKind.MethodDeclaration;
                         var eventStatement = ((VBSyntax.EventBlockSyntax)node.Parent).EventStatement;
                         var eventName = ConvertIdentifier(eventStatement.Identifier).ValueText;
                         potentialMethodId = $"On{eventName}";
