@@ -556,7 +556,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var isWriteOnly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WriteOnlyKeyword));
                 var convertibleModifiers = node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword, VBasic.SyntaxKind.WriteOnlyKeyword, VBasic.SyntaxKind.DefaultKeyword));
                 var modifiers = CommonConversions.ConvertModifiers(node, convertibleModifiers, GetMemberContext(node));
-                var isIndexer = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.DefaultKeyword));
+                var isIndexer = CommonConversions.IsDefaultIndexer(node);
                 var accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, _semanticModel.GetDeclaredSymbol(node));
                 bool isInInterface = node.Ancestors().OfType<VBSyntax.InterfaceBlockSyntax>().FirstOrDefault() != null;
 
@@ -753,7 +753,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 bool TryConvertAsParameterizedProperty(out MethodDeclarationSyntax methodDeclarationSyntax)
                 {
-                    if (containingProperty.ParameterList?.Parameters.Any() == true)
+                    if (containingProperty.ParameterList?.Parameters.Any() == true && !CommonConversions.IsDefaultIndexer(containingProperty))
                     {
                         var parameterListSyntax =
                             (ParameterListSyntax) containingProperty?.ParameterList.Accept(TriviaConvertingVisitor);
@@ -1174,7 +1174,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             public override CSharpSyntaxNode VisitParameterList(VBSyntax.ParameterListSyntax node)
             {
                 var parameterSyntaxs = node.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor));
-                if (node.Parent is VBSyntax.PropertyStatementSyntax && node.Parent.GetModifiers().Any(m => m.IsKind(VBasic.SyntaxKind.DefaultKeyword))) {
+                if (node.Parent is VBSyntax.PropertyStatementSyntax && CommonConversions.IsDefaultIndexer(node.Parent)) {
                     return SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(parameterSyntaxs));
                 }
                 return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameterSyntaxs));
@@ -1890,6 +1890,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var convertedExpression = ConvertInvocationSubExpression(out var shouldBeElementAccess);
                 if (shouldBeElementAccess) {
                     return CreateElementAccess();
+                }
+
+                if (expressionSymbol != null && expressionSymbol.IsKind(SymbolKind.Property)) {
+                    return convertedExpression; //Parameterless property access
                 }
 
                 if (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault) && !expressionSymbol.Equals(invocationSymbol)) {
