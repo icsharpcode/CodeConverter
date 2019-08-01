@@ -572,21 +572,24 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 AccessorListSyntax accessors = null;
                 if (node.Parent is VBSyntax.PropertyBlockSyntax propertyBlock) {
-                    if (!isIndexer && node.ParameterList?.Parameters.Any() != true) {
-                        accessors = SyntaxFactory.AccessorList(
-                            SyntaxFactory.List(
-                                (propertyBlock.Accessors.Select(a =>
-                                    (AccessorDeclarationSyntax)a.Accept(TriviaConvertingVisitor))
-                                )
-                            ));
-                    } else {
-                        //Logic error: MyClass on a parameterized property should be handled here by creating delegating methods
+                    if (node.ParameterList?.Parameters.Any() == true && !isIndexer) {
+                        if (accessedThroughMyClass) {
+                            // Would need to create a delegating implementation to implement this
+                            throw new NotImplementedException("MyClass indexing not implemented");
+                        }
                         var accessorMethods = propertyBlock.Accessors.Select(a =>
-                            (MethodDeclarationSyntax) a.Accept(TriviaConvertingVisitor))
+                                (MethodDeclarationSyntax)a.Accept(TriviaConvertingVisitor))
                             .Select(WithMergedModifiers).ToArray();
                         _additionalDeclarations.Add(propertyBlock, accessorMethods.Skip(1).ToArray());
                         return accessorMethods[0];
                     }
+
+                    accessors = SyntaxFactory.AccessorList(
+                        SyntaxFactory.List(
+                            (propertyBlock.Accessors.Select(a =>
+                                (AccessorDeclarationSyntax)a.Accept(TriviaConvertingVisitor))
+                            )
+                        ));
                 } else {
                     accessors = ConvertSimpleAccessors(isWriteOnly, isReadonly, isInInterface);
                 }
