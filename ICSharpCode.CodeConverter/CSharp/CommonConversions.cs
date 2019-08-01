@@ -7,6 +7,7 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using ArgumentListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax;
@@ -504,6 +505,21 @@ namespace ICSharpCode.CodeConverter.CSharp
                 explicitType ?? SyntaxFactory.IdentifierName("var"),
                 SyntaxFactory.SingletonSeparatedList(variableDeclaratorSyntax));
             return variableDeclarationSyntax;
+        }
+
+        public string GetParameterizedPropertyAccessMethod(IOperation operation, out ExpressionSyntax extraArg)
+        {
+            if (operation is IPropertyReferenceOperation pro && pro.Arguments.Any() &&
+                !pro.Property.IsDefault()) {
+                var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.Children.First() == pro;
+                extraArg = isSetter
+                    ? (ExpressionSyntax)_nodesVisitor.Visit(operation.Parent.Syntax.ChildNodes().ElementAt(1))
+                    : null;
+                return isSetter ? pro.Property.SetMethod.Name : pro.Property.GetMethod.Name;
+            }
+
+            extraArg = null;
+            return null;
         }
     }
 }

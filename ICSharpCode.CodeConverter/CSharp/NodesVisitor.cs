@@ -1872,6 +1872,20 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return csEquivalent;
                 }
 
+                var overrideIdentifier = CommonConversions.GetParameterizedPropertyAccessMethod(operation, out var extraArg);
+                if (overrideIdentifier != null) {
+                    var expr = node.Expression.Accept(TriviaConvertingVisitor);
+                    if (expr is IdentifierNameSyntax ins) {
+                        expr = ins.WithIdentifier(SyntaxFactory.Identifier(overrideIdentifier));
+                    }
+
+                    var args = ConvertArgumentListOrEmpty(node.ArgumentList);
+                    if (extraArg != null) {
+                        args = args.WithArguments(args.Arguments.Add(SyntaxFactory.Argument(extraArg)));
+                    }
+                    return SyntaxFactory.InvocationExpression((ExpressionSyntax) expr, args);
+                }
+
                 // VB doesn't have a specialized node for element access because the syntax is ambiguous. Instead, it just uses an invocation expression or dictionary access expression, then figures out using the semantic model which one is most likely intended.
                 // https://github.com/dotnet/roslyn/blob/master/src/Workspaces/VisualBasic/Portable/LanguageServices/VisualBasicSyntaxFactsService.vb#L768
                 var convertedExpression = ConvertInvocationSubExpression(out var shouldBeElementAccess);
@@ -1894,10 +1908,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                                       ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
 
                     var expr = node.Expression.Accept(TriviaConvertingVisitor);
-                    var overrideIdentifier = GetIdentifierTextForParameterizedPropertyAccess(operation);
-                    if (expr is IdentifierNameSyntax ins && overrideIdentifier != null) {
-                        return ins.WithIdentifier(SyntaxFactory.Identifier(overrideIdentifier));
-                    }
                     return (ExpressionSyntax) expr;
                 }
 
@@ -1921,15 +1931,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             private static bool IsPropertyElementAccess(IOperation operation)
             {
                 return operation is IPropertyReferenceOperation pro && pro.Arguments.Any() && VBasic.VisualBasicExtensions.IsDefault(pro.Property);
-            }
-
-            private static string GetIdentifierTextForParameterizedPropertyAccess(IOperation operation)
-            {
-                if (operation is IPropertyReferenceOperation pro && pro.Arguments.Any() &&
-                    !VBasic.VisualBasicExtensions.IsDefault(pro.Property)) {
-                    return pro.Property.IsWriteOnly ? pro.Property.SetMethod.Name : pro.Property.GetMethod.Name;
-                }
-                return null;
             }
 
             private static bool IsArrayElementAccess(IOperation operation)
