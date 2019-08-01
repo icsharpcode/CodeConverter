@@ -1,7 +1,19 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
-# 6.9.0 TBC/06/2019
+# 7.0.0 TBC/08/2019
+* Compatible with Visual Studio ~15.5+
+
+### VB -> C#
+* Improve conversion for WithEvents/Handles
+* Improve detection of enum related casts
+* Convert parameterized properties
+* Convert plain XML literals
+
+### C# -> VB
+* Convert more binary operators
+
+# 6.9.0 09/06/2019
 
 ### VB -> C#
 * String comparison conversion now often avoids referencing VB library in output (when TextCompare is set to Binary)
