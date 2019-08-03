@@ -22,6 +22,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly ConcurrentDictionary<string, string> _errors = new ConcurrentDictionary<string, string>();
         private readonly Dictionary<string, SyntaxTree> _firstPassResults = new Dictionary<string, SyntaxTree>();
         private readonly ILanguageConversion _languageConversion;
+        private readonly Project _project;
         private readonly bool _handlePartialConversion;
         private readonly bool _showCompilationErrors =
 #if DEBUG && ShowCompilationErrors
@@ -30,13 +31,15 @@ namespace ICSharpCode.CodeConverter.Shared
             false;
 #endif
 
-        private ProjectConversion(Compilation sourceCompilation, IEnumerable<SyntaxTree> syntaxTreesToConvert, ILanguageConversion languageConversion, Compilation convertedCompilation)
+        private ProjectConversion(Compilation sourceCompilation, IEnumerable<SyntaxTree> syntaxTreesToConvert,
+            ILanguageConversion languageConversion, Compilation convertedCompilation, Project project = null)
         {
             _languageConversion = languageConversion;
+            _project = project;
             _sourceCompilation = sourceCompilation;
             _syntaxTreesToConvert = syntaxTreesToConvert.ToList();
             _handlePartialConversion = _syntaxTreesToConvert.Count() == 1;
-            languageConversion.Initialize(convertedCompilation.RemoveAllSyntaxTrees());
+            languageConversion.Initialize(convertedCompilation.RemoveAllSyntaxTrees(), project);
         }
 
         public static Task<ConversionResult> ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null) where TLanguageConversion : ILanguageConversion, new()
@@ -91,7 +94,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var compilation = await project.GetCompilationAsync();
             var syntaxTreesToConvert = compilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir));
             var projectConversion = new ProjectConversion(compilation, syntaxTreesToConvert,
-                languageConversion, await GetConvertedCompilationWithProjectReferences(project, languageConversion));
+                languageConversion, await GetConvertedCompilationWithProjectReferences(project, languageConversion), project);
             return await ConvertProjectContents(projectConversion);
         }
 

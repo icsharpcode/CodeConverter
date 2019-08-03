@@ -20,12 +20,26 @@ namespace ICSharpCode.CodeConverter.CSharp
         private Compilation _sourceCompilation;
         private readonly List<SyntaxTree> _secondPassResults = new List<SyntaxTree>();
         private CSharpCompilation _convertedCompilation;
+        private Project _project;
+        private Project _convertedProject;
 
         public string RootNamespace { get; set; }
 
 
-        public void Initialize(Compilation convertedCompilation)
+        public void Initialize(Compilation convertedCompilation, Project project)
         {
+            _project = project;
+            if (project != null) {
+
+                var projectInfo = ProjectInfo.Create(project.Id, project.Version, project.Name, project.AssemblyName,
+                    LanguageNames.VisualBasic, null, project.OutputFilePath,
+                    VisualBasicCompiler.CreateVisualBasicCompilationOptions(RootNamespace),
+                    VisualBasicParseOptions.Default, new DocumentInfo[0], project.ProjectReferences,
+                    project.MetadataReferences, project.AnalyzerReferences);
+                var convertedSolution = project.Solution.RemoveProject(project.Id).AddProject(projectInfo);
+                _convertedProject = convertedSolution.GetProject(project.Id);
+            }
+
             _convertedCompilation = (CSharpCompilation) convertedCompilation;
         }
 
@@ -35,6 +49,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var converted = VisualBasicConverter.ConvertCompilationTree((VisualBasicCompilation)sourceCompilation, _convertedCompilation, (VisualBasicSyntaxTree)tree);
             var convertedTree = SyntaxFactory.SyntaxTree(converted);
             _convertedCompilation = _convertedCompilation.AddSyntaxTrees(convertedTree);
+            _convertedProject = _convertedProject.AddDocument(tree.FilePath, converted).Project;
             return convertedTree;
         }
 
