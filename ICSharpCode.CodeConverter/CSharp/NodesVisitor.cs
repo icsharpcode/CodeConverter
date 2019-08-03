@@ -1315,7 +1315,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         );
                 }
 
-                var castExpr = SyntaxFactory.CastExpression((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor), expressionSyntax);
+                var castExpr = ValidSyntaxFactory.CastExpression((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor), expressionSyntax);
                 if (node.Parent is VBSyntax.MemberAccessExpressionSyntax)
                 {
                     return (ExpressionSyntax)SyntaxFactory.ParenthesizedExpression(castExpr);
@@ -1342,10 +1342,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             SyntaxFactory.SingletonSeparatedList(
                                 SyntaxFactory.Argument(expressionSyntax)))
                     ) // Hopefully will be a compile error if it's wrong
-                    : SyntaxFactory.CastExpression(
-                    SyntaxFactory.PredefinedType(node.Keyword.ConvertToken()),
-                    (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor)
-                );
+                    : ValidSyntaxFactory.CastExpression(SyntaxFactory.PredefinedType(node.Keyword.ConvertToken()), (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
             }
 
             private ExpressionSyntax GetConvertMethodForKeywordOrNull(SyntaxNode type)
@@ -1967,7 +1964,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 cSharpSyntaxNode = null;
                 var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
                 if (symbol?.Name == "ChrW" || symbol?.Name == "Chr") {
-                    cSharpSyntaxNode = SyntaxFactory.CastExpression(SyntaxFactory.ParseTypeName("char"),
+                    cSharpSyntaxNode = ValidSyntaxFactory.CastExpression(SyntaxFactory.ParseTypeName("char"),
                         ConvertArguments(node.ArgumentList).Single().Expression);
                 }
 

@@ -37,5 +37,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return lhs;
         }
+        
+        public static CastExpressionSyntax CastExpression(TypeSyntax type, ExpressionSyntax expressionSyntax)
+        {
+            return SyntaxFactory.CastExpression(type, expressionSyntax);
+        }
     }
 }

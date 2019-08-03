@@ -38,7 +38,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case TypeConversionKind.Identity:
                     return addParenthesisIfNeeded ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
                 case TypeConversionKind.Implicit:
-                    return SyntaxFactory.CastExpression(_semanticModel.GetCsTypeSyntax(vbConvertedType, vbNode), csNode);
+                    return ValidSyntaxFactory.CastExpression(_semanticModel.GetCsTypeSyntax(vbConvertedType, vbNode), csNode);
                 case TypeConversionKind.Explicit:
                     return AddExplicitConvertTo(vbNode, csNode, vbConvertedType);
                 default:
