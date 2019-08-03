@@ -20,7 +20,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly Compilation _sourceCompilation;
         private readonly IEnumerable<SyntaxTree> _syntaxTreesToConvert;
         private readonly ConcurrentDictionary<string, string> _errors = new ConcurrentDictionary<string, string>();
-        private readonly Dictionary<string, SyntaxTree> _firstPassResults = new Dictionary<string, SyntaxTree>();
+        private readonly Dictionary<string, Document> _firstPassResults = new Dictionary<string, Document>();
         private readonly ILanguageConversion _languageConversion;
         private readonly Project _project;
         private readonly bool _handlePartialConversion;
@@ -155,7 +155,7 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        private async Task<(string Key, SyntaxNode singleSecondPass)> SingleSecondPassHandled(AdhocWorkspace workspace, KeyValuePair<string, SyntaxTree> firstPassResult)
+        private async Task<(string Key, SyntaxNode singleSecondPass)> SingleSecondPassHandled(AdhocWorkspace workspace, KeyValuePair<string, Document> firstPassResult)
         {
             try {
                 var singleSecondPass = await SingleSecondPass(firstPassResult, workspace);
@@ -163,7 +163,7 @@ namespace ICSharpCode.CodeConverter.Shared
             }
             catch (Exception e)
             {
-                var formatted = await Format(firstPassResult.Value.GetRoot(), workspace);
+                var formatted = await Format(await firstPassResult.Value.GetSyntaxRootAsync(), workspace);
                 _errors.TryAdd(firstPassResult.Key, e.ToString());
                 return (firstPassResult.Key, formatted);
             }
@@ -181,9 +181,9 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        private async Task<SyntaxNode> SingleSecondPass(KeyValuePair<string, SyntaxTree> cs, AdhocWorkspace workspace)
+        private async Task<SyntaxNode> SingleSecondPass(KeyValuePair<string, Document> cs, AdhocWorkspace workspace)
         {
-            var secondPassNode = _languageConversion.SingleSecondPass(cs);
+            var secondPassNode = await _languageConversion.SingleSecondPass(cs);
             return await Format(secondPassNode, workspace);
         }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
@@ -27,13 +28,13 @@ namespace ICSharpCode.CodeConverter.VB
             _convertedCompilation = (VisualBasicCompilation) convertedCompilation;
         }
 
-        public SyntaxTree SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)
+        public Document SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)
         {
             _sourceCompilation = sourceCompilation;
             var converted = CSharpConverter.ConvertCompilationTree((CSharpCompilation)sourceCompilation, (CSharpSyntaxTree)tree);
             var convertedTree = VBSyntaxFactory.SyntaxTree(converted);
             _convertedCompilation = _convertedCompilation.AddSyntaxTrees(convertedTree);
-            return convertedTree;
+            return null; //TODO
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
@@ -145,9 +146,9 @@ namespace ICSharpCode.CodeConverter.VB
             return children;
         }
 
-        public SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)
+        public Task<SyntaxNode> SingleSecondPass(KeyValuePair<string, Document> cs)
         {
-            return cs.Value.GetRoot();
+            return cs.Value.GetSyntaxRootAsync();
         }
 
         public string GetWarningsOrNull()

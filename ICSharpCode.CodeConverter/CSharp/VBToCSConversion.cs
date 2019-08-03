@@ -12,6 +12,8 @@ using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Simplification;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -32,9 +34,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (project != null) {
 
                 var projectInfo = ProjectInfo.Create(project.Id, project.Version, project.Name, project.AssemblyName,
-                    LanguageNames.VisualBasic, null, project.OutputFilePath,
-                    VisualBasicCompiler.CreateVisualBasicCompilationOptions(RootNamespace),
-                    VisualBasicParseOptions.Default, new DocumentInfo[0], project.ProjectReferences,
+                    LanguageNames.CSharp, null, project.OutputFilePath,
+                    CSharpCompiler.CreateCompilationOptions(),
+                    CSharpParseOptions.Default, new DocumentInfo[0], project.ProjectReferences,
                     project.MetadataReferences, project.AnalyzerReferences);
                 var convertedSolution = project.Solution.RemoveProject(project.Id).AddProject(projectInfo);
                 _convertedProject = convertedSolution.GetProject(project.Id);
@@ -43,14 +45,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             _convertedCompilation = (CSharpCompilation) convertedCompilation;
         }
 
-        public SyntaxTree SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)
+        public Document SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)
         {
             _sourceCompilation = sourceCompilation;
             var converted = VisualBasicConverter.ConvertCompilationTree((VisualBasicCompilation)sourceCompilation, _convertedCompilation, (VisualBasicSyntaxTree)tree);
             var convertedTree = SyntaxFactory.SyntaxTree(converted);
             _convertedCompilation = _convertedCompilation.AddSyntaxTrees(convertedTree);
-            _convertedProject = _convertedProject.AddDocument(tree.FilePath, converted).Project;
-            return convertedTree;
+            var convertedDocument = _convertedProject.AddDocument(tree.FilePath, converted);
+            _convertedProject = convertedDocument.Project;
+            return convertedDocument;
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
@@ -155,10 +158,14 @@ End Class";
             return children;
         }
 
-        public SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)
+        public async Task<SyntaxNode> SingleSecondPass(KeyValuePair<string, Document> cs)
         {
-            var cSharpSyntaxNode = new CompilationErrorFixer(_convertedCompilation, (CSharpSyntaxTree)cs.Value).Fix();
-            _secondPassResults.Add(cSharpSyntaxNode.SyntaxTree);
+            var doc = cs.Value.WithSyntaxRoot((await cs.Value.GetSyntaxRootAsync()).WithAdditionalAnnotations(Simplifier.Annotation));
+            var cSharpSyntaxNode = new CompilationErrorFixer((CSharpCompilation) await doc.Project.GetCompilationAsync(), (CSharpSyntaxTree) await doc.GetSyntaxTreeAsync()).Fix();
+            var simplifiedDocument = await Simplifier.ReduceAsync(doc.WithSyntaxRoot(cSharpSyntaxNode));
+            _convertedProject = simplifiedDocument.Project;
+
+            _secondPassResults.Add(await simplifiedDocument.GetSyntaxTreeAsync());
             return cSharpSyntaxNode;
         }
 
