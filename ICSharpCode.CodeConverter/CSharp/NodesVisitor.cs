@@ -1877,9 +1877,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var overrideIdentifier = CommonConversions.GetParameterizedPropertyAccessMethod(operation, out var extraArg);
                 if (overrideIdentifier != null) {
                     var expr = node.Expression.Accept(TriviaConvertingVisitor);
-                    if (expr is IdentifierNameSyntax ins) {
-                        expr = ins.WithIdentifier(SyntaxFactory.Identifier(overrideIdentifier));
-                    }
+                    var idToken = expr.DescendantTokens().Last(t => t.IsKind(SyntaxKind.IdentifierToken));
+                    expr = ReplaceRightmostIdentifierText(expr, idToken, overrideIdentifier);
 
                     var args = ConvertArgumentListOrEmpty(node.ArgumentList);
                     if (extraArg != null) {
@@ -1932,6 +1931,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                         return SyntaxFactory.ElementAccessExpression(convertedExpression,bracketedArgumentListSyntax);
                     }
                 }
+            }
+
+            private static CSharpSyntaxNode ReplaceRightmostIdentifierText(CSharpSyntaxNode expr, SyntaxToken idToken, string overrideIdentifier)
+            {
+                return expr.ReplaceToken(idToken, SyntaxFactory.Identifier(overrideIdentifier).WithTriviaFrom(idToken).WithAdditionalAnnotations(idToken.GetAnnotations()));
             }
 
             private static bool IsPropertyElementAccess(IOperation operation)

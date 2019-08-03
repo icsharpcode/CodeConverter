@@ -136,6 +136,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var lhs = (ExpressionSyntax)node.Left.Accept(_nodesVisitor);
                 var lOperation = _semanticModel.GetOperation(node.Left);
+
+                //Already dealt with by call to the same method in VisitInvocationExpression
                 if (CommonConversions.GetParameterizedPropertyAccessMethod(lOperation, out var _) != null) return SingleStatement(lhs);
                 var rhs = (ExpressionSyntax)node.Right.Accept(_nodesVisitor);
 
