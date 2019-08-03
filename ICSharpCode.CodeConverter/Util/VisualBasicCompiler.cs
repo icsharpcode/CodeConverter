@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
@@ -38,7 +39,7 @@ namespace ICSharpCode.CodeConverter.Util
             var visualBasicCompilation = LazyVisualBasicCompilation.Value;
             VisualBasicCompilation withReferences = visualBasicCompilation
                 .WithOptions(visualBasicCompilation.Options.WithRootNamespace(rootNamespace))
-                .WithReferences(references);
+                .WithReferences(visualBasicCompilation.References.Concat(references).Distinct());
             return withReferences;
         }
 

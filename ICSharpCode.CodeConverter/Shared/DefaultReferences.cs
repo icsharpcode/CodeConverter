@@ -12,6 +12,7 @@ namespace ICSharpCode.CodeConverter.Shared
     {
         private static readonly Type[] TypesToLoadAssembliesFor = {
             typeof(System.Text.Encoding),
+            typeof(Enumerable),
             typeof(System.ComponentModel.BrowsableAttribute),
             typeof(System.Dynamic.DynamicObject),
             typeof(System.Data.DataRow),

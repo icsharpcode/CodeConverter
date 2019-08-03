@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -23,7 +24,8 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static Compilation CreateCSharpCompilation(IEnumerable<MetadataReference> references)
         {
-            return LazyCSharpCompilation.Value.WithReferences(references);
+            var cSharpCompilation = LazyCSharpCompilation.Value;
+            return cSharpCompilation.WithReferences(cSharpCompilation.References.Concat(references).Distinct());
         }
 
         private static CSharpCompilation CreateCSharpCompilation()
