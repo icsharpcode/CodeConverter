@@ -599,6 +599,80 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public void TestParameterizedPropertyAndGenericInvocationAndEnumEdgeCases()
+        {
+            TestConversionVisualBasicToCSharpWithoutComments(
+@"Public Class ParameterizedPropertiesAndEnumTest
+    Public Enum MyEnum
+        First
+    End Enum
+    
+    Public Property MyProp(ByVal blah As Integer) As String
+        Get
+            Return blah
+        End Get
+        Set
+        End Set
+    End Property
+            
+
+    Public Sub ReturnWhatever(ByVal m As MyEnum)
+        Dim enumerableThing = Enumerable.Empty(Of String)
+        Select Case m
+            Case -1
+                Exit Sub
+            Case MyEnum.First
+                Exit Sub
+            Case 3
+                Me.MyProp(4) = enumerableThing.ToArray(m)
+                Exit Sub
+        End Select
+    End Sub
+End Class", @"using System.Linq;
+
+public class ParameterizedPropertiesAndEnumTest
+{
+    public enum MyEnum
+    {
+        First
+    }
+
+    public string get_MyProp(int blah)
+    {
+        return blah;
+    }
+
+    public void set_MyProp(int blah, string value)
+    {
+    }
+
+
+    public void ReturnWhatever(MyEnum m)
+    {
+        var enumerableThing = Enumerable.Empty<string>();
+        switch (m)
+        {
+            case -1:
+                {
+                    return;
+                }
+
+            case MyEnum.First:
+                {
+                    return;
+                }
+
+            case 3:
+                {
+                    this.set_MyProp(4, enumerableThing.ToArray()[(int)m]);
+                    return;
+                }
+        }
+    }
+}");
+        }
+
+        [Fact]
         public void TestReadWriteOnlyInterfaceProperty()
         {
             TestConversionVisualBasicToCSharpWithoutComments(

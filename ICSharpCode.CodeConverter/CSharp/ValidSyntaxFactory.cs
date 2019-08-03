@@ -1,6 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Linq.Expressions;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Simplification;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -40,7 +43,30 @@ namespace ICSharpCode.CodeConverter.CSharp
         
         public static CastExpressionSyntax CastExpression(TypeSyntax type, ExpressionSyntax expressionSyntax)
         {
+            expressionSyntax = ParenthesizeExpressionForCast(expressionSyntax);
             return SyntaxFactory.CastExpression(type, expressionSyntax);
+        }
+
+        /// <summary>
+        /// There are a bunch more cases, but we should let the simplifier annotation do its job
+        /// https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/
+        /// </summary>
+        private static ExpressionSyntax ParenthesizeExpressionForCast(ExpressionSyntax expressionSyntax)
+        {
+            bool boundExpression = expressionSyntax is MemberAccessExpressionSyntax ||
+                                   expressionSyntax is ConditionalAccessExpressionSyntax ||
+                                   expressionSyntax is ElementAccessExpressionSyntax ||
+                                   expressionSyntax is InvocationExpressionSyntax ||
+                                   expressionSyntax is ParenthesizedExpressionSyntax ||
+                                   expressionSyntax is LambdaExpressionSyntax ||
+                                   expressionSyntax is LiteralExpressionSyntax ||
+                                   expressionSyntax is IdentifierNameSyntax ||
+                                   expressionSyntax is ObjectCreationExpressionSyntax;
+            if (!boundExpression) {
+                expressionSyntax = SyntaxFactory.ParenthesizedExpression(expressionSyntax).WithAdditionalAnnotations(Simplifier.Annotation);
+            }
+
+            return expressionSyntax;
         }
     }
 }

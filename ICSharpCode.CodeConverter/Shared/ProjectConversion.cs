@@ -58,7 +58,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var convertedCompilation = containingProject == null
                 ? GetConvertedCompilation(compilation, languageConversion)
-                : GetConvertedCompilationWithProjectReferences(containingProject, languageConversion);
+                : await GetConvertedCompilationWithProjectReferences(containingProject, languageConversion);
 
             if (selected.Length > 0)
             {
@@ -68,7 +68,7 @@ namespace ICSharpCode.CodeConverter.Shared
             }
 
             var conversion = new ProjectConversion(compilation, new[] {syntaxTree}, languageConversion, convertedCompilation);
-            var conversionResults = ConvertProjectContents(conversion).ToList();
+            var conversionResults = (await ConvertProjectContents(conversion)).ToList();
             var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
                              ?? conversionResults.First();
             codeResult.Exceptions = conversionResults.SelectMany(x => x.Exceptions).ToArray();
@@ -91,8 +91,8 @@ namespace ICSharpCode.CodeConverter.Shared
             var compilation = await project.GetCompilationAsync();
             var syntaxTreesToConvert = compilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir));
             var projectConversion = new ProjectConversion(compilation, syntaxTreesToConvert,
-                languageConversion, GetConvertedCompilationWithProjectReferences(project, languageConversion));
-            return ConvertProjectContents(projectConversion);
+                languageConversion, await GetConvertedCompilationWithProjectReferences(project, languageConversion));
+            return await ConvertProjectContents(projectConversion);
         }
 
         public static ConversionResult ConvertProjectFile(Project project, ILanguageConversion languageConversion, params (string, string)[] textReplacements)
@@ -106,62 +106,70 @@ namespace ICSharpCode.CodeConverter.Shared
         /// </summary>
         private static Compilation GetConvertedCompilation(Compilation compilation, ILanguageConversion languageConversion)
         {
-            return languageConversion is VBToCSConversion ? CSharpCompiler.CreateCSharpCompilation(compilation.References) : (Compilation) VisualBasicCompiler.CreateVisualBasicCompilation(compilation.References);
+            var convertedCompilation = languageConversion is VBToCSConversion ? CSharpCompiler.CreateCSharpCompilation(compilation.References) : (Compilation) VisualBasicCompiler.CreateVisualBasicCompilation(compilation.References);
+            return convertedCompilation;
         }
 
-        private static Compilation GetConvertedCompilationWithProjectReferences(Project project, ILanguageConversion languageConversion)
+        private static Task<Compilation> GetConvertedCompilationWithProjectReferences(Project project, ILanguageConversion languageConversion)
         {
             return project.Solution.RemoveProject(project.Id)
                 .AddProject(project.Id, project.Name, project.AssemblyName, languageConversion.TargetLanguage)
                 .GetProject(project.Id)
                 .WithProjectReferences(project.AllProjectReferences).WithMetadataReferences(project.MetadataReferences)
-                .GetCompilationAsync().GetAwaiter().GetResult();
+                .GetCompilationAsync();
         }
 
-        private static IEnumerable<ConversionResult> ConvertProjectContents(ProjectConversion projectConversion)
+        private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(ProjectConversion projectConversion)
         {
-            using (var adhocWorkspace = new AdhocWorkspace())
-            {
-                foreach (var pathNodePair in projectConversion.Convert(adhocWorkspace))
-                {
-                    var errors = projectConversion._errors.TryRemove(pathNodePair.Key, out var nonFatalException)
+            using (var adhocWorkspace = new AdhocWorkspace()) {
+                var pathNodePairs = await Task.WhenAll(projectConversion.Convert(adhocWorkspace));
+                var results = pathNodePairs.Select(pathNodePair => {
+                    var errors = projectConversion._errors.TryRemove(pathNodePair.Path, out var nonFatalException)
                         ? new[] {nonFatalException}
                         : new string[0];
-                    yield return new ConversionResult(pathNodePair.Value.ToFullString()) { SourcePathOrNull = pathNodePair.Key, Exceptions = errors };
-                }
-            }
+                    return new ConversionResult(pathNodePair.Node.ToFullString())
+                        {SourcePathOrNull = pathNodePair.Path, Exceptions = errors};
+                });
 
-            foreach (var error in projectConversion._errors)
-            {
-                yield return new ConversionResult {SourcePathOrNull = error.Key, Exceptions = new []{ error.Value } };
+                projectConversion.AddProjectWarnings();
+
+                return results.Concat(projectConversion._errors
+                    .Select(error => new ConversionResult {SourcePathOrNull = error.Key, Exceptions = new[] {error.Value}})
+                );
             }
         }
 
-        private Dictionary<string, SyntaxNode> Convert(AdhocWorkspace adhocWorkspace)
+        private IEnumerable<Task<(string Path, SyntaxNode Node)>> Convert(AdhocWorkspace adhocWorkspace)
         {
             FirstPass();
-            var secondPassByFilePath = SecondPass(adhocWorkspace);
-            if (_showCompilationErrors) AddProjectWarnings();
-            return secondPassByFilePath;
+            return SecondPass(adhocWorkspace);
         }
 
-        private Dictionary<string, SyntaxNode> SecondPass(AdhocWorkspace workspace)
+        private IEnumerable<Task<(string Path, SyntaxNode Node)>> SecondPass(AdhocWorkspace workspace)
         {
-            var secondPassByFilePath = new Dictionary<string, SyntaxNode>();
             foreach (var firstPassResult in _firstPassResults) {
-                var treeFilePath = firstPassResult.Key;
-                try {
-                    secondPassByFilePath.Add(treeFilePath, SingleSecondPass(firstPassResult, workspace));
-                }  catch (Exception e) {
-                    secondPassByFilePath.Add(treeFilePath, Format(firstPassResult.Value.GetRoot(), workspace));
-                    _errors.TryAdd(treeFilePath, e.ToString());
-                }
+                yield return SingleSecondPassHandled(workspace, firstPassResult);
             }
-            return secondPassByFilePath;
+        }
+
+        private async Task<(string Key, SyntaxNode singleSecondPass)> SingleSecondPassHandled(AdhocWorkspace workspace, KeyValuePair<string, SyntaxTree> firstPassResult)
+        {
+            try {
+                var singleSecondPass = await SingleSecondPass(firstPassResult, workspace);
+                return (firstPassResult.Key, singleSecondPass);
+            }
+            catch (Exception e)
+            {
+                var formatted = await Format(firstPassResult.Value.GetRoot(), workspace);
+                _errors.TryAdd(firstPassResult.Key, e.ToString());
+                return (firstPassResult.Key, formatted);
+            }
         }
 
         private void AddProjectWarnings()
         {
+            if (!_showCompilationErrors) return;
+
             var nonFatalWarningsOrNull = _languageConversion.GetWarningsOrNull();
             if (!string.IsNullOrWhiteSpace(nonFatalWarningsOrNull))
             {
@@ -170,10 +178,10 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        private SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs, AdhocWorkspace workspace)
+        private async Task<SyntaxNode> SingleSecondPass(KeyValuePair<string, SyntaxTree> cs, AdhocWorkspace workspace)
         {
             var secondPassNode = _languageConversion.SingleSecondPass(cs);
-            return Format(secondPassNode, workspace);
+            return await Format(secondPassNode, workspace);
         }
 
         private void FirstPass()
@@ -238,7 +246,7 @@ namespace ICSharpCode.CodeConverter.Shared
             return root.WithAnnotatedNode(selectedNode, AnnotationConstants.SelectedNodeAnnotationKind);
         }
 
-        private SyntaxNode Format(SyntaxNode resultNode, Workspace workspace)
+        private async Task<SyntaxNode> Format(SyntaxNode resultNode, Workspace workspace)
         {
             SyntaxNode selectedNode = _handlePartialConversion ? GetSelectedNode(resultNode) : resultNode;
             SyntaxNode nodeToFormat = selectedNode ?? resultNode;

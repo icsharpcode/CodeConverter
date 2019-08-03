@@ -74,7 +74,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csType = _csCompilation.GetTypeByMetadataName(vbType.GetFullMetadataName());
             var csConvertedType = _csCompilation.GetTypeByMetadataName(vbConvertedType.GetFullMetadataName());
 
-            if (csType is null || csConvertedType is null)
+            if (csType == null || csConvertedType == null)
             {
                 if (alwaysExplicit && vbType != vbConvertedType) {
                     return TypeConversionKind.Implicit;
