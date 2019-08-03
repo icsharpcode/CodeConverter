@@ -39,7 +39,7 @@ namespace ICSharpCode.CodeConverter.Shared
             _sourceCompilation = sourceCompilation;
             _syntaxTreesToConvert = syntaxTreesToConvert.ToList();
             _handlePartialConversion = _syntaxTreesToConvert.Count() == 1;
-            languageConversion.Initialize(convertedCompilation.RemoveAllSyntaxTrees(), project);
+            languageConversion.Initialize(convertedCompilation.RemoveAllSyntaxTrees(), project).GetAwaiter().GetResult();
         }
 
         public static Task<ConversionResult> ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null) where TLanguageConversion : ILanguageConversion, new()

@@ -23,9 +23,10 @@ namespace ICSharpCode.CodeConverter.VB
         private VisualBasicCompilation _convertedCompilation;
         public string RootNamespace { get; set; }
 
-        public void Initialize(Compilation convertedCompilation, Project project)
+        public Task Initialize(Compilation convertedCompilation, Project project)
         {
             _convertedCompilation = (VisualBasicCompilation) convertedCompilation;
+            return Task.CompletedTask;
         }
 
         public Document SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)

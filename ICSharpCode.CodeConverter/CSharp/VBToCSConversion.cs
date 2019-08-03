@@ -13,6 +13,7 @@ using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Simplification;
 
 namespace ICSharpCode.CodeConverter.CSharp
@@ -24,31 +25,64 @@ namespace ICSharpCode.CodeConverter.CSharp
         private CSharpCompilation _convertedCompilation;
         private Project _project;
         private Project _convertedProject;
+        private CSharpCompilation _csharpViewOfVbSymbols;
 
         public string RootNamespace { get; set; }
 
 
-        public void Initialize(Compilation convertedCompilation, Project project)
+        public async Task Initialize(Compilation convertedCompilation, Project project)
         {
             _project = project;
+            _convertedCompilation = (CSharpCompilation) convertedCompilation;
             if (project != null) {
 
-                var projectInfo = ProjectInfo.Create(project.Id, project.Version, project.Name, project.AssemblyName,
-                    LanguageNames.CSharp, null, project.OutputFilePath,
-                    CSharpCompiler.CreateCompilationOptions(),
-                    CSharpParseOptions.Default, new DocumentInfo[0], project.ProjectReferences,
-                    project.MetadataReferences, project.AnalyzerReferences);
+                var projectInfo = CreateProjectInfo(project, project.Id, project.Name, CSharpCompiler.CreateCompilationOptions(), project.ProjectReferences);
                 var convertedSolution = project.Solution.RemoveProject(project.Id).AddProject(projectInfo);
                 _convertedProject = convertedSolution.GetProject(project.Id);
+                _csharpViewOfVbSymbols = await GetCSharpCompilationReferencingProject(project);
             }
+        }
 
-            _convertedCompilation = (CSharpCompilation) convertedCompilation;
+        private async Task<CSharpCompilation> GetCSharpCompilationReferencingProject(Project project)
+        {
+            var baseOptions = CSharpCompiler.CreateCompilationOptions();
+            var options = WithMetadataImportOptionsAll(baseOptions);
+            var viewerId = ProjectId.CreateNewId();
+            var projectReferences = project.ProjectReferences.Concat(new[] {new ProjectReference(project.Id)});
+            var viewerProjectInfo = CreateProjectInfo(project, viewerId, project.Name + viewerId, options,
+                projectReferences);
+            var csharpViewOfVbProject = project.Solution.AddProject(viewerProjectInfo).GetProject(viewerId);
+            return (CSharpCompilation) await csharpViewOfVbProject.GetCompilationAsync();
+        }
+
+        /// <summary>
+        /// This method becomes public in CodeAnalysis 3.1 and hence we can be confident it won't disappear.
+        /// Need to use reflection for now until that version is widely enough deployed as taking a dependency would mean everyone needs latest VS version.
+        /// </summary>
+        private CSharpCompilationOptions WithMetadataImportOptionsAll(CSharpCompilationOptions baseOptions)
+        {
+            Type optionsType = baseOptions.GetType();
+            var withMetadataImportOptions = optionsType
+                .GetMethod("WithMetadataImportOptions", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+            var options =
+                (CSharpCompilationOptions) withMetadataImportOptions.Invoke(baseOptions,
+                    new object[] {(byte)2 /*MetadataImportOptions.All*/});
+            return options;
+        }
+
+        private static ProjectInfo CreateProjectInfo(Project project, ProjectId projectId, string projectName, CSharpCompilationOptions cSharpCompilationOptions, IEnumerable<ProjectReference> projectProjectReferences)
+        {
+            return ProjectInfo.Create(projectId, project.Version, projectName, project.AssemblyName,
+                LanguageNames.CSharp, null, project.OutputFilePath,
+                cSharpCompilationOptions,
+                CSharpParseOptions.Default, new DocumentInfo[0], projectProjectReferences,
+                project.MetadataReferences, project.AnalyzerReferences);
         }
 
         public Document SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)
         {
             _sourceCompilation = sourceCompilation;
-            var converted = VisualBasicConverter.ConvertCompilationTree((VisualBasicCompilation)sourceCompilation, _convertedCompilation, (VisualBasicSyntaxTree)tree);
+            var converted = VisualBasicConverter.ConvertCompilationTree((VisualBasicCompilation)sourceCompilation, _csharpViewOfVbSymbols, (VisualBasicSyntaxTree)tree);
             var convertedTree = SyntaxFactory.SyntaxTree(converted);
             _convertedCompilation = _convertedCompilation.AddSyntaxTrees(convertedTree);
             var convertedDocument = _convertedProject.AddDocument(tree.FilePath, converted);
