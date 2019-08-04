@@ -147,9 +147,9 @@ End Class";
         {
             var doc = cs.Value;
             var cSharpSyntaxNode = new CompilationErrorFixer((CSharpCompilation) await doc.Project.GetCompilationAsync(), (CSharpSyntaxTree) await doc.GetSyntaxTreeAsync()).Fix();
-            var simplifiedDocument = await doc.WithSimplifiedSyntaxRoot(cSharpSyntaxNode);
+            var simplifiedDocument = doc.WithSyntaxRoot(cSharpSyntaxNode);
             _convertedCsProject = simplifiedDocument.Project;
-            return cSharpSyntaxNode;
+            return await simplifiedDocument.GetSyntaxRootAsync();
         }
 
         public async Task<string> GetWarningsOrNull()

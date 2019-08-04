@@ -1561,7 +1561,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 RefKind refKind = RefKind.None;
                 if (symbol != null) {
                     int argId = ((VBSyntax.ArgumentListSyntax)node.Parent).Arguments.IndexOf(node);
-                    var parameters = symbol.GetParameters();
+                    var parameters = GetCsSymbolIfPossible(symbol).GetParameters();
                     //WARNING: If named parameters can reach here it won't work properly for them
                     if (argId < parameters.Count()) {
                         refKind = parameters[argId].RefKind;
@@ -1591,6 +1591,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxFactory.Argument(nameColon, token, expression);
                 } else {
                     return SyntaxFactory.Argument(nameColon, token, SyntaxFactory.IdentifierName(local.ID).WithAdditionalAnnotations(AdditionalLocals.Annotation));
+                }
+            }
+
+            private ISymbol GetCsSymbolIfPossible(ISymbol symbol)
+            {
+                try {
+                    return SymbolFinder.FindSimilarSymbols(symbol, _csCompilation).FirstOrDefault() ?? symbol;
+                } catch (InvalidOperationException) {
+                    //TODO Report via IProgress. This happens sometimes for generic symbols, would be good to understand why, and if there's any remedy
+                    return symbol;
                 }
             }
 
