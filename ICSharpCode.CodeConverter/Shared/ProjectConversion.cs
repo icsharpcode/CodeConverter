@@ -105,49 +105,48 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(ProjectConversion projectConversion)
         {
-            using (var adhocWorkspace = new AdhocWorkspace()) {
-                var pathNodePairs = await Task.WhenAll(await projectConversion.Convert(adhocWorkspace));
-                var results = pathNodePairs.Select(pathNodePair => {
-                    var errors = projectConversion._errors.TryRemove(pathNodePair.Path, out var nonFatalException)
-                        ? new[] {nonFatalException}
-                        : new string[0];
-                    return new ConversionResult(pathNodePair.Node.ToFullString())
-                        {SourcePathOrNull = pathNodePair.Path, Exceptions = errors};
-                });
+            var pathNodePairs = await Task.WhenAll(await projectConversion.Convert());
+            var results = pathNodePairs.Select(pathNodePair => {
+                var errors = projectConversion._errors.TryRemove(pathNodePair.Path, out var nonFatalException)
+                    ? new[] {nonFatalException}
+                    : new string[0];
+                return new ConversionResult(pathNodePair.Node.ToFullString())
+                    {SourcePathOrNull = pathNodePair.Path, Exceptions = errors};
+            });
 
-                await projectConversion.AddProjectWarnings();
+            await projectConversion.AddProjectWarnings();
 
-                return results.Concat(projectConversion._errors
-                    .Select(error => new ConversionResult {SourcePathOrNull = error.Key, Exceptions = new[] {error.Value}})
-                );
-            }
+            return results.Concat(projectConversion._errors
+                .Select(error => new ConversionResult {SourcePathOrNull = error.Key, Exceptions = new[] {error.Value}})
+            );
         }
 
-        private async Task<IEnumerable<Task<(string Path, SyntaxNode Node)>>> Convert(AdhocWorkspace adhocWorkspace)
+        private async Task<IEnumerable<Task<(string Path, SyntaxNode Node)>>> Convert()
         {
             await FirstPass();
-            return SecondPass(adhocWorkspace);
+            return SecondPass();
         }
 
-        private IEnumerable<Task<(string Path, SyntaxNode Node)>> SecondPass(AdhocWorkspace workspace)
+        private IEnumerable<Task<(string Path, SyntaxNode Node)>> SecondPass()
         {
             foreach (var firstPassResult in _firstPassResults) {
-                yield return SingleSecondPassHandled(workspace, firstPassResult);
+                yield return SingleSecondPassHandled(firstPassResult);
             }
         }
 
-        private async Task<(string Key, SyntaxNode singleSecondPass)> SingleSecondPassHandled(AdhocWorkspace workspace, KeyValuePair<string, Document> firstPassResult)
+        private async Task<(string Key, SyntaxNode singleSecondPass)> SingleSecondPassHandled(KeyValuePair<string, Document> firstPassResult)
         {
+            var convertedDoc = firstPassResult.Value;
             try {
-                var singleSecondPass = await SingleSecondPass(firstPassResult, workspace);
-                return (firstPassResult.Key, singleSecondPass);
+                convertedDoc = convertedDoc.WithSyntaxRoot(await _languageConversion.SingleSecondPass(firstPassResult));
             }
             catch (Exception e)
             {
-                var formatted = await Format(await firstPassResult.Value.GetSyntaxRootAsync(), workspace);
                 _errors.TryAdd(firstPassResult.Key, e.ToString());
-                return (firstPassResult.Key, formatted);
             }
+
+            var singleSecondPass = await Format(convertedDoc);
+            return (firstPassResult.Key, singleSecondPass);
         }
 
         private async Task AddProjectWarnings()
@@ -160,12 +159,6 @@ namespace ICSharpCode.CodeConverter.Shared
                 var warningsDescription = Path.Combine(_sourceCompilation.AssemblyName, "ConversionWarnings.txt");
                 _errors.TryAdd(warningsDescription, nonFatalWarningsOrNull);
             }
-        }
-
-        private async Task<SyntaxNode> SingleSecondPass(KeyValuePair<string, Document> cs, AdhocWorkspace workspace)
-        {
-            var secondPassNode = await _languageConversion.SingleSecondPass(cs);
-            return await Format(secondPassNode, workspace);
         }
 
         private async Task FirstPass()
@@ -198,11 +191,13 @@ namespace ICSharpCode.CodeConverter.Shared
             return document.WithSyntaxRoot(withAnnotatedSelection);
         }
 
-        private async Task<SyntaxNode> Format(SyntaxNode resultNode, Workspace workspace)
+        private async Task<SyntaxNode> Format(Document document)
         {
-            SyntaxNode selectedNode = _returnSelectedNode ? GetSelectedNode(resultNode) : resultNode;
-            SyntaxNode nodeToFormat = selectedNode ?? resultNode;
-            return Formatter.Format(nodeToFormat, workspace);
+            document = await document.WithSimplifiedSyntaxRoot(await document.GetSyntaxRootAsync());
+            var syntaxRoot = await document.GetSyntaxRootAsync();
+            var selectedNode = _returnSelectedNode ? GetSelectedNode(syntaxRoot) : syntaxRoot;
+            var formatted = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
+            return formatted;
         }
 
         private SyntaxNode GetSelectedNode(SyntaxNode resultNode)
