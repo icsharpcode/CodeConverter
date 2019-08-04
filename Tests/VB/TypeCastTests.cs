@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace CodeConverter.Tests.VB
@@ -6,9 +7,9 @@ namespace CodeConverter.Tests.VB
     public class TypeCastTests : ConverterTestBase
     {
         [Fact]
-        public void CastObjectToInteger()
+        public async Task CastObjectToInteger()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = 5;
@@ -22,9 +23,9 @@ End Sub
         }
 
         [Fact]
-        public void CastObjectToString()
+        public async Task CastObjectToString()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = ""Test"";
@@ -38,9 +39,9 @@ End Sub
         }
 
         [Fact]
-        public void CastObjectToGenericList()
+        public async Task CastObjectToGenericList()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = new System.Collections.Generic.List<int>();
@@ -54,9 +55,9 @@ End Sub
         }
 
         [Fact]
-        public void TryCastObjectToInteger()
+        public async Task TryCastObjectToInteger()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = 5;
@@ -70,9 +71,9 @@ End Sub
         }
 
         [Fact]
-        public void TryCastObjectToGenericList()
+        public async Task TryCastObjectToGenericList()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = new System.Collections.Generic.List<int>();
@@ -86,9 +87,9 @@ End Sub
         }
 
         [Fact]
-        public void CastConstantNumberToLong()
+        public async Task CastConstantNumberToLong()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = 5L;
@@ -100,9 +101,9 @@ End Sub
         }
 
         [Fact]
-        public void CastConstantNumberToFloat()
+        public async Task CastConstantNumberToFloat()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = 5.0f;
@@ -114,9 +115,9 @@ End Sub
         }
 
         [Fact]
-        public void CastConstantNumberToDecimal()
+        public async Task CastConstantNumberToDecimal()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = 5.0m;
@@ -128,9 +129,9 @@ End Sub
         }
 
         [Fact]
-        public void CastConstantNumberToCharacter()
+        public async Task CastConstantNumberToCharacter()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     char CR = (char)0xD;

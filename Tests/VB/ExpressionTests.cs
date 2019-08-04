@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace CodeConverter.Tests.VB
@@ -6,9 +7,9 @@ namespace CodeConverter.Tests.VB
     public class ExpressionTests : ConverterTestBase
     {
         [Fact]
-        public void MultilineString()
+        public async Task MultilineString()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -25,9 +26,9 @@ End Class");
 
 
         [Fact]
-        public void StringInterpolationWithDoubleQuotes()
+        public async Task StringInterpolationWithDoubleQuotes()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 namespace global::InnerNamespace
@@ -64,9 +65,9 @@ End Namespace");
         }
 
         [Fact]
-        public void ConditionalExpression()
+        public async Task ConditionalExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -80,9 +81,9 @@ End Class");
         }
 
         [Fact]
-        public void IfIsPatternExpression()
+        public async Task IfIsPatternExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     private static int GetLength(object node)
     {
@@ -115,9 +116,9 @@ End Class");
         }
 
         [Fact]
-        public void DeclarationExpression()
+        public async Task DeclarationExpression()
         {
-            TestConversionCSharpToVisualBasic(@"using System.Collections.Generic;
+            await TestConversionCSharpToVisualBasic(@"using System.Collections.Generic;
 
 class TestClass
 {
@@ -138,9 +139,9 @@ End Class");
         }
 
         [Fact]
-        public void ThrowExpression()
+        public async Task ThrowExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -161,9 +162,9 @@ End Class");
         }
 
         [Fact]
-        public void NameOf()
+        public async Task NameOf()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     private string n = nameof(TestMethod);
 
@@ -179,9 +180,9 @@ End Class");
         }
 
         [Fact]
-        public void NullCoalescingExpression()
+        public async Task NullCoalescingExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -195,9 +196,9 @@ End Class");
         }
 
         [Fact]
-        public void MemberAccessAndInvocationExpression()
+        public async Task MemberAccessAndInvocationExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -217,9 +218,9 @@ End Class");
         }
 
         [Fact]
-        public void ShiftOperators()
+        public async Task ShiftOperators()
         {
-            TestConversionCSharpToVisualBasic(@"public class Test
+            await TestConversionCSharpToVisualBasic(@"public class Test
 {
     public static void Main()
     {
@@ -241,9 +242,9 @@ End Class");
         }
 
         [Fact]
-        public void ElvisOperatorExpression()
+        public async Task ElvisOperatorExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -263,9 +264,9 @@ End Class");
         }
 
         [Fact]
-        public void ObjectInitializerExpression()
+        public async Task ObjectInitializerExpression()
         {
-            TestConversionCSharpToVisualBasic(@"
+            await TestConversionCSharpToVisualBasic(@"
 class StudentName
 {
     public string LastName, FirstName;
@@ -295,9 +296,9 @@ End Class");
         }
 
         [Fact]
-        public void ObjectInitializerExpression2()
+        public async Task ObjectInitializerExpression2()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -317,9 +318,9 @@ End Class");
         }
 
         [Fact]
-        public void ObjectInitializerExpression3()
+        public async Task ObjectInitializerExpression3()
         {
-            TestConversionCSharpToVisualBasic(@"using System.Collections.Generic;
+            await TestConversionCSharpToVisualBasic(@"using System.Collections.Generic;
 
 internal class SomeSettings
 {
@@ -346,9 +347,9 @@ End Class");
         }
 
         [Fact]
-        public void ThisMemberAccessExpression()
+        public async Task ThisMemberAccessExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     private int member;
 
@@ -366,9 +367,9 @@ End Class");
         }
 
         [Fact]
-        public void BaseMemberAccessExpression()
+        public async Task BaseMemberAccessExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class BaseTestClass
+            await TestConversionCSharpToVisualBasic(@"class BaseTestClass
 {
     public int member;
 }
@@ -393,9 +394,9 @@ End Class");
         }
 
         [Fact]
-        public void ReferenceTypeComparison()
+        public async Task ReferenceTypeComparison()
         {
-            TestConversionCSharpToVisualBasic(@"public static bool AreTwoObjectsReferenceEqual()
+            await TestConversionCSharpToVisualBasic(@"public static bool AreTwoObjectsReferenceEqual()
 {
     return new object() == new object();
 }", @"Public Shared Function AreTwoObjectsReferenceEqual() As Boolean
@@ -404,9 +405,9 @@ End Function");
         }
 
         [Fact]
-        public void TupleType()
+        public async Task TupleType()
         {
-            TestConversionCSharpToVisualBasic(@"public interface ILanguageConversion 
+            await TestConversionCSharpToVisualBasic(@"public interface ILanguageConversion 
 {
     IReadOnlyCollection<(string, string)> GetProjectTypeGuidMappings();
     IEnumerable<(string, string)> GetProjectFileReplacementRegexes();
@@ -417,9 +418,9 @@ End Interface");
         }
 
         [Fact]
-        public void DelegateExpression()
+        public async Task DelegateExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass 
+            await TestConversionCSharpToVisualBasic(@"class TestClass 
 {
 
     private static Action<int> m_Event1 = delegate { };
@@ -442,9 +443,9 @@ End Class");
         }
 
         [Fact]
-        public void LambdaBodyExpression()
+        public async Task LambdaBodyExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass 
+            await TestConversionCSharpToVisualBasic(@"class TestClass 
 {
     void TestMethod()
     {
@@ -469,9 +470,9 @@ End Class");
         }
 
         [Fact]
-        public void Await()
+        public async Task Await()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass 
+            await TestConversionCSharpToVisualBasic(@"class TestClass 
 {
     Task<int> SomeAsyncMethod()
     {
@@ -496,9 +497,9 @@ End Class");
         }
 
         [Fact]
-        public void Linq1()
+        public async Task Linq1()
         {
-            TestConversionCSharpToVisualBasic(@"static void SimpleQuery()
+            await TestConversionCSharpToVisualBasic(@"static void SimpleQuery()
 {
     int[] numbers = { 7, 9, 5, 3, 6 };
  
@@ -520,9 +521,9 @@ End Sub");
         }
 
         [Fact]
-        public void Linq2()
+        public async Task Linq2()
         {
-            TestConversionCSharpToVisualBasic(@"public static void Linq40() 
+            await TestConversionCSharpToVisualBasic(@"public static void Linq40() 
     { 
         int[] numbers = { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 }; 
       
@@ -561,9 +562,9 @@ End Sub");
         }
 
         [Fact]
-        public void Linq3()
+        public async Task Linq3()
         {
-            TestConversionCSharpToVisualBasic(@"class Product {
+            await TestConversionCSharpToVisualBasic(@"class Product {
     public string Category;
     public string ProductName;
 }
@@ -614,9 +615,9 @@ End Class");
         }
 
         [Fact]
-        public void Linq4()
+        public async Task Linq4()
         {
-            TestConversionCSharpToVisualBasic(@"public void Linq103() 
+            await TestConversionCSharpToVisualBasic(@"public void Linq103() 
 { 
     string[] categories = new string[]{  
         ""Beverages"",  

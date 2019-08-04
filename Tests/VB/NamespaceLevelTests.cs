@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace CodeConverter.Tests.VB
@@ -6,9 +7,9 @@ namespace CodeConverter.Tests.VB
     public class NamespaceLevelTests : ConverterTestBase
     {
         [Fact]
-        public void TestNamespace()
+        public async Task TestNamespace()
         {
-            TestConversionCSharpToVisualBasic(@"namespace Test
+            await TestConversionCSharpToVisualBasic(@"namespace Test
 {
     
 }", @"Namespace Test
@@ -16,18 +17,18 @@ End Namespace");
         }
 
         [Fact]
-        public void TestTopLevelAttribute()
+        public async Task TestTopLevelAttribute()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"[assembly: CLSCompliant(true)]",
                 @"
 <Assembly: CLSCompliant(True)>");
         }
 
         [Fact]
-        public void TestImports()
+        public async Task TestImports()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using SomeNamespace;
 using VB = Microsoft.VisualBasic;",
                 @"Imports SomeNamespace
@@ -35,9 +36,9 @@ Imports VB = Microsoft.VisualBasic");
         }
 
         [Fact]
-        public void TestClass()
+        public async Task TestClass()
         {
-            TestConversionCSharpToVisualBasic(@"namespace Test.@class
+            await TestConversionCSharpToVisualBasic(@"namespace Test.@class
 {
     class TestClass<T>
     {
@@ -49,9 +50,9 @@ End Namespace");
         }
 
         [Fact]
-        public void TestInternalStaticClass()
+        public async Task TestInternalStaticClass()
         {
-            TestConversionCSharpToVisualBasic(@"namespace Test.@class
+            await TestConversionCSharpToVisualBasic(@"namespace Test.@class
 {
     internal static class TestClass
     {
@@ -70,9 +71,9 @@ End Namespace");
         }
 
         [Fact]
-        public void TestAbstractClass()
+        public async Task TestAbstractClass()
         {
-            TestConversionCSharpToVisualBasic(@"namespace Test.@class
+            await TestConversionCSharpToVisualBasic(@"namespace Test.@class
 {
     abstract class TestClass
     {
@@ -84,9 +85,9 @@ End Namespace");
         }
 
         [Fact]
-        public void TestSealedClass()
+        public async Task TestSealedClass()
         {
-            TestConversionCSharpToVisualBasic(@"namespace Test.@class
+            await TestConversionCSharpToVisualBasic(@"namespace Test.@class
 {
     sealed class TestClass
     {
@@ -98,9 +99,9 @@ End Namespace");
         }
 
         [Fact]
-        public void TestInterface()
+        public async Task TestInterface()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"interface ITest : System.IDisposable
 {
     void Test ();
@@ -112,9 +113,9 @@ End Interface");
         }
 
         [Fact]
-        public void TestInterfaceWithTwoMembers()
+        public async Task TestInterfaceWithTwoMembers()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"interface ITest : System.IDisposable
 {
     void Test ();
@@ -128,9 +129,9 @@ End Interface");
         }
 
         [Fact]
-        public void TestEnum()
+        public async Task TestEnum()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
     @"internal enum ExceptionResource
 {
     Argument_ImplementIComparable,
@@ -146,9 +147,9 @@ End Enum");
         }
 
         [Fact]
-        public void TestEnumWithExplicitBaseType()
+        public async Task TestEnumWithExplicitBaseType()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
     @"public enum ExceptionResource : byte
 {
     Argument_ImplementIComparable
@@ -158,9 +159,9 @@ End Enum");
         }
 
         [Fact]
-        public void TestClassInheritanceList()
+        public async Task TestClassInheritanceList()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
     @"abstract class ClassA : System.IDisposable
 {
     protected abstract void Test();
@@ -170,7 +171,7 @@ End Enum");
     Protected MustOverride Sub Test()
 End Class");
 
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"abstract class ClassA : System.EventArgs, System.IDisposable
 {
     protected abstract void Test();
@@ -183,9 +184,9 @@ End Class");
         }
 
         [Fact]
-        public void TestStruct()
+        public async Task TestStruct()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
     @"struct MyType : System.IComparable<MyType>
 {
     void Test() {}
@@ -198,26 +199,26 @@ End Structure");
         }
 
         [Fact]
-        public void TestDelegate()
+        public async Task TestDelegate()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"public delegate void Test();",
                 @"Public Delegate Sub Test()");
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"public delegate int Test();",
                 @"Public Delegate Function Test() As Integer");
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"public delegate void Test(int x);",
                 @"Public Delegate Sub Test(ByVal x As Integer)");
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"public delegate void Test(ref int x);",
                 @"Public Delegate Sub Test(ByRef x As Integer)");
         }
 
         [Fact]
-        public void MoveImportsStatement()
+        public async Task MoveImportsStatement()
         {
-            TestConversionCSharpToVisualBasic("namespace test { using SomeNamespace; }",
+            await TestConversionCSharpToVisualBasic("namespace test { using SomeNamespace; }",
                         @"Imports SomeNamespace
 
 Namespace test
@@ -225,9 +226,9 @@ End Namespace");
         }
 
         [Fact]
-        public void ClassImplementsInterface()
+        public async Task ClassImplementsInterface()
         {
-            TestConversionCSharpToVisualBasic(@"public class ToBeDisplayed : iDisplay
+            await TestConversionCSharpToVisualBasic(@"public class ToBeDisplayed : iDisplay
 {
     public string Name { get; set; }
 
@@ -257,18 +258,18 @@ End Interface");
         }
 
         [Fact]
-        public void ClassImplementsInterface2()
+        public async Task ClassImplementsInterface2()
         {
-            TestConversionCSharpToVisualBasic("class test : System.IComparable { }",
+            await TestConversionCSharpToVisualBasic("class test : System.IComparable { }",
 @"Friend Class test
     Implements System.IComparable
 End Class");
         }
 
         [Fact]
-        public void ClassInheritsClass()
+        public async Task ClassInheritsClass()
         {
-            TestConversionCSharpToVisualBasic("using System.IO; class test : InvalidDataException { }",
+            await TestConversionCSharpToVisualBasic("using System.IO; class test : InvalidDataException { }",
 @"Imports System.IO
 
 Friend Class test
@@ -277,9 +278,9 @@ End Class");
         }
 
         [Fact]
-        public void ClassInheritsClass2()
+        public async Task ClassInheritsClass2()
         {
-            TestConversionCSharpToVisualBasic("class test : System.IO.InvalidDataException { }",
+            await TestConversionCSharpToVisualBasic("class test : System.IO.InvalidDataException { }",
 @"Friend Class test
     Inherits System.IO.InvalidDataException
 End Class");

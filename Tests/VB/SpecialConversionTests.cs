@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -7,9 +8,9 @@ namespace CodeConverter.Tests.VB
     public class SpecialConversionTests : ConverterTestBase
     {
         [Fact]
-        public void TestSimpleInlineAssign()
+        public async Task TestSimpleInlineAssign()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     void TestMethod()
@@ -34,9 +35,9 @@ End Class");
         }
 
         [Fact]
-        public void TestSimplePostIncrementAssign()
+        public async Task TestSimplePostIncrementAssign()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     void TestMethod()
@@ -53,9 +54,9 @@ End Class");
         }
 
         [Fact]
-        public void RaiseEventOneLiners()
+        public async Task RaiseEventOneLiners()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 class TestClass
@@ -84,9 +85,9 @@ End Class");
         }
 
         [Fact]
-        public void RaiseEventInElse()
+        public async Task RaiseEventInElse()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 public class Foo
@@ -117,9 +118,9 @@ End Class
         }
 
         [Fact]
-        public void RaiseEventReversedConditional()
+        public async Task RaiseEventReversedConditional()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 class TestClass
@@ -142,9 +143,9 @@ End Class");
         }
 
         [Fact]
-        public void RaiseEventQualified()
+        public async Task RaiseEventQualified()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 class TestClass
@@ -167,9 +168,9 @@ End Class");
         }
 
         [Fact]
-        public void RaiseEventInNestedBrackets()
+        public async Task RaiseEventInNestedBrackets()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 class TestClass
@@ -192,9 +193,9 @@ End Class");
         }
 
         [Fact]
-        public void RaiseEventQualifiedWithNestedBrackets()
+        public async Task RaiseEventQualifiedWithNestedBrackets()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 class TestClass
@@ -217,9 +218,9 @@ End Class");
         }
 
         [Fact]
-        public void CharacterizeRaiseEventWithMissingDefinitionActsLikeFunc()
+        public async Task CharacterizeRaiseEventWithMissingDefinitionActsLikeFunc()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 class TestClass
@@ -241,9 +242,9 @@ End Class");
         /// Intentionally unknown type used to ensure imperfect compilation errs towards common case
         /// </summary>
         [Fact]
-        public void IfStatementSimilarToRaiseEvent()
+        public async Task IfStatementSimilarToRaiseEvent()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     void TestMethod()
@@ -256,7 +257,7 @@ End Class");
     End Sub
 End Class", expectCompilationErrors: true);
             // regression test:
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     void TestMethod()
@@ -269,7 +270,7 @@ End Class", expectCompilationErrors: true);
     End Sub
 End Class", expectCompilationErrors: true);
             // with braces:
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     void TestMethod()
@@ -283,7 +284,7 @@ End Class", expectCompilationErrors: true);
         End If
     End Sub
 End Class", expectCompilationErrors: true);
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     void TestMethod()
@@ -298,7 +299,7 @@ End Class", expectCompilationErrors: true);
     End Sub
 End Class", expectCompilationErrors: true);
             // another bug related to the IfStatement code:
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     void TestMethod()
@@ -323,9 +324,9 @@ End Class", expectCompilationErrors: true);
         /// This means Funcs/Actions need to be wrapped in a typed constructor such as New Action(Of String)
         /// </summary>
         [Fact]
-        public void AddressOfWhereVbTypeInferenceIsWeaker()
+        public async Task AddressOfWhereVbTypeInferenceIsWeaker()
         {
-            TestConversionCSharpToVisualBasic(@"using System;
+            await TestConversionCSharpToVisualBasic(@"using System;
 
 static class TestClass
 {
@@ -374,9 +375,9 @@ End Module");
         }
 
         [Fact]
-        public void HexAndBinaryLiterals()
+        public async Task HexAndBinaryLiterals()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class Test
 {
     public int CR = 0x0D * 0b1;

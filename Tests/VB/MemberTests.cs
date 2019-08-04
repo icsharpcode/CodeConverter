@@ -11,9 +11,9 @@ namespace CodeConverter.Tests.VB
     public class MemberTests : ConverterTestBase
     {
         [Fact]
-        public void TestField()
+        public async Task TestField()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     const int answer = 42;
@@ -27,9 +27,9 @@ End Class");
         }
 
         [Fact]
-        public void TestMethod()
+        public async Task TestMethod()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class, new where T2 : struct
@@ -50,9 +50,9 @@ End Class");
         }
 
         [Fact]
-        public void TestMethodWithReturnType()
+        public async Task TestMethodWithReturnType()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     public int TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class, new where T2 : struct
@@ -69,9 +69,9 @@ End Class");
         }
 
         [Fact]
-        public void TestStaticMethod()
+        public async Task TestStaticMethod()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     public static void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class, new where T2 : struct
@@ -92,9 +92,9 @@ End Class");
         }
 
         [Fact]
-        public void TestAbstractMethod()
+        public async Task TestAbstractMethod()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"abstract class TestClass
 {
     public abstract void TestMethod();
@@ -104,9 +104,9 @@ End Class");
         }
 
         [Fact]
-        public void TestNewMethodIsOverloadsNotShadows()
+        public async Task TestNewMethodIsOverloadsNotShadows()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     public void TestMethod()
@@ -145,10 +145,10 @@ End Class");
 
 
         [Fact]
-        public void OperatorOverloads()
+        public async Task OperatorOverloads()
         {
             // Note a couple map to the same thing in C# so occasionally the result won't compile. The user can manually decide what to do in such scenarios.
-            TestConversionCSharpToVisualBasic(@"public class AcmeClass
+            await TestConversionCSharpToVisualBasic(@"public class AcmeClass
 {
     public static AcmeClass operator +(int i, AcmeClass ac)
     {
@@ -290,9 +290,9 @@ End Class");
         }
 
         [Fact]
-        public void TestSealedMethod()
+        public async Task TestSealedMethod()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     public sealed void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class, new where T2 : struct
@@ -313,9 +313,9 @@ End Class");
         }
 
         [Fact]
-        public void TestExtensionMethod()
+        public async Task TestExtensionMethod()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"static class TestClass
 {
     public static void TestMethod(this String str)
@@ -339,9 +339,9 @@ End Module");
         }
 
         [Fact]
-        public void TestExtensionMethodWithExistingImport()
+        public async Task TestExtensionMethodWithExistingImport()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System.Runtime.CompilerServices;
 
 static class TestClass
@@ -359,9 +359,9 @@ End Module");
         }
 
         [Fact]
-        public void TestProperty()
+        public async Task TestProperty()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     public int Test { get; set; }
@@ -396,9 +396,9 @@ End Class");
         }
 
         [Fact]
-        public void TestPropertyWithExpressionBody()
+        public async Task TestPropertyWithExpressionBody()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"public class ConversionResult
 {
     private string _sourcePathOrNull;
@@ -422,9 +422,9 @@ End Class");
         }
 
         [Fact]
-        public void TestOmmittedAccessorsReplacedWithExpressionBody()
+        public async Task TestOmmittedAccessorsReplacedWithExpressionBody()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class MyFavColor  
 {  
     private string[] favColor => new string[] {""Red"", ""Green""};
@@ -446,9 +446,9 @@ End Class");
         }
 
         [Fact]
-        public void TestPropertyWithExpressionBodyThatCanBeStatement()
+        public async Task TestPropertyWithExpressionBodyThatCanBeStatement()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"public class ConversionResult
 {
     private int _num;
@@ -478,9 +478,9 @@ End Class");
         }
 
         [Fact]
-        public void TestPropertyWithAttribute()
+        public async Task TestPropertyWithAttribute()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
@@ -493,9 +493,9 @@ End Class
         }
 
         [Fact]
-        public void TestClassWithGlobalAttribute()
+        public async Task TestClassWithGlobalAttribute()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"[global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
 internal class Resources
 {
@@ -507,9 +507,9 @@ End Class
         }
 
         [Fact]
-        public void TestConstructor()
+        public async Task TestConstructor()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass<T, T2, T3> where T : class, new where T2 : struct
 {
     public TestClass(out T argument, ref T2 argument2, T3 argument3)
@@ -525,9 +525,9 @@ End Class");
 
 
         [Fact]
-        public void TestStaticConstructor()
+        public async Task TestStaticConstructor()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"static SurroundingClass()
 {
 }", @"Shared Sub New()
@@ -535,9 +535,9 @@ End Sub");
         }
 
         [Fact]
-        public void TestConstructorCallingBase()
+        public async Task TestConstructorCallingBase()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"public class MyBaseClass
 {
     public MyBaseClass(object o)
@@ -567,9 +567,9 @@ End Class");
         }
 
         [Fact]
-        public void TestDestructor()
+        public async Task TestDestructor()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     ~TestClass()
@@ -582,9 +582,9 @@ End Class");
         }
 
         [Fact]
-        public void TestEvent()
+        public async Task TestEvent()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     public event EventHandler MyEvent;
@@ -594,9 +594,9 @@ End Class");
         }
 
         [Fact]
-        public void TestCustomEvent()
+        public async Task TestCustomEvent()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 class TestClass
@@ -628,9 +628,9 @@ End Class");
         }
 
         [Fact]
-        public void TestIndexer()
+        public async Task TestIndexer()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     private int[] _Items;

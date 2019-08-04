@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace CodeConverter.Tests.CSharp
@@ -10,10 +11,10 @@ namespace CodeConverter.Tests.CSharp
         }
 
         [Fact]
-        public void RootNamespaceIsExplicit()
+        public async Task RootNamespaceIsExplicit()
         {
             // Auto comment testing not used since it can't handle the added namespace
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class AClassInRootNamespace
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class AClassInRootNamespace
 End Class
 
 Namespace NestedWithinRoot
@@ -36,10 +37,10 @@ End Namespace",
         }
 
         [Fact]
-        public void RootNamespaceIsExplicitWithSingleClass()
+        public async Task RootNamespaceIsExplicitWithSingleClass()
         {
             // Auto comment testing not used since it can't handle the added namespace
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class AClassInRootNamespace
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class AClassInRootNamespace
 End Class",
                 @"namespace TheRootNamespace
 {
@@ -50,10 +51,10 @@ End Class",
         }
 
         [Fact]
-        public void RootNamespaceIsExplicitForSingleNamespace()
+        public async Task RootNamespaceIsExplicitForSingleNamespace()
         {
             // Auto comment testing not used since it can't handle the added namespace
-            TestConversionVisualBasicToCSharpWithoutComments(@"
+            await TestConversionVisualBasicToCSharpWithoutComments(@"
 Namespace NestedWithinRoot
     Class AClassInANamespace
     End Class
@@ -70,10 +71,10 @@ End Namespace",
         }
 
         [Fact]
-        public void RootNamespaceNotAppliedToFullyQualifiedNamespace()
+        public async Task RootNamespaceNotAppliedToFullyQualifiedNamespace()
         {
             // Auto comment testing not used since it can't handle the added namespace
-            TestConversionVisualBasicToCSharpWithoutComments(@"
+            await TestConversionVisualBasicToCSharpWithoutComments(@"
 Namespace Global.NotNestedWithinRoot
     Class AClassInANamespace
     End Class
@@ -87,10 +88,10 @@ End Namespace",
         }
 
         [Fact]
-        public void RootNamespaceOnlyAppliedToUnqualifiedMembers()
+        public async Task RootNamespaceOnlyAppliedToUnqualifiedMembers()
         {
             // Auto comment testing not used since it can't handle the added namespace
-            TestConversionVisualBasicToCSharpWithoutComments(@"
+            await TestConversionVisualBasicToCSharpWithoutComments(@"
 Class AClassInRootNamespace
 End Class
 
