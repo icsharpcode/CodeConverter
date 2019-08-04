@@ -1,16 +1,17 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace CodeConverter.Tests.CSharp
 {
     public class NamedFact
     {
-        public NamedFact(string name, Action execute)
+        public NamedFact(string name, Func<Task> execute)
         {
             Execute = execute;
             Name = name;
         }
 
-        public Action Execute { get; }
+        public Func<Task> Execute { get; }
         public string Name { get; }
 
         public override string ToString()

@@ -12,6 +12,7 @@ using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.VisualStudio.Threading;
 using Xunit;
 using Xunit.Sdk;
 
@@ -40,20 +41,19 @@ namespace CodeConverter.Tests.TestRunners
             where TLanguageConversion : ILanguageConversion, new()
         {
             // Lazy to avoid confusing test runner on error, but also avoid calculating multiple times
-            var conversionResult = new Lazy<ConversionResult>(() =>
+            var conversionResultAsync = new AsyncLazy<ConversionResult>(() =>
                 ProjectConversion.ConvertText<TLanguageConversion>(sourceFileText, DefaultReferences.NetStandard2)
-                    .GetAwaiter().GetResult()
             );
 
-            var runnableTestsInTarget = new Lazy<Dictionary<string, NamedFact>>(() => GetConvertedNamedFacts<TTargetCompiler>(runnableTestsInSource,
-                conversionResult.Value));
+            var runnableTestsInTarget = new AsyncLazy<Dictionary<string, NamedFact>>(async () => GetConvertedNamedFacts<TTargetCompiler>(runnableTestsInSource,
+                await conversionResultAsync.GetValueAsync()));
 
             return runnableTestsInSource.Select(sourceFact =>
-                new NamedFact(sourceFact.Name, () =>
+                new NamedFact(sourceFact.Name, async () =>
                 {
                     try
                     {
-                        sourceFact.Execute();
+                        await sourceFact.Execute();
                     }
                     catch (TargetInvocationException ex)
                     {
@@ -61,14 +61,14 @@ namespace CodeConverter.Tests.TestRunners
                             $"Source test failed, ensure the source is correct for \"{sourceFact.Name}\": {(ex.InnerException ?? ex)}");
                     }
 
-                    try
-                    {
-                        runnableTestsInTarget.Value[sourceFact.Name].Execute();
+                    try {
+                        var test = await runnableTestsInTarget.GetValueAsync();
+                        await test[sourceFact.Name].Execute();
                     }
-                    catch (TargetInvocationException ex)
-                    {
+                    catch (TargetInvocationException ex) {
+                        var conversionResult = await conversionResultAsync.GetValueAsync();
                         throw new XunitException(
-                            $"Converted test failed, the conversion is incorrect for \"{sourceFact.Name}\": {(ex.InnerException ?? ex)}\r\nConverted Code: {conversionResult.Value.ConvertedCode ?? conversionResult.Value.GetExceptionsAsString()}");
+                            $"Converted test failed, the conversion is incorrect for \"{sourceFact.Name}\": {(ex.InnerException ?? ex)}\r\nConverted Code: {conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString()}");
                     }
                 })
             );
