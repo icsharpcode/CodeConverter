@@ -19,23 +19,25 @@ namespace ICSharpCode.CodeConverter.VB
 {
     public class CSToVBConversion : ILanguageConversion
     {
-        private Compilation _sourceCompilation;
-        private VisualBasicCompilation _convertedCompilation;
+        private Project _sourceCsProject;
+        private Project _convertedVbProject;
+        private VisualBasicCompilation _vbViewOfCsSymbols;
         public string RootNamespace { get; set; }
 
-        public Task Initialize(Compilation convertedCompilation, Project project)
+        public async Task Initialize(Project project)
         {
-            _convertedCompilation = (VisualBasicCompilation) convertedCompilation;
-            return Task.CompletedTask;
+            _sourceCsProject = project;
+            var cSharpCompilationOptions = VisualBasicCompiler.CreateCompilationOptions(RootNamespace);
+            _convertedVbProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions);
+            _vbViewOfCsSymbols = (VisualBasicCompilation)await project.CreateReferenceOnlyCompilationFromAnyOptionsAsync(cSharpCompilationOptions);
         }
 
-        public Document SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)
+        public async Task<Document> SingleFirstPass(Document document)
         {
-            _sourceCompilation = sourceCompilation;
-            var converted = CSharpConverter.ConvertCompilationTree((CSharpCompilation)sourceCompilation, (CSharpSyntaxTree)tree);
-            var convertedTree = VBSyntaxFactory.SyntaxTree(converted);
-            _convertedCompilation = _convertedCompilation.AddSyntaxTrees(convertedTree);
-            return null; //TODO
+            var convertedTree = await CSharpConverter.ConvertCompilationTree(document);
+            var convertedDocument = _convertedVbProject.AddDocument(document.FilePath, convertedTree);
+            _convertedVbProject = convertedDocument.Project;
+            return convertedDocument;
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
@@ -152,9 +154,11 @@ namespace ICSharpCode.CodeConverter.VB
             return cs.Value.GetSyntaxRootAsync();
         }
 
-        public string GetWarningsOrNull()
+        public async Task<string> GetWarningsOrNull()
         {
-            return CompilationWarnings.WarningsForCompilation(_sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(_convertedCompilation, "target");
+            var sourceCompilation = await _sourceCsProject.GetCompilationAsync();
+            var convertedCompilation = await _convertedVbProject.GetCompilationAsync();
+            return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(convertedCompilation, "target");
         }
 
         public SyntaxTree CreateTree(string text)
@@ -162,9 +166,10 @@ namespace ICSharpCode.CodeConverter.VB
             return new CSharpCompiler().CreateTree(text);
         }
 
-        public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
+        public Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
+            IEnumerable<MetadataReference> references)
         {
-            return new CSharpCompiler().CreateCompilationFromTree(tree, references);
+            return CSharpCompiler.CreateCompilationOptions().CreateProjectDocumentFromTree(workspace, tree, references);
         }
     }
 }

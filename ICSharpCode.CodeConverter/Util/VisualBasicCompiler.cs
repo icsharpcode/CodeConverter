@@ -45,12 +45,12 @@ namespace ICSharpCode.CodeConverter.Util
 
         private static VisualBasicCompilation CreateVisualBasicCompilation()
         {
-            VisualBasicCompilationOptions compilationOptions = CreateVisualBasicCompilationOptions();
+            VisualBasicCompilationOptions compilationOptions = CreateCompilationOptions();
             return VisualBasicCompilation.Create("Conversion")
                 .WithOptions(compilationOptions);
         }
 
-        public static VisualBasicCompilationOptions CreateVisualBasicCompilationOptions(string rootNamespace = null)
+        public static VisualBasicCompilationOptions CreateCompilationOptions(string rootNamespace = null)
         {
             var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithGlobalImports(GlobalImport.Parse(

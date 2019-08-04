@@ -18,11 +18,11 @@ namespace ICSharpCode.CodeConverter.Shared
     public class ProjectConversion
     {
         private readonly Compilation _sourceCompilation;
-        private readonly IEnumerable<SyntaxTree> _syntaxTreesToConvert;
+        private readonly IReadOnlyCollection<Document> _documentsToConvert;
         private readonly ConcurrentDictionary<string, string> _errors = new ConcurrentDictionary<string, string>();
         private readonly Dictionary<string, Document> _firstPassResults = new Dictionary<string, Document>();
-        private readonly ILanguageConversion _languageConversion;
         private readonly Project _project;
+        private readonly ILanguageConversion _languageConversion;
         private readonly bool _showCompilationErrors =
 #if DEBUG && ShowCompilationErrors
             true;
@@ -32,15 +32,13 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly bool _returnSelectedNode;
 #endif
 
-        private ProjectConversion(Compilation sourceCompilation, IEnumerable<SyntaxTree> syntaxTreesToConvert,
-            ILanguageConversion languageConversion, Compilation convertedCompilation, Project project = null, bool returnSelectedNode = false)
+        private ProjectConversion(Project project, IEnumerable<Document> documentsToConvert,
+            ILanguageConversion languageConversion, bool returnSelectedNode = false)
         {
-            _languageConversion = languageConversion;
             _project = project;
-            _sourceCompilation = sourceCompilation;
-            _syntaxTreesToConvert = syntaxTreesToConvert.ToList();
+            _languageConversion = languageConversion;
+            _documentsToConvert = documentsToConvert.ToList();
             _returnSelectedNode = returnSelectedNode;
-            languageConversion.Initialize(convertedCompilation.RemoveAllSyntaxTrees(), project).GetAwaiter().GetResult();
         }
 
         public static Task<ConversionResult> ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null) where TLanguageConversion : ILanguageConversion, new()
@@ -49,33 +47,38 @@ namespace ICSharpCode.CodeConverter.Shared
                 RootNamespace = rootNamespace
             };
             var syntaxTree = languageConversion.MakeFullCompilationUnit(text);
-            var compilation = languageConversion.CreateCompilationFromTree(syntaxTree, references);
-            return ConvertSingle(compilation, syntaxTree, new TextSpan(0, 0), new TLanguageConversion());
+            using (var workspace = new AdhocWorkspace()) {
+                var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, references);
+                return ConvertSingle(document, new TextSpan(0, 0), languageConversion);
+            }
         }
 
-        /// <summary>
-        /// If the compilation comes from a Project/Workspace, you must specify the <paramref name="containingProject"/>.
-        /// Otherwise an error will occur when one or more project references to another project of the same language exist.
-        /// </summary>
-        public static async Task<ConversionResult> ConvertSingle(Compilation compilation, SyntaxTree syntaxTree, TextSpan selected,
-            ILanguageConversion languageConversion, Project containingProject = null)
+        private static async Task<ConversionResult> ConvertSingle(Document document, TextSpan selected, ILanguageConversion languageConversion)
         {
-            var convertedCompilation = containingProject == null
-                ? GetConvertedCompilation(compilation, languageConversion)
-                : await GetConvertedCompilationWithProjectReferences(containingProject, languageConversion);
-
             if (selected.Length > 0) {
-                var annotatedSyntaxTree = await GetSyntaxTreeWithAnnotatedSelection(syntaxTree, selected);
-                compilation = compilation.ReplaceSyntaxTree(syntaxTree, annotatedSyntaxTree);
-                syntaxTree = annotatedSyntaxTree;
+                document = await WithAnnotatedSelection(document, selected);
             }
 
-            var conversion = new ProjectConversion(compilation, new[] {syntaxTree}, languageConversion, convertedCompilation, returnSelectedNode: true);
+            var conversion = new ProjectConversion(document.Project, new[] { document}, languageConversion, returnSelectedNode: true);
+            await languageConversion.Initialize(document.Project);
             var conversionResults = (await ConvertProjectContents(conversion)).ToList();
             var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
                              ?? conversionResults.First();
             codeResult.Exceptions = conversionResults.SelectMany(x => x.Exceptions).ToArray();
             return codeResult;
+        }
+
+        [Obsolete("Use an alternate overload of ConvertSingle or ConvertText")]
+        public static async Task<ConversionResult> ConvertSingle(Compilation compilation, SyntaxTree syntaxTree, TextSpan selected,
+            ILanguageConversion languageConversion, Project containingProject = null)
+        {
+            if (containingProject != null) {
+                return await ConvertSingle(containingProject.GetDocument(syntaxTree), selected, languageConversion);
+            }
+            using (var workspace = new AdhocWorkspace()) {
+                var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, compilation.References);
+                return await ConvertSingle(document, new TextSpan(0, 0), languageConversion);
+            }
         }
 
         public static async Task<IEnumerable<ConversionResult>> ConvertProject(Project project, ILanguageConversion languageConversion,
@@ -89,12 +92,8 @@ namespace ICSharpCode.CodeConverter.Shared
         public static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(Project project,
             ILanguageConversion languageConversion)
         {
-            var solutionFilePath = project.Solution.FilePath ?? project.FilePath;
-            var solutionDir = Path.GetDirectoryName(solutionFilePath);
-            var compilation = await project.GetCompilationAsync();
-            var syntaxTreesToConvert = compilation.SyntaxTrees.Where(t => t.FilePath.StartsWith(solutionDir));
-            var projectConversion = new ProjectConversion(compilation, syntaxTreesToConvert,
-                languageConversion, await GetConvertedCompilationWithProjectReferences(project, languageConversion), project);
+            var projectConversion = new ProjectConversion(project, project.Documents, languageConversion);
+            await languageConversion.Initialize(project);
             return await ConvertProjectContents(projectConversion);
         }
 
@@ -103,29 +102,10 @@ namespace ICSharpCode.CodeConverter.Shared
             return new FileInfo(project.FilePath).ConversionResultFromReplacements(textReplacements, languageConversion.PostTransformProjectFile);
         }
 
-        /// <summary>
-        /// If the source compilation has project references to a compilation of the same language, this will fail with an argument exception.
-        /// Use <see cref="GetConvertedCompilationWithProjectReferences"/> wherever this is possible.
-        /// </summary>
-        private static Compilation GetConvertedCompilation(Compilation compilation, ILanguageConversion languageConversion)
-        {
-            var convertedCompilation = languageConversion is VBToCSConversion ? CSharpCompiler.CreateCSharpCompilation(compilation.References) : (Compilation) VisualBasicCompiler.CreateVisualBasicCompilation(compilation.References);
-            return convertedCompilation;
-        }
-
-        private static Task<Compilation> GetConvertedCompilationWithProjectReferences(Project project, ILanguageConversion languageConversion)
-        {
-            return project.Solution.RemoveProject(project.Id)
-                .AddProject(project.Id, project.Name, project.AssemblyName, languageConversion.TargetLanguage)
-                .GetProject(project.Id)
-                .WithProjectReferences(project.AllProjectReferences).WithMetadataReferences(project.MetadataReferences)
-                .GetCompilationAsync();
-        }
-
         private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(ProjectConversion projectConversion)
         {
             using (var adhocWorkspace = new AdhocWorkspace()) {
-                var pathNodePairs = await Task.WhenAll(projectConversion.Convert(adhocWorkspace));
+                var pathNodePairs = await Task.WhenAll(await projectConversion.Convert(adhocWorkspace));
                 var results = pathNodePairs.Select(pathNodePair => {
                     var errors = projectConversion._errors.TryRemove(pathNodePair.Path, out var nonFatalException)
                         ? new[] {nonFatalException}
@@ -134,7 +114,7 @@ namespace ICSharpCode.CodeConverter.Shared
                         {SourcePathOrNull = pathNodePair.Path, Exceptions = errors};
                 });
 
-                projectConversion.AddProjectWarnings();
+                await projectConversion.AddProjectWarnings();
 
                 return results.Concat(projectConversion._errors
                     .Select(error => new ConversionResult {SourcePathOrNull = error.Key, Exceptions = new[] {error.Value}})
@@ -142,9 +122,9 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        private IEnumerable<Task<(string Path, SyntaxNode Node)>> Convert(AdhocWorkspace adhocWorkspace)
+        private async Task<IEnumerable<Task<(string Path, SyntaxNode Node)>>> Convert(AdhocWorkspace adhocWorkspace)
         {
-            FirstPass();
+            await FirstPass();
             return SecondPass(adhocWorkspace);
         }
 
@@ -169,11 +149,11 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        private void AddProjectWarnings()
+        private async Task AddProjectWarnings()
         {
             if (!_showCompilationErrors) return;
 
-            var nonFatalWarningsOrNull = _languageConversion.GetWarningsOrNull();
+            var nonFatalWarningsOrNull = await _languageConversion.GetWarningsOrNull();
             if (!string.IsNullOrWhiteSpace(nonFatalWarningsOrNull))
             {
                 var warningsDescription = Path.Combine(_sourceCompilation.AssemblyName, "ConversionWarnings.txt");
@@ -187,14 +167,15 @@ namespace ICSharpCode.CodeConverter.Shared
             return await Format(secondPassNode, workspace);
         }
 
-        private void FirstPass()
+        private async Task FirstPass()
         {
-            foreach (var tree in _syntaxTreesToConvert)
+            foreach (var document in _documentsToConvert)
             {
-                var treeFilePath = tree.FilePath ?? "";
+                var treeFilePath = document.FilePath ?? "";
                 try {
-                    SingleFirstPass(tree, treeFilePath);
-                    var errorAnnotations = tree.GetRoot().GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
+                    var convertedDoc = await _languageConversion.SingleFirstPass(document);
+                    _firstPassResults.Add(treeFilePath, convertedDoc);
+                    var errorAnnotations = (await convertedDoc.GetSyntaxRootAsync()).GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
                     if (errorAnnotations.Any()) {
                         _errors.TryAdd(treeFilePath,
                             string.Join(Environment.NewLine, errorAnnotations.Select(a => a.Data))
@@ -208,18 +189,12 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        private void SingleFirstPass(SyntaxTree tree, string treeFilePath)
+        private static async Task<Document> WithAnnotatedSelection(Document document, TextSpan selected)
         {
-            var currentSourceCompilation = this._sourceCompilation;
-            var convertedTree = _languageConversion.SingleFirstPass(currentSourceCompilation, tree);
-            _firstPassResults.Add(treeFilePath, convertedTree);
-        }
-
-        private static async Task<SyntaxTree> GetSyntaxTreeWithAnnotatedSelection(SyntaxTree syntaxTree, TextSpan selected)
-        {
-            var root = await syntaxTree.GetRootAsync();
+            var root = await document.GetSyntaxRootAsync();
             var selectedNode = root.FindNode(selected);
-            return root.WithAnnotatedNode(selectedNode, AnnotationConstants.SelectedNodeAnnotationKind);
+            var withAnnotatedSelection = await root.WithAnnotatedNode(selectedNode, AnnotationConstants.SelectedNodeAnnotationKind).GetRootAsync();
+            return document.WithSyntaxRoot(withAnnotatedSelection);
         }
 
         private async Task<SyntaxNode> Format(SyntaxNode resultNode, Workspace workspace)

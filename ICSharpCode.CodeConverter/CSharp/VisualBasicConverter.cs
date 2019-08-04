@@ -25,10 +25,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     public partial class VisualBasicConverter
     {
-        public static CSharpSyntaxNode ConvertCompilationTree(VBasic.VisualBasicCompilation compilation, CSharpCompilation csCompilation, VBasic.VisualBasicSyntaxTree tree)
+        public static async Task<SyntaxNode> ConvertCompilationTree(Document document,
+            CSharpCompilation csharpViewOfVbSymbols)
         {
-            var visualBasicSyntaxVisitor = new VisualBasicConverter.NodesVisitor(compilation.GetSemanticModel(tree, true), csCompilation);
-            return tree.GetRoot().Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
+            var compilation = await document.Project.GetCompilationAsync();
+            var tree = await document.GetSyntaxTreeAsync();
+            var semanticModel = compilation.GetSemanticModel(tree, true);
+            var root = (VBasic.VisualBasicSyntaxNode)await document.GetSyntaxRootAsync();
+
+            var visualBasicSyntaxVisitor = new NodesVisitor(semanticModel, csharpViewOfVbSymbols);
+            return root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
         }
     }
 }
