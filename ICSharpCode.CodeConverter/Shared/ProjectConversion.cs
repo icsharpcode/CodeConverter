@@ -23,22 +23,23 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly Dictionary<string, Document> _firstPassResults = new Dictionary<string, Document>();
         private readonly ILanguageConversion _languageConversion;
         private readonly Project _project;
-        private readonly bool _handlePartialConversion;
         private readonly bool _showCompilationErrors =
 #if DEBUG && ShowCompilationErrors
             true;
 #else
             false;
+
+        private readonly bool _returnSelectedNode;
 #endif
 
         private ProjectConversion(Compilation sourceCompilation, IEnumerable<SyntaxTree> syntaxTreesToConvert,
-            ILanguageConversion languageConversion, Compilation convertedCompilation, Project project = null)
+            ILanguageConversion languageConversion, Compilation convertedCompilation, Project project = null, bool returnSelectedNode = false)
         {
             _languageConversion = languageConversion;
             _project = project;
             _sourceCompilation = sourceCompilation;
             _syntaxTreesToConvert = syntaxTreesToConvert.ToList();
-            _handlePartialConversion = _syntaxTreesToConvert.Count() == 1;
+            _returnSelectedNode = returnSelectedNode;
             languageConversion.Initialize(convertedCompilation.RemoveAllSyntaxTrees(), project).GetAwaiter().GetResult();
         }
 
@@ -47,7 +48,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var languageConversion = new TLanguageConversion {
                 RootNamespace = rootNamespace
             };
-            var syntaxTree = languageConversion.CreateTree(text);
+            var syntaxTree = languageConversion.MakeFullCompilationUnit(text);
             var compilation = languageConversion.CreateCompilationFromTree(syntaxTree, references);
             return ConvertSingle(compilation, syntaxTree, new TextSpan(0, 0), new TLanguageConversion());
         }
@@ -63,14 +64,13 @@ namespace ICSharpCode.CodeConverter.Shared
                 ? GetConvertedCompilation(compilation, languageConversion)
                 : await GetConvertedCompilationWithProjectReferences(containingProject, languageConversion);
 
-            if (selected.Length > 0)
-            {
+            if (selected.Length > 0) {
                 var annotatedSyntaxTree = await GetSyntaxTreeWithAnnotatedSelection(syntaxTree, selected);
                 compilation = compilation.ReplaceSyntaxTree(syntaxTree, annotatedSyntaxTree);
                 syntaxTree = annotatedSyntaxTree;
             }
 
-            var conversion = new ProjectConversion(compilation, new[] {syntaxTree}, languageConversion, convertedCompilation);
+            var conversion = new ProjectConversion(compilation, new[] {syntaxTree}, languageConversion, convertedCompilation, returnSelectedNode: true);
             var conversionResults = (await ConvertProjectContents(conversion)).ToList();
             var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
                              ?? conversionResults.First();
@@ -211,35 +211,8 @@ namespace ICSharpCode.CodeConverter.Shared
         private void SingleFirstPass(SyntaxTree tree, string treeFilePath)
         {
             var currentSourceCompilation = this._sourceCompilation;
-            var newTree = MakeFullCompilationUnit(tree);
-            if (newTree != tree) {
-                currentSourceCompilation = currentSourceCompilation.ReplaceSyntaxTree(tree, newTree);
-                tree = newTree;
-            }
             var convertedTree = _languageConversion.SingleFirstPass(currentSourceCompilation, tree);
             _firstPassResults.Add(treeFilePath, convertedTree);
-        }
-
-        private SyntaxTree MakeFullCompilationUnit(SyntaxTree tree)
-        {
-            if (!_handlePartialConversion) return tree;
-            var root = tree.GetRoot();
-            var rootChildren = root.ChildNodes().ToList();
-            var requiresSurroundingClass = rootChildren.Any(_languageConversion.MustBeContainedByClass);
-            var requiresSurroundingMethod = rootChildren.All(_languageConversion.CanBeContainedByMethod);
-
-            if (requiresSurroundingMethod || requiresSurroundingClass) {
-                var text = root.GetText().ToString();
-                if (requiresSurroundingMethod) text = _languageConversion.WithSurroundingMethod(text);
-                text = _languageConversion.WithSurroundingClass(text);
-
-                var fullCompilationUnit = _languageConversion.CreateTree(text).GetRoot();
-
-                var selectedNode = _languageConversion.GetSurroundedNode(fullCompilationUnit.DescendantNodes(), requiresSurroundingMethod);
-                tree = fullCompilationUnit.WithAnnotatedNode(selectedNode, AnnotationConstants.SelectedNodeAnnotationKind, AnnotationConstants.AnnotatedNodeIsParentData);
-            }
-
-            return tree;
         }
 
         private static async Task<SyntaxTree> GetSyntaxTreeWithAnnotatedSelection(SyntaxTree syntaxTree, TextSpan selected)
@@ -251,7 +224,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private async Task<SyntaxNode> Format(SyntaxNode resultNode, Workspace workspace)
         {
-            SyntaxNode selectedNode = _handlePartialConversion ? GetSelectedNode(resultNode) : resultNode;
+            SyntaxNode selectedNode = _returnSelectedNode ? GetSelectedNode(resultNode) : resultNode;
             SyntaxNode nodeToFormat = selectedNode ?? resultNode;
             return Formatter.Format(nodeToFormat, workspace);
         }
