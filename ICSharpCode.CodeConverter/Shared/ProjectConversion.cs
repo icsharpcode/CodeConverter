@@ -28,9 +28,9 @@ namespace ICSharpCode.CodeConverter.Shared
             true;
 #else
             false;
-
-        private readonly bool _returnSelectedNode;
 #endif
+        private readonly bool _returnSelectedNode;
+        private static readonly string[] BannedPaths = new[] { ".AssemblyAttributes.", "\\bin\\", "\\obj\\"};
 
         private ProjectConversion(Project project, IEnumerable<Document> documentsToConvert,
             ILanguageConversion languageConversion, bool returnSelectedNode = false)
@@ -92,7 +92,8 @@ namespace ICSharpCode.CodeConverter.Shared
         public static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(Project project,
             ILanguageConversion languageConversion)
         {
-            var projectConversion = new ProjectConversion(project, project.Documents, languageConversion);
+            var documentsToConvert = project.Documents.Where(d => !BannedPaths.Any(d.FilePath.Contains));
+            var projectConversion = new ProjectConversion(project, documentsToConvert, languageConversion);
             await languageConversion.Initialize(project);
             return await ConvertProjectContents(projectConversion);
         }
