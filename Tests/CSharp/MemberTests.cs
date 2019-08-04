@@ -624,7 +624,7 @@ End Class", @"class TestClass
             Case MyEnum.First
                 Exit Sub
             Case 3
-                Me.MyProp(4) = enumerableThing.ToArray(m)
+                Me.MyProp(4) = enumerableThing.ToArray()(m)
                 Exit Sub
         End Select
     End Sub
