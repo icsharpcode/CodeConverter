@@ -13,7 +13,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var options = baseOptions.WithMetadataImportOptionsAll();
             var viewerId = ProjectId.CreateNewId();
             var projectReferences = project.ProjectReferences.Concat(new[] {new ProjectReference(project.Id)});
-            var viewerProjectInfo = ToProjectInfo(project, viewerId, project.Name + viewerId, options,
+            var viewerProjectInfo = project.ToProjectInfo(viewerId, project.Name + viewerId, options,
                 projectReferences);
             var csharpViewOfVbProject = project.Solution.AddProject(viewerProjectInfo).GetProject(viewerId);
             return await csharpViewOfVbProject.GetCompilationAsync();
