@@ -10,7 +10,7 @@ namespace CodeConverter.Tests.CSharp
         public async Task Linq1()
         {
             await TestConversionVisualBasicToCSharp(@"Private Shared Sub SimpleQuery()
-    Dim numbers As Integer() = {7, 9, 5, 3, 6}
+    Dim numbers = {7, 9, 5, 3, 6}
     Dim res = From n In numbers Where n > 5 Select n
 
     For Each n In res
@@ -350,39 +350,38 @@ static class Ext
 {
     public static IEnumerable<AccountEntry> Reduce(this IEnumerable<AccountEntry> accountEntries)
     {
-        return (from _accountEntry in accountEntries
-                where _accountEntry.Amount > 0M
-                group _accountEntry by new
-                {
-                    LookupAccountEntryTypeId = _accountEntry.LookupAccountEntryTypeId,
-                    LookupAccountEntrySourceId = _accountEntry.LookupAccountEntrySourceId,
-                    SponsorId = _accountEntry.SponsorId,
-                    LookupFundTypeId = _accountEntry.LookupFundTypeId,
-                    StartDate = _accountEntry.StartDate,
-                    SatisfiedDate = _accountEntry.SatisfiedDate,
-                    InterestStartDate = _accountEntry.InterestStartDate,
-                    ComputeInterestFlag = _accountEntry.ComputeInterestFlag,
-                    SponsorClaimRevision = _accountEntry.SponsorClaimRevision
-                } into Group
-                let _keys = Group.Key
-                select new AccountEntry()
-                {
-                    LookupAccountEntryTypeId = _keys.LookupAccountEntryTypeId,
-                    LookupAccountEntrySourceId = _keys.LookupAccountEntrySourceId,
-                    SponsorId = _keys.SponsorId,
-                    LookupFundTypeId = _keys.LookupFundTypeId,
-                    StartDate = _keys.StartDate,
-                    SatisfiedDate = _keys.SatisfiedDate,
-                    ComputeInterestFlag = _keys.ComputeInterestFlag,
-                    InterestStartDate = _keys.InterestStartDate,
-                    SponsorClaimRevision = _keys.SponsorClaimRevision,
-                    Amount = Group.Sum(accountEntry => accountEntry.Amount),
-                    AccountTransactions = new List<object>(),
-                    AccountEntryClaimDetails = (from _accountEntry in Group
-                                                from _claimDetail in _accountEntry.AccountEntryClaimDetails
-                                                select _claimDetail).Reduce().ToList()
-                }
-);
+        return from _accountEntry in accountEntries
+               where _accountEntry.Amount > 0M
+               group _accountEntry by new
+               {
+                   _accountEntry.LookupAccountEntryTypeId,
+                   _accountEntry.LookupAccountEntrySourceId,
+                   _accountEntry.SponsorId,
+                   _accountEntry.LookupFundTypeId,
+                   _accountEntry.StartDate,
+                   _accountEntry.SatisfiedDate,
+                   _accountEntry.InterestStartDate,
+                   _accountEntry.ComputeInterestFlag,
+                   _accountEntry.SponsorClaimRevision
+               } into Group
+               let _keys = Group.Key
+               select new AccountEntry()
+               {
+                   LookupAccountEntryTypeId = _keys.LookupAccountEntryTypeId,
+                   LookupAccountEntrySourceId = _keys.LookupAccountEntrySourceId,
+                   SponsorId = _keys.SponsorId,
+                   LookupFundTypeId = _keys.LookupFundTypeId,
+                   StartDate = _keys.StartDate,
+                   SatisfiedDate = _keys.SatisfiedDate,
+                   ComputeInterestFlag = _keys.ComputeInterestFlag,
+                   InterestStartDate = _keys.InterestStartDate,
+                   SponsorClaimRevision = _keys.SponsorClaimRevision,
+                   Amount = Group.Sum(accountEntry => accountEntry.Amount),
+                   AccountTransactions = new List<object>(),
+                   AccountEntryClaimDetails = (from _accountEntry in Group
+                                               from _claimDetail in _accountEntry.AccountEntryClaimDetails
+                                               select _claimDetail).Reduce().ToList()
+               };
     }
 }");
         }

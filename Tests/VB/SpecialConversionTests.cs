@@ -47,8 +47,8 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer, a As Integer = 5
-        b = Math.Min(System.Threading.Interlocked.Increment(a), a - 1)
+        Dim b As Integer, a = 5
+        b = Math.Min(Threading.Interlocked.Increment(a), a - 1)
     End Sub
 End Class");
         }
@@ -108,7 +108,7 @@ Public Class Foo
 
     Protected Sub OnBar(ByVal e As EventArgs)
         If BarEvent Is Nothing Then
-            System.Diagnostics.Debug.WriteLine(""No subscriber"")
+            Debug.WriteLine(""No subscriber"")
         Else
             RaiseEvent Bar(Me, e)
         End If
@@ -253,7 +253,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        If FullImage IsNot Nothing Then DrawImage()
+        If FullImage IsNot Nothing Then DrawImage
     End Sub
 End Class", expectCompilationErrors: true);
             // regression test:
@@ -266,7 +266,7 @@ End Class", expectCompilationErrors: true);
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        If FullImage IsNot Nothing Then e.DrawImage()
+        If FullImage IsNot Nothing Then e.DrawImage
     End Sub
 End Class", expectCompilationErrors: true);
             // with braces:
@@ -368,7 +368,7 @@ Friend Module TestClass
 
     Function Convert(ByVal node As Object) As Object
         Return node.TypeSwitch(New Func(Of String, Object)(AddressOf ConvertString), New Func(Of Integer, Object)(AddressOf ConvertInt), Function(__)
-                                                                                                                                             Throw New NotImplementedException($""Conversion for '{node.[GetType]()}' not implemented"")
+                                                                                                                                             Throw New NotImplementedException($""Conversion for '{node.[GetType]}' not implemented"")
                                                                                                                                          End Function)
     End Function
 End Module");

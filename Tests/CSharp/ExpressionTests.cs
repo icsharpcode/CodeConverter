@@ -23,7 +23,7 @@ End Class", @"public class TestClass
 {
     public void TestMethod()
     {
-        TestClass.Val = 6;
+        Val = 6;
     }
 
     private static int Val;
@@ -96,21 +96,21 @@ class TestClass
 
     public static string GetNameValuePair(string pName, int pValue)
     {
-        return (""{\""name\"": \"""" + pName + ""\"", \""value\"": \"""" + Conversions.ToString(pValue) + ""\""}"");
+        return ""{\""name\"": \"""" + pName + ""\"", \""value\"": \"""" + Conversions.ToString(pValue) + ""\""}"";
     }
 
     public static string GetNameValuePair(string pName, string pValue)
     {
-        return (""{\""name\"": \"""" + pName + ""\"", \""value\"": \"""" + pValue + ""\""}"");
+        return ""{\""name\"": \"""" + pName + ""\"", \""value\"": \"""" + pValue + ""\""}"";
     }
 
     public static string GetTitleTextPair(string pName, string pValue)
     {
-        return (""{\""title\"": \"""" + pName + ""\"", \""msg\"": \"""" + pValue + ""\""}"");
+        return ""{\""title\"": \"""" + pName + ""\"", \""msg\"": \"""" + pValue + ""\""}"";
     }
     public static string GetDeltaPoint(int pDelta)
     {
-        return (""{\""delta\"": \"""" + Conversions.ToString(pDelta) + ""\""}"");
+        return ""{\""delta\"": \"""" + Conversions.ToString(pDelta) + ""\""}"";
     }
 }");
         }
@@ -189,14 +189,14 @@ End Class", @"public class Class1
         Bar(ref argclass1);
         var argclass11 = (object)C1;
         Bar(ref argclass11);
-        var argclass12 = (object)this.C1;
+        var argclass12 = (object)C1;
         Bar(ref argclass12);
         var argclass13 = (object)_c2;
         Bar(ref argclass13);
-        var argclass14 = (object)this._c2;
+        var argclass14 = (object)_c2;
         Bar(ref argclass14);
         Bar(ref _o1);
-        Bar(ref this._o1);
+        Bar(ref _o1);
     }
 
     public void Bar(ref object class1)
@@ -398,7 +398,7 @@ public class Class1
     public void Foo()
     {
         Bar(Conversions.ToInteger(true));
-        this.Bar(Conversions.ToInteger(""4""));
+        Bar(Conversions.ToInteger(""4""));
         string[] ss = new string[2];
         var y = ss[Conversions.ToInteger(""0"")];
     }
@@ -430,7 +430,7 @@ public class Class1
 
     public void Main()
     {
-        Foo((TriState)0);
+        Foo(0);
     }
 }");
         }
@@ -499,7 +499,7 @@ End Class",
     public void Main()
     {
         var e1 = E.A;
-        int e2 = default(int);
+        int e2 = default;
         switch (e1)
         {
             case 0:
@@ -510,7 +510,7 @@ End Class",
 
         switch (e2)
         {
-            case var @case when @case == (int)E.A:
+            case var @case when @case == E.A:
                 {
                     break;
                 }
@@ -540,9 +540,9 @@ End Class", @"public class Class1
     public void Foo()
     {
         var w = Bar();
-        var x = this.Bar();
+        var x = Bar();
         var y = Baz;
-        var z = this.Baz;
+        var z = Baz;
     }
 
     public int Bar()
@@ -565,7 +565,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var rslt = ((object)true).ToString();
+        var rslt = true.ToString();
         var rslt2 = (object)true;
     }
 }");
@@ -580,7 +580,7 @@ End Class", @"using System;
 
 class TestClass
 {
-    private DateTime DefaultDate = default(DateTime);
+    private DateTime DefaultDate = default;
 }");
         }
 
@@ -600,8 +600,8 @@ End Class", @"public class A
     public void Test()
     {
         var tmp = this;
-        var y = A.x;
-        var z = A.x;
+        var y = x;
+        var z = x;
     }
 }");
         }
@@ -691,10 +691,10 @@ End Class", @"public class A
 {
     public void Test()
     {
-        var str1 = this.GetStringFromNone()[0];
+        var str1 = GetStringFromNone()[0];
         str1 = GetStringFromNone()[0];
         var str2 = GetStringFromNone()[1];
-        var str3 = this.GetStringsFromString(""abc"");
+        var str3 = GetStringsFromString(""abc"");
         str3 = GetStringsFromString(""abc"");
         var str4 = GetStringsFromString(""abc"")[1];
         var fromStr3 = GetMoreStringsFromString(""bc"")[1][0];
@@ -905,42 +905,42 @@ End Class", @"public class Class1
 {
     Class1()
     {
-        int needsInitialization = default(int);
+        int needsInitialization = default;
         int notUsed;
         var y = needsInitialization;
     }
 
     public void Foo()
     {
-        int needsInitialization = default(int);
+        int needsInitialization = default;
         int notUsed;
         var y = needsInitialization;
     }
 
     public void Bar()
     {
-        int i = default(int);
+        int i = default;
         string temp = string.Empty;
         i += 1;
     }
 
     public void Bar2()
     {
-        int i = default(int);
+        int i = default;
         string temp = string.Empty;
         i = i + 1;
     }
 
     public void Bar3()
     {
-        int i = default(int);
+        int i = default;
         string temp = string.Empty;
         int k = i + 1;
     }
 
     public void Bar4()
     {
-        int i = default(int);
+        int i = default;
         string temp = string.Empty;
         int k = i + 1;
         i = 1;
@@ -950,7 +950,7 @@ End Class", @"public class Class1
     {
         get
         {
-            int needsInitialization = default(int);
+            int needsInitialization = default;
             int notUsed;
             var y = needsInitialization;
             return y;
@@ -1111,7 +1111,7 @@ class TestClass
 {
     private void TestMethod()
     {
-        var x = (Math.Pow((double)7, (double)6) % (double)(5 / 4)) + (double)(3 * 2);
+        var x = Math.Pow(7, 6) % (5 / 4) + 3 * 2;
         x += 1;
         x -= 2;
         x *= 3;
@@ -1140,11 +1140,11 @@ class TestClass
 {
     private void TestMethod()
     {
-        double x = (double)1;
-        decimal y = (decimal)2;
+        double x = 1;
+        decimal y = 2;
         int i1 = 1;
         int i2 = 2;
-        var d1 = (double)i1 / (double)i2;
+        var d1 = i1 / (double)i2;
         var z = x + Conversions.ToDouble(y);
         var z2 = Conversions.ToDouble(y) + x;
     }
@@ -1168,9 +1168,9 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var x = (double)10 / (double)3;
+        var x = 10 / (double)3;
         x /= 2;
-        var y = 10.0 / (double)3;
+        var y = 10.0 / 3;
         y /= 2;
         int z = 8;
         z /= 3;
@@ -1207,7 +1207,7 @@ class TestClass
 {
     private void TestMethod()
     {
-        var str = (new ThreadStaticAttribute()).ToString();
+        var str = new ThreadStaticAttribute().ToString();
     }
 }");
         }
@@ -1267,7 +1267,7 @@ End Class", @"class TestClass
         if (int.TryParse(value, out result))
             return result;
         else
-            return default(int?);
+            return default;
     }
 }");
         }
@@ -1289,9 +1289,9 @@ class TestClass
     public void Bar()
     {
         int number;
-        number = default(int);
+        number = default;
         DateTime dat;
-        dat = default(DateTime);
+        dat = default;
     }
 }");
         }
@@ -1345,7 +1345,7 @@ End Class", @"class TestClass
 {
     private void TestMethod(string str)
     {
-        bool result = (string.IsNullOrEmpty(str)) ? true : false;
+        bool result = string.IsNullOrEmpty(str) ? true : false;
     }
 }");
         }
@@ -1361,7 +1361,7 @@ End Class", @"class TestClass
 {
     private void TestMethod(string str)
     {
-        bool result = !((string.IsNullOrEmpty(str)) ? true : false);
+        bool result = !(string.IsNullOrEmpty(str) ? true : false);
     }
 }");
         }
@@ -1377,7 +1377,7 @@ End Class", @"class TestClass
 {
     private void TestMethod(string str)
     {
-        int result = 5 - ((string.IsNullOrEmpty(str)) ? 1 : 2);
+        int result = 5 - (string.IsNullOrEmpty(str) ? 1 : 2);
     }
 }");
         }
@@ -1621,7 +1621,7 @@ End Class", @"class TestClass
 
     private void TestMethod()
     {
-        this.member = 0;
+        member = 0;
     }
 }");
         }
@@ -1648,7 +1648,7 @@ class TestClass : BaseTestClass
 {
     private void TestMethod()
     {
-        base.member = 0;
+        member = 0;
     }
 }");
         }
@@ -1667,7 +1667,7 @@ class TestClass
 {
     private void TestMethod()
     {
-        Func<int, int> test = (int a) => a * 2;
+        Func<int, int> test = (a) => a * 2;
         test(3);
     }
 }");
@@ -1697,7 +1697,7 @@ class TestClass
         Func<int, int, double> test2 = (a, b) =>
         {
             if (b > 0)
-                return (double)a / (double)b;
+                return a / (double)b;
             return 0;
         };
 
@@ -2013,7 +2013,7 @@ public class Class1
 {
     public void Foo()
     {
-        var x = DateAndTime.DateAdd(""m"", (double)5, DateAndTime.Now);
+        var x = DateAndTime.DateAdd(""m"", 5, DateAndTime.Now);
     }
 }");
         }
@@ -2054,7 +2054,7 @@ End Class", @"public class Class1
     public void Foo()
     {
         Bar();
-        this.Bar();
+        Bar();
     }
 }");
         }

@@ -822,7 +822,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int charIndex = default(int);
+        int charIndex = default;
         // allow only digits and letters
         do
             charIndex = rand.Next(48, 123);
@@ -1024,7 +1024,7 @@ End Class", @"class TestClass
 {
     private void TestMethod(int end)
     {
-        int[] b = default(int[]), s = default(int[]);
+        int[] b = default, s = default;
         var loopTo = end;
         for (var i = 0; i <= loopTo; i++)
             b[i] = s[i];
@@ -1050,7 +1050,7 @@ End Class", @"public class Class1
 
     public void Foo()
     {
-        for (this.Index = 0; this.Index <= 10; this.Index++)
+        for (Index = 0; Index <= 10; Index++)
         {
         }
     }
@@ -1079,7 +1079,7 @@ class TestClass
         var loopTo = 10 - stringValue.Length;
         for (int i = 1; i <= loopTo; i++)
         {
-            stringValue = stringValue + ("" "" + System.Convert.ToString(i));
+            stringValue = stringValue + "" "" + Convert.ToString(i);
             Console.WriteLine(stringValue);
         }
     }
@@ -1101,7 +1101,7 @@ End Class", @"class TestClass
 {
     private void TestMethod(int end)
     {
-        int[] b = default(int[]), s = default(int[]);
+        int[] b = default, s = default;
         var loopTo = end - 1;
         for (var i = 0; i <= loopTo; i++)
             b[i] = s[i];
@@ -1162,7 +1162,7 @@ class GotoTest1
         {
             var loopTo1 = y - 1;
             for (int j = 0; j <= loopTo1; j++)
-                array[i, j] = (System.Threading.Interlocked.Increment(ref count)).ToString();
+                array[i, j] = System.Threading.Interlocked.Increment(ref count).ToString();
         }
 
         Console.Write(""Enter the number to search for: "");
@@ -1261,14 +1261,14 @@ class TestClass
 
     private void TestMethod(EventHandler e)
     {
-        this.MyEvent += e;
-        this.MyEvent += MyHandler;
+        MyEvent += e;
+        MyEvent += MyHandler;
     }
 
     private void TestMethod2(EventHandler e)
     {
-        this.MyEvent -= e;
-        this.MyEvent -= MyHandler;
+        MyEvent -= e;
+        MyEvent -= MyHandler;
     }
 
     private void MyHandler(object sender, EventArgs e)
@@ -1449,7 +1449,7 @@ public class TestClass2
     {
         switch (true)
         {
-            case object _ when ((int)DateAndTime.Today.DayOfWeek == (int)DayOfWeek.Saturday) | ((int)DateAndTime.Today.DayOfWeek == (int)DayOfWeek.Sunday):
+            case object _ when (int)DateAndTime.Today.DayOfWeek == (int)DayOfWeek.Saturday | DateAndTime.Today.DayOfWeek == (int)DayOfWeek.Sunday:
                 {
                     // we do not work on weekends
                     return false;

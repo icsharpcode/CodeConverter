@@ -138,7 +138,7 @@ Friend Class TestSubclass
 
     Public Overloads Sub TestMethod()
         TestMethod(3)
-        System.Console.WriteLine(""Shadowed implementation"")
+        Console.WriteLine(""Shadowed implementation"")
     End Sub
 End Class");
         }
@@ -386,10 +386,10 @@ End Module");
 
     Public Property Test3 As Integer
         Get
-            Return Me.m_test3
+            Return m_test3
         End Get
         Set(ByVal value As Integer)
-            Me.m_test3 = value
+            m_test3 = value
         End Set
     End Property
 End Class");
@@ -471,7 +471,7 @@ End Class");
 
     Public WriteOnly Property Blanket As String
         Set(ByVal value As String)
-            Throw New Exception()
+            Throw New Exception
         End Set
     End Property
 End Class");
@@ -618,10 +618,10 @@ Friend Class TestClass
 
     Public Event MyEvent As EventHandler
         AddHandler(ByVal value As EventHandler)
-            AddHandler Me.backingField, value
+            AddHandler backingField, value
         End AddHandler
         RemoveHandler(ByVal value As EventHandler)
-            RemoveHandler Me.backingField, value
+            RemoveHandler backingField, value
         End RemoveHandler
     End Event
 End Class");
@@ -690,10 +690,10 @@ End Class");
 
     Default Public Property Item(ByVal index As Double) As Integer
         Get
-            Return Me.m_test3
+            Return m_test3
         End Get
         Set(ByVal value As Integer)
-            Me.m_test3 = value
+            m_test3 = value
         End Set
     End Property
 End Class");

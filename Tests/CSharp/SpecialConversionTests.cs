@@ -62,14 +62,14 @@ class TestClass45
     {
         add
         {
-            this.backingField += value;
+            backingField += value;
         }
         remove
         {
-            this.backingField -= value;
+            backingField -= value;
         }
     }
-    void OnMyEvent(object sender, System.EventArgs e)
+    void OnMyEvent(object sender, EventArgs e)
     {
         Console.WriteLine(""Event Raised"");
     }

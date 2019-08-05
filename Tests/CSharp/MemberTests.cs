@@ -69,7 +69,7 @@ class TestClass
     private const int someConstField = 42;
     public void TestMethod()
     {
-        const DateTimeKind someConst = System.DateTimeKind.Local;
+        const DateTimeKind someConst = DateTimeKind.Local;
     }
 }");
         }
@@ -125,8 +125,8 @@ class TestClass
         where T2 : struct
     {
         argument = null;
-        argument2 = default(T2);
-        argument3 = default(T3);
+        argument2 = default;
+        argument3 = default;
         Console.WriteLine(Enumerable.Empty<string>());
     }
 }");
@@ -151,7 +151,7 @@ End Class", @"class Class1
 {
     public int TestMethod(int x)
     {
-        int TestMethodRet = default(int);
+        int TestMethodRet = default;
         if (x == 1)
             TestMethodRet = 1;
         else if (x == 2)
@@ -201,7 +201,7 @@ public class Class1
     {
         get
         {
-            string FooRet = default(string);
+            string FooRet = default;
             FooRet = """";
             return FooRet;
         }
@@ -210,9 +210,9 @@ public class Class1
     {
         get
         {
-            string XRet = default(string);
+            string XRet = default;
             XRet = 4;
-            XRet = Conversions.ToString(Conversions.ToDouble(XRet) * (double)2);
+            XRet = Conversions.ToString(Conversions.ToDouble(XRet) * 2);
             var y = ""random variable to check it isn't just using the value of the last statement"";
             return XRet;
         }
@@ -249,7 +249,7 @@ public class Class1
     public event EventHandler MyEvent;
     protected override string Foo()
     {
-        string FooRet = default(string);
+        string FooRet = default;
         MyEvent += Foo;
         FooRet = FooRet + """";
         FooRet += nameof(Foo);
@@ -277,7 +277,7 @@ End Class", @"class Class1
 {
     public int TestMethod(int x)
     {
-        int TestMethodRet = default(int);
+        int TestMethodRet = default;
         if (x == 1)
             TestMethodRet += 1;
         else if (x == 2)
@@ -304,7 +304,7 @@ End Class", @"class Class1
 {
     public int TestMethod()
     {
-        return default(int);
+        return default;
     }
 }");
         }
@@ -328,8 +328,8 @@ End Class", @"class TestClass
         where T2 : struct
     {
         argument = null;
-        argument2 = default(T2);
-        argument3 = default(T3);
+        argument2 = default;
+        argument3 = default;
     }
 }");
         }
@@ -370,8 +370,8 @@ End Class", @"class TestClass
         where T2 : struct
     {
         argument = null;
-        argument2 = default(T2);
-        argument3 = default(T3);
+        argument2 = default;
+        argument3 = default;
     }
 }");
         }
@@ -405,8 +405,8 @@ End Class", @"class TestClass
         where T2 : struct
     {
         argument = null;
-        argument2 = default(T2);
-        argument3 = default(T3);
+        argument2 = default;
+        argument3 = default;
     }
 }");
         }
@@ -535,11 +535,11 @@ End Class", @"class TestClass
     {
         get
         {
-            return this.m_test3;
+            return m_test3;
         }
         set
         {
-            this.m_test3 = value;
+            m_test3 = value;
         }
     }
 }");
@@ -664,7 +664,7 @@ public class ParameterizedPropertiesAndEnumTest
 
             case 3:
                 {
-                    this.set_MyProp(4, enumerableThing.ToArray()[(int)m]);
+                    set_MyProp(4, enumerableThing.ToArray()[(int)m]);
                     return;
                 }
         }
@@ -1455,7 +1455,7 @@ End Class");
         {
             await TestConversionVisualBasicToCSharp(@"<Global.System.Diagnostics.DebuggerDisplay(""Hello World"")>
 Class TestClass
-End Class", @"[global::System.Diagnostics.DebuggerDisplay(""Hello World"")]
+End Class", @"[System.Diagnostics.DebuggerDisplay(""Hello World"")]
 class TestClass
 {
 }");
@@ -1596,7 +1596,7 @@ End Class", @"class ClA
 {
     public static void MA()
     {
-        ClA.ClassB.MB();
+        ClassB.MB();
         MyClassC.MC();
     }
 
@@ -1604,9 +1604,9 @@ End Class", @"class ClA
     {
         public static ClassB MB()
         {
-            ClA.MA();
+            MA();
             MyClassC.MC();
-            return ClA.ClassB.MB();
+            return MB();
         }
     }
 }
@@ -1735,11 +1735,11 @@ End Class", @"class TestClass
     {
         get
         {
-            return this.m_test3;
+            return m_test3;
         }
         set
         {
-            this.m_test3 = value;
+            m_test3 = value;
         }
     }
 }");

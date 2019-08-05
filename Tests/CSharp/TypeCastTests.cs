@@ -118,7 +118,7 @@ End Class",
     private void Test()
     {
         object o = 5;
-        System.Nullable<int> i = System.Convert.ToInt32(o);
+        int? i = System.Convert.ToInt32(o);
         string s = System.Convert.ToInt32(o).ToString();
     }
 }");
@@ -202,11 +202,11 @@ End Class" + Environment.NewLine, @"class Class1
         {
             await TestConversionVisualBasicToCSharp(
                 @"Private Sub Test()
-    Dim CR As Char = ChrW(&HD)
+    Dim CR = ChrW(&HD)
 End Sub
 ", @"private void Test()
 {
-    char CR = (char)0xD;
+    var CR = (char)0xD;
 }
 ");
         }
@@ -220,7 +220,7 @@ End Sub
 End Sub
 ", @"private void Test()
 {
-    char CR = (char)0xD;
+    var CR = (char)0xD;
 }
 ");
         }

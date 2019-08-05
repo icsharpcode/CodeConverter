@@ -51,7 +51,7 @@ namespace global::InnerNamespace
 
 Namespace Global.InnerNamespace
     Public Class Test
-        Public Function StringInter(ByVal t As String, ByVal dt As DateTime) As String
+        Public Function StringInter(ByVal t As String, ByVal dt As Date) As String
             Dim a = $""pre{t} t""
             Dim b = $""pre{t} """" t""
             Dim c = $""pre{t} """"\ t""
@@ -75,7 +75,7 @@ End Namespace");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim result As Boolean = If((str Is """"), True, False)
+        Dim result = If(str Is """", True, False)
     End Sub
 End Class");
         }
@@ -149,7 +149,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim result As Boolean = If((str Is """"), CSharpImpl.__Throw(Of System.Boolean)(New Exception(""empty"")), False)
+        Dim result = If(str Is """", CSharpImpl.__Throw(Of Boolean)(New Exception(""empty"")), False)
     End Sub
 
     Private Class CSharpImpl
@@ -212,7 +212,7 @@ End Class");
         Dim length As Integer
         length = str.Length
         Console.WriteLine(""Test"" & length)
-        Console.ReadKey()
+        Console.ReadKey
     End Sub
 End Class");
         }
@@ -232,7 +232,7 @@ End Class");
 	}
 }", @"Public Class Test
     Public Shared Sub Main()
-        Dim y As Integer = 1
+        Dim y = 1
         y <<= 1
         y >>= 1
         y = y << 1
@@ -255,9 +255,9 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim length As Integer = If(str?.Length, -1)
+        Dim length = If(str?.Length, -1)
         Console.WriteLine(length)
-        Console.ReadKey()
+        Console.ReadKey
         Dim redirectUri As String = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri
     End Sub
 End Class");
@@ -287,7 +287,7 @@ End Class
 
 Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim student2 As StudentName = New StudentName With {
+        Dim student2 = New StudentName With {
             .FirstName = ""Craig"",
             .LastName = ""Playstead""
         }
@@ -361,7 +361,7 @@ End Class");
     Private member As Integer
 
     Private Sub TestMethod()
-        Me.member = 0
+        member = 0
     End Sub
 End Class");
         }
@@ -388,7 +388,7 @@ Friend Class TestClass
     Inherits BaseTestClass
 
     Private Sub TestMethod()
-        MyBase.member = 0
+        member = 0
     End Sub
 End Class");
         }
@@ -400,7 +400,7 @@ End Class");
 {
     return new object() == new object();
 }", @"Public Shared Function AreTwoObjectsReferenceEqual() As Boolean
-    Return New Object() Is New Object()
+    Return New Object Is New Object
 End Function");
         }
 
@@ -490,7 +490,7 @@ End Class");
     End Function
 
     Private Async Sub TestMethod()
-        Dim result As Integer = Await SomeAsyncMethod()
+        Dim result = Await SomeAsyncMethod
         Console.WriteLine(result)
     End Sub
 End Class");
@@ -511,7 +511,7 @@ End Class");
         Console.WriteLine(n);
 }",
 @"Private Shared Sub SimpleQuery()
-    Dim numbers As Integer() = {7, 9, 5, 3, 6}
+    Dim numbers = {7, 9, 5, 3, 6}
     Dim res = From n In numbers Where n > 5 Select n
 
     For Each n In res
@@ -545,7 +545,7 @@ End Sub");
         }
     }",
 @"Public Shared Sub Linq40()
-    Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
+    Dim numbers = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
     Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {
         .Remainder = __groupByKey1__,
         .Numbers = g
@@ -601,8 +601,8 @@ End Class
 
 Friend Class Test
     Public Sub Linq102()
-        Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
-        Dim products As Product() = GetProductList()
+        Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
+        Dim products As Product() = GetProductList
         Dim q = From c In categories Join p In products On c Equals p.Category Select New With {
             .Category = c, p.ProductName
         }
@@ -645,8 +645,8 @@ End Class");
         }
     }
 }", @"Public Sub Linq103()
-    Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
-    Dim products = GetProductList()
+    Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
+    Dim products = GetProductList
     Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {
         .Category = c,
         .Products = ps

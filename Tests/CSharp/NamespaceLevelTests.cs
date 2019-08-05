@@ -289,7 +289,7 @@ End Class",
         MyBase.New
     End Sub
 End Class",
-                @"public class DataSet1 : global::System.Data.DataSet
+                @"public class DataSet1 : System.Data.DataSet
 {
     public DataSet1() : base()
     {
@@ -668,14 +668,14 @@ End Class",
         return 1;
     }
 
-    public virtual int F1() => this.MyClassF1();
+    public virtual int F1() => MyClassF1();
     public abstract int F2();
     public void TestMethod()
     {
-        var w = this.MyClassF1();
-        var x = this.F1();
-        var y = this.F2();
-        var z = this.F2();
+        var w = MyClassF1();
+        var x = F1();
+        var y = F2();
+        var z = F2();
     }
 }");
         }
@@ -701,22 +701,22 @@ End Class",
     {
         get
         {
-            return this.MyClassP1;
+            return MyClassP1;
         }
 
         set
         {
-            this.MyClassP1 = value;
+            MyClassP1 = value;
         }
     }
 
     public abstract int P2 { get; set; }
     public void TestMethod()
     {
-        var w = this.MyClassP1;
-        var x = this.P1;
-        var y = this.P2;
-        var z = this.P2;
+        var w = MyClassP1;
+        var x = P1;
+        var y = P2;
+        var z = P2;
     }
 }");
         }

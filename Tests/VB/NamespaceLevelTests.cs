@@ -106,7 +106,7 @@ End Namespace");
 {
     void Test ();
 }", @"Friend Interface ITest
-    Inherits System.IDisposable
+    Inherits IDisposable
 
     Sub Test()
 End Interface");
@@ -121,7 +121,7 @@ End Interface");
     void Test ();
     void Test2 ();
 }", @"Friend Interface ITest
-    Inherits System.IDisposable
+    Inherits IDisposable
 
     Sub Test()
     Sub Test2()
@@ -166,7 +166,7 @@ End Enum");
 {
     protected abstract void Test();
 }", @"Friend MustInherit Class ClassA
-    Implements System.IDisposable
+    Implements IDisposable
 
     Protected MustOverride Sub Test()
 End Class");
@@ -176,8 +176,8 @@ End Class");
 {
     protected abstract void Test();
 }", @"Friend MustInherit Class ClassA
-    Inherits System.EventArgs
-    Implements System.IDisposable
+    Inherits EventArgs
+    Implements IDisposable
 
     Protected MustOverride Sub Test()
 End Class");
@@ -191,7 +191,7 @@ End Class");
 {
     void Test() {}
 }", @"Friend Structure MyType
-    Implements System.IComparable(Of MyType)
+    Implements IComparable(Of MyType)
 
     Private Sub Test()
     End Sub
@@ -262,7 +262,7 @@ End Interface");
         {
             await TestConversionCSharpToVisualBasic("class test : System.IComparable { }",
 @"Friend Class test
-    Implements System.IComparable
+    Implements IComparable
 End Class");
         }
 
@@ -282,7 +282,7 @@ End Class");
         {
             await TestConversionCSharpToVisualBasic("class test : System.IO.InvalidDataException { }",
 @"Friend Class test
-    Inherits System.IO.InvalidDataException
+    Inherits InvalidDataException
 End Class");
         }
     }

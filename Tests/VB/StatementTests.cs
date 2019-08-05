@@ -69,7 +69,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer = 0
+        Dim b = 0
     End Sub
 End Class");
         }
@@ -119,7 +119,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As String = New String(""test"")
+        Dim b = New String(""test"")
     End Sub
 End Class");
         }
@@ -167,7 +167,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer() = {1, 2, 3}
+        Dim b = {1, 2, 3}
     End Sub
 End Class");
         }
@@ -199,7 +199,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer() = New Integer() {1, 2, 3}
+        Dim b = New Integer() {1, 2, 3}
     End Sub
 End Class");
         }
@@ -215,7 +215,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer() = New Integer(2) {1, 2, 3}
+        Dim b = New Integer(2) {1, 2, 3}
     End Sub
 End Class");
         }
@@ -250,7 +250,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer(,) = {
+        Dim b = {
         {1, 2},
         {3, 4}}
     End Sub
@@ -271,7 +271,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer(,) = New Integer(,) {
+        Dim b = New Integer(,) {
         {1, 2},
         {3, 4}}
     End Sub
@@ -292,7 +292,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer(,) = New Integer(1, 1) {
+        Dim b = New Integer(1, 1) {
         {1, 2},
         {3, 4}}
     End Sub
@@ -326,7 +326,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer()() = {New Integer() {1, 2}, New Integer() {3, 4}}
+        Dim b = {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
         }
@@ -342,7 +342,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer()() = New Integer()() {New Integer() {1, 2}, New Integer() {3, 4}}
+        Dim b = New Integer()() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
         }
@@ -358,7 +358,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer()() = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
+        Dim b = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
         }
@@ -379,8 +379,8 @@ the_beginning:
 }", @"Friend Class Test
     Private Sub TestMethod()
 the_beginning:
-        Dim value As Integer = 1
-        Const myPIe As Double = System.Math.PI
+        Dim value = 1
+        Const myPIe = Math.PI
         Dim text = ""This is my text!""
         GoTo the_beginning
     End Sub
@@ -596,7 +596,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
-        For Each val As Integer In values
+        For Each val In values
             If val = 2 Then Continue For
             If val = 3 Then Exit For
         Next
@@ -688,7 +688,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim i As Integer = 0
+        Dim i = 0
 
         While unknownCondition
             b(i) = s(i)
@@ -808,23 +808,23 @@ End Class");
         }
     }", @"Friend Class GotoTest1
     Private Shared Sub Main()
-        Dim x As Integer = 200, y As Integer = 4
-        Dim count As Integer = 0
-        Dim array As String(,) = New String(x - 1, y - 1) {}
+        Dim x = 200, y = 4
+        Dim count = 0
+        Dim array = New String(x - 1, y - 1) {}
 
-        For i As Integer = 0 To x - 1
+        For i = 0 To x - 1
 
-            For j As Integer = 0 To y - 1
-                array(i, j) = (System.Threading.Interlocked.Increment(count)).ToString()
+            For j = 0 To y - 1
+                array(i, j) = Threading.Interlocked.Increment(count).ToString
             Next
         Next
 
         Console.Write(""Enter the number to search for: "")
-        Dim myNumber As String = Console.ReadLine()
+        Dim myNumber = Console.ReadLine
 
-        For i As Integer = 0 To x - 1
+        For i = 0 To x - 1
 
-            For j As Integer = 0 To y - 1
+            For j = 0 To y - 1
 
                 If array(i, j).Equals(myNumber) Then
                     GoTo Found
@@ -839,7 +839,7 @@ Found:
 Finish:
         Console.WriteLine(""End of search."")
         Console.WriteLine(""Press any key to exit."")
-        Console.ReadKey()
+        Console.ReadKey
     End Sub
 End Class");
         }
@@ -892,13 +892,13 @@ Friend Class TestClass
     Public Event MyEvent As EventHandler
 
     Private Sub TestMethod(ByVal e As EventHandler)
-        AddHandler Me.MyEvent, e
-        AddHandler Me.MyEvent, AddressOf MyHandler
+        AddHandler MyEvent, e
+        AddHandler MyEvent, AddressOf MyHandler
     End Sub
 
     Private Sub TestMethod2(ByVal e As EventHandler)
-        RemoveHandler Me.MyEvent, e
-        RemoveHandler Me.MyEvent, AddressOf MyHandler
+        RemoveHandler MyEvent, e
+        RemoveHandler MyEvent, AddressOf MyHandler
     End Sub
 
     Private Sub MyHandler(ByVal sender As Object, ByVal e As EventArgs)
@@ -1039,7 +1039,7 @@ End Class");
 
         Try
             Console.WriteLine(""try"")
-        Catch __unusedIOException1__ As System.IO.IOException
+        Catch __unusedIOException1__ As IOException
             Console.WriteLine(""catch1"")
         Catch e As Exception When Log(e.Message)
             Console.WriteLine(""catch2"")
@@ -1070,7 +1070,7 @@ End Class");
     Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
         If number < 0 Then Return
 
-        For i As Integer = 0 To number - 1
+        For i = 0 To number - 1
             Yield i
         Next
     End Function

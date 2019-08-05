@@ -17,7 +17,7 @@ namespace CodeConverter.Tests.VB
 }
 ", @"Private Sub Test()
     Dim o As Object = 5
-    Dim i As Integer = CInt(o)
+    Dim i As Integer = o
 End Sub
 ");
         }
@@ -33,7 +33,7 @@ End Sub
 }
 ", @"Private Sub Test()
     Dim o As Object = ""Test""
-    Dim s As String = CStr(o)
+    Dim s = CStr(o)
 End Sub
 ");
         }
@@ -48,8 +48,8 @@ End Sub
     System.Collections.Generic.List<int> l = (System.Collections.Generic.List<int>) o;
 }
 ", @"Private Sub Test()
-    Dim o As Object = New System.Collections.Generic.List(Of Integer)()
-    Dim l As System.Collections.Generic.List(Of Integer) = CType(o, System.Collections.Generic.List(Of Integer))
+    Dim o As Object = New List(Of Integer)
+    Dim l = CType(o, List(Of Integer))
 End Sub
 ");
         }
@@ -65,7 +65,7 @@ End Sub
 }
 ", @"Private Sub Test()
     Dim o As Object = 5
-    Dim i As System.Nullable(Of Integer) = CType(o, Integer?)
+    Dim i As Integer? = o
 End Sub
 ");
         }
@@ -80,8 +80,8 @@ End Sub
     System.Collections.Generic.List<int> l = o as System.Collections.Generic.List<int>;
 }
 ", @"Private Sub Test()
-    Dim o As Object = New System.Collections.Generic.List(Of Integer)()
-    Dim l As System.Collections.Generic.List(Of Integer) = TryCast(o, System.Collections.Generic.List(Of Integer))
+    Dim o As Object = New List(Of Integer)
+    Dim l = TryCast(o, List(Of Integer))
 End Sub
 ");
         }
@@ -137,7 +137,7 @@ End Sub
     char CR = (char)0xD;
 }
 ", @"Private Sub Test()
-    Dim CR As Char = ChrW(&HD)
+    Dim CR = ChrW(&HD)
 End Sub
 ");
         }
