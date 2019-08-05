@@ -1599,7 +1599,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             private ISymbol GetCsSymbolIfPossible(IMethodSymbol symbol)
             {
                 // Construct throws an exception if ConstructedFrom differs from it, so let's use ConstructedFrom directly
-                return SymbolFinder.FindSimilarSymbols(symbol.ConstructedFrom, _csCompilation).FirstOrDefault();
+                return SymbolFinder.FindSimilarSymbols(symbol.ConstructedFrom, _csCompilation).FirstOrDefault() ??
+                       symbol;
 
             }
 
