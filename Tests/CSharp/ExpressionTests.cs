@@ -2,6 +2,7 @@
 using System.Data;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -10,9 +11,9 @@ namespace CodeConverter.Tests.CSharp
     public class ExpressionTests : ConverterTestBase
     {
         [Fact]
-        public void MyClassExpr()
+        public async Task MyClassExpr()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass
     Sub TestMethod()
         MyClass.Val = 6
     End Sub
@@ -22,7 +23,7 @@ End Class", @"public class TestClass
 {
     public void TestMethod()
     {
-        TestClass.Val = 6;
+        Val = 6;
     }
 
     private static int Val;
@@ -31,10 +32,10 @@ End Class", @"public class TestClass
         }
 
         [Fact]
-        public void MultilineString()
+        public async Task MultilineString()
         {
             // Don't auto-test comments, otherwise it tries to put a comment in the middle of the string, which obviously isn't a valid place for it
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim x = ""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!""
@@ -53,10 +54,10 @@ World!"";
 }");
         }
         [Fact]
-        public void Quotes()
+        public async Task Quotes()
         {
             // Don't auto-test comments, otherwise it tries to put a comment in the middle of the string, which obviously isn't a valid place for it
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Shared Function GetTextFeedInput(pStream As String, pTitle As String, pText As String) As String
         Return ""{"" & AccessKey() & "",""""streamName"""": """""" & pStream & """""",""""point"""": ["" & GetTitleTextPair(pTitle, pText) & ""]}""
     End Function
@@ -95,29 +96,29 @@ class TestClass
 
     public static string GetNameValuePair(string pName, int pValue)
     {
-        return (""{\""name\"": \"""" + pName + ""\"", \""value\"": \"""" + Conversions.ToString(pValue) + ""\""}"");
+        return ""{\""name\"": \"""" + pName + ""\"", \""value\"": \"""" + Conversions.ToString(pValue) + ""\""}"";
     }
 
     public static string GetNameValuePair(string pName, string pValue)
     {
-        return (""{\""name\"": \"""" + pName + ""\"", \""value\"": \"""" + pValue + ""\""}"");
+        return ""{\""name\"": \"""" + pName + ""\"", \""value\"": \"""" + pValue + ""\""}"";
     }
 
     public static string GetTitleTextPair(string pName, string pValue)
     {
-        return (""{\""title\"": \"""" + pName + ""\"", \""msg\"": \"""" + pValue + ""\""}"");
+        return ""{\""title\"": \"""" + pName + ""\"", \""msg\"": \"""" + pValue + ""\""}"";
     }
     public static string GetDeltaPoint(int pDelta)
     {
-        return (""{\""delta\"": \"""" + Conversions.ToString(pDelta) + ""\""}"");
+        return ""{\""delta\"": \"""" + Conversions.ToString(pDelta) + ""\""}"";
     }
 }");
         }
 
         [Fact]
-        public void ConversionOfNotUsesParensIfNeeded()
+        public async Task ConversionOfNotUsesParensIfNeeded()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim rslt = Not 1 = 2
         Dim rslt2 = Not True
@@ -135,9 +136,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void DateLiterals()
+        public async Task DateLiterals()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal date As Date = #1/1/1900#)
         Dim rslt = #1/1/1900#
         Dim rslt2 = #8/13/2002 12:14 PM#
@@ -157,9 +158,9 @@ class TestClass
         }
 
         [Fact]
-        public void RefArgumentRValue()
+        public async Task RefArgumentRValue()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Private Property C1 As Class1
     Private _c2 As Class1
     Private _o1 As Object
@@ -188,14 +189,14 @@ End Class", @"public class Class1
         Bar(ref argclass1);
         var argclass11 = (object)C1;
         Bar(ref argclass11);
-        var argclass12 = (object)this.C1;
+        var argclass12 = (object)C1;
         Bar(ref argclass12);
         var argclass13 = (object)_c2;
         Bar(ref argclass13);
-        var argclass14 = (object)this._c2;
+        var argclass14 = (object)_c2;
         Bar(ref argclass14);
         Bar(ref _o1);
-        Bar(ref this._o1);
+        Bar(ref _o1);
     }
 
     public void Bar(ref object class1)
@@ -205,9 +206,9 @@ End Class", @"public class Class1
         }
 
         [Fact]
-        public void RefArgumentRValue2()
+        public async Task RefArgumentRValue2()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Sub Foo()
         Dim x = True
         Bar(x = True)
@@ -321,9 +322,9 @@ End Class", @"public class Class1
         }
 
         [Fact]
-        public void RefArgumentUsing()
+        public async Task RefArgumentUsing()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Data.SqlClient
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Data.SqlClient
 
 Public Class Class1
     Sub Foo()
@@ -353,9 +354,9 @@ public class Class1
         }
 
         [Fact]
-        public void RefArgumentPropertyInitializer()
+        public async Task RefArgumentPropertyInitializer()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Private _p1 As Class1 = Foo(New Class1)
     Public Shared Function Foo(ByRef c1 As Class1) As Class1
         Return c1
@@ -378,9 +379,9 @@ End Class", @"public class Class1
         }
 
         [Fact]
-        public void MethodCallWithImplicitConversion()
+        public async Task MethodCallWithImplicitConversion()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Sub Foo()
         Bar(True)
         Me.Bar(""4"")
@@ -397,7 +398,7 @@ public class Class1
     public void Foo()
     {
         Bar(Conversions.ToInteger(true));
-        this.Bar(Conversions.ToInteger(""4""));
+        Bar(Conversions.ToInteger(""4""));
         string[] ss = new string[2];
         var y = ss[Conversions.ToInteger(""0"")];
     }
@@ -409,9 +410,9 @@ public class Class1
         }
 
         [Fact]
-        public void IntToEnumArg()
+        public async Task IntToEnumArg()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Sub Foo(ByVal arg As TriState)
     End Sub
 
@@ -429,15 +430,15 @@ public class Class1
 
     public void Main()
     {
-        Foo((TriState)0);
+        Foo(0);
     }
 }");
         }
 
         [Fact]
-        public void EnumToIntCast()
+        public async Task EnumToIntCast()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class MyTest
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class MyTest
     Public Enum TestEnum As Integer
         Test1 = 0
         Test2 = 1
@@ -468,9 +469,9 @@ End Class",
 
 
         [Fact]
-        public void EnumSwitch()
+        public async Task EnumSwitch()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Enum E
         A
     End Enum
@@ -509,7 +510,7 @@ End Class",
 
         switch (e2)
         {
-            case var @case when @case == (int)E.A:
+            case var @case when @case == E.A:
                 {
                     break;
                 }
@@ -520,9 +521,9 @@ End Class",
 
 
         [Fact]
-        public void MethodCallWithoutParens()
+        public async Task MethodCallWithoutParens()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Sub Foo()
         Dim w = Bar
         Dim x = Me.Bar
@@ -539,9 +540,9 @@ End Class", @"public class Class1
     public void Foo()
     {
         var w = Bar();
-        var x = this.Bar();
+        var x = Bar();
         var y = Baz;
-        var z = this.Baz;
+        var z = Baz;
     }
 
     public int Bar()
@@ -553,9 +554,9 @@ End Class", @"public class Class1
         }
 
         [Fact]
-        public void ConversionOfCTypeUsesParensIfNeeded()
+        public async Task ConversionOfCTypeUsesParensIfNeeded()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim rslt = Ctype(true, Object).ToString()
         Dim rslt2 = Ctype(true, Object)
@@ -564,16 +565,16 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var rslt = ((object)true).ToString();
+        var rslt = true.ToString();
         var rslt2 = (object)true;
     }
 }");
         }
 
         [Fact]
-        public void DateKeyword()
+        public async Task DateKeyword()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private DefaultDate as Date = Nothing
 End Class", @"using System;
 
@@ -584,9 +585,9 @@ class TestClass
         }
 
         [Fact]
-        public void AccessSharedThroughInstance()
+        public async Task AccessSharedThroughInstance()
         {
-            TestConversionVisualBasicToCSharp(@"Public Class A
+            await TestConversionVisualBasicToCSharp(@"Public Class A
     Public Shared x As Integer = 2
     Public Sub Test()
         Dim tmp = Me
@@ -599,16 +600,16 @@ End Class", @"public class A
     public void Test()
     {
         var tmp = this;
-        var y = A.x;
-        var z = A.x;
+        var y = x;
+        var z = x;
     }
 }");
         }
 
         [Fact]
-        public void MethodCallDictionaryAccessConditional()
+        public async Task MethodCallDictionaryAccessConditional()
         {
-            TestConversionVisualBasicToCSharp(@"Public Class A
+            await TestConversionVisualBasicToCSharp(@"Public Class A
     Public Sub Test()
         Dim dict = New Dictionary(Of String, String) From {{""a"", ""AAA""}, {""b"", ""bbb""}}
         Dim v = dict?.Item(""a"")
@@ -626,10 +627,10 @@ public class A
         }
 
         [Fact]
-        public void IndexerWithParameter()
+        public async Task IndexerWithParameter()
         {
             //BUG Semicolon ends up on newline after comment instead of before it
-            TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Data
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Data
 
 Public Class A
     Public Function ReadDataSet(myData As DataSet) As String
@@ -652,9 +653,9 @@ public class A
         }
 
         [Fact]
-        public void MethodCallArrayIndexerBrackets()
+        public async Task MethodCallArrayIndexerBrackets()
         {
-            TestConversionVisualBasicToCSharp(@"Public Class A
+            await TestConversionVisualBasicToCSharp(@"Public Class A
     Public Sub Test()
         Dim str1 = Me.GetStringFromNone(0)
         str1 = GetStringFromNone(0)
@@ -690,10 +691,10 @@ End Class", @"public class A
 {
     public void Test()
     {
-        var str1 = this.GetStringFromNone()[0];
+        var str1 = GetStringFromNone()[0];
         str1 = GetStringFromNone()[0];
         var str2 = GetStringFromNone()[1];
-        var str3 = this.GetStringsFromString(""abc"");
+        var str3 = GetStringsFromString(""abc"");
         str3 = GetStringsFromString(""abc"");
         var str4 = GetStringsFromString(""abc"")[1];
         var fromStr3 = GetMoreStringsFromString(""bc"")[1][0];
@@ -729,9 +730,9 @@ End Class", @"public class A
         }
 
         [Fact]
-        public void UnknownTypeInvocation()
+        public async Task UnknownTypeInvocation()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private property DefaultDate as System.SomeUnknownType
     private sub TestMethod()
         Dim a = DefaultDate(1, 2, 3).Blawer(1, 2, 3)
@@ -747,9 +748,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void BinaryOperatorsIsIsNotLeftShiftRightShift()
+        public async Task BinaryOperatorsIsIsNotLeftShiftRightShift()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private bIs as Boolean = New Object Is New Object
     Private bIsNot as Boolean = New Object IsNot New Object
     Private bLeftShift as Integer = 1 << 3
@@ -764,9 +765,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void LikeOperator()
+        public async Task LikeOperator()
         {
-            TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Foo()
         Dim x = """" Like ""*x*""
     End Sub
@@ -783,9 +784,9 @@ public class Class1
         }
 
         [Fact]
-        public void ElementAtOrDefaultIndexing()
+        public async Task ElementAtOrDefaultIndexing()
         {
-            TestConversionVisualBasicToCSharp(@"Imports System.Linq
+            await TestConversionVisualBasicToCSharp(@"Imports System.Linq
 
 Public Class Class1
     Sub Foo()
@@ -805,9 +806,9 @@ public class Class1
         }
 
         [Fact]
-        public void ElementAtOrDefaultInvocationIsNotDuplicated()
+        public async Task ElementAtOrDefaultInvocationIsNotDuplicated()
         {
-            TestConversionVisualBasicToCSharp(@"Imports System.Linq
+            await TestConversionVisualBasicToCSharp(@"Imports System.Linq
 
 Public Class Class1
     Sub Foo()
@@ -827,9 +828,9 @@ public class Class1
         }
 
         [Fact]
-        public void EnumNullableConversion()
+        public async Task EnumNullableConversion()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Sub Main()
         Dim x = DayOfWeek.Monday
         Foo(x)
@@ -855,10 +856,10 @@ public class Class1
         }
 
         [Fact]
-        public void UninitializedVariable()
+        public async Task UninitializedVariable()
         {
             //TODO: Fix comment to be ported to top of property rather than bottom
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Sub New()
         Dim needsInitialization As Integer
         Dim notUsed As Integer
@@ -959,9 +960,9 @@ End Class", @"public class Class1
         }
 
         [Fact]
-        public void ShiftAssignment()
+        public async Task ShiftAssignment()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 1
         x <<= 4
@@ -979,9 +980,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void StringCompare()
+        public async Task StringCompare()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Sub Foo()
         Dim s1 As String = Nothing
         Dim s2 As String = """"
@@ -1026,9 +1027,9 @@ public class Class1
         }
 
         [Fact]
-        public void StringCompareText()
+        public async Task StringCompareText()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Option Compare Text
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Option Compare Text
 Public Class Class1
     Sub Foo()
         Dim s1 As String = Nothing
@@ -1075,9 +1076,9 @@ public class Class1
         }
 
         [Fact]
-        public void StringConcatPrecedence()
+        public async Task StringConcatPrecedence()
         {
-            TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Foo()
         Dim x = ""x "" & 5 - 4 & "" y""
     End Sub
@@ -1093,9 +1094,9 @@ public class Class1
         }
 
         [Fact]
-        public void IntegerArithmetic()
+        public async Task IntegerArithmetic()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 7 ^ 6 Mod 5 \ 4 + 3 * 2
         x += 1
@@ -1110,7 +1111,7 @@ class TestClass
 {
     private void TestMethod()
     {
-        var x = (Math.Pow((double)7, (double)6) % (double)(5 / 4)) + (double)(3 * 2);
+        var x = Math.Pow(7, 6) % (5 / 4) + 3 * 2;
         x += 1;
         x -= 2;
         x *= 3;
@@ -1121,9 +1122,9 @@ class TestClass
         }
 
         [Fact]
-        public void ImplicitConversions()
+        public async Task ImplicitConversions()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim x As Double = 1
         Dim y As Decimal = 2
@@ -1139,11 +1140,11 @@ class TestClass
 {
     private void TestMethod()
     {
-        double x = (double)1;
-        decimal y = (decimal)2;
+        double x = 1;
+        decimal y = 2;
         int i1 = 1;
         int i2 = 2;
-        var d1 = (double)i1 / (double)i2;
+        var d1 = i1 / (double)i2;
         var z = x + Conversions.ToDouble(y);
         var z2 = Conversions.ToDouble(y) + x;
     }
@@ -1152,9 +1153,9 @@ class TestClass
         }
 
         [Fact]
-        public void FloatingPointDivisionIsForced()
+        public async Task FloatingPointDivisionIsForced()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 10 / 3
         x /= 2
@@ -1167,9 +1168,9 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var x = (double)10 / (double)3;
+        var x = 10 / (double)3;
         x /= 2;
-        var y = 10.0 / (double)3;
+        var y = 10.0 / 3;
         y /= 2;
         int z = 8;
         z /= 3;
@@ -1178,9 +1179,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void FullyTypeInferredEnumerableCreation()
+        public async Task FullyTypeInferredEnumerableCreation()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim strings = { ""1"", ""2"" }
     End Sub
@@ -1194,9 +1195,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void EmptyArgumentLists()
+        public async Task EmptyArgumentLists()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim str = (New ThreadStaticAttribute).ToString
     End Sub
@@ -1206,15 +1207,15 @@ class TestClass
 {
     private void TestMethod()
     {
-        var str = (new ThreadStaticAttribute()).ToString();
+        var str = new ThreadStaticAttribute().ToString();
     }
 }");
         }
 
         [Fact]
-        public void StringConcatenationAssignment()
+        public async Task StringConcatenationAssignment()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim str = ""Hello, ""
         str &= ""World""
@@ -1230,9 +1231,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void GetTypeExpression()
+        public async Task GetTypeExpression()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim typ = GetType(String)
     End Sub
@@ -1246,10 +1247,10 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void NullableInteger()
+        public async Task NullableInteger()
         {
             //BUG: Line comments after "else" aren't converted
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Public Function Bar(value As String) As Integer?
         Dim result As Integer
         If Integer.TryParse(value, result) Then
@@ -1272,9 +1273,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void NothingInvokesDefaultForValueTypes()
+        public async Task NothingInvokesDefaultForValueTypes()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Public Sub Bar()
         Dim number As Integer
         number = Nothing
@@ -1296,9 +1297,9 @@ class TestClass
         }
 
         [Fact]
-        public void UsesSquareBracketsForIndexerButParenthesesForMethodInvocation()
+        public async Task UsesSquareBracketsForIndexerButParenthesesForMethodInvocation()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Function TestMethod() As String()
         Dim s = ""1,2""
         Return s.Split(s(1))
@@ -1314,9 +1315,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void UsesSquareBracketsForItemIndexer()
+        public async Task UsesSquareBracketsForItemIndexer()
         {
-            TestConversionVisualBasicToCSharp(@"Imports System.Data
+            await TestConversionVisualBasicToCSharp(@"Imports System.Data
 
 Class TestClass
     Function GetItem(dr As DataRow) As Object
@@ -1334,9 +1335,9 @@ class TestClass
         }
 
         [Fact]
-        public void ConditionalExpression()
+        public async Task ConditionalExpression()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = If((str = """"), True, False)
     End Sub
@@ -1344,15 +1345,15 @@ End Class", @"class TestClass
 {
     private void TestMethod(string str)
     {
-        bool result = (string.IsNullOrEmpty(str)) ? true : false;
+        bool result = string.IsNullOrEmpty(str) ? true : false;
     }
 }");
         }
 
         [Fact]
-        public void ConditionalExpressionInUnaryExpression()
+        public async Task ConditionalExpressionInUnaryExpression()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = Not If((str = """"), True, False)
     End Sub
@@ -1360,15 +1361,15 @@ End Class", @"class TestClass
 {
     private void TestMethod(string str)
     {
-        bool result = !((string.IsNullOrEmpty(str)) ? true : false);
+        bool result = !(string.IsNullOrEmpty(str) ? true : false);
     }
 }");
         }
 
         [Fact]
-        public void ConditionalExpressionInBinaryExpression()
+        public async Task ConditionalExpressionInBinaryExpression()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Integer = 5 - If((str = """"), 1, 2)
     End Sub
@@ -1376,15 +1377,15 @@ End Class", @"class TestClass
 {
     private void TestMethod(string str)
     {
-        int result = 5 - ((string.IsNullOrEmpty(str)) ? 1 : 2);
+        int result = 5 - (string.IsNullOrEmpty(str) ? 1 : 2);
     }
 }");
         }
 
         [Fact]
-        public void NullCoalescingExpression()
+        public async Task NullCoalescingExpression()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Console.WriteLine(If(str, ""<null>""))
     End Sub
@@ -1399,9 +1400,9 @@ class TestClass
 }");
         }
         [Fact]
-        public void OmmittedArgumentInInvocation()
+        public async Task OmmittedArgumentInInvocation()
         {
-            TestConversionVisualBasicToCSharp(@"Imports System
+            await TestConversionVisualBasicToCSharp(@"Imports System
 
 Public Module MyExtensions
     public sub NewColumn(type As Type , Optional strV1 As String = nothing, optional code As String = ""code"")
@@ -1430,9 +1431,9 @@ public static class MyExtensions
         }
 
         [Fact]
-        public void MemberAccessAndInvocationExpression()
+        public async Task MemberAccessAndInvocationExpression()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim length As Integer
         length = str.Length
@@ -1455,9 +1456,9 @@ class TestClass
         }
 
         [Fact]
-        public void ExternalReferenceToOutParameter()
+        public async Task ExternalReferenceToOutParameter()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim d = New Dictionary(Of string, string)
         Dim s As String
@@ -1477,9 +1478,9 @@ class TestClass
         }
 
         [Fact]
-        public void OmittedParamsArray()
+        public async Task OmittedParamsArray()
         {
-            TestConversionVisualBasicToCSharp(@"Module AppBuilderUseExtensions
+            await TestConversionVisualBasicToCSharp(@"Module AppBuilderUseExtensions
     <System.Runtime.CompilerServices.Extension>
     Function Use(Of T)(ByVal app As String, ParamArray args As Object()) As Object
         Return Nothing
@@ -1508,9 +1509,9 @@ class TestClass
         }
 
         [Fact]
-        public void ElvisOperatorExpression()
+        public async Task ElvisOperatorExpression()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass3
+            await TestConversionVisualBasicToCSharp(@"Class TestClass3
     Private Class Rec
         Public ReadOnly Property Prop As New Rec
     End Class
@@ -1538,10 +1539,10 @@ class TestClass3
 }");
         }
 
-        [Fact()]
-        public void ObjectInitializerExpression()
+        [Fact]
+        public async Task ObjectInitializerExpression()
         {
-            TestConversionVisualBasicToCSharp(@"Class StudentName
+            await TestConversionVisualBasicToCSharp(@"Class StudentName
     Public LastName, FirstName As String
 End Class
 
@@ -1563,10 +1564,10 @@ class TestClass
 }");
         }
 
-        [Fact()]
-        public void ObjectInitializerExpression2()
+        [Fact]
+        public async Task ObjectInitializerExpression2()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 = New With {Key .FirstName = ""Craig"", Key .LastName = ""Playstead""}
     End Sub
@@ -1579,9 +1580,9 @@ End Class", @"class TestClass
 }");
         }
         [Fact]
-        public void CollectionInitializers()
+        public async Task CollectionInitializers()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub DoStuff(a As Object)
     End Sub
     Private Sub TestMethod()
@@ -1606,9 +1607,9 @@ class TestClass
         }
 
         [Fact]
-        public void ThisMemberAccessExpression()
+        public async Task ThisMemberAccessExpression()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private member As Integer
 
     Private Sub TestMethod()
@@ -1620,15 +1621,15 @@ End Class", @"class TestClass
 
     private void TestMethod()
     {
-        this.member = 0;
+        member = 0;
     }
 }");
         }
 
         [Fact]
-        public void BaseMemberAccessExpression()
+        public async Task BaseMemberAccessExpression()
         {
-            TestConversionVisualBasicToCSharp(@"Class BaseTestClass
+            await TestConversionVisualBasicToCSharp(@"Class BaseTestClass
     Public member As Integer
 End Class
 
@@ -1647,15 +1648,15 @@ class TestClass : BaseTestClass
 {
     private void TestMethod()
     {
-        base.member = 0;
+        member = 0;
     }
 }");
         }
 
         [Fact]
-        public void DelegateExpression()
+        public async Task DelegateExpression()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim test As Func(Of Integer, Integer) = Function(ByVal a As Integer) a * 2
         test(3)
@@ -1666,16 +1667,16 @@ class TestClass
 {
     private void TestMethod()
     {
-        Func<int, int> test = (int a) => a * 2;
+        Func<int, int> test = (a) => a * 2;
         test(3);
     }
 }");
         }
 
         [Fact]
-        public void LambdaBodyExpression()
+        public async Task LambdaBodyExpression()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim test As Func(Of Integer, Integer) = Function(a) a * 2
         Dim test2 As Func(Of Integer, Integer, Double) = Function(a, b)
@@ -1696,7 +1697,7 @@ class TestClass
         Func<int, int, double> test2 = (a, b) =>
         {
             if (b > 0)
-                return (double)a / (double)b;
+                return a / (double)b;
             return 0;
         };
 
@@ -1707,10 +1708,10 @@ class TestClass
         }
 
         [Fact]
-        public void SingleLineLambdaWithStatementBody()
+        public async Task SingleLineLambdaWithStatementBody()
         {
             //Bug: Comments after action definition are lost
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 1
         Dim simpleAssignmentAction As System.Action = Sub() x = 1
@@ -1724,17 +1725,17 @@ class TestClass
     private void TestMethod()
     {
         var x = 1;
-        System.Action simpleAssignmentAction = () => x = 1;
-        System.Action nonBlockAction = () => Console.WriteLine(""Statement"");
-        Action ifAction = () => { if (true) return; };"/* I don't know why this Action doesn't get qualified when the above two do - just characterizing current behaviour*/ + @"
+        Action simpleAssignmentAction = () => x = 1;
+        Action nonBlockAction = () => Console.WriteLine(""Statement"");
+        Action ifAction = () => { if (true) return; };
     }
 }");
         }
         
         [Fact]
-        public void Await()
+        public async Task Await()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Function SomeAsyncMethod() As Task(Of Integer)
         Return Task.FromResult(0)
     End Function
@@ -1762,9 +1763,9 @@ class TestClass
         }
 
         [Fact]
-        public void PartiallyQualifiedName()
+        public async Task PartiallyQualifiedName()
         {
-            TestConversionVisualBasicToCSharp(@"Imports System.Collections
+            await TestConversionVisualBasicToCSharp(@"Imports System.Collections
 Class TestClass
     Public Sub TestMethod(dir As String)
         IO.Path.Combine(dir, ""file.txt"")
@@ -1781,9 +1782,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void TypePromotedModuleIsQualified()
+        public async Task TypePromotedModuleIsQualified()
         {
-            TestConversionVisualBasicToCSharp(@"Namespace TestNamespace
+            await TestConversionVisualBasicToCSharp(@"Namespace TestNamespace
     Public Module TestModule
         Public Sub ModuleFunction()
         End Sub
@@ -1814,9 +1815,9 @@ class TestClass
         }
         
         [Fact]
-        public void NameQualifyingHandlesInheritance()
+        public async Task NameQualifyingHandlesInheritance()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClassBase
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClassBase
     Sub DoStuff()
     End Sub
 End Class
@@ -1842,9 +1843,9 @@ class TestClass : TestClassBase
         }
 
         [Fact]
-        public void UsingGlobalImport()
+        public async Task UsingGlobalImport()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Public Function TestMethod() As String
          Return vbCrLf
     End Function
@@ -1860,10 +1861,10 @@ class TestClass
         }
 
         [Fact]
-        public void ValueCapitalisation()
+        public async Task ValueCapitalisation()
         {
             //TODO: Fix comment to be ported to top of property rather than bottom
-            TestConversionVisualBasicToCSharpWithoutComments(@"public Enum TestState
+            await TestConversionVisualBasicToCSharpWithoutComments(@"public Enum TestState
 one
 two
 end enum
@@ -1904,9 +1905,9 @@ public class test
         }
 
         [Fact]
-        public void StringInterpolationWithConditionalOperator()
+        public async Task StringInterpolationWithConditionalOperator()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharpWithoutComments(
                 @"Public Function GetString(yourBoolean as Boolean) As String
     Return $""You {if (yourBoolean, ""do"", ""do not"")} have a true value""
 End Function",
@@ -1917,9 +1918,9 @@ End Function",
         }
 
         [Fact]
-        public void Tuple()
+        public async Task Tuple()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharpWithoutComments(
                 @"Public Function GetString(yourBoolean as Boolean) As Boolean
     Return 1 <> 1 OrElse if (yourBoolean, True, False)
 End Function",
@@ -1930,9 +1931,9 @@ End Function",
         }
 
         [Fact]
-        public void UseEventBackingField()
+        public async Task UseEventBackingField()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharpWithoutComments(
                 @"Public Class Foo
     Public Event Bar As EventHandler(Of EventArgs)
 
@@ -1961,9 +1962,9 @@ public class Foo
         }
 
         [Fact]
-        public void StringInterpolationWithDoubleQuotes()
+        public async Task StringInterpolationWithDoubleQuotes()
         {
-            TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharp(
 @"Imports System
 
 Namespace Global.InnerNamespace
@@ -2000,9 +2001,9 @@ namespace InnerNamespace
         }
 
         [Fact]
-        public void DateTimeToDateAndTime()
+        public async Task DateTimeToDateAndTime()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Sub Foo()
         Dim x = DateAdd(""m"", 5, Now)
     End Sub
@@ -2012,15 +2013,15 @@ public class Class1
 {
     public void Foo()
     {
-        var x = DateAndTime.DateAdd(""m"", (double)5, DateAndTime.Now);
+        var x = DateAndTime.DateAdd(""m"", 5, DateAndTime.Now);
     }
 }");
         }
 
         [Fact]
-        public void BaseFinalizeRemoved()
+        public async Task BaseFinalizeRemoved()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Protected Overrides Sub Finalize()
         MyBase.Finalize()
     End Sub
@@ -2033,9 +2034,9 @@ End Class", @"public class Class1
         }
 
         [Fact]
-        public void MemberAccessCasing()
+        public async Task MemberAccessCasing()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Sub Bar()
 
     End Sub
@@ -2053,7 +2054,7 @@ End Class", @"public class Class1
     public void Foo()
     {
         Bar();
-        this.Bar();
+        Bar();
     }
 }");
         }

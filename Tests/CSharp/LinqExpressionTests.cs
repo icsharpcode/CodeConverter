@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace CodeConverter.Tests.CSharp
@@ -6,10 +7,10 @@ namespace CodeConverter.Tests.CSharp
     public class LinqExpressionTests : ConverterTestBase
     {
         [Fact]
-        public void Linq1()
+        public async Task Linq1()
         {
-            TestConversionVisualBasicToCSharp(@"Private Shared Sub SimpleQuery()
-    Dim numbers As Integer() = {7, 9, 5, 3, 6}
+            await TestConversionVisualBasicToCSharp(@"Private Shared Sub SimpleQuery()
+    Dim numbers = {7, 9, 5, 3, 6}
     Dim res = From n In numbers Where n > 5 Select n
 
     For Each n In res
@@ -18,7 +19,7 @@ namespace CodeConverter.Tests.CSharp
 End Sub",
                 @"private static void SimpleQuery()
 {
-    int[] numbers = new[] { 7, 9, 5, 3, 6 };"/*TODO Remove need for new[]*/ + @"
+    var numbers = new[] { 7, 9, 5, 3, 6 };
     var res = from n in numbers
               where n > 5
               select n;
@@ -29,9 +30,9 @@ End Sub",
         }
 
         [Fact]
-        public void Linq2()
+        public async Task Linq2()
         {
-            TestConversionVisualBasicToCSharp(@"Public Shared Sub Linq40()
+            await TestConversionVisualBasicToCSharp(@"Public Shared Sub Linq40()
     Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
     Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g Select New With {Key .Remainder = g.Key, Key .Numbers = g}
 
@@ -61,9 +62,9 @@ End Sub",
         }
 
         [Fact()]
-        public void Linq3()
+        public async Task Linq3()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class Product
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -115,9 +116,9 @@ class Test
         }
 
         [Fact]
-        public void Linq4()
+        public async Task Linq4()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class Product
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -176,9 +177,9 @@ class Test
         }
 
         [Fact]
-        public void Linq5()
+        public async Task Linq5()
         {
-            TestConversionVisualBasicToCSharp(@"Private Shared Function FindPicFilePath(picId As String) As String
+            await TestConversionVisualBasicToCSharp(@"Private Shared Function FindPicFilePath(picId As String) As String
     For Each FileInfo As FileInfo In From FileInfo1 In AList Where FileInfo1.Name.Substring(0, 6) = picId
         Return FileInfo.FullName
     Next
@@ -194,9 +195,9 @@ End Function", @"private static string FindPicFilePath(string picId)
         }
 
         [Fact]
-        public void LinqMultipleFroms()
+        public async Task LinqMultipleFroms()
         {
-            TestConversionVisualBasicToCSharp(@"Private Shared Sub LinqSub()
+            await TestConversionVisualBasicToCSharp(@"Private Shared Sub LinqSub()
     Dim _result = From _claimProgramSummary In New List(Of List(Of List(Of List(Of String))))()
                   From _claimComponentSummary In _claimProgramSummary.First()
                   From _lineItemCalculation In _claimComponentSummary.Last()
@@ -211,9 +212,9 @@ End Sub", @"private static void LinqSub()
         }
 
         [Fact]
-        public void LinqPartitionDistinct()
+        public async Task LinqPartitionDistinct()
         {
-            TestConversionVisualBasicToCSharp(@"Private Shared Function FindPicFilePath() As IEnumerable(Of String)
+            await TestConversionVisualBasicToCSharp(@"Private Shared Function FindPicFilePath() As IEnumerable(Of String)
     Dim words = {""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away""}
 
     Return From word In words
@@ -236,9 +237,9 @@ End Function", @"private static IEnumerable<string> FindPicFilePath()
         }
 
         [Fact(Skip = "Issue #29 - Aggregate not supported")]
-        public void LinqAggregateSum()
+        public async Task LinqAggregateSum()
         {
-            TestConversionVisualBasicToCSharp(@"Private Shared Sub ASub()
+            await TestConversionVisualBasicToCSharp(@"Private Shared Sub ASub()
     Dim expenses() As Double = {560.0, 300.0, 1080.5, 29.95, 64.75, 200.0}
     Dim totalExpense = Aggregate expense In expenses Into Sum()
 End Sub", @"private static void ASub()
@@ -249,9 +250,9 @@ End Sub", @"private static void ASub()
         }
 
         [Fact(Skip = "Issue #29 - Group join not supported")]
-        public void LinqGroupJoin()
+        public async Task LinqGroupJoin()
         {
-            TestConversionVisualBasicToCSharp(@"Private Shared Sub ASub()
+            await TestConversionVisualBasicToCSharp(@"Private Shared Sub ASub()
     Dim customerList = From cust In customers
                        Group Join ord In orders On
                        cust.CustomerID Equals ord.CustomerID
@@ -269,10 +270,10 @@ End Sub", @"private static void ASub()
         }
 
         [Fact]
-        public void LinqGroupByAnonymous()
+        public async Task LinqGroupByAnonymous()
         {
             //Very hard to automated test comments on such a complicated query
-            TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Runtime.CompilerServices
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Runtime.CompilerServices
 
 Public Class AccountEntry
     Public Property LookupAccountEntryTypeId As Object
@@ -349,39 +350,38 @@ static class Ext
 {
     public static IEnumerable<AccountEntry> Reduce(this IEnumerable<AccountEntry> accountEntries)
     {
-        return (from _accountEntry in accountEntries
-                where _accountEntry.Amount > 0M
-                group _accountEntry by new
-                {
-                    LookupAccountEntryTypeId = _accountEntry.LookupAccountEntryTypeId,
-                    LookupAccountEntrySourceId = _accountEntry.LookupAccountEntrySourceId,
-                    SponsorId = _accountEntry.SponsorId,
-                    LookupFundTypeId = _accountEntry.LookupFundTypeId,
-                    StartDate = _accountEntry.StartDate,
-                    SatisfiedDate = _accountEntry.SatisfiedDate,
-                    InterestStartDate = _accountEntry.InterestStartDate,
-                    ComputeInterestFlag = _accountEntry.ComputeInterestFlag,
-                    SponsorClaimRevision = _accountEntry.SponsorClaimRevision
-                } into Group
-                let _keys = Group.Key
-                select new AccountEntry()
-                {
-                    LookupAccountEntryTypeId = _keys.LookupAccountEntryTypeId,
-                    LookupAccountEntrySourceId = _keys.LookupAccountEntrySourceId,
-                    SponsorId = _keys.SponsorId,
-                    LookupFundTypeId = _keys.LookupFundTypeId,
-                    StartDate = _keys.StartDate,
-                    SatisfiedDate = _keys.SatisfiedDate,
-                    ComputeInterestFlag = _keys.ComputeInterestFlag,
-                    InterestStartDate = _keys.InterestStartDate,
-                    SponsorClaimRevision = _keys.SponsorClaimRevision,
-                    Amount = Group.Sum(accountEntry => accountEntry.Amount),
-                    AccountTransactions = new List<object>(),
-                    AccountEntryClaimDetails = (from _accountEntry in Group
-                                                from _claimDetail in _accountEntry.AccountEntryClaimDetails
-                                                select _claimDetail).Reduce().ToList()
-                }
-);
+        return from _accountEntry in accountEntries
+               where _accountEntry.Amount > 0M
+               group _accountEntry by new
+               {
+                   _accountEntry.LookupAccountEntryTypeId,
+                   _accountEntry.LookupAccountEntrySourceId,
+                   _accountEntry.SponsorId,
+                   _accountEntry.LookupFundTypeId,
+                   _accountEntry.StartDate,
+                   _accountEntry.SatisfiedDate,
+                   _accountEntry.InterestStartDate,
+                   _accountEntry.ComputeInterestFlag,
+                   _accountEntry.SponsorClaimRevision
+               } into Group
+               let _keys = Group.Key
+               select new AccountEntry()
+               {
+                   LookupAccountEntryTypeId = _keys.LookupAccountEntryTypeId,
+                   LookupAccountEntrySourceId = _keys.LookupAccountEntrySourceId,
+                   SponsorId = _keys.SponsorId,
+                   LookupFundTypeId = _keys.LookupFundTypeId,
+                   StartDate = _keys.StartDate,
+                   SatisfiedDate = _keys.SatisfiedDate,
+                   ComputeInterestFlag = _keys.ComputeInterestFlag,
+                   InterestStartDate = _keys.InterestStartDate,
+                   SponsorClaimRevision = _keys.SponsorClaimRevision,
+                   Amount = Group.Sum(accountEntry => accountEntry.Amount),
+                   AccountTransactions = new List<object>(),
+                   AccountEntryClaimDetails = (from _accountEntry in Group
+                                               from _claimDetail in _accountEntry.AccountEntryClaimDetails
+                                               select _claimDetail).Reduce().ToList()
+               };
     }
 }");
         }

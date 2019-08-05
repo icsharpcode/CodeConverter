@@ -30,7 +30,12 @@ namespace ICSharpCode.CodeConverter.Util
 
         private static CSharpCompilation CreateCSharpCompilation()
         {
-            return CSharpCompilation.Create("Conversion", options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            return CSharpCompilation.Create("Conversion", options: CreateCompilationOptions());
+        }
+
+        public static CSharpCompilationOptions CreateCompilationOptions()
+        {
+            return new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary);
         }
     }
 }

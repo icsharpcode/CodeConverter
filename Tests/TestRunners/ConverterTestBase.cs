@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +16,7 @@ namespace CodeConverter.Tests.TestRunners
 {
     public class ConverterTestBase
     {
+
         private bool _testCstoVBCommentsByDefault = false;
         private readonly string _rootNamespace;
 
@@ -28,12 +32,12 @@ namespace CodeConverter.Tests.TestRunners
             return convertedCode;
         }
 
-        public void TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, bool expectCompilationErrors = false)
+        public async Task TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, bool expectCompilationErrors = false)
         {
             expectedVisualBasicCode = AddSurroundingMethodBlock(expectedVisualBasicCode, expectSurroundingMethodBlock);
 
-            TestConversionCSharpToVisualBasicWithoutComments(csharpCode, expectedVisualBasicCode);
-            if (_testCstoVBCommentsByDefault) TestConversionCSharpToVisualBasicWithoutComments(AddLineNumberComments(csharpCode, "// ", false), AddLineNumberComments(expectedVisualBasicCode, "' ", true));
+            await TestConversionCSharpToVisualBasicWithoutComments(csharpCode, expectedVisualBasicCode);
+            if (_testCstoVBCommentsByDefault) await TestConversionCSharpToVisualBasicWithoutComments(AddLineNumberComments(csharpCode, "// ", false), AddLineNumberComments(expectedVisualBasicCode, "' ", true));
         }
 
         private static string AddSurroundingMethodBlock(string expectedVisualBasicCode, bool expectSurroundingBlock)
@@ -49,16 +53,16 @@ End Sub";
             return expectedVisualBasicCode;
         }
 
-        private void TestConversionCSharpToVisualBasicWithoutComments(string csharpCode, string expectedVisualBasicCode)
+        private async Task TestConversionCSharpToVisualBasicWithoutComments(string csharpCode, string expectedVisualBasicCode)
         {
-            AssertConvertedCodeResultEquals<CSToVBConversion>(csharpCode, expectedVisualBasicCode).GetAwaiter().GetResult();
+            await AssertConvertedCodeResultEquals<CSToVBConversion>(csharpCode, expectedVisualBasicCode);
         }
 
-        public void TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool expectSurroundingBlock = false)
+        public async Task TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool expectSurroundingBlock = false)
         {
             if (expectSurroundingBlock) expectedCsharpCode = SurroundWithBlock(expectedCsharpCode);
-            TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode);
-            TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true));
+            await TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode);
+            await TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true));
         }
 
         private static string SurroundWithBlock(string expectedCsharpCode)
@@ -67,9 +71,9 @@ End Sub";
             return $"{{\r\n    {indentedStatements}\r\n}}";
         }
 
-        public void TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode)
+        public async Task TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode)
         {
-            AssertConvertedCodeResultEquals<VBToCSConversion>(visualBasicCode, expectedCsharpCode).GetAwaiter().GetResult();
+            await AssertConvertedCodeResultEquals<VBToCSConversion>(visualBasicCode, expectedCsharpCode);
         }
 
         private async Task AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode) where TLanguageConversion : ILanguageConversion, new()

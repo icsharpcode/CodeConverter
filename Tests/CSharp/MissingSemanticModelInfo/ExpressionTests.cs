@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace CodeConverter.Tests.CSharp.MissingSemanticModelInfo
@@ -6,11 +7,11 @@ namespace CodeConverter.Tests.CSharp.MissingSemanticModelInfo
     public class ExpressionTests : ConverterTestBase
     {
         [Fact]
-        public void InvokeIndexerOnPropertyValue()
+        public async Task InvokeIndexerOnPropertyValue()
         {
             // Chances of having an unknown delegate stored as a field/property/local seem lower than having an unknown non-delegate
             // type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
 Public Property SomeProperty As System.Some.UnknownType
     Private Sub TestMethod()
         Dim value = SomeProperty(0)
@@ -25,9 +26,9 @@ End Class", @"class TestClass
 }");
         }
         [Fact]
-        public void InvokeMethodWithUnknownReturnType()
+        public async Task InvokeMethodWithUnknownReturnType()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Sub Foo()
         Bar(Nothing)
     End Sub
@@ -64,10 +65,10 @@ public class Class1
         }
 
         [Fact]
-        public void ForNextMutatingMissingField()
+        public async Task ForNextMutatingMissingField()
         {
             // Comment from "Next" gets pushed up to previous line
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Sub Foo()
         For Me.Index = 0 To 10
 

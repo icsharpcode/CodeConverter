@@ -72,7 +72,7 @@ namespace CodeConverter.Tests.TestRunners
                 : LanguageNames.CSharp;
 
             var projectsToConvert = (await _solution.GetValueAsync()).Projects.Where(p => p.Language == languageNameToConvert && shouldConvertProject(p)).ToArray();
-            var conversionResults = SolutionConverter.CreateFor<TLanguageConversion>(projectsToConvert).Convert().GetAwaiter().GetResult().ToDictionary(c => c.TargetPathOrNull, StringComparer.OrdinalIgnoreCase);
+            var conversionResults = (await SolutionConverter.CreateFor<TLanguageConversion>(projectsToConvert).Convert()).ToDictionary(c => c.TargetPathOrNull, StringComparer.OrdinalIgnoreCase);
             var expectedResultDirectory = GetExpectedResultDirectory<TLanguageConversion>(testName);
 
             try {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
@@ -18,22 +19,27 @@ namespace ICSharpCode.CodeConverter.VB
 {
     public class CSToVBConversion : ILanguageConversion
     {
-        private Compilation _sourceCompilation;
-        private VisualBasicCompilation _convertedCompilation;
+        private Project _sourceCsProject;
+        private Project _convertedVbProject;
+        private VisualBasicCompilation _vbViewOfCsSymbols;
+        private VisualBasicParseOptions _visualBasicParseOptions;
         public string RootNamespace { get; set; }
 
-        public void Initialize(Compilation convertedCompilation)
+        public async Task Initialize(Project project)
         {
-            _convertedCompilation = (VisualBasicCompilation) convertedCompilation;
+            _sourceCsProject = project;
+            var cSharpCompilationOptions = VisualBasicCompiler.CreateCompilationOptions(RootNamespace);
+            _visualBasicParseOptions = VisualBasicParseOptions.Default;
+            _convertedVbProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, _visualBasicParseOptions);
+            _vbViewOfCsSymbols = (VisualBasicCompilation)await project.CreateReferenceOnlyCompilationFromAnyOptionsAsync(cSharpCompilationOptions);
         }
 
-        public SyntaxTree SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)
+        public async Task<Document> SingleFirstPass(Document document)
         {
-            _sourceCompilation = sourceCompilation;
-            var converted = CSharpConverter.ConvertCompilationTree((CSharpCompilation)sourceCompilation, (CSharpSyntaxTree)tree);
-            var convertedTree = VBSyntaxFactory.SyntaxTree(converted);
-            _convertedCompilation = _convertedCompilation.AddSyntaxTrees(convertedTree);
-            return convertedTree;
+            var convertedTree = await CSharpConverter.ConvertCompilationTree(document);
+            var convertedDocument = _convertedVbProject.AddDocument(document.FilePath, convertedTree);
+            _convertedVbProject = convertedDocument.Project;
+            return convertedDocument;
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
@@ -145,14 +151,16 @@ namespace ICSharpCode.CodeConverter.VB
             return children;
         }
 
-        public SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)
+        public Task<SyntaxNode> SingleSecondPass(KeyValuePair<string, Document> cs)
         {
-            return cs.Value.GetRoot();
+            return cs.Value.GetSyntaxRootAsync();
         }
 
-        public string GetWarningsOrNull()
+        public async Task<string> GetWarningsOrNull()
         {
-            return CompilationWarnings.WarningsForCompilation(_sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(_convertedCompilation, "target");
+            var sourceCompilation = await _sourceCsProject.GetCompilationAsync();
+            var convertedCompilation = await _convertedVbProject.GetCompilationAsync();
+            return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(convertedCompilation, "target");
         }
 
         public SyntaxTree CreateTree(string text)
@@ -160,9 +168,10 @@ namespace ICSharpCode.CodeConverter.VB
             return new CSharpCompiler().CreateTree(text);
         }
 
-        public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
+        public Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
+            IEnumerable<MetadataReference> references)
         {
-            return new CSharpCompiler().CreateCompilationFromTree(tree, references);
+            return CSharpCompiler.CreateCompilationOptions().CreateProjectDocumentFromTree(workspace, tree, references, _visualBasicParseOptions);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace CodeConverter.Tests.CSharp
@@ -6,9 +7,9 @@ namespace CodeConverter.Tests.CSharp
     public class SpecialConversionTests : ConverterTestBase
     {
         [Fact]
-        public void RaiseEvent()
+        public async Task RaiseEvent()
         {
-            TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Private Event MyEvent As EventHandler
 
@@ -29,10 +30,10 @@ class TestClass
         }
 
         [Fact]
-        public void TestCustomEvent()
+        public async Task TestCustomEvent()
         {
             // Can't be automatically tested for comments since an extra method is generated
-            TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharpWithoutComments(
                 @"Class TestClass45
     Private Event backingField As EventHandler
 
@@ -61,14 +62,14 @@ class TestClass45
     {
         add
         {
-            this.backingField += value;
+            backingField += value;
         }
         remove
         {
-            this.backingField -= value;
+            backingField -= value;
         }
     }
-    void OnMyEvent(object sender, System.EventArgs e)
+    void OnMyEvent(object sender, EventArgs e)
     {
         Console.WriteLine(""Event Raised"");
     }
@@ -81,9 +82,9 @@ class TestClass45
         }
 
         [Fact]
-        public void HexAndBinaryLiterals()
+        public async Task HexAndBinaryLiterals()
         {
-        TestConversionVisualBasicToCSharp(
+        await TestConversionVisualBasicToCSharp(
         @"Class Test
     Public CR As Integer = &HD * &B1
 End Class", @"class Test

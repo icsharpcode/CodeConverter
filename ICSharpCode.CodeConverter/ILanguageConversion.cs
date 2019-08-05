@@ -1,16 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
     public interface ILanguageConversion
     {
-        SyntaxTree SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree);
-        SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs);
-        string GetWarningsOrNull();
+        Task<Document> SingleFirstPass(Document document);
+        Task<SyntaxNode> SingleSecondPass(KeyValuePair<string, Document> cs);
+        Task<string> GetWarningsOrNull();
         SyntaxTree CreateTree(string text);
-        Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references);
+        Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
+            IEnumerable<MetadataReference> references);
         List<SyntaxNode> FindSingleImportantChild(SyntaxNode annotatedNode);
         bool CanBeContainedByMethod(SyntaxNode node);
         bool MustBeContainedByClass(SyntaxNode node);
@@ -23,7 +25,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         IEnumerable<(string, string)> GetProjectFileReplacementRegexes();
         string TargetLanguage { get; }
         string RootNamespace { get; set; }
-        void Initialize(Compilation convertedCompilation);
+        Task Initialize(Project project);
         string PostTransformProjectFile(string xml);
     }
 }

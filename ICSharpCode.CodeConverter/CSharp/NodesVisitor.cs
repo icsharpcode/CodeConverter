@@ -32,6 +32,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(SyntaxKind.SemicolonToken);
             private static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
             private readonly CSharpCompilation _csCompilation;
+            private readonly Compilation _compilation;
             private readonly SemanticModel _semanticModel;
             private readonly Dictionary<ITypeSymbol, string> _createConvertMethodsLookupByReturnType;
             private MethodsWithHandles _methodsWithHandles;
@@ -50,8 +51,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private CommonConversions CommonConversions { get; }
 
-            public NodesVisitor(SemanticModel semanticModel, CSharpCompilation csCompilation)
+            public NodesVisitor(Compilation compilation, SemanticModel semanticModel, CSharpCompilation csCompilation)
             {
+                _compilation = compilation;
                 this._semanticModel = semanticModel;
                 this._csCompilation = csCompilation;
                 TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
@@ -1559,9 +1561,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxToken token = default(SyntaxToken);
                 string argName = null;
                 RefKind refKind = RefKind.None;
-                if (symbol != null) {
+                if (symbol is IMethodSymbol methodSymbol) {
                     int argId = ((VBSyntax.ArgumentListSyntax)node.Parent).Arguments.IndexOf(node);
-                    var parameters = symbol.GetParameters();
+                    var parameters = GetCsSymbolIfPossible(methodSymbol).GetParameters();
                     //WARNING: If named parameters can reach here it won't work properly for them
                     if (argId < parameters.Count()) {
                         refKind = parameters[argId].RefKind;
@@ -1592,6 +1594,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 } else {
                     return SyntaxFactory.Argument(nameColon, token, SyntaxFactory.IdentifierName(local.ID).WithAdditionalAnnotations(AdditionalLocals.Annotation));
                 }
+            }
+
+            private ISymbol GetCsSymbolIfPossible(IMethodSymbol symbol)
+            {
+                // Construct throws an exception if ConstructedFrom differs from it, so let's use ConstructedFrom directly
+                return SymbolFinder.FindSimilarSymbols(symbol.ConstructedFrom, _csCompilation).FirstOrDefault() ??
+                       symbol;
+
             }
 
             private bool NeedsVariableForArgument(VBSyntax.SimpleArgumentSyntax node)

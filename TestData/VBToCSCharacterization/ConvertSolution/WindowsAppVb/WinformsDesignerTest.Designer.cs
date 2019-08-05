@@ -3,8 +3,8 @@ using System.Runtime.CompilerServices;
 
 namespace WindowsAppVb
 {
-    [global::Microsoft.VisualBasic.CompilerServices.DesignerGenerated()]
-    public partial class WinformsDesignerTest : System.Windows.Forms.Form
+    [Microsoft.VisualBasic.CompilerServices.DesignerGenerated()]
+    public partial class WinformsDesignerTest : Form
     {
 
         // Form overrides dispose to clean up the component list.
@@ -31,45 +31,45 @@ namespace WindowsAppVb
         [System.Diagnostics.DebuggerStepThrough()]
         private void InitializeComponent()
         {
-            this._Button1 = new System.Windows.Forms.Button();
+            _Button1 = new Button();
             _Button1.Click += Button1_Click;
             _Button1.Click += CheckBox1_CheckedChanged; // In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
-            this._CheckBox1 = new System.Windows.Forms.CheckBox();
+            _CheckBox1 = new CheckBox();
             _CheckBox1.CheckedChanged += CheckBox1_CheckedChanged;
-            this.SuspendLayout();
+            SuspendLayout();
             // 
             // Button1
             // 
-            this._Button1.Location = new System.Drawing.Point(95, 80);
-            this._Button1.Name = "Button1";
-            this._Button1.Size = new System.Drawing.Size(75, 23);
-            this._Button1.TabIndex = 0;
-            this._Button1.Text = "Button1";
-            this._Button1.UseVisualStyleBackColor = true;
+            _Button1.Location = new System.Drawing.Point(95, 80);
+            _Button1.Name = "Button1";
+            _Button1.Size = new System.Drawing.Size(75, 23);
+            _Button1.TabIndex = 0;
+            _Button1.Text = "Button1";
+            _Button1.UseVisualStyleBackColor = true;
             // 
             // CheckBox1
             // 
-            this._CheckBox1.AutoSize = true;
-            this._CheckBox1.Location = new System.Drawing.Point(89, 28);
-            this._CheckBox1.Name = "CheckBox1";
-            this._CheckBox1.Size = new System.Drawing.Size(81, 17);
-            this._CheckBox1.TabIndex = 1;
-            this._CheckBox1.Text = "CheckBox1";
-            this._CheckBox1.UseVisualStyleBackColor = true;
+            _CheckBox1.AutoSize = true;
+            _CheckBox1.Location = new System.Drawing.Point(89, 28);
+            _CheckBox1.Name = "CheckBox1";
+            _CheckBox1.Size = new System.Drawing.Size(81, 17);
+            _CheckBox1.TabIndex = 1;
+            _CheckBox1.Text = "CheckBox1";
+            _CheckBox1.UseVisualStyleBackColor = true;
             // 
             // WinformsDesignerTest
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(292, 273);
-            this.Controls.Add(this._CheckBox1);
-            this.Controls.Add(this._Button1);
-            this.Name = "WinformsDesignerTest";
-            this.Text = "Form1";
+            AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new System.Drawing.Size(292, 273);
+            Controls.Add(_CheckBox1);
+            Controls.Add(_Button1);
+            Name = "WinformsDesignerTest";
+            Text = "Form1";
             base.Load += WinformsDesignerTest_EnsureSelfEventsWork;
             this.SizeChanged += WinformsDesignerTest_EnsureSelfEventsWork;
-            this.ResumeLayout(false);
-            this.PerformLayout();
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         public static bool TestSub(ref bool IsDefault = false)

@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace CodeConverter.Tests.VB
@@ -6,27 +7,27 @@ namespace CodeConverter.Tests.VB
     public class StandaloneStatementTests : ConverterTestBase
     {
         [Fact]
-        public void Reassignment()
+        public async Task Reassignment()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
 @"int num = 4;
 num = 5;",
-@"Dim num As Integer = 4
+@"Dim num = 4
 num = 5",
 expectSurroundingMethodBlock: true);
         }
 
         [Fact]
-        public void ObjectMemberInitializerSyntax()
+        public async Task ObjectMemberInitializerSyntax()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
 @"AttributeUsageAttribute obj = new AttributeUsageAttribute()
 {
     AllowMultiple = true,
     Inherited = false
 };
 obj = null;",
-@"Dim obj As AttributeUsageAttribute = New AttributeUsageAttribute() With {
+@"Dim obj = New AttributeUsageAttribute With {
     .AllowMultiple = True,
     .Inherited = False
 }
@@ -35,9 +36,9 @@ obj = Nothing",
         }
 
         [Fact]
-        public void AnonymousObjectCreationExpressionSyntax()
+        public async Task AnonymousObjectCreationExpressionSyntax()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
 @"var obj = new
 {
     Name = ""Hello"",
@@ -53,25 +54,25 @@ obj = Nothing",
         }
 
         [Fact]
-        public void SingleAssigment()
+        public async Task SingleAssigment()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
 @"var x = 3;",
 @"Dim x = 3");
         }
 
         [Fact]
-        public void SingleFieldDeclaration()
+        public async Task SingleFieldDeclaration()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
 @"private int x = 3;",
 @"Private x As Integer = 3");
         }
 
         [Fact]
-        public void SingleEmptyClass()
+        public async Task SingleEmptyClass()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
 @"public class Test
 {
 }",
@@ -80,17 +81,17 @@ End Class");
         }
 
         [Fact]
-        public void SingleAbstractMethod()
+        public async Task SingleAbstractMethod()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
 @"protected abstract void abs();",
 @"Protected MustOverride Sub abs()");
         }
 
         [Fact]
-        public void SingleEmptyNamespace()
+        public async Task SingleEmptyNamespace()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
 @"namespace nam
 {
 }",
@@ -99,17 +100,17 @@ End Namespace");
         }
 
         [Fact]
-        public void SingleUsing()
+        public async Task SingleUsing()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
 @"using s = System.String;",
 @"Imports s = System.String");
         }
 
         [Fact]
-        public void SingleFieldAssignment()
+        public async Task SingleFieldAssignment()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
 @"this.DataContext = from task in tasks
     where task.Priority == pri
     select task;",

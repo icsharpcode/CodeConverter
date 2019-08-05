@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -7,9 +8,9 @@ namespace CodeConverter.Tests.VB
     public class SpecialConversionTests : ConverterTestBase
     {
         [Fact]
-        public void TestSimpleInlineAssign()
+        public async Task TestSimpleInlineAssign()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     void TestMethod()
@@ -34,9 +35,9 @@ End Class");
         }
 
         [Fact]
-        public void TestSimplePostIncrementAssign()
+        public async Task TestSimplePostIncrementAssign()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     void TestMethod()
@@ -46,16 +47,16 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer, a As Integer = 5
-        b = Math.Min(System.Threading.Interlocked.Increment(a), a - 1)
+        Dim b As Integer, a = 5
+        b = Math.Min(Threading.Interlocked.Increment(a), a - 1)
     End Sub
 End Class");
         }
 
         [Fact]
-        public void RaiseEventOneLiners()
+        public async Task RaiseEventOneLiners()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 class TestClass
@@ -84,9 +85,9 @@ End Class");
         }
 
         [Fact]
-        public void RaiseEventInElse()
+        public async Task RaiseEventInElse()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 public class Foo
@@ -107,7 +108,7 @@ Public Class Foo
 
     Protected Sub OnBar(ByVal e As EventArgs)
         If BarEvent Is Nothing Then
-            System.Diagnostics.Debug.WriteLine(""No subscriber"")
+            Debug.WriteLine(""No subscriber"")
         Else
             RaiseEvent Bar(Me, e)
         End If
@@ -117,9 +118,9 @@ End Class
         }
 
         [Fact]
-        public void RaiseEventReversedConditional()
+        public async Task RaiseEventReversedConditional()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 class TestClass
@@ -142,9 +143,9 @@ End Class");
         }
 
         [Fact]
-        public void RaiseEventQualified()
+        public async Task RaiseEventQualified()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 class TestClass
@@ -167,9 +168,9 @@ End Class");
         }
 
         [Fact]
-        public void RaiseEventInNestedBrackets()
+        public async Task RaiseEventInNestedBrackets()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 class TestClass
@@ -192,9 +193,9 @@ End Class");
         }
 
         [Fact]
-        public void RaiseEventQualifiedWithNestedBrackets()
+        public async Task RaiseEventQualifiedWithNestedBrackets()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 class TestClass
@@ -217,9 +218,9 @@ End Class");
         }
 
         [Fact]
-        public void CharacterizeRaiseEventWithMissingDefinitionActsLikeFunc()
+        public async Task CharacterizeRaiseEventWithMissingDefinitionActsLikeFunc()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 class TestClass
@@ -241,9 +242,9 @@ End Class");
         /// Intentionally unknown type used to ensure imperfect compilation errs towards common case
         /// </summary>
         [Fact]
-        public void IfStatementSimilarToRaiseEvent()
+        public async Task IfStatementSimilarToRaiseEvent()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     void TestMethod()
@@ -252,11 +253,11 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        If FullImage IsNot Nothing Then DrawImage()
+        If FullImage IsNot Nothing Then DrawImage
     End Sub
 End Class", expectCompilationErrors: true);
             // regression test:
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     void TestMethod()
@@ -265,11 +266,11 @@ End Class", expectCompilationErrors: true);
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        If FullImage IsNot Nothing Then e.DrawImage()
+        If FullImage IsNot Nothing Then e.DrawImage
     End Sub
 End Class", expectCompilationErrors: true);
             // with braces:
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     void TestMethod()
@@ -279,11 +280,11 @@ End Class", expectCompilationErrors: true);
 }", @"Friend Class TestClass
     Private Sub TestMethod()
         If FullImage IsNot Nothing Then
-            DrawImage()
+            DrawImage
         End If
     End Sub
 End Class", expectCompilationErrors: true);
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     void TestMethod()
@@ -293,12 +294,12 @@ End Class", expectCompilationErrors: true);
 }", @"Friend Class TestClass
     Private Sub TestMethod()
         If FullImage IsNot Nothing Then
-            e.DrawImage()
+            e.DrawImage
         End If
     End Sub
 End Class", expectCompilationErrors: true);
             // another bug related to the IfStatement code:
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     void TestMethod()
@@ -323,9 +324,9 @@ End Class", expectCompilationErrors: true);
         /// This means Funcs/Actions need to be wrapped in a typed constructor such as New Action(Of String)
         /// </summary>
         [Fact]
-        public void AddressOfWhereVbTypeInferenceIsWeaker()
+        public async Task AddressOfWhereVbTypeInferenceIsWeaker()
         {
-            TestConversionCSharpToVisualBasic(@"using System;
+            await TestConversionCSharpToVisualBasic(@"using System;
 
 static class TestClass
 {
@@ -367,16 +368,16 @@ Friend Module TestClass
 
     Function Convert(ByVal node As Object) As Object
         Return node.TypeSwitch(New Func(Of String, Object)(AddressOf ConvertString), New Func(Of Integer, Object)(AddressOf ConvertInt), Function(__)
-                                                                                                                                             Throw New NotImplementedException($""Conversion for '{node.[GetType]()}' not implemented"")
+                                                                                                                                             Throw New NotImplementedException($""Conversion for '{node.[GetType]}' not implemented"")
                                                                                                                                          End Function)
     End Function
 End Module");
         }
 
         [Fact]
-        public void HexAndBinaryLiterals()
+        public async Task HexAndBinaryLiterals()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"class Test
 {
     public int CR = 0x0D * 0b1;

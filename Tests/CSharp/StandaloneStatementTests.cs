@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace CodeConverter.Tests.CSharp
@@ -6,9 +7,9 @@ namespace CodeConverter.Tests.CSharp
     public class StandaloneStatementTests : ConverterTestBase
     {
         [Fact]
-        public void Reassignment()
+        public async Task Reassignment()
         {
-            TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharp(
 @"Dim num as Integer = 4
 num = 5",
 @"int num = 4;
@@ -17,9 +18,9 @@ expectSurroundingBlock: true);
         }
 
         [Fact]
-        public void ObjectMemberInitializerSyntax()
+        public async Task ObjectMemberInitializerSyntax()
         {
-            TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharp(
 @"Dim obj as New AttributeUsageAttribute With
 {
     .AllowMultiple = True,
@@ -36,9 +37,9 @@ obj = null;",
         }
 
         [Fact]
-        public void AnonymousObjectCreationExpressionSyntax()
+        public async Task AnonymousObjectCreationExpressionSyntax()
         {
-            TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharp(
 @"Dim obj = New With
 {
     .Name = ""Hello"",
@@ -55,26 +56,26 @@ obj = null;",
         }
 
         [Fact]
-        public void SingleAssigment()
+        public async Task SingleAssigment()
         {
-            TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharp(
                 @"Dim x = 3",
                 @"var x = 3;",
                 expectSurroundingBlock: true);
         }
 
         [Fact]
-        public void SingleFieldDeclaration()
+        public async Task SingleFieldDeclaration()
         {
-            TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharp(
                 @"Private x As Integer = 3",
                 @"private int x = 3;");
         }
 
         [Fact]
-        public void SingleEmptyClass()
+        public async Task SingleEmptyClass()
         {
-            TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharp(
 @"Public Class Test
 End Class",
 @"public class Test
@@ -83,17 +84,17 @@ End Class",
         }
 
         [Fact]
-        public void SingleAbstractMethod()
+        public async Task SingleAbstractMethod()
         {
-            TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharp(
                 @"Protected MustOverride Sub abs()",
                 @"protected abstract void abs();");
         }
 
         [Fact]
-        public void SingleEmptyNamespace()
+        public async Task SingleEmptyNamespace()
         {
-            TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharp(
 @"Namespace nam
 End Namespace",
 @"namespace nam
@@ -102,15 +103,15 @@ End Namespace",
         }
 
         [Fact]
-        public void SingleUnusedUsingAliasTidiedAway()
+        public async Task SingleUnusedUsingAliasTidiedAway()
         {
-            TestConversionVisualBasicToCSharp(@"Imports tr = System.IO.TextReader", "");
+            await TestConversionVisualBasicToCSharp(@"Imports tr = System.IO.TextReader", "");
         }
 
         [Fact]
-        public void QuerySyntax()
+        public async Task QuerySyntax()
         {
-            TestConversionVisualBasicToCSharp(@"Dim cmccIds As New List(Of Integer)
+            await TestConversionVisualBasicToCSharp(@"Dim cmccIds As New List(Of Integer)
 For Each scr In _sponsorPayment.SponsorClaimRevisions
     For Each claim In scr.Claims
         If TypeOf claim.ClaimSummary Is ClaimSummary Then

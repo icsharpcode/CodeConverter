@@ -12,30 +12,41 @@ using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Operations;
+using LanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
     public class VBToCSConversion : ILanguageConversion
     {
-        private Compilation _sourceCompilation;
-        private readonly List<SyntaxTree> _secondPassResults = new List<SyntaxTree>();
-        private CSharpCompilation _convertedCompilation;
+        private Project _sourceVbProject;
+        private CSharpCompilation _csharpViewOfVbSymbols;
+        private Project _convertedCsProject;
+        /// <summary>
+        /// It's really hard to change simplifier options since everything is done on the Object hashcode of internal fields.
+        /// I wanted to avoid saying "default" instead of "default(string)" because I don't want to force a later language version on people in such a general case.
+        /// This will have that effect, but also has the possibility of failing to interpret code output by this converter.
+        /// If this has such unintended effects in future, investigate the code that loads options from an editorconfig file
+        /// </summary>
+        private static readonly CSharpParseOptions DoNotAllowImplicitDefault = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp7);
 
         public string RootNamespace { get; set; }
 
-
-        public void Initialize(Compilation convertedCompilation)
+        public async Task Initialize(Project project)
         {
-            _convertedCompilation = (CSharpCompilation) convertedCompilation;
+            _sourceVbProject = project;
+            var cSharpCompilationOptions = CSharpCompiler.CreateCompilationOptions();
+            _convertedCsProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, DoNotAllowImplicitDefault);
+            _csharpViewOfVbSymbols = (CSharpCompilation) await project.CreateReferenceOnlyCompilationFromAnyOptionsAsync(cSharpCompilationOptions);
         }
 
-        public SyntaxTree SingleFirstPass(Compilation sourceCompilation, SyntaxTree tree)
+        public async Task<Document> SingleFirstPass(Document document)
         {
-            _sourceCompilation = sourceCompilation;
-            var converted = VisualBasicConverter.ConvertCompilationTree((VisualBasicCompilation)sourceCompilation, _convertedCompilation, (VisualBasicSyntaxTree)tree);
-            var convertedTree = SyntaxFactory.SyntaxTree(converted);
-            _convertedCompilation = _convertedCompilation.AddSyntaxTrees(convertedTree);
-            return convertedTree;
+            var converted = await VisualBasicConverter.ConvertCompilationTree(document, _csharpViewOfVbSymbols);
+            var convertedDocument = _convertedCsProject.AddDocument(document.FilePath, converted);
+            _convertedCsProject = convertedDocument.Project;
+            return convertedDocument;
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
@@ -140,16 +151,20 @@ End Class";
             return children;
         }
 
-        public SyntaxNode SingleSecondPass(KeyValuePair<string, SyntaxTree> cs)
+        public async Task<SyntaxNode> SingleSecondPass(KeyValuePair<string, Document> cs)
         {
-            var cSharpSyntaxNode = new CompilationErrorFixer(_convertedCompilation, (CSharpSyntaxTree)cs.Value).Fix();
-            _secondPassResults.Add(cSharpSyntaxNode.SyntaxTree);
-            return cSharpSyntaxNode;
+            var doc = cs.Value;
+            var cSharpSyntaxNode = new CompilationErrorFixer((CSharpCompilation) await doc.Project.GetCompilationAsync(), (CSharpSyntaxTree) await doc.GetSyntaxTreeAsync()).Fix();
+            var simplifiedDocument = doc.WithSyntaxRoot(cSharpSyntaxNode);
+            _convertedCsProject = simplifiedDocument.Project;
+            return await simplifiedDocument.GetSyntaxRootAsync();
         }
 
-        public string GetWarningsOrNull()
+        public async Task<string> GetWarningsOrNull()
         {
-            return CompilationWarnings.WarningsForCompilation(_sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(_convertedCompilation, "target");
+            var sourceCompilation = await _sourceVbProject.GetCompilationAsync();
+            var convertedCompilation = await _convertedCsProject.GetCompilationAsync();
+            return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation( convertedCompilation, "target");
         }
 
         public SyntaxTree CreateTree(string text)
@@ -162,9 +177,12 @@ End Class";
             return new VisualBasicCompiler(RootNamespace);
         }
 
-        public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
+        public Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
+            IEnumerable<MetadataReference> references)
         {
-            return CreateCompiler().CreateCompilationFromTree(tree, references);
+            return VisualBasicCompiler.CreateCompilationOptions(RootNamespace)
+                .CreateProjectDocumentFromTree(workspace, tree, references,
+                    DoNotAllowImplicitDefault);
         }
     }
 }

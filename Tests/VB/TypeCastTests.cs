@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace CodeConverter.Tests.VB
@@ -6,9 +7,9 @@ namespace CodeConverter.Tests.VB
     public class TypeCastTests : ConverterTestBase
     {
         [Fact]
-        public void CastObjectToInteger()
+        public async Task CastObjectToInteger()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = 5;
@@ -16,15 +17,15 @@ namespace CodeConverter.Tests.VB
 }
 ", @"Private Sub Test()
     Dim o As Object = 5
-    Dim i As Integer = CInt(o)
+    Dim i As Integer = o
 End Sub
 ");
         }
 
         [Fact]
-        public void CastObjectToString()
+        public async Task CastObjectToString()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = ""Test"";
@@ -32,31 +33,31 @@ End Sub
 }
 ", @"Private Sub Test()
     Dim o As Object = ""Test""
-    Dim s As String = CStr(o)
+    Dim s = CStr(o)
 End Sub
 ");
         }
 
         [Fact]
-        public void CastObjectToGenericList()
+        public async Task CastObjectToGenericList()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = new System.Collections.Generic.List<int>();
     System.Collections.Generic.List<int> l = (System.Collections.Generic.List<int>) o;
 }
 ", @"Private Sub Test()
-    Dim o As Object = New System.Collections.Generic.List(Of Integer)()
-    Dim l As System.Collections.Generic.List(Of Integer) = CType(o, System.Collections.Generic.List(Of Integer))
+    Dim o As Object = New List(Of Integer)
+    Dim l = CType(o, List(Of Integer))
 End Sub
 ");
         }
 
         [Fact]
-        public void TryCastObjectToInteger()
+        public async Task TryCastObjectToInteger()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = 5;
@@ -64,31 +65,31 @@ End Sub
 }
 ", @"Private Sub Test()
     Dim o As Object = 5
-    Dim i As System.Nullable(Of Integer) = CType(o, Integer?)
+    Dim i As Integer? = o
 End Sub
 ");
         }
 
         [Fact]
-        public void TryCastObjectToGenericList()
+        public async Task TryCastObjectToGenericList()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = new System.Collections.Generic.List<int>();
     System.Collections.Generic.List<int> l = o as System.Collections.Generic.List<int>;
 }
 ", @"Private Sub Test()
-    Dim o As Object = New System.Collections.Generic.List(Of Integer)()
-    Dim l As System.Collections.Generic.List(Of Integer) = TryCast(o, System.Collections.Generic.List(Of Integer))
+    Dim o As Object = New List(Of Integer)
+    Dim l = TryCast(o, List(Of Integer))
 End Sub
 ");
         }
 
         [Fact]
-        public void CastConstantNumberToLong()
+        public async Task CastConstantNumberToLong()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = 5L;
@@ -100,9 +101,9 @@ End Sub
         }
 
         [Fact]
-        public void CastConstantNumberToFloat()
+        public async Task CastConstantNumberToFloat()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = 5.0f;
@@ -114,9 +115,9 @@ End Sub
         }
 
         [Fact]
-        public void CastConstantNumberToDecimal()
+        public async Task CastConstantNumberToDecimal()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     object o = 5.0m;
@@ -128,15 +129,15 @@ End Sub
         }
 
         [Fact]
-        public void CastConstantNumberToCharacter()
+        public async Task CastConstantNumberToCharacter()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"void Test()
 {
     char CR = (char)0xD;
 }
 ", @"Private Sub Test()
-    Dim CR As Char = ChrW(&HD)
+    Dim CR = ChrW(&HD)
 End Sub
 ");
         }

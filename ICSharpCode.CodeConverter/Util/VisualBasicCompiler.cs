@@ -45,6 +45,13 @@ namespace ICSharpCode.CodeConverter.Util
 
         private static VisualBasicCompilation CreateVisualBasicCompilation()
         {
+            VisualBasicCompilationOptions compilationOptions = CreateCompilationOptions();
+            return VisualBasicCompilation.Create("Conversion")
+                .WithOptions(compilationOptions);
+        }
+
+        public static VisualBasicCompilationOptions CreateCompilationOptions(string rootNamespace = null)
+        {
             var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithGlobalImports(GlobalImport.Parse(
                     "System",
@@ -62,9 +69,9 @@ namespace ICSharpCode.CodeConverter.Util
                 .WithOptionExplicit(true)
                 .WithOptionCompareText(false)
                 .WithOptionStrict(OptionStrict.Off)
-                .WithOptionInfer(true);
-            return VisualBasicCompilation.Create("Conversion")
-                .WithOptions(compilationOptions);
+                .WithOptionInfer(true)
+                .WithRootNamespace(rootNamespace);
+            return compilationOptions;
         }
     }
 }

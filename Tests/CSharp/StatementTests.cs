@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace CodeConverter.Tests.CSharp
@@ -6,9 +7,9 @@ namespace CodeConverter.Tests.CSharp
     public class StatementTests : ConverterTestBase
     {
         [Fact]
-        public void EmptyStatement()
+        public async Task EmptyStatement()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         If True Then
         End If
@@ -40,9 +41,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void AssignmentStatement()
+        public async Task AssignmentStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -58,9 +59,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void AssignmentStatementInDeclaration()
+        public async Task AssignmentStatementInDeclaration()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer = 0
     End Sub
@@ -74,9 +75,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void AssignmentStatementInVarDeclaration()
+        public async Task AssignmentStatementInVarDeclaration()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b = 0
     End Sub
@@ -90,9 +91,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void AssignmentStatementWithXmlElement()
+        public async Task AssignmentStatementWithXmlElement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b = <someXmlTag></someXmlTag>
         Dim c = <someXmlTag><bla anAttribute=""itsValue"">tata</bla><someContent>tata</someContent></someXmlTag>
@@ -110,9 +111,9 @@ class TestClass
         }
 
         [Fact]
-        public void ObjectInitializationStatement()
+        public async Task ObjectInitializationStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As String
         b = New String(""test"")
@@ -128,9 +129,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void TupleInitializationStatement()
+        public async Task TupleInitializationStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim totales As (fics As Integer, dirs As Integer) = (0, 0)
     End Sub
@@ -144,9 +145,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void ObjectInitializationStatementInDeclaration()
+        public async Task ObjectInitializationStatementInDeclaration()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As String = New String(""test"")
     End Sub
@@ -160,9 +161,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void ObjectInitializationStatementInVarDeclaration()
+        public async Task ObjectInitializationStatementInVarDeclaration()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b = New String(""test"")
     End Sub
@@ -176,9 +177,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void ValuesOfArrayAssignmentWithSurroundingClass()
+        public async Task ValuesOfArrayAssignmentWithSurroundingClass()
         {
-            TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharp(
 @"Class SurroundingClass
     Public Arr() As String
 End Class
@@ -204,9 +205,9 @@ class UseClass
         }
 
         [Fact]
-        public void ArrayDeclarationStatement()
+        public async Task ArrayDeclarationStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()
     End Sub
@@ -220,9 +221,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void ArrayDeclarationWithRangeStatement()
+        public async Task ArrayDeclarationWithRangeStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Imports System.Collections.Generic
+            await TestConversionVisualBasicToCSharp(@"Imports System.Collections.Generic
 
 Class TestClass
     Private Sub TestMethod()
@@ -242,10 +243,10 @@ class TestClass
         }
 
         [Fact]
-        public void ArrayEraseAndRedimStatement()
+        public async Task ArrayEraseAndRedimStatement()
         {
             // One statement turns into two, so can't auto-test comments
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass
     Shared Function TestMethod(numArray As Integer(), numArray2 As Integer()) As Integer()
         ReDim numArray(3)
         Erase numArray
@@ -286,9 +287,9 @@ public class TestClass
         }
 
         [Fact]
-        public void EndStatement()
+        public async Task EndStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         End
     End Sub
@@ -304,9 +305,9 @@ class TestClass
         }
 
         [Fact]
-        public void StopStatement()
+        public async Task StopStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Stop
     End Sub
@@ -322,9 +323,9 @@ class TestClass
         }
 
         [Fact]
-        public void WithBlock()
+        public async Task WithBlock()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         With New System.Text.StringBuilder
             .Capacity = 20
@@ -345,9 +346,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void WithBlock2()
+        public async Task WithBlock2()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Data.SqlClient
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Data.SqlClient
 
 Class TestClass
     Private Sub Save()
@@ -381,9 +382,9 @@ class TestClass
         }
 
         [Fact]
-        public void NestedWithBlock()
+        public async Task NestedWithBlock()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         With New System.Text.StringBuilder
             Dim withBlock as Integer = 3
@@ -414,9 +415,9 @@ End Class", @"class TestClass
 }");
         }
         [Fact]
-        public void ArrayInitializationStatement()
+        public async Task ArrayInitializationStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = {1, 2, 3}
     End Sub
@@ -430,9 +431,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void ArrayInitializationStatementInVarDeclaration()
+        public async Task ArrayInitializationStatementInVarDeclaration()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b = {1, 2, 3}
     End Sub
@@ -446,9 +447,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void ArrayInitializationStatementWithType()
+        public async Task ArrayInitializationStatementWithType()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer() {1, 2, 3}
     End Sub
@@ -462,9 +463,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void ArrayInitializationStatementWithLength()
+        public async Task ArrayInitializationStatementWithLength()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer(2) {1, 2, 3}
     End Sub
@@ -478,9 +479,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void MultidimensionalArrayDeclarationStatement()
+        public async Task MultidimensionalArrayDeclarationStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,)
     End Sub
@@ -494,9 +495,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void MultidimensionalArrayInitializationStatement()
+        public async Task MultidimensionalArrayInitializationStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = {{1, 2}, {3, 4}}
     End Sub
@@ -510,9 +511,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void MultidimensionalArrayInitializationStatementWithType()
+        public async Task MultidimensionalArrayInitializationStatementWithType()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = New Integer(,) {{1, 2}, {3, 4}}
     End Sub
@@ -526,9 +527,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void MultidimensionalArrayInitializationStatementWithAndWithoutLengths()
+        public async Task MultidimensionalArrayInitializationStatementWithAndWithoutLengths()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim a As Integer(,) = New Integer(,) {{1, 2}, {3, 4}}
         Dim b As Integer(,) = New Integer(1, 1) {{1, 2}, {3, 4}}
@@ -552,9 +553,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void JaggedArrayDeclarationStatement()
+        public async Task JaggedArrayDeclarationStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()()
     End Sub
@@ -568,9 +569,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void JaggedArrayInitializationStatement()
+        public async Task JaggedArrayInitializationStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
@@ -584,9 +585,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void JaggedArrayInitializationStatementWithType()
+        public async Task JaggedArrayInitializationStatementWithType()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b = New Integer()() {New Integer() {1}}
     End Sub
@@ -600,9 +601,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void JaggedArrayInitializationStatementWithLength()
+        public async Task JaggedArrayInitializationStatementWithLength()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
@@ -616,9 +617,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void DeclarationStatements()
+        public async Task DeclarationStatements()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharpWithoutComments(
 @"Class Test
     Private Sub TestMethod()
 the_beginning:
@@ -644,10 +645,10 @@ End Class", @"class Test
         [Theory]
         [InlineData("Sub", "", "void")]
         [InlineData("Function", " As Long", "long")]
-        public void DeclareStatement(string vbMethodDecl,string vbType, string csType)
+        public async Task DeclareStatement(string vbMethodDecl,string vbType, string csType)
         {
             // Intentionally uses a type name with a different casing as the loop variable, i.e. "process" to test name resolution
-            TestConversionVisualBasicToCSharp($@"Imports System.Diagnostics
+            await TestConversionVisualBasicToCSharp($@"Imports System.Diagnostics
 Imports System.Threading
 
 Public Class AcmeClass
@@ -669,7 +670,7 @@ using System.Runtime.InteropServices;
 public class AcmeClass
 {{
     [DllImport(""user32"")]
-    private static extern {csType} SetForegroundWindow(Int32 hwnd);
+    private static extern {csType} SetForegroundWindow(int hwnd);
 
     public static void Main()
     {{
@@ -684,9 +685,9 @@ public class AcmeClass
 
 
         [Fact]
-        public void DeclareStatementWithAttributes()
+        public async Task DeclareStatementWithAttributes()
         {
-            TestConversionVisualBasicToCSharp(@"Public Class AcmeClass
+            await TestConversionVisualBasicToCSharp(@"Public Class AcmeClass
     Friend Declare Ansi Function GetNumDevices Lib ""CP210xManufacturing.dll"" Alias ""CP210x_GetNumDevices"" (ByRef NumDevices As String) As Integer
 End Class"
                 , @"using System.Runtime.InteropServices;
@@ -699,9 +700,9 @@ public class AcmeClass
         }
 
         [Fact]
-        public void IfStatement()
+        public async Task IfStatement()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod(ByVal a As Integer)
         Dim b As Integer
 
@@ -734,9 +735,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void NestedBlockStatementsKeepSameNesting()
+        public async Task NestedBlockStatementsKeepSameNesting()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Shared Function FindTextInCol(w As String, pTitleRow As Integer, startCol As Integer, needle As String) As Integer
 
         For c As Integer = startCol To w.Length
@@ -773,9 +774,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void WhileStatement()
+        public async Task WhileStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -806,10 +807,10 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void UntilStatement()
+        public async Task UntilStatement()
         {
             //Bug: comment on statement in do loop gets moved to end of conditional
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim charIndex As Integer
         ' allow only digits and letters
@@ -831,9 +832,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void SimpleDoStatement()
+        public async Task SimpleDoStatement()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -865,9 +866,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void DoWhileStatement()
+        public async Task DoWhileStatement()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -899,9 +900,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void IncompleteStatement()
+        public async Task IncompleteStatement()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -933,9 +934,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void ForEachStatementWithExplicitType()
+        public async Task ForEachStatementWithExplicitType()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         For Each val As Integer In values
             If val = 2 Then Continue For
@@ -958,9 +959,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void ForEachStatementWithVar()
+        public async Task ForEachStatementWithVar()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         For Each val In values
             If val = 2 Then Continue For
@@ -983,9 +984,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void SyncLockStatement()
+        public async Task SyncLockStatement()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod(ByVal nullObject As Object)
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
 
@@ -1009,10 +1010,10 @@ class TestClass
         }
 
         [Fact]
-        public void ForWithSingleStatement()
+        public async Task ForWithSingleStatement()
         {
             // Comment from "Next" gets pushed up to previous line
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod(end As Integer)
         Dim b, s As Integer()
         For i = 0 To [end]
@@ -1032,10 +1033,10 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void ForNextMutatingField()
+        public async Task ForNextMutatingField()
         {
             // Comment from "Next" gets pushed up to previous line
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
     Private Index As Integer
 
     Sub Foo()
@@ -1049,7 +1050,7 @@ End Class", @"public class Class1
 
     public void Foo()
     {
-        for (this.Index = 0; this.Index <= 10; this.Index++)
+        for (Index = 0; Index <= 10; Index++)
         {
         }
     }
@@ -1057,10 +1058,10 @@ End Class", @"public class Class1
         }
 
         [Fact]
-        public void ForRequiringExtraVariable()
+        public async Task ForRequiringExtraVariable()
         {
             // Comment from "Next" gets pushed up to previous line
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim stringValue AS string = ""42""
         For i As Integer = 1 To 10 - stringValue.Length
@@ -1078,7 +1079,7 @@ class TestClass
         var loopTo = 10 - stringValue.Length;
         for (int i = 1; i <= loopTo; i++)
         {
-            stringValue = stringValue + ("" "" + System.Convert.ToString(i));
+            stringValue = stringValue + "" "" + Convert.ToString(i);
             Console.WriteLine(stringValue);
         }
     }
@@ -1086,10 +1087,10 @@ class TestClass
         }
 
         [Fact]
-        public void ForWithBlock()
+        public async Task ForWithBlock()
         {
             // Comment from "Next" gets pushed up to previous line
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod([end] As Integer)
         Dim b, s As Integer()
         For i = 0 To [end] - 1
@@ -1109,9 +1110,9 @@ End Class", @"class TestClass
         }
 
         [Fact]
-        public void LabeledAndForStatement()
+        public async Task LabeledAndForStatement()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class GotoTest1
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class GotoTest1
     Private Shared Sub Main()
         Dim x As Integer = 200, y As Integer = 4
         Dim count As Integer = 0
@@ -1161,7 +1162,7 @@ class GotoTest1
         {
             var loopTo1 = y - 1;
             for (int j = 0; j <= loopTo1; j++)
-                array[i, j] = (System.Threading.Interlocked.Increment(ref count)).ToString();
+                array[i, j] = System.Threading.Interlocked.Increment(ref count).ToString();
         }
 
         Console.Write(""Enter the number to search for: "");
@@ -1192,9 +1193,9 @@ class GotoTest1
         }
 
         [Fact]
-        public void ThrowStatement()
+        public async Task ThrowStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod(ByVal nullObject As Object)
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
     End Sub
@@ -1211,9 +1212,9 @@ class TestClass
         }
 
         [Fact]
-        public void CallStatement()
+        public async Task CallStatement()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Call (Sub() Console.Write(""Hello""))
         Call (Sub() Console.Write(""Hello""))()
@@ -1235,9 +1236,9 @@ class TestClass
         }
 
         [Fact]
-        public void AddRemoveHandler()
+        public async Task AddRemoveHandler()
         {
-            TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Public Event MyEvent As EventHandler
 
     Private Sub TestMethod(ByVal e As EventHandler)
@@ -1260,14 +1261,14 @@ class TestClass
 
     private void TestMethod(EventHandler e)
     {
-        this.MyEvent += e;
-        this.MyEvent += MyHandler;
+        MyEvent += e;
+        MyEvent += MyHandler;
     }
 
     private void TestMethod2(EventHandler e)
     {
-        this.MyEvent -= e;
-        this.MyEvent -= MyHandler;
+        MyEvent -= e;
+        MyEvent -= MyHandler;
     }
 
     private void MyHandler(object sender, EventArgs e)
@@ -1277,9 +1278,9 @@ class TestClass
         }
 
         [Fact]
-        public void SelectCase1()
+        public async Task SelectCase1()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod(ByVal number As Integer)
         Select Case number
             Case 0, 1, 2
@@ -1323,9 +1324,9 @@ class TestClass
         }
 
         [Fact]
-        public void SelectCaseWithExpression()
+        public async Task SelectCaseWithExpression()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass
     Shared Function TimeAgo(daysAgo As Integer) As String
         Select Case daysAgo
             Case 0 To 3, 4, Is >= 5, Is < 6, Is <= 7
@@ -1368,9 +1369,9 @@ public class TestClass
         }
 
         [Fact]
-        public void SelectCaseWithString()
+        public async Task SelectCaseWithString()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass
     Shared Function TimeAgo(x As String) As String
         Select Case UCase(x)
             Case UCase(""a""), UCase(""b"")
@@ -1415,9 +1416,9 @@ End Class", @"public class TestClass
         }
 
         [Fact]
-        public void SelectCaseWithExpression2()
+        public async Task SelectCaseWithExpression2()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass2
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass2
     Function CanDoWork(Something As Object) As Boolean
         Select Case True
             Case Today.DayOfWeek = DayOfWeek.Saturday Or Today.DayOfWeek = DayOfWeek.Sunday
@@ -1448,7 +1449,7 @@ public class TestClass2
     {
         switch (true)
         {
-            case object _ when ((int)DateAndTime.Today.DayOfWeek == (int)DayOfWeek.Saturday) | ((int)DateAndTime.Today.DayOfWeek == (int)DayOfWeek.Sunday):
+            case object _ when (int)DateAndTime.Today.DayOfWeek == (int)DayOfWeek.Saturday | DateAndTime.Today.DayOfWeek == (int)DayOfWeek.Sunday:
                 {
                     // we do not work on weekends
                     return false;
@@ -1483,9 +1484,9 @@ public class TestClass2
         }
 
         [Fact]
-        public void TryCatch()
+        public async Task TryCatch()
         {
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Shared Function Log(ByVal message As String) As Boolean
         Console.WriteLine(message)
         Return False
@@ -1571,10 +1572,10 @@ class TestClass
         }
 
         [Fact]
-        public void Yield()
+        public async Task Yield()
         {
             // Comment from "Next" gets pushed up to previous line
-            TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
         If number < 0 Then Return
         For i As Integer = 0 To number - 1

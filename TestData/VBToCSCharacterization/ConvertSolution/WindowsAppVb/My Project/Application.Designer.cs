@@ -10,19 +10,19 @@ namespace WindowsAppVb
         // 
         internal partial class MyApplication
         {
-            [global::System.Diagnostics.DebuggerStepThrough()]
-            public MyApplication() : base(global::Microsoft.VisualBasic.ApplicationServices.AuthenticationMode.Windows)
+            [System.Diagnostics.DebuggerStepThrough()]
+            public MyApplication() : base(Microsoft.VisualBasic.ApplicationServices.AuthenticationMode.Windows)
             {
                 this.IsSingleInstance = false;
                 this.EnableVisualStyles = true;
                 this.SaveMySettingsOnExit = true;
-                this.ShutdownStyle = global::Microsoft.VisualBasic.ApplicationServices.ShutdownMode.AfterMainFormCloses;
+                this.ShutdownStyle = Microsoft.VisualBasic.ApplicationServices.ShutdownMode.AfterMainFormCloses;
             }
 
-            [global::System.Diagnostics.DebuggerStepThrough()]
+            [System.Diagnostics.DebuggerStepThrough()]
             protected override void OnCreateMainForm()
             {
-                this.MainForm = global::WindowsAppVb.WinformsDesignerTest;
+                this.MainForm = WindowsAppVb.WinformsDesignerTest;
             }
         }
     }

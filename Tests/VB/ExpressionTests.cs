@@ -1,4 +1,5 @@
-﻿using CodeConverter.Tests.TestRunners;
+﻿using System.Threading.Tasks;
+using CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace CodeConverter.Tests.VB
@@ -6,9 +7,9 @@ namespace CodeConverter.Tests.VB
     public class ExpressionTests : ConverterTestBase
     {
         [Fact]
-        public void MultilineString()
+        public async Task MultilineString()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -25,9 +26,9 @@ End Class");
 
 
         [Fact]
-        public void StringInterpolationWithDoubleQuotes()
+        public async Task StringInterpolationWithDoubleQuotes()
         {
-            TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasic(
                 @"using System;
 
 namespace global::InnerNamespace
@@ -50,7 +51,7 @@ namespace global::InnerNamespace
 
 Namespace Global.InnerNamespace
     Public Class Test
-        Public Function StringInter(ByVal t As String, ByVal dt As DateTime) As String
+        Public Function StringInter(ByVal t As String, ByVal dt As Date) As String
             Dim a = $""pre{t} t""
             Dim b = $""pre{t} """" t""
             Dim c = $""pre{t} """"\ t""
@@ -64,9 +65,9 @@ End Namespace");
         }
 
         [Fact]
-        public void ConditionalExpression()
+        public async Task ConditionalExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -74,15 +75,15 @@ End Namespace");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim result As Boolean = If((str Is """"), True, False)
+        Dim result = If(str Is """", True, False)
     End Sub
 End Class");
         }
 
         [Fact]
-        public void IfIsPatternExpression()
+        public async Task IfIsPatternExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     private static int GetLength(object node)
     {
@@ -115,9 +116,9 @@ End Class");
         }
 
         [Fact]
-        public void DeclarationExpression()
+        public async Task DeclarationExpression()
         {
-            TestConversionCSharpToVisualBasic(@"using System.Collections.Generic;
+            await TestConversionCSharpToVisualBasic(@"using System.Collections.Generic;
 
 class TestClass
 {
@@ -130,17 +131,17 @@ class TestClass
 
 Friend Class TestClass
     Private Shared Function [Do]() As Boolean
-        Dim d = New Dictionary(Of String, String)()
-        Dim output As string = Nothing" + /* Ideally string would have the first letter uppercased but that's out of scope for this test */ @"
+        Dim d = New Dictionary(Of String, String)
+        Dim output As string = Nothing
         Return d.TryGetValue("""", output)
     End Function
 End Class");
         }
 
         [Fact]
-        public void ThrowExpression()
+        public async Task ThrowExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -148,7 +149,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim result As Boolean = If((str Is """"), CSharpImpl.__Throw(Of System.Boolean)(New Exception(""empty"")), False)
+        Dim result = If(str Is """", CSharpImpl.__Throw(Of Boolean)(New Exception(""empty"")), False)
     End Sub
 
     Private Class CSharpImpl
@@ -161,9 +162,9 @@ End Class");
         }
 
         [Fact]
-        public void NameOf()
+        public async Task NameOf()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     private string n = nameof(TestMethod);
 
@@ -179,9 +180,9 @@ End Class");
         }
 
         [Fact]
-        public void NullCoalescingExpression()
+        public async Task NullCoalescingExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -195,9 +196,9 @@ End Class");
         }
 
         [Fact]
-        public void MemberAccessAndInvocationExpression()
+        public async Task MemberAccessAndInvocationExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -211,15 +212,15 @@ End Class");
         Dim length As Integer
         length = str.Length
         Console.WriteLine(""Test"" & length)
-        Console.ReadKey()
+        Console.ReadKey
     End Sub
 End Class");
         }
 
         [Fact]
-        public void ShiftOperators()
+        public async Task ShiftOperators()
         {
-            TestConversionCSharpToVisualBasic(@"public class Test
+            await TestConversionCSharpToVisualBasic(@"public class Test
 {
     public static void Main()
     {
@@ -231,7 +232,7 @@ End Class");
 	}
 }", @"Public Class Test
     Public Shared Sub Main()
-        Dim y As Integer = 1
+        Dim y = 1
         y <<= 1
         y >>= 1
         y = y << 1
@@ -241,9 +242,9 @@ End Class");
         }
 
         [Fact]
-        public void ElvisOperatorExpression()
+        public async Task ElvisOperatorExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -254,18 +255,18 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim length As Integer = If(str?.Length, -1)
+        Dim length = If(str?.Length, -1)
         Console.WriteLine(length)
-        Console.ReadKey()
+        Console.ReadKey
         Dim redirectUri As String = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri
     End Sub
 End Class");
         }
 
         [Fact]
-        public void ObjectInitializerExpression()
+        public async Task ObjectInitializerExpression()
         {
-            TestConversionCSharpToVisualBasic(@"
+            await TestConversionCSharpToVisualBasic(@"
 class StudentName
 {
     public string LastName, FirstName;
@@ -286,7 +287,7 @@ End Class
 
 Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim student2 As StudentName = New StudentName With {
+        Dim student2 = New StudentName With {
             .FirstName = ""Craig"",
             .LastName = ""Playstead""
         }
@@ -295,9 +296,9 @@ End Class");
         }
 
         [Fact]
-        public void ObjectInitializerExpression2()
+        public async Task ObjectInitializerExpression2()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -317,9 +318,9 @@ End Class");
         }
 
         [Fact]
-        public void ObjectInitializerExpression3()
+        public async Task ObjectInitializerExpression3()
         {
-            TestConversionCSharpToVisualBasic(@"using System.Collections.Generic;
+            await TestConversionCSharpToVisualBasic(@"using System.Collections.Generic;
 
 internal class SomeSettings
 {
@@ -346,9 +347,9 @@ End Class");
         }
 
         [Fact]
-        public void ThisMemberAccessExpression()
+        public async Task ThisMemberAccessExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     private int member;
 
@@ -360,15 +361,15 @@ End Class");
     Private member As Integer
 
     Private Sub TestMethod()
-        Me.member = 0
+        member = 0
     End Sub
 End Class");
         }
 
         [Fact]
-        public void BaseMemberAccessExpression()
+        public async Task BaseMemberAccessExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class BaseTestClass
+            await TestConversionCSharpToVisualBasic(@"class BaseTestClass
 {
     public int member;
 }
@@ -387,26 +388,26 @@ Friend Class TestClass
     Inherits BaseTestClass
 
     Private Sub TestMethod()
-        MyBase.member = 0
+        member = 0
     End Sub
 End Class");
         }
 
         [Fact]
-        public void ReferenceTypeComparison()
+        public async Task ReferenceTypeComparison()
         {
-            TestConversionCSharpToVisualBasic(@"public static bool AreTwoObjectsReferenceEqual()
+            await TestConversionCSharpToVisualBasic(@"public static bool AreTwoObjectsReferenceEqual()
 {
     return new object() == new object();
 }", @"Public Shared Function AreTwoObjectsReferenceEqual() As Boolean
-    Return New Object() Is New Object()
+    Return New Object Is New Object
 End Function");
         }
 
         [Fact]
-        public void TupleType()
+        public async Task TupleType()
         {
-            TestConversionCSharpToVisualBasic(@"public interface ILanguageConversion 
+            await TestConversionCSharpToVisualBasic(@"public interface ILanguageConversion 
 {
     IReadOnlyCollection<(string, string)> GetProjectTypeGuidMappings();
     IEnumerable<(string, string)> GetProjectFileReplacementRegexes();
@@ -417,9 +418,9 @@ End Interface");
         }
 
         [Fact]
-        public void DelegateExpression()
+        public async Task DelegateExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass 
+            await TestConversionCSharpToVisualBasic(@"class TestClass 
 {
 
     private static Action<int> m_Event1 = delegate { };
@@ -442,9 +443,9 @@ End Class");
         }
 
         [Fact]
-        public void LambdaBodyExpression()
+        public async Task LambdaBodyExpression()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass 
+            await TestConversionCSharpToVisualBasic(@"class TestClass 
 {
     void TestMethod()
     {
@@ -469,9 +470,9 @@ End Class");
         }
 
         [Fact]
-        public void Await()
+        public async Task Await()
         {
-            TestConversionCSharpToVisualBasic(@"class TestClass 
+            await TestConversionCSharpToVisualBasic(@"class TestClass 
 {
     Task<int> SomeAsyncMethod()
     {
@@ -489,16 +490,16 @@ End Class");
     End Function
 
     Private Async Sub TestMethod()
-        Dim result As Integer = Await SomeAsyncMethod()
+        Dim result = Await SomeAsyncMethod
         Console.WriteLine(result)
     End Sub
 End Class");
         }
 
         [Fact]
-        public void Linq1()
+        public async Task Linq1()
         {
-            TestConversionCSharpToVisualBasic(@"static void SimpleQuery()
+            await TestConversionCSharpToVisualBasic(@"static void SimpleQuery()
 {
     int[] numbers = { 7, 9, 5, 3, 6 };
  
@@ -510,7 +511,7 @@ End Class");
         Console.WriteLine(n);
 }",
 @"Private Shared Sub SimpleQuery()
-    Dim numbers As Integer() = {7, 9, 5, 3, 6}
+    Dim numbers = {7, 9, 5, 3, 6}
     Dim res = From n In numbers Where n > 5 Select n
 
     For Each n In res
@@ -520,9 +521,9 @@ End Sub");
         }
 
         [Fact]
-        public void Linq2()
+        public async Task Linq2()
         {
-            TestConversionCSharpToVisualBasic(@"public static void Linq40() 
+            await TestConversionCSharpToVisualBasic(@"public static void Linq40() 
     { 
         int[] numbers = { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 }; 
       
@@ -544,7 +545,7 @@ End Sub");
         }
     }",
 @"Public Shared Sub Linq40()
-    Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
+    Dim numbers = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
     Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {
         .Remainder = __groupByKey1__,
         .Numbers = g
@@ -561,9 +562,9 @@ End Sub");
         }
 
         [Fact]
-        public void Linq3()
+        public async Task Linq3()
         {
-            TestConversionCSharpToVisualBasic(@"class Product {
+            await TestConversionCSharpToVisualBasic(@"class Product {
     public string Category;
     public string ProductName;
 }
@@ -600,8 +601,8 @@ End Class
 
 Friend Class Test
     Public Sub Linq102()
-        Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
-        Dim products As Product() = GetProductList()
+        Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
+        Dim products As Product() = GetProductList
         Dim q = From c In categories Join p In products On c Equals p.Category Select New With {
             .Category = c, p.ProductName
         }
@@ -614,9 +615,9 @@ End Class");
         }
 
         [Fact]
-        public void Linq4()
+        public async Task Linq4()
         {
-            TestConversionCSharpToVisualBasic(@"public void Linq103() 
+            await TestConversionCSharpToVisualBasic(@"public void Linq103() 
 { 
     string[] categories = new string[]{  
         ""Beverages"",  
@@ -644,8 +645,8 @@ End Class");
         }
     }
 }", @"Public Sub Linq103()
-    Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
-    Dim products = GetProductList()
+    Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
+    Dim products = GetProductList
     Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {
         .Category = c,
         .Products = ps
