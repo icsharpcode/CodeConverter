@@ -1598,23 +1598,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private ISymbol GetCsSymbolIfPossible(IMethodSymbol symbol)
             {
-                // ReSharper disable once PossibleUnintendedReferenceComparison - this is what happens when FindSimilarSymbols tries to construct a symbol, so we need the same check to avoid an exception
-                if (symbol.ConstructedFrom == symbol) {
-                    IMethodSymbol csSymbol = SymbolFinder.FindSimilarSymbols(symbol, _csCompilation).FirstOrDefault();
-                    if (csSymbol != null) {
-                        return csSymbol;
-                    }
-                }
-
-                var symbolClass = _csCompilation.GetTypeByMetadataName(symbol.ContainingType.ToDisplayString());
-                if (symbolClass != null) {
-                    var closestMatch = symbolClass.GetMembers(symbol.Name).OfType<IMethodSymbol>()
-                        .Where(m => m.Parameters.Length >= symbol.Parameters.Length).OrderBy(m => m.Parameters.Length)
-                        .FirstOrDefault();
-                    symbol = closestMatch ?? symbol;
-                }
-
-                return symbol;
+                // Construct throws an exception if ConstructedFrom differs from it, so let's use ConstructedFrom directly
+                return SymbolFinder.FindSimilarSymbols(symbol.ConstructedFrom, _csCompilation).FirstOrDefault();
 
             }
 
