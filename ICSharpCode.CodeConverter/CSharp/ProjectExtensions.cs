@@ -19,18 +19,20 @@ namespace ICSharpCode.CodeConverter.CSharp
             return await csharpViewOfVbProject.GetCompilationAsync();
         }
 
-        public static ProjectInfo ToProjectInfo(this Project project, ProjectId projectId, string projectName, CompilationOptions options, IEnumerable<ProjectReference> projectProjectReferences)
+        public static ProjectInfo ToProjectInfo(this Project project, ProjectId projectId, string projectName,
+            CompilationOptions options, IEnumerable<ProjectReference> projectProjectReferences,
+            ParseOptions parseOptions = null)
         {
             return ProjectInfo.Create(projectId, project.Version, projectName, project.AssemblyName,
                 options.Language, null, project.OutputFilePath,
-                options, null, new DocumentInfo[0], projectProjectReferences,
+                options, parseOptions, new DocumentInfo[0], projectProjectReferences,
                 project.MetadataReferences, project.AnalyzerReferences);
         }
 
-        public static Project ToProjectFromAnyOptions(this Project project, CompilationOptions compilationOptions)
+        public static Project ToProjectFromAnyOptions(this Project project, CompilationOptions compilationOptions, ParseOptions parseOptions)
         {
             var projectInfo = project.ToProjectInfo(project.Id, project.Name, compilationOptions,
-                project.ProjectReferences);
+                project.ProjectReferences, parseOptions);
             var convertedSolution = project.Solution.RemoveProject(project.Id).AddProject(projectInfo);
             return convertedSolution.GetProject(project.Id);
         }

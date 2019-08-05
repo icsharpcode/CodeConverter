@@ -17,7 +17,6 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     public class ProjectConversion
     {
-        private readonly Compilation _sourceCompilation;
         private readonly IReadOnlyCollection<Document> _documentsToConvert;
         private readonly ConcurrentDictionary<string, string> _errors = new ConcurrentDictionary<string, string>();
         private readonly Dictionary<string, Document> _firstPassResults = new Dictionary<string, Document>();
@@ -156,7 +155,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var nonFatalWarningsOrNull = await _languageConversion.GetWarningsOrNull();
             if (!string.IsNullOrWhiteSpace(nonFatalWarningsOrNull))
             {
-                var warningsDescription = Path.Combine(_sourceCompilation.AssemblyName, "ConversionWarnings.txt");
+                var warningsDescription = Path.Combine(_project.AssemblyName, "ConversionWarnings.txt");
                 _errors.TryAdd(warningsDescription, nonFatalWarningsOrNull);
             }
         }

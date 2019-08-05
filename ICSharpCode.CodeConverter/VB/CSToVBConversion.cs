@@ -22,13 +22,15 @@ namespace ICSharpCode.CodeConverter.VB
         private Project _sourceCsProject;
         private Project _convertedVbProject;
         private VisualBasicCompilation _vbViewOfCsSymbols;
+        private VisualBasicParseOptions _visualBasicParseOptions;
         public string RootNamespace { get; set; }
 
         public async Task Initialize(Project project)
         {
             _sourceCsProject = project;
             var cSharpCompilationOptions = VisualBasicCompiler.CreateCompilationOptions(RootNamespace);
-            _convertedVbProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions);
+            _visualBasicParseOptions = VisualBasicParseOptions.Default;
+            _convertedVbProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, _visualBasicParseOptions);
             _vbViewOfCsSymbols = (VisualBasicCompilation)await project.CreateReferenceOnlyCompilationFromAnyOptionsAsync(cSharpCompilationOptions);
         }
 
@@ -169,7 +171,7 @@ namespace ICSharpCode.CodeConverter.VB
         public Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
             IEnumerable<MetadataReference> references)
         {
-            return CSharpCompiler.CreateCompilationOptions().CreateProjectDocumentFromTree(workspace, tree, references);
+            return CSharpCompiler.CreateCompilationOptions().CreateProjectDocumentFromTree(workspace, tree, references, _visualBasicParseOptions);
         }
     }
 }

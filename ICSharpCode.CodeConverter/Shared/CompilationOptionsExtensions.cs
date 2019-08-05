@@ -10,7 +10,7 @@ namespace ICSharpCode.CodeConverter.Shared
     internal static class CompilationOptionsExtensions {
 
         public static Document CreateProjectDocumentFromTree(this CompilationOptions options,
-            Workspace workspace, SyntaxTree tree, IEnumerable<MetadataReference> references)
+            Workspace workspace, SyntaxTree tree, IEnumerable<MetadataReference> references, ParseOptions parseOptions)
         {
             ProjectId projectId = ProjectId.CreateNewId();
             var solution = workspace.CurrentSolution.AddProject(projectId, "ProjectToBeConverted",
