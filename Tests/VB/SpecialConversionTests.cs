@@ -280,7 +280,7 @@ End Class", expectCompilationErrors: true);
 }", @"Friend Class TestClass
     Private Sub TestMethod()
         If FullImage IsNot Nothing Then
-            DrawImage()
+            DrawImage
         End If
     End Sub
 End Class", expectCompilationErrors: true);
@@ -294,7 +294,7 @@ End Class", expectCompilationErrors: true);
 }", @"Friend Class TestClass
     Private Sub TestMethod()
         If FullImage IsNot Nothing Then
-            e.DrawImage()
+            e.DrawImage
         End If
     End Sub
 End Class", expectCompilationErrors: true);

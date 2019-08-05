@@ -499,7 +499,7 @@ End Class",
     public void Main()
     {
         var e1 = E.A;
-        int e2 = default;
+        int e2 = default(int);
         switch (e1)
         {
             case 0:
@@ -580,7 +580,7 @@ End Class", @"using System;
 
 class TestClass
 {
-    private DateTime DefaultDate = default;
+    private DateTime DefaultDate = default(DateTime);
 }");
         }
 
@@ -905,42 +905,42 @@ End Class", @"public class Class1
 {
     Class1()
     {
-        int needsInitialization = default;
+        int needsInitialization = default(int);
         int notUsed;
         var y = needsInitialization;
     }
 
     public void Foo()
     {
-        int needsInitialization = default;
+        int needsInitialization = default(int);
         int notUsed;
         var y = needsInitialization;
     }
 
     public void Bar()
     {
-        int i = default;
+        int i = default(int);
         string temp = string.Empty;
         i += 1;
     }
 
     public void Bar2()
     {
-        int i = default;
+        int i = default(int);
         string temp = string.Empty;
         i = i + 1;
     }
 
     public void Bar3()
     {
-        int i = default;
+        int i = default(int);
         string temp = string.Empty;
         int k = i + 1;
     }
 
     public void Bar4()
     {
-        int i = default;
+        int i = default(int);
         string temp = string.Empty;
         int k = i + 1;
         i = 1;
@@ -950,7 +950,7 @@ End Class", @"public class Class1
     {
         get
         {
-            int needsInitialization = default;
+            int needsInitialization = default(int);
             int notUsed;
             var y = needsInitialization;
             return y;
@@ -1267,7 +1267,7 @@ End Class", @"class TestClass
         if (int.TryParse(value, out result))
             return result;
         else
-            return default;
+            return default(int?);
     }
 }");
         }
@@ -1289,9 +1289,9 @@ class TestClass
     public void Bar()
     {
         int number;
-        number = default;
+        number = default(int);
         DateTime dat;
-        dat = default;
+        dat = default(DateTime);
     }
 }");
         }
@@ -1725,9 +1725,9 @@ class TestClass
     private void TestMethod()
     {
         var x = 1;
-        System.Action simpleAssignmentAction = () => x = 1;
-        System.Action nonBlockAction = () => Console.WriteLine(""Statement"");
-        Action ifAction = () => { if (true) return; };"/* I don't know why this Action doesn't get qualified when the above two do - just characterizing current behaviour*/ + @"
+        Action simpleAssignmentAction = () => x = 1;
+        Action nonBlockAction = () => Console.WriteLine(""Statement"");
+        Action ifAction = () => { if (true) return; };
     }
 }");
         }

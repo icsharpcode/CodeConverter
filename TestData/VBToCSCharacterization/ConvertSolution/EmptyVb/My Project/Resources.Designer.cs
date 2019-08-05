@@ -10,27 +10,27 @@ namespace EmptyVb
         /// <summary>
     /// A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
-        [global::System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
-        [global::System.Diagnostics.DebuggerNonUserCode()]
-        [global::System.Runtime.CompilerServices.CompilerGenerated()]
-        [global::Microsoft.VisualBasic.HideModuleName()]
+        [System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+        [System.Diagnostics.DebuggerNonUserCode()]
+        [System.Runtime.CompilerServices.CompilerGenerated()]
+        [Microsoft.VisualBasic.HideModuleName()]
         internal static class Resources
         {
-            private static global::System.Resources.ResourceManager resourceMan;
+            private static System.Resources.ResourceManager resourceMan;
 
-            private static global::System.Globalization.CultureInfo resourceCulture;
+            private static System.Globalization.CultureInfo resourceCulture;
 
             /// <summary>
         /// Returns the cached ResourceManager instance used by this class.
         /// </summary>
-            [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-            internal static global::System.Resources.ResourceManager ResourceManager
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
+            internal static System.Resources.ResourceManager ResourceManager
             {
                 get
                 {
-                    if (object.ReferenceEquals(resourceMan, null))
+                    if (ReferenceEquals(resourceMan, null))
                     {
-                        global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("EmptyVb.Resources", typeof(Resources).Assembly);
+                        System.Resources.ResourceManager temp = new System.Resources.ResourceManager("EmptyVb.Resources", typeof(Resources).Assembly);
                         resourceMan = temp;
                     }
                     return resourceMan;
@@ -41,8 +41,8 @@ namespace EmptyVb
         /// Overrides the current thread's CurrentUICulture property for all
         /// resource lookups using this strongly typed resource class.
         /// </summary>
-            [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-            internal static global::System.Globalization.CultureInfo Culture
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
+            internal static System.Globalization.CultureInfo Culture
             {
                 get
                 {

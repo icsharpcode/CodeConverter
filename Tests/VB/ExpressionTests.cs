@@ -131,8 +131,8 @@ class TestClass
 
 Friend Class TestClass
     Private Shared Function [Do]() As Boolean
-        Dim d = New Dictionary(Of String, String)()
-        Dim output As string = Nothing" + /* Ideally string would have the first letter uppercased but that's out of scope for this test */ @"
+        Dim d = New Dictionary(Of String, String)
+        Dim output As string = Nothing
         Return d.TryGetValue("""", output)
     End Function
 End Class");

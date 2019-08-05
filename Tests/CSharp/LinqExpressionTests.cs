@@ -19,7 +19,7 @@ namespace CodeConverter.Tests.CSharp
 End Sub",
                 @"private static void SimpleQuery()
 {
-    int[] numbers = new[] { 7, 9, 5, 3, 6 };"/*TODO Remove need for new[]*/ + @"
+    var numbers = new[] { 7, 9, 5, 3, 6 };
     var res = from n in numbers
               where n > 5
               select n;

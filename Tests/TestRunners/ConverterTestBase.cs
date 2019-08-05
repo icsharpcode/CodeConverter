@@ -16,25 +16,6 @@ namespace CodeConverter.Tests.TestRunners
 {
     public class ConverterTestBase
     {
-        private static readonly Dictionary<string, string> _fileContents = GetTestFileContents();
-
-        private static Dictionary<string, string> GetTestFileContents()
-        {
-            return Directory.GetFiles(@"C:\Users\Graham\Documents\GitHub\CodeConverter\Tests", "*Tests.cs", SearchOption.AllDirectories)
-                .ToDictionary(f => f, s => File.ReadAllText(s, Encoding.UTF8));
-        }
-
-        private static void UpdateFiles(string expected, string actual)
-        {
-            foreach (var fileContent in _fileContents) {
-                var newFc = fileContent.Value.Replace(expected.Replace("\"", "\"\""), actual.Replace("\"", "\"\""));
-                if (fileContent.Value != newFc) {
-                    _fileContents[fileContent.Key] = newFc;
-                    File.WriteAllText(fileContent.Key, newFc, Encoding.UTF8);
-                    return;
-                }
-            }
-        }
 
         private bool _testCstoVBCommentsByDefault = false;
         private readonly string _rootNamespace;
@@ -131,7 +112,6 @@ End Sub";
                 sb.AppendLine();
                 sb.AppendLine("source:");
                 sb.AppendLine(originalSource);
-                UpdateFiles(expectedConversion, actualConversion);
                 Assert.True(false, sb.ToString());
             }
         }

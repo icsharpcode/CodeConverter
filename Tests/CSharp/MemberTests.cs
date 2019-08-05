@@ -125,8 +125,8 @@ class TestClass
         where T2 : struct
     {
         argument = null;
-        argument2 = default;
-        argument3 = default;
+        argument2 = default(T2);
+        argument3 = default(T3);
         Console.WriteLine(Enumerable.Empty<string>());
     }
 }");
@@ -151,7 +151,7 @@ End Class", @"class Class1
 {
     public int TestMethod(int x)
     {
-        int TestMethodRet = default;
+        int TestMethodRet = default(int);
         if (x == 1)
             TestMethodRet = 1;
         else if (x == 2)
@@ -201,7 +201,7 @@ public class Class1
     {
         get
         {
-            string FooRet = default;
+            string FooRet = default(string);
             FooRet = """";
             return FooRet;
         }
@@ -210,7 +210,7 @@ public class Class1
     {
         get
         {
-            string XRet = default;
+            string XRet = default(string);
             XRet = 4;
             XRet = Conversions.ToString(Conversions.ToDouble(XRet) * 2);
             var y = ""random variable to check it isn't just using the value of the last statement"";
@@ -249,7 +249,7 @@ public class Class1
     public event EventHandler MyEvent;
     protected override string Foo()
     {
-        string FooRet = default;
+        string FooRet = default(string);
         MyEvent += Foo;
         FooRet = FooRet + """";
         FooRet += nameof(Foo);
@@ -277,7 +277,7 @@ End Class", @"class Class1
 {
     public int TestMethod(int x)
     {
-        int TestMethodRet = default;
+        int TestMethodRet = default(int);
         if (x == 1)
             TestMethodRet += 1;
         else if (x == 2)
@@ -304,7 +304,7 @@ End Class", @"class Class1
 {
     public int TestMethod()
     {
-        return default;
+        return default(int);
     }
 }");
         }
@@ -328,8 +328,8 @@ End Class", @"class TestClass
         where T2 : struct
     {
         argument = null;
-        argument2 = default;
-        argument3 = default;
+        argument2 = default(T2);
+        argument3 = default(T3);
     }
 }");
         }
@@ -370,8 +370,8 @@ End Class", @"class TestClass
         where T2 : struct
     {
         argument = null;
-        argument2 = default;
-        argument3 = default;
+        argument2 = default(T2);
+        argument3 = default(T3);
     }
 }");
         }
@@ -405,8 +405,8 @@ End Class", @"class TestClass
         where T2 : struct
     {
         argument = null;
-        argument2 = default;
-        argument3 = default;
+        argument2 = default(T2);
+        argument3 = default(T3);
     }
 }");
         }

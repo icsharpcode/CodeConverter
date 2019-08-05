@@ -12,7 +12,7 @@ namespace CodeConverter.Tests.VB
             await TestConversionCSharpToVisualBasic(
 @"int num = 4;
 num = 5;",
-@"Dim num As Integer = 4
+@"Dim num = 4
 num = 5",
 expectSurroundingMethodBlock: true);
         }
@@ -27,7 +27,7 @@ expectSurroundingMethodBlock: true);
     Inherited = false
 };
 obj = null;",
-@"Dim obj As AttributeUsageAttribute = New AttributeUsageAttribute() With {
+@"Dim obj = New AttributeUsageAttribute With {
     .AllowMultiple = True,
     .Inherited = False
 }

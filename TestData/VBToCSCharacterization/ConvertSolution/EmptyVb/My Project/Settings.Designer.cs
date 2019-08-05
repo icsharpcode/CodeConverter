@@ -2,12 +2,12 @@ namespace EmptyVb
 {
     namespace My
     {
-        [global::System.Runtime.CompilerServices.CompilerGenerated()]
-        [global::System.CodeDom.Compiler.GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "11.0.0.0")]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal sealed partial class MySettings : global::System.Configuration.ApplicationSettingsBase
+        [System.Runtime.CompilerServices.CompilerGenerated()]
+        [System.CodeDom.Compiler.GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "11.0.0.0")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
+        internal sealed partial class MySettings : System.Configuration.ApplicationSettingsBase
         {
-            private static MySettings defaultInstance = (MySettings)global::System.Configuration.ApplicationSettingsBase.Synchronized(new MySettings());
+            private static MySettings defaultInstance = (MySettings)Synchronized(new MySettings());
 
             /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
             public static MySettings Default
@@ -24,17 +24,17 @@ namespace EmptyVb
 
     namespace My
     {
-        [global::Microsoft.VisualBasic.HideModuleName()]
-        [global::System.Diagnostics.DebuggerNonUserCode()]
-        [global::System.Runtime.CompilerServices.CompilerGenerated()]
+        [Microsoft.VisualBasic.HideModuleName()]
+        [System.Diagnostics.DebuggerNonUserCode()]
+        [System.Runtime.CompilerServices.CompilerGenerated()]
         internal static class MySettingsProperty
         {
-            [global::System.ComponentModel.Design.HelpKeyword("My.Settings")]
-            internal static global::EmptyVb.My.MySettings Settings
+            [System.ComponentModel.Design.HelpKeyword("My.Settings")]
+            internal static MySettings Settings
             {
                 get
                 {
-                    return global::EmptyVb.My.MySettings.Default;
+                    return MySettings.Default;
                 }
             }
         }

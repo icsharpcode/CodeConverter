@@ -670,7 +670,7 @@ using System.Runtime.InteropServices;
 public class AcmeClass
 {{
     [DllImport(""user32"")]
-    private static extern {csType} SetForegroundWindow(Int32 hwnd);
+    private static extern {csType} SetForegroundWindow(int hwnd);
 
     public static void Main()
     {{
@@ -822,7 +822,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int charIndex = default;
+        int charIndex = default(int);
         // allow only digits and letters
         do
             charIndex = rand.Next(48, 123);
@@ -1024,7 +1024,7 @@ End Class", @"class TestClass
 {
     private void TestMethod(int end)
     {
-        int[] b = default, s = default;
+        int[] b = default(int[]), s = default(int[]);
         var loopTo = end;
         for (var i = 0; i <= loopTo; i++)
             b[i] = s[i];
@@ -1101,7 +1101,7 @@ End Class", @"class TestClass
 {
     private void TestMethod(int end)
     {
-        int[] b = default, s = default;
+        int[] b = default(int[]), s = default(int[]);
         var loopTo = end - 1;
         for (var i = 0; i <= loopTo; i++)
             b[i] = s[i];

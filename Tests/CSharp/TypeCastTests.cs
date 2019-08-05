@@ -206,7 +206,7 @@ End Class" + Environment.NewLine, @"class Class1
 End Sub
 ", @"private void Test()
 {
-    var CR = (char)0xD;
+    char CR = (char)0xD;
 }
 ");
         }
@@ -220,7 +220,7 @@ End Sub
 End Sub
 ", @"private void Test()
 {
-    var CR = (char)0xD;
+    char CR = (char)0xD;
 }
 ");
         }
