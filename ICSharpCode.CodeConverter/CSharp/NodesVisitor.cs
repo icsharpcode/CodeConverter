@@ -32,6 +32,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(SyntaxKind.SemicolonToken);
             private static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
             private readonly CSharpCompilation _csCompilation;
+            private readonly Compilation _compilation;
             private readonly SemanticModel _semanticModel;
             private readonly Dictionary<ITypeSymbol, string> _createConvertMethodsLookupByReturnType;
             private MethodsWithHandles _methodsWithHandles;
@@ -50,8 +51,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private CommonConversions CommonConversions { get; }
 
-            public NodesVisitor(SemanticModel semanticModel, CSharpCompilation csCompilation)
+            public NodesVisitor(Compilation compilation, SemanticModel semanticModel, CSharpCompilation csCompilation)
             {
+                _compilation = compilation;
                 this._semanticModel = semanticModel;
                 this._csCompilation = csCompilation;
                 TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
@@ -1559,9 +1561,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxToken token = default(SyntaxToken);
                 string argName = null;
                 RefKind refKind = RefKind.None;
-                if (symbol != null) {
+                if (symbol is IMethodSymbol methodSymbol) {
                     int argId = ((VBSyntax.ArgumentListSyntax)node.Parent).Arguments.IndexOf(node);
-                    var parameters = GetCsSymbolIfPossible(symbol).GetParameters();
+                    var parameters = GetCsSymbolIfPossible(methodSymbol).GetParameters();
                     //WARNING: If named parameters can reach here it won't work properly for them
                     if (argId < parameters.Count()) {
                         refKind = parameters[argId].RefKind;
@@ -1594,14 +1596,26 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            private ISymbol GetCsSymbolIfPossible(ISymbol symbol)
+            private ISymbol GetCsSymbolIfPossible(IMethodSymbol symbol)
             {
-                try {
-                    return SymbolFinder.FindSimilarSymbols(symbol, _csCompilation).FirstOrDefault() ?? symbol;
-                } catch (InvalidOperationException) {
-                    //TODO Report via IProgress. This happens sometimes for generic symbols, would be good to understand why, and if there's any remedy
-                    return symbol;
+                // ReSharper disable once PossibleUnintendedReferenceComparison - this is what happens when FindSimilarSymbols tries to construct a symbol, so we need the same check to avoid an exception
+                if (symbol.ConstructedFrom == symbol) {
+                    IMethodSymbol csSymbol = SymbolFinder.FindSimilarSymbols(symbol, _csCompilation).FirstOrDefault();
+                    if (csSymbol != null) {
+                        return csSymbol;
+                    }
                 }
+
+                var symbolClass = _csCompilation.GetTypeByMetadataName(symbol.ContainingType.ToDisplayString());
+                if (symbolClass != null) {
+                    var closestMatch = symbolClass.GetMembers(symbol.Name).OfType<IMethodSymbol>()
+                        .Where(m => m.Parameters.Length >= symbol.Parameters.Length).OrderBy(m => m.Parameters.Length)
+                        .FirstOrDefault();
+                    symbol = closestMatch ?? symbol;
+                }
+
+                return symbol;
+
             }
 
             private bool NeedsVariableForArgument(VBSyntax.SimpleArgumentSyntax node)

@@ -33,7 +33,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var semanticModel = compilation.GetSemanticModel(tree, true);
             var root = (VBasic.VisualBasicSyntaxNode)await document.GetSyntaxRootAsync();
 
-            var visualBasicSyntaxVisitor = new NodesVisitor(semanticModel, csharpViewOfVbSymbols);
+            var visualBasicSyntaxVisitor = new 
+                NodesVisitor(compilation, semanticModel, csharpViewOfVbSymbols);
             return root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
         }
     }
