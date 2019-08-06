@@ -62,6 +62,7 @@ namespace ICSharpCode.CodeConverter.Util
                     "System.Linq",
                     "System.Reflection",
                     "System.Runtime.CompilerServices",
+                    "System.Runtime.InteropServices",
                     "System.Security",
                     "System.Text",
                     "System.Threading.Tasks",

@@ -26,6 +26,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         class NodesVisitor : VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
         {
             private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
+            private static Type _outAttributeType = typeof(OutAttribute);
             private static Type ConvertType = typeof(Convert);
             private static readonly Type DllImportType = typeof(DllImportAttribute);
             private static readonly Type CharSetType = typeof(CharSet);
@@ -117,7 +118,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             IEnumerable<AttributeListSyntax> ConvertAttribute(VBSyntax.AttributeListSyntax attributeList)
             {
-                return attributeList.Attributes.Where(a => !IsExtensionAttribute(a)).Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor));
+                // These attributes' semantic effects are expressed differently in CSharp.
+                return attributeList.Attributes.Where(a => !IsExtensionAttribute(a) && !IsOutAttribute(a))
+                    .Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor));
             }
 
             public override CSharpSyntaxNode VisitAttribute(VBSyntax.AttributeSyntax node)
@@ -982,9 +985,21 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return a.Attributes.Any(IsExtensionAttribute);
             }
 
+            private bool HasOutAttribute(VBSyntax.AttributeListSyntax a)
+            {
+                return a.Attributes.Any(IsOutAttribute);
+            }
+
             private bool IsExtensionAttribute(VBSyntax.AttributeSyntax a)
             {
-                return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()?.Equals(ExtensionAttributeType.FullName) == true;
+                return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
+                           ?.Equals(ExtensionAttributeType.FullName) == true;
+            }
+
+            private bool IsOutAttribute(VBSyntax.AttributeSyntax a)
+            {
+                return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
+                           ?.Equals(_outAttributeType.FullName) == true;
             }
 
             private TokenContext GetMemberContext(VBSyntax.StatementSyntax member)
@@ -1209,10 +1224,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 var attributes = node.AttributeLists.SelectMany(ConvertAttribute).ToList();
-                int outAttributeIndex = attributes.FindIndex(a => a.Attributes.Single().Name.ToString() == "Out");
+                var paramSymbol = _semanticModel.GetDeclaredSymbol(node);
+                var csParamSymbol = GetCsSymbolIfPossible(paramSymbol) as IParameterSymbol;
+                
                 var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Local);
-                if (outAttributeIndex > -1) {
-                    attributes.RemoveAt(outAttributeIndex);
+                if (csParamSymbol?.RefKind == RefKind.Out || node.AttributeLists.Any(HasOutAttribute)) {
                     modifiers = modifiers.Replace(SyntaxFactory.Token(SyntaxKind.RefKeyword), SyntaxFactory.Token(SyntaxKind.OutKeyword));
                 }
                 
@@ -1596,12 +1612,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            private ISymbol GetCsSymbolIfPossible(IMethodSymbol symbol)
+            private ISymbol GetCsSymbolIfPossible(ISymbol symbol)
             {
                 // Construct throws an exception if ConstructedFrom differs from it, so let's use ConstructedFrom directly
-                return SymbolFinder.FindSimilarSymbols(symbol.ConstructedFrom, _csCompilation).FirstOrDefault() ??
+                ISymbol symbolToFind = symbol is IMethodSymbol m ? m.ConstructedFrom : symbol;
+                return SymbolFinder.FindSimilarSymbols(symbolToFind, _csCompilation).FirstOrDefault() ??
                        symbol;
-
             }
 
             private bool NeedsVariableForArgument(VBSyntax.SimpleArgumentSyntax node)
