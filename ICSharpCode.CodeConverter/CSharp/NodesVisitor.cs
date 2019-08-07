@@ -1225,7 +1225,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var attributes = node.AttributeLists.SelectMany(ConvertAttribute).ToList();
                 var paramSymbol = _semanticModel.GetDeclaredSymbol(node);
-                var csParamSymbol = GetCsSymbolIfPossible(paramSymbol) as IParameterSymbol;
+                var csParamSymbol = GetCsSymbolOrNull(paramSymbol) as IParameterSymbol;
                 
                 var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Local);
                 if (csParamSymbol?.RefKind == RefKind.Out || node.AttributeLists.Any(HasOutAttribute)) {
@@ -1579,7 +1579,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 RefKind refKind = RefKind.None;
                 if (symbol is IMethodSymbol methodSymbol) {
                     int argId = ((VBSyntax.ArgumentListSyntax)node.Parent).Arguments.IndexOf(node);
-                    var parameters = GetCsSymbolIfPossible(methodSymbol).GetParameters();
+                    var parameters = (GetCsSymbolOrNull(methodSymbol) ?? methodSymbol).GetParameters();
                     //WARNING: If named parameters can reach here it won't work properly for them
                     if (argId < parameters.Count()) {
                         refKind = parameters[argId].RefKind;
@@ -1612,12 +1612,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            private ISymbol GetCsSymbolIfPossible(ISymbol symbol)
+            private ISymbol GetCsSymbolOrNull(ISymbol symbol)
             {
                 // Construct throws an exception if ConstructedFrom differs from it, so let's use ConstructedFrom directly
                 ISymbol symbolToFind = symbol is IMethodSymbol m ? m.ConstructedFrom : symbol;
-                return SymbolFinder.FindSimilarSymbols(symbolToFind, _csCompilation).FirstOrDefault() ??
-                       symbol;
+                return SymbolFinder.FindSimilarSymbols(symbolToFind, _csCompilation).FirstOrDefault();
             }
 
             private bool NeedsVariableForArgument(VBSyntax.SimpleArgumentSyntax node)
