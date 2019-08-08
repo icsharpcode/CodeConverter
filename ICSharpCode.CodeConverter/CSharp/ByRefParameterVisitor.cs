@@ -93,8 +93,5 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override SyntaxList<StatementSyntax> VisitWhileBlock(VBSyntax.WhileBlockSyntax node) => AddLocalVariables(node);
         public override SyntaxList<StatementSyntax> VisitWithBlock(VBSyntax.WithBlockSyntax node) => AddLocalVariables(node);
         public override SyntaxList<StatementSyntax> VisitYieldStatement(VBSyntax.YieldStatementSyntax node) => AddLocalVariables(node);
-
-        // RedimClause is implemented in MethodBodyVisitor, but is not an executable statement
-        public override SyntaxList<StatementSyntax> VisitRedimClause(VBSyntax.RedimClauseSyntax node) => _wrappedVisitor.Visit(node);
     }
 }

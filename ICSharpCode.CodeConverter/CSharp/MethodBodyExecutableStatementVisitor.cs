@@ -180,10 +180,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override SyntaxList<StatementSyntax> VisitReDimStatement(VBSyntax.ReDimStatementSyntax node)
         {
-            return SyntaxFactory.List(node.Clauses.SelectMany(arrayExpression => arrayExpression.Accept(CommentConvertingVisitor)));
+            return SyntaxFactory.List(node.Clauses.SelectMany(arrayExpression => ConvertRedimClause(arrayExpression)));
         }
 
-        public override SyntaxList<StatementSyntax> VisitRedimClause(VBSyntax.RedimClauseSyntax node)
+        /// <remarks>
+        /// RedimClauseSyntax isn't an executable statement, therefore this isn't a "Visit" method.
+        /// Since it returns multiple statements it's easiest for it to be here in the current architecture.
+        /// </remarks>
+        private SyntaxList<StatementSyntax> ConvertRedimClause(VBSyntax.RedimClauseSyntax node)
         {
             bool preserve = node.Parent is VBSyntax.ReDimStatementSyntax rdss && rdss.PreserveKeyword.IsKind(VBasic.SyntaxKind.PreserveKeyword);
                 
