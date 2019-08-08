@@ -17,7 +17,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var root = (VBasic.VisualBasicSyntaxNode)await document.GetSyntaxRootAsync();
 
             var visualBasicSyntaxVisitor = new 
-                DeclarationAndExpressionNodeVisitor(compilation, semanticModel, csharpViewOfVbSymbols);
+                DeclarationNodeVisitor(compilation, semanticModel, csharpViewOfVbSymbols);
             return root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
         }
     }
