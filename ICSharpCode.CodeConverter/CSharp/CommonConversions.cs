@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
@@ -28,34 +30,10 @@ using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    internal class VbSyntaxNodeExtensions
-    {
-        public static ExpressionSyntax ParenthesizeIfPrecedenceCouldChange(Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxNode node, ExpressionSyntax expression)
-        {
-            return PrecedenceCouldChange(node) ? SyntaxFactory.ParenthesizedExpression(expression) : expression;
-        }
-
-        public static bool PrecedenceCouldChange(Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxNode node)
-        {
-            bool parentIsSameBinaryKind = node is VBSyntax.BinaryExpressionSyntax && node.Parent is VBSyntax.BinaryExpressionSyntax parent && parent.Kind() == node.Kind();
-            bool parentIsReturn = node.Parent is VBSyntax.ReturnStatementSyntax;
-            bool parentIsLambda = node.Parent is VBSyntax.LambdaExpressionSyntax;
-            bool parentIsNonArgumentExpression = node.Parent is VBSyntax.ExpressionSyntax && !(node.Parent is VBSyntax.ArgumentSyntax);
-            bool parentIsParenthesis = node.Parent is VBSyntax.ParenthesizedExpressionSyntax;
-
-            // Could be a full C# precedence table - this is just a common case
-            bool parentIsAndOr = node.Parent.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AndAlsoExpression, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.OrElseExpression);
-            bool nodeIsRelationalOrEqual = node.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.EqualsExpression, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NotEqualsExpression,
-                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.LessThanExpression, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.LessThanOrEqualExpression,
-                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.GreaterThanExpression, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.GreaterThanOrEqualExpression);
-            bool csharpPrecedenceSame = parentIsAndOr && nodeIsRelationalOrEqual;
-
-            return parentIsNonArgumentExpression && !parentIsSameBinaryKind && !parentIsReturn && !parentIsLambda && !parentIsParenthesis && !csharpPrecedenceSame;
-        }
-    }
-
     internal class CommonConversions
     {
+        private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
+        private static readonly Type OutAttributeType = typeof(OutAttribute);
         private readonly SemanticModel _semanticModel;
         public CommentConvertingVisitorWrapper<CSharpSyntaxNode> TriviaConvertingExpressionVisitor { get; set; }
         public TypeConversionAnalyzer TypeConversionAnalyzer { get; }
@@ -524,6 +502,29 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static bool IsDefaultIndexer(SyntaxNode node)
         {
             return node is PropertyStatementSyntax pss && pss.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DefaultKeyword));
+        }
+
+
+        public bool HasExtensionAttribute(VBSyntax.AttributeListSyntax a)
+        {
+            return a.Attributes.Any(IsExtensionAttribute);
+        }
+
+        public bool HasOutAttribute(VBSyntax.AttributeListSyntax a)
+        {
+            return a.Attributes.Any(IsOutAttribute);
+        }
+
+        public bool IsExtensionAttribute(VBSyntax.AttributeSyntax a)
+        {
+            return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
+                       ?.Equals(ExtensionAttributeType.FullName) == true;
+        }
+
+        public bool IsOutAttribute(VBSyntax.AttributeSyntax a)
+        {
+            return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
+                       ?.Equals(OutAttributeType.FullName) == true;
         }
     }
 }

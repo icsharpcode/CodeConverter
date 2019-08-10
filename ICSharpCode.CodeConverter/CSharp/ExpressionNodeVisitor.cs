@@ -664,6 +664,99 @@ namespace ICSharpCode.CodeConverter.CSharp
             return CreateLambdaExpression(param, body);
         }
 
+        public override CSharpSyntaxNode VisitParameterList(VBSyntax.ParameterListSyntax node)
+        {
+            var parameterSyntaxs = node.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor));
+            if (node.Parent is VBSyntax.PropertyStatementSyntax && CommonConversions.IsDefaultIndexer(node.Parent)) {
+                return SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(parameterSyntaxs));
+            }
+            return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameterSyntaxs));
+        }
+
+        public override CSharpSyntaxNode VisitParameter(VBSyntax.ParameterSyntax node)
+        {
+            var id = CommonConversions.ConvertIdentifier(node.Identifier.Identifier);
+            var returnType = (TypeSyntax)node.AsClause?.Type.Accept(TriviaConvertingVisitor);
+            if (node.Parent?.Parent?.IsKind(VBasic.SyntaxKind.FunctionStatement,
+                    VBasic.SyntaxKind.SubStatement) == true) {
+                returnType = returnType ?? SyntaxFactory.ParseTypeName("object");
+            }
+
+            var rankSpecifiers = CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.Identifier.ArrayRankSpecifiers, node.Identifier.ArrayBounds, false);
+            if (rankSpecifiers.Any() && returnType != null) {
+                returnType = SyntaxFactory.ArrayType(returnType, rankSpecifiers);
+            }
+
+            if (returnType != null && !SyntaxTokenExtensions.IsKind(node.Identifier.Nullable, SyntaxKind.None)) {
+                var arrayType = returnType as ArrayTypeSyntax;
+                if (arrayType == null) {
+                    returnType = SyntaxFactory.NullableType(returnType);
+                } else {
+                    returnType = arrayType.WithElementType(SyntaxFactory.NullableType(arrayType.ElementType));
+                }
+            }
+
+            var attributes = node.AttributeLists.SelectMany(ConvertAttribute).ToList();
+            var paramSymbol = _semanticModel.GetDeclaredSymbol(node);
+            var csParamSymbol = GetCsSymbolOrNull(paramSymbol) as IParameterSymbol;
+
+            var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Local);
+            if (csParamSymbol?.RefKind == RefKind.Out || node.AttributeLists.Any(CommonConversions.HasOutAttribute)) {
+                modifiers = modifiers.Replace(SyntaxFactory.Token(SyntaxKind.RefKeyword), SyntaxFactory.Token(SyntaxKind.OutKeyword));
+            }
+
+            EqualsValueClauseSyntax @default = null;
+            if (node.Default != null) {
+                if (node.Default.Value is VBSyntax.LiteralExpressionSyntax les && les.Token.Value is DateTime dt) {
+                    var dateTimeAsLongCsLiteral = CommonConversions.GetLiteralExpression(dt.Ticks, dt.Ticks + "L");
+                    var dateTimeArg = CommonConversions.CreateAttributeArgumentList(SyntaxFactory.AttributeArgument(dateTimeAsLongCsLiteral));
+                    _extraUsingDirectives.Add("System.Runtime.InteropServices");
+                    _extraUsingDirectives.Add("System.Runtime.CompilerServices");
+                    var optionalDateTimeAttributes = new[] {
+                        SyntaxFactory.Attribute(SyntaxFactory.ParseName("Optional")),
+                        SyntaxFactory.Attribute(SyntaxFactory.ParseName("DateTimeConstant"), dateTimeArg)
+                    };
+                    attributes.Insert(0,
+                        SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(optionalDateTimeAttributes)));
+                } else {
+                    @default = SyntaxFactory.EqualsValueClause(
+                        (ExpressionSyntax)node.Default.Value.Accept(TriviaConvertingVisitor));
+                }
+            }
+
+            if (node.Parent.Parent is VBSyntax.MethodStatementSyntax mss
+                && mss.AttributeLists.Any(CommonConversions.HasExtensionAttribute) && node.Parent.ChildNodes().First() == node) {
+                modifiers = modifiers.Insert(0, SyntaxFactory.Token(SyntaxKind.ThisKeyword));
+            }
+            return SyntaxFactory.Parameter(
+                SyntaxFactory.List(attributes),
+                modifiers,
+                returnType,
+                id,
+                @default
+            );
+        }
+
+        public SyntaxList<AttributeListSyntax> ConvertAttributes(SyntaxList<VBSyntax.AttributeListSyntax> attributeListSyntaxs)
+        {
+            return SyntaxFactory.List(attributeListSyntaxs.SelectMany(ConvertAttribute));
+        }
+
+        public IEnumerable<AttributeListSyntax> ConvertAttribute(VBSyntax.AttributeListSyntax attributeList)
+        {
+            // These attributes' semantic effects are expressed differently in CSharp.
+            return attributeList.Attributes.Where(a => !CommonConversions.IsExtensionAttribute(a) && !CommonConversions.IsOutAttribute(a))
+                .Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor));
+        }
+
+        public override CSharpSyntaxNode VisitAttribute(VBSyntax.AttributeSyntax node)
+        {
+            return SyntaxFactory.AttributeList(
+                node.Target == null ? null : SyntaxFactory.AttributeTargetSpecifier(node.Target.AttributeModifier.ConvertToken()),
+                SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Attribute((NameSyntax)node.Name.Accept(TriviaConvertingVisitor), (AttributeArgumentListSyntax)node.ArgumentList?.Accept(TriviaConvertingVisitor)))
+            );
+        }
+
         public override CSharpSyntaxNode VisitTupleType(Microsoft.CodeAnalysis.VisualBasic.Syntax.TupleTypeSyntax node)
         {
             var elements = node.Elements.Select(e => (TupleElementSyntax)e.Accept(TriviaConvertingVisitor));
