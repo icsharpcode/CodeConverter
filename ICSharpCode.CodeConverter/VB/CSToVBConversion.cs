@@ -23,6 +23,7 @@ namespace ICSharpCode.CodeConverter.VB
         private Project _convertedVbProject;
         private VisualBasicCompilation _vbViewOfCsSymbols;
         private VisualBasicParseOptions _visualBasicParseOptions;
+        private Project _vbReferenceProject;
         public string RootNamespace { get; set; }
 
         public async Task Initialize(Project project)
@@ -31,7 +32,8 @@ namespace ICSharpCode.CodeConverter.VB
             var cSharpCompilationOptions = VisualBasicCompiler.CreateCompilationOptions(RootNamespace);
             _visualBasicParseOptions = VisualBasicParseOptions.Default;
             _convertedVbProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, _visualBasicParseOptions);
-            _vbViewOfCsSymbols = (VisualBasicCompilation)await project.CreateReferenceOnlyCompilationFromAnyOptionsAsync(cSharpCompilationOptions);
+            _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptionsAsync(cSharpCompilationOptions);
+            _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync();
         }
 
         public async Task<Document> SingleFirstPass(Document document)

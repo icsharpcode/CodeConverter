@@ -8,7 +8,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class ProjectExtensions
     {
-        public static async Task<Compilation> CreateReferenceOnlyCompilationFromAnyOptionsAsync(this Project project, CompilationOptions baseOptions)
+        public static Project CreateReferenceOnlyProjectFromAnyOptionsAsync(this Project project, CompilationOptions baseOptions)
         {
             var options = baseOptions.WithMetadataImportOptionsAll();
             var viewerId = ProjectId.CreateNewId();
@@ -16,7 +16,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var viewerProjectInfo = project.ToProjectInfo(viewerId, project.Name + viewerId, options,
                 projectReferences);
             var csharpViewOfVbProject = project.Solution.AddProject(viewerProjectInfo).GetProject(viewerId);
-            return await csharpViewOfVbProject.GetCompilationAsync();
+            return csharpViewOfVbProject;
         }
 
         public static ProjectInfo ToProjectInfo(this Project project, ProjectId projectId, string projectName,

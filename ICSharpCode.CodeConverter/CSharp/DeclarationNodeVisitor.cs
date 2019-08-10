@@ -9,6 +9,7 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Editing;
 using Microsoft.VisualBasic.CompilerServices;
 using StringComparer = System.StringComparer;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -31,6 +32,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(SyntaxKind.SemicolonToken);
         private static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
         private readonly CSharpCompilation _csCompilation;
+        private readonly SyntaxGenerator _csSyntaxGenerator;
         private readonly Compilation _compilation;
         private readonly SemanticModel _semanticModel;
         private readonly MethodsWithHandles _methodsWithHandles = new MethodsWithHandles();
@@ -44,15 +46,17 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static HashSet<string> _accessedThroughMyClass;
         public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
         private readonly CommentConvertingVisitorWrapper<CSharpSyntaxNode> _triviaConvertingExpressionVisitor;
-        private ExpressionNodeVisitor _expressionNodeVisitor;
+        private readonly ExpressionNodeVisitor _expressionNodeVisitor;
 
         private CommonConversions CommonConversions { get; }
 
-        public DeclarationNodeVisitor(Compilation compilation, SemanticModel semanticModel, CSharpCompilation csCompilation)
+        public DeclarationNodeVisitor(Compilation compilation, SemanticModel semanticModel,
+            CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator)
         {
             _compilation = compilation;
             _semanticModel = semanticModel;
-            this._csCompilation = csCompilation;
+            _csCompilation = csCompilation;
+            _csSyntaxGenerator = csSyntaxGenerator;
             _visualBasicEqualityComparison = new VisualBasicEqualityComparison(_semanticModel, _extraUsingDirectives);
             TriviaConverter triviaConverter = new TriviaConverter();
             TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this, triviaConverter);
