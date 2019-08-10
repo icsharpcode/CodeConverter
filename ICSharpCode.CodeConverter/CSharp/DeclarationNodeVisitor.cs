@@ -910,6 +910,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override CSharpSyntaxNode VisitEventStatement(VBSyntax.EventStatementSyntax node)
         {
+            if (_expressionNodeVisitor.GetCsSymbolOrNull(_semanticModel.GetDeclaredSymbol(node)) is IEventSymbol csEvent
+            ) {
+                return (CSharpSyntaxNode) _syntaxGenerator.EventDeclaration(csEvent);
+            }
+
             var attributes = node.AttributeLists.SelectMany(_expressionNodeVisitor.ConvertAttribute);
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, GetMemberContext(node));
             var id = CommonConversions.ConvertIdentifier(node.Identifier);
