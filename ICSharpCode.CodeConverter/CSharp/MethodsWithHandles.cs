@@ -7,12 +7,15 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
+    /// <summary>
+    /// MUST call Initialize before using. Alternative implementation in future - embed the analysis, pass a node in the type for each request and make the initialization lazy
+    /// </summary>
     internal class MethodsWithHandles
     {
-        private readonly List<MethodWithHandles> _methodWithHandleses;
-        private readonly ILookup<string, MethodWithHandles> _handledMethodsFromPropertyWithEventName;
+        private List<MethodWithHandles> _methodWithHandleses;
+        private ILookup<string, MethodWithHandles> _handledMethodsFromPropertyWithEventName;
 
-        public MethodsWithHandles(List<MethodWithHandles> methodWithHandleses)
+        public void Initialize(List<MethodWithHandles> methodWithHandleses)
         {
             _methodWithHandleses = methodWithHandleses;
             _handledMethodsFromPropertyWithEventName = methodWithHandleses

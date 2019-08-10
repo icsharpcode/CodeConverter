@@ -57,15 +57,15 @@ namespace ICSharpCode.CodeConverter.CSharp
     internal class CommonConversions
     {
         private readonly SemanticModel _semanticModel;
-        private readonly VisualBasicSyntaxVisitor<CSharpSyntaxNode> _nodesVisitor;
+        private readonly CommentConvertingVisitorWrapper<CSharpSyntaxNode> _triviaConvertingExpressionVisitor;
         public TypeConversionAnalyzer TypeConversionAnalyzer { get; }
 
-        public CommonConversions(SemanticModel semanticModel, VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
+        public CommonConversions(SemanticModel semanticModel, CommentConvertingVisitorWrapper<CSharpSyntaxNode> triviaConvertingExpressionVisitor,
             TypeConversionAnalyzer typeConversionAnalyzer)
         {
             TypeConversionAnalyzer = typeConversionAnalyzer;
             _semanticModel = semanticModel;
-            _nodesVisitor = nodesVisitor;
+            _triviaConvertingExpressionVisitor = triviaConvertingExpressionVisitor;
         }
 
         public Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(
@@ -110,7 +110,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 (SimpleAsClauseSyntax c) => c.Type,
                 (AsNewClauseSyntax c) => c.NewExpression.Type(),
                 _ => throw new NotImplementedException($"{_.GetType().FullName} not implemented!"));
-            return (TypeSyntax)vbType?.Accept(_nodesVisitor) ?? GetTypeSyntax(declarator, preferExplicitType);
+            return (TypeSyntax)vbType?.Accept(_triviaConvertingExpressionVisitor) ?? GetTypeSyntax(declarator, preferExplicitType);
         }
 
         private TypeSyntax GetTypeSyntax(VariableDeclaratorSyntax declarator, bool preferExplicitType)
@@ -133,7 +133,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return (ExpressionSyntax)declarator.AsClause?.TypeSwitch(
                        (SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
                        (AsNewClauseSyntax c) => c.NewExpression
-                   )?.Accept(_nodesVisitor) ?? (ExpressionSyntax)declarator.Initializer?.Value.Accept(_nodesVisitor);
+                   )?.Accept(_triviaConvertingExpressionVisitor) ?? (ExpressionSyntax)declarator.Initializer?.Value.Accept(_triviaConvertingExpressionVisitor);
         }
 
         private (TypeSyntax, ExpressionSyntax) AdjustFromName(TypeSyntax rawType,
@@ -450,7 +450,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxList<VBSyntax.ArrayRankSpecifierSyntax> arrayRankSpecifierSyntaxs,
             ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
         {
-            var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax)r.Accept(_nodesVisitor)));
+            var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax)r.Accept(_triviaConvertingExpressionVisitor)));
 
             if (nodeArrayBounds != null) {
                 var sizesSpecified = nodeArrayBounds.Arguments.Any(a => !a.IsOmitted);
@@ -487,7 +487,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return SyntaxFactory.BinaryExpression(
                 CSSyntaxKind.SubtractExpression,
-                (ExpressionSyntax)expr.Accept(_nodesVisitor), SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+                (ExpressionSyntax)expr.Accept(_triviaConvertingExpressionVisitor), SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
         }
 
         public static AttributeArgumentListSyntax CreateAttributeArgumentList(params AttributeArgumentSyntax[] attributeArgumentSyntaxs)
@@ -513,7 +513,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 !pro.Property.IsDefault()) {
                 var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.Children.First() == pro;
                 extraArg = isSetter
-                    ? (ExpressionSyntax)_nodesVisitor.Visit(operation.Parent.Syntax.ChildNodes().ElementAt(1))
+                    ? (ExpressionSyntax)_triviaConvertingExpressionVisitor.Visit(operation.Parent.Syntax.ChildNodes().ElementAt(1))
                     : null;
                 return isSetter ? pro.Property.SetMethod.Name : pro.Property.GetMethod.Name;
             }
