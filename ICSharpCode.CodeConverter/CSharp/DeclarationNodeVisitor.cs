@@ -379,15 +379,44 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override CSharpSyntaxNode VisitFieldDeclaration(VBSyntax.FieldDeclarationSyntax node)
         {
             _additionalLocals.PushScope();
-            var attributes = node.AttributeLists.SelectMany(_expressionNodeVisitor.ConvertAttribute).ToList();
-            var convertableModifiers = node.Modifiers.Where(m => !SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
-            var isWithEvents = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
-            var convertedModifiers = CommonConversions.ConvertModifiers(node.Declarators[0].Names[0], convertableModifiers, GetMemberContext(node));
-            var declarations = new List<MemberDeclarationSyntax>(node.Declarators.Count);
 
-            foreach (var declarator in node.Declarators) {
-                foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator, preferExplicitType: true).Values) {
-                    if (isWithEvents) {
+            var fieldSymbols = node.Declarators
+                .SelectMany(d => d.Names.Select(n => (Declarator: d, NameSymbol: (IFieldSymbol) GetDeclaredCsSymbolOrNull(n))))
+                .ToList();
+            
+            var declarations = fieldSymbols.Any(x => x.NameSymbol == null) ? SyntacticGenerateFields(node) :
+                SymbolicGenerateFields(fieldSymbols);
+
+            _additionalLocals.PopScope();
+            _additionalDeclarations.Add(node, declarations.Skip(1).ToArray());
+            return declarations.First();
+        }
+
+        private List<MemberDeclarationSyntax> SymbolicGenerateFields(IReadOnlyCollection<(VBSyntax.VariableDeclaratorSyntax Declarator, IFieldSymbol NameSymbol)> fieldSymbols)
+        {
+            return fieldSymbols
+                .Select(d => {
+                    return (MemberDeclarationSyntax)_csSyntaxGenerator.FieldDeclaration(d.NameSymbol, CommonConversions.ConvertInitializer(d.Declarator));
+                })
+                .ToList();
+        }
+
+        private List<MemberDeclarationSyntax> SyntacticGenerateFields(VBSyntax.FieldDeclarationSyntax node)
+        {
+            var declarations = new List<MemberDeclarationSyntax>(node.Declarators.Count);
+            var attributes = node.AttributeLists.SelectMany(_expressionNodeVisitor.ConvertAttribute).ToList();
+            var convertableModifiers =
+                node.Modifiers.Where(m => !SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
+            var isWithEvents = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
+            var convertedModifiers =
+                CommonConversions.ConvertModifiers(node.Declarators[0].Names[0], convertableModifiers, GetMemberContext(node));
+
+            foreach (var declarator in node.Declarators)
+            {
+                foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator, preferExplicitType: true).Values)
+                {
+                    if (isWithEvents)
+                    {
                         var initializers = decl.Variables
                             .Where(a => a.Initializer != null)
                             .ToDictionary(v => v.Identifier.Text, v => v.Initializer);
@@ -395,58 +424,82 @@ namespace ICSharpCode.CodeConverter.CSharp
                         var initializerCollection = convertedModifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword))
                             ? _additionalInitializers.AdditionalStaticInitializers
                             : _additionalInitializers.AdditionalInstanceInitializers;
-                        foreach (var initializer in initializers) {
+                        foreach (var initializer in initializers)
+                        {
                             initializerCollection.Add(initializer.Key, initializer.Value.Value);
                         }
 
                         var fieldDecls = _methodsWithHandles.GetDeclarationsForFieldBackedProperty(fieldDecl,
                             convertedModifiers, SyntaxFactory.List(attributes));
                         declarations.AddRange(fieldDecls);
-                    } else {
+                    }
+                    else
+                    {
                         FieldDeclarationSyntax baseFieldDeclarationSyntax;
-                        if (_additionalLocals.Count() > 0) {
-                            if (decl.Variables.Count > 1) {
+                        if (_additionalLocals.Count() > 0)
+                        {
+                            if (decl.Variables.Count > 1)
+                            {
                                 // Currently no way to tell which _additionalLocals would apply to which initializer
-                                throw new NotImplementedException("Fields with multiple declarations and initializers with ByRef parameters not currently supported");
+                                throw new NotImplementedException(
+                                    "Fields with multiple declarations and initializers with ByRef parameters not currently supported");
                             }
+
                             var v = decl.Variables.First();
-                            if (v.Initializer.Value.DescendantNodes().OfType<InvocationExpressionSyntax>().Count() > 1) {
-                                throw new NotImplementedException("Field initializers with nested method calls not currently supported");
+                            if (v.Initializer.Value.DescendantNodes().OfType<InvocationExpressionSyntax>().Count() > 1)
+                            {
+                                throw new NotImplementedException(
+                                    "Field initializers with nested method calls not currently supported");
                             }
-                            var calledMethodName = v.Initializer.Value.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>().First().DescendantNodes().OfType<IdentifierNameSyntax>().First();
+
+                            var calledMethodName = v.Initializer.Value.DescendantNodesAndSelf()
+                                .OfType<InvocationExpressionSyntax>().First().DescendantNodes().OfType<IdentifierNameSyntax>()
+                                .First();
                             var newMethodName = $"{calledMethodName.Identifier.ValueText}_{v.Identifier.ValueText}";
                             var localVars = _additionalLocals.Select(l => l.Value)
-                                .Select(al => SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(al.Prefix, al.Initializer)))
+                                .Select(al =>
+                                    SyntaxFactory.LocalDeclarationStatement(
+                                        CommonConversions.CreateVariableDeclarationAndAssignment(al.Prefix, al.Initializer)))
                                 .Cast<StatementSyntax>().ToList();
-                            var newInitializer = v.Initializer.Value.ReplaceNodes(v.Initializer.Value.GetAnnotatedNodes(AdditionalLocals.Annotation), (an, _) => {
-                                // This should probably use a unique name like in MethodBodyVisitor - a collision is far less likely here
-                                var id = (an as IdentifierNameSyntax).Identifier.ValueText;
-                                return SyntaxFactory.IdentifierName(_additionalLocals[id].Prefix);
-                            });
-                            var body = SyntaxFactory.Block(localVars.Concat(SyntaxFactory.SingletonList(SyntaxFactory.ReturnStatement(newInitializer))));
+                            var newInitializer = v.Initializer.Value.ReplaceNodes(
+                                v.Initializer.Value.GetAnnotatedNodes(AdditionalLocals.Annotation), (an, _) =>
+                                {
+                                    // This should probably use a unique name like in MethodBodyVisitor - a collision is far less likely here
+                                    var id = (an as IdentifierNameSyntax).Identifier.ValueText;
+                                    var identifierNameSyntax = SyntaxFactory.IdentifierName(_additionalLocals[id].Prefix);
+                                    return identifierNameSyntax;
+                                });
+                            var body = SyntaxFactory.Block(
+                                localVars.Concat(SyntaxFactory.SingletonList(SyntaxFactory.ReturnStatement(newInitializer))));
                             var methodAttrs = SyntaxFactory.List<AttributeListSyntax>();
                             // Method calls in initializers must be static in C# - Supporting this is #281
                             var modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword));
                             var typeConstraints = SyntaxFactory.List<TypeParameterConstraintClauseSyntax>();
                             var parameterList = SyntaxFactory.ParameterList();
-                            var methodDecl = SyntaxFactory.MethodDeclaration(methodAttrs, modifiers, decl.Type, null, SyntaxFactory.Identifier(newMethodName), null, parameterList, typeConstraints, body, null);
+                            var methodDecl = SyntaxFactory.MethodDeclaration(methodAttrs, modifiers, decl.Type, null,
+                                SyntaxFactory.Identifier(newMethodName), null, parameterList, typeConstraints, body, null);
                             declarations.Add(methodDecl);
 
-                            var newVar = v.WithInitializer(SyntaxFactory.EqualsValueClause(SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(newMethodName))));
-                            var newVarDecl = SyntaxFactory.VariableDeclaration(decl.Type, SyntaxFactory.SingletonSeparatedList(newVar));
+                            var newVar = v.WithInitializer(SyntaxFactory.EqualsValueClause(
+                                SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(newMethodName))));
+                            var newVarDecl =
+                                SyntaxFactory.VariableDeclaration(decl.Type, SyntaxFactory.SingletonSeparatedList(newVar));
 
-                            baseFieldDeclarationSyntax = SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, newVarDecl);
-                        } else {
-                            baseFieldDeclarationSyntax = SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, decl);
+                            baseFieldDeclarationSyntax = SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes),
+                                convertedModifiers, newVarDecl);
                         }
+                        else
+                        {
+                            baseFieldDeclarationSyntax =
+                                SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, decl);
+                        }
+
                         declarations.Add(baseFieldDeclarationSyntax);
                     }
                 }
             }
 
-            _additionalLocals.PopScope();
-            _additionalDeclarations.Add(node, declarations.Skip(1).ToArray());
-            return declarations.First();
+            return declarations;
         }
 
         private List<MethodWithHandles> GetMethodWithHandles(VBSyntax.TypeBlockSyntax parentType)
@@ -914,15 +967,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override CSharpSyntaxNode VisitEventStatement(VBSyntax.EventStatementSyntax node)
         {
-            if (_expressionNodeVisitor.GetCsSymbolOrNull(_semanticModel.GetDeclaredSymbol(node)) is IEventSymbol csEvent
-            ) {
-                return (CSharpSyntaxNode) _syntaxGenerator.EventDeclaration(csEvent);
-            }
-
-            var attributes = node.AttributeLists.SelectMany(_expressionNodeVisitor.ConvertAttribute);
-            var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, GetMemberContext(node));
             var id = CommonConversions.ConvertIdentifier(node.Identifier);
+            var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, GetMemberContext(node));
 
+            IdentifierNameSyntax variableType = null;
             if (node.AsClause == null) {
                 var delegateName = SyntaxFactory.Identifier(id.ValueText + "EventHandler");
 
@@ -936,25 +984,30 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.List<TypeParameterConstraintClauseSyntax>()
                 );
 
-                var eventDecl = SyntaxFactory.EventFieldDeclaration(
-                    SyntaxFactory.List(attributes),
-                    modifiers,
-                    SyntaxFactory.VariableDeclaration(SyntaxFactory.IdentifierName(delegateName),
-                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)))
-                );
+                variableType = SyntaxFactory.IdentifierName(delegateName);
 
                 _additionalDeclarations.Add(node, new MemberDeclarationSyntax[] { delegateDecl });
-                return eventDecl;
             }
 
+            if (GetDeclaredCsSymbolOrNull(node) is IEventSymbol csEvent) {
+                return (CSharpSyntaxNode)_csSyntaxGenerator.EventDeclaration(csEvent);
+            }
+
+            var attributes = node.AttributeLists.SelectMany(_expressionNodeVisitor.ConvertAttribute);
+            TypeSyntax typeSyntax = variableType ?? (TypeSyntax)node.AsClause.Type.Accept(_triviaConvertingExpressionVisitor);
             return SyntaxFactory.EventFieldDeclaration(
                 SyntaxFactory.List(attributes),
                 modifiers,
-                SyntaxFactory.VariableDeclaration((TypeSyntax)node.AsClause.Type.Accept(_triviaConvertingExpressionVisitor),
+                SyntaxFactory.VariableDeclaration(typeSyntax,
                     SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)))
             );
         }
 
+        private ISymbol GetDeclaredCsSymbolOrNull(VBasic.VisualBasicSyntaxNode node)
+        {
+            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
+            return declaredSymbol != null ? _expressionNodeVisitor.GetCsSymbolOrNull(declaredSymbol) : null;
+        }
 
 
         public override CSharpSyntaxNode VisitOperatorBlock(VBSyntax.OperatorBlockSyntax node)

@@ -105,7 +105,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.ParseTypeName("var");
         }
 
-        private ExpressionSyntax ConvertInitializer(VariableDeclaratorSyntax declarator)
+        public ExpressionSyntax ConvertInitializer(VariableDeclaratorSyntax declarator)
         {
             return (ExpressionSyntax)declarator.AsClause?.TypeSwitch(
                        (SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
