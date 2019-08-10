@@ -19,9 +19,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         public TriviaConverter TriviaConverter { get; }
         private readonly VisualBasicSyntaxVisitor<CSharpSyntaxNode> _wrappedVisitor;
 
-        public CommentConvertingNodesVisitor(VisualBasicSyntaxVisitor<CSharpSyntaxNode> wrappedVisitor)
+        public CommentConvertingNodesVisitor(VisualBasicSyntaxVisitor<CSharpSyntaxNode> wrappedVisitor, TriviaConverter triviaConverter)
         {
-            TriviaConverter = new TriviaConverter();
+            TriviaConverter = triviaConverter;
             this._wrappedVisitor = wrappedVisitor;
         }
         public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)

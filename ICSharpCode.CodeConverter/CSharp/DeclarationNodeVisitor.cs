@@ -22,7 +22,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
     {
         private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
-        private static Type _outAttributeType = typeof(OutAttribute);
+        private static readonly Type _outAttributeType = typeof(OutAttribute);
         private static readonly Type DllImportType = typeof(DllImportAttribute);
         private static readonly Type CharSetType = typeof(CharSet);
         private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(SyntaxKind.SemicolonToken);
@@ -35,13 +35,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly Stack<string> _withBlockTempVariableNames = new Stack<string>();
         private readonly AdditionalInitializers _additionalInitializers;
         private readonly AdditionalLocals _additionalLocals = new AdditionalLocals();
-        private readonly QueryConverter _queryConverter;
-        private uint failedMemberConversionMarkerCount;
-        private HashSet<string> _extraUsingDirectives = new HashSet<string>();
-        private readonly TypeConversionAnalyzer _typeConversionAnalyzer;
+        private uint _failedMemberConversionMarkerCount;
+        private readonly HashSet<string> _extraUsingDirectives = new HashSet<string>();
         public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
-        private bool _optionCompareText = false;
-        private VisualBasicEqualityComparison _visualBasicEqualityComparison;
+        private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
         private static HashSet<string> _accessedThroughMyClass;
         private readonly ExpressionNodeVisitor _expressionNodeVisitor;
 
@@ -50,13 +47,15 @@ namespace ICSharpCode.CodeConverter.CSharp
         public DeclarationNodeVisitor(Compilation compilation, SemanticModel semanticModel, CSharpCompilation csCompilation)
         {
             _compilation = compilation;
+            _semanticModel = semanticModel;
             this._csCompilation = csCompilation;
-            TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
-            _typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives);
-            CommonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor, _typeConversionAnalyzer);
-            _queryConverter = new QueryConverter(CommonConversions, TriviaConvertingVisitor);
+            _visualBasicEqualityComparison = new VisualBasicEqualityComparison(_semanticModel, _extraUsingDirectives);
+            TriviaConverter triviaConverter = new TriviaConverter();
+            TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this, triviaConverter);
+            var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives);
+            CommonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor, typeConversionAnalyzer);
             _additionalInitializers = new AdditionalInitializers();
-            _expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _typeConversionAnalyzer, _additionalLocals, _queryConverter, csCompilation, _withBlockTempVariableNames, _methodsWithHandles);
+            _expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _withBlockTempVariableNames, _methodsWithHandles, CommonConversions, triviaConverter);
         }
 
         public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)
@@ -109,9 +108,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             var options = (VBasic.VisualBasicCompilationOptions)_semanticModel.Compilation.Options;
             var importsClauses = options.GlobalImports.Select(gi => gi.Clause).Concat(node.Imports.SelectMany(imp => imp.ImportsClauses)).ToList();
 
-            _optionCompareText = node.Options.Any(x => x.NameKeyword.ValueText.Equals("Compare", StringComparison.OrdinalIgnoreCase) &&
+            var optionCompareText = node.Options.Any(x => x.NameKeyword.ValueText.Equals("Compare", StringComparison.OrdinalIgnoreCase) &&
                                                        x.ValueKeyword.ValueText.Equals("Text", StringComparison.OrdinalIgnoreCase));
-            _visualBasicEqualityComparison = new VisualBasicEqualityComparison(_semanticModel, _extraUsingDirectives, _optionCompareText);
+            _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive = optionCompareText;
 
             var attributes = SyntaxFactory.List(node.Attributes.SelectMany(a => a.AttributeLists).SelectMany(ConvertAttribute));
             var sourceAndConverted = node.Members.Select(m => (Source: m, Converted: ConvertMember(m))).ToReadOnlyCollection();
@@ -225,7 +224,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             MemberDeclarationSyntax CreateErrorMember(VBSyntax.StatementSyntax memberCausingError, Exception e)
             {
                 var dummyClass
-                    = SyntaxFactory.ClassDeclaration("_failedMemberConversionMarker" + ++failedMemberConversionMarkerCount);
+                    = SyntaxFactory.ClassDeclaration("_failedMemberConversionMarker" + ++_failedMemberConversionMarkerCount);
                 return dummyClass.WithCsTrailingErrorComment(memberCausingError, e);
             }
         }

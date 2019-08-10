@@ -14,9 +14,9 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// </remarks>
     internal class QueryConverter
     {
-        private readonly CommentConvertingNodesVisitor _triviaConvertingVisitor;
+        private readonly CommentConvertingVisitorWrapper<CSharpSyntaxNode> _triviaConvertingVisitor;
 
-        public QueryConverter(CommonConversions commonConversions, CommentConvertingNodesVisitor triviaConvertingVisitor)
+        public QueryConverter(CommonConversions commonConversions, CommentConvertingVisitorWrapper<CSharpSyntaxNode> triviaConvertingVisitor)
         {
             CommonConversions = commonConversions;
             _triviaConvertingVisitor = triviaConvertingVisitor;
