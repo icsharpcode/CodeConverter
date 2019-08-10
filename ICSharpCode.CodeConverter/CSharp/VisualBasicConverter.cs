@@ -6,7 +6,7 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    public class VisualBasicConverter
+    internal class VisualBasicConverter
     {
         public static async Task<SyntaxNode> ConvertCompilationTree(Document document,
             CSharpCompilation csharpViewOfVbSymbols)
