@@ -10,7 +10,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public CommentConvertingVisitorWrapper(VisualBasicSyntaxVisitor<T> wrappedVisitor, TriviaConverter triviaConverter)
         {
-            TriviaConverter = new TriviaConverter();
+            TriviaConverter = triviaConverter;
             _wrappedVisitor = wrappedVisitor;
         }
 

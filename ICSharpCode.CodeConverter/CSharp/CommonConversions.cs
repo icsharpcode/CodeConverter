@@ -57,15 +57,14 @@ namespace ICSharpCode.CodeConverter.CSharp
     internal class CommonConversions
     {
         private readonly SemanticModel _semanticModel;
-        private readonly CommentConvertingVisitorWrapper<CSharpSyntaxNode> _triviaConvertingExpressionVisitor;
+        public CommentConvertingVisitorWrapper<CSharpSyntaxNode> TriviaConvertingExpressionVisitor { get; set; }
         public TypeConversionAnalyzer TypeConversionAnalyzer { get; }
 
-        public CommonConversions(SemanticModel semanticModel, CommentConvertingVisitorWrapper<CSharpSyntaxNode> triviaConvertingExpressionVisitor,
+        public CommonConversions(SemanticModel semanticModel,
             TypeConversionAnalyzer typeConversionAnalyzer)
         {
             TypeConversionAnalyzer = typeConversionAnalyzer;
             _semanticModel = semanticModel;
-            _triviaConvertingExpressionVisitor = triviaConvertingExpressionVisitor;
         }
 
         public Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(
@@ -110,7 +109,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 (SimpleAsClauseSyntax c) => c.Type,
                 (AsNewClauseSyntax c) => c.NewExpression.Type(),
                 _ => throw new NotImplementedException($"{_.GetType().FullName} not implemented!"));
-            return (TypeSyntax)vbType?.Accept(_triviaConvertingExpressionVisitor) ?? GetTypeSyntax(declarator, preferExplicitType);
+            return (TypeSyntax)vbType?.Accept(TriviaConvertingExpressionVisitor) ?? GetTypeSyntax(declarator, preferExplicitType);
         }
 
         private TypeSyntax GetTypeSyntax(VariableDeclaratorSyntax declarator, bool preferExplicitType)
@@ -133,7 +132,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return (ExpressionSyntax)declarator.AsClause?.TypeSwitch(
                        (SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
                        (AsNewClauseSyntax c) => c.NewExpression
-                   )?.Accept(_triviaConvertingExpressionVisitor) ?? (ExpressionSyntax)declarator.Initializer?.Value.Accept(_triviaConvertingExpressionVisitor);
+                   )?.Accept(TriviaConvertingExpressionVisitor) ?? (ExpressionSyntax)declarator.Initializer?.Value.Accept(TriviaConvertingExpressionVisitor);
         }
 
         private (TypeSyntax, ExpressionSyntax) AdjustFromName(TypeSyntax rawType,
@@ -261,7 +260,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         /// <summary>
         ///  https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/data-types/type-characters
-        //   https://stackoverflow.com/a/166762/1128762
+        ///  https://stackoverflow.com/a/166762/1128762
         /// </summary>
         private string ConvertNumericLiteralValueText(string textForUser, object value)
         {
@@ -450,7 +449,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxList<VBSyntax.ArrayRankSpecifierSyntax> arrayRankSpecifierSyntaxs,
             ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
         {
-            var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax)r.Accept(_triviaConvertingExpressionVisitor)));
+            var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax)r.Accept(TriviaConvertingExpressionVisitor)));
 
             if (nodeArrayBounds != null) {
                 var sizesSpecified = nodeArrayBounds.Arguments.Any(a => !a.IsOmitted);
@@ -487,7 +486,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return SyntaxFactory.BinaryExpression(
                 CSSyntaxKind.SubtractExpression,
-                (ExpressionSyntax)expr.Accept(_triviaConvertingExpressionVisitor), SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+                (ExpressionSyntax)expr.Accept(TriviaConvertingExpressionVisitor), SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
         }
 
         public static AttributeArgumentListSyntax CreateAttributeArgumentList(params AttributeArgumentSyntax[] attributeArgumentSyntaxs)
@@ -513,7 +512,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 !pro.Property.IsDefault()) {
                 var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.Children.First() == pro;
                 extraArg = isSetter
-                    ? (ExpressionSyntax)_triviaConvertingExpressionVisitor.Visit(operation.Parent.Syntax.ChildNodes().ElementAt(1))
+                    ? (ExpressionSyntax)TriviaConvertingExpressionVisitor.Visit(operation.Parent.Syntax.ChildNodes().ElementAt(1))
                     : null;
                 return isSetter ? pro.Property.SetMethod.Name : pro.Property.GetMethod.Name;
             }

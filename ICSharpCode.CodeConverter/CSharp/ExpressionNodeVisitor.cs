@@ -57,6 +57,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public CommonConversions CommonConversions { get; }
 
+        public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)
+        {
+            throw new NotImplementedException($"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
+                .WithNodeInformation(node);
+        }
+
         public override CSharpSyntaxNode VisitXmlElement(Microsoft.CodeAnalysis.VisualBasic.Syntax.XmlElementSyntax node)
         {
             _extraUsingDirectives.Add("System.Xml.Linq");
