@@ -19,6 +19,11 @@ using SyntaxToken = Microsoft.CodeAnalysis.SyntaxToken;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
+    /// <summary>
+    /// Declaration nodes, and nodes only used directly in that declaration (i.e. never within an expression)
+    /// e.g. Class, Enum, TypeConstraint
+    /// </summary>
+    /// <remarks>The split between this and the <see cref="ExpressionNodeVisitor"/> is purely organizational and serves no real runtime purpose.</remarks>
     internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
     {
         private static readonly Type DllImportType = typeof(DllImportAttribute);
@@ -54,7 +59,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives);
             CommonConversions = new CommonConversions(semanticModel, typeConversionAnalyzer);
             _additionalInitializers = new AdditionalInitializers();
-            _expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _withBlockTempVariableNames, _methodsWithHandles, CommonConversions, triviaConverter);
+            _expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _withBlockTempVariableNames, _methodsWithHandles, CommonConversions, triviaConverter, _extraUsingDirectives);
             _triviaConvertingExpressionVisitor = _expressionNodeVisitor.TriviaConvertingVisitor;
             CommonConversions.TriviaConvertingExpressionVisitor = _triviaConvertingExpressionVisitor;
         }
@@ -509,7 +514,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         throw new NotImplementedException("MyClass indexing not implemented");
                     }
                     var accessorMethods = propertyBlock.Accessors.Select(a =>
-                            (MethodDeclarationSyntax)a.Accept(_triviaConvertingExpressionVisitor))
+                            (MethodDeclarationSyntax)a.Accept(TriviaConvertingVisitor))
                         .Select(WithMergedModifiers).ToArray();
                     _additionalDeclarations.Add(propertyBlock, accessorMethods.Skip(1).ToArray());
                     return accessorMethods[0];
@@ -518,7 +523,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 accessors = SyntaxFactory.AccessorList(
                     SyntaxFactory.List(
                         (propertyBlock.Accessors.Select(a =>
-                            (AccessorDeclarationSyntax)a.Accept(_triviaConvertingExpressionVisitor))
+                            (AccessorDeclarationSyntax)a.Accept(TriviaConvertingVisitor))
                         )
                     ));
             } else {
@@ -634,7 +639,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override CSharpSyntaxNode VisitPropertyBlock(VBSyntax.PropertyBlockSyntax node)
         {
-            return node.PropertyStatement.Accept(_triviaConvertingExpressionVisitor);
+            return node.PropertyStatement.Accept(TriviaConvertingVisitor);
         }
 
         public override CSharpSyntaxNode VisitAccessorBlock(VBSyntax.AccessorBlockSyntax node)
@@ -936,7 +941,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.EventFieldDeclaration(
                 SyntaxFactory.List(attributes),
                 modifiers,
-                SyntaxFactory.VariableDeclaration((TypeSyntax)node.AsClause.Type.Accept(TriviaConvertingVisitor),
+                SyntaxFactory.VariableDeclaration((TypeSyntax)node.AsClause.Type.Accept(_triviaConvertingExpressionVisitor),
                     SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)))
             );
         }
@@ -945,7 +950,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override CSharpSyntaxNode VisitOperatorBlock(VBSyntax.OperatorBlockSyntax node)
         {
-            return node.BlockStatement.Accept(_triviaConvertingExpressionVisitor);
+            return node.BlockStatement.Accept(TriviaConvertingVisitor);
         }
 
         public override CSharpSyntaxNode VisitOperatorStatement(VBSyntax.OperatorStatementSyntax node)

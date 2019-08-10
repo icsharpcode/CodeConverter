@@ -20,7 +20,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static readonly Type ConvertType = typeof(Convert);
         public CommentConvertingVisitorWrapper<CSharpSyntaxNode> TriviaConvertingVisitor { get; }
         private readonly SemanticModel _semanticModel;
-        private readonly HashSet<string> _extraUsingDirectives = new HashSet<string>();
+        private readonly HashSet<string> _extraUsingDirectives;
         private readonly bool _optionCompareText = false;
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
         private readonly Stack<string> _withBlockTempVariableNames;
@@ -30,7 +30,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly Dictionary<ITypeSymbol, string> _convertMethodsLookupByReturnType;
         private readonly Compilation _csCompilation;
 
-        public ExpressionNodeVisitor(SemanticModel semanticModel, VisualBasicEqualityComparison visualBasicEqualityComparison, AdditionalLocals additionalLocals, Compilation csCompilation, Stack<string> withBlockTempVariableNames, MethodsWithHandles methodsWithHandles, CommonConversions commonConversions, TriviaConverter triviaConverter)
+        public ExpressionNodeVisitor(SemanticModel semanticModel,
+            VisualBasicEqualityComparison visualBasicEqualityComparison, AdditionalLocals additionalLocals,
+            Compilation csCompilation, Stack<string> withBlockTempVariableNames, MethodsWithHandles methodsWithHandles,
+            CommonConversions commonConversions, TriviaConverter triviaConverter, HashSet<string> extraUsingDirectives)
         {
             CommonConversions = commonConversions;
             _semanticModel = semanticModel;
@@ -41,6 +44,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csCompilation = csCompilation;
             _withBlockTempVariableNames = withBlockTempVariableNames;
             _methodsWithHandles = methodsWithHandles;
+            _extraUsingDirectives = extraUsingDirectives;
             _convertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
         }
 

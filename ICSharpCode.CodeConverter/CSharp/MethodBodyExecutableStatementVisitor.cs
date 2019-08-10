@@ -17,7 +17,8 @@ using static ICSharpCode.CodeConverter.CSharp.SyntaxKindExtensions;
 namespace ICSharpCode.CodeConverter.CSharp
 {
     /// <summary>
-    ///  Maintains state relevant to the called method-like object. A fresh one must be used for each method, and the same one must be reused for statements in the same method
+    /// Executable statements - which includes executable blocks such as if statements
+    /// Maintains state relevant to the called method-like object. A fresh one must be used for each method, and the same one must be reused for statements in the same method
     /// </summary>
     internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>>
     {
