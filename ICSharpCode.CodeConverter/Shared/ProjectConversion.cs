@@ -52,7 +52,7 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        private static async Task<ConversionResult> ConvertSingle(Document document, TextSpan selected, ILanguageConversion languageConversion)
+        public static async Task<ConversionResult> ConvertSingle(Document document, TextSpan selected, ILanguageConversion languageConversion)
         {
             if (selected.Length > 0) {
                 document = await WithAnnotatedSelection(document, selected);

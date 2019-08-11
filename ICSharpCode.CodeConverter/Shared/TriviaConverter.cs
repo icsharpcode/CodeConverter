@@ -24,6 +24,10 @@ namespace ICSharpCode.CodeConverter.Shared
         /// </summary>
         private readonly Dictionary<string, SyntaxToken> _annotationData = new Dictionary<string, SyntaxToken>();
 
+        public TriviaConverter()
+        {
+        }
+
         public T PortConvertedTrivia<T>(SyntaxNode sourceNode, T destination) where T : SyntaxNode
         {
             if (destination == null || sourceNode == null) return destination;

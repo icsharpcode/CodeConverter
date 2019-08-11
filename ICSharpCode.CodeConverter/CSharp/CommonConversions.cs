@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
@@ -28,44 +30,19 @@ using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    internal class VbSyntaxNodeExtensions
-    {
-        public static ExpressionSyntax ParenthesizeIfPrecedenceCouldChange(Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxNode node, ExpressionSyntax expression)
-        {
-            return PrecedenceCouldChange(node) ? SyntaxFactory.ParenthesizedExpression(expression) : expression;
-        }
-
-        public static bool PrecedenceCouldChange(Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxNode node)
-        {
-            bool parentIsSameBinaryKind = node is VBSyntax.BinaryExpressionSyntax && node.Parent is VBSyntax.BinaryExpressionSyntax parent && parent.Kind() == node.Kind();
-            bool parentIsReturn = node.Parent is VBSyntax.ReturnStatementSyntax;
-            bool parentIsLambda = node.Parent is VBSyntax.LambdaExpressionSyntax;
-            bool parentIsNonArgumentExpression = node.Parent is VBSyntax.ExpressionSyntax && !(node.Parent is VBSyntax.ArgumentSyntax);
-            bool parentIsParenthesis = node.Parent is VBSyntax.ParenthesizedExpressionSyntax;
-
-            // Could be a full C# precedence table - this is just a common case
-            bool parentIsAndOr = node.Parent.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AndAlsoExpression, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.OrElseExpression);
-            bool nodeIsRelationalOrEqual = node.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.EqualsExpression, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NotEqualsExpression,
-                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.LessThanExpression, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.LessThanOrEqualExpression,
-                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.GreaterThanExpression, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.GreaterThanOrEqualExpression);
-            bool csharpPrecedenceSame = parentIsAndOr && nodeIsRelationalOrEqual;
-
-            return parentIsNonArgumentExpression && !parentIsSameBinaryKind && !parentIsReturn && !parentIsLambda && !parentIsParenthesis && !csharpPrecedenceSame;
-        }
-    }
-
     internal class CommonConversions
     {
+        private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
+        private static readonly Type OutAttributeType = typeof(OutAttribute);
         private readonly SemanticModel _semanticModel;
-        private readonly VisualBasicSyntaxVisitor<CSharpSyntaxNode> _nodesVisitor;
+        public CommentConvertingVisitorWrapper<CSharpSyntaxNode> TriviaConvertingExpressionVisitor { get; set; }
         public TypeConversionAnalyzer TypeConversionAnalyzer { get; }
 
-        public CommonConversions(SemanticModel semanticModel, VisualBasicSyntaxVisitor<CSharpSyntaxNode> nodesVisitor,
+        public CommonConversions(SemanticModel semanticModel,
             TypeConversionAnalyzer typeConversionAnalyzer)
         {
             TypeConversionAnalyzer = typeConversionAnalyzer;
             _semanticModel = semanticModel;
-            _nodesVisitor = nodesVisitor;
         }
 
         public Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(
@@ -110,7 +87,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 (SimpleAsClauseSyntax c) => c.Type,
                 (AsNewClauseSyntax c) => c.NewExpression.Type(),
                 _ => throw new NotImplementedException($"{_.GetType().FullName} not implemented!"));
-            return (TypeSyntax)vbType?.Accept(_nodesVisitor) ?? GetTypeSyntax(declarator, preferExplicitType);
+            return (TypeSyntax)vbType?.Accept(TriviaConvertingExpressionVisitor) ?? GetTypeSyntax(declarator, preferExplicitType);
         }
 
         private TypeSyntax GetTypeSyntax(VariableDeclaratorSyntax declarator, bool preferExplicitType)
@@ -133,7 +110,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return (ExpressionSyntax)declarator.AsClause?.TypeSwitch(
                        (SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
                        (AsNewClauseSyntax c) => c.NewExpression
-                   )?.Accept(_nodesVisitor) ?? (ExpressionSyntax)declarator.Initializer?.Value.Accept(_nodesVisitor);
+                   )?.Accept(TriviaConvertingExpressionVisitor) ?? (ExpressionSyntax)declarator.Initializer?.Value.Accept(TriviaConvertingExpressionVisitor);
         }
 
         private (TypeSyntax, ExpressionSyntax) AdjustFromName(TypeSyntax rawType,
@@ -261,7 +238,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         /// <summary>
         ///  https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/data-types/type-characters
-        //   https://stackoverflow.com/a/166762/1128762
+        ///  https://stackoverflow.com/a/166762/1128762
         /// </summary>
         private string ConvertNumericLiteralValueText(string textForUser, object value)
         {
@@ -450,7 +427,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxList<VBSyntax.ArrayRankSpecifierSyntax> arrayRankSpecifierSyntaxs,
             ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
         {
-            var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax)r.Accept(_nodesVisitor)));
+            var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax)r.Accept(TriviaConvertingExpressionVisitor)));
 
             if (nodeArrayBounds != null) {
                 var sizesSpecified = nodeArrayBounds.Arguments.Any(a => !a.IsOmitted);
@@ -487,7 +464,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return SyntaxFactory.BinaryExpression(
                 CSSyntaxKind.SubtractExpression,
-                (ExpressionSyntax)expr.Accept(_nodesVisitor), SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+                (ExpressionSyntax)expr.Accept(TriviaConvertingExpressionVisitor), SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
         }
 
         public static AttributeArgumentListSyntax CreateAttributeArgumentList(params AttributeArgumentSyntax[] attributeArgumentSyntaxs)
@@ -513,7 +490,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 !pro.Property.IsDefault()) {
                 var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.Children.First() == pro;
                 extraArg = isSetter
-                    ? (ExpressionSyntax)_nodesVisitor.Visit(operation.Parent.Syntax.ChildNodes().ElementAt(1))
+                    ? (ExpressionSyntax)TriviaConvertingExpressionVisitor.Visit(operation.Parent.Syntax.ChildNodes().ElementAt(1))
                     : null;
                 return isSetter ? pro.Property.SetMethod.Name : pro.Property.GetMethod.Name;
             }
@@ -525,6 +502,29 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static bool IsDefaultIndexer(SyntaxNode node)
         {
             return node is PropertyStatementSyntax pss && pss.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DefaultKeyword));
+        }
+
+
+        public bool HasExtensionAttribute(VBSyntax.AttributeListSyntax a)
+        {
+            return a.Attributes.Any(IsExtensionAttribute);
+        }
+
+        public bool HasOutAttribute(VBSyntax.AttributeListSyntax a)
+        {
+            return a.Attributes.Any(IsOutAttribute);
+        }
+
+        public bool IsExtensionAttribute(VBSyntax.AttributeSyntax a)
+        {
+            return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
+                       ?.Equals(ExtensionAttributeType.FullName) == true;
+        }
+
+        public bool IsOutAttribute(VBSyntax.AttributeSyntax a)
+        {
+            return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
+                       ?.Equals(OutAttributeType.FullName) == true;
         }
     }
 }

@@ -31,6 +31,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         private static readonly CSharpParseOptions DoNotAllowImplicitDefault = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp7);
 
+        private Project _csharpReferenceProject;
+
         public string RootNamespace { get; set; }
 
         public async Task Initialize(Project project)
@@ -38,12 +40,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             _sourceVbProject = project;
             var cSharpCompilationOptions = CSharpCompiler.CreateCompilationOptions();
             _convertedCsProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, DoNotAllowImplicitDefault);
-            _csharpViewOfVbSymbols = (CSharpCompilation) await project.CreateReferenceOnlyCompilationFromAnyOptionsAsync(cSharpCompilationOptions);
+            _csharpReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptionsAsync(cSharpCompilationOptions);
+            _csharpViewOfVbSymbols = (CSharpCompilation) await _csharpReferenceProject.GetCompilationAsync();
         }
 
         public async Task<Document> SingleFirstPass(Document document)
         {
-            var converted = await VisualBasicConverter.ConvertCompilationTree(document, _csharpViewOfVbSymbols);
+            var converted = await VisualBasicConverter.ConvertCompilationTree(document, _csharpViewOfVbSymbols, _csharpReferenceProject);
             var convertedDocument = _convertedCsProject.AddDocument(document.FilePath, converted);
             _convertedCsProject = convertedDocument.Project;
             return convertedDocument;

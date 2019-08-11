@@ -26,5 +26,8 @@ At the moment there's just a very small amount of quite bad documentation...so m
 * Investigate: The code heavily uses SyntaxFactory at the moment. In future I  intend to investigate making some use of [`SyntaxGenerator`](https://docs.microsoft.com/en-us/dotnet/api/microsoft.codeanalysis.editing.syntaxgenerator?view=roslyn-dotnet).
 
 ## Resources
-* https://en.wikipedia.org/wiki/Comparison_of_C_Sharp_and_Visual_Basic_.NET#Features_of_Visual_Basic_.NET_not_found_in_C#
-* Lots of high level introductions exist, e.g. https://github.com/dotnet/roslyn/wiki/Roslyn-Overview Getting deeper information is a lot harder. If you see good resources, PR them to this document!
+* Lots of high level Roslyn introductions exist, e.g. https://github.com/dotnet/roslyn/wiki/Roslyn-Overview Getting deeper information is a lot harder. If you see good resources, PR them to this document!
+* Understanding VB/C# differences:
+ * https://en.wikipedia.org/wiki/Comparison_of_C_Sharp_and_Visual_Basic_.NET#Features_of_Visual_Basic_.NET_not_found_in_C#
+ * https://anthonydgreen.net/2019/02/12/exhausting-list-of-differences-between-vb-net-c/
+ * Roslyn source for [CSharp binder](http://source.roslyn.codeplex.com/#Microsoft.CodeAnalysis.CSharp/Binder/Binder_Expressions.cs,365) vs [VB binder](http://source.roslyn.codeplex.com/#Microsoft.CodeAnalysis.VisualBasic/Binding/Binder_Expressions.vb,43)

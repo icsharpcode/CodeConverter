@@ -6,7 +6,7 @@ using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.VB
 {
-    public class CSharpConverter
+    internal class CSharpConverter
     {
         public static async Task<SyntaxNode> ConvertCompilationTree(Document document)
         {

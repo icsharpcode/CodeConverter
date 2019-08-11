@@ -27,9 +27,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _extraUsingDirectives;
 
-        public VisualBasicEqualityComparison(SemanticModel semanticModel, HashSet<string> extraUsingDirectives, bool optionCompareTextCaseInsensitive)
+        public VisualBasicEqualityComparison(SemanticModel semanticModel, HashSet<string> extraUsingDirectives)
         {
-            OptionCompareTextCaseInsensitive = optionCompareTextCaseInsensitive;
             _extraUsingDirectives = extraUsingDirectives;
             _semanticModel = semanticModel;
         }
@@ -41,7 +40,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             Object
         }
 
-        public bool OptionCompareTextCaseInsensitive { get; }
+        public bool OptionCompareTextCaseInsensitive { get; set; }
         
         public RequiredType GetObjectEqualityType(VBSyntax.BinaryExpressionSyntax node, TypeInfo leftType, TypeInfo rightType)
         {
