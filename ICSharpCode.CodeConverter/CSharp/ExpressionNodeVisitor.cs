@@ -10,8 +10,8 @@ using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
-using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -21,7 +21,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// http://source.roslyn.codeplex.com/#Microsoft.CodeAnalysis.VisualBasic/Binding/Binder_Expressions.vb,43
     /// 
     /// </summary>
-    internal class ExpressionNodeVisitor : Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
+    internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
     {
         private static readonly Type ConvertType = typeof(Convert);
         public CommentConvertingVisitorWrapper<CSharpSyntaxNode> TriviaConvertingVisitor { get; }
@@ -73,7 +73,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .WithNodeInformation(node);
         }
 
-        public override CSharpSyntaxNode VisitXmlElement(Microsoft.CodeAnalysis.VisualBasic.Syntax.XmlElementSyntax node)
+        public override CSharpSyntaxNode VisitXmlElement(VBasic.Syntax.XmlElementSyntax node)
         {
             _extraUsingDirectives.Add("System.Xml.Linq");
             var aggregatedContent = node.Content.Select(n => n.ToString()).Aggregate(String.Empty, (a, b) => a + b);
@@ -90,29 +90,29 @@ namespace ICSharpCode.CodeConverter.CSharp
                                 SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(xmlAsString))))));
         }
 
-        public override CSharpSyntaxNode VisitGetTypeExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.GetTypeExpressionSyntax node)
+        public override CSharpSyntaxNode VisitGetTypeExpression(VBasic.Syntax.GetTypeExpressionSyntax node)
         {
             return SyntaxFactory.TypeOfExpression((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor));
         }
 
-        public override CSharpSyntaxNode VisitGlobalName(Microsoft.CodeAnalysis.VisualBasic.Syntax.GlobalNameSyntax node)
+        public override CSharpSyntaxNode VisitGlobalName(VBasic.Syntax.GlobalNameSyntax node)
         {
             return SyntaxFactory.IdentifierName(SyntaxFactory.Token(SyntaxKind.GlobalKeyword));
         }
 
-        public override CSharpSyntaxNode VisitAwaitExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.AwaitExpressionSyntax node)
+        public override CSharpSyntaxNode VisitAwaitExpression(VBasic.Syntax.AwaitExpressionSyntax node)
         {
             return SyntaxFactory.AwaitExpression((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
         }
 
-        public override CSharpSyntaxNode VisitCatchBlock(Microsoft.CodeAnalysis.VisualBasic.Syntax.CatchBlockSyntax node)
+        public override CSharpSyntaxNode VisitCatchBlock(VBasic.Syntax.CatchBlockSyntax node)
         {
             var stmt = node.CatchStatement;
             CatchDeclarationSyntax catcher;
             if (stmt.IdentifierName == null)
                 catcher = null;
             else {
-                var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, stmt.IdentifierName).Type;
+                var typeInfo = _semanticModel.GetTypeInfo(stmt.IdentifierName).Type;
                 catcher = SyntaxFactory.CatchDeclaration(
                     SyntaxFactory.ParseTypeName(typeInfo.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart)),
                     ConvertIdentifier(stmt.IdentifierName.Identifier)
@@ -128,32 +128,32 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
-        public override CSharpSyntaxNode VisitCatchFilterClause(Microsoft.CodeAnalysis.VisualBasic.Syntax.CatchFilterClauseSyntax node)
+        public override CSharpSyntaxNode VisitCatchFilterClause(VBasic.Syntax.CatchFilterClauseSyntax node)
         {
             return SyntaxFactory.CatchFilterClause((ExpressionSyntax)node.Filter.Accept(TriviaConvertingVisitor));
         }
 
-        public override CSharpSyntaxNode VisitFinallyBlock(Microsoft.CodeAnalysis.VisualBasic.Syntax.FinallyBlockSyntax node)
+        public override CSharpSyntaxNode VisitFinallyBlock(VBasic.Syntax.FinallyBlockSyntax node)
         {
             var methodBodyVisitor = CreateMethodBodyVisitor(node); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
             return SyntaxFactory.FinallyClause(SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(methodBodyVisitor))));
         }
 
-        public override CSharpSyntaxNode VisitCTypeExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.CTypeExpressionSyntax node)
+        public override CSharpSyntaxNode VisitCTypeExpression(VBasic.Syntax.CTypeExpressionSyntax node)
         {
             var convertMethodForKeywordOrNull = GetConvertMethodForKeywordOrNull(node.Type);
             return ConvertCastExpression(node, convertMethodForKeywordOrNull);
         }
 
-        public override CSharpSyntaxNode VisitDirectCastExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.DirectCastExpressionSyntax node)
+        public override CSharpSyntaxNode VisitDirectCastExpression(VBasic.Syntax.DirectCastExpressionSyntax node)
         {
             return ConvertCastExpression(node);
         }
 
-        public override CSharpSyntaxNode VisitPredefinedCastExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.PredefinedCastExpressionSyntax node)
+        public override CSharpSyntaxNode VisitPredefinedCastExpression(VBasic.Syntax.PredefinedCastExpressionSyntax node)
         {
             var expressionSyntax = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
-            if (SyntaxTokenExtensions.IsKind(node.Keyword, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.CDateKeyword)) {
+            if (SyntaxTokenExtensions.IsKind(node.Keyword, VBasic.SyntaxKind.CDateKeyword)) {
 
                 _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
                 return SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Conversions.ToDate"), SyntaxFactory.ArgumentList(
@@ -172,7 +172,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : ValidSyntaxFactory.CastExpression(SyntaxFactory.PredefinedType(node.Keyword.ConvertToken()), (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
         }
 
-        public override CSharpSyntaxNode VisitTryCastExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.TryCastExpressionSyntax node)
+        public override CSharpSyntaxNode VisitTryCastExpression(VBasic.Syntax.TryCastExpressionSyntax node)
         {
             return VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(node, SyntaxFactory.BinaryExpression(
                 SyntaxKind.AsExpression,
@@ -181,10 +181,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             ));
         }
 
-        public override CSharpSyntaxNode VisitLiteralExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax node)
+        public override CSharpSyntaxNode VisitLiteralExpression(VBasic.Syntax.LiteralExpressionSyntax node)
         {
             if (node.Token.Value == null) {
-                var type = ModelExtensions.GetTypeInfo(_semanticModel, node).ConvertedType;
+                var type = _semanticModel.GetTypeInfo(node).ConvertedType;
                 if (type == null) {
                     return CommonConversions.Literal(null); //In future, we'll be able to just say "default" instead of guessing at "null" in this case
                 }
@@ -194,65 +194,65 @@ namespace ICSharpCode.CodeConverter.CSharp
             return CommonConversions.Literal(node.Token.Value, node.Token.Text);
         }
 
-        public override CSharpSyntaxNode VisitInterpolation(Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolationSyntax node)
+        public override CSharpSyntaxNode VisitInterpolation(VBasic.Syntax.InterpolationSyntax node)
         {
-            return SyntaxFactory.Interpolation((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor), (InterpolationAlignmentClauseSyntax) node.AlignmentClause?.Accept(TriviaConvertingVisitor), (InterpolationFormatClauseSyntax) node.FormatClause?.Accept(TriviaConvertingVisitor));
+            return SyntaxFactory.Interpolation((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor), (InterpolationAlignmentClauseSyntax)node.AlignmentClause?.Accept(TriviaConvertingVisitor), (InterpolationFormatClauseSyntax)node.FormatClause?.Accept(TriviaConvertingVisitor));
         }
 
-        public override CSharpSyntaxNode VisitInterpolatedStringExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolatedStringExpressionSyntax node)
+        public override CSharpSyntaxNode VisitInterpolatedStringExpression(VBasic.Syntax.InterpolatedStringExpressionSyntax node)
         {
-            var useVerbatim = node.DescendantNodes().OfType<Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolatedStringTextSyntax>().Any(c => CommonConversions.IsWorthBeingAVerbatimString(c.TextToken.Text));
-            var startToken = useVerbatim ? 
+            var useVerbatim = node.DescendantNodes().OfType<VBasic.Syntax.InterpolatedStringTextSyntax>().Any(c => CommonConversions.IsWorthBeingAVerbatimString(c.TextToken.Text));
+            var startToken = useVerbatim ?
                 SyntaxFactory.Token(default(SyntaxTriviaList), SyntaxKind.InterpolatedVerbatimStringStartToken, "$@\"", "$@\"", default(SyntaxTriviaList))
                 : SyntaxFactory.Token(default(SyntaxTriviaList), SyntaxKind.InterpolatedStringStartToken, "$\"", "$\"", default(SyntaxTriviaList));
             InterpolatedStringExpressionSyntax interpolatedStringExpressionSyntax = SyntaxFactory.InterpolatedStringExpression(startToken, SyntaxFactory.List(node.Contents.Select(c => (InterpolatedStringContentSyntax)c.Accept(TriviaConvertingVisitor))), SyntaxFactory.Token(SyntaxKind.InterpolatedStringEndToken));
             return interpolatedStringExpressionSyntax;
         }
 
-        public override CSharpSyntaxNode VisitInterpolatedStringText(Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolatedStringTextSyntax node)
+        public override CSharpSyntaxNode VisitInterpolatedStringText(VBasic.Syntax.InterpolatedStringTextSyntax node)
         {
-            var useVerbatim = node.Parent.DescendantNodes().OfType<Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolatedStringTextSyntax>().Any(c => CommonConversions.IsWorthBeingAVerbatimString(c.TextToken.Text));
+            var useVerbatim = node.Parent.DescendantNodes().OfType<VBasic.Syntax.InterpolatedStringTextSyntax>().Any(c => CommonConversions.IsWorthBeingAVerbatimString(c.TextToken.Text));
             var textForUser = CommonConversions.EscapeQuotes(node.TextToken.Text, node.TextToken.ValueText, useVerbatim);
             InterpolatedStringTextSyntax interpolatedStringTextSyntax = SyntaxFactory.InterpolatedStringText(SyntaxFactory.Token(default(SyntaxTriviaList), SyntaxKind.InterpolatedStringTextToken, textForUser, node.TextToken.ValueText, default(SyntaxTriviaList)));
             return interpolatedStringTextSyntax;
         }
 
-        public override CSharpSyntaxNode VisitInterpolationAlignmentClause(Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolationAlignmentClauseSyntax node)
+        public override CSharpSyntaxNode VisitInterpolationAlignmentClause(VBasic.Syntax.InterpolationAlignmentClauseSyntax node)
         {
-            return SyntaxFactory.InterpolationAlignmentClause(SyntaxFactory.Token(SyntaxKind.CommaToken), (ExpressionSyntax) node.Value.Accept(TriviaConvertingVisitor));
+            return SyntaxFactory.InterpolationAlignmentClause(SyntaxFactory.Token(SyntaxKind.CommaToken), (ExpressionSyntax)node.Value.Accept(TriviaConvertingVisitor));
         }
 
-        public override CSharpSyntaxNode VisitInterpolationFormatClause(Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolationFormatClauseSyntax node)
+        public override CSharpSyntaxNode VisitInterpolationFormatClause(VBasic.Syntax.InterpolationFormatClauseSyntax node)
         {
             SyntaxToken formatStringToken = SyntaxFactory.Token(SyntaxTriviaList.Empty, SyntaxKind.InterpolatedStringTextToken, node.FormatStringToken.Text, node.FormatStringToken.ValueText, SyntaxTriviaList.Empty);
             return SyntaxFactory.InterpolationFormatClause(SyntaxFactory.Token(SyntaxKind.ColonToken), formatStringToken);
         }
 
-        public override CSharpSyntaxNode VisitMeExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.MeExpressionSyntax node)
+        public override CSharpSyntaxNode VisitMeExpression(VBasic.Syntax.MeExpressionSyntax node)
         {
             return SyntaxFactory.ThisExpression();
         }
 
-        public override CSharpSyntaxNode VisitMyBaseExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.MyBaseExpressionSyntax node)
+        public override CSharpSyntaxNode VisitMyBaseExpression(VBasic.Syntax.MyBaseExpressionSyntax node)
         {
             return SyntaxFactory.BaseExpression();
         }
 
-        public override CSharpSyntaxNode VisitParenthesizedExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.ParenthesizedExpressionSyntax node)
+        public override CSharpSyntaxNode VisitParenthesizedExpression(VBasic.Syntax.ParenthesizedExpressionSyntax node)
         {
             return SyntaxFactory.ParenthesizedExpression((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
         }
 
-        public override CSharpSyntaxNode VisitMemberAccessExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.MemberAccessExpressionSyntax node)
+        public override CSharpSyntaxNode VisitMemberAccessExpression(VBasic.Syntax.MemberAccessExpressionSyntax node)
         {
             var simpleNameSyntax = (SimpleNameSyntax)node.Name.Accept(TriviaConvertingVisitor);
 
-            var nodeSymbol = ModelExtensions.GetSymbolInfo(_semanticModel, node.Name).Symbol;
-            var isDefaultProperty = nodeSymbol is IPropertySymbol p && Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions.IsDefault(p);
+            var nodeSymbol = _semanticModel.GetSymbolInfo(node.Name).Symbol;
+            var isDefaultProperty = nodeSymbol is IPropertySymbol p && VBasic.VisualBasicExtensions.IsDefault(p);
             ExpressionSyntax left = null;
-            if (node.Expression is Microsoft.CodeAnalysis.VisualBasic.Syntax.MyClassExpressionSyntax) {
+            if (node.Expression is VBasic.Syntax.MyClassExpressionSyntax) {
                 if (nodeSymbol.IsStatic) {
-                    var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, node.Expression);
+                    var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
                     left = _semanticModel.GetCsTypeSyntax(typeInfo.Type, node);
                 } else {
                     left = SyntaxFactory.ThisExpression();
@@ -262,8 +262,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
             if (left == null && nodeSymbol?.IsStatic == true) {
-                var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, node.Expression);
-                var expressionSymbolInfo = ModelExtensions.GetSymbolInfo(_semanticModel, node.Expression);
+                var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
+                var expressionSymbolInfo = _semanticModel.GetSymbolInfo(node.Expression);
                 if (typeInfo.Type != null && !expressionSymbolInfo.Symbol.IsType()) {
                     left = _semanticModel.GetCsTypeSyntax(typeInfo.Type, node);
                 }
@@ -274,18 +274,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (left == null) {
                 if (IsSubPartOfConditionalAccess(node)) {
                     return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
-                        : (ExpressionSyntax) SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
+                        : (ExpressionSyntax)SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
                 }
                 left = SyntaxFactory.IdentifierName(_withBlockTempVariableNames.Peek());
             } else if (TryGetTypePromotedModuleSymbol(node, out var promotedModuleSymbol)) {
                 left = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left,
                     SyntaxFactory.IdentifierName(promotedModuleSymbol.Name));
             }
-                
-            if (node.Expression.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.GlobalName)) {
+
+            if (node.Expression.IsKind(VBasic.SyntaxKind.GlobalName)) {
                 return SyntaxFactory.AliasQualifiedName((IdentifierNameSyntax)left, simpleNameSyntax);
             }
-                
+
             if (isDefaultProperty && left != null) {
                 return left;
             }
@@ -294,32 +294,32 @@ namespace ICSharpCode.CodeConverter.CSharp
             return AddEmptyArgumentListIfImplicit(node, memberAccessExpressionSyntax);
         }
 
-        public override CSharpSyntaxNode VisitConditionalAccessExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.ConditionalAccessExpressionSyntax node)
+        public override CSharpSyntaxNode VisitConditionalAccessExpression(VBasic.Syntax.ConditionalAccessExpressionSyntax node)
         {
             var leftExpression = (ExpressionSyntax)node.Expression?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.IdentifierName(_withBlockTempVariableNames.Peek());
             return SyntaxFactory.ConditionalAccessExpression(leftExpression, (ExpressionSyntax)node.WhenNotNull.Accept(TriviaConvertingVisitor));
         }
 
-        public override CSharpSyntaxNode VisitArgumentList(Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax node)
+        public override CSharpSyntaxNode VisitArgumentList(VBasic.Syntax.ArgumentListSyntax node)
         {
-            if (node.Parent.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.Attribute)) {
+            if (node.Parent.IsKind(VBasic.SyntaxKind.Attribute)) {
                 return CommonConversions.CreateAttributeArgumentList(node.Arguments.Select(ToAttributeArgument).ToArray());
             }
             var argumentSyntaxes = ConvertArguments(node);
             return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(argumentSyntaxes));
         }
 
-        public override CSharpSyntaxNode VisitSimpleArgument(Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleArgumentSyntax node)
+        public override CSharpSyntaxNode VisitSimpleArgument(VBasic.Syntax.SimpleArgumentSyntax node)
         {
             var invocation = node.Parent.Parent;
-            if (invocation is Microsoft.CodeAnalysis.VisualBasic.Syntax.ArrayCreationExpressionSyntax)
+            if (invocation is VBasic.Syntax.ArrayCreationExpressionSyntax)
                 return node.Expression.Accept(TriviaConvertingVisitor);
             var symbol = GetInvocationSymbol(invocation);
             SyntaxToken token = default(SyntaxToken);
             string argName = null;
             RefKind refKind = RefKind.None;
             if (symbol is IMethodSymbol methodSymbol) {
-                int argId = ((Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax)node.Parent).Arguments.IndexOf(node);
+                int argId = ((VBasic.Syntax.ArgumentListSyntax)node.Parent).Arguments.IndexOf(node);
                 var parameters = (GetCsSymbolOrNull(methodSymbol) ?? methodSymbol).GetParameters();
                 //WARNING: If named parameters can reach here it won't work properly for them
                 if (argId < parameters.Count()) {
@@ -353,36 +353,36 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        public override CSharpSyntaxNode VisitNameOfExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.NameOfExpressionSyntax node)
+        public override CSharpSyntaxNode VisitNameOfExpression(VBasic.Syntax.NameOfExpressionSyntax node)
         {
             return SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName("nameof"), SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument((ExpressionSyntax)node.Argument.Accept(TriviaConvertingVisitor)))));
         }
 
-        public override CSharpSyntaxNode VisitEqualsValue(Microsoft.CodeAnalysis.VisualBasic.Syntax.EqualsValueSyntax node)
+        public override CSharpSyntaxNode VisitEqualsValue(VBasic.Syntax.EqualsValueSyntax node)
         {
             return SyntaxFactory.EqualsValueClause((ExpressionSyntax)node.Value.Accept(TriviaConvertingVisitor));
         }
 
-        public override CSharpSyntaxNode VisitObjectMemberInitializer(Microsoft.CodeAnalysis.VisualBasic.Syntax.ObjectMemberInitializerSyntax node)
+        public override CSharpSyntaxNode VisitObjectMemberInitializer(VBasic.Syntax.ObjectMemberInitializerSyntax node)
         {
             var memberDeclaratorSyntaxs = SyntaxFactory.SeparatedList(
                 node.Initializers.Select(initializer => initializer.Accept(TriviaConvertingVisitor)).Cast<ExpressionSyntax>());
             return SyntaxFactory.InitializerExpression(SyntaxKind.ObjectInitializerExpression, memberDeclaratorSyntaxs);
         }
 
-        public override CSharpSyntaxNode VisitAnonymousObjectCreationExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.AnonymousObjectCreationExpressionSyntax node)
+        public override CSharpSyntaxNode VisitAnonymousObjectCreationExpression(VBasic.Syntax.AnonymousObjectCreationExpressionSyntax node)
         {
             var memberDeclaratorSyntaxs = SyntaxFactory.SeparatedList(
                 node.Initializer.Initializers.Select(initializer => initializer.Accept(TriviaConvertingVisitor)).Cast<AnonymousObjectMemberDeclaratorSyntax>());
             return SyntaxFactory.AnonymousObjectCreationExpression(memberDeclaratorSyntaxs);
         }
 
-        public override CSharpSyntaxNode VisitInferredFieldInitializer(Microsoft.CodeAnalysis.VisualBasic.Syntax.InferredFieldInitializerSyntax node)
+        public override CSharpSyntaxNode VisitInferredFieldInitializer(VBasic.Syntax.InferredFieldInitializerSyntax node)
         {
-            return SyntaxFactory.AnonymousObjectMemberDeclarator((ExpressionSyntax) node.Expression.Accept(TriviaConvertingVisitor));
+            return SyntaxFactory.AnonymousObjectMemberDeclarator((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
         }
 
-        public override CSharpSyntaxNode VisitObjectCreationExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.ObjectCreationExpressionSyntax node)
+        public override CSharpSyntaxNode VisitObjectCreationExpression(VBasic.Syntax.ObjectCreationExpressionSyntax node)
         {
             return SyntaxFactory.ObjectCreationExpression(
                 (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor),
@@ -392,7 +392,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
-        public override CSharpSyntaxNode VisitArrayCreationExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.ArrayCreationExpressionSyntax node)
+        public override CSharpSyntaxNode VisitArrayCreationExpression(VBasic.Syntax.ArrayCreationExpressionSyntax node)
         {
             var bounds = CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.RankSpecifiers, node.ArrayBounds);
             var allowInitializer = node.Initializer.Initializers.Any() || node.ArrayBounds == null ||
@@ -404,11 +404,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
-        public override CSharpSyntaxNode VisitCollectionInitializer(Microsoft.CodeAnalysis.VisualBasic.Syntax.CollectionInitializerSyntax node)
+        public override CSharpSyntaxNode VisitCollectionInitializer(VBasic.Syntax.CollectionInitializerSyntax node)
         {
-            var isExplicitCollectionInitializer = node.Parent is Microsoft.CodeAnalysis.VisualBasic.Syntax.ObjectCollectionInitializerSyntax
-                                                  || node.Parent is Microsoft.CodeAnalysis.VisualBasic.Syntax.CollectionInitializerSyntax
-                                                  || node.Parent is Microsoft.CodeAnalysis.VisualBasic.Syntax.ArrayCreationExpressionSyntax;
+            var isExplicitCollectionInitializer = node.Parent is VBasic.Syntax.ObjectCollectionInitializerSyntax
+                                                  || node.Parent is VBasic.Syntax.CollectionInitializerSyntax
+                                                  || node.Parent is VBasic.Syntax.ArrayCreationExpressionSyntax;
             var initializerType = isExplicitCollectionInitializer ? SyntaxKind.CollectionInitializerExpression : SyntaxKind.ArrayInitializerExpression;
             var initializer = SyntaxFactory.InitializerExpression(initializerType, SyntaxFactory.SeparatedList(node.Initializers.Select(i => (ExpressionSyntax)i.Accept(TriviaConvertingVisitor))));
             return isExplicitCollectionInitializer
@@ -416,12 +416,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : (CSharpSyntaxNode)SyntaxFactory.ImplicitArrayCreationExpression(initializer);
         }
 
-        public override CSharpSyntaxNode VisitQueryExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.QueryExpressionSyntax node)
+        public override CSharpSyntaxNode VisitQueryExpression(VBasic.Syntax.QueryExpressionSyntax node)
         {
             return _queryConverter.ConvertClauses(node.Clauses);
         }
 
-        public override CSharpSyntaxNode VisitOrdering(Microsoft.CodeAnalysis.VisualBasic.Syntax.OrderingSyntax node)
+        public override CSharpSyntaxNode VisitOrdering(VBasic.Syntax.OrderingSyntax node)
         {
             var convertToken = node.Kind().ConvertToken();
             var expressionSyntax = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
@@ -429,9 +429,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.Ordering(convertToken, expressionSyntax, ascendingOrDescendingKeyword);
         }
 
-        public override CSharpSyntaxNode VisitNamedFieldInitializer(Microsoft.CodeAnalysis.VisualBasic.Syntax.NamedFieldInitializerSyntax node)
+        public override CSharpSyntaxNode VisitNamedFieldInitializer(VBasic.Syntax.NamedFieldInitializerSyntax node)
         {
-            if (node?.Parent?.Parent is Microsoft.CodeAnalysis.VisualBasic.Syntax.AnonymousObjectCreationExpressionSyntax) {
+            if (node?.Parent?.Parent is VBasic.Syntax.AnonymousObjectCreationExpressionSyntax) {
                 return SyntaxFactory.AnonymousObjectMemberDeclarator(
                     SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(ConvertIdentifier(node.Name.Identifier))),
                     (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
@@ -443,12 +443,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
-        public override CSharpSyntaxNode VisitObjectCollectionInitializer(Microsoft.CodeAnalysis.VisualBasic.Syntax.ObjectCollectionInitializerSyntax node)
+        public override CSharpSyntaxNode VisitObjectCollectionInitializer(VBasic.Syntax.ObjectCollectionInitializerSyntax node)
         {
             return node.Initializer.Accept(TriviaConvertingVisitor); //Dictionary initializer comes through here despite the FROM keyword not being in the source code
         }
 
-        public override CSharpSyntaxNode VisitBinaryConditionalExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.BinaryConditionalExpressionSyntax node)
+        public override CSharpSyntaxNode VisitBinaryConditionalExpression(VBasic.Syntax.BinaryConditionalExpressionSyntax node)
         {
             return SyntaxFactory.BinaryExpression(
                 SyntaxKind.CoalesceExpression,
@@ -457,7 +457,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
-        public override CSharpSyntaxNode VisitTernaryConditionalExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.TernaryConditionalExpressionSyntax node)
+        public override CSharpSyntaxNode VisitTernaryConditionalExpression(VBasic.Syntax.TernaryConditionalExpressionSyntax node)
         {
             var expr = SyntaxFactory.ConditionalExpression(
                 (ExpressionSyntax)node.Condition.Accept(TriviaConvertingVisitor),
@@ -465,28 +465,28 @@ namespace ICSharpCode.CodeConverter.CSharp
                 (ExpressionSyntax)node.WhenFalse.Accept(TriviaConvertingVisitor)
             );
 
-            if (node.Parent.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.Interpolation) || VbSyntaxNodeExtensions.PrecedenceCouldChange(node))
+            if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || VbSyntaxNodeExtensions.PrecedenceCouldChange(node))
                 return SyntaxFactory.ParenthesizedExpression(expr);
 
             return expr;
         }
 
-        public override CSharpSyntaxNode VisitTypeOfExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeOfExpressionSyntax node)
+        public override CSharpSyntaxNode VisitTypeOfExpression(VBasic.Syntax.TypeOfExpressionSyntax node)
         {
             var expr = SyntaxFactory.BinaryExpression(
                 SyntaxKind.IsExpression,
                 (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
                 (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)
             );
-            return node.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.TypeOfIsNotExpression) ? expr.InvertCondition() : expr;
+            return node.IsKind(VBasic.SyntaxKind.TypeOfIsNotExpression) ? expr.InvertCondition() : expr;
         }
 
-        public override CSharpSyntaxNode VisitUnaryExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.UnaryExpressionSyntax node)
+        public override CSharpSyntaxNode VisitUnaryExpression(VBasic.Syntax.UnaryExpressionSyntax node)
         {
             var expr = (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor);
-            if (node.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AddressOfExpression))
+            if (node.IsKind(VBasic.SyntaxKind.AddressOfExpression))
                 return expr;
-            var kind = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
+            var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
             SyntaxKind csTokenKind = CSharpUtil.GetExpressionOperatorTokenKind(kind);
             return SyntaxFactory.PrefixUnaryExpression(
                 kind,
@@ -495,26 +495,26 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
-        public override CSharpSyntaxNode VisitBinaryExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.BinaryExpressionSyntax node)
+        public override CSharpSyntaxNode VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax node)
         {
-            if (node.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IsExpression)) {
+            if (node.IsKind(VBasic.SyntaxKind.IsExpression)) {
                 ExpressionSyntax otherArgument = null;
-                if (node.Left.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NothingLiteralExpression)) {
+                if (node.Left.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
                     otherArgument = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
                 }
-                if (node.Right.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NothingLiteralExpression)) {
+                if (node.Right.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
                     otherArgument = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
                 }
                 if (otherArgument != null) {
                     return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, otherArgument, SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression));
                 }
             }
-            if (node.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IsNotExpression)) {
+            if (node.IsKind(VBasic.SyntaxKind.IsNotExpression)) {
                 ExpressionSyntax otherArgument = null;
-                if (node.Left.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NothingLiteralExpression)) {
+                if (node.Left.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
                     otherArgument = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
                 }
-                if (node.Right.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NothingLiteralExpression)) {
+                if (node.Right.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
                     otherArgument = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
                 }
                 if (otherArgument != null) {
@@ -526,10 +526,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             var rhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor));
 
             var stringType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
-            var lhsTypeInfo = ModelExtensions.GetTypeInfo(_semanticModel, node.Left);
-            var rhsTypeInfo = ModelExtensions.GetTypeInfo(_semanticModel, node.Right);
+            var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
+            var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
 
-            if (node.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.ConcatenateExpression)) {
+            if (node.IsKind(VBasic.SyntaxKind.ConcatenateExpression)) {
                 if (lhsTypeInfo.Type.SpecialType != SpecialType.System_String &&
                     lhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String &&
                     rhsTypeInfo.Type.SpecialType != SpecialType.System_String &&
@@ -538,11 +538,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            var objectEqualityType = _visualBasicEqualityComparison.GetObjectEqualityType(node,  lhsTypeInfo, rhsTypeInfo);
-            switch(objectEqualityType) {
+            var objectEqualityType = _visualBasicEqualityComparison.GetObjectEqualityType(node, lhsTypeInfo, rhsTypeInfo);
+            switch (objectEqualityType) {
                 case VisualBasicEqualityComparison.RequiredType.StringOnly:
                     if (lhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String &&
-                        rhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String && 
+                        rhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String &&
                         _visualBasicEqualityComparison.TryConvertToNullOrEmptyCheck(node, lhs, rhs, out CSharpSyntaxNode visitBinaryExpression)) {
                         return visitBinaryExpression;
                     }
@@ -552,14 +552,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(node, lhs, rhs);
             }
 
-            if (node.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.ExponentiateExpression,
-                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
+            if (node.IsKind(VBasic.SyntaxKind.ExponentiateExpression,
+                VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
                 return SyntaxFactory.InvocationExpression(
                     ValidSyntaxFactory.MemberAccess(nameof(Math), nameof(Math.Pow)),
                     ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
             }
 
-            if (node.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.LikeExpression)) {
+            if (node.IsKind(VBasic.SyntaxKind.LikeExpression)) {
                 var compareText = ValidSyntaxFactory.MemberAccess("CompareMethod", _optionCompareText ? "Text" : "Binary");
                 var likeString = ValidSyntaxFactory.MemberAccess("LikeOperator", "LikeString");
                 _extraUsingDirectives.Add("Microsoft.VisualBasic");
@@ -570,18 +570,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                 );
             }
 
-            var kind = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
+            var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
             var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
 
             var csBinExp = SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
             return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, csBinExp, addParenthesisIfNeeded: true);
         }
 
-        public override CSharpSyntaxNode VisitInvocationExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.InvocationExpressionSyntax node)
+        public override CSharpSyntaxNode VisitInvocationExpression(VBasic.Syntax.InvocationExpressionSyntax node)
         {
-            var invocationSymbol = ModelExtensions.GetSymbolInfo(_semanticModel, node).ExtractBestMatch();
-            var expressionSymbol = ModelExtensions.GetSymbolInfo(_semanticModel, node.Expression).ExtractBestMatch();
-            var expressionReturnType = expressionSymbol?.GetReturnType() ?? ModelExtensions.GetTypeInfo(_semanticModel, node.Expression).Type;
+            var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch();
+            var expressionSymbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
+            var expressionReturnType = expressionSymbol?.GetReturnType() ?? _semanticModel.GetTypeInfo(node.Expression).Type;
             var operation = _semanticModel.GetOperation(node);
             if (expressionSymbol?.ContainingNamespace.MetadataName == "VisualBasic" && TrySubstituteVisualBasicMethod(node, out var csEquivalent)) {
                 return csEquivalent;
@@ -597,7 +597,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (extraArg != null) {
                     args = args.WithArguments(args.Arguments.Add(SyntaxFactory.Argument(extraArg)));
                 }
-                return SyntaxFactory.InvocationExpression((ExpressionSyntax) expr, args);
+                return SyntaxFactory.InvocationExpression((ExpressionSyntax)expr, args);
             }
 
             // VB doesn't have a specialized node for element access because the syntax is ambiguous. Instead, it just uses an invocation expression or dictionary access expression, then figures out using the semantic model which one is most likely intended.
@@ -626,7 +626,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                   ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
 
                 var expr = node.Expression.Accept(TriviaConvertingVisitor);
-                return (ExpressionSyntax) expr;
+                return (ExpressionSyntax)expr;
             }
 
             CSharpSyntaxNode CreateElementAccess()
@@ -634,22 +634,19 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var bracketedArgumentListSyntax = SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(
                     node.ArgumentList.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor))
                 ));
-                if (convertedExpression is ElementBindingExpressionSyntax binding && !binding.ArgumentList.Arguments.Any())
-                {
+                if (convertedExpression is ElementBindingExpressionSyntax binding && !binding.ArgumentList.Arguments.Any()) {
                     // Special case where structure changes due to conditional access (See VisitMemberAccessExpression)
                     return binding.WithArgumentList(bracketedArgumentListSyntax);
-                }
-                else
-                {
-                    return SyntaxFactory.ElementAccessExpression(convertedExpression,bracketedArgumentListSyntax);
+                } else {
+                    return SyntaxFactory.ElementAccessExpression(convertedExpression, bracketedArgumentListSyntax);
                 }
             }
         }
 
-        public override CSharpSyntaxNode VisitSingleLineLambdaExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.SingleLineLambdaExpressionSyntax node)
+        public override CSharpSyntaxNode VisitSingleLineLambdaExpression(VBasic.Syntax.SingleLineLambdaExpressionSyntax node)
         {
             CSharpSyntaxNode body;
-            if (node.Body is Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSyntax statement) {
+            if (node.Body is VBasic.Syntax.StatementSyntax statement) {
                 var convertedStatements = statement.Accept(CreateMethodBodyVisitor(node));
                 if (convertedStatements.Count == 1
                     && convertedStatements.Single() is ExpressionStatementSyntax exprStmt) {
@@ -658,15 +655,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 } else {
                     body = SyntaxFactory.Block(convertedStatements).UnpackNonNestedBlock();
                 }
-            }
-            else {
+            } else {
                 body = node.Body.Accept(TriviaConvertingVisitor);
             }
             var param = (ParameterListSyntax)node.SubOrFunctionHeader.ParameterList.Accept(TriviaConvertingVisitor);
             return CreateLambdaExpression(param, body);
         }
 
-        public override CSharpSyntaxNode VisitMultiLineLambdaExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.MultiLineLambdaExpressionSyntax node)
+        public override CSharpSyntaxNode VisitMultiLineLambdaExpression(VBasic.Syntax.MultiLineLambdaExpressionSyntax node)
         {
             var methodBodyVisitor = CreateMethodBodyVisitor(node);
             var body = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(methodBodyVisitor)));
@@ -767,23 +763,23 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
-        public override CSharpSyntaxNode VisitTupleType(Microsoft.CodeAnalysis.VisualBasic.Syntax.TupleTypeSyntax node)
+        public override CSharpSyntaxNode VisitTupleType(VBasic.Syntax.TupleTypeSyntax node)
         {
             var elements = node.Elements.Select(e => (TupleElementSyntax)e.Accept(TriviaConvertingVisitor));
             return SyntaxFactory.TupleType(SyntaxFactory.SeparatedList(elements));
         }
 
-        public override CSharpSyntaxNode VisitTypedTupleElement(Microsoft.CodeAnalysis.VisualBasic.Syntax.TypedTupleElementSyntax node)
+        public override CSharpSyntaxNode VisitTypedTupleElement(VBasic.Syntax.TypedTupleElementSyntax node)
         {
-            return SyntaxFactory.TupleElement((TypeSyntax) node.Type.Accept(TriviaConvertingVisitor));
+            return SyntaxFactory.TupleElement((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor));
         }
 
-        public override CSharpSyntaxNode VisitNamedTupleElement(Microsoft.CodeAnalysis.VisualBasic.Syntax.NamedTupleElementSyntax node)
+        public override CSharpSyntaxNode VisitNamedTupleElement(VBasic.Syntax.NamedTupleElementSyntax node)
         {
             return SyntaxFactory.TupleElement((TypeSyntax)node.AsClause.Type.Accept(TriviaConvertingVisitor), CommonConversions.ConvertIdentifier(node.Identifier));
         }
 
-        public override CSharpSyntaxNode VisitTupleExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.TupleExpressionSyntax node)
+        public override CSharpSyntaxNode VisitTupleExpression(VBasic.Syntax.TupleExpressionSyntax node)
         {
             var args = node.Arguments.Select(a => {
                 var expr = (ExpressionSyntax)a.Expression.Accept(TriviaConvertingVisitor);
@@ -792,44 +788,44 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.TupleExpression(SyntaxFactory.SeparatedList(args));
         }
 
-        public override CSharpSyntaxNode VisitPredefinedType(Microsoft.CodeAnalysis.VisualBasic.Syntax.PredefinedTypeSyntax node)
+        public override CSharpSyntaxNode VisitPredefinedType(VBasic.Syntax.PredefinedTypeSyntax node)
         {
-            if (SyntaxTokenExtensions.IsKind(node.Keyword, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DateKeyword)) {
+            if (SyntaxTokenExtensions.IsKind(node.Keyword, VBasic.SyntaxKind.DateKeyword)) {
                 return SyntaxFactory.IdentifierName("DateTime");
             }
             return SyntaxFactory.PredefinedType(node.Keyword.ConvertToken());
         }
 
-        public override CSharpSyntaxNode VisitNullableType(Microsoft.CodeAnalysis.VisualBasic.Syntax.NullableTypeSyntax node)
+        public override CSharpSyntaxNode VisitNullableType(VBasic.Syntax.NullableTypeSyntax node)
         {
             return SyntaxFactory.NullableType((TypeSyntax)node.ElementType.Accept(TriviaConvertingVisitor));
         }
 
-        public override CSharpSyntaxNode VisitArrayType(Microsoft.CodeAnalysis.VisualBasic.Syntax.ArrayTypeSyntax node)
+        public override CSharpSyntaxNode VisitArrayType(VBasic.Syntax.ArrayTypeSyntax node)
         {
             return SyntaxFactory.ArrayType((TypeSyntax)node.ElementType.Accept(TriviaConvertingVisitor), SyntaxFactory.List(node.RankSpecifiers.Select(r => (ArrayRankSpecifierSyntax)r.Accept(TriviaConvertingVisitor))));
         }
 
-        public override CSharpSyntaxNode VisitArrayRankSpecifier(Microsoft.CodeAnalysis.VisualBasic.Syntax.ArrayRankSpecifierSyntax node)
+        public override CSharpSyntaxNode VisitArrayRankSpecifier(VBasic.Syntax.ArrayRankSpecifierSyntax node)
         {
             return SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(Enumerable.Repeat<ExpressionSyntax>(SyntaxFactory.OmittedArraySizeExpression(), node.Rank)));
         }
 
-        public override CSharpSyntaxNode VisitIdentifierName(Microsoft.CodeAnalysis.VisualBasic.Syntax.IdentifierNameSyntax node)
+        public override CSharpSyntaxNode VisitIdentifierName(VBasic.Syntax.IdentifierNameSyntax node)
         {
-            var identifier = SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier, node.GetAncestor<Microsoft.CodeAnalysis.VisualBasic.Syntax.AttributeSyntax>() != null));
+            var identifier = SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier, node.GetAncestor<VBasic.Syntax.AttributeSyntax>() != null));
 
-            var qualifiedIdentifier = !node.Parent.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.SimpleMemberAccessExpression, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.QualifiedName, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NameColonEquals, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.ImportsStatement, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NamespaceStatement, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NamedFieldInitializer)
-                                      || node.Parent is Microsoft.CodeAnalysis.VisualBasic.Syntax.MemberAccessExpressionSyntax maes && maes.Expression == node
-                                      || node.Parent is Microsoft.CodeAnalysis.VisualBasic.Syntax.QualifiedNameSyntax qns && qns.Left == node
+            var qualifiedIdentifier = !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer)
+                                      || node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax maes && maes.Expression == node
+                                      || node.Parent is VBasic.Syntax.QualifiedNameSyntax qns && qns.Left == node
                 ? QualifyNode(node, identifier) : identifier;
 
             var withArgList = AddEmptyArgumentListIfImplicit(node, qualifiedIdentifier);
             var sym = GetSymbolInfoInDocument(node);
             if (sym != null && sym.Kind == SymbolKind.Local) {
-                var vbMethodBlock = node.Ancestors().OfType<Microsoft.CodeAnalysis.VisualBasic.Syntax.MethodBlockBaseSyntax>().FirstOrDefault();
+                var vbMethodBlock = node.Ancestors().OfType<VBasic.Syntax.MethodBlockBaseSyntax>().FirstOrDefault();
                 if (vbMethodBlock != null &&
-                    !node.Parent.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NameOfExpression) &&
+                    !node.Parent.IsKind(VBasic.SyntaxKind.NameOfExpression) &&
                     node.Identifier.ValueText.Equals(GetMethodBlockBaseIdentifierForImplicitReturn(vbMethodBlock).ValueText, StringComparison.OrdinalIgnoreCase)) {
                     var retVar = GetRetVariableNameOrNull(vbMethodBlock);
                     if (retVar != null) {
@@ -840,18 +836,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             return withArgList;
         }
 
-        public override CSharpSyntaxNode VisitQualifiedName(Microsoft.CodeAnalysis.VisualBasic.Syntax.QualifiedNameSyntax node)
+        public override CSharpSyntaxNode VisitQualifiedName(VBasic.Syntax.QualifiedNameSyntax node)
         {
             var lhsSyntax = (NameSyntax)node.Left.Accept(TriviaConvertingVisitor);
             var rhsSyntax = (SimpleNameSyntax)node.Right.Accept(TriviaConvertingVisitor);
 
-            Microsoft.CodeAnalysis.VisualBasic.Syntax.NameSyntax topLevelName = node;
-            while (topLevelName.Parent is Microsoft.CodeAnalysis.VisualBasic.Syntax.NameSyntax parentName)
-            {
+            VBasic.Syntax.NameSyntax topLevelName = node;
+            while (topLevelName.Parent is VBasic.Syntax.NameSyntax parentName) {
                 topLevelName = parentName;
             }
-            var partOfNamespaceDeclaration = topLevelName.Parent.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NamespaceStatement);
-            var leftIsGlobal = node.Left.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.GlobalName);
+            var partOfNamespaceDeclaration = topLevelName.Parent.IsKind(VBasic.SyntaxKind.NamespaceStatement);
+            var leftIsGlobal = node.Left.IsKind(VBasic.SyntaxKind.GlobalName);
 
             ExpressionSyntax qualifiedName;
             if (partOfNamespaceDeclaration || !(lhsSyntax is SimpleNameSyntax sns)) {
@@ -863,30 +858,30 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return leftIsGlobal
                 ? (CSharpSyntaxNode)SyntaxFactory.AliasQualifiedName((IdentifierNameSyntax)lhsSyntax, rhsSyntax)
-                : SyntaxFactory.QualifiedName((NameSyntax) qualifiedName, rhsSyntax);
+                : SyntaxFactory.QualifiedName((NameSyntax)qualifiedName, rhsSyntax);
         }
 
-        public override CSharpSyntaxNode VisitGenericName(Microsoft.CodeAnalysis.VisualBasic.Syntax.GenericNameSyntax node)
+        public override CSharpSyntaxNode VisitGenericName(VBasic.Syntax.GenericNameSyntax node)
         {
             return SyntaxFactory.GenericName(ConvertIdentifier(node.Identifier), (TypeArgumentListSyntax)node.TypeArgumentList?.Accept(TriviaConvertingVisitor));
         }
 
-        public override CSharpSyntaxNode VisitTypeArgumentList(Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeArgumentListSyntax node)
+        public override CSharpSyntaxNode VisitTypeArgumentList(VBasic.Syntax.TypeArgumentListSyntax node)
         {
             return SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(node.Arguments.Select(a => (TypeSyntax)a.Accept(TriviaConvertingVisitor))));
         }
 
-        public static bool AllowsImplicitReturn(Microsoft.CodeAnalysis.VisualBasic.Syntax.MethodBlockBaseSyntax node)
+        public static bool AllowsImplicitReturn(VBasic.Syntax.MethodBlockBaseSyntax node)
         {
-            return !IsIterator(node) && node.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.FunctionBlock, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.GetAccessorBlock);
+            return !IsIterator(node) && node.IsKind(VBasic.SyntaxKind.FunctionBlock, VBasic.SyntaxKind.GetAccessorBlock);
         }
 
-        public static bool IsIterator(Microsoft.CodeAnalysis.VisualBasic.Syntax.MethodBlockBaseSyntax node)
+        public static bool IsIterator(VBasic.Syntax.MethodBlockBaseSyntax node)
         {
-            return node.BlockStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IteratorKeyword));
+            return node.BlockStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
         }
 
-        public IdentifierNameSyntax GetRetVariableNameOrNull(Microsoft.CodeAnalysis.VisualBasic.Syntax.MethodBlockBaseSyntax node)
+        public IdentifierNameSyntax GetRetVariableNameOrNull(VBasic.Syntax.MethodBlockBaseSyntax node)
         {
             if (!AllowsImplicitReturn(node)) return null;
 
@@ -895,7 +890,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (!node.Statements.IsEmpty()) {
                 string methodName = GetMethodBlockBaseIdentifierForImplicitReturn(node).ValueText;
                 Func<ISymbol, bool> equalsMethodName = s => s.IsKind(SymbolKind.Local) && s.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase);
-                var flow = ModelExtensions.AnalyzeDataFlow(_semanticModel, node.Statements.First(), node.Statements.Last());
+                var flow = _semanticModel.AnalyzeDataFlow(node.Statements.First(), node.Statements.Last());
 
                 if (flow.Succeeded) {
                     assignsToMethodNameVariable = flow.ReadInside.Any(equalsMethodName) || flow.WrittenInside.Any(equalsMethodName);
@@ -904,8 +899,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             IdentifierNameSyntax csReturnVariable = null;
 
-            if (assignsToMethodNameVariable)
-            {
+            if (assignsToMethodNameVariable) {
                 // In VB, assigning to the method name implicitly creates a variable that is returned when the method exits
                 var csReturnVariableName =
                     CommonConversions.ConvertIdentifier(GetMethodBlockBaseIdentifierForImplicitReturn(node)).ValueText + "Ret";
@@ -915,7 +909,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return csReturnVariable;
         }
 
-        public Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
+        public VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
         {
             var methodBodyVisitor = new MethodBodyExecutableStatementVisitor(node, _semanticModel, TriviaConvertingVisitor, CommonConversions, _withBlockTempVariableNames, _extraUsingDirectives, _additionalLocals, _methodsWithHandles, TriviaConvertingVisitor.TriviaConverter) {
                 IsIterator = isIterator,
@@ -924,12 +918,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             return methodBodyVisitor.CommentConvertingVisitor;
         }
 
-        private CSharpSyntaxNode ConvertCastExpression(Microsoft.CodeAnalysis.VisualBasic.Syntax.CastExpressionSyntax node, ExpressionSyntax convertMethodOrNull = null)
+        private CSharpSyntaxNode ConvertCastExpression(VBasic.Syntax.CastExpressionSyntax node, ExpressionSyntax convertMethodOrNull = null)
         {
             var expressionSyntax = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
 
-            if (convertMethodOrNull != null)
-            {
+            if (convertMethodOrNull != null) {
                 return
                     SyntaxFactory.InvocationExpression(convertMethodOrNull,
                         SyntaxFactory.ArgumentList(
@@ -939,9 +932,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             var castExpr = ValidSyntaxFactory.CastExpression((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor), expressionSyntax);
-            if (node.Parent is Microsoft.CodeAnalysis.VisualBasic.Syntax.MemberAccessExpressionSyntax)
-            {
-                return (ExpressionSyntax)SyntaxFactory.ParenthesizedExpression(castExpr);
+            if (node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax) {
+                return SyntaxFactory.ParenthesizedExpression(castExpr);
             }
             return castExpr;
         }
@@ -954,11 +946,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         /// <remarks>https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/declared-elements/type-promotion</remarks>
-        private bool TryGetTypePromotedModuleSymbol(Microsoft.CodeAnalysis.VisualBasic.Syntax.MemberAccessExpressionSyntax node, out INamedTypeSymbol moduleSymbol)
+        private bool TryGetTypePromotedModuleSymbol(VBasic.Syntax.MemberAccessExpressionSyntax node, out INamedTypeSymbol moduleSymbol)
         {
-            if (ModelExtensions.GetSymbolInfo(_semanticModel, node.Expression).ExtractBestMatch() is INamespaceSymbol
+            if (_semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch() is INamespaceSymbol
                     expressionSymbol &&
-                ModelExtensions.GetSymbolInfo(_semanticModel, node.Name).ExtractBestMatch()?.ContainingSymbol is INamedTypeSymbol
+                _semanticModel.GetSymbolInfo(node.Name).ExtractBestMatch()?.ContainingSymbol is INamedTypeSymbol
                     nameContainingSymbol &&
                 nameContainingSymbol.ContainingSymbol.Equals(expressionSymbol)) {
                 moduleSymbol = nameContainingSymbol;
@@ -969,29 +961,25 @@ namespace ICSharpCode.CodeConverter.CSharp
             return false;
         }
 
-        private static bool IsSubPartOfConditionalAccess(Microsoft.CodeAnalysis.VisualBasic.Syntax.MemberAccessExpressionSyntax node)
+        private static bool IsSubPartOfConditionalAccess(VBasic.Syntax.MemberAccessExpressionSyntax node)
         {
             var firstPossiblyConditionalAncestor = node.Parent;
             while (firstPossiblyConditionalAncestor != null &&
-                   firstPossiblyConditionalAncestor.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.InvocationExpression,
-                       Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.SimpleMemberAccessExpression))
-            {
+                   firstPossiblyConditionalAncestor.IsKind(VBasic.SyntaxKind.InvocationExpression,
+                       VBasic.SyntaxKind.SimpleMemberAccessExpression)) {
                 firstPossiblyConditionalAncestor = firstPossiblyConditionalAncestor.Parent;
             }
 
-            return firstPossiblyConditionalAncestor?.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.ConditionalAccessExpression) == true;
+            return firstPossiblyConditionalAncestor?.IsKind(VBasic.SyntaxKind.ConditionalAccessExpression) == true;
         }
 
-        private IEnumerable<ArgumentSyntax> ConvertArguments(Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax node)
+        private IEnumerable<ArgumentSyntax> ConvertArguments(VBasic.Syntax.ArgumentListSyntax node)
         {
             ISymbol invocationSymbolForForcedNames = null;
-            var argumentSyntaxs = node.Arguments.Select((a, i) =>
-            {
-                if (a.IsOmitted)
-                {
+            var argumentSyntaxs = node.Arguments.Select((a, i) => {
+                if (a.IsOmitted) {
                     invocationSymbolForForcedNames = GetInvocationSymbol(node.Parent);
-                    if (invocationSymbolForForcedNames != null)
-                    {
+                    if (invocationSymbolForForcedNames != null) {
                         return null;
                     }
 
@@ -1001,10 +989,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxFactory.Argument(nullLiteral);
                 }
 
-                var argumentSyntax = (ArgumentSyntax) a.Accept(TriviaConvertingVisitor);
+                var argumentSyntax = (ArgumentSyntax)a.Accept(TriviaConvertingVisitor);
 
-                if (invocationSymbolForForcedNames != null)
-                {
+                if (invocationSymbolForForcedNames != null) {
                     var elementAtOrDefault = invocationSymbolForForcedNames.GetParameters().ElementAt(i).Name;
                     return argumentSyntax.WithNameColon(SyntaxFactory.NameColon(elementAtOrDefault));
                 }
@@ -1021,16 +1008,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SymbolFinder.FindSimilarSymbols(symbolToFind, _csCompilation).FirstOrDefault();
         }
 
-        private bool NeedsVariableForArgument(Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleArgumentSyntax node)
+        private bool NeedsVariableForArgument(VBasic.Syntax.SimpleArgumentSyntax node)
         {
-            bool isIdentifier = node.Expression is Microsoft.CodeAnalysis.VisualBasic.Syntax.IdentifierNameSyntax;
-            bool isMemberAccess = node.Expression is Microsoft.CodeAnalysis.VisualBasic.Syntax.MemberAccessExpressionSyntax;
+            bool isIdentifier = node.Expression is VBasic.Syntax.IdentifierNameSyntax;
+            bool isMemberAccess = node.Expression is VBasic.Syntax.MemberAccessExpressionSyntax;
 
             var symbolInfo = GetSymbolInfoInDocument(node.Expression);
-            bool isProperty = symbolInfo != null && SymbolExtensions.IsKind(symbolInfo, SymbolKind.Property);
-            bool isUsing = symbolInfo?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()?.Parent?.Parent?.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.UsingStatement) == true;
+            bool isProperty = symbolInfo != null && symbolInfo.IsKind(SymbolKind.Property);
+            bool isUsing = symbolInfo?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()?.Parent?.Parent?.IsKind(VBasic.SyntaxKind.UsingStatement) == true;
 
-            var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, node.Expression);
+            var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
             bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType);
 
             return (!isIdentifier && !isMemberAccess) || isProperty || isTypeMismatch || isUsing;
@@ -1039,19 +1026,19 @@ namespace ICSharpCode.CodeConverter.CSharp
         private ISymbol GetInvocationSymbol(SyntaxNode invocation)
         {
             var symbol = invocation.TypeSwitch(
-                (Microsoft.CodeAnalysis.VisualBasic.Syntax.InvocationExpressionSyntax e) => ModelExtensions.GetSymbolInfo(_semanticModel, e).ExtractBestMatch(),
-                (Microsoft.CodeAnalysis.VisualBasic.Syntax.ObjectCreationExpressionSyntax e) => ModelExtensions.GetSymbolInfo(_semanticModel, e).ExtractBestMatch(),
-                (Microsoft.CodeAnalysis.VisualBasic.Syntax.RaiseEventStatementSyntax e) => ModelExtensions.GetSymbolInfo(_semanticModel, e.Name).ExtractBestMatch(),
+                (VBasic.Syntax.InvocationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch(),
+                (VBasic.Syntax.ObjectCreationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch(),
+                (VBasic.Syntax.RaiseEventStatementSyntax e) => _semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch(),
                 _ => { throw new NotSupportedException(); }
             );
             return symbol;
         }
 
-        private AttributeArgumentSyntax ToAttributeArgument(Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentSyntax arg)
+        private AttributeArgumentSyntax ToAttributeArgument(VBasic.Syntax.ArgumentSyntax arg)
         {
-            if (!(arg is Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleArgumentSyntax))
+            if (!(arg is VBasic.Syntax.SimpleArgumentSyntax))
                 throw new NotSupportedException();
-            var a = (Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleArgumentSyntax)arg;
+            var a = (VBasic.Syntax.SimpleArgumentSyntax)arg;
             var attr = SyntaxFactory.AttributeArgument((ExpressionSyntax)a.Expression.Accept(TriviaConvertingVisitor));
             if (a.IsNamed) {
                 attr = attr.WithNameEquals(SyntaxFactory.NameEquals((IdentifierNameSyntax)a.NameColonEquals.Name.Accept(TriviaConvertingVisitor)));
@@ -1071,7 +1058,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static bool IsPropertyElementAccess(IOperation operation)
         {
-            return operation is IPropertyReferenceOperation pro && pro.Arguments.Any() && Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions.IsDefault(pro.Property);
+            return operation is IPropertyReferenceOperation pro && pro.Arguments.Any() && VBasic.VisualBasicExtensions.IsDefault(pro.Property);
         }
 
         private static bool IsArrayElementAccess(IOperation operation)
@@ -1083,20 +1070,20 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// Chances of having an unknown delegate stored as a field/local seem lower than having an unknown non-delegate type with an indexer stored.
         /// So for a standalone identifier err on the side of assuming it's an indexer.
         /// </summary>
-        private static bool ProbablyNotAMethodCall(Microsoft.CodeAnalysis.VisualBasic.Syntax.InvocationExpressionSyntax node, ISymbol symbol, ITypeSymbol symbolReturnType)
+        private static bool ProbablyNotAMethodCall(VBasic.Syntax.InvocationExpressionSyntax node, ISymbol symbol, ITypeSymbol symbolReturnType)
         {
-            return !(symbol is IMethodSymbol) && symbolReturnType.IsErrorType() && node.Expression is Microsoft.CodeAnalysis.VisualBasic.Syntax.IdentifierNameSyntax && node.ArgumentList.Arguments.Any();
+            return !(symbol is IMethodSymbol) && symbolReturnType.IsErrorType() && node.Expression is VBasic.Syntax.IdentifierNameSyntax && node.ArgumentList.Arguments.Any();
         }
 
-        private ArgumentListSyntax ConvertArgumentListOrEmpty(Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax argumentListSyntax)
+        private ArgumentListSyntax ConvertArgumentListOrEmpty(VBasic.Syntax.ArgumentListSyntax argumentListSyntax)
         {
             return (ArgumentListSyntax)argumentListSyntax?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ArgumentList();
         }
 
-        private bool TrySubstituteVisualBasicMethod(Microsoft.CodeAnalysis.VisualBasic.Syntax.InvocationExpressionSyntax node, out CSharpSyntaxNode cSharpSyntaxNode)
+        private bool TrySubstituteVisualBasicMethod(VBasic.Syntax.InvocationExpressionSyntax node, out CSharpSyntaxNode cSharpSyntaxNode)
         {
             cSharpSyntaxNode = null;
-            var symbol = ModelExtensions.GetSymbolInfo(_semanticModel, node.Expression).ExtractBestMatch();
+            var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
             if (symbol?.Name == "ChrW" || symbol?.Name == "Chr") {
                 cSharpSyntaxNode = ValidSyntaxFactory.CastExpression(SyntaxFactory.ParseTypeName("char"),
                     ConvertArguments(node.ArgumentList).Single().Expression);
@@ -1112,20 +1099,20 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.ParenthesizedLambdaExpression(param, body);
         }
 
-        private static SyntaxToken GetMethodBlockBaseIdentifierForImplicitReturn(Microsoft.CodeAnalysis.VisualBasic.Syntax.MethodBlockBaseSyntax vbMethodBlock)
+        private static SyntaxToken GetMethodBlockBaseIdentifierForImplicitReturn(VBasic.Syntax.MethodBlockBaseSyntax vbMethodBlock)
         {
-            if (vbMethodBlock.Parent is Microsoft.CodeAnalysis.VisualBasic.Syntax.PropertyBlockSyntax pb) {
+            if (vbMethodBlock.Parent is VBasic.Syntax.PropertyBlockSyntax pb) {
                 return pb.PropertyStatement.Identifier;
-            } else if (vbMethodBlock is Microsoft.CodeAnalysis.VisualBasic.Syntax.MethodBlockSyntax mb) {
+            } else if (vbMethodBlock is VBasic.Syntax.MethodBlockSyntax mb) {
                 return mb.SubOrFunctionStatement.Identifier;
             } else {
-                return Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.Token(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.EmptyToken);
+                return VBasic.SyntaxFactory.Token(VBasic.SyntaxKind.EmptyToken);
             }
         }
 
         private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(SyntaxNode node, ExpressionSyntax id)
         {
-            return _semanticModel.GetOperation(node)?.Kind == OperationKind.Invocation 
+            return _semanticModel.GetOperation(node)?.Kind == OperationKind.Invocation
                 ? SyntaxFactory.InvocationExpression(id, SyntaxFactory.ArgumentList())
                 : id;
         }
@@ -1138,12 +1125,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 !ContextImplicitlyQualfiesSymbol(node, containingSymbol)) {
 
                 if (containingSymbol is ITypeSymbol containingTypeSymbol &&
-                    !SymbolExtensions.IsConstructor(nodeSymbolInfo) /* Constructors are implicitly qualified with their type */) {
+                    !nodeSymbolInfo.IsConstructor() /* Constructors are implicitly qualified with their type */) {
                     // Qualify with a type to handle VB's type promotion https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/declared-elements/type-promotion
                     var qualification =
                         containingTypeSymbol.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart);
                     return Qualify(qualification, left);
-                } else if (SymbolExtensions.IsNamespace(nodeSymbolInfo)) {
+                } else if (nodeSymbolInfo.IsNamespace()) {
                     // Turn partial namespace qualification into full namespace qualification
                     var qualification =
                         containingSymbol.ToCSharpDisplayString();
@@ -1163,7 +1150,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private bool EnclosingTypeImplicitlyQualifiesSymbol(SyntaxNode syntaxNodeContext, INamespaceOrTypeSymbol symbolToCheck)
         {
             ISymbol typeContext = syntaxNodeContext.GetEnclosingDeclaredTypeSymbol(_semanticModel);
-            var implicitCsQualifications = ((ITypeSymbol) typeContext).GetBaseTypesAndThis()
+            var implicitCsQualifications = ((ITypeSymbol)typeContext).GetBaseTypesAndThis()
                 .Concat(typeContext.FollowProperty(n => n.ContainingSymbol))
                 .ToList();
 
