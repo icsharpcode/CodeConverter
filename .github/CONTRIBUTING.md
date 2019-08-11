@@ -23,5 +23,8 @@ At the moment there's just a very small amount of quite bad documentation...so m
 * The code currently has to care about both a correct conversion, and creating readable output. In future I hope to use more built-in functions to simplify the code (e.g. `ReduceAsync`). That will allow most of the code to focus on generating code that's correct, and then automatically tidy up the result to remove redundant qualification, parentheses etc.
 
 ## Resources
-* https://en.wikipedia.org/wiki/Comparison_of_C_Sharp_and_Visual_Basic_.NET#Features_of_Visual_Basic_.NET_not_found_in_C#
-* Lots of high level introductions exist, e.g. https://github.com/dotnet/roslyn/wiki/Roslyn-Overview Getting deeper information is a lot harder. If you see good resources, PR them to this document!
+* Lots of high level Roslyn introductions exist, e.g. https://github.com/dotnet/roslyn/wiki/Roslyn-Overview Getting deeper information is a lot harder. If you see good resources, PR them to this document!
+* Understanding VB/C# differences:
+ * https://en.wikipedia.org/wiki/Comparison_of_C_Sharp_and_Visual_Basic_.NET#Features_of_Visual_Basic_.NET_not_found_in_C#
+ * https://anthonydgreen.net/2019/02/12/exhausting-list-of-differences-between-vb-net-c/
+ * Roslyn source for [CSharp binder](http://source.roslyn.codeplex.com/#Microsoft.CodeAnalysis.CSharp/Binder/Binder_Expressions.cs,365) vs [VB binder](http://source.roslyn.codeplex.com/#Microsoft.CodeAnalysis.VisualBasic/Binding/Binder_Expressions.vb,43)
