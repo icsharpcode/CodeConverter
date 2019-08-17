@@ -192,7 +192,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private async Task<SyntaxNode> Format(Document document)
         {
-            document = await document.WithSimplifiedSyntaxRoot(await document.GetSyntaxRootAsync());
+            document = await document.WithSimplifiedSyntaxRootAsync();
             var syntaxRoot = await document.GetSyntaxRootAsync();
             var selectedNode = _returnSelectedNode ? GetSelectedNode(syntaxRoot) : syntaxRoot;
             var formatted = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
