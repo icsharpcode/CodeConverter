@@ -649,7 +649,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override CSharpSyntaxNode VisitAccessorBlock(VBSyntax.AccessorBlockSyntax node)
         {
             SyntaxKind blockKind;
-            bool isIterator = node.GetModifiers().Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
+            bool isIterator = node.IsIterator();
             var csReturnVariableOrNull = _expressionNodeVisitor.GetRetVariableNameOrNull(node);
             var convertedStatements = ConvertStatements(node.Statements, _expressionNodeVisitor.CreateMethodBodyVisitor(node, isIterator));
             var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
@@ -731,7 +731,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             var csReturnVariableOrNull = _expressionNodeVisitor.GetRetVariableNameOrNull(node);
-            var visualBasicSyntaxVisitor = _expressionNodeVisitor.CreateMethodBodyVisitor(node, ExpressionNodeVisitor.IsIterator(node), csReturnVariableOrNull);
+            var visualBasicSyntaxVisitor = _expressionNodeVisitor.CreateMethodBodyVisitor(node, node.IsIterator(), csReturnVariableOrNull);
             var convertedStatements = ConvertStatements(node.Statements, visualBasicSyntaxVisitor);
             var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
 
@@ -741,7 +741,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private BlockSyntax WithImplicitReturnStatements(VBSyntax.MethodBlockBaseSyntax node, BlockSyntax convertedStatements,
             IdentifierNameSyntax csReturnVariableOrNull)
         {
-            if (!ExpressionNodeVisitor.AllowsImplicitReturn(node)) return convertedStatements;
+            if (!node.AllowsImplicitReturn()) return convertedStatements;
 
             var preBodyStatements = new List<StatementSyntax>();
             var postBodyStatements = new List<StatementSyntax>();

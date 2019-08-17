@@ -15,6 +15,25 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
+    internal static class VbMethodSyntaxExtensions
+    {
+        public static bool AllowsImplicitReturn(this VBasic.Syntax.MethodBlockBaseSyntax node)
+        {
+            return !IsIterator(node) && node.IsKind(VBasic.SyntaxKind.FunctionBlock, VBasic.SyntaxKind.GetAccessorBlock);
+        }
+
+        public static bool IsIterator(this VBasic.Syntax.MethodBlockBaseSyntax node)
+        {
+            var modifiableNode = node.IsKind(VBasic.SyntaxKind.GetAccessorBlock) ? node.GetAncestor<VBSyntax.PropertyBlockSyntax>().PropertyStatement : node.BlockStatement;
+            return HasIteratorModifier(modifiableNode);
+        }
+
+        private static bool HasIteratorModifier(this VBSyntax.MethodBaseSyntax d)
+        {
+            return d.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
+        }
+    }
+
     /// <summary>
     /// To understand the difference between how expressions are expressed, compare:
     /// http://source.roslyn.codeplex.com/#Microsoft.CodeAnalysis.CSharp/Binder/Binder_Expressions.cs,365
@@ -871,19 +890,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(node.Arguments.Select(a => (TypeSyntax)a.Accept(TriviaConvertingVisitor))));
         }
 
-        public static bool AllowsImplicitReturn(VBasic.Syntax.MethodBlockBaseSyntax node)
-        {
-            return !IsIterator(node) && node.IsKind(VBasic.SyntaxKind.FunctionBlock, VBasic.SyntaxKind.GetAccessorBlock);
-        }
-
-        public static bool IsIterator(VBasic.Syntax.MethodBlockBaseSyntax node)
-        {
-            return node.BlockStatement.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.IteratorKeyword));
-        }
-
         public IdentifierNameSyntax GetRetVariableNameOrNull(VBasic.Syntax.MethodBlockBaseSyntax node)
         {
-            if (!AllowsImplicitReturn(node)) return null;
+            if (!node.AllowsImplicitReturn()) return null;
 
             bool assignsToMethodNameVariable = false;
 

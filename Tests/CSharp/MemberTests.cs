@@ -310,6 +310,32 @@ End Class", @"class Class1
         }
 
         [Fact]
+        public async Task TestGetIteratorDoesNotGainReturn()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(
+@"Public Class VisualBasicClass
+  Public Shared ReadOnly Iterator Property SomeObjects As IEnumerable(Of Object())
+    Get
+      Yield New Object(2) {}
+      Yield New Object(2) {}
+    End Get
+  End Property
+End Class", @"using System.Collections.Generic;
+
+public class VisualBasicClass
+{
+    public static IEnumerable<object[]> SomeObjects
+    {
+        get
+        {
+            yield return new object[3] { };
+            yield return new object[3] { };
+        }
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestMethodXmlDoc()
         {
             await TestConversionVisualBasicToCSharp(

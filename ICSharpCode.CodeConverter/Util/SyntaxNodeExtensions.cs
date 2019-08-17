@@ -1447,7 +1447,7 @@ namespace ICSharpCode.CodeConverter.Util
                 (SyntaxNode n) => null);
         }
 
-        public static SyntaxTokenList GetModifiers(this SyntaxNode member)
+        public static SyntaxTokenList GetModifiers(this CSharpSyntaxNode member)
         {
             if (member != null) {
                 switch (CSharpExtensions.Kind(member)) {
