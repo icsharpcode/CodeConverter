@@ -37,7 +37,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly SemanticModel _semanticModel;
         private readonly MethodsWithHandles _methodsWithHandles = new MethodsWithHandles();
         private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
-        private readonly Stack<string> _withBlockTempVariableNames = new Stack<string>();
         private readonly AdditionalInitializers _additionalInitializers;
         private readonly AdditionalLocals _additionalLocals = new AdditionalLocals();
         private uint _failedMemberConversionMarkerCount;
@@ -63,7 +62,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives);
             CommonConversions = new CommonConversions(semanticModel, typeConversionAnalyzer);
             _additionalInitializers = new AdditionalInitializers();
-            _expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _withBlockTempVariableNames, _methodsWithHandles, CommonConversions, triviaConverter, _extraUsingDirectives);
+            _expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _methodsWithHandles, CommonConversions, triviaConverter, _extraUsingDirectives);
             _triviaConvertingExpressionVisitor = _expressionNodeVisitor.TriviaConvertingVisitor;
             CommonConversions.TriviaConvertingExpressionVisitor = _triviaConvertingExpressionVisitor;
         }

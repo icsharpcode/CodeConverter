@@ -25,7 +25,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly VBasic.VisualBasicSyntaxNode _methodNode;
         private readonly SemanticModel _semanticModel;
         private readonly CommentConvertingVisitorWrapper<CSharpSyntaxNode> _expressionVisitor;
-        private readonly Stack<string> _withBlockTempVariableNames;
+        private readonly Stack<ExpressionSyntax> _withBlockLhs;
         private readonly HashSet<string> _extraUsingDirectives;
         private readonly MethodsWithHandles _methodsWithHandles;
         private readonly HashSet<string> _generatedNames = new HashSet<string>();
@@ -39,7 +39,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public MethodBodyExecutableStatementVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
             CommentConvertingVisitorWrapper<CSharpSyntaxNode> expressionVisitor, CommonConversions commonConversions,
-            Stack<string> withBlockTempVariableNames, HashSet<string> extraUsingDirectives,
+            Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
             AdditionalLocals additionalLocals, MethodsWithHandles methodsWithHandles,
             TriviaConverter triviaConverter)
         {
@@ -47,7 +47,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _semanticModel = semanticModel;
             _expressionVisitor = expressionVisitor;
             CommonConversions = commonConversions;
-            _withBlockTempVariableNames = withBlockTempVariableNames;
+            _withBlockLhs = withBlockLhs;
             _extraUsingDirectives = extraUsingDirectives;
             _methodsWithHandles = methodsWithHandles;
             var byRefParameterVisitor = new ByRefParameterVisitor(this, additionalLocals, semanticModel, _generatedNames);
@@ -591,14 +591,30 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override SyntaxList<StatementSyntax> VisitWithBlock(VBSyntax.WithBlockSyntax node)
         {
             var withExpression = (ExpressionSyntax)node.WithStatement.Expression.Accept(_expressionVisitor);
-            _withBlockTempVariableNames.Push(GetUniqueVariableNameInScope(node, "withBlock"));
+            var generateVariableName = !_semanticModel.GetTypeInfo(node.WithStatement.Expression).Type.IsValueType;
+
+            ExpressionSyntax lhsExpression;
+            List<StatementSyntax> prefixDeclarations = new List<StatementSyntax>();
+            if (generateVariableName) {
+                string uniqueVariableNameInScope = GetUniqueVariableNameInScope(node, "withBlock");
+                lhsExpression =
+                    SyntaxFactory.IdentifierName(uniqueVariableNameInScope);
+                prefixDeclarations.Add(
+                    CreateLocalVariableDeclarationAndAssignment(uniqueVariableNameInScope, withExpression));
+            } else {
+                lhsExpression = withExpression;
+            }
+
+            _withBlockLhs.Push(lhsExpression);
             try {
-                var declaration = CreateLocalVariableDeclarationAndAssignment(_withBlockTempVariableNames.Peek(), withExpression);
                 var statements = node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor));
 
-                return SingleStatement(SyntaxFactory.Block(new[] { declaration }.Concat(statements).ToArray()));
+                IEnumerable<StatementSyntax> statementSyntaxs = prefixDeclarations.Concat(statements).ToArray();
+                return generateVariableName
+                    ? SingleStatement(SyntaxFactory.Block(statementSyntaxs))
+                    : SyntaxFactory.List(statementSyntaxs);
             } finally {
-                _withBlockTempVariableNames.Pop();
+                _withBlockLhs.Pop();
             }
         }
 

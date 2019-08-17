@@ -29,17 +29,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly HashSet<string> _extraUsingDirectives;
         private readonly bool _optionCompareText = false;
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
-        private readonly Stack<string> _withBlockTempVariableNames;
+        private readonly Stack<ExpressionSyntax> _withBlockLhs = new Stack<ExpressionSyntax>();
         private readonly AdditionalLocals _additionalLocals;
         private readonly MethodsWithHandles _methodsWithHandles;
         private readonly QueryConverter _queryConverter;
         private readonly Dictionary<ITypeSymbol, string> _convertMethodsLookupByReturnType;
         private readonly Compilation _csCompilation;
 
-        public ExpressionNodeVisitor(SemanticModel semanticModel,
-            VisualBasicEqualityComparison visualBasicEqualityComparison, AdditionalLocals additionalLocals,
-            Compilation csCompilation, Stack<string> withBlockTempVariableNames, MethodsWithHandles methodsWithHandles,
-            CommonConversions commonConversions, TriviaConverter triviaConverter, HashSet<string> extraUsingDirectives)
+        public ExpressionNodeVisitor(SemanticModel semanticModel, VisualBasicEqualityComparison visualBasicEqualityComparison, AdditionalLocals additionalLocals, Compilation csCompilation, MethodsWithHandles methodsWithHandles, CommonConversions commonConversions, TriviaConverter triviaConverter, HashSet<string> extraUsingDirectives)
         {
             CommonConversions = commonConversions;
             _semanticModel = semanticModel;
@@ -48,7 +45,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             TriviaConvertingVisitor = new CommentConvertingVisitorWrapper<CSharpSyntaxNode>(this, triviaConverter);
             _queryConverter = new QueryConverter(commonConversions, TriviaConvertingVisitor);
             _csCompilation = csCompilation;
-            _withBlockTempVariableNames = withBlockTempVariableNames;
             _methodsWithHandles = methodsWithHandles;
             _extraUsingDirectives = extraUsingDirectives;
             _convertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
@@ -276,7 +272,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
                         : (ExpressionSyntax)SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
                 }
-                left = SyntaxFactory.IdentifierName(_withBlockTempVariableNames.Peek());
+                left = _withBlockLhs.Peek();
             } else if (TryGetTypePromotedModuleSymbol(node, out var promotedModuleSymbol)) {
                 left = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left,
                     SyntaxFactory.IdentifierName(promotedModuleSymbol.Name));
@@ -296,7 +292,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override CSharpSyntaxNode VisitConditionalAccessExpression(VBasic.Syntax.ConditionalAccessExpressionSyntax node)
         {
-            var leftExpression = (ExpressionSyntax)node.Expression?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.IdentifierName(_withBlockTempVariableNames.Peek());
+            var leftExpression = (ExpressionSyntax)node.Expression?.Accept(TriviaConvertingVisitor) ?? _withBlockLhs.Peek();
             return SyntaxFactory.ConditionalAccessExpression(leftExpression, (ExpressionSyntax)node.WhenNotNull.Accept(TriviaConvertingVisitor));
         }
 
@@ -901,7 +897,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
         {
-            var methodBodyVisitor = new MethodBodyExecutableStatementVisitor(node, _semanticModel, TriviaConvertingVisitor, CommonConversions, _withBlockTempVariableNames, _extraUsingDirectives, _additionalLocals, _methodsWithHandles, TriviaConvertingVisitor.TriviaConverter) {
+            var methodBodyVisitor = new MethodBodyExecutableStatementVisitor(node, _semanticModel, TriviaConvertingVisitor, CommonConversions, _withBlockLhs, _extraUsingDirectives, _additionalLocals, _methodsWithHandles, TriviaConvertingVisitor.TriviaConverter) {
                 IsIterator = isIterator,
                 ReturnVariable = csReturnVariable,
             };

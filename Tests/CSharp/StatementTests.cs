@@ -382,6 +382,41 @@ class TestClass
         }
 
         [Fact]
+        public async Task WithBlockValue()
+        {
+            //Whitespace trivia bug on first statement in with block
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class VisualBasicClass
+    Public Sub Stuff()
+        Dim str As SomeStruct
+        With Str
+            ReDim .ArrField(1)
+            ReDim .ArrProp(2)
+        End With
+    End Sub
+End Class
+
+Public Structure SomeStruct
+    Public ArrField As String()
+    Public Property ArrProp As String()
+End Structure", @"public class VisualBasicClass
+{
+    public void Stuff()
+    {
+        SomeStruct str = default(SomeStruct);
+        str
+.ArrField = new string[2];
+        str.ArrProp = new string[3];
+    }
+}
+
+public struct SomeStruct
+{
+    public string[] ArrField;
+    public string[] ArrProp { get; set; }
+}");
+        }
+
+        [Fact]
         public async Task NestedWithBlock()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
