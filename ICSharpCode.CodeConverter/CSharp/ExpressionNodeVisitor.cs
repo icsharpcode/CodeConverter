@@ -414,8 +414,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override CSharpSyntaxNode VisitArrayCreationExpression(VBasic.Syntax.ArrayCreationExpressionSyntax node)
         {
             var bounds = CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.RankSpecifiers, node.ArrayBounds);
-            var allowInitializer = node.Initializer.Initializers.Any() || node.ArrayBounds == null ||
-                                   node.ArrayBounds.Arguments.All(b => b.IsOmitted || _semanticModel.GetConstantValue(b.GetExpression()).HasValue);
+
+            var allowInitializer = node.Initializer.Initializers.Any()
+                || node.RankSpecifiers.Any()
+                || node.ArrayBounds == null
+                || (node.Initializer.Initializers.Any() && node.ArrayBounds.Arguments.All(b => b.IsOmitted || _semanticModel.GetConstantValue(b.GetExpression()).HasValue));
+
             var initializerToConvert = allowInitializer ? node.Initializer : null;
             return SyntaxFactory.ArrayCreationExpression(
                 SyntaxFactory.ArrayType((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor), bounds),

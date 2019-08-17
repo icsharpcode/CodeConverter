@@ -479,6 +479,22 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public async Task ArrayInitializationStatementWithLengthAndNoValues()
+        {
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Dim b As Integer() = New Integer(2) { }
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        int[] b = new int[3];
+    }
+}");
+        }
+
+        [Fact]
         public async Task MultidimensionalArrayDeclarationStatement()
         {
             await TestConversionVisualBasicToCSharp(@"Class TestClass
