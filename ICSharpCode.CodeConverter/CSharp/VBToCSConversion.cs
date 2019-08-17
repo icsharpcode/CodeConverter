@@ -154,9 +154,8 @@ End Class";
             return children;
         }
 
-        public async Task<SyntaxNode> SingleSecondPass(KeyValuePair<string, Document> cs)
+        public async Task<SyntaxNode> SingleSecondPass(Document doc)
         {
-            var doc = cs.Value;
             var cSharpSyntaxNode = new CompilationErrorFixer((CSharpCompilation) await doc.Project.GetCompilationAsync(), (CSharpSyntaxTree) await doc.GetSyntaxTreeAsync()).Fix();
             var simplifiedDocument = doc.WithSyntaxRoot(cSharpSyntaxNode);
             _convertedCsProject = simplifiedDocument.Project;

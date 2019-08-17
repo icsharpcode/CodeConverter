@@ -153,9 +153,9 @@ namespace ICSharpCode.CodeConverter.VB
             return children;
         }
 
-        public Task<SyntaxNode> SingleSecondPass(KeyValuePair<string, Document> cs)
+        public Task<SyntaxNode> SingleSecondPass(Document doc)
         {
-            return cs.Value.GetSyntaxRootAsync();
+            return doc.GetSyntaxRootAsync();
         }
 
         public async Task<string> GetWarningsOrNull()

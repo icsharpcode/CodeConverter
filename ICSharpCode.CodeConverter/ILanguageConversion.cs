@@ -8,7 +8,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     public interface ILanguageConversion
     {
         Task<Document> SingleFirstPass(Document document);
-        Task<SyntaxNode> SingleSecondPass(KeyValuePair<string, Document> cs);
+        Task<SyntaxNode> SingleSecondPass(Document doc);
         Task<string> GetWarningsOrNull();
         SyntaxTree CreateTree(string text);
         Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,

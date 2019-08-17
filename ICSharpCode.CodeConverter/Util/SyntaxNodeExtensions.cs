@@ -870,10 +870,13 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static IEnumerable<SyntaxTrivia> ImportantTrailingTrivia(this SyntaxToken node)
         {
-            return node.TrailingTrivia.Where(x => 
-                !x.IsKind(CSSyntaxKind.WhitespaceTrivia) && !x.IsKind(CSSyntaxKind.EndOfLineTrivia)
-                && !x.IsKind(CSSyntaxKind.WhitespaceTrivia) && !x.IsKind(CSSyntaxKind.EndOfLineTrivia)
+            return node.TrailingTrivia.Where(x => !IsWhitespaceTrivia(x)
             );
+        }
+
+        public static bool IsWhitespaceTrivia(this SyntaxTrivia trivia)
+        {
+            return trivia.IsKind(CSSyntaxKind.WhitespaceTrivia) || trivia.IsKind(CSSyntaxKind.EndOfLineTrivia) || trivia.IsKind(CSSyntaxKind.WhitespaceTrivia) || trivia.IsKind(CSSyntaxKind.EndOfLineTrivia);
         }
 
         public static bool ParentHasSameTrailingTrivia(this SyntaxNode otherNode)

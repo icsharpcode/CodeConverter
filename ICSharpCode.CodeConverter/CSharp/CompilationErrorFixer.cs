@@ -47,7 +47,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return root;
             }
 
-            return root.RemoveNodes(unusedUsings, SyntaxRemoveOptions.KeepNoTrivia);
+            root = root.RemoveNodes(unusedUsings, SyntaxRemoveOptions.KeepNoTrivia);
+            var firstChild = root.ChildNodes().FirstOrDefault();
+            if (firstChild != null) {
+                root = root.ReplaceNode(firstChild,
+                    firstChild.WithLeadingTrivia(firstChild.GetLeadingTrivia()
+                        .SkipWhile(t => t.IsWhitespaceTrivia())));
+            }
+
+            return root;
         }
     }
 }

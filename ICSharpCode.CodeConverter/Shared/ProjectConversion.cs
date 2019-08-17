@@ -45,20 +45,21 @@ namespace ICSharpCode.CodeConverter.Shared
             var languageConversion = new TLanguageConversion {
                 RootNamespace = rootNamespace
             };
-            var syntaxTree = languageConversion.MakeFullCompilationUnit(text);
+            var syntaxTree = languageConversion.MakeFullCompilationUnit(text, out var textSpan);
             using (var workspace = new AdhocWorkspace()) {
                 var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, references);
-                return ConvertSingle(document, new TextSpan(0, 0), languageConversion);
+                return ConvertSingle(document, textSpan ?? new TextSpan(0,0), languageConversion);
             }
         }
 
         public static async Task<ConversionResult> ConvertSingle(Document document, TextSpan selected, ILanguageConversion languageConversion)
         {
-            if (selected.Length > 0) {
+            bool returnSelectedNode = selected.Length > 0;
+            if (returnSelectedNode) {
                 document = await WithAnnotatedSelection(document, selected);
             }
 
-            var conversion = new ProjectConversion(document.Project, new[] { document}, languageConversion, returnSelectedNode: true);
+            var conversion = new ProjectConversion(document.Project, new[] { document}, languageConversion, returnSelectedNode);
             await languageConversion.Initialize(document.Project);
             var conversionResults = (await ConvertProjectContents(conversion)).ToList();
             var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
@@ -135,17 +136,25 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private async Task<(string Key, SyntaxNode singleSecondPass)> SingleSecondPassHandled(KeyValuePair<string, Document> firstPassResult)
         {
-            var convertedDoc = firstPassResult.Value;
+            SyntaxNode selectedNode = null;
             try {
-                convertedDoc = convertedDoc.WithSyntaxRoot(await _languageConversion.SingleSecondPass(firstPassResult));
+                var document = await firstPassResult.Value.WithSimplifiedSyntaxRootAsync();
+                if (_returnSelectedNode) {
+                    selectedNode = await GetSelectedNode(document);
+                    selectedNode = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
+                } else {
+                    selectedNode = await document.GetSyntaxRootAsync();
+                    selectedNode = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
+                    var convertedDoc = document.WithSyntaxRoot(selectedNode);
+                    selectedNode = await _languageConversion.SingleSecondPass(convertedDoc);
+                }
             }
             catch (Exception e)
             {
                 _errors.TryAdd(firstPassResult.Key, e.ToString());
             }
 
-            var singleSecondPass = await Format(convertedDoc);
-            return (firstPassResult.Key, singleSecondPass);
+            return (firstPassResult.Key, selectedNode ?? await firstPassResult.Value.GetSyntaxRootAsync());
         }
 
         private async Task AddProjectWarnings()
@@ -190,17 +199,9 @@ namespace ICSharpCode.CodeConverter.Shared
             return document.WithSyntaxRoot(withAnnotatedSelection);
         }
 
-        private async Task<SyntaxNode> Format(Document document)
+        private async Task<SyntaxNode> GetSelectedNode(Document document)
         {
-            document = await document.WithSimplifiedSyntaxRootAsync();
-            var syntaxRoot = await document.GetSyntaxRootAsync();
-            var selectedNode = _returnSelectedNode ? GetSelectedNode(syntaxRoot) : syntaxRoot;
-            var formatted = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
-            return formatted;
-        }
-
-        private SyntaxNode GetSelectedNode(SyntaxNode resultNode)
-        {
+            var resultNode = await document.GetSyntaxRootAsync();
             var selectedNode = resultNode.GetAnnotatedNodes(AnnotationConstants.SelectedNodeAnnotationKind)
                 .FirstOrDefault();
             if (selectedNode != null)
