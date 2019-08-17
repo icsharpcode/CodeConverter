@@ -539,7 +539,7 @@ End Class", @"class TestClass
         [Fact]
         public async Task LotsOfArrayInitialization()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         ' Declare a single-dimension array of 5 numbers.
         Dim numbers1(4) As Integer
@@ -581,7 +581,7 @@ End Class", @"class TestClass
         double[,] rankSpecifiers2 = new double[2, 2];
 
         // Declare a jagged array
-        double[][] sales = new double[12][];
+        double[][] sales = new double[12][] { };
     }
 }");
         }
