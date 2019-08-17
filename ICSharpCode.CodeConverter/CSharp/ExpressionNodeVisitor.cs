@@ -23,7 +23,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// </summary>
     internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
     {
-        private static readonly Type ConvertType = typeof(Convert);
+        private static readonly Type ConvertType = typeof(Microsoft.VisualBasic.CompilerServices.Conversions);
         public CommentConvertingVisitorWrapper<CSharpSyntaxNode> TriviaConvertingVisitor { get; }
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _extraUsingDirectives;
@@ -927,6 +927,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private ExpressionSyntax GetConvertMethodForKeywordOrNull(SyntaxNode type)
         {
             var convertedType = _semanticModel.GetTypeInfo(type).Type;
+            _extraUsingDirectives.Add(ConvertType.Namespace);
             return _convertMethodsLookupByReturnType.TryGetValue(convertedType, out var convertMethodName)
                 ? SyntaxFactory.ParseExpression(convertMethodName) : null;
         }
