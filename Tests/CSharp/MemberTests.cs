@@ -328,8 +328,8 @@ public class VisualBasicClass
     {
         get
         {
-            yield return new object[3] { };
-            yield return new object[3] { };
+            yield return new object[3];
+            yield return new object[3];
         }
     }
 }");

@@ -518,6 +518,75 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public async Task ArrayInitializationStatementWithLengthAndNoValues()
+        {
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        Dim b As Integer() = New Integer(2) { }
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        int[] b = new int[3];
+    }
+}");
+        }
+
+        /// <summary>
+        /// Inspired by: https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/arrays/
+        /// </summary>
+        [Fact]
+        public async Task LotsOfArrayInitialization()
+        {
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod()
+        ' Declare a single-dimension array of 5 numbers.
+        Dim numbers1(4) As Integer
+
+        ' Declare a single-dimension array and set its 4 values.
+        Dim numbers2 = New Integer() {1, 2, 4, 8}
+
+        ' Declare a 6 x 6 multidimensional array.
+        Dim matrix1(5, 5) As Double
+
+        ' Declare a 4 x 3 multidimensional array and set array element values.
+        Dim matrix2 = New Integer(3, 2) {{1, 2, 3}, {2, 3, 4}, {3, 4, 5}, {4, 5, 6}}
+
+        ' Combine rank specifiers with initializers of various kinds
+        Dim rankSpecifiers(,) As Double = New Double(1,1) {{1.0, 2.0}, {3.0, 4.0}}
+        Dim rankSpecifiers2(,) As Double = New Double(1,1) {}
+
+        ' Declare a jagged array
+        Dim sales()() As Double = New Double(11)() {}
+    End Sub
+End Class", @"class TestClass
+{
+    private void TestMethod()
+    {
+        // Declare a single-dimension array of 5 numbers.
+        int[] numbers1 = new int[5];
+
+        // Declare a single-dimension array and set its 4 values.
+        var numbers2 = new int[] { 1, 2, 4, 8 };
+
+        // Declare a 6 x 6 multidimensional array.
+        double[,] matrix1 = new double[6, 6];
+
+        // Declare a 4 x 3 multidimensional array and set array element values.
+        var matrix2 = new int[4, 3] { { 1, 2, 3 }, { 2, 3, 4 }, { 3, 4, 5 }, { 4, 5, 6 } };
+
+        // Combine rank specifiers with initializers of various kinds
+        double[,] rankSpecifiers = new double[2, 2] { { 1.0, 2.0 }, { 3.0, 4.0 } };
+        double[,] rankSpecifiers2 = new double[2, 2];
+
+        // Declare a jagged array
+        double[][] sales = new double[12][];
+    }
+}");
+        }
+
+        [Fact]
         public async Task MultidimensionalArrayDeclarationStatement()
         {
             await TestConversionVisualBasicToCSharp(@"Class TestClass
