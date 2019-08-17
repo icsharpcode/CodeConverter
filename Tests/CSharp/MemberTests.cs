@@ -477,7 +477,9 @@ Class TestSubclass
         ' Not possible: TestMethod(3)
         System.Console.WriteLine(""New implementation"")
     End Sub
-End Class", @"class TestClass
+End Class", @"using System;
+
+class TestClass
 {
     public void TestMethod()
     {
@@ -493,7 +495,7 @@ class TestSubclass : TestClass
     public new void TestMethod()
     {
         // Not possible: TestMethod(3)
-        System.Console.WriteLine(""New implementation"");
+        Console.WriteLine(""New implementation"");
     }
 }");
         }
@@ -532,8 +534,7 @@ Module TestClass
     <Extension()>
     Sub TestMethod(ByVal str As String)
     End Sub
-End Module", @"
-static class TestClass
+End Module", @"static class TestClass
 {
     public static void TestMethod(this string str)
     {
@@ -1502,7 +1503,9 @@ End Class");
         {
             await TestConversionVisualBasicToCSharp(@"<Global.System.Diagnostics.DebuggerDisplay(""Hello World"")>
 Class TestClass
-End Class", @"[System.Diagnostics.DebuggerDisplay(""Hello World"")]
+End Class", @"using System.Diagnostics;
+
+[DebuggerDisplay(""Hello World"")]
 class TestClass
 {
 }");

@@ -1,3 +1,5 @@
+using System.Drawing;
+using System.Diagnostics;
 using System.Windows.Forms;
 using System.Runtime.CompilerServices;
 
@@ -8,7 +10,7 @@ namespace WindowsAppVb
     {
 
         // Form overrides dispose to clean up the component list.
-        [System.Diagnostics.DebuggerNonUserCode()]
+        [DebuggerNonUserCode()]
         protected override void Dispose(bool disposing)
         {
             try
@@ -28,7 +30,7 @@ namespace WindowsAppVb
         // NOTE: The following procedure is required by the Windows Form Designer
         // It can be modified using the Windows Form Designer.  
         // Do not modify it using the code editor.
-        [System.Diagnostics.DebuggerStepThrough()]
+        [DebuggerStepThrough()]
         private void InitializeComponent()
         {
             _Button1 = new Button();
@@ -40,9 +42,9 @@ namespace WindowsAppVb
             // 
             // Button1
             // 
-            _Button1.Location = new System.Drawing.Point(95, 80);
+            _Button1.Location = new Point(95, 80);
             _Button1.Name = "Button1";
-            _Button1.Size = new System.Drawing.Size(75, 23);
+            _Button1.Size = new Size(75, 23);
             _Button1.TabIndex = 0;
             _Button1.Text = "Button1";
             _Button1.UseVisualStyleBackColor = true;
@@ -50,18 +52,18 @@ namespace WindowsAppVb
             // CheckBox1
             // 
             _CheckBox1.AutoSize = true;
-            _CheckBox1.Location = new System.Drawing.Point(89, 28);
+            _CheckBox1.Location = new Point(89, 28);
             _CheckBox1.Name = "CheckBox1";
-            _CheckBox1.Size = new System.Drawing.Size(81, 17);
+            _CheckBox1.Size = new Size(81, 17);
             _CheckBox1.TabIndex = 1;
             _CheckBox1.Text = "CheckBox1";
             _CheckBox1.UseVisualStyleBackColor = true;
             // 
             // WinformsDesignerTest
             // 
-            AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            AutoScaleDimensions = new SizeF(6F, 13F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(292, 273);
+            ClientSize = new Size(292, 273);
             Controls.Add(_CheckBox1);
             Controls.Add(_Button1);
             Name = "WinformsDesignerTest";

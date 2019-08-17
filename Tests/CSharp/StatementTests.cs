@@ -332,12 +332,14 @@ class TestClass
             ?.Length = 0
         End With
     End Sub
-End Class", @"class TestClass
+End Class", @"using System.Text;
+
+class TestClass
 {
     private void TestMethod()
     {
         {
-            var withBlock = new System.Text.StringBuilder();
+            var withBlock = new StringBuilder();
             withBlock.Capacity = 20;
             withBlock?.Length = 0;
         }
@@ -431,15 +433,17 @@ public struct SomeStruct
             .Length = withBlock
         End With
     End Sub
-End Class", @"class TestClass
+End Class", @"using System.Text;
+
+class TestClass
 {
     private void TestMethod()
     {
         {
-            var withBlock2 = new System.Text.StringBuilder();
+            var withBlock2 = new StringBuilder();
             int withBlock = 3;
             {
-                var withBlock3 = new System.Text.StringBuilder();
+                var withBlock3 = new StringBuilder();
                 int withBlock1 = 4;
                 withBlock3.Capacity = withBlock1;
             }
@@ -663,14 +667,16 @@ the_beginning:
         Dim text = ""This is my text!""
         GoTo the_beginning
     End Sub
-End Class", @"class Test
+End Class", @"using System;
+
+class Test
 {
     private void TestMethod()
     {
     the_beginning:
         ;
         int value = 1;
-        const double myPIe = System.Math.PI;
+        const double myPIe = Math.PI;
         var text = ""This is my text!"";
         goto the_beginning;
     }
@@ -696,8 +702,7 @@ Public Class AcmeClass
         Next
     End Sub
 End Class"
-                , $@"using System;
-using System.Diagnostics;
+                , $@"using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -1105,6 +1110,7 @@ End Class", @"public class Class1
         Next
     End Sub
 End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices;
 
 class TestClass
 {
@@ -1114,7 +1120,7 @@ class TestClass
         var loopTo = 10 - stringValue.Length;
         for (int i = 1; i <= loopTo; i++)
         {
-            stringValue = stringValue + "" "" + Convert.ToString(i);
+            stringValue = stringValue + "" "" + Conversions.ToString(i);
             Console.WriteLine(stringValue);
         }
     }
@@ -1419,19 +1425,21 @@ public class TestClass
                 Return ""e""
         End Select
     End Function
-End Class", @"public class TestClass
+End Class", @"using Microsoft.VisualBasic;
+
+public class TestClass
 {
     public static string TimeAgo(string x)
     {
-        switch (Microsoft.VisualBasic.Strings.UCase(x))
+        switch (Strings.UCase(x))
         {
-            case var @case when @case == Microsoft.VisualBasic.Strings.UCase(""a""):
-            case var case1 when case1 == Microsoft.VisualBasic.Strings.UCase(""b""):
+            case var @case when @case == Strings.UCase(""a""):
+            case var case1 when case1 == Strings.UCase(""b""):
                 {
                     return ""ab"";
                 }
 
-            case var case2 when case2 == Microsoft.VisualBasic.Strings.UCase(""c""):
+            case var case2 when case2 == Strings.UCase(""c""):
                 {
                     return ""c"";
                 }

@@ -250,7 +250,9 @@ End Class", @"public class Class1
         Return """"
     End Function
 
-End Class", @"public class Class1
+End Class", @"using Microsoft.VisualBasic;
+
+public class Class1
 {
     public void Foo()
     {
@@ -309,7 +311,7 @@ End Class", @"public class Class1
     public int Bar2(ref Class1 c1)
     {
         var argc1 = this;
-        if (c1 != null && Microsoft.VisualBasic.Strings.Len(Bar3(ref argc1)) != 0)
+        if (c1 != null && Strings.Len(Bar3(ref argc1)) != 0)
             return 1;
         return 0;
     }
@@ -1771,11 +1773,13 @@ Class TestClass
         IO.Path.Combine(dir, ""file.txt"")
         Dim c As New ObjectModel.ObservableCollection(Of String)
     End Sub
-End Class", @"class TestClass
+End Class", @"using System.IO;
+
+class TestClass
 {
     public void TestMethod(string dir)
     {
-        System.IO.Path.Combine(dir, ""file.txt"");
+        Path.Combine(dir, ""file.txt"");
         System.Collections.ObjectModel.ObservableCollection<string> c = new System.Collections.ObjectModel.ObservableCollection<string>();
     }
 }");
@@ -1946,6 +1950,7 @@ End Function",
     End Sub
 End Class",
                 @"using System;
+using System.Diagnostics;
 
 public class Foo
 {
@@ -1954,7 +1959,7 @@ public class Foo
     protected void OnBar(EventArgs e)
     {
         if (Bar == null)
-            System.Diagnostics.Debug.WriteLine(""No subscriber"");
+            Debug.WriteLine(""No subscriber"");
         else
             Bar?.Invoke(this, e);
     }

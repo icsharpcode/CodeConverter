@@ -16,12 +16,14 @@ namespace CodeConverter.Tests.CSharp
         Dim o As Object = 5
         Dim i As Integer = CInt(o)
     End Sub
-End Class" + Environment.NewLine, @"class Class1
+End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
+
+class Class1
 {
     private void Test()
     {
         object o = 5;
-        int i = System.Convert.ToInt32(o);
+        int i = Conversions.ToInteger(o);
     }
 }" + Environment.NewLine);
         }
@@ -53,12 +55,14 @@ public class Class1
         Dim o As Object = ""Test""
         Dim s As String = CStr(o)
     End Sub
-End Class" + Environment.NewLine, @"class Class1
+End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
+
+class Class1
 {
     private void Test()
     {
         object o = ""Test"";
-        string s = System.Convert.ToString(o);
+        string s = Conversions.ToString(o);
     }
 }" + Environment.NewLine);
         }
@@ -72,12 +76,14 @@ End Class" + Environment.NewLine, @"class Class1
         Dim q = 2.37
         Dim j = CType(q, Integer)
     End Sub
-End Class", @"class Class1
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+class Class1
 {
     private void Test()
     {
         var q = 2.37;
-        var j = System.Convert.ToInt32(q);
+        var j = Conversions.ToInteger(q);
     }
 }");
         }
@@ -92,12 +98,14 @@ End Class", @"class Class1
         Dim l As System.Collections.Generic.List(Of Integer) = CType(o, System.Collections.Generic.List(Of Integer))
     End Sub
 End Class",
-@"class Class1
+@"using System.Collections.Generic;
+
+class Class1
 {
     private void Test()
     {
-        object o = new System.Collections.Generic.List<int>();
-        System.Collections.Generic.List<int> l = (System.Collections.Generic.List<int>)o;
+        object o = new List<int>();
+        List<int> l = (List<int>)o;
     }
 }");
         }
@@ -113,13 +121,15 @@ End Class",
         Dim s As String = CType(o, Integer).ToString()
     End Sub
 End Class",
-@"class Class1
+@"using Microsoft.VisualBasic.CompilerServices;
+
+class Class1
 {
     private void Test()
     {
         object o = 5;
-        int? i = System.Convert.ToInt32(o);
-        string s = System.Convert.ToInt32(o).ToString();
+        int? i = Conversions.ToInteger(o);
+        string s = Conversions.ToInteger(o).ToString();
     }
 }");
         }
@@ -134,12 +144,14 @@ End Class",
         Dim l As System.Collections.Generic.List(Of Integer) = TryCast(o, System.Collections.Generic.List(Of Integer))
     End Sub
 End Class",
-@"class Class1
+@"using System.Collections.Generic;
+
+class Class1
 {
     private void Test()
     {
-        object o = new System.Collections.Generic.List<int>();
-        System.Collections.Generic.List<int> l = o as System.Collections.Generic.List<int>;
+        object o = new List<int>();
+        List<int> l = o as List<int>;
     }
 }");
         }

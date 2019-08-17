@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace WindowsAppVb
 {
     namespace My
@@ -10,7 +12,7 @@ namespace WindowsAppVb
         // 
         internal partial class MyApplication
         {
-            [System.Diagnostics.DebuggerStepThrough()]
+            [DebuggerStepThrough()]
             public MyApplication() : base(Microsoft.VisualBasic.ApplicationServices.AuthenticationMode.Windows)
             {
                 this.IsSingleInstance = false;
@@ -19,7 +21,7 @@ namespace WindowsAppVb
                 this.ShutdownStyle = Microsoft.VisualBasic.ApplicationServices.ShutdownMode.AfterMainFormCloses;
             }
 
-            [System.Diagnostics.DebuggerStepThrough()]
+            [DebuggerStepThrough()]
             protected override void OnCreateMainForm()
             {
                 this.MainForm = WindowsAppVb.WinformsDesignerTest;

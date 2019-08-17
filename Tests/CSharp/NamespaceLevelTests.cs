@@ -146,7 +146,9 @@ End Namespace", @"namespace Test.@class
     Inherits System.IDisposable
 
     Sub Test()
-End Interface", @"interface ITest : System.IDisposable
+End Interface", @"using System;
+
+interface ITest : IDisposable
 {
     void Test();
 }");
@@ -178,7 +180,9 @@ End Enum", @"internal enum ExceptionResource
     Implements System.IDisposable
 
     Protected MustOverride Sub Test()
-End Class", @"abstract class ClassA : System.IDisposable
+End Class", @"using System;
+
+abstract class ClassA : IDisposable
 {
     protected abstract void Test();
 }");
@@ -189,7 +193,9 @@ End Class", @"abstract class ClassA : System.IDisposable
     Implements System.IDisposable
 
     Protected MustOverride Sub Test()
-End Class", @"abstract class ClassA : System.EventArgs, System.IDisposable
+End Class", @"using System;
+
+abstract class ClassA : EventArgs, IDisposable
 {
     protected abstract void Test();
 }");
@@ -204,7 +210,9 @@ End Class", @"abstract class ClassA : System.EventArgs, System.IDisposable
 
     Private Sub Test()
     End Sub
-End Structure", @"struct MyType : System.IComparable<MyType>
+End Structure", @"using System;
+
+struct MyType : IComparable<MyType>
 {
     private void Test()
     {
@@ -248,7 +256,9 @@ class test : IComparable
             await TestConversionVisualBasicToCSharp(@"Class test
     Implements System.IComparable
 End Class",
-                @"class test : System.IComparable
+                @"using System;
+
+class test : IComparable
 {
 }");
         }
@@ -274,7 +284,9 @@ class test : InvalidDataException
             await TestConversionVisualBasicToCSharp(@"Class test
     Inherits System.IO.InvalidDataException
 End Class",
-                @"class test : System.IO.InvalidDataException
+                @"using System.IO;
+
+class test : InvalidDataException
 {
 }");
         }
