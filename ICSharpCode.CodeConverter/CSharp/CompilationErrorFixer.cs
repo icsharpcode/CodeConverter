@@ -49,24 +49,5 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return root.RemoveNodes(unusedUsings, SyntaxRemoveOptions.KeepNoTrivia);
         }
-
-        private static SyntaxToken GetRefKeyword(IParameterSymbol formalParameter)
-        {
-            SyntaxToken token;
-            switch (formalParameter.RefKind) {
-                case RefKind.None:
-                    token = default(SyntaxToken);
-                    break;
-                case RefKind.Ref:
-                    token = SyntaxFactory.Token(SyntaxKind.RefKeyword);
-                    break;
-                case RefKind.Out:
-                    token = SyntaxFactory.Token(SyntaxKind.OutKeyword);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-            return token.WithTrailingTrivia(SyntaxFactory.Whitespace(" "));
-        }
     }
 }
