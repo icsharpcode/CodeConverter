@@ -1093,6 +1093,32 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public async Task TwoForEachStatementsWithImplicitVariableCreation()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Friend Class Program
+    Public Shared Sub Main(ByVal args As String())
+        For idx = 0 To 10
+        Next
+
+        For idx = 0 To 10
+        Next
+    End Sub
+End Class", @"internal class Program
+{
+    public static void Main(string[] args)
+    {
+        for (var idx = 0; idx <= 10; idx++)
+        {
+        }
+
+        for (var idx = 0; idx <= 10; idx++)
+        {
+        }
+    }
+}");
+        }
+
+        [Fact]
         public async Task SyncLockStatement()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
