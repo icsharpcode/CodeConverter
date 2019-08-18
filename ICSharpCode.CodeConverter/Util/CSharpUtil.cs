@@ -248,14 +248,6 @@ namespace ICSharpCode.CodeConverter.Util
             throw new NotSupportedException();
         }
 
-        public static TypeSyntax ToCsSyntax(this ITypeSymbol type, SemanticModel model, Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax typeSyntax)
-        {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            return SyntaxFactory.ParseTypeName(type.ToMinimalCSharpDisplayString(model, typeSyntax.SpanStart))
-                .WithLeadingTrivia(typeSyntax.GetLeadingTrivia().ConvertTrivia())
-                .WithTrailingTrivia(typeSyntax.GetTrailingTrivia().ConvertTrivia());
-        }
         public static Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax ToVbSyntax(this ITypeSymbol type, SemanticModel model, TypeSyntax typeSyntax)
         {
             if (type == null)
