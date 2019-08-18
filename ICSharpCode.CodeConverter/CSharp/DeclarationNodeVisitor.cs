@@ -59,7 +59,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _visualBasicEqualityComparison = new VisualBasicEqualityComparison(_semanticModel, _extraUsingDirectives);
             TriviaConverter triviaConverter = new TriviaConverter();
             TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this, triviaConverter);
-            var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives);
+            var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator);
             CommonConversions = new CommonConversions(semanticModel, typeConversionAnalyzer, csSyntaxGenerator);
             _additionalInitializers = new AdditionalInitializers();
             _expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _methodsWithHandles, CommonConversions, triviaConverter, _extraUsingDirectives);
@@ -746,7 +746,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var postBodyStatements = new List<StatementSyntax>();
 
             var functionSym = _semanticModel.GetDeclaredSymbol(node);
-            var returnType = _semanticModel.GetCsTypeSyntax(functionSym.GetReturnType(), node);
+            var returnType = CommonConversions.GetTypeSyntax(functionSym.GetReturnType());
 
             if (csReturnVariableOrNull != null)
             {

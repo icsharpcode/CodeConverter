@@ -185,7 +185,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return CommonConversions.Literal(null); //In future, we'll be able to just say "default" instead of guessing at "null" in this case
                 }
 
-                return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(_semanticModel.GetCsTypeSyntax(type, node)) : CommonConversions.Literal(null);
+                return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(CommonConversions.GetTypeSyntax(type)) : CommonConversions.Literal(null);
             }
             return CommonConversions.Literal(node.Token.Value, node.Token.Text);
         }
@@ -249,7 +249,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (node.Expression is VBasic.Syntax.MyClassExpressionSyntax) {
                 if (nodeSymbol.IsStatic) {
                     var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
-                    left = _semanticModel.GetCsTypeSyntax(typeInfo.Type, node);
+                    left = CommonConversions.GetTypeSyntax(typeInfo.Type);
                 } else {
                     left = SyntaxFactory.ThisExpression();
                     if (nodeSymbol.IsVirtual && !nodeSymbol.IsAbstract) {
@@ -261,7 +261,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
                 var expressionSymbolInfo = _semanticModel.GetSymbolInfo(node.Expression);
                 if (typeInfo.Type != null && !expressionSymbolInfo.Symbol.IsType()) {
-                    left = _semanticModel.GetCsTypeSyntax(typeInfo.Type, node);
+                    left = CommonConversions.GetTypeSyntax(typeInfo.Type);
                 }
             }
             if (left == null) {

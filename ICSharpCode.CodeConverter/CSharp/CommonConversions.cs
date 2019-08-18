@@ -90,17 +90,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                 (SimpleAsClauseSyntax c) => c.Type,
                 (AsNewClauseSyntax c) => c.NewExpression.Type(),
                 _ => throw new NotImplementedException($"{_.GetType().FullName} not implemented!"));
-            return (TypeSyntax)vbType?.Accept(TriviaConvertingExpressionVisitor) ?? GetTypeSyntax(declarator, preferExplicitType);
+            return (TypeSyntax)vbType?.Accept(TriviaConvertingExpressionVisitor) ?? GetTypeSyntax(declarator, !preferExplicitType);
         }
 
-        private TypeSyntax GetTypeSyntax(VariableDeclaratorSyntax declarator, bool preferExplicitType)
+        private TypeSyntax GetTypeSyntax(VariableDeclaratorSyntax declarator, bool useImplicitType)
         {
-            if (!preferExplicitType) return CreateVarTypeName();
+            if (useImplicitType) return CreateVarTypeName();
 
             var typeInf = _semanticModel.GetTypeInfo(declarator.Initializer.Value);
             if (typeInf.ConvertedType == null) return CreateVarTypeName();
 
-            return _semanticModel.GetCsTypeSyntax(typeInf.ConvertedType, declarator);
+            return GetTypeSyntax(typeInf.ConvertedType);
         }
 
         public TypeSyntax GetTypeSyntax(ITypeSymbol typeSymbol, bool useImplicitType = false)

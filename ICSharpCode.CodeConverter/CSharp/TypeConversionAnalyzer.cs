@@ -4,6 +4,7 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Editing;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -12,12 +13,15 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly CSharpCompilation _csCompilation;
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _extraUsingDirectives;
+        private readonly SyntaxGenerator _csSyntaxGenerator;
 
-        public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation, HashSet<string> extraUsingDirectives)
+        public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation,
+            HashSet<string> extraUsingDirectives, SyntaxGenerator csSyntaxGenerator)
         {
             _semanticModel = semanticModel;
             _csCompilation = csCompilation;
             _extraUsingDirectives = extraUsingDirectives;
+            _csSyntaxGenerator = csSyntaxGenerator;
         }
 
         public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = false, bool alwaysExplicit = false, bool implicitCastFromIntToEnum = false)
@@ -39,7 +43,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return addParenthesisIfNeeded ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
                 case TypeConversionKind.DestructiveCast:
                 case TypeConversionKind.NonDestructiveCast:
-                    var typeName = _semanticModel.GetCsTypeSyntax(vbConvertedType, vbNode);
+                    var typeName = (TypeSyntax) _csSyntaxGenerator.TypeExpression(vbConvertedType);
                     if (csNode is CastExpressionSyntax cast && cast.Type.IsEquivalentTo(typeName)) {
                         return csNode;
                     }

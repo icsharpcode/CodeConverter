@@ -40,18 +40,5 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool writtenInside = dataFlow.WrittenInside.Any(s => equalsId(s.Name));
             return alwaysAssigned && !writtenInside || !readInside;
         }
-
-        public static TypeSyntax GetCsTypeSyntax(this SemanticModel vbSemanticModel, ITypeSymbol typeSymbol, VisualBasicSyntaxNode contextNode)
-        {
-            if (typeSymbol.IsNullable()) return SyntaxFactory.NullableType(GetCsTypeSyntax(vbSemanticModel, typeSymbol.GetNullableUnderlyingType(), contextNode));
-            var predefined = typeSymbol.SpecialType.GetPredefinedKeywordKind();
-            if (predefined != Microsoft.CodeAnalysis.CSharp.SyntaxKind.None)
-            {
-                return SyntaxFactory.PredefinedType(SyntaxFactory.Token(predefined));
-            }
-
-            var typeName = typeSymbol.ToMinimalCSharpDisplayString(vbSemanticModel, contextNode.SpanStart);
-            return SyntaxFactory.ParseTypeName(typeName);
-        }
     }
 }
