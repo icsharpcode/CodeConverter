@@ -209,15 +209,15 @@ End Class", @"public class Class1
 
     public void Foo()
     {
-        var argclass1 = (object)new Class1();
+        object argclass1 = new Class1();
         Bar(ref argclass1);
-        var argclass11 = (object)C1;
+        object argclass11 = C1;
         Bar(ref argclass11);
-        var argclass12 = (object)C1;
+        object argclass12 = C1;
         Bar(ref argclass12);
-        var argclass13 = (object)_c2;
+        object argclass13 = _c2;
         Bar(ref argclass13);
-        var argclass14 = (object)_c2;
+        object argclass14 = _c2;
         Bar(ref argclass14);
         Bar(ref _o1);
         Bar(ref _o1);
@@ -324,7 +324,7 @@ public class Class1
 
     public void Foo5()
     {
-        var argb = default(bool);
+        bool argb = default(bool);
         Bar(ref argb);
     }
 

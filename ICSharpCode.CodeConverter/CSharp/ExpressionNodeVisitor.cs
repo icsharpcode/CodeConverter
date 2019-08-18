@@ -340,8 +340,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             AdditionalLocal local = null;
             if (refKind != RefKind.None && NeedsVariableForArgument(node)) {
                 var expressionTypeInfo= _semanticModel.GetTypeInfo(node.Expression);
-                var constantValue = _semanticModel.GetConstantValue(node.Expression);
-                bool useVar = constantValue.HasValue && constantValue.Value != null && expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType) == true;
+                bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType) == true;
                 var typeSyntax = CommonConversions.GetTypeSyntax(expressionTypeInfo.ConvertedType, useVar);
                 string prefix = $"arg{argName}";
                 local = _additionalLocals.AddAdditionalLocal(new AdditionalLocal(prefix, expression, typeSyntax));
