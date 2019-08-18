@@ -11,45 +11,44 @@
 using Microsoft.VisualBasic;
 using System.Diagnostics;
 
-namespace EmptyVb
+
+namespace EmptyVb.My
 {
-    namespace My
+    [System.Runtime.CompilerServices.CompilerGenerated()]
+    [System.CodeDom.Compiler.GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "11.0.0.0")]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
+    internal sealed partial class MySettings : System.Configuration.ApplicationSettingsBase
     {
-        [System.Runtime.CompilerServices.CompilerGenerated()]
-        [System.CodeDom.Compiler.GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "11.0.0.0")]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal sealed partial class MySettings : System.Configuration.ApplicationSettingsBase
+        private static MySettings defaultInstance = (MySettings)Synchronized(new MySettings());
+
+        /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
+        public static MySettings Default
         {
-            private static MySettings defaultInstance = (MySettings)Synchronized(new MySettings());
-
-            /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
-            public static MySettings Default
+            get
             {
-                get
-                {
 
-                    /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
-                    return defaultInstance;
-                }
-            }
-        }
-    }
-
-    namespace My
-    {
-        [HideModuleName()]
-        [DebuggerNonUserCode()]
-        [System.Runtime.CompilerServices.CompilerGenerated()]
-        internal static class MySettingsProperty
-        {
-            [System.ComponentModel.Design.HelpKeyword("My.Settings")]
-            internal static MySettings Settings
-            {
-                get
-                {
-                    return MySettings.Default;
-                }
+                /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
+                return defaultInstance;
             }
         }
     }
 }
+
+namespace EmptyVb.My
+{
+    [HideModuleName()]
+    [DebuggerNonUserCode()]
+    [System.Runtime.CompilerServices.CompilerGenerated()]
+    internal static class MySettingsProperty
+    {
+        [System.ComponentModel.Design.HelpKeyword("My.Settings")]
+        internal static MySettings Settings
+        {
+            get
+            {
+                return MySettings.Default;
+            }
+        }
+    }
+}
+

@@ -46,6 +46,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
         private readonly CommentConvertingVisitorWrapper<CSharpSyntaxNode> _triviaConvertingExpressionVisitor;
         private readonly ExpressionNodeVisitor _expressionNodeVisitor;
+        private string _topAncestorNamespace;
 
         private CommonConversions CommonConversions { get; }
 
@@ -80,10 +81,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var optionCompareText = node.Options.Any(x => x.NameKeyword.ValueText.Equals("Compare", StringComparison.OrdinalIgnoreCase) &&
                                                        x.ValueKeyword.ValueText.Equals("Text", StringComparison.OrdinalIgnoreCase));
+            _topAncestorNamespace = node.Members.Any(m => !IsNamespaceDeclaration(m)) ? options.RootNamespace : null;
             _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive = optionCompareText;
 
             var attributes = SyntaxFactory.List(node.Attributes.SelectMany(a => a.AttributeLists).SelectMany(_expressionNodeVisitor.ConvertAttribute));
             var sourceAndConverted = node.Members.Select(m => (Source: m, Converted: ConvertMember(m))).ToReadOnlyCollection();
+
+
             var convertedMembers = String.IsNullOrEmpty(options.RootNamespace)
                 ? sourceAndConverted.Select(sd => sd.Converted)
                 : PrependRootNamespace(sourceAndConverted, SyntaxFactory.IdentifierName(options.RootNamespace));
@@ -103,25 +107,28 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         private IReadOnlyCollection<MemberDeclarationSyntax> PrependRootNamespace(
-            IReadOnlyCollection<(VBSyntax.StatementSyntax VbNode, MemberDeclarationSyntax CsNode)> memberConversion,
+            IReadOnlyCollection<(VBSyntax.StatementSyntax VbNode, MemberDeclarationSyntax CsNode)> membersConversions,
             IdentifierNameSyntax rootNamespaceIdentifier)
         {
-            var inGlobalNamespace = memberConversion
-                .ToLookup(m => IsNamespaceDeclarationInGlobalScope(m.VbNode), m => m.CsNode);
-            var members = inGlobalNamespace[true].ToList();
-            if (inGlobalNamespace[false].Any()) {
-                var newNamespaceDecl = (MemberDeclarationSyntax)SyntaxFactory.NamespaceDeclaration(rootNamespaceIdentifier)
-                    .WithMembers(SyntaxFactory.List(inGlobalNamespace[false]));
-                members.Add(newNamespaceDecl);
+            
+            if (_topAncestorNamespace != null) {
+                var csMembers = membersConversions.ToLookup(c => ShouldBeNestedInRootNamespace(c.VbNode, rootNamespaceIdentifier.Identifier.Text), c => c.CsNode);
+                var nestedMembers = csMembers[true].Select<MemberDeclarationSyntax, SyntaxNode>(x => x);
+                var newNamespaceDecl = (MemberDeclarationSyntax) _csSyntaxGenerator.NamespaceDeclaration(rootNamespaceIdentifier.Identifier.Text, nestedMembers);
+                return csMembers[false].Concat(new[] { newNamespaceDecl }).ToArray();
             }
-            return members;
+            return membersConversions.Select(n => n.CsNode).ToArray();
         }
 
-        private bool IsNamespaceDeclarationInGlobalScope(VBSyntax.StatementSyntax m)
+        private bool ShouldBeNestedInRootNamespace(VBSyntax.StatementSyntax vbStatement, string rootNamespace)
         {
-            if (!(m is VBSyntax.NamespaceBlockSyntax nss)) return false;
-            if (!(_semanticModel.GetSymbolInfo(nss.NamespaceStatement.Name).Symbol is INamespaceSymbol nsSymbol)) return false;
-            return nsSymbol.ContainingNamespace.IsGlobalNamespace;
+            var declSymbol = _semanticModel.GetDeclaredSymbol(vbStatement);
+            return declSymbol.ToDisplayString().StartsWith(rootNamespace);
+        }
+
+        private bool IsNamespaceDeclaration(VBSyntax.StatementSyntax m)
+        {
+            return m is VBSyntax.NamespaceBlockSyntax;
         }
 
         public override CSharpSyntaxNode VisitSimpleImportsClause(VBSyntax.SimpleImportsClauseSyntax node)
@@ -134,16 +141,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override CSharpSyntaxNode VisitNamespaceBlock(VBSyntax.NamespaceBlockSyntax node)
         {
-            var members = node.Members.Select(ConvertMember);
+            var members = node.Members.Select(ConvertMember).Where(m => m != null);
+            var namespaceToDeclare = _semanticModel.GetDeclaredSymbol(node).ToDisplayString();
+            var parentNamespaceSyntax = node.GetAncestor<VBSyntax.NamespaceBlockSyntax>();
+            var parentNamespaceDecl = parentNamespaceSyntax != null ? _semanticModel.GetDeclaredSymbol(parentNamespaceSyntax) : null;
+            var parentNamespaceFullName = parentNamespaceDecl?.ToDisplayString() ?? _topAncestorNamespace;
+            if (parentNamespaceFullName != null && namespaceToDeclare.StartsWith(parentNamespaceFullName + "."))
+                namespaceToDeclare = namespaceToDeclare.Substring(parentNamespaceFullName.Length + 1);
 
-            var namespaceDeclaration = SyntaxFactory.NamespaceDeclaration(
-                (NameSyntax)node.NamespaceStatement.Name.Accept(_triviaConvertingExpressionVisitor),
-                SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
-                SyntaxFactory.List<UsingDirectiveSyntax>(),
-                SyntaxFactory.List(members)
-            );
-
-            return namespaceDeclaration;
+            var cSharpSyntaxNode = (CSharpSyntaxNode) _csSyntaxGenerator.NamespaceDeclaration(namespaceToDeclare, SyntaxFactory.List(members));
+            return cSharpSyntaxNode;
         }
 
         #region Namespace Members

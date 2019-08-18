@@ -51,6 +51,86 @@ End Class",
         }
 
         [Fact]
+        public async Task RootNamespaceIsAddedToExistingNamespace()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace A.B
+    Public Class Class1
+    End Class
+End Namespace",
+                @"namespace TheRootNamespace.A.B
+{
+    public class Class1
+    {
+    }
+}");
+        }
+
+        [Fact]
+        public async Task NestedNamespacesRemainRelative()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace A.B
+    Namespace C
+        Public Class Class1
+        End Class
+    End Namespace
+End Namespace",
+                @"namespace TheRootNamespace.A.B
+{
+    namespace C
+    {
+        public class Class1
+        {
+        }
+    }
+}");
+        }
+
+        [Fact]
+        public async Task NestedNamespaceWithRootClassRemainRelative()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace A.B
+    Namespace C
+        Public Class Class1
+        End Class
+    End Namespace
+End Namespace
+
+Public Class RootClass
+End Class",
+                @"namespace TheRootNamespace
+{
+    namespace A.B
+    {
+        namespace C
+        {
+            public class Class1
+            {
+            }
+        }
+    }
+
+    public class RootClass
+    {
+    }
+}");
+        }
+
+        [Fact]
+        public async Task RootNamespaceIsNotAddedToExistingGlobalNamespace()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace Global.A.B
+    Public Class Class1
+    End Class
+End Namespace",
+                @"namespace A.B
+{
+    public class Class1
+    {
+    }
+}");
+        }
+
+        [Fact]
         public async Task RootNamespaceIsExplicitForSingleNamespace()
         {
             // Auto comment testing not used since it can't handle the added namespace
@@ -59,13 +139,10 @@ Namespace NestedWithinRoot
     Class AClassInANamespace
     End Class
 End Namespace",
-                @"namespace TheRootNamespace
+                @"namespace TheRootNamespace.NestedWithinRoot
 {
-    namespace NestedWithinRoot
+    class AClassInANamespace
     {
-        class AClassInANamespace
-        {
-        }
     }
 }");
         }
