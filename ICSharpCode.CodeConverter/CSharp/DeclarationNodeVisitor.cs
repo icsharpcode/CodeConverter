@@ -60,7 +60,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             TriviaConverter triviaConverter = new TriviaConverter();
             TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this, triviaConverter);
             var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives);
-            CommonConversions = new CommonConversions(semanticModel, typeConversionAnalyzer);
+            CommonConversions = new CommonConversions(semanticModel, typeConversionAnalyzer, csSyntaxGenerator);
             _additionalInitializers = new AdditionalInitializers();
             _expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _methodsWithHandles, CommonConversions, triviaConverter, _extraUsingDirectives);
             _triviaConvertingExpressionVisitor = _expressionNodeVisitor.TriviaConvertingVisitor;

@@ -9,6 +9,7 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -432,6 +433,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             ExpressionSyntax startValue = (ExpressionSyntax)stmt.FromValue.Accept(_expressionVisitor);
             VariableDeclarationSyntax declaration = null;
             ExpressionSyntax id;
+            var controlVarOp = _semanticModel.GetOperation(stmt.ControlVariable) as IVariableDeclaratorOperation;
+            var controlVarType = controlVarOp?.Symbol.Type;
+            var initializers = new List<ExpressionSyntax>();
             if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                 var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
                 declaration = CommonConversions.SplitVariableDeclarations(v).Values.Single();
@@ -439,11 +443,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 id = SyntaxFactory.IdentifierName(declaration.Variables[0].Identifier);
             } else {
                 id = (ExpressionSyntax)stmt.ControlVariable.Accept(_expressionVisitor);
-                var symbol = _semanticModel.GetSymbolInfo(stmt.ControlVariable).Symbol;
-                if (symbol != null && symbol.DeclaringSyntaxReferences.Any(r => r.Span.OverlapsWith(stmt.ControlVariable.Span))) {
-                    declaration = CommonConversions.CreateVariableDeclarationAndAssignment(symbol.Name, startValue);
+                var controlVarSymbol = controlVarOp?.Symbol;
+                if (controlVarSymbol != null && controlVarSymbol.DeclaringSyntaxReferences.Any(r => r.Span.OverlapsWith(stmt.ControlVariable.Span))) {
+                    declaration = CommonConversions.CreateVariableDeclarationAndAssignment(controlVarSymbol.Name, startValue, CommonConversions.GetTypeSyntax(controlVarType));
                 } else {
                     startValue = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, id, startValue);
+                    initializers.Add(startValue);
                 }
             }
 
@@ -457,10 +462,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csToValue = (ExpressionSyntax)stmt.ToValue.Accept(_expressionVisitor);
             if (!_semanticModel.GetConstantValue(stmt.ToValue).HasValue) {
                 var loopToVariableName = GetUniqueVariableNameInScope(node, "loopTo");
-                var loopEndDeclaration = SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(loopToVariableName, csToValue));
-                // Does not do anything about porting newline trivia upwards to maintain spacing above the loop
-                preLoopStatements.Add(loopEndDeclaration);
-                csToValue = SyntaxFactory.IdentifierName(loopToVariableName);
+                var toValueType = _semanticModel.GetTypeInfo(stmt.ToValue).ConvertedType;
+                var toVariableId = SyntaxFactory.IdentifierName(loopToVariableName);
+                if (controlVarType?.Equals(toValueType) == true && declaration != null) {
+                    var loopToAssignment = CommonConversions.CreateVariableDeclarator(loopToVariableName, csToValue);
+                    declaration = declaration.AddVariables(loopToAssignment);
+                } else {
+                    var loopEndDeclaration = SyntaxFactory.LocalDeclarationStatement(
+                        CommonConversions.CreateVariableDeclarationAndAssignment(loopToVariableName, csToValue));
+                    // Does not do anything about porting newline trivia upwards to maintain spacing above the loop
+                    preLoopStatements.Add(loopEndDeclaration);
+                }
+
+                csToValue = toVariableId;
             };
                 
             if (value == null) {
@@ -475,9 +489,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var block = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
             var forStatementSyntax = SyntaxFactory.ForStatement(
                 declaration,
-                declaration != null
-                    ? SyntaxFactory.SeparatedList<ExpressionSyntax>()
-                    : SyntaxFactory.SingletonSeparatedList(startValue),
+                SyntaxFactory.SeparatedList(initializers),
                 condition,
                 SyntaxFactory.SingletonSeparatedList(step),
                 block.UnpackNonNestedBlock());

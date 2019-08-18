@@ -9,6 +9,7 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -35,14 +36,16 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
         private static readonly Type OutAttributeType = typeof(OutAttribute);
         private readonly SemanticModel _semanticModel;
+        private readonly SyntaxGenerator _csSyntaxGenerator;
         public CommentConvertingVisitorWrapper<CSharpSyntaxNode> TriviaConvertingExpressionVisitor { get; set; }
         public TypeConversionAnalyzer TypeConversionAnalyzer { get; }
 
         public CommonConversions(SemanticModel semanticModel,
-            TypeConversionAnalyzer typeConversionAnalyzer)
+            TypeConversionAnalyzer typeConversionAnalyzer, SyntaxGenerator csSyntaxGenerator)
         {
             TypeConversionAnalyzer = typeConversionAnalyzer;
             _semanticModel = semanticModel;
+            _csSyntaxGenerator = csSyntaxGenerator;
         }
 
         public Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(
@@ -98,6 +101,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (typeInf.ConvertedType == null) return CreateVarTypeName();
 
             return _semanticModel.GetCsTypeSyntax(typeInf.ConvertedType, declarator);
+        }
+
+        public TypeSyntax GetTypeSyntax(ITypeSymbol typeSymbol, bool preferExplicitType = false)
+        {
+            if (!preferExplicitType) return CreateVarTypeName();
+            return (TypeSyntax) _csSyntaxGenerator.TypeExpression(typeSymbol);
         }
 
         private static TypeSyntax CreateVarTypeName()
@@ -475,13 +484,19 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static VariableDeclarationSyntax CreateVariableDeclarationAndAssignment(string variableName,
             ExpressionSyntax initValue, TypeSyntax explicitType = null)
         {
-            var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(
-                SyntaxFactory.Identifier(variableName), null,
-                SyntaxFactory.EqualsValueClause(initValue));
+            CSSyntax.VariableDeclaratorSyntax variableDeclaratorSyntax = CreateVariableDeclarator(variableName, initValue);
             var variableDeclarationSyntax = SyntaxFactory.VariableDeclaration(
                 explicitType ?? SyntaxFactory.IdentifierName("var"),
                 SyntaxFactory.SingletonSeparatedList(variableDeclaratorSyntax));
             return variableDeclarationSyntax;
+        }
+
+        public static CSSyntax.VariableDeclaratorSyntax CreateVariableDeclarator(string variableName, ExpressionSyntax initValue)
+        {
+            var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(
+                SyntaxFactory.Identifier(variableName), null,
+                SyntaxFactory.EqualsValueClause(initValue));
+            return variableDeclaratorSyntax;
         }
 
         public string GetParameterizedPropertyAccessMethod(IOperation operation, out ExpressionSyntax extraArg)
