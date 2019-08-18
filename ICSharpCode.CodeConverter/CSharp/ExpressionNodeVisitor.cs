@@ -337,9 +337,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
             var expression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor), alwaysExplicit: refKind != RefKind.None);
-            AdditionalLocals.AdditionalLocal local = null;
+            AdditionalLocal local = null;
             if (refKind != RefKind.None && NeedsVariableForArgument(node)) {
-                local = _additionalLocals.AddAdditionalLocal($"arg{argName}", expression);
+                var expressionTypeInfo= _semanticModel.GetTypeInfo(node.Expression);
+                var constantValue = _semanticModel.GetConstantValue(node.Expression);
+                bool useVar = constantValue.HasValue && constantValue.Value != null && expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType) == true;
+                var typeSyntax = CommonConversions.GetTypeSyntax(expressionTypeInfo.ConvertedType, useVar);
+                string prefix = $"arg{argName}";
+                local = _additionalLocals.AddAdditionalLocal(new AdditionalLocal(prefix, expression, typeSyntax));
             }
             var nameColon = node.IsNamed ? SyntaxFactory.NameColon((IdentifierNameSyntax)node.NameColonEquals.Name.Accept(TriviaConvertingVisitor)) : null;
             if (local == null) {

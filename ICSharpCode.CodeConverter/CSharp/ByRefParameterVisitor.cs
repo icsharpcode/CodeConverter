@@ -52,7 +52,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 })).ToList();
 
                 foreach (var additionalLocal in _additionalLocals) {
-                    var decl = CommonConversions.CreateVariableDeclarationAndAssignment(newNames[additionalLocal.Key], additionalLocal.Value.Initializer);
+                    var decl = CommonConversions.CreateVariableDeclarationAndAssignment(newNames[additionalLocal.Key], additionalLocal.Value.Initializer, additionalLocal.Value.Type);
                     additionalDeclarations.Add(SyntaxFactory.LocalDeclarationStatement(decl));
                 }
             }

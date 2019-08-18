@@ -105,7 +105,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public TypeSyntax GetTypeSyntax(ITypeSymbol typeSymbol, bool useImplicitType = false)
         {
-            if (useImplicitType) return CreateVarTypeName();
+            if (useImplicitType || typeSymbol == null) return CreateVarTypeName();
             return (TypeSyntax) _csSyntaxGenerator.TypeExpression(typeSymbol);
         }
 

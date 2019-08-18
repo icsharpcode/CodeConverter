@@ -158,6 +158,30 @@ class TestClass
         }
 
         [Fact]
+        public async Task NullInlineRefArgument()
+        {
+            await TestConversionVisualBasicToCSharp(@"Public Class VisualBasicClass
+  Public Sub UseStuff()
+    Stuff(Nothing)
+  End Sub
+
+  Public Sub Stuff(ByRef strs As String())
+  End Sub
+End Class", @"public class VisualBasicClass
+{
+    public void UseStuff()
+    {
+        string[] argstrs = null;
+        Stuff(ref argstrs);
+    }
+
+    public void Stuff(ref string[] strs)
+    {
+    }
+}");
+        }
+
+        [Fact]
         public async Task RefArgumentRValue()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
