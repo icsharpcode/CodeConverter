@@ -158,7 +158,8 @@ End Sub";
                    || nextLine.Contains("where T")
                    || IsTwoLineCsIfStatement(line, nextLine)
                    || line.TrimStart().StartsWith("//")
-                   || line.Contains("DllImport");
+                   || line.Contains("DllImport")
+                   || line.Contains("arg") && nextLine.Contains("ref ");
         }
 
         /// <summary>
