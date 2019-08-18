@@ -22,16 +22,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = false, bool alwaysExplicit = false, bool implicitCastFromIntToEnum = false)
         {
-            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit, implicitCastFromIntToEnum, out var vbConvertedType);
+            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit, implicitCastFromIntToEnum);
             csNode = addParenthesisIfNeeded && (conversionKind == TypeConversionKind.DestructiveCast || conversionKind == TypeConversionKind.NonDestructiveCast)
                 ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;
-            return AddExplicitConversion(vbNode, csNode, vbConvertedType, conversionKind, addParenthesisIfNeeded);
+            return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded);
         }
 
-        private ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode,
-            ITypeSymbol vbConvertedType, TypeConversionKind conversionKind, bool addParenthesisIfNeeded)
+        private ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded)
         {
+            var vbConvertedType = _semanticModel.GetTypeInfo(vbNode).ConvertedType;
             switch (conversionKind)
             {
                 case TypeConversionKind.Unknown:
@@ -51,11 +51,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        private TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit, bool implicitCastFromIntToEnum, out ITypeSymbol vbConvertedType)
+        private TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool implicitCastFromIntToEnum = false)
         {
             var typeInfo = _semanticModel.GetTypeInfo(vbNode);
             var vbType = typeInfo.Type;
-            vbConvertedType = typeInfo.ConvertedType;
+            var vbConvertedType = typeInfo.ConvertedType;
             if (vbType is null || vbConvertedType is null)
             {
                 return TypeConversionKind.Unknown;
