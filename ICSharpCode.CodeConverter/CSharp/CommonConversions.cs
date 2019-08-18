@@ -103,9 +103,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return _semanticModel.GetCsTypeSyntax(typeInf.ConvertedType, declarator);
         }
 
-        public TypeSyntax GetTypeSyntax(ITypeSymbol typeSymbol, bool preferExplicitType = false)
+        public TypeSyntax GetTypeSyntax(ITypeSymbol typeSymbol, bool useImplicitType = false)
         {
-            if (!preferExplicitType) return CreateVarTypeName();
+            if (useImplicitType) return CreateVarTypeName();
             return (TypeSyntax) _csSyntaxGenerator.TypeExpression(typeSymbol);
         }
 

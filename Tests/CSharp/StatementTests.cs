@@ -1106,11 +1106,11 @@ End Class", @"internal class Program
 {
     public static void Main(string[] args)
     {
-        for (var idx = 0; idx <= 10; idx++)
+        for (int idx = 0; idx <= 10; idx++)
         {
         }
 
-        for (var idx = 0; idx <= 10; idx++)
+        for (int idx = 0; idx <= 10; idx++)
         {
         }
     }
@@ -1159,7 +1159,7 @@ End Class", @"class TestClass
     private void TestMethod(int end)
     {
         int[] b = default(int[]), s = default(int[]);
-        for (var i = 0, loopTo = end; i <= loopTo; i++)
+        for (int i = 0, loopTo = end; i <= loopTo; i++)
             b[i] = s[i];
     }
 }");
@@ -1235,7 +1235,7 @@ End Class", @"class TestClass
     private void TestMethod(int end)
     {
         int[] b = default(int[]), s = default(int[]);
-        for (var i = 0, loopTo = end - 1; i <= loopTo; i++)
+        for (int i = 0, loopTo = end - 1; i <= loopTo; i++)
             b[i] = s[i];
     }
 }");
