@@ -866,8 +866,7 @@ End Class", @"class TestClass
 {
     public static int FindTextInCol(string w, int pTitleRow, int startCol, string needle)
     {
-        var loopTo = w.Length;
-        for (int c = startCol; c <= loopTo; c++)
+        for (int c = startCol, loopTo = w.Length; c <= loopTo; c++)
         {
             if (string.IsNullOrEmpty(needle))
             {
@@ -1160,8 +1159,7 @@ End Class", @"class TestClass
     private void TestMethod(int end)
     {
         int[] b = default(int[]), s = default(int[]);
-        var loopTo = end;
-        for (var i = 0; i <= loopTo; i++)
+        for (var i = 0, loopTo = end; i <= loopTo; i++)
             b[i] = s[i];
     }
 }");
@@ -1212,8 +1210,7 @@ class TestClass
     private void TestMethod()
     {
         string stringValue = ""42"";
-        var loopTo = 10 - stringValue.Length;
-        for (int i = 1; i <= loopTo; i++)
+        for (int i = 1, loopTo = 10 - stringValue.Length; i <= loopTo; i++)
         {
             stringValue = stringValue + "" "" + Conversions.ToString(i);
             Console.WriteLine(stringValue);
@@ -1238,8 +1235,7 @@ End Class", @"class TestClass
     private void TestMethod(int end)
     {
         int[] b = default(int[]), s = default(int[]);
-        var loopTo = end - 1;
-        for (var i = 0; i <= loopTo; i++)
+        for (var i = 0, loopTo = end - 1; i <= loopTo; i++)
             b[i] = s[i];
     }
 }");
@@ -1293,21 +1289,19 @@ class GotoTest1
         int y = 4;
         int count = 0;
         string[,] array = new string[x - 1 + 1, y - 1 + 1];
-        var loopTo = x - 1;
-        for (int i = 0; i <= loopTo; i++)
+
+        for (int i = 0, loopTo = x - 1; i <= loopTo; i++)
         {
-            var loopTo1 = y - 1;
-            for (int j = 0; j <= loopTo1; j++)
+            for (int j = 0, loopTo1 = y - 1; j <= loopTo1; j++)
                 array[i, j] = System.Threading.Interlocked.Increment(ref count).ToString();
         }
 
         Console.Write(""Enter the number to search for: "");
         string myNumber = Console.ReadLine();
-        var loopTo2 = x - 1;
-        for (int i = 0; i <= loopTo2; i++)
+
+        for (int i = 0, loopTo2 = x - 1; i <= loopTo2; i++)
         {
-            var loopTo3 = y - 1;
-            for (int j = 0; j <= loopTo3; j++)
+            for (int j = 0, loopTo3 = y - 1; j <= loopTo3; j++)
             {
                 if (array[i, j].Equals(myNumber))
                     goto Found;
@@ -1728,8 +1722,7 @@ class TestClass
     {
         if (number < 0)
             yield break;
-        var loopTo = number - 1;
-        for (int i = 0; i <= loopTo; i++)
+        for (int i = 0, loopTo = number - 1; i <= loopTo; i++)
             yield return i;
     }
 }");
