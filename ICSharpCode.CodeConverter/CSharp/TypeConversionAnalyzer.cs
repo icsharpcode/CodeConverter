@@ -22,7 +22,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = false, bool alwaysExplicit = false, bool implicitCastFromIntToEnum = false)
         {
-            var conversionKind = AnalyzeConversion(vbNode, csNode, alwaysExplicit, implicitCastFromIntToEnum, out var vbConvertedType);
+            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit, implicitCastFromIntToEnum, out var vbConvertedType);
             csNode = addParenthesisIfNeeded && (conversionKind == TypeConversionKind.DestructiveCast || conversionKind == TypeConversionKind.NonDestructiveCast)
                 ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;
@@ -39,7 +39,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return addParenthesisIfNeeded ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
                 case TypeConversionKind.DestructiveCast:
                 case TypeConversionKind.NonDestructiveCast:
-                    return ValidSyntaxFactory.CastExpression(_semanticModel.GetCsTypeSyntax(vbConvertedType, vbNode), csNode);
+                    var typeName = _semanticModel.GetCsTypeSyntax(vbConvertedType, vbNode);
+                    if (csNode is CastExpressionSyntax cast && cast.Type.IsEquivalentTo(typeName)) {
+                        return csNode;
+                    }
+                    return ValidSyntaxFactory.CastExpression(typeName, csNode);
                 case TypeConversionKind.Conversion:
                     return AddExplicitConvertTo(vbNode, csNode, vbConvertedType);
                 default:
@@ -47,7 +51,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        private TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool alwaysExplicit, bool implicitCastFromIntToEnum, out ITypeSymbol vbConvertedType)
+        private TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit, bool implicitCastFromIntToEnum, out ITypeSymbol vbConvertedType)
         {
             var typeInfo = _semanticModel.GetTypeInfo(vbNode);
             var vbType = typeInfo.Type;
@@ -100,10 +104,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 // Safe overapproximation: A cast is really only needed to help resolve the overload for the operator/method used.
                 // e.g. When VB "&" changes to C# "+", there are lots more overloads available that implicit casts could match.
                 // e.g. sbyte * ulong uses the decimal * operator in VB. In C# it's ambiguous - see ExpressionTests.vb "TestMul".
-                var typeName = _semanticModel.GetCsTypeSyntax(vbConvertedType, vbNode);
-                if (csNode is CastExpressionSyntax cast && cast.Type.IsEquivalentTo(typeName)) {
-                    return TypeConversionKind.Identity;
-                }
                 return TypeConversionKind.NonDestructiveCast;
             }
             else if (csConversion.IsExplicit && csConversion.IsEnumeration)
