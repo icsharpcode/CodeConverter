@@ -16,8 +16,7 @@ If relevant, the output you expected (in VB or C#), or a description of what you
 ```
 
 ### Details
-Product in use: e.g. web converter / VS extension / both
-
-Version in use: e.g. 5.6.3
-
-Any other relevant information to the issue, or your interest in contributing a fix.
+* Product in use: e.g. web converter / VS extension / both
+* Version in use: e.g. 5.6.3 or a commit hash
+* Did you see it working in a previous version, which?
+* Any other relevant information to the issue, or your interest in contributing a fix.
