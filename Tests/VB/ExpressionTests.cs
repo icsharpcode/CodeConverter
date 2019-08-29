@@ -418,6 +418,42 @@ End Interface");
         }
 
         [Fact]
+        public async Task ValueTupleType()
+        {
+            await TestConversionCSharpToVisualBasic(@"using System;
+using System.Collections.Generic;
+
+namespace PreHOPL
+{
+    static class Program
+    {
+        private static readonly Dictionary<string, ValueTuple<int, Delegate>> dict = 
+            new Dictionary<string, ValueTuple<int, Delegate>>()
+        {
+            [""SAY""] =  (1, (Action<string>)System.Console.WriteLine)
+        };
+        private static void Main(string[] args)
+        {
+            dict[""SAY""].Item2.DynamicInvoke(""Hello World!"");
+        }
+    }
+}", @"Imports System
+Imports System.Collections.Generic
+
+Namespace PreHOPL
+    Friend Module Program
+        Private ReadOnly dict As Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) = New Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) From {
+            {""SAY"", (1, CType(AddressOf Console.WriteLine, Action(Of String)))}
+        }
+
+        Private Sub Main(ByVal args As String())
+            dict(""SAY"").Item2.DynamicInvoke(""Hello World!"")
+        End Sub
+    End Module
+End Namespace");
+        }
+
+        [Fact]
         public async Task DelegateExpression()
         {
             await TestConversionCSharpToVisualBasic(@"class TestClass 

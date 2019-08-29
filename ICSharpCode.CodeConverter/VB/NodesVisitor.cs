@@ -695,8 +695,6 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.TupleExpression(SyntaxFactory.SeparatedList(args));
         }
 
-
-
         public override VisualBasicSyntaxNode VisitParenthesizedVariableDesignation(CSS.ParenthesizedVariableDesignationSyntax node)
         {
             return SyntaxFactory.IdentifierName(CommonConversions.GetTupleName(node));
@@ -1253,16 +1251,16 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitInitializerExpression(CSS.InitializerExpressionSyntax node)
         {
             if (node.IsKind(CS.SyntaxKind.ObjectInitializerExpression)) {
-                var expressions = node.Expressions.Select(e => e.Accept(TriviaConvertingVisitor));
+                var expressions = node.Expressions.Select(e => e.Accept(TriviaConvertingVisitor)).ToList();
                 if (expressions.OfType<FieldInitializerSyntax>().Any()) {
                     return SyntaxFactory.ObjectMemberInitializer(
                        SyntaxFactory.SeparatedList(expressions.OfType<FieldInitializerSyntax>())
                    );
                 }
 
-                return SyntaxFactory.CollectionInitializer(
+                return SyntaxFactory.ObjectCollectionInitializer(SyntaxFactory.CollectionInitializer(
                     SyntaxFactory.SeparatedList(expressions.OfType<ExpressionSyntax>())
-                );
+                ));
             }
             if (node.IsKind(CS.SyntaxKind.ArrayInitializerExpression))
                 return SyntaxFactory.CollectionInitializer(
