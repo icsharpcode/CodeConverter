@@ -479,6 +479,26 @@ End Class");
         }
 
         [Fact]
+        public async Task ExpressionSub()
+        {
+            await TestConversionCSharpToVisualBasic(@"using System;
+
+static class Program
+{
+    private static void Main(string[] args)
+    {
+        Action<string> x = (Action<string>)(_ => Environment.Exit(0));
+    }
+}", @"Imports System
+
+Friend Module Program
+    Private Sub Main(ByVal args As String())
+        Dim x = (Sub(__) Environment.[Exit](0))
+    End Sub
+End Module");
+        }
+
+        [Fact]
         public async Task LambdaBodyExpression()
         {
             await TestConversionCSharpToVisualBasic(@"class TestClass 

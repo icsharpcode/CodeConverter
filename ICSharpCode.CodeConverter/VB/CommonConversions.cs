@@ -213,7 +213,8 @@ namespace ICSharpCode.CodeConverter.VB
             EndBlockStatementSyntax endBlock;
             SyntaxKind multiLineExpressionKind;
             SyntaxKind singleLineExpressionKind;
-            if (symbol.ReturnsVoid) {
+            bool isSub = symbol.ReturnsVoid;
+            if (isSub) {
                 header = SyntaxFactory.SubLambdaHeader(SyntaxFactory.List<AttributeListSyntax>(),
                     ConvertModifiers(modifiers, TokenContext.Local), parameterList, null);
                 endBlock = SyntaxFactory.EndBlockStatement(SyntaxKind.EndSubStatement,
@@ -237,17 +238,41 @@ namespace ICSharpCode.CodeConverter.VB
                 return SyntaxFactory.MultiLineFunctionLambdaExpression(header,
                     SyntaxFactory.SingletonList<StatementSyntax>(vbThrowStatement), endBlock);
             } else {
-                statements = InsertRequiredDeclarations(
-                    SyntaxFactory.SingletonList<StatementSyntax>(
-                        SyntaxFactory.ReturnStatement((ExpressionSyntax)body.Accept(_nodesVisitor))),
-                    body);
+                var expressionSyntax = (ExpressionSyntax)body.Accept(_nodesVisitor);
+                var stmt = isSub ? (StatementSyntax) SyntaxFactory.ExpressionStatement(expressionSyntax) : SyntaxFactory.ReturnStatement(expressionSyntax);
+                statements = InsertRequiredDeclarations(SyntaxFactory.SingletonList(stmt), body);
             }
 
-            if (statements.Count == 1 && UnpackExpressionFromStatement(statements[0], out var expression)) {
-                return SyntaxFactory.SingleLineLambdaExpression(singleLineExpressionKind, header, expression);
+            return CreateLambdaExpression(singleLineExpressionKind, multiLineExpressionKind, header, statements, endBlock);
+            
+        }
+
+        private static LambdaExpressionSyntax CreateLambdaExpression(SyntaxKind singleLineKind,
+            SyntaxKind multiLineExpressionKind,
+            LambdaHeaderSyntax header, SyntaxList<StatementSyntax> statements, EndBlockStatementSyntax endBlock)
+        {
+            if (statements.Count == 1  && TryGetNodeForeSingleLineLambdaExpression(singleLineKind, statements, out VisualBasicSyntaxNode singleNode)) {
+                return SyntaxFactory.SingleLineLambdaExpression(singleLineKind, header, singleNode);
             }
 
             return SyntaxFactory.MultiLineLambdaExpression(multiLineExpressionKind, header, statements, endBlock);
+        }
+
+        private static bool TryGetNodeForeSingleLineLambdaExpression(SyntaxKind kind,
+            SyntaxList<StatementSyntax> statements, out VisualBasicSyntaxNode singleNode)
+        {
+            switch (kind)
+            {
+                case SyntaxKind.SingleLineSubLambdaExpression:
+                    singleNode = statements[0];
+                    return true;
+                case SyntaxKind.SingleLineFunctionLambdaExpression when UnpackExpressionFromStatement(statements[0], out var expression):
+                    singleNode = expression;
+                    return true;
+                default:
+                    singleNode = null;
+                    return false;
+            }
         }
 
         private static LambdaHeaderSyntax CreateFunctionHeader(SyntaxTokenList modifiers, ParameterListSyntax parameterList,
@@ -262,7 +287,7 @@ namespace ICSharpCode.CodeConverter.VB
             return header;
         }
 
-        private bool UnpackExpressionFromStatement(StatementSyntax statementSyntax, out ExpressionSyntax expression)
+        private static bool UnpackExpressionFromStatement(StatementSyntax statementSyntax, out ExpressionSyntax expression)
         {
             if (statementSyntax is ReturnStatementSyntax)
                 expression = ((ReturnStatementSyntax)statementSyntax).Expression;
