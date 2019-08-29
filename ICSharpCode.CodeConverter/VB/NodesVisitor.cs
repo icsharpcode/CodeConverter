@@ -1258,9 +1258,12 @@ namespace ICSharpCode.CodeConverter.VB
                    );
                 }
 
-                return SyntaxFactory.ObjectCollectionInitializer(SyntaxFactory.CollectionInitializer(
+                var collectionInitializerSyntax = SyntaxFactory.CollectionInitializer(
                     SyntaxFactory.SeparatedList(expressions.OfType<ExpressionSyntax>())
-                ));
+                );
+                var isObjectCollection = _semanticModel.GetTypeInfo(node.Parent).Type?.CanSupportCollectionInitializer() == true;
+
+                return isObjectCollection ? (VisualBasicSyntaxNode) SyntaxFactory.ObjectCollectionInitializer(collectionInitializerSyntax) : collectionInitializerSyntax;
             }
             if (node.IsKind(CS.SyntaxKind.ArrayInitializerExpression))
                 return SyntaxFactory.CollectionInitializer(
