@@ -316,7 +316,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             RefKind refKind = RefKind.None;
             if (symbol is IMethodSymbol methodSymbol) {
                 int argId = ((VBasic.Syntax.ArgumentListSyntax)node.Parent).Arguments.IndexOf(node);
-                var parameters = (GetCsSymbolOrNull(methodSymbol) ?? methodSymbol).GetParameters();
+                var parameters = (CommonConversions.GetCsOriginalSymbolOrNull(methodSymbol.OriginalDefinition) ?? methodSymbol).GetParameters();
                 //WARNING: If named parameters can reach here it won't work properly for them
                 if (argId < parameters.Count()) {
                     refKind = parameters[argId].RefKind;
@@ -707,8 +707,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             var attributes = node.AttributeLists.SelectMany(ConvertAttribute).ToList();
-            var paramSymbol = _semanticModel.GetDeclaredSymbol(node);
-            var csParamSymbol = GetCsSymbolOrNull(paramSymbol) as IParameterSymbol;
+            var csParamSymbol = CommonConversions.GetDeclaredCsOriginalSymbolOrNull(node) as IParameterSymbol;
 
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Local);
             if (csParamSymbol?.RefKind == RefKind.Out || node.AttributeLists.Any(CommonConversions.HasOutAttribute)) {
@@ -994,14 +993,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return argumentSyntax;
             }).Where(a => a != null);
             return argumentSyntaxs;
-        }
-
-        public ISymbol GetCsSymbolOrNull(ISymbol symbol)
-        {
-            // Construct throws an exception if ConstructedFrom differs from it, so let's use ConstructedFrom directly
-            ISymbol symbolToFind = symbol is IMethodSymbol m ? m.ConstructedFrom : symbol;
-            var similarSymbol = SymbolFinder.FindSimilarSymbols(symbolToFind, _csCompilation).FirstOrDefault();
-            return similarSymbol;
         }
 
         private bool NeedsVariableForArgument(VBasic.Syntax.SimpleArgumentSyntax node)

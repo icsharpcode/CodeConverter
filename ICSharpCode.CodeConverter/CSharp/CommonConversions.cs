@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
+using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -37,15 +38,18 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static readonly Type OutAttributeType = typeof(OutAttribute);
         private readonly SemanticModel _semanticModel;
         private readonly SyntaxGenerator _csSyntaxGenerator;
+        private readonly CSharpCompilation _csCompilation;
         public CommentConvertingVisitorWrapper<CSharpSyntaxNode> TriviaConvertingExpressionVisitor { get; set; }
         public TypeConversionAnalyzer TypeConversionAnalyzer { get; }
 
         public CommonConversions(SemanticModel semanticModel,
-            TypeConversionAnalyzer typeConversionAnalyzer, SyntaxGenerator csSyntaxGenerator)
+            TypeConversionAnalyzer typeConversionAnalyzer, SyntaxGenerator csSyntaxGenerator,
+            CSharpCompilation csCompilation)
         {
             TypeConversionAnalyzer = typeConversionAnalyzer;
             _semanticModel = semanticModel;
             _csSyntaxGenerator = csSyntaxGenerator;
+            _csCompilation = csCompilation;
         }
 
         public Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(
@@ -540,6 +544,21 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
                        ?.Equals(OutAttributeType.FullName) == true;
+        }
+
+        public ISymbol GetDeclaredCsOriginalSymbolOrNull(VisualBasicSyntaxNode node)
+        {
+            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
+            return declaredSymbol != null ? GetCsOriginalSymbolOrNull(declaredSymbol) : null;
+        }
+
+        public ISymbol GetCsOriginalSymbolOrNull(ISymbol symbol)
+        {
+            symbol = symbol.OriginalDefinition;
+            // Construct throws an exception if ConstructedFrom differs from it, so let's use ConstructedFrom directly
+            var symbolToFind = symbol is IMethodSymbol m ? m.ConstructedFrom : symbol;
+            var similarSymbol = SymbolFinder.FindSimilarSymbols(symbolToFind, _csCompilation).FirstOrDefault();
+            return similarSymbol;
         }
     }
 }

@@ -61,7 +61,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             TriviaConverter triviaConverter = new TriviaConverter();
             TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this, triviaConverter);
             var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator);
-            CommonConversions = new CommonConversions(semanticModel, typeConversionAnalyzer, csSyntaxGenerator);
+            CommonConversions = new CommonConversions(semanticModel, typeConversionAnalyzer, csSyntaxGenerator, csCompilation);
             _additionalInitializers = new AdditionalInitializers();
             _expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _methodsWithHandles, CommonConversions, triviaConverter, _extraUsingDirectives);
             _triviaConvertingExpressionVisitor = _expressionNodeVisitor.TriviaConvertingVisitor;
@@ -955,13 +955,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)))
             );
         }
-
-        private ISymbol GetDeclaredCsSymbolOrNull(VBasic.VisualBasicSyntaxNode node)
-        {
-            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
-            return declaredSymbol != null ? _expressionNodeVisitor.GetCsSymbolOrNull(declaredSymbol) : null;
-        }
-
 
         public override CSharpSyntaxNode VisitOperatorBlock(VBSyntax.OperatorBlockSyntax node)
         {

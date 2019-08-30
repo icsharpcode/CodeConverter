@@ -85,5 +85,67 @@ End Class", @"public class Class1
     }
 }");
         }
+
+        [Fact]
+        public async Task OutParameterNonCompilingType()
+        {
+            await TestConversionVisualBasicToCSharp(@"Public Class OutParameterWithMissingType
+    Private Shared Sub AddToDict(ByVal pDict As Dictionary(Of Integer, MissingType), ByVal pKey As Integer)
+        Dim anInstance As MissingType = Nothing
+        If Not pDict.TryGetValue(pKey, anInstance) Then
+            anInstance = New MissingType
+            pDict.Add(pKey, anInstance)
+        End If
+    End Sub
+End Class
+
+Public Class OutParameterWithNonCompilingType
+    Private Shared Sub AddToDict(ByVal pDict As Dictionary(Of OutParameterWithMissingType, MissingType), ByVal pKey As OutParameterWithMissingType)
+        Dim anInstance As MissingType = Nothing
+        If Not pDict.TryGetValue(pKey, anInstance) Then
+            anInstance = New MissingType
+            pDict.Add(pKey, anInstance)
+        End If
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.VisualBasic;
+
+public class OutParameterWithMissingType
+{
+    private static void AddToDict(Dictionary<int, MissingType> pDict, int pKey)
+    {
+        MissingType anInstance = null;
+        if (!pDict.TryGetValue(pKey, out anInstance))
+        {
+            anInstance = new MissingType();
+            pDict.Add(pKey, anInstance);
+        }
+    }
+}
+
+public class OutParameterWithNonCompilingType
+{
+    private static void AddToDict(Dictionary<OutParameterWithMissingType, MissingType> pDict, OutParameterWithMissingType pKey)
+    {
+        MissingType anInstance = null;
+        if (!pDict.TryGetValue(pKey, out anInstance))
+        {
+            anInstance = new MissingType();
+            pDict.Add(pKey, anInstance);
+        }
+    }
+}");
+        }
     }
 }
