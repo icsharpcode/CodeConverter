@@ -30,16 +30,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csSyntaxGenerator = csSyntaxGenerator;
         }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = false, bool alwaysExplicit = false, bool implicitCastFromIntToEnum = false)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = false, bool alwaysExplicit = false)
         {
-            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit, implicitCastFromIntToEnum);
+            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit);
             csNode = addParenthesisIfNeeded && (conversionKind == TypeConversionKind.DestructiveCast || conversionKind == TypeConversionKind.NonDestructiveCast)
                 ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;
             return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded);
         }
 
-        private ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false)
         {
             var vbConvertedType = ModelExtensions.GetTypeInfo(_semanticModel, vbNode).ConvertedType;
             switch (conversionKind)
@@ -61,7 +61,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        private TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool implicitCastFromIntToEnum = false)
+        public TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false)
         {
             var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, vbNode);
             var vbType = typeInfo.Type;
@@ -89,14 +89,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csConvertedType = _csCompilation.GetTypeByMetadataName(vbConvertedType.GetFullMetadataName());
 
             if (csType != null && csConvertedType != null && 
-                TryAnalyzeCsConversion(vbNode, implicitCastFromIntToEnum, csType, csConvertedType, vbConversion, vbConvertedType, vbType, vbCompilation, out TypeConversionKind analyzeConversion)) {
+                TryAnalyzeCsConversion(vbNode, csType, csConvertedType, vbConversion, vbConvertedType, vbType, vbCompilation, out TypeConversionKind analyzeConversion)) {
                 return analyzeConversion;
             }
 
             return AnalyzeVbConversion(alwaysExplicit, vbType, vbConvertedType, vbConversion);
         }
 
-        private bool TryAnalyzeCsConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool implicitCastFromIntToEnum, INamedTypeSymbol csType,
+        private bool TryAnalyzeCsConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, INamedTypeSymbol csType,
             INamedTypeSymbol csConvertedType, Conversion vbConversion, ITypeSymbol vbConvertedType, ITypeSymbol vbType,
             VisualBasicCompilation vbCompilation, out TypeConversionKind typeConversionKind)
         {
@@ -122,9 +122,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 typeConversionKind = TypeConversionKind.NonDestructiveCast;
                 return true;
             } else if (csConversion.IsExplicit && csConversion.IsEnumeration) {
-                typeConversionKind = implicitCastFromIntToEnum
-                    ? TypeConversionKind.Identity
-                    : TypeConversionKind.NonDestructiveCast;
+                typeConversionKind = TypeConversionKind.NonDestructiveCast;
                 return true;
             } else if (csConversion.IsExplicit && vbConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
                 typeConversionKind = TypeConversionKind.Conversion;

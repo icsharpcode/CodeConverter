@@ -543,9 +543,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 foreach (var c in block.CaseStatement.Cases) {
                     if (c is VBSyntax.SimpleCaseClauseSyntax s) {
                         var originalExpressionSyntax = (ExpressionSyntax)s.Value.Accept(_expressionVisitor);
-                        var expressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax);
+                        // CSharp requires an explicit cast from the base type (e.g. int) in most cases switching on an enum
+                        var typeConversionKind = CommonConversions.TypeConversionAnalyzer.AnalyzeConversion(s.Value);
+                        var expressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax, typeConversionKind, true);
                         SwitchLabelSyntax caseSwitchLabelSyntax = SyntaxFactory.CaseSwitchLabel(expressionSyntax);
-                        if (!_semanticModel.GetConstantValue(s.Value).HasValue || originalExpressionSyntax != expressionSyntax) {
+                        if (!_semanticModel.GetConstantValue(s.Value).HasValue && typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.NonDestructiveCast && typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.Identity) {
                             caseSwitchLabelSyntax =
                                 WrapInCasePatternSwitchLabelSyntax(node, expressionSyntax);
                         }

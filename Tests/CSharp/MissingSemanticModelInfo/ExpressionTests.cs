@@ -239,7 +239,7 @@ public class EnumAndValTest
                 break;
             }
 
-            case (PositionEnum) 1:
+            case (PositionEnum)1:
             {
                 tS = ""LEFTTOP"";
                 break;
