@@ -1,4 +1,11 @@
 ﻿Friend Class AClass
+    Private dict As New Dictionary(Of Integer, Integer)
+
+    Private Sub UseOutParameterInClass()
+        Dim x
+        dict.TryGetValue(1, x)
+    End Sub
+
     Private Sub UseEnumFromOtherFileInSolution(m As AnEnum)
         Dim [nothing] = Enumerable.Empty(Of String).ToArray()(AnEnum.AnEnumMember)
         Select Case m
