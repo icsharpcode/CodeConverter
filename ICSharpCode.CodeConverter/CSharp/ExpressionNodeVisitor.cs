@@ -1000,7 +1000,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             // Construct throws an exception if ConstructedFrom differs from it, so let's use ConstructedFrom directly
             ISymbol symbolToFind = symbol is IMethodSymbol m ? m.ConstructedFrom : symbol;
-            return SymbolFinder.FindSimilarSymbols(symbolToFind, _csCompilation).FirstOrDefault();
+            var similarSymbol = SymbolFinder.FindSimilarSymbols(symbolToFind, _csCompilation).FirstOrDefault();
+            return similarSymbol;
         }
 
         private bool NeedsVariableForArgument(VBasic.Syntax.SimpleArgumentSyntax node)
