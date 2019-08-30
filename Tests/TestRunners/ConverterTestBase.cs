@@ -159,7 +159,8 @@ End Sub";
                    || IsTwoLineCsIfStatement(line, nextLine)
                    || line.TrimStart().StartsWith("//")
                    || line.Contains("DllImport")
-                   || line.Contains("arg") && nextLine.Contains("ref ");
+                   || line.Contains("arg") && nextLine.Contains("ref ")
+                   || line.TrimStart().StartsWith("if") && nextLine.Trim() == "{";
         }
 
         /// <summary>
@@ -173,7 +174,6 @@ End Sub";
         private static bool HasNoTargetLine(string prevLine, string line, string nextLine)
         {
             return IsVbInheritsOrImplements(nextLine)
-                || line.Contains("End If")
                 || IsFirstOfMultiLineVbIfStatement(line)
                 || line.Contains("<Extension") || line.Contains("CompilerServices.Extension")
                 || line.TrimStart().StartsWith("'")
