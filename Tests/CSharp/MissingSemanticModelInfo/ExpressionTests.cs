@@ -147,5 +147,113 @@ public class OutParameterWithNonCompilingType
     }
 }");
         }
+        [Fact]
+        public async Task EnumSwitchAndValWithUnusedMissingType()
+        {
+            await TestConversionVisualBasicToCSharp(@"Public Class EnumAndValTest
+
+    Public Enum PositionEnum As Integer
+        None = 0
+        LeftTop = 1
+    End Enum
+
+    Public TitlePosition As PositionEnum = PositionEnum.LeftTop
+    Public TitleAlign As PositionEnum = 2
+    Public TargetAspectRatio As Single = 0
+
+    Function TitlePositionConstantFromString(ByVal pS As String, missing As MissingType) As PositionEnum
+        Dim tPos As PositionEnum
+        Select Case pS.ToUpper
+            Case ""NONE"", ""0""
+                tPos = 0
+            Case ""LEFTTOP"", ""1""
+                tPos = 1
+            Case Else
+                TargetAspectRatio = Val(pS)
+        End Select
+        Return tPos
+    End Function
+    Function TitlePositionStringFromConstant(ByVal pS As PositionEnum) As String
+        Dim tS As String
+        Select Case pS
+            Case 0
+                tS = ""NONE""
+            Case 1
+                tS = ""LEFTTOP""
+            Case Else
+                tS = pS
+        End Select
+        Return tS
+    End Function
+End Class",
+@"using Microsoft.VisualBasic;
+using Microsoft.VisualBasic.CompilerServices;
+
+public class EnumAndValTest
+{
+    public enum PositionEnum : int
+    {
+        None = 0,
+        LeftTop = 1
+    }
+
+    public PositionEnum TitlePosition = PositionEnum.LeftTop;
+    public PositionEnum TitleAlign = (PositionEnum)2;
+    public float TargetAspectRatio = 0;
+
+    public PositionEnum TitlePositionConstantFromString(string pS, MissingType missing)
+    {
+        PositionEnum tPos = default(PositionEnum);
+        switch (pS.ToUpper())
+        {
+            case ""NONE"":
+            case ""0"":
+            {
+                tPos = 0;
+                break;
+            }
+
+            case ""LEFTTOP"":
+            case ""1"":
+            {
+                tPos = (PositionEnum) 1;
+                break;
+            }
+
+            default:
+            {
+                TargetAspectRatio = (float) Conversion.Val(pS);
+                break;
+            }
+        }
+        return tPos;
+    }
+    public string TitlePositionStringFromConstant(PositionEnum pS)
+    {
+        string tS;
+        switch (pS)
+        {
+            case 0:
+            {
+                tS = ""NONE"";
+                break;
+            }
+
+            case (PositionEnum) 1:
+            {
+                tS = ""LEFTTOP"";
+                break;
+            }
+
+            default:
+            {
+                tS = Conversions.ToString(pS);
+                break;
+            }
+        }
+        return tS;
+    }
+}");
+        }
     }
 }
