@@ -13,7 +13,7 @@ namespace CodeConverter.Tests.LanguageAgnostic
     {
 
         [Fact]
-        public async Task TogglesExistingValue()
+        public void TogglesExistingValue()
         {
             var convertedProjFile = ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(
                 @"
@@ -33,7 +33,7 @@ namespace CodeConverter.Tests.LanguageAgnostic
         }
 
         [Fact]
-        public async Task InsertsIfNotPresent()
+        public void InsertsIfNotPresent()
         {
             var convertedProjFile = ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(
                 @"

@@ -219,11 +219,8 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                 return await ConvertTextOnlyAsync<TLanguageConversion>(documentPath, selected);
             }
             var document = _visualStudioWorkspace.CurrentSolution.GetDocument(documentId);
-            var compilation = await document.Project.GetCompilationAsync();
-            var documentSyntaxTree = await document.GetSyntaxTreeAsync();
-
             var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
-            return await ProjectConversion.ConvertSingle(compilation, documentSyntaxTree, selectedTextSpan, new TLanguageConversion(), document.Project);
+            return await ProjectConversion.ConvertSingle(document, selectedTextSpan, new TLanguageConversion());
         }
 
         private static async Task<ConversionResult> ConvertTextOnlyAsync<TLanguageConversion>(string documentPath, Span selected)
