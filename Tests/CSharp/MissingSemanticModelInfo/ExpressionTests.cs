@@ -159,9 +159,9 @@ public class OutParameterWithNonCompilingType
 
     Public TitlePosition As PositionEnum = PositionEnum.LeftTop
     Public TitleAlign As PositionEnum = 2
-    Public TargetAspectRatio As Single = 0
+    Public Ratio As Single = 0
 
-    Function TitlePositionConstantFromString(ByVal pS As String, missing As MissingType) As PositionEnum
+    Function PositionEnumFromString(ByVal pS As String, missing As MissingType) As PositionEnum
         Dim tPos As PositionEnum
         Select Case pS.ToUpper
             Case ""NONE"", ""0""
@@ -169,11 +169,11 @@ public class OutParameterWithNonCompilingType
             Case ""LEFTTOP"", ""1""
                 tPos = 1
             Case Else
-                TargetAspectRatio = Val(pS)
+                Ratio = Val(pS)
         End Select
         Return tPos
     End Function
-    Function TitlePositionStringFromConstant(ByVal pS As PositionEnum) As String
+    Function PositionEnumStringFromConstant(ByVal pS As PositionEnum) As String
         Dim tS As String
         Select Case pS
             Case 0
@@ -186,7 +186,19 @@ public class OutParameterWithNonCompilingType
         Return tS
     End Function
 End Class",
-@"using Microsoft.VisualBasic;
+@"using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
 
 public class EnumAndValTest
@@ -199,9 +211,9 @@ public class EnumAndValTest
 
     public PositionEnum TitlePosition = PositionEnum.LeftTop;
     public PositionEnum TitleAlign = (PositionEnum)2;
-    public float TargetAspectRatio = 0;
+    public float Ratio = 0;
 
-    public PositionEnum TitlePositionConstantFromString(string pS, MissingType missing)
+    public PositionEnum PositionEnumFromString(string pS, MissingType missing)
     {
         PositionEnum tPos = default(PositionEnum);
         switch (pS.ToUpper())
@@ -222,13 +234,13 @@ public class EnumAndValTest
 
             default:
             {
-                TargetAspectRatio = (float) Conversion.Val(pS);
+                Ratio = Conversions.ToSingle(Conversion.Val(pS));
                 break;
             }
         }
         return tPos;
     }
-    public string TitlePositionStringFromConstant(PositionEnum pS)
+    public string PositionEnumStringFromConstant(PositionEnum pS)
     {
         string tS;
         switch (pS)
