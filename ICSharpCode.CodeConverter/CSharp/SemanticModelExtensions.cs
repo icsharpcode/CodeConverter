@@ -31,8 +31,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (!methodFlow.ReadInside.Contains(localSymbol)) return true;
             var unassignedVariables = GetUnassignedVariables(methodFlow);
             if (unassignedVariables != null) return !unassignedVariables.Contains(localSymbol);
-            //Safe underapproximation - may not be read on the paths where it wasn't assigned
-            return methodFlow.AlwaysAssigned.Contains(localSymbol);
+            return false;
         }
 
         /// <remarks>Unfortunately the roslyn UnassignedVariablesWalker and all useful collections created from it are internal only
