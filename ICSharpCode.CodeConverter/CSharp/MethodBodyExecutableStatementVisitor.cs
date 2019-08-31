@@ -155,6 +155,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
             var kind = node.Kind().ConvertToken(TokenContext.Local);
 
+            rhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
             var assignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
 
             var postAssignment = GetPostAssignmentStatements(node);
