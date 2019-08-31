@@ -47,18 +47,5 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return unassignedVariables.Cast<ISymbol>();
             return null;
         }
-
-        private static DataFlowAnalysis AnalyzeDataFlow(SemanticModel semanticModel, SyntaxNode ancestorOfLocation, ReferenceLocation location)
-        {
-            var ofLocation = ancestorOfLocation.FindNode(location.Location.SourceSpan);
-            return AnalyzeDataFlow(semanticModel, ofLocation);
-        }
-
-        private static DataFlowAnalysis AnalyzeDataFlow(SemanticModel semanticModel, SyntaxNode refNode)
-        {
-            var nodeExprOrStmt = refNode.GetAncestors().First(a => a is ExpressionSyntax || a is ExecutableStatementSyntax);
-            var nodeFlow = semanticModel.AnalyzeDataFlow(nodeExprOrStmt);
-            return nodeFlow;
-        }
     }
 }
