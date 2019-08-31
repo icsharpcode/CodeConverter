@@ -267,5 +267,44 @@ public class EnumAndValTest
     }
 }");
         }
+
+        [Fact]
+        public async Task UnknownTypeInvocation()
+        {
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private property DefaultDate as System.SomeUnknownType
+    private sub TestMethod()
+        Dim a = DefaultDate(1, 2, 3).Blawer(1, 2, 3)
+    End Sub
+End Class", @"class TestClass
+{
+    private System.SomeUnknownType DefaultDate { get; set; }
+    private void TestMethod()
+    {
+        object a = DefaultDate[1, 2, 3].Blawer(1, 2, 3);
+    }
+}");
+        }
+
+    [Fact]
+    public async Task CharacterizeRaiseEventWithMissingDefinitionActsLikeFunc()
+    {
+    await TestConversionCSharpToVisualBasic(
+        @"using System;
+
+class TestClass
+{
+    void TestMethod()
+    {
+        if (MyEvent != null) MyEvent(this, EventArgs.Empty);
+    }
+}", @"Imports System
+
+Friend Class TestClass
+    Private Sub TestMethod()
+        If MyEvent IsNot Nothing Then MyEvent(Me, EventArgs.Empty)
+    End Sub
+End Class");
+        }
     }
 }
