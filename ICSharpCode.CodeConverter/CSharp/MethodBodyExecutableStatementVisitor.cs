@@ -547,7 +547,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         var typeConversionKind = CommonConversions.TypeConversionAnalyzer.AnalyzeConversion(s.Value);
                         var expressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax, typeConversionKind, true);
                         SwitchLabelSyntax caseSwitchLabelSyntax = SyntaxFactory.CaseSwitchLabel(expressionSyntax);
-                        if (!_semanticModel.GetConstantValue(s.Value).HasValue && typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.NonDestructiveCast && typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.Identity) {
+                        if (!_semanticModel.GetConstantValue(s.Value).HasValue || (typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.NonDestructiveCast && typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.Identity)) {
                             caseSwitchLabelSyntax =
                                 WrapInCasePatternSwitchLabelSyntax(node, expressionSyntax);
                         }
