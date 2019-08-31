@@ -85,7 +85,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var b = 0;
+        int b = 0;
     }
 }");
         }
@@ -171,7 +171,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var b = new string(""test"");
+        string b = new string(""test"");
     }
 }");
         }
@@ -198,7 +198,7 @@ class UseClass
 {
     public void DoStuff()
     {
-        SurroundingClass surrounding = new SurroundingClass();
+        var surrounding = new SurroundingClass();
         surrounding.Arr[1] = ""bla"";
     }
 }");
@@ -237,7 +237,7 @@ class TestClass
     private void TestMethod()
     {
         var colFics = new List<int>();
-        string[] a = new string[colFics.Count - 1 + 1];
+        var a = new string[colFics.Count - 1 + 1];
     }
 }");
         }
@@ -274,7 +274,7 @@ public class TestClass
         numArray2 = new int[6];
         if (oldNumArray2 != null)
             Array.Copy(oldNumArray2, numArray2, Math.Min(6, oldNumArray2.Length));
-        int[,] y = new int[7, 6];
+        var y = new int[7, 6];
         y[2, 3] = 1;
         var oldY = y;
         y = new int[7, 9];
@@ -369,7 +369,7 @@ class TestClass
 {
     private void Save()
     {
-        using (SqlCommand cmd = new SqlCommand())
+        using (var cmd = new SqlCommand())
         {
             {
                 var withBlock = cmd;
@@ -404,7 +404,7 @@ End Structure", @"public class VisualBasicClass
 {
     public void Stuff()
     {
-        SomeStruct str = default(SomeStruct);
+        var str = default(SomeStruct);
         str
 .ArrField = new string[2];
         str.ArrProp = new string[3];
@@ -464,7 +464,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[] b = new[] { 1, 2, 3 };
+        var b = new[] { 1, 2, 3 };
     }
 }");
         }
@@ -496,7 +496,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[] b = new int[] { 1, 2, 3 };
+        var b = new int[] { 1, 2, 3 };
     }
 }");
         }
@@ -512,7 +512,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[] b = new int[3] { 1, 2, 3 };
+        var b = new int[3] { 1, 2, 3 };
     }
 }");
         }
@@ -528,7 +528,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[] b = new int[3];
+        var b = new int[3];
     }
 }");
         }
@@ -565,23 +565,23 @@ End Class", @"class TestClass
     private void TestMethod()
     {
         // Declare a single-dimension array of 5 numbers.
-        int[] numbers1 = new int[5];
+        var numbers1 = new int[5];
 
         // Declare a single-dimension array and set its 4 values.
         var numbers2 = new int[] { 1, 2, 4, 8 };
 
         // Declare a 6 x 6 multidimensional array.
-        double[,] matrix1 = new double[6, 6];
+        var matrix1 = new double[6, 6];
 
         // Declare a 4 x 3 multidimensional array and set array element values.
         var matrix2 = new int[4, 3] { { 1, 2, 3 }, { 2, 3, 4 }, { 3, 4, 5 }, { 4, 5, 6 } };
 
         // Combine rank specifiers with initializers of various kinds
-        double[,] rankSpecifiers = new double[2, 2] { { 1.0, 2.0 }, { 3.0, 4.0 } };
-        double[,] rankSpecifiers2 = new double[2, 2];
+        var rankSpecifiers = new double[2, 2] { { 1.0, 2.0 }, { 3.0, 4.0 } };
+        var rankSpecifiers2 = new double[2, 2];
 
         // Declare a jagged array
-        double[][] sales = new double[12][] { };
+        var sales = new double[12][] { };
     }
 }");
         }
@@ -613,7 +613,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[,] b = new[] { { 1, 2 }, { 3, 4 } };
+        var b = new[] { { 1, 2 }, { 3, 4 } };
     }
 }");
         }
@@ -629,7 +629,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[,] b = new int[,] { { 1, 2 }, { 3, 4 } };
+        var b = new int[,] { { 1, 2 }, { 3, 4 } };
     }
 }");
         }
@@ -650,12 +650,12 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[,] a = new int[,] { { 1, 2 }, { 3, 4 } };
-        int[,] b = new int[2, 2] { { 1, 2 }, { 3, 4 } };
-        int[,,] c = new int[,,] { { { 1 } } };
-        int[,,] d = new int[1, 1, 1] { { { 1 } } };
-        int[][,] e = new int[][,] { };
-        int[][,] f = new int[0][,] { };
+        var a = new int[,] { { 1, 2 }, { 3, 4 } };
+        var b = new int[2, 2] { { 1, 2 }, { 3, 4 } };
+        var c = new int[,,] { { { 1 } } };
+        var d = new int[1, 1, 1] { { { 1 } } };
+        var e = new int[][,] { };
+        var f = new int[0][,] { };
     }
 }");
         }
@@ -687,7 +687,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[][] b = new[] { new int[] { 1, 2 }, new int[] { 3, 4 } };
+        var b = new[] { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
 }");
         }
@@ -719,7 +719,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[][] b = new int[2][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
+        var b = new int[2][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
 }");
         }
@@ -746,7 +746,7 @@ class Test
         ;
         int value = 1;
         const double myPIe = Math.PI;
-        var text = ""This is my text!"";
+        string text = ""This is my text!"";
         goto the_beginning;
     }
 }");
@@ -1158,7 +1158,7 @@ End Class", @"class TestClass
 {
     private void TestMethod(int end)
     {
-        int[] b = default(int[]), s = default(int[]);
+        var b = default(int[]), s = default(int[]);
         for (int i = 0, loopTo = end; i <= loopTo; i++)
             b[i] = s[i];
     }
@@ -1234,7 +1234,7 @@ End Class", @"class TestClass
 {
     private void TestMethod(int end)
     {
-        int[] b = default(int[]), s = default(int[]);
+        var b = default(int[]), s = default(int[]);
         for (int i = 0, loopTo = end - 1; i <= loopTo; i++)
             b[i] = s[i];
     }
@@ -1288,7 +1288,7 @@ class GotoTest1
         int x = 200;
         int y = 4;
         int count = 0;
-        string[,] array = new string[x - 1 + 1, y - 1 + 1];
+        var array = new string[x - 1 + 1, y - 1 + 1];
 
         for (int i = 0, loopTo = x - 1; i <= loopTo; i++)
         {

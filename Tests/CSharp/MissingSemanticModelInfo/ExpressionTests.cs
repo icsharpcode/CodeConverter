@@ -125,7 +125,7 @@ public class OutParameterWithMissingType
 {
     private static void AddToDict(Dictionary<int, MissingType> pDict, int pKey)
     {
-        MissingType anInstance = null;
+        var anInstance = null;
         if (!pDict.TryGetValue(pKey, out anInstance))
         {
             anInstance = new MissingType();
@@ -138,7 +138,7 @@ public class OutParameterWithNonCompilingType
 {
     private static void AddToDict(Dictionary<OutParameterWithMissingType, MissingType> pDict, OutParameterWithMissingType pKey)
     {
-        MissingType anInstance = null;
+        var anInstance = null;
         if (!pDict.TryGetValue(pKey, out anInstance))
         {
             anInstance = new MissingType();
@@ -215,7 +215,7 @@ public class EnumAndValTest
 
     public PositionEnum PositionEnumFromString(string pS, MissingType missing)
     {
-        PositionEnum tPos = default(PositionEnum);
+        var tPos = default(PositionEnum);
         switch (pS.ToUpper())
         {
             case ""NONE"":

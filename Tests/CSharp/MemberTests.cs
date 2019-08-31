@@ -213,7 +213,7 @@ public class Class1
             string XRet = default(string);
             XRet = Conversions.ToString(4);
             XRet = Conversions.ToString(Conversions.ToDouble(XRet) * 2);
-            var y = ""random variable to check it isn't just using the value of the last statement"";
+            string y = ""random variable to check it isn't just using the value of the last statement"";
             return XRet;
         }
     }

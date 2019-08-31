@@ -9,7 +9,7 @@ namespace EmptyVb
 
         private static void UseOutParameterInModule()
         {
-            var x = default(var);
+            var x = default(object);
             int argvalue = Conversions.ToInteger(x);
             dict.TryGetValue(1, out argvalue);
         }

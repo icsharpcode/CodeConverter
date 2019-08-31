@@ -103,8 +103,8 @@ class Test
 
     public void Linq102()
     {
-        string[] categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
-        Product[] products = GetProductList();
+        var categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
+        var products = GetProductList();
         var q = from c in categories
                 join p in products on c equals p.Category
                 select new { Category = c, p.ProductName };
@@ -159,7 +159,7 @@ class Test
 
     public void Linq103()
     {
-        string[] categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
+        var categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
         var products = GetProductList();
         var q = from c in categories
                 join p in products on c equals p.Category into ps

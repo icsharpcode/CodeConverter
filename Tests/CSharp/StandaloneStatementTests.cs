@@ -121,7 +121,7 @@ For Each scr In _sponsorPayment.SponsorClaimRevisions
         End If
     Next
 Next", @"{
-    List<int> cmccIds = new List<int>();
+    var cmccIds = new List<int>();
     foreach (var scr in _sponsorPayment.SponsorClaimRevisions)
     {
         foreach (var claim in scr.Claims)
