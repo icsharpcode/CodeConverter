@@ -55,7 +55,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var systemDotConvert = ConvertType.FullName;
             var convertMethods = semanticModel.Compilation.GetTypeByMetadataName(systemDotConvert).GetMembers().Where(m =>
                 m.Name.StartsWith("To", StringComparison.Ordinal) && m.GetParameters().Length == 1);
-            var methodsByType = convertMethods.Where(m => m.Name != nameof(Convert.ToBase64String))
+            var methodsByType = convertMethods
                 .GroupBy(m => new { ReturnType = m.GetReturnType(), Name = $"{systemDotConvert}.{m.Name}" })
                 .ToDictionary(m => m.Key.ReturnType, m => m.Key.Name);
             return methodsByType;
