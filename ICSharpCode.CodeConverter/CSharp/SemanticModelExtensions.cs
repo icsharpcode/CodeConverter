@@ -25,20 +25,22 @@ namespace ICSharpCode.CodeConverter.CSharp
             var statements = localDeclarator.GetAncestor<MethodBlockBaseSyntax>().Statements.Where(s =>
                 s.DescendantTokens().Any(id => ((SyntaxToken) id).IsKind(SyntaxKind.IdentifierToken) && equalsId(id.ValueText))
             ).Take(2).ToList();
-            var first = statements.First();
-            var second = statements.Last();
+            var declarationStmt = statements.First();
 
-            // Analyze the data flow in this block to see if initialization is required
-            // If the second statement where the identifier is used is an if block, we look at the condition rather than the whole statement. This is an easy special
-            // case which catches eg. the if (TryParse()) pattern. This could happen for any node which allows multiple statements.
-            var dataFlow = second is MultiLineIfBlockSyntax ifBlock
-                ? semanticModel.AnalyzeDataFlow(ifBlock.IfStatement.Condition)
-                : semanticModel.AnalyzeDataFlow(first, second);
+            foreach (var referenceStmt in statements.Skip(1)) {
 
-            bool alwaysAssigned = dataFlow.AlwaysAssigned.Any(s => equalsId(s.Name));
-            bool readInside = dataFlow.ReadInside.Any(s => equalsId(s.Name));
-            bool writtenInside = dataFlow.WrittenInside.Any(s => equalsId(s.Name));
-            return alwaysAssigned && !writtenInside || !readInside;
+                // Analyze the data flow in this block to see if initialization is required
+                // If the second statement where the identifier is used is an if block, we look at the condition rather than the whole statement. This is an easy special
+                // case which catches eg. the if (TryParse()) pattern. This could happen for any node which allows multiple statements.
+                var dataFlow = semanticModel.AnalyzeDataFlow(declarationStmt, referenceStmt);
+
+                bool alwaysAssigned = dataFlow.AlwaysAssigned.Any(s => equalsId(s.Name));
+                bool readInside = dataFlow.ReadInside.Any(s => equalsId(s.Name));
+                if (alwaysAssigned) return true;
+                if (readInside) return false;
+            }
+
+            return true;
         }
     }
 }
