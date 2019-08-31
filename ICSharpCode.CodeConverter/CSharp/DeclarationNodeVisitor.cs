@@ -50,7 +50,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CommonConversions CommonConversions { get; }
 
-        public DeclarationNodeVisitor(Compilation compilation, SemanticModel semanticModel,
+        public DeclarationNodeVisitor(Document document, Compilation compilation, SemanticModel semanticModel,
             CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator)
         {
             _compilation = compilation;
@@ -61,7 +61,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             TriviaConverter triviaConverter = new TriviaConverter();
             TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this, triviaConverter);
             var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator);
-            CommonConversions = new CommonConversions(semanticModel, typeConversionAnalyzer, csSyntaxGenerator, csCompilation);
+            CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, csCompilation);
             _additionalInitializers = new AdditionalInitializers();
             _expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _methodsWithHandles, CommonConversions, triviaConverter, _extraUsingDirectives);
             _triviaConvertingExpressionVisitor = _expressionNodeVisitor.TriviaConvertingVisitor;

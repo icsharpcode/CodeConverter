@@ -27,7 +27,8 @@ namespace EmptyVb
             var nothing = Enumerable.Empty<string>().ToArray()[(int)AnEnum.AnEnumMember];
             switch (m)
             {
-                case -1:
+                case (EmptyVb.AnEnum)(-1
+               ):
                     {
                         return;
                     }

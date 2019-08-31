@@ -2,6 +2,8 @@
 using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.FindSymbols;
+using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -16,31 +18,35 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// This check is entirely to avoid some unnecessary default initializations so the code looks less cluttered and more like the VB did.
         /// The caller should default to outputting an initializer which is always safe for equivalence/correctness.
         /// </summary>
-        public static bool IsDefinitelyAssignedBeforeRead(this SemanticModel semanticModel, VariableDeclaratorSyntax localDeclarator, ModifiedIdentifierSyntax name)
+        /// <remarks>Unfortunately the roslyn UnassignedVariablesWalker is internal only
+        /// https://github.com/dotnet/roslyn/blob/007022c37c6d21ee100728954bd75113e0dfe4bd/src/Compilers/VisualBasic/Portable/Analysis/FlowAnalysis/UnassignedVariablesWalker.vb#L15
+        /// It'd be possible to see the result of the diagnostic analysis, but that would miss out value types, which don't cause a warning in VB
+        /// </remarks>
+        public static bool IsDefinitelyAssignedBeforeRead(this SemanticModel semanticModel, Document document,
+            ISymbol localSymbol, ModifiedIdentifierSyntax name)
         {
-            Func<string, bool> equalsId = s => s.Equals(name.Identifier.ValueText, StringComparison.OrdinalIgnoreCase);
+            MethodBlockBaseSyntax methodBlockBaseSyntax = name.GetAncestor<MethodBlockBaseSyntax>();
+            var methodFlow = semanticModel.AnalyzeDataFlow(methodBlockBaseSyntax.Statements.First(), methodBlockBaseSyntax.Statements.Last());
+            if (!methodFlow.ReadInside.Contains(localSymbol)) return true;
+            if (!methodFlow.AlwaysAssigned.Contains(localSymbol)) return false;
+            var nameStmt = name.GetAncestor<StatementSyntax>();
 
-            // Find the first and second statements in the method (property, constructor, etc.) which contain the identifier
-            // This may overshoot where there are multiple identifiers with the same name - this is ok, it just means we could output an initializer where one is not needed
-            var statements = localDeclarator.GetAncestor<MethodBlockBaseSyntax>().Statements.Where(s =>
-                s.DescendantTokens().Any(id => ((SyntaxToken) id).IsKind(SyntaxKind.IdentifierToken) && equalsId(id.ValueText))
-            ).Take(2).ToList();
-            var declarationStmt = statements.First();
+            var references = SymbolFinder.FindReferencesAsync(localSymbol, document.Project.Solution).GetAwaiter().GetResult().ToList();//TODO asyncify
+            return references.SelectMany(r => r.Locations)
+                .Select(r => AnalyzeDataFlow(semanticModel, methodBlockBaseSyntax, r))
+                .All(nodeFlow => !nodeFlow.ReadInside.Contains(localSymbol) || nodeFlow.DataFlowsIn.Contains(localSymbol));
+        }
 
-            foreach (var referenceStmt in statements.Skip(1)) {
+        private static DataFlowAnalysis AnalyzeDataFlow(SemanticModel semanticModel, SyntaxNode ancestorOfLocation, ReferenceLocation location)
+        {
+            return AnalyzeDataFlow(semanticModel, ancestorOfLocation.FindNode(location.Location.SourceSpan));
+        }
 
-                // Analyze the data flow in this block to see if initialization is required
-                // If the second statement where the identifier is used is an if block, we look at the condition rather than the whole statement. This is an easy special
-                // case which catches eg. the if (TryParse()) pattern. This could happen for any node which allows multiple statements.
-                var dataFlow = semanticModel.AnalyzeDataFlow(declarationStmt, referenceStmt);
-
-                bool alwaysAssigned = dataFlow.AlwaysAssigned.Any(s => equalsId(s.Name));
-                bool readInside = dataFlow.ReadInside.Any(s => equalsId(s.Name));
-                if (alwaysAssigned) return true;
-                if (readInside) return false;
-            }
-
-            return true;
+        private static DataFlowAnalysis AnalyzeDataFlow(SemanticModel semanticModel, SyntaxNode refNode)
+        {
+            var nodeExprOrStmt = refNode.GetAncestors().First(a => a is ExpressionSyntax || a is ExecutableStatementSyntax);
+            var nodeFlow = semanticModel.AnalyzeDataFlow(nodeExprOrStmt);
+            return nodeFlow;
         }
     }
 }

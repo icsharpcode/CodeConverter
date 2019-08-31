@@ -211,7 +211,7 @@ public class Class1
         get
         {
             string XRet = default(string);
-            XRet = 4;
+            XRet = Conversions.ToString(4);
             XRet = Conversions.ToString(Conversions.ToDouble(XRet) * 2);
             var y = ""random variable to check it isn't just using the value of the last statement"";
             return XRet;
@@ -700,7 +700,8 @@ public class ParameterizedPropertiesAndEnumTest
         var enumerableThing = Enumerable.Empty<string>();
         switch (m)
         {
-            case -1:
+            case (MyEnum)(-1
+           ):
                 {
                     return;
                 }
@@ -710,7 +711,7 @@ public class ParameterizedPropertiesAndEnumTest
                     return;
                 }
 
-            case 3:
+            case (MyEnum)3:
                 {
                     set_MyProp(4, enumerableThing.ToArray()[(int)m]);
                     return;

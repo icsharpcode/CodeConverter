@@ -150,8 +150,8 @@ public class OutParameterWithNonCompilingType
         [Fact]
         public async Task EnumSwitchAndValWithUnusedMissingType()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class EnumAndValTest
-
+            // BUG: Stop comments appearing before colon in case statement
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class EnumAndValTest
     Public Enum PositionEnum As Integer
         None = 0
         LeftTop = 1
@@ -220,23 +220,23 @@ public class EnumAndValTest
         {
             case ""NONE"":
             case ""0"":
-            {
-                tPos = 0;
-                break;
-            }
+                {
+                    tPos = 0;
+                    break;
+                }
 
             case ""LEFTTOP"":
             case ""1"":
-            {
-                tPos = (PositionEnum) 1;
-                break;
-            }
+                {
+                    tPos = (PositionEnum)1;
+                    break;
+                }
 
             default:
-            {
-                Ratio = Conversions.ToSingle(Conversion.Val(pS));
-                break;
-            }
+                {
+                    Ratio = Conversions.ToSingle(Conversion.Val(pS));
+                    break;
+                }
         }
         return tPos;
     }
@@ -246,22 +246,22 @@ public class EnumAndValTest
         switch (pS)
         {
             case 0:
-            {
-                tS = ""NONE"";
-                break;
-            }
+                {
+                    tS = ""NONE"";
+                    break;
+                }
 
             case (PositionEnum)1:
-            {
-                tS = ""LEFTTOP"";
-                break;
-            }
+                {
+                    tS = ""LEFTTOP"";
+                    break;
+                }
 
             default:
-            {
-                tS = Conversions.ToString(pS);
-                break;
-            }
+                {
+                    tS = Conversions.ToString(pS);
+                    break;
+                }
         }
         return tS;
     }

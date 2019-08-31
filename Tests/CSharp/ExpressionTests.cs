@@ -536,7 +536,7 @@ End Class",
 
         switch (e2)
         {
-            case var @case when @case == E.A:
+            case (int)E.A:
                 {
                     break;
                 }
@@ -1199,7 +1199,7 @@ End Class", @"class TestClass
         var y = 10.0 / 3;
         y /= 2;
         int z = 8;
-        z /= 3;
+        z /= (double)3;
     }
 }");
         }
