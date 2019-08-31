@@ -55,13 +55,15 @@ namespace ICSharpCode.CodeConverter.CSharp
         public Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(
             VariableDeclaratorSyntax declarator, bool preferExplicitType = false)
         {
-            var rawType = ConvertDeclaratorType(declarator, preferExplicitType);
+            var useExplicitType = declarator.AsClause != null || declarator.Initializer == null || preferExplicitType;
             var initializer = ConvertInitializer(declarator);
 
             var newDecls = new Dictionary<string, VariableDeclarationSyntax>();
 
             foreach (var name in declarator.Names) {
-                var (type, adjustedInitializer) = AdjustFromName(rawType, name, initializer);
+                var typeSymbol = _semanticModel.GetDeclaredSymbol(name).GetSymbolType();
+                var csTypeSyntax = (TypeSyntax)_csSyntaxGenerator.TypeExpression(typeSymbol);
+                var adjustedInitializer = GetInitializerFromNameAndType(typeSymbol, name, initializer);
 
                 bool isField = declarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
                 EqualsValueClauseSyntax equalsValueClauseSyntax;
@@ -74,27 +76,20 @@ namespace ICSharpCode.CodeConverter.CSharp
                     equalsValueClauseSyntax = null;
                 } else {
                     // VB initializes variables to their default
-                    equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(SyntaxFactory.DefaultExpression(type));
+                    equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(SyntaxFactory.DefaultExpression(csTypeSyntax));
                 }
 
                 var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier), null, equalsValueClauseSyntax);
-                string k = type.ToString();
+                string k = typeSymbol.GetFullMetadataName();
                 if (newDecls.TryGetValue(k, out var decl))
                     newDecls[k] = decl.AddVariables(v);
-                else
-                    newDecls[k] = SyntaxFactory.VariableDeclaration(type, SyntaxFactory.SingletonSeparatedList(v));
+                else {
+                    var csTypeOrVar = GetTypeSyntax(typeSymbol, !useExplicitType);
+                    newDecls[k] = SyntaxFactory.VariableDeclaration(csTypeOrVar, SyntaxFactory.SingletonSeparatedList(v));
+                }
             }
 
             return newDecls;
-        }
-
-        private TypeSyntax ConvertDeclaratorType(VariableDeclaratorSyntax declarator, bool preferExplicitType)
-        {
-            var vbType = declarator.AsClause?.TypeSwitch(
-                (SimpleAsClauseSyntax c) => c.Type,
-                (AsNewClauseSyntax c) => c.NewExpression.Type(),
-                _ => throw new NotImplementedException($"{_.GetType().FullName} not implemented!"));
-            return (TypeSyntax)vbType?.Accept(TriviaConvertingExpressionVisitor) ?? GetTypeSyntax(declarator, !preferExplicitType);
         }
 
         private TypeSyntax GetTypeSyntax(VariableDeclaratorSyntax declarator, bool useImplicitType)
@@ -126,38 +121,30 @@ namespace ICSharpCode.CodeConverter.CSharp
                    )?.Accept(TriviaConvertingExpressionVisitor) ?? (ExpressionSyntax)declarator.Initializer?.Value.Accept(TriviaConvertingExpressionVisitor);
         }
 
-        private (TypeSyntax, ExpressionSyntax) AdjustFromName(TypeSyntax rawType,
+        private ExpressionSyntax GetInitializerFromNameAndType(ITypeSymbol typeSymbol,
             ModifiedIdentifierSyntax name, ExpressionSyntax initializer)
         {
-            var type = rawType;
             if (!SyntaxTokenExtensions.IsKind(name.Nullable, SyntaxKind.None))
             {
-                if (type is ArrayTypeSyntax)
+                if (typeSymbol.IsArrayType())
                 {
-                    type = ((ArrayTypeSyntax) type).WithElementType(
-                        SyntaxFactory.NullableType(((ArrayTypeSyntax) type).ElementType));
                     initializer = null;
                 }
-                else
-                    type = SyntaxFactory.NullableType(type);
             }
 
             var rankSpecifiers = ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds, false);
             if (rankSpecifiers.Count > 0)
             {
-                var rankSpecifiersWithSizes = ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers,
-                    name.ArrayBounds);
+                var rankSpecifiersWithSizes = ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds);
                 if (!rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).OfType<OmittedArraySizeExpressionSyntax>().Any())
                 {
-                    initializer =
-                        SyntaxFactory.ArrayCreationExpression(
-                            SyntaxFactory.ArrayType(type, rankSpecifiersWithSizes));
+                    var arrayTypeSyntax = (ArrayTypeSyntax) _csSyntaxGenerator.TypeExpression(typeSymbol);
+                    arrayTypeSyntax = arrayTypeSyntax.WithRankSpecifiers(rankSpecifiersWithSizes);
+                    initializer = SyntaxFactory.ArrayCreationExpression(arrayTypeSyntax);
                 }
-
-                type = SyntaxFactory.ArrayType(type, rankSpecifiers);
             }
 
-            return (type, initializer);
+            return initializer;
         }
 
         public ExpressionSyntax Literal(object o, string textForUser = null) => GetLiteralExpression(o, textForUser);
