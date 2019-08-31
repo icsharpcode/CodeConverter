@@ -578,7 +578,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
 
             var csBinExp = SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
-            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, csBinExp, addParenthesisIfNeeded: true);
+            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, csBinExp);
         }
 
         public override CSharpSyntaxNode VisitInvocationExpression(VBasic.Syntax.InvocationExpressionSyntax node)
