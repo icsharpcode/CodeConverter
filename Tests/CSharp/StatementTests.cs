@@ -111,6 +111,26 @@ class TestClass
         }
 
         [Fact]
+        public async Task AssignmentStatementWithFunc()
+        {
+            await TestConversionVisualBasicToCSharp(@"Class TestFunc
+    Private Sub TestMethod()
+        Dim isTrue = Function(row As Integer) As Boolean
+                            Return True
+                     End Function
+    End Sub
+End Class", @"using System.Xml.Linq;
+
+class TestClass
+{
+    private void TestMethod()
+    {
+        Func<int, bool> isTrue = row => true;
+    }
+}");
+        }
+
+        [Fact]
         public async Task ObjectInitializationStatement()
         {
             await TestConversionVisualBasicToCSharp(@"Class TestClass
