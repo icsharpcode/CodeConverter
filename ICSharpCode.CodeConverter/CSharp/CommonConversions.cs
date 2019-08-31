@@ -60,13 +60,21 @@ namespace ICSharpCode.CodeConverter.CSharp
             var initializer = ConvertInitializer(declarator);
             var vbInitValue = declarator.Initializer?.Value;
             var vbInitializerType = vbInitValue != null ? _semanticModel.GetTypeInfo(vbInitValue).Type : null;
-            preferExplicitType |= vbInitializerType != null && (vbInitializerType.HasCsKeyword() || vbInitializerType.IsFunctionValue());
+
+            bool requireExplicitTypeForAll = false;
+            if (vbInitValue != null) {
+                var vbInitConstantValue = _semanticModel.GetConstantValue(vbInitValue);
+                var vbInitIsNothingLiteral = vbInitConstantValue.HasValue && vbInitConstantValue.Value == null;
+                preferExplicitType |= vbInitializerType != null && vbInitializerType.HasCsKeyword();
+                requireExplicitTypeForAll = vbInitIsNothingLiteral || vbInitializerType?.IsAnonymousDelegateType() == true;
+            }
+
             var newDecls = new Dictionary<string, VariableDeclarationSyntax>();
 
             foreach (var name in declarator.Names) {
                 var declaredSymbol = _semanticModel.GetDeclaredSymbol(name);
                 var declaredSymbolType = declaredSymbol.GetSymbolType();
-                var requireExplicitType = vbInitializerType != null && !Equals(declaredSymbolType, vbInitializerType);
+                var requireExplicitType = requireExplicitTypeForAll || vbInitializerType != null && !Equals(declaredSymbolType, vbInitializerType);
                 var csTypeSyntax = (TypeSyntax)_csSyntaxGenerator.TypeExpression(declaredSymbolType);
                 var adjustedInitializer = GetInitializerFromNameAndType(declaredSymbolType, name, initializer);
 

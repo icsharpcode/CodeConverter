@@ -27,7 +27,7 @@ expectSurroundingBlock: true);
     .Inherited = False
 }
 obj = Nothing",
-@"AttributeUsageAttribute obj = new AttributeUsageAttribute()
+@"var obj = new AttributeUsageAttribute()
 {
     AllowMultiple = true,
     Inherited = false
@@ -60,7 +60,7 @@ obj = null;",
         {
             await TestConversionVisualBasicToCSharp(
                 @"Dim x = 3",
-                @"var x = 3;",
+                @"int x = 3;",
                 expectSurroundingBlock: true);
         }
 

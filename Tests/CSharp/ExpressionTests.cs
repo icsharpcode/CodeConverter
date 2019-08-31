@@ -1016,7 +1016,7 @@ public class Class1
 {
     public void Foo()
     {
-        var s1 = null;
+        string s1 = null;
         string s2 = """";
         if ((s1 ?? """") != (s2 ?? """"))
             throw new Exception();
@@ -1065,7 +1065,7 @@ public class Class1
 {
     public void Foo()
     {
-        var s1 = null;
+        string s1 = null;
         string s2 = """";
         if (CultureInfo.CurrentCulture.CompareInfo.Compare(s1, s2, CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) != 0)
             throw new Exception();

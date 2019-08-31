@@ -125,7 +125,7 @@ public class OutParameterWithMissingType
 {
     private static void AddToDict(Dictionary<int, MissingType> pDict, int pKey)
     {
-        var anInstance = null;
+        MissingType anInstance = null;
         if (!pDict.TryGetValue(pKey, out anInstance))
         {
             anInstance = new MissingType();
@@ -138,7 +138,7 @@ public class OutParameterWithNonCompilingType
 {
     private static void AddToDict(Dictionary<OutParameterWithMissingType, MissingType> pDict, OutParameterWithMissingType pKey)
     {
-        var anInstance = null;
+        MissingType anInstance = null;
         if (!pDict.TryGetValue(pKey, out anInstance))
         {
             anInstance = new MissingType();
@@ -281,7 +281,7 @@ End Class", @"class TestClass
     private System.SomeUnknownType DefaultDate { get; set; }
     private void TestMethod()
     {
-        object a = DefaultDate[1, 2, 3].Blawer(1, 2, 3);
+        var a = DefaultDate[1, 2, 3].Blawer(1, 2, 3);
     }
 }");
         }
