@@ -47,7 +47,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             try {
                 var getMethod = methodFlow.GetType().GetProperty("UnassignedVariables")?.GetMethod;
-                var getDelegate = getMethod?.CreateOpenDelegateOfType<DataFlowAnalysis, IEnumerable>();
+                var getDelegate = getMethod?.CreateOpenInstanceDelegateForcingType<DataFlowAnalysis, IEnumerable>();
                 return dataFlowAnalysis => getDelegate?.Invoke(dataFlowAnalysis).Cast<ISymbol>();
             } catch (Exception e) {
                 Debug.Fail(e.Message);

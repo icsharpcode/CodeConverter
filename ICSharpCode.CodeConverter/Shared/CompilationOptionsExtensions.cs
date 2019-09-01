@@ -2,12 +2,24 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
-    internal static class CompilationOptionsExtensions {
+    internal static class CompilationOptionsExtensions
+    {
+        private static readonly Lazy<Func<CompilationOptions, byte, CompilationOptions>> LazyWithMetadataImportOptions =
+            new Lazy<Func<CompilationOptions, byte, CompilationOptions>>(CreateWithMetadataImportOptionsDelegate);
+
+        private static Func<CompilationOptions, byte, CompilationOptions> CreateWithMetadataImportOptionsDelegate()
+        {
+            return typeof(CompilationOptions)
+                .GetMethod("WithMetadataImportOptions",
+                    BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance)
+                .CreateOpenInstanceDelegateForcingType<CompilationOptions, byte, CompilationOptions>();
+        }
 
         public static Document CreateProjectDocumentFromTree(this CompilationOptions options,
             Workspace workspace, SyntaxTree tree, IEnumerable<MetadataReference> references, ParseOptions parseOptions)
@@ -28,14 +40,7 @@ namespace ICSharpCode.CodeConverter.Shared
         /// </summary>
         public static CompilationOptions WithMetadataImportOptionsAll(this CompilationOptions baseOptions)
         {
-            Type optionsType = baseOptions.GetType();
-            var withMetadataImportOptions = optionsType
-                .GetMethod("WithMetadataImportOptions",
-                    BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-            var options =
-                withMetadataImportOptions.Invoke(baseOptions,
-                    new object[] {(byte)2 /*MetadataImportOptions.All*/});
-            return (CompilationOptions)options;
+            return LazyWithMetadataImportOptions.Value(baseOptions, 2 /*MetadataImportOptions.All*/);
         }
     }
 }
