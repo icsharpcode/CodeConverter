@@ -110,23 +110,41 @@ class TestClass
 }");
         }
 
+        /// <summary>
+        /// Implicitly typed lambdas exist in vb but are not happening in C#. Trying to use Func/Action would be overly restrictive for some cases. Local functions are preferable
+        /// See discussion on https://github.com/dotnet/roslyn/issues/14
+        /// </summary>
         [Fact]
         public async Task AssignmentStatementWithFunc()
         {
             await TestConversionVisualBasicToCSharp(@"Class TestFunc
+    Dim isFalse = Function(row As Integer) False
+    Dim doNothing = Sub()
+
+    End Sub
+
     Private Sub TestMethod()
-        Dim isTrue = Function(row As Integer) As Boolean
-                            Return True
+        Dim isTrue = Function(pList As List(Of String))
+                            Return pList.All(Function(x) True)
                      End Function
+        Dim isTrueWithNoStatement = Function(pList As List(Of String)) pList.All(Function(x) True)
+        Dim write = Sub() Console.WriteLine(1)
     End Sub
 End Class", @"class TestFunc
 {
+    private bool isFalse(int row) => false;
+    private void doNothing()
+    {
+    }
+
     private void TestMethod()
     {
-        Func<int, bool> isTrue = (int row) =>
+        bool isTrue(List<string> pList)
         {
-            return true;
+            return pList.All(x => true);
         };
+        bool isTrueWithNoStatement(List<string> pList) => pList.All(x => true);
+        void write() => Console.WriteLine(1);
     }
 }");
         }
