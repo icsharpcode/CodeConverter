@@ -118,10 +118,10 @@ class TestClass
         [Fact]
         public async Task AssignmentStatementWithFunc()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestFunc
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestFunc
     Dim isFalse = Function(row As Integer) False
-    Dim doNothing = Sub()
-
+    Dim write0 = Sub()
+        Console.WriteLine(0)
     End Sub
 
     Private Sub TestMethod()
@@ -134,31 +134,21 @@ class TestClass
         Dim isTrueWithNoStatement = (Function(pList As List(Of String)) pList.All(Function(x) True))
         Dim write = Sub() Console.WriteLine(1)
     End Sub
-End Class", @"class TestFunc
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class TestFunc
 {
     private bool isFalse(int row) => false;
-    private void doNothing()
-    {
-    }
+    private void write0() => Console.WriteLine(0);
 
     private void TestMethod()
     {
-        bool index(List<string> pList)
-        {
-            return pList.All(x => true);
-        };
-        bool index2(List<string> pList)
-        {
-            return pList.All(x => false);
-        };
-        bool index3(List<int> pList)
-        {
-            return pList.All(x => true);
-        };
-        bool isTrue(List<string> pList)
-        {
-            return pList.All(x => true);
-        };
+        bool index(List<string> pList) => pList.All(x => true);
+        bool index2(List<string> pList) => pList.All(x => false);
+        bool index3(List<int> pList) => pList.All(x => true);
+        bool isTrue(List<string> pList) => pList.All(x => true);
         bool isTrueWithNoStatement(List<string> pList) => pList.All(x => true);
         void write() => Console.WriteLine(1);
     }

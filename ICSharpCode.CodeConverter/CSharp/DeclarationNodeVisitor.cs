@@ -385,74 +385,122 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override CSharpSyntaxNode VisitFieldDeclaration(VBSyntax.FieldDeclarationSyntax node)
         {
             _additionalLocals.PushScope();
+            List<MemberDeclarationSyntax> declarations;
+            try {
+                declarations = GetMemberDeclarations(node);
+            } finally {
+                _additionalLocals.PopScope();
+            }
+            _additionalDeclarations.Add(node, declarations.Skip(1).ToArray());
+            return declarations.First();
+        }
+
+        private List<MemberDeclarationSyntax> GetMemberDeclarations(VBSyntax.FieldDeclarationSyntax node)
+        {
             var attributes = node.AttributeLists.SelectMany(_expressionNodeVisitor.ConvertAttribute).ToList();
-            var convertableModifiers = node.Modifiers.Where(m => !SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
+            var convertableModifiers =
+                node.Modifiers.Where(m => !SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
             var isWithEvents = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
-            var convertedModifiers = CommonConversions.ConvertModifiers(node.Declarators[0].Names[0], convertableModifiers, GetMemberContext(node));
+            var convertedModifiers =
+                CommonConversions.ConvertModifiers(node.Declarators[0].Names[0], convertableModifiers, GetMemberContext(node));
             var declarations = new List<MemberDeclarationSyntax>(node.Declarators.Count);
 
-            foreach (var declarator in node.Declarators) {
-                foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator, preferExplicitType: true).Values) {
-                    if (isWithEvents) {
-                        var initializers = decl.Variables
-                            .Where(a => a.Initializer != null)
-                            .ToDictionary(v => v.Identifier.Text, v => v.Initializer);
-                        var fieldDecl = decl.RemoveNodes(initializers.Values, SyntaxRemoveOptions.KeepNoTrivia);
-                        var initializerCollection = convertedModifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword))
-                            ? _additionalInitializers.AdditionalStaticInitializers
-                            : _additionalInitializers.AdditionalInstanceInitializers;
-                        foreach (var initializer in initializers) {
-                            initializerCollection.Add(initializer.Key, initializer.Value.Value);
+            foreach (var declarator in node.Declarators)
+            {
+                var splitDeclarations = CommonConversions.SplitVariableDeclarations(declarator, preferExplicitType: true);
+                declarations.AddRange(CreateFieldDeclarations(splitDeclarations, isWithEvents, convertedModifiers, attributes));
+                declarations.AddRange(splitDeclarations.Methods.Cast<MemberDeclarationSyntax>());
+            }
+
+            return declarations;
+        }
+
+        private IEnumerable<MemberDeclarationSyntax> CreateFieldDeclarations((IReadOnlyCollection<VariableDeclarationSyntax> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods) splitDeclarations,
+            bool isWithEvents, SyntaxTokenList convertedModifiers, List<AttributeListSyntax> attributes)
+        {
+            foreach (var decl in splitDeclarations.Variables)
+            {
+                if (isWithEvents)
+                {
+                    var initializers = decl.Variables
+                        .Where(a => a.Initializer != null)
+                        .ToDictionary(v => v.Identifier.Text, v => v.Initializer);
+                    var fieldDecl = decl.RemoveNodes(initializers.Values, SyntaxRemoveOptions.KeepNoTrivia);
+                    var initializerCollection = convertedModifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword))
+                        ? _additionalInitializers.AdditionalStaticInitializers
+                        : _additionalInitializers.AdditionalInstanceInitializers;
+                    foreach (var initializer in initializers)
+                    {
+                        initializerCollection.Add(initializer.Key, initializer.Value.Value);
+                    }
+
+                    var fieldDecls = _methodsWithHandles.GetDeclarationsForFieldBackedProperty(fieldDecl,
+                        convertedModifiers, SyntaxFactory.List(attributes));
+                    foreach(var f in fieldDecls) yield return f;
+                }
+                else
+                {
+                    FieldDeclarationSyntax baseFieldDeclarationSyntax;
+                    if (_additionalLocals.Count() > 0)
+                    {
+                        if (decl.Variables.Count > 1)
+                        {
+                            // Currently no way to tell which _additionalLocals would apply to which initializer
+                            throw new NotImplementedException(
+                                "Fields with multiple declarations and initializers with ByRef parameters not currently supported");
                         }
 
-                        var fieldDecls = _methodsWithHandles.GetDeclarationsForFieldBackedProperty(fieldDecl,
-                            convertedModifiers, SyntaxFactory.List(attributes));
-                        declarations.AddRange(fieldDecls);
-                    } else {
-                        FieldDeclarationSyntax baseFieldDeclarationSyntax;
-                        if (_additionalLocals.Count() > 0) {
-                            if (decl.Variables.Count > 1) {
-                                // Currently no way to tell which _additionalLocals would apply to which initializer
-                                throw new NotImplementedException("Fields with multiple declarations and initializers with ByRef parameters not currently supported");
-                            }
-                            var v = decl.Variables.First();
-                            if (v.Initializer.Value.DescendantNodes().OfType<InvocationExpressionSyntax>().Count() > 1) {
-                                throw new NotImplementedException("Field initializers with nested method calls not currently supported");
-                            }
-                            var calledMethodName = v.Initializer.Value.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>().First().DescendantNodes().OfType<IdentifierNameSyntax>().First();
-                            var newMethodName = $"{calledMethodName.Identifier.ValueText}_{v.Identifier.ValueText}";
-                            var localVars = _additionalLocals.Select(l => l.Value)
-                                .Select(al => SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(al.Prefix, al.Initializer)))
-                                .Cast<StatementSyntax>().ToList();
-                            var newInitializer = v.Initializer.Value.ReplaceNodes(v.Initializer.Value.GetAnnotatedNodes(AdditionalLocals.Annotation), (an, _) => {
+                        var v = decl.Variables.First();
+                        if (v.Initializer.Value.DescendantNodes().OfType<InvocationExpressionSyntax>().Count() > 1)
+                        {
+                            throw new NotImplementedException(
+                                "Field initializers with nested method calls not currently supported");
+                        }
+
+                        var calledMethodName = v.Initializer.Value.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()
+                            .First().DescendantNodes().OfType<IdentifierNameSyntax>().First();
+                        var newMethodName = $"{calledMethodName.Identifier.ValueText}_{v.Identifier.ValueText}";
+                        var localVars = _additionalLocals.Select(l => l.Value)
+                            .Select(al =>
+                                SyntaxFactory.LocalDeclarationStatement(
+                                    CommonConversions.CreateVariableDeclarationAndAssignment(al.Prefix, al.Initializer)))
+                            .Cast<StatementSyntax>().ToList();
+                        var newInitializer = v.Initializer.Value.ReplaceNodes(
+                            v.Initializer.Value.GetAnnotatedNodes(AdditionalLocals.Annotation), (an, _) =>
+                            {
                                 // This should probably use a unique name like in MethodBodyVisitor - a collision is far less likely here
                                 var id = (an as IdentifierNameSyntax).Identifier.ValueText;
                                 return SyntaxFactory.IdentifierName(_additionalLocals[id].Prefix);
                             });
-                            var body = SyntaxFactory.Block(localVars.Concat(SyntaxFactory.SingletonList(SyntaxFactory.ReturnStatement(newInitializer))));
-                            var methodAttrs = SyntaxFactory.List<AttributeListSyntax>();
-                            // Method calls in initializers must be static in C# - Supporting this is #281
-                            var modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword));
-                            var typeConstraints = SyntaxFactory.List<TypeParameterConstraintClauseSyntax>();
-                            var parameterList = SyntaxFactory.ParameterList();
-                            var methodDecl = SyntaxFactory.MethodDeclaration(methodAttrs, modifiers, decl.Type, null, SyntaxFactory.Identifier(newMethodName), null, parameterList, typeConstraints, body, null);
-                            declarations.Add(methodDecl);
+                        var body = SyntaxFactory.Block(
+                            localVars.Concat(SyntaxFactory.SingletonList(SyntaxFactory.ReturnStatement(newInitializer))));
+                        var methodAttrs = SyntaxFactory.List<AttributeListSyntax>();
+                        // Method calls in initializers must be static in C# - Supporting this is #281
+                        var modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword));
+                        var typeConstraints = SyntaxFactory.List<TypeParameterConstraintClauseSyntax>();
+                        var parameterList = SyntaxFactory.ParameterList();
+                        var methodDecl = SyntaxFactory.MethodDeclaration(methodAttrs, modifiers, decl.Type, null,
+                            SyntaxFactory.Identifier(newMethodName), null, parameterList, typeConstraints, body, null);
+                        yield return methodDecl;
 
-                            var newVar = v.WithInitializer(SyntaxFactory.EqualsValueClause(SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(newMethodName))));
-                            var newVarDecl = SyntaxFactory.VariableDeclaration(decl.Type, SyntaxFactory.SingletonSeparatedList(newVar));
+                        var newVar =
+                            v.WithInitializer(SyntaxFactory.EqualsValueClause(
+                                SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(newMethodName))));
+                        var newVarDecl =
+                            SyntaxFactory.VariableDeclaration(decl.Type, SyntaxFactory.SingletonSeparatedList(newVar));
 
-                            baseFieldDeclarationSyntax = SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, newVarDecl);
-                        } else {
-                            baseFieldDeclarationSyntax = SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, decl);
-                        }
-                        declarations.Add(baseFieldDeclarationSyntax);
+                        baseFieldDeclarationSyntax =
+                            SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, newVarDecl);
                     }
+                    else
+                    {
+                        baseFieldDeclarationSyntax =
+                            SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, decl);
+                    }
+
+                    yield return baseFieldDeclarationSyntax;
                 }
             }
-
-            _additionalLocals.PopScope();
-            _additionalDeclarations.Add(node, declarations.Skip(1).ToArray());
-            return declarations.First();
         }
 
         private List<MethodWithHandles> GetMethodWithHandles(VBSyntax.TypeBlockSyntax parentType)

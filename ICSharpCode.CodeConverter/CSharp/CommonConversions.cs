@@ -38,7 +38,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static readonly Type OutAttributeType = typeof(OutAttribute);
         private readonly Document _document;
         private readonly SemanticModel _semanticModel;
-        private readonly SyntaxGenerator _csSyntaxGenerator;
+        public SyntaxGenerator CsSyntaxGenerator { get; }
         private readonly CSharpCompilation _csCompilation;
         public CommentConvertingVisitorWrapper<CSharpSyntaxNode> TriviaConvertingExpressionVisitor { get; set; }
         public TypeConversionAnalyzer TypeConversionAnalyzer { get; }
@@ -50,42 +50,45 @@ namespace ICSharpCode.CodeConverter.CSharp
             TypeConversionAnalyzer = typeConversionAnalyzer;
             _document = document;
             _semanticModel = semanticModel;
-            _csSyntaxGenerator = csSyntaxGenerator;
+            CsSyntaxGenerator = csSyntaxGenerator;
             _csCompilation = csCompilation;
         }
 
-        public Dictionary<string, VariableDeclarationSyntax> SplitVariableDeclarations(
+        public (IReadOnlyCollection<VariableDeclarationSyntax> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods) SplitVariableDeclarations(
             VariableDeclaratorSyntax declarator, bool preferExplicitType = false)
         {
-            var initializer = ConvertInitializer(declarator);
-            var vbInitValue = declarator.Initializer?.Value;
+            var vbInitValue = GetInitializerToConvert(declarator);
+            var initializer = vbInitValue?.Accept(TriviaConvertingExpressionVisitor);
             var vbInitializerType = vbInitValue != null ? _semanticModel.GetTypeInfo(vbInitValue).Type : null;
 
             bool requireExplicitTypeForAll = false;
+            bool isAnonymousFunction = false;
             if (vbInitValue != null) {
                 var vbInitConstantValue = _semanticModel.GetConstantValue(vbInitValue);
                 var vbInitIsNothingLiteral = vbInitConstantValue.HasValue && vbInitConstantValue.Value == null;
-                var initSymbol = _semanticModel.GetSymbolInfo(vbInitValue).Symbol;
                 preferExplicitType |= vbInitializerType != null && vbInitializerType.HasCsKeyword();
-                requireExplicitTypeForAll = vbInitIsNothingLiteral || initSymbol?.IsAnonymousFunction() == true;
+                var initSymbol = _semanticModel.GetSymbolInfo(vbInitValue).Symbol as IMethodSymbol;
+                isAnonymousFunction = initSymbol?.IsAnonymousFunction() == true;
+                requireExplicitTypeForAll = vbInitIsNothingLiteral || isAnonymousFunction;
             }
 
-            var newDecls = new Dictionary<string, VariableDeclarationSyntax>();
+            var csVars = new Dictionary<string, VariableDeclarationSyntax>();
+            var csMethods = new List<CSharpSyntaxNode>();
 
             foreach (var name in declarator.Names) {
                 var declaredSymbol = _semanticModel.GetDeclaredSymbol(name);
                 var declaredSymbolType = declaredSymbol.GetSymbolType();
                 var requireExplicitType = requireExplicitTypeForAll || vbInitializerType != null && !Equals(declaredSymbolType, vbInitializerType);
-                var csTypeSyntax = (TypeSyntax)_csSyntaxGenerator.TypeExpression(declaredSymbolType);
+                var csTypeSyntax = (TypeSyntax)CsSyntaxGenerator.TypeExpression(declaredSymbolType);
                 var adjustedInitializer = GetInitializerFromNameAndType(declaredSymbolType, name, initializer);
 
                 bool isField = declarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
                 EqualsValueClauseSyntax equalsValueClauseSyntax;
                 
-                if (adjustedInitializer != null) {
+                if (adjustedInitializer is ExpressionSyntax adjustedInitializerExpr) {
                     // Explicit conversions are never needed for AsClause, since the type is inferred from the RHS
-                    var convertedInitializer = vbInitValue == null ? adjustedInitializer : TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializer);
-                    equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
+                    var convertedInitializer = vbInitValue == null ? adjustedInitializer : TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr);
+                    equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(adjustedInitializerExpr);
                 } else if (isField || _semanticModel.IsDefinitelyAssignedBeforeRead(_document, declaredSymbol, name)) {
                     equalsValueClauseSyntax = null;
                 } else {
@@ -95,21 +98,26 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier), null, equalsValueClauseSyntax);
                 string k = declaredSymbolType.GetFullMetadataName();
-                if (newDecls.TryGetValue(k, out var decl))
-                    newDecls[k] = decl.AddVariables(v);
+                if (csVars.TryGetValue(k, out var decl))
+                    csVars[k] = decl.AddVariables(v);
                 else {
-                    var csTypeOrVar = GetTypeSyntax(declaredSymbolType, equalsValueClauseSyntax != null && !preferExplicitType && !requireExplicitType);
-                    newDecls[k] = SyntaxFactory.VariableDeclaration(csTypeOrVar, SyntaxFactory.SingletonSeparatedList(v));
+                    bool useVar = equalsValueClauseSyntax != null && !preferExplicitType && !requireExplicitType;
+                    if (isAnonymousFunction) {
+                        csMethods.Add(initializer);
+                    } else {
+                        csVars[k] =
+                            SyntaxFactory.VariableDeclaration(GetTypeSyntax(declaredSymbolType, useVar), SyntaxFactory.SingletonSeparatedList(v));
+                    }
                 }
             }
 
-            return newDecls;
+            return (csVars.Values, csMethods);
         }
 
         public TypeSyntax GetTypeSyntax(ITypeSymbol typeSymbol, bool useImplicitType = false)
         {
             if (useImplicitType || typeSymbol == null) return CreateVarTypeName();
-            return (TypeSyntax) _csSyntaxGenerator.TypeExpression(typeSymbol);
+            return (TypeSyntax) CsSyntaxGenerator.TypeExpression(typeSymbol);
         }
 
         private static TypeSyntax CreateVarTypeName()
@@ -117,16 +125,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.ParseTypeName("var");
         }
 
-        private ExpressionSyntax ConvertInitializer(VariableDeclaratorSyntax declarator)
+        private static VBSyntax.ExpressionSyntax GetInitializerToConvert(VariableDeclaratorSyntax declarator)
         {
-            return (ExpressionSyntax)declarator.AsClause?.TypeSwitch(
-                       (SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
-                       (AsNewClauseSyntax c) => c.NewExpression
-                   )?.Accept(TriviaConvertingExpressionVisitor) ?? (ExpressionSyntax)declarator.Initializer?.Value.Accept(TriviaConvertingExpressionVisitor);
+            var vbInitializer = declarator.AsClause?.TypeSwitch(
+                                (SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
+                                (AsNewClauseSyntax c) => c.NewExpression
+                            ) ?? declarator.Initializer?.Value;
+
+            return
+                (VBSyntax.ExpressionSyntax) vbInitializer?.DescendantNodesAndSelf(n => n is VBSyntax.ParenthesizedExpressionSyntax).Last();
         }
 
-        private ExpressionSyntax GetInitializerFromNameAndType(ITypeSymbol typeSymbol,
-            ModifiedIdentifierSyntax name, ExpressionSyntax initializer)
+        private CSharpSyntaxNode GetInitializerFromNameAndType(ITypeSymbol typeSymbol,
+            ModifiedIdentifierSyntax name, CSharpSyntaxNode initializer)
         {
             if (!SyntaxTokenExtensions.IsKind(name.Nullable, SyntaxKind.None))
             {
@@ -142,7 +153,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var rankSpecifiersWithSizes = ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds);
                 if (!rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).OfType<OmittedArraySizeExpressionSyntax>().Any())
                 {
-                    var arrayTypeSyntax = (ArrayTypeSyntax) _csSyntaxGenerator.TypeExpression(typeSymbol);
+                    var arrayTypeSyntax = (ArrayTypeSyntax) CsSyntaxGenerator.TypeExpression(typeSymbol);
                     arrayTypeSyntax = arrayTypeSyntax.WithRankSpecifiers(rankSpecifiersWithSizes);
                     initializer = SyntaxFactory.ArrayCreationExpression(arrayTypeSyntax);
                 }

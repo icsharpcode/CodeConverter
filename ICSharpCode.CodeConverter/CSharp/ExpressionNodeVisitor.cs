@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
+using IOperation = Microsoft.CodeAnalysis.IOperation;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
@@ -649,29 +650,67 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override CSharpSyntaxNode VisitSingleLineLambdaExpression(VBasic.Syntax.SingleLineLambdaExpressionSyntax node)
         {
-            CSharpSyntaxNode body;
+            IReadOnlyCollection<StatementSyntax> convertedStatements;
             if (node.Body is VBasic.Syntax.StatementSyntax statement) {
-                var convertedStatements = statement.Accept(CreateMethodBodyVisitor(node));
-                if (convertedStatements.Count == 1
-                    && convertedStatements.Single() is ExpressionStatementSyntax exprStmt) {
-                    // Assignment is an example of a statement in VB that becomes an expression in C#
-                    body = exprStmt.Expression;
-                } else {
-                    body = SyntaxFactory.Block(convertedStatements).UnpackNonNestedBlock();
-                }
+                convertedStatements = statement.Accept(CreateMethodBodyVisitor(node));
             } else {
-                body = node.Body.Accept(TriviaConvertingVisitor);
+                var csNode = node.Body.Accept(TriviaConvertingVisitor);
+                convertedStatements = new[] { SyntaxFactory.ExpressionStatement((ExpressionSyntax)csNode)};
             }
             var param = (ParameterListSyntax)node.SubOrFunctionHeader.ParameterList.Accept(TriviaConvertingVisitor);
-            return CreateLambdaExpression(param, body);
+            return CreateLambdaExpression(node, param, convertedStatements);
         }
 
         public override CSharpSyntaxNode VisitMultiLineLambdaExpression(VBasic.Syntax.MultiLineLambdaExpressionSyntax node)
         {
             var methodBodyVisitor = CreateMethodBodyVisitor(node);
-            var body = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(methodBodyVisitor)));
+            var body = node.Statements.SelectMany(s => s.Accept(methodBodyVisitor));
             var param = (ParameterListSyntax)node.SubOrFunctionHeader.ParameterList.Accept(TriviaConvertingVisitor);
-            return CreateLambdaExpression(param, body);
+            return CreateLambdaExpression(node, param, body.ToList());
+        }
+
+        private CSharpSyntaxNode CreateLambdaExpression(VBasic.VisualBasicSyntaxNode vbNode,
+            ParameterListSyntax param, IReadOnlyCollection<StatementSyntax> convertedStatements)
+        {
+            BlockSyntax block = null;
+            ExpressionSyntax expressionBody = null;
+            ArrowExpressionClauseSyntax arrow = null;
+            if (!convertedStatements.TryUnpackSingleStatement(out var singleStatement) ||
+                !singleStatement.TryUnpackSingleExpressionFromStatement(out expressionBody)) {
+                block = SyntaxFactory.Block(convertedStatements);
+            } else {
+                arrow = SyntaxFactory.ArrowExpressionClause(expressionBody);
+            }
+
+            var operation = _semanticModel.GetOperation(vbNode) as IAnonymousFunctionOperation;
+            var potentialAncestorDeclarationOperation = operation?.Parent?.Parent?.Parent;
+            if (potentialAncestorDeclarationOperation is IFieldInitializerOperation fieldInit) {
+                var methodDeclaration =
+                    (MethodDeclarationSyntax)CommonConversions.CsSyntaxGenerator.MethodDeclaration(operation.Symbol);
+                string name = fieldInit.InitializedFields.Single().Name; //TODO Find correct name
+                var methodDecl = methodDeclaration
+                    .WithIdentifier(SyntaxFactory.Identifier(name))
+                    .WithBody(block).WithExpressionBody(arrow);
+                return arrow == null ? methodDecl : methodDecl.WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken));
+            }
+
+            var potentialDeclarationOperation = potentialAncestorDeclarationOperation?.Parent;
+            if (potentialDeclarationOperation is IVariableDeclarationGroupOperation go) {
+                potentialDeclarationOperation = go.Declarations.First(); //TODO Find correct declaration
+            }
+
+            if (potentialDeclarationOperation is IVariableDeclarationOperation variableDeclaration) {
+                string symbolName = variableDeclaration.Declarators.Single().Symbol.Name; //TODO Find correct name
+                return SyntaxFactory.LocalFunctionStatement(SyntaxFactory.TokenList(),
+                    CommonConversions.GetTypeSyntax(operation.Symbol.ReturnType),
+                    SyntaxFactory.Identifier(symbolName), null, param,
+                    SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), block, arrow,
+                    SyntaxFactory.Token(SyntaxKind.SemicolonToken));
+            }
+
+            if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null)
+                return SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], (CSharpSyntaxNode) block ?? expressionBody);
+            return SyntaxFactory.ParenthesizedLambdaExpression(param, (CSharpSyntaxNode) block ?? expressionBody);
         }
 
         public override CSharpSyntaxNode VisitParameterList(VBSyntax.ParameterListSyntax node)
@@ -1079,14 +1118,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return cSharpSyntaxNode != null;
         }
 
-        private static CSharpSyntaxNode CreateLambdaExpression(ParameterListSyntax param, CSharpSyntaxNode body)
-        {
-            if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null)
-                return SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
-            return SyntaxFactory.ParenthesizedLambdaExpression(param, body);
-        }
-
-        private static SyntaxToken GetMethodBlockBaseIdentifierForImplicitReturn(VBasic.Syntax.MethodBlockBaseSyntax vbMethodBlock)
+        private static SyntaxToken GetMethodBlockBaseIdentifierForImplicitReturn(SyntaxNode vbMethodBlock)
         {
             if (vbMethodBlock.Parent is VBasic.Syntax.PropertyBlockSyntax pb) {
                 return pb.PropertyStatement.Identifier;

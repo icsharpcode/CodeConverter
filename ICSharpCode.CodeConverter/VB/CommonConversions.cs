@@ -289,10 +289,10 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static bool UnpackExpressionFromStatement(StatementSyntax statementSyntax, out ExpressionSyntax expression)
         {
-            if (statementSyntax is ReturnStatementSyntax)
-                expression = ((ReturnStatementSyntax)statementSyntax).Expression;
-            else if (statementSyntax is YieldStatementSyntax)
-                expression = ((YieldStatementSyntax)statementSyntax).Expression;
+            if (statementSyntax is ReturnStatementSyntax returnStmt)
+                expression = returnStmt.Expression;
+            else if (statementSyntax is YieldStatementSyntax yieldStmt)
+                expression = yieldStmt.Expression;
             else
                 expression = null;
             return expression != null;
