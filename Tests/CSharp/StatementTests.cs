@@ -125,6 +125,9 @@ class TestClass
     End Sub
 
     Private Sub TestMethod()
+        Dim index = (Function(pList As List(Of String)) pList.All(Function(x) True)),
+            index2 = (Function(pList As List(Of String)) pList.All(Function(x) False)),
+            index3 = (Function(pList As List(Of Integer)) pList.All(Function(x) True))
         Dim isTrue = Function(pList As List(Of String))
                             Return pList.All(Function(x) True)
                      End Function
@@ -140,6 +143,18 @@ End Class", @"class TestFunc
 
     private void TestMethod()
     {
+        bool index(List<string> pList)
+        {
+            return pList.All(x => true);
+        };
+        bool index2(List<string> pList)
+        {
+            return pList.All(x => false);
+        };
+        bool index3(List<int> pList)
+        {
+            return pList.All(x => true);
+        };
         bool isTrue(List<string> pList)
         {
             return pList.All(x => true);
