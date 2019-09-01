@@ -708,9 +708,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.Token(SyntaxKind.SemicolonToken));
             }
 
+            var body = (CSharpSyntaxNode) block ?? expressionBody;
             if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null)
-                return SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], (CSharpSyntaxNode) block ?? expressionBody);
-            return SyntaxFactory.ParenthesizedLambdaExpression(param, (CSharpSyntaxNode) block ?? expressionBody);
+                return SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
+            return SyntaxFactory.ParenthesizedLambdaExpression(param, body);
         }
 
         public override CSharpSyntaxNode VisitParameterList(VBSyntax.ParameterListSyntax node)
