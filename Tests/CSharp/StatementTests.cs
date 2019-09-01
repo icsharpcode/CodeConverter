@@ -111,8 +111,9 @@ class TestClass
         }
 
         /// <summary>
-        /// Implicitly typed lambdas exist in vb but are not happening in C#. Trying to use Func/Action would be overly restrictive for some cases. Local functions are preferable
-        /// See discussion on https://github.com/dotnet/roslyn/issues/14
+        /// Implicitly typed lambdas exist in vb but are not happening in C#. See discussion on https://github.com/dotnet/roslyn/issues/14
+        /// * For VB local declarations, inference happens. The closest equivalent in C# is a local function since Func/Action would be overly restrictive for some cases
+        /// * For VB field declarations, inference doesn't happen, it just uses "Object", but in C# lambdas can't be assigned to object so we need to do something
         /// </summary>
         [Fact]
         public async Task AssignmentStatementWithFunc()
@@ -127,7 +128,7 @@ class TestClass
         Dim isTrue = Function(pList As List(Of String))
                             Return pList.All(Function(x) True)
                      End Function
-        Dim isTrueWithNoStatement = Function(pList As List(Of String)) pList.All(Function(x) True)
+        Dim isTrueWithNoStatement = (Function(pList As List(Of String)) pList.All(Function(x) True))
         Dim write = Sub() Console.WriteLine(1)
     End Sub
 End Class", @"class TestFunc
@@ -145,6 +146,101 @@ End Class", @"class TestFunc
         };
         bool isTrueWithNoStatement(List<string> pList) => pList.All(x => true);
         void write() => Console.WriteLine(1);
+    }
+}");
+        }
+
+        /// <summary>
+        /// Technically it's possible to use a type-inferred lambda within a for loop
+        /// Other than the above field/local declarations, candidates would be other things using <see cref="SplitVariableDeclarations"/>,
+        /// e.g. ForEach (no assignment involved), Using block (can't have a disposable lambda)
+        /// </summary>
+        [Fact]
+        public async Task ContrivedFuncInferenceExample()
+        {
+            //BUG: Comments on operators first line get ported to last line
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Friend Class ContrivedFuncInferenceExample
+    Private Sub TestMethod()
+        For index = (Function(pList As List(Of String)) pList.All(Function(x) True)) To New Blah() Step New Blah()
+            Dim buffer = index.Check(New List(Of String))
+            Console.WriteLine($""{buffer}"")
+        Next
+    End Sub
+
+    Class Blah
+        Public ReadOnly Check As Func(Of List(Of String), Boolean)
+
+        Public Sub New(Optional check As Func(Of List(Of String), Boolean) = Nothing)
+            check = check
+        End Sub
+
+        Public Shared Widening Operator CType(ByVal p1 As Func(Of List(Of String), Boolean)) As Blah
+            Return New Blah(p1)
+        End Operator
+        Public Shared Widening Operator CType(ByVal p1 As Blah) As Func(Of List(Of String), Boolean)
+            Return p1.Check
+        End Operator
+        Public Shared Operator -(ByVal p1 As Blah, ByVal p2 As Blah) As Blah
+            Return New Blah()
+        End Operator
+        Public Shared Operator +(ByVal p1 As Blah, ByVal p2 As Blah) As Blah
+            Return New Blah()
+        End Operator
+        Public Shared Operator <=(ByVal p1 As Blah, ByVal p2 As Blah) As Boolean
+            Return p1.Check(New List(Of String))
+        End Operator
+        Public Shared Operator >=(ByVal p1 As Blah, ByVal p2 As Blah) As Boolean
+            Return p2.Check(New List(Of String))
+        End Operator
+    End Class
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+
+internal class ContrivedFuncInferenceExample
+{
+    private void TestMethod()
+    {
+        for (Blah index = (List<string> pList) => pList.All(x => true), loopTo = new Blah(); index <= loopTo; index += new Blah())
+        {
+            bool buffer = index.Check(new List<string>());
+            Console.WriteLine($""{buffer}"");
+        }
+    }
+
+    class Blah
+    {
+        public readonly Func<List<string>, bool> Check;
+
+        public Blah(Func<List<string>, bool> check = null)
+        {
+            check = check;
+        }
+
+        public static implicit operator Blah(Func<List<string>, bool> p1)
+        {
+            return new Blah(p1);
+        }
+        public static implicit operator Func<List<string>, bool>(Blah p1)
+        {
+            return p1.Check;
+        }
+        public static Blah operator -(Blah p1, Blah p2)
+        {
+            return new Blah();
+        }
+        public static Blah operator +(Blah p1, Blah p2)
+        {
+            return new Blah();
+        }
+        public static bool operator <=(Blah p1, Blah p2)
+        {
+            return p1.Check(new List<string>());
+        }
+        public static bool operator >=(Blah p1, Blah p2)
+        {
+            return p2.Check(new List<string>());
+        }
     }
 }");
         }
