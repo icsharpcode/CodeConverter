@@ -119,13 +119,14 @@ class TestClass
                             Return True
                      End Function
     End Sub
-End Class", @"using System.Xml.Linq;
-
-class TestClass
+End Class", @"class TestFunc
 {
     private void TestMethod()
     {
-        Func<int, bool> isTrue = row => true;
+        Func<int, bool> isTrue = (int row) =>
+        {
+            return true;
+        };
     }
 }");
         }

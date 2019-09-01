@@ -67,7 +67,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var vbInitIsNothingLiteral = vbInitConstantValue.HasValue && vbInitConstantValue.Value == null;
                 var initSymbol = _semanticModel.GetSymbolInfo(vbInitValue).Symbol;
                 preferExplicitType |= vbInitializerType != null && vbInitializerType.HasCsKeyword();
-                requireExplicitTypeForAll = vbInitIsNothingLiteral || initSymbol?.Kind == SymbolKind.Method;
+                requireExplicitTypeForAll = vbInitIsNothingLiteral || initSymbol?.IsAnonymousFunction() == true;
             }
 
             var newDecls = new Dictionary<string, VariableDeclarationSyntax>();

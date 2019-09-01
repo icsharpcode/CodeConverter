@@ -1669,11 +1669,13 @@ class TestClass : BaseTestClass
         Dim test As Func(Of Integer, Integer) = Function(ByVal a As Integer) a * 2
         test(3)
     End Sub
-End Class", @"class TestClass
+End Class", @"using System;
+
+class TestClass
 {
     private void TestMethod()
     {
-        var test = (int a) => a * 2;
+        Func<int, int> test = (a) => a * 2;
         test(3);
     }
 }");
@@ -1693,19 +1695,21 @@ End Class", @"class TestClass
         Dim test3 As Func(Of Integer, Integer, Integer) = Function(a, b) a Mod b
         test(3)
     End Sub
-End Class", @"class TestClass
+End Class", @"using System;
+
+class TestClass
 {
     private void TestMethod()
     {
-        var test = a => a * 2;
-        var test2 = (a, b) =>
+        Func<int, int> test = a => a * 2;
+        Func<int, int, double> test2 = (a, b) =>
         {
             if (b > 0)
-                return (double)a / (double)b;
+                return a / (double)b;
             return 0;
         };
 
-        var test3 = (a, b) => a % b;
+        Func<int, int, int> test3 = (a, b) => a % b;
         test(3);
     }
 }");
@@ -1729,9 +1733,9 @@ class TestClass
     private void TestMethod()
     {
         int x = 1;
-        var simpleAssignmentAction = () => x = 1;
-        var nonBlockAction = () => Console.WriteLine(""Statement"");
-        var ifAction = () => { if (true) return; };
+        Action simpleAssignmentAction = () => x = 1;
+        Action nonBlockAction = () => Console.WriteLine(""Statement"");
+        Action ifAction = () => { if (true) return; };
     }
 }");
         }
