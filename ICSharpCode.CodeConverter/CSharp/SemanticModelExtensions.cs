@@ -1,23 +1,20 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.FindSymbols;
-using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
-using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasicExtensions;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class SemanticModelExtensions
     {
-        private static PropertyInfo _unassignedVariablesProperty;
+        private static Func<DataFlowAnalysis, IEnumerable<ISymbol>> _unassignedVariablesProperty;
 
         /// <summary>
         /// This check is entirely to avoid some unnecessary default initializations so the code looks less cluttered and more like the VB did.
@@ -41,10 +38,21 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </remarks>
         private static IEnumerable<ISymbol> GetUnassignedVariables(DataFlowAnalysis methodFlow)
         {
-            _unassignedVariablesProperty = _unassignedVariablesProperty ?? methodFlow.GetType().GetProperty("UnassignedVariables");
-            if (_unassignedVariablesProperty != null && _unassignedVariablesProperty.GetValue(methodFlow) is IEnumerable unassignedVariables)
-                return unassignedVariables.Cast<ISymbol>();
-            return null;
+            //PERF: Assume we'll only be passed one type of data flow analysis (VisualBasicDataFlowAnalysis)
+            _unassignedVariablesProperty = _unassignedVariablesProperty ?? CreateDelegate(methodFlow);
+            return _unassignedVariablesProperty(methodFlow);
+        }
+
+        private static Func<DataFlowAnalysis, IEnumerable<ISymbol>> CreateDelegate(DataFlowAnalysis methodFlow)
+        {
+            try {
+                var getMethod = methodFlow.GetType().GetProperty("UnassignedVariables")?.GetMethod;
+                var getDelegate = getMethod?.CreateOpenDelegateOfType<DataFlowAnalysis, IEnumerable>();
+                return dataFlowAnalysis => getDelegate?.Invoke(dataFlowAnalysis).Cast<ISymbol>();
+            } catch (Exception e) {
+                Debug.Fail(e.Message);
+                return _ => null;
+            }
         }
     }
 }
