@@ -58,7 +58,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             VariableDeclaratorSyntax declarator, bool preferExplicitType = false)
         {
             var vbInitValue = GetInitializerToConvert(declarator);
-            var initializer = vbInitValue?.Accept(TriviaConvertingExpressionVisitor);
+            var initializerOrMethodDecl = vbInitValue?.Accept(TriviaConvertingExpressionVisitor);
             var vbInitializerType = vbInitValue != null ? _semanticModel.GetTypeInfo(vbInitValue).Type : null;
 
             bool requireExplicitTypeForAll = false;
@@ -80,7 +80,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var declaredSymbolType = declaredSymbol.GetSymbolType();
                 var requireExplicitType = requireExplicitTypeForAll || vbInitializerType != null && !Equals(declaredSymbolType, vbInitializerType);
                 var csTypeSyntax = (TypeSyntax)CsSyntaxGenerator.TypeExpression(declaredSymbolType);
-                var adjustedInitializer = GetInitializerFromNameAndType(declaredSymbolType, name, initializer);
+                var adjustedInitializer = GetInitializerFromNameAndType(declaredSymbolType, name, initializerOrMethodDecl);
 
                 bool isField = declarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
                 EqualsValueClauseSyntax equalsValueClauseSyntax;
@@ -88,7 +88,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (adjustedInitializer is ExpressionSyntax adjustedInitializerExpr) {
                     // Explicit conversions are never needed for AsClause, since the type is inferred from the RHS
                     var convertedInitializer = vbInitValue == null ? adjustedInitializer : TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr);
-                    equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(adjustedInitializerExpr);
+                    equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause((ExpressionSyntax) convertedInitializer);
                 } else if (isField || _semanticModel.IsDefinitelyAssignedBeforeRead(_document, declaredSymbol, name)) {
                     equalsValueClauseSyntax = null;
                 } else {
@@ -103,7 +103,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 else {
                     bool useVar = equalsValueClauseSyntax != null && !preferExplicitType && !requireExplicitType;
                     if (isAnonymousFunction) {
-                        csMethods.Add(initializer);
+                        csMethods.Add(initializerOrMethodDecl);
                     } else {
                         csVars[k] =
                             SyntaxFactory.VariableDeclaration(GetTypeSyntax(declaredSymbolType, useVar), SyntaxFactory.SingletonSeparatedList(v));

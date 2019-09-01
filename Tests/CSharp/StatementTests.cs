@@ -118,6 +118,7 @@ class TestClass
         [Fact]
         public async Task AssignmentStatementWithFunc()
         {
+            // Number of lines changes so can't auto test comments
             await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestFunc
     Dim isFalse = Function(row As Integer) False
     Dim write0 = Sub()
