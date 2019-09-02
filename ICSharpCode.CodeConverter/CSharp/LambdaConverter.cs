@@ -65,7 +65,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var potentialAncestorDeclarationOperation = operation?.Parent?.Parent?.Parent;
             if (potentialAncestorDeclarationOperation is IFieldInitializerOperation fieldInit) {
                 var fieldSymbol = fieldInit.InitializedFields.Single();
-                if (fieldSymbol.GetResultantVisibility() <= SymbolVisibility.Internal && !fieldSymbol.Type.IsDelegateReferencableByName()) {
+                if (fieldSymbol.GetResultantVisibility() != SymbolVisibility.Public && !fieldSymbol.Type.IsDelegateReferencableByName()) {
                     //Should do: Check no (other) write usages exist: SymbolFinder.FindReferencesAsync + checking if they're an assignment LHS or out parameter
                     return CreateMethodDeclaration(operation, fieldSymbol, block, arrow);
                 }

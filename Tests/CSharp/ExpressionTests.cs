@@ -1718,6 +1718,11 @@ class TestClass
         [Fact]
         public async Task TypeInferredLambdaBodyExpression()
         {
+            // BUG: Should actually call:
+            // * Operators::DivideObject(object, object)
+            // * Operators::ConditionalCompareObjectGreater(object, object, bool)
+            // * Operators::MultiplyObject(object, object)
+            // * Operators::ModObject(object, object)
             await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Sub TestMethod()
         Dim test = Function(a) a * 2
@@ -1729,21 +1734,21 @@ class TestClass
         Dim test3 = Function(a, b) a Mod b
         test(3)
     End Sub
-End Class", @"using System;
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
 
 class TestClass
 {
     private void TestMethod()
     {
-        int test(int a) => a * 2;
-        double test2(int a, int b)
+        object test(object a) => a * 2;
+        object test2(object a, object b)
         {
-            if (b > 0)
-                return a / (double)b;
+            if (Conversions.ToBoolean(b > 0))
+                return a / b;
             return 0;
         };
 
-        int test3(int a, int b) => a % b;
+        object test3(object a, object b) => a % b;
         test(3);
     }
 }");
