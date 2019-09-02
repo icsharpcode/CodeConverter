@@ -4,7 +4,9 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
+using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
@@ -35,11 +37,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 arrow = SyntaxFactory.ArrowExpressionClause(expressionBody);
             }
 
-            if (TryConvertToFunctionDeclaration(vbNode, param, block, arrow, out CSharpSyntaxNode functionStatement)) {
+            var functionStatement = ConvertToFunctionDeclarationOrNull(vbNode, param, block, arrow);
+            if (functionStatement != null) {
                 return functionStatement;
             }
 
-            CSharpSyntaxNode body = (CSharpSyntaxNode)block ?? expressionBody;
+            var body = (CSharpSyntaxNode)block ?? expressionBody;
             if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null) {
                 return SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
             }
@@ -47,26 +50,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.ParenthesizedLambdaExpression(param, body);
         }
 
-        private bool TryConvertToFunctionDeclaration(VBSyntax.LambdaExpressionSyntax vbNode,
+        private CSharpSyntaxNode ConvertToFunctionDeclarationOrNull(VBSyntax.LambdaExpressionSyntax vbNode,
             ParameterListSyntax param, BlockSyntax block,
-            ArrowExpressionClauseSyntax arrow, out CSharpSyntaxNode localFunctionStatement)
+            ArrowExpressionClauseSyntax arrow)
         {
             if (!(_semanticModel.GetOperation(vbNode) is IAnonymousFunctionOperation operation)) {
-                localFunctionStatement = null;
-                return false;
+                return null;
             }
 
+            //Should do: See if we can improve upon returning "object" for pretty much everything (which is what the symbols say)
             var paramsWithTypes = operation.Symbol.Parameters.Select(p => CommonConversions.CsSyntaxGenerator.ParameterDeclaration(p));
 
-            //TODO Check none of the logic in VisitParameterList needed for this case - see if we can replace some of that method with this
             var paramListWithTypes = param.WithParameters(SyntaxFactory.SeparatedList(paramsWithTypes));
             var potentialAncestorDeclarationOperation = operation?.Parent?.Parent?.Parent;
             if (potentialAncestorDeclarationOperation is IFieldInitializerOperation fieldInit) {
                 var fieldSymbol = fieldInit.InitializedFields.Single();
-                if (!fieldSymbol.Type.IsDelegateReferencableByName()) {
-                    localFunctionStatement =
-                        CreateMethodDeclaration(operation, fieldSymbol, block, arrow);
-                    return true;
+                if (fieldSymbol.GetResultantVisibility() <= SymbolVisibility.Internal && !fieldSymbol.Type.IsDelegateReferencableByName()) {
+                    //Should do: Check no (other) write usages exist: SymbolFinder.FindReferencesAsync + checking if they're an assignment LHS or out parameter
+                    return CreateMethodDeclaration(operation, fieldSymbol, block, arrow);
                 }
             }
 
@@ -78,14 +79,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (potentialDeclarationOperation is IVariableDeclarationOperation variableDeclaration) {
                 var variableDeclaratorOperation = variableDeclaration.Declarators.Single();
                 if (!variableDeclaratorOperation.Symbol.Type.IsDelegateReferencableByName()) {
-                    localFunctionStatement =
-                        CreateLocalFunction(operation, variableDeclaratorOperation, paramListWithTypes, block, arrow);
-                    return true;
+                    //Should do: Check no (other) write usages exist: SymbolFinder.FindReferencesAsync + checking if they're an assignment LHS or out parameter
+                    return CreateLocalFunction(operation, variableDeclaratorOperation, paramListWithTypes, block, arrow);
                 }
             }
 
-            localFunctionStatement = null;
-            return false;
+            return null;
         }
 
         private MethodDeclarationSyntax CreateMethodDeclaration(IAnonymousFunctionOperation operation,
