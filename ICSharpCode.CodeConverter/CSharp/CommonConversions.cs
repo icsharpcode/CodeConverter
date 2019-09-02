@@ -84,7 +84,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 EqualsValueClauseSyntax equalsValueClauseSyntax;
                 if (GetInitializerFromNameAndType(declaredSymbolType, name, initializerOrMethodDecl) is ExpressionSyntax adjustedInitializerExpr) {
-                    var convertedInitializer = TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr);
+                    var convertedInitializer = vbInitValue != null ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr) : adjustedInitializerExpr;
                     equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
                 } else if (isField || _semanticModel.IsDefinitelyAssignedBeforeRead(_document, declaredSymbol, name)) {
                     equalsValueClauseSyntax = null;
