@@ -29,6 +29,7 @@ using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExte
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+using ITypeSymbol = Microsoft.CodeAnalysis.ITypeSymbol;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -62,11 +63,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             var vbInitializerType = vbInitValue != null ? _semanticModel.GetTypeInfo(vbInitValue).Type : null;
 
             bool requireExplicitTypeForAll = false;
+            IMethodSymbol initSymbol = null;
             if (vbInitValue != null) {
                 var vbInitConstantValue = _semanticModel.GetConstantValue(vbInitValue);
                 var vbInitIsNothingLiteral = vbInitConstantValue.HasValue && vbInitConstantValue.Value == null;
                 preferExplicitType |= vbInitializerType != null && vbInitializerType.HasCsKeyword();
-                var initSymbol = _semanticModel.GetSymbolInfo(vbInitValue).Symbol as IMethodSymbol;
+                initSymbol = _semanticModel.GetSymbolInfo(vbInitValue).Symbol as IMethodSymbol;
                 bool isAnonymousFunction = initSymbol?.IsAnonymousFunction() == true;
                 requireExplicitTypeForAll = vbInitIsNothingLiteral || isAnonymousFunction;
             }
@@ -100,9 +102,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 else {
                     if (initializerOrMethodDecl == null || initializerOrMethodDecl is ExpressionSyntax) {
                         bool useVar = equalsValueClauseSyntax != null && !preferExplicitType && !requireExplicitType;
-                        csVars[k] =
-                            SyntaxFactory.VariableDeclaration(GetTypeSyntax(declaredSymbolType, useVar),
-                                SyntaxFactory.SingletonSeparatedList(v));
+                        var typeSyntax = initSymbol?.CanBeReferencedByName != false
+                            ? GetTypeSyntax(declaredSymbolType, useVar)
+                            : GetFuncTypeSyntax(initSymbol);
+                        csVars[k] = SyntaxFactory.VariableDeclaration(typeSyntax, SyntaxFactory.SingletonSeparatedList(v));
                     } else {
                         csMethods.Add(initializerOrMethodDecl);
                     }
@@ -110,6 +113,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return (csVars.Values, csMethods);
+        }
+
+        private TypeSyntax GetFuncTypeSyntax(IMethodSymbol method)
+        {
+            var parameters = method.Parameters.Select(p => p.Type);
+            if (method.ReturnsVoid) {
+                return (TypeSyntax)CsSyntaxGenerator.GenericName(nameof(Action), parameters);
+            }
+
+            parameters = parameters.Concat(new[] {method.ReturnType});
+            return (TypeSyntax)CsSyntaxGenerator.GenericName(nameof(Func<object>), parameters);
         }
 
         public TypeSyntax GetTypeSyntax(ITypeSymbol typeSymbol, bool useImplicitType = false)

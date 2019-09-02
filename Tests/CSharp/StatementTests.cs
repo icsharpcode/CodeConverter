@@ -113,13 +113,15 @@ class TestClass
         /// <summary>
         /// Implicitly typed lambdas exist in vb but are not happening in C#. See discussion on https://github.com/dotnet/roslyn/issues/14
         /// * For VB local declarations, inference happens. The closest equivalent in C# is a local function since Func/Action would be overly restrictive for some cases
-        /// * For VB field declarations, inference doesn't happen, it just uses "Object", but in C# lambdas can't be assigned to object so we need to do something
+        /// * For VB field declarations, inference doesn't happen, it just uses "Object", but in C# lambdas can't be assigned to object so we have to settle for Func/Action for externally visible methods to maintain assignability.
         /// </summary>
         [Fact]
         public async Task AssignmentStatementWithFunc()
         {
             // Number of lines changes so can't auto test comments
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestFunc
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestFunc
+    Public pubIdent = Function(row As Integer) row
+    Public pubWrite = Function(row As Integer) Console.WriteLine(row)
     Dim isFalse = Function(row As Integer) False
     Dim write0 = Sub()
         Console.WriteLine(0)
@@ -141,6 +143,8 @@ using System.Linq;
 
 class TestFunc
 {
+    private Func<int, int> pubIdent = (row) => row;
+    private Action<int> pubWrite = row => Console.WriteLine(row);
     private bool isFalse(int row) => false;
     private void write0() => Console.WriteLine(0);
 
