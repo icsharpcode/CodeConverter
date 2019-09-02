@@ -48,19 +48,20 @@ namespace ICSharpCode.CodeConverter.CSharp
             var operation = _semanticModel.GetOperation(vbNode) as IAnonymousFunctionOperation;
             var potentialAncestorDeclarationOperation = operation?.Parent?.Parent?.Parent;
             if (potentialAncestorDeclarationOperation is IFieldInitializerOperation fieldInit) {
-                localFunctionStatement = CreateMethodDeclaration(operation, fieldInit, block, arrow);
+                localFunctionStatement = CreateMethodDeclaration(operation, fieldInit.InitializedFields.Single(), block, arrow);
                 return true;
             }
 
             var potentialDeclarationOperation = potentialAncestorDeclarationOperation?.Parent;
             if (potentialDeclarationOperation is IVariableDeclarationGroupOperation go)
             {
-                potentialDeclarationOperation = go.Declarations.First(); //TODO Find correct declaration
+                potentialDeclarationOperation = go.Declarations.Single();
             }
 
             if (potentialDeclarationOperation is IVariableDeclarationOperation variableDeclaration)
             {
-                localFunctionStatement = CreateLocalFunction(operation, variableDeclaration, param, block, arrow);
+                var variableDeclaratorOperation = variableDeclaration.Declarators.Single();
+                localFunctionStatement = CreateLocalFunction(operation, variableDeclaratorOperation, param, block, arrow);
                 return true;
             }
 
@@ -69,14 +70,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         private MethodDeclarationSyntax CreateMethodDeclaration(IAnonymousFunctionOperation operation,
-            IFieldInitializerOperation fieldInit,
+            IFieldSymbol fieldSymbol,
             BlockSyntax block, ArrowExpressionClauseSyntax arrow)
         {
             var methodDeclaration =
                 (MethodDeclarationSyntax) CommonConversions.CsSyntaxGenerator.MethodDeclaration(operation.Symbol);
-            string name = fieldInit.InitializedFields.Single().Name; //TODO Find correct name
             var methodDecl = methodDeclaration
-                .WithIdentifier(SyntaxFactory.Identifier(name))
+                .WithIdentifier(SyntaxFactory.Identifier(fieldSymbol.Name))
                 .WithBody(block).WithExpressionBody(arrow);
             return arrow == null
                 ? methodDecl
@@ -84,11 +84,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         private LocalFunctionStatementSyntax CreateLocalFunction(IAnonymousFunctionOperation operation,
-            IVariableDeclarationOperation variableDeclaration,
+            IVariableDeclaratorOperation variableDeclaratorOperation,
             ParameterListSyntax param, BlockSyntax block,
             ArrowExpressionClauseSyntax arrow)
         {
-            string symbolName = variableDeclaration.Declarators.Single().Symbol.Name; //TODO Find correct name
+            string symbolName = variableDeclaratorOperation.Symbol.Name;
             var localFunctionStatementSyntax = SyntaxFactory.LocalFunctionStatement(SyntaxFactory.TokenList(),
                 CommonConversions.GetTypeSyntax(operation.Symbol.ReturnType),
                 SyntaxFactory.Identifier(symbolName), null, param,
