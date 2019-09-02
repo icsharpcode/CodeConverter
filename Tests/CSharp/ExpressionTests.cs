@@ -1716,6 +1716,40 @@ class TestClass
         }
 
         [Fact]
+        public async Task TypeInferredLambdaBodyExpression()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+    Private Sub TestMethod()
+        Dim test = Function(a) a * 2
+        Dim test2 = Function(a, b)
+            If b > 0 Then Return a / b
+            Return 0
+        End Function
+
+        Dim test3 = Function(a, b) a Mod b
+        test(3)
+    End Sub
+End Class", @"using System;
+
+class TestClass
+{
+    private void TestMethod()
+    {
+        int test(int a) => a * 2;
+        double test2(int a, int b)
+        {
+            if (b > 0)
+                return a / (double)b;
+            return 0;
+        };
+
+        int test3(int a, int b) => a % b;
+        test(3);
+    }
+}");
+        }
+
+        [Fact]
         public async Task SingleLineLambdaWithStatementBody()
         {
             //Bug: Comments after action definition are lost

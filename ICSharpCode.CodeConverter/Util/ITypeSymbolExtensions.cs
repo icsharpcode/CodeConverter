@@ -393,6 +393,11 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return t is IArrayTypeSymbol ats && ats.ElementType.SpecialType == specialType;
         }
+
+        public static bool IsDelegateReferencableByName(this ITypeSymbol t)
+        {
+            return t.CanBeReferencedByName && t.IsDelegateType();
+        }
     }
 }
 

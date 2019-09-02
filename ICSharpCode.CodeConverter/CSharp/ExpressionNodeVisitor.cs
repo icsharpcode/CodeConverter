@@ -686,23 +686,23 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override CSharpSyntaxNode VisitParameter(VBSyntax.ParameterSyntax node)
         {
             var id = CommonConversions.ConvertIdentifier(node.Identifier.Identifier);
-            var returnType = (TypeSyntax)node.AsClause?.Type.Accept(TriviaConvertingVisitor);
+            var paramType = (TypeSyntax)node.AsClause?.Type.Accept(TriviaConvertingVisitor);
             if (node.Parent?.Parent?.IsKind(VBasic.SyntaxKind.FunctionStatement,
                     VBasic.SyntaxKind.SubStatement) == true) {
-                returnType = returnType ?? SyntaxFactory.ParseTypeName("object");
+                paramType = paramType ?? SyntaxFactory.ParseTypeName("object");
             }
 
             var rankSpecifiers = CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.Identifier.ArrayRankSpecifiers, node.Identifier.ArrayBounds, false);
-            if (rankSpecifiers.Any() && returnType != null) {
-                returnType = SyntaxFactory.ArrayType(returnType, rankSpecifiers);
+            if (rankSpecifiers.Any() && paramType != null) {
+                paramType = SyntaxFactory.ArrayType(paramType, rankSpecifiers);
             }
 
-            if (returnType != null && !SyntaxTokenExtensions.IsKind(node.Identifier.Nullable, SyntaxKind.None)) {
-                var arrayType = returnType as ArrayTypeSyntax;
+            if (paramType != null && !SyntaxTokenExtensions.IsKind(node.Identifier.Nullable, SyntaxKind.None)) {
+                var arrayType = paramType as ArrayTypeSyntax;
                 if (arrayType == null) {
-                    returnType = SyntaxFactory.NullableType(returnType);
+                    paramType = SyntaxFactory.NullableType(paramType);
                 } else {
-                    returnType = arrayType.WithElementType(SyntaxFactory.NullableType(arrayType.ElementType));
+                    paramType = arrayType.WithElementType(SyntaxFactory.NullableType(arrayType.ElementType));
                 }
             }
 
@@ -740,7 +740,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.Parameter(
                 SyntaxFactory.List(attributes),
                 modifiers,
-                returnType,
+                paramType,
                 id,
                 @default
             );
