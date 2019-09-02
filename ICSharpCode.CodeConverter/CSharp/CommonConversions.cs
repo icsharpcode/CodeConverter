@@ -62,13 +62,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             var vbInitializerType = vbInitValue != null ? _semanticModel.GetTypeInfo(vbInitValue).Type : null;
 
             bool requireExplicitTypeForAll = false;
-            bool isAnonymousFunction = false;
             if (vbInitValue != null) {
                 var vbInitConstantValue = _semanticModel.GetConstantValue(vbInitValue);
                 var vbInitIsNothingLiteral = vbInitConstantValue.HasValue && vbInitConstantValue.Value == null;
                 preferExplicitType |= vbInitializerType != null && vbInitializerType.HasCsKeyword();
                 var initSymbol = _semanticModel.GetSymbolInfo(vbInitValue).Symbol as IMethodSymbol;
-                isAnonymousFunction = initSymbol?.IsAnonymousFunction() == true;
+                bool isAnonymousFunction = initSymbol?.IsAnonymousFunction() == true;
                 requireExplicitTypeForAll = vbInitIsNothingLiteral || isAnonymousFunction;
             }
 
@@ -80,15 +79,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var declaredSymbolType = declaredSymbol.GetSymbolType();
                 var requireExplicitType = requireExplicitTypeForAll || vbInitializerType != null && !Equals(declaredSymbolType, vbInitializerType);
                 var csTypeSyntax = (TypeSyntax)CsSyntaxGenerator.TypeExpression(declaredSymbolType);
-                var adjustedInitializer = GetInitializerFromNameAndType(declaredSymbolType, name, initializerOrMethodDecl);
 
                 bool isField = declarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
+
                 EqualsValueClauseSyntax equalsValueClauseSyntax;
-                
-                if (adjustedInitializer is ExpressionSyntax adjustedInitializerExpr) {
-                    // Explicit conversions are never needed for AsClause, since the type is inferred from the RHS
-                    var convertedInitializer = vbInitValue == null ? adjustedInitializer : TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr);
-                    equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause((ExpressionSyntax) convertedInitializer);
+                if (GetInitializerFromNameAndType(declaredSymbolType, name, initializerOrMethodDecl) is ExpressionSyntax adjustedInitializerExpr) {
+                    var convertedInitializer = TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr);
+                    equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
                 } else if (isField || _semanticModel.IsDefinitelyAssignedBeforeRead(_document, declaredSymbol, name)) {
                     equalsValueClauseSyntax = null;
                 } else {
@@ -101,12 +98,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (csVars.TryGetValue(k, out var decl))
                     csVars[k] = decl.AddVariables(v);
                 else {
-                    bool useVar = equalsValueClauseSyntax != null && !preferExplicitType && !requireExplicitType;
-                    if (isAnonymousFunction) {
-                        csMethods.Add(initializerOrMethodDecl);
-                    } else {
+                    if (initializerOrMethodDecl == null || initializerOrMethodDecl is ExpressionSyntax) {
+                        bool useVar = equalsValueClauseSyntax != null && !preferExplicitType && !requireExplicitType;
                         csVars[k] =
-                            SyntaxFactory.VariableDeclaration(GetTypeSyntax(declaredSymbolType, useVar), SyntaxFactory.SingletonSeparatedList(v));
+                            SyntaxFactory.VariableDeclaration(GetTypeSyntax(declaredSymbolType, useVar),
+                                SyntaxFactory.SingletonSeparatedList(v));
+                    } else {
+                        csMethods.Add(initializerOrMethodDecl);
                     }
                 }
             }

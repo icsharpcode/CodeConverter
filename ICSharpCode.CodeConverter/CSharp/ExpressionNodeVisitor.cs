@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -682,30 +683,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 arrow = SyntaxFactory.ArrowExpressionClause(expressionBody);
             }
 
-            var operation = _semanticModel.GetOperation(vbNode) as IAnonymousFunctionOperation;
-            var potentialAncestorDeclarationOperation = operation?.Parent?.Parent?.Parent;
-            if (potentialAncestorDeclarationOperation is IFieldInitializerOperation fieldInit) {
-                var methodDeclaration =
-                    (MethodDeclarationSyntax)CommonConversions.CsSyntaxGenerator.MethodDeclaration(operation.Symbol);
-                string name = fieldInit.InitializedFields.Single().Name; //TODO Find correct name
-                var methodDecl = methodDeclaration
-                    .WithIdentifier(SyntaxFactory.Identifier(name))
-                    .WithBody(block).WithExpressionBody(arrow);
-                return arrow == null ? methodDecl : methodDecl.WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken));
-            }
-
-            var potentialDeclarationOperation = potentialAncestorDeclarationOperation?.Parent;
-            if (potentialDeclarationOperation is IVariableDeclarationGroupOperation go) {
-                potentialDeclarationOperation = go.Declarations.First(); //TODO Find correct declaration
-            }
-
-            if (potentialDeclarationOperation is IVariableDeclarationOperation variableDeclaration) {
-                string symbolName = variableDeclaration.Declarators.Single().Symbol.Name; //TODO Find correct name
-                return SyntaxFactory.LocalFunctionStatement(SyntaxFactory.TokenList(),
-                    CommonConversions.GetTypeSyntax(operation.Symbol.ReturnType),
-                    SyntaxFactory.Identifier(symbolName), null, param,
-                    SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), block, arrow,
-                    SyntaxFactory.Token(SyntaxKind.SemicolonToken));
+            if (TryConvertToFunctionDeclaration(vbNode, param, block, arrow, out CSharpSyntaxNode functionStatement)) {
+                return functionStatement;
             }
 
             var body = (CSharpSyntaxNode) block ?? expressionBody;
@@ -714,13 +693,68 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.ParenthesizedLambdaExpression(param, body);
         }
 
+        private bool TryConvertToFunctionDeclaration(VBasic.VisualBasicSyntaxNode vbNode, ParameterListSyntax param, BlockSyntax block,
+            ArrowExpressionClauseSyntax arrow, out CSharpSyntaxNode localFunctionStatement)
+        {
+            var operation = _semanticModel.GetOperation(vbNode) as IAnonymousFunctionOperation;
+            var potentialAncestorDeclarationOperation = operation?.Parent?.Parent?.Parent;
+            if (potentialAncestorDeclarationOperation is IFieldInitializerOperation fieldInit) {
+                localFunctionStatement = CreateMethodDeclaration(operation, fieldInit, block, arrow);
+                return true;
+            }
+
+            var potentialDeclarationOperation = potentialAncestorDeclarationOperation?.Parent;
+            if (potentialDeclarationOperation is IVariableDeclarationGroupOperation go)
+            {
+                potentialDeclarationOperation = go.Declarations.First(); //TODO Find correct declaration
+            }
+
+            if (potentialDeclarationOperation is IVariableDeclarationOperation variableDeclaration)
+            {
+                localFunctionStatement = CreateLocalFunction(operation, variableDeclaration, param, block, arrow);
+                return true;
+            }
+
+            localFunctionStatement = null;
+            return false;
+        }
+
+        private MethodDeclarationSyntax CreateMethodDeclaration(IAnonymousFunctionOperation operation,
+            IFieldInitializerOperation fieldInit,
+            BlockSyntax block, ArrowExpressionClauseSyntax arrow)
+        {
+            var methodDeclaration =
+                (MethodDeclarationSyntax) CommonConversions.CsSyntaxGenerator.MethodDeclaration(operation.Symbol);
+            string name = fieldInit.InitializedFields.Single().Name; //TODO Find correct name
+            var methodDecl = methodDeclaration
+                .WithIdentifier(SyntaxFactory.Identifier(name))
+                .WithBody(block).WithExpressionBody(arrow);
+            return arrow == null
+                ? methodDecl
+                : methodDecl.WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken));
+        }
+
+        private LocalFunctionStatementSyntax CreateLocalFunction(IAnonymousFunctionOperation operation,
+            IVariableDeclarationOperation variableDeclaration,
+            ParameterListSyntax param, BlockSyntax block,
+            ArrowExpressionClauseSyntax arrow)
+        {
+            string symbolName = variableDeclaration.Declarators.Single().Symbol.Name; //TODO Find correct name
+            var localFunctionStatementSyntax = SyntaxFactory.LocalFunctionStatement(SyntaxFactory.TokenList(),
+                CommonConversions.GetTypeSyntax(operation.Symbol.ReturnType),
+                SyntaxFactory.Identifier(symbolName), null, param,
+                SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), block, arrow,
+                SyntaxFactory.Token(SyntaxKind.SemicolonToken));
+            return localFunctionStatementSyntax;
+        }
+
         public override CSharpSyntaxNode VisitParameterList(VBSyntax.ParameterListSyntax node)
         {
-            var parameterSyntaxs = node.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor));
+            var parameters = node.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor));
             if (node.Parent is VBSyntax.PropertyStatementSyntax && CommonConversions.IsDefaultIndexer(node.Parent)) {
-                return SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(parameterSyntaxs));
+                return SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(parameters));
             }
-            return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameterSyntaxs));
+            return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters));
         }
 
         public override CSharpSyntaxNode VisitParameter(VBSyntax.ParameterSyntax node)
