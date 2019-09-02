@@ -119,18 +119,6 @@ namespace ICSharpCode.CodeConverter.Util
             return symbol.Locations.All(loc => loc.IsInSource);
         }
 
-        public static DeclarationModifiers GetSymbolModifiers(this ISymbol symbol)
-        {
-            // ported from roslyn source - why they didn't use DeclarationModifiers.From (symbol) ?
-            return DeclarationModifiers.None
-                .WithIsStatic(symbol.IsStatic)
-                .WithIsAbstract(symbol.IsAbstract)
-                .WithIsUnsafe(symbol.IsUnsafe())
-                .WithIsVirtual(symbol.IsVirtual)
-                .WithIsOverride(symbol.IsOverride)
-                .WithIsSealed(symbol.IsSealed);
-        }
-
         public static IEnumerable<SyntaxReference> GetDeclarations(this ISymbol symbol)
         {
             return symbol != null
