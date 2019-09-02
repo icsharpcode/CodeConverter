@@ -125,13 +125,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static VBSyntax.ExpressionSyntax GetInitializerToConvert(VariableDeclaratorSyntax declarator)
         {
-            var vbInitializer = declarator.AsClause?.TypeSwitch(
-                                (SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
-                                (AsNewClauseSyntax c) => c.NewExpression
-                            ) ?? declarator.Initializer?.Value;
-
-            return
-                (VBSyntax.ExpressionSyntax) vbInitializer?.DescendantNodesAndSelf(n => n is VBSyntax.ParenthesizedExpressionSyntax).Last();
+            return declarator.AsClause?.TypeSwitch(
+                       (SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
+                       (AsNewClauseSyntax c) => c.NewExpression
+                   ) ?? declarator.Initializer?.Value;
         }
 
         private CSharpSyntaxNode GetInitializerFromNameAndType(ITypeSymbol typeSymbol,

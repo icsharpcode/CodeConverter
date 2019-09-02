@@ -240,7 +240,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override CSharpSyntaxNode VisitParenthesizedExpression(VBasic.Syntax.ParenthesizedExpressionSyntax node)
         {
-            return SyntaxFactory.ParenthesizedExpression((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
+            var cSharpSyntaxNode = node.Expression.Accept(TriviaConvertingVisitor);
+            // If structural changes are necessary the expression may have been lifted a statement (e.g. Type inferred lambda)
+            return cSharpSyntaxNode is ExpressionSyntax expr ? SyntaxFactory.ParenthesizedExpression(expr) : cSharpSyntaxNode;
         }
 
         public override CSharpSyntaxNode VisitMemberAccessExpression(VBasic.Syntax.MemberAccessExpressionSyntax node)
