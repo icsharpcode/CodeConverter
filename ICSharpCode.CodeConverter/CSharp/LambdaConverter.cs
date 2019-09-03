@@ -15,11 +15,13 @@ namespace ICSharpCode.CodeConverter.CSharp
     internal class LambdaConverter
     {
         private readonly SemanticModel _semanticModel;
+        private readonly Solution _solution;
 
         public LambdaConverter(CommonConversions commonConversions, SemanticModel semanticModel)
         {
             CommonConversions = commonConversions;
             _semanticModel = semanticModel;
+            _solution = CommonConversions.Document.Project.Solution;
         }
 
         public CommonConversions CommonConversions { get; }
@@ -67,8 +69,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var potentialAncestorDeclarationOperation = operation?.Parent?.Parent?.Parent;
             if (potentialAncestorDeclarationOperation is IFieldInitializerOperation fieldInit) {
                 var fieldSymbol = fieldInit.InitializedFields.Single();
-                if (fieldSymbol.GetResultantVisibility() != SymbolVisibility.Public && !fieldSymbol.Type.IsDelegateReferencableByName()) {
-                    //Should do: Check no (other) write usages exist: SymbolFinder.FindReferencesAsync + checking if they're an assignment LHS or out parameter
+                if (fieldSymbol.GetResultantVisibility() != SymbolVisibility.Public && !fieldSymbol.Type.IsDelegateReferencableByName() && _solution.HasWriteUsages(fieldSymbol) == false) {
                     return CreateMethodDeclaration(operation, fieldSymbol, block, arrow);
                 }
             }
@@ -80,7 +81,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (potentialDeclarationOperation is IVariableDeclarationOperation variableDeclaration) {
                 var variableDeclaratorOperation = variableDeclaration.Declarators.Single();
-                if (!variableDeclaratorOperation.Symbol.Type.IsDelegateReferencableByName()) {
+                if (!variableDeclaratorOperation.Symbol.Type.IsDelegateReferencableByName() && _solution.HasWriteUsages(variableDeclaratorOperation.Symbol) == false) {
                     //Should do: Check no (other) write usages exist: SymbolFinder.FindReferencesAsync + checking if they're an assignment LHS or out parameter
                     return CreateLocalFunction(operation, variableDeclaratorOperation, paramListWithTypes, block, arrow);
                 }

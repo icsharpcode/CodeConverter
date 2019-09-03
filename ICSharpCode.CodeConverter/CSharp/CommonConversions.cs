@@ -37,7 +37,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
         private static readonly Type OutAttributeType = typeof(OutAttribute);
-        private readonly Document _document;
+        public Document Document { get; }
         private readonly SemanticModel _semanticModel;
         public SyntaxGenerator CsSyntaxGenerator { get; }
         private readonly CSharpCompilation _csCompilation;
@@ -49,7 +49,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             CSharpCompilation csCompilation)
         {
             TypeConversionAnalyzer = typeConversionAnalyzer;
-            _document = document;
+            Document = document;
             _semanticModel = semanticModel;
             CsSyntaxGenerator = csSyntaxGenerator;
             _csCompilation = csCompilation;
@@ -88,7 +88,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (GetInitializerFromNameAndType(declaredSymbolType, name, initializerOrMethodDecl) is ExpressionSyntax adjustedInitializerExpr) {
                     var convertedInitializer = vbInitValue != null ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr) : adjustedInitializerExpr;
                     equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
-                } else if (isField || _semanticModel.IsDefinitelyAssignedBeforeRead(_document, declaredSymbol, name)) {
+                } else if (isField || _semanticModel.IsDefinitelyAssignedBeforeRead(declaredSymbol, name)) {
                     equalsValueClauseSyntax = null;
                 } else {
                     // VB initializes variables to their default
@@ -102,7 +102,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 else {
                     if (initializerOrMethodDecl == null || initializerOrMethodDecl is ExpressionSyntax) {
                         bool useVar = equalsValueClauseSyntax != null && !preferExplicitType && !requireExplicitType;
-                        var typeSyntax = initSymbol?.CanBeReferencedByName != false
+                        var typeSyntax = initSymbol == null || !initSymbol.IsAnonymousFunction() || initSymbol.CanBeReferencedByName
                             ? GetTypeSyntax(declaredSymbolType, useVar)
                             : GetFuncTypeSyntax(initSymbol);
                         csVars[k] = SyntaxFactory.VariableDeclaration(typeSyntax, SyntaxFactory.SingletonSeparatedList(v));

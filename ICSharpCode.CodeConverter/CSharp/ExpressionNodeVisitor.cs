@@ -708,7 +708,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var attributes = node.AttributeLists.SelectMany(ConvertAttribute).ToList();
             var csParamSymbol = CommonConversions.GetDeclaredCsOriginalSymbolOrNull(node) as IParameterSymbol;
-
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Local);
             if (csParamSymbol?.RefKind == RefKind.Out || node.AttributeLists.Any(CommonConversions.HasOutAttribute)) {
                 modifiers = modifiers.Replace(SyntaxFactory.Token(SyntaxKind.RefKeyword), SyntaxFactory.Token(SyntaxKind.OutKeyword));

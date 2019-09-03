@@ -141,10 +141,10 @@ End Class", @"using System;
 using System.Collections.Generic;
 using System.Linq;
 
-class TestFunc
+public class TestFunc
 {
-    private Func<int, int> pubIdent = (row) => row;
-    private Action<int> pubWrite = row => Console.WriteLine(row);
+    public Func<int, int> pubIdent = (row) => row;
+    public Action<int> pubWrite = row => Console.WriteLine(row);
     private bool isFalse(int row) => false;
     private void write0() => Console.WriteLine(0);
 
