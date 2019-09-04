@@ -118,6 +118,8 @@ class TestClass
         [Fact]
         public async Task AssignmentStatementWithFunc()
         {
+            // BUG: pubWrite's body is missing a return statement
+            // pubWrite is an example of when the LambdaConverter could analyze ConvertedType at usages, realize the return type is never used, and convert it to an Action.
             // Number of lines changes so can't auto test comments
             await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestFunc
     Public pubIdent = Function(row As Integer) row
@@ -144,7 +146,7 @@ using System.Linq;
 public class TestFunc
 {
     public Func<int, int> pubIdent = (row) => row;
-    public Action<int> pubWrite = row => Console.WriteLine(row);
+    public Func<int, object> pubWrite = (row) => Console.WriteLine(row);
     private bool isFalse(int row) => false;
     private void write0() => Console.WriteLine(0);
 

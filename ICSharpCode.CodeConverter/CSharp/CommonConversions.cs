@@ -102,7 +102,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 else {
                     if (initializerOrMethodDecl == null || initializerOrMethodDecl is ExpressionSyntax) {
                         bool useVar = equalsValueClauseSyntax != null && !preferExplicitType && !requireExplicitType;
-                        var typeSyntax = initSymbol == null || !initSymbol.IsAnonymousFunction() || initSymbol.CanBeReferencedByName
+                        var typeSyntax = initSymbol == null || !initSymbol.IsAnonymousFunction()
                             ? GetTypeSyntax(declaredSymbolType, useVar)
                             : GetFuncTypeSyntax(initSymbol);
                         csVars[k] = SyntaxFactory.VariableDeclaration(typeSyntax, SyntaxFactory.SingletonSeparatedList(v));
@@ -117,12 +117,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private TypeSyntax GetFuncTypeSyntax(IMethodSymbol method)
         {
-            var parameters = method.Parameters.Select(p => p.Type);
+            var parameters = method.Parameters.Select(p => p.Type).ToArray();
             if (method.ReturnsVoid) {
-                return (TypeSyntax)CsSyntaxGenerator.GenericName(nameof(Action), parameters);
+                return parameters.Any() ? (TypeSyntax)CsSyntaxGenerator.GenericName(nameof(Action), parameters)
+                    : SyntaxFactory.ParseTypeName("Action");
             }
 
-            parameters = parameters.Concat(new[] {method.ReturnType});
+            parameters = parameters.Concat(new[] {method.ReturnType}).ToArray();
             return (TypeSyntax)CsSyntaxGenerator.GenericName(nameof(Func<object>), parameters);
         }
 
