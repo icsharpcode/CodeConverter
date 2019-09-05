@@ -684,10 +684,10 @@ End Class",
     public abstract int F2();
     public void TestMethod()
     {
-        var w = MyClassF1();
-        var x = F1();
-        var y = F2();
-        var z = F2();
+        int w = MyClassF1();
+        int x = F1();
+        int y = F2();
+        int z = F2();
     }
 }");
         }
@@ -725,10 +725,10 @@ End Class",
     public abstract int P2 { get; set; }
     public void TestMethod()
     {
-        var w = MyClassP1;
-        var x = P1;
-        var y = P2;
-        var z = P2;
+        int w = MyClassP1;
+        int x = P1;
+        int y = P2;
+        int z = P2;
     }
 }");
         }

@@ -211,9 +211,9 @@ public class Class1
         get
         {
             string XRet = default(string);
-            XRet = 4;
+            XRet = Conversions.ToString(4);
             XRet = Conversions.ToString(Conversions.ToDouble(XRet) * 2);
-            var y = ""random variable to check it isn't just using the value of the last statement"";
+            string y = ""random variable to check it isn't just using the value of the last statement"";
             return XRet;
         }
     }
@@ -396,6 +396,27 @@ End Class", @"class TestClass
         where T2 : struct
     {
         return 0;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task TestFunctionWithNoReturnTypeSpecified()
+        {
+            // Note: "Inferred" type is always object except with local variables
+            // https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/variables/local-type-inference
+            await TestConversionVisualBasicToCSharp(
+@"Class TestClass
+    Private Function TurnFirstToUp(ByVal Text As String)
+        Dim firstCharacter = Text.Substring(0, 1).ToUpper()
+        Return firstCharacter + Text.Substring(1)
+    End Function
+End Class", @"class TestClass
+{
+    private object TurnFirstToUp(string Text)
+    {
+        string firstCharacter = Text.Substring(0, 1).ToUpper();
+        return firstCharacter + Text.Substring(1);
     }
 }");
         }
@@ -700,7 +721,8 @@ public class ParameterizedPropertiesAndEnumTest
         var enumerableThing = Enumerable.Empty<string>();
         switch (m)
         {
-            case -1:
+            case (MyEnum)(-1
+           ):
                 {
                     return;
                 }
@@ -710,7 +732,7 @@ public class ParameterizedPropertiesAndEnumTest
                     return;
                 }
 
-            case 3:
+            case (MyEnum)3:
                 {
                     set_MyProp(4, enumerableThing.ToArray()[(int)m]);
                     return;

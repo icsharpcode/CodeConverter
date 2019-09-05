@@ -147,5 +147,164 @@ public class OutParameterWithNonCompilingType
     }
 }");
         }
+        [Fact]
+        public async Task EnumSwitchAndValWithUnusedMissingType()
+        {
+            // BUG: Stop comments appearing before colon in case statement
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class EnumAndValTest
+    Public Enum PositionEnum As Integer
+        None = 0
+        LeftTop = 1
+    End Enum
+
+    Public TitlePosition As PositionEnum = PositionEnum.LeftTop
+    Public TitleAlign As PositionEnum = 2
+    Public Ratio As Single = 0
+
+    Function PositionEnumFromString(ByVal pS As String, missing As MissingType) As PositionEnum
+        Dim tPos As PositionEnum
+        Select Case pS.ToUpper
+            Case ""NONE"", ""0""
+                tPos = 0
+            Case ""LEFTTOP"", ""1""
+                tPos = 1
+            Case Else
+                Ratio = Val(pS)
+        End Select
+        Return tPos
+    End Function
+    Function PositionEnumStringFromConstant(ByVal pS As PositionEnum) As String
+        Dim tS As String
+        Select Case pS
+            Case 0
+                tS = ""NONE""
+            Case 1
+                tS = ""LEFTTOP""
+            Case Else
+                tS = pS
+        End Select
+        Return tS
+    End Function
+End Class",
+@"using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.VisualBasic;
+using Microsoft.VisualBasic.CompilerServices;
+
+public class EnumAndValTest
+{
+    public enum PositionEnum : int
+    {
+        None = 0,
+        LeftTop = 1
+    }
+
+    public PositionEnum TitlePosition = PositionEnum.LeftTop;
+    public PositionEnum TitleAlign = (PositionEnum)2;
+    public float Ratio = 0;
+
+    public PositionEnum PositionEnumFromString(string pS, MissingType missing)
+    {
+        var tPos = default(PositionEnum);
+        switch (pS.ToUpper())
+        {
+            case ""NONE"":
+            case ""0"":
+                {
+                    tPos = 0;
+                    break;
+                }
+
+            case ""LEFTTOP"":
+            case ""1"":
+                {
+                    tPos = (PositionEnum)1;
+                    break;
+                }
+
+            default:
+                {
+                    Ratio = Conversions.ToSingle(Conversion.Val(pS));
+                    break;
+                }
+        }
+        return tPos;
+    }
+    public string PositionEnumStringFromConstant(PositionEnum pS)
+    {
+        string tS;
+        switch (pS)
+        {
+            case 0:
+                {
+                    tS = ""NONE"";
+                    break;
+                }
+
+            case (PositionEnum)1:
+                {
+                    tS = ""LEFTTOP"";
+                    break;
+                }
+
+            default:
+                {
+                    tS = Conversions.ToString(pS);
+                    break;
+                }
+        }
+        return tS;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task UnknownTypeInvocation()
+        {
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private property DefaultDate as System.SomeUnknownType
+    private sub TestMethod()
+        Dim a = DefaultDate(1, 2, 3).Blawer(1, 2, 3)
+    End Sub
+End Class", @"class TestClass
+{
+    private System.SomeUnknownType DefaultDate { get; set; }
+    private void TestMethod()
+    {
+        var a = DefaultDate[1, 2, 3].Blawer(1, 2, 3);
+    }
+}");
+        }
+
+    [Fact]
+    public async Task CharacterizeRaiseEventWithMissingDefinitionActsLikeFunc()
+    {
+    await TestConversionCSharpToVisualBasic(
+        @"using System;
+
+class TestClass
+{
+    void TestMethod()
+    {
+        if (MyEvent != null) MyEvent(this, EventArgs.Empty);
+    }
+}", @"Imports System
+
+Friend Class TestClass
+    Private Sub TestMethod()
+        If MyEvent IsNot Nothing Then MyEvent(Me, EventArgs.Empty)
+    End Sub
+End Class");
+        }
     }
 }

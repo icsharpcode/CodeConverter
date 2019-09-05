@@ -85,7 +85,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var b = 0;
+        int b = 0;
     }
 }");
         }
@@ -106,6 +106,153 @@ class TestClass
     {
         var b = XElement.Parse(""<someXmlTag></someXmlTag>"");
         var c = XElement.Parse(""<someXmlTag><bla anAttribute=\""itsValue\"">tata</bla><someContent>tata</someContent></someXmlTag>"");
+    }
+}");
+        }
+
+        /// <summary>
+        /// Implicitly typed lambdas exist in vb but are not happening in C#. See discussion on https://github.com/dotnet/roslyn/issues/14
+        /// * For VB local declarations, inference happens. The closest equivalent in C# is a local function since Func/Action would be overly restrictive for some cases
+        /// * For VB field declarations, inference doesn't happen, it just uses "Object", but in C# lambdas can't be assigned to object so we have to settle for Func/Action for externally visible methods to maintain assignability.
+        /// </summary>
+        [Fact]
+        public async Task AssignmentStatementWithFunc()
+        {
+            // BUG: pubWrite's body is missing a return statement
+            // pubWrite is an example of when the LambdaConverter could analyze ConvertedType at usages, realize the return type is never used, and convert it to an Action.
+            // Number of lines changes so can't auto test comments
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestFunc
+    Public pubIdent = Function(row As Integer) row
+    Public pubWrite = Function(row As Integer) Console.WriteLine(row)
+    Dim isFalse = Function(row As Integer) False
+    Dim write0 = Sub()
+        Console.WriteLine(0)
+    End Sub
+
+    Private Sub TestMethod()
+        Dim index = (Function(pList As List(Of String)) pList.All(Function(x) True)),
+            index2 = (Function(pList As List(Of String)) pList.All(Function(x) False)),
+            index3 = (Function(pList As List(Of Integer)) pList.All(Function(x) True))
+        Dim isTrue = Function(pList As List(Of String))
+                            Return pList.All(Function(x) True)
+                     End Function
+        Dim isTrueWithNoStatement = (Function(pList As List(Of String)) pList.All(Function(x) True))
+        Dim write = Sub() Console.WriteLine(1)
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public class TestFunc
+{
+    public Func<int, int> pubIdent = (row) => row;
+    public Func<int, object> pubWrite = (row) => Console.WriteLine(row);
+    private bool isFalse(int row) => false;
+    private void write0() => Console.WriteLine(0);
+
+    private void TestMethod()
+    {
+        bool index(List<string> pList) => pList.All(x => true);
+        bool index2(List<string> pList) => pList.All(x => false);
+        bool index3(List<int> pList) => pList.All(x => true);
+        bool isTrue(List<string> pList) => pList.All(x => true);
+        bool isTrueWithNoStatement(List<string> pList) => pList.All(x => true);
+        void write() => Console.WriteLine(1);
+    }
+}");
+        }
+
+        /// <summary>
+        /// Technically it's possible to use a type-inferred lambda within a for loop
+        /// Other than the above field/local declarations, candidates would be other things using <see cref="SplitVariableDeclarations"/>,
+        /// e.g. ForEach (no assignment involved), Using block (can't have a disposable lambda)
+        /// </summary>
+        [Fact]
+        public async Task ContrivedFuncInferenceExample()
+        {
+            //BUG: Comments on operators first line get ported to last line
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Friend Class ContrivedFuncInferenceExample
+    Private Sub TestMethod()
+        For index = (Function(pList As List(Of String)) pList.All(Function(x) True)) To New Blah() Step New Blah()
+            Dim buffer = index.Check(New List(Of String))
+            Console.WriteLine($""{buffer}"")
+        Next
+    End Sub
+
+    Class Blah
+        Public ReadOnly Check As Func(Of List(Of String), Boolean)
+
+        Public Sub New(Optional check As Func(Of List(Of String), Boolean) = Nothing)
+            check = check
+        End Sub
+
+        Public Shared Widening Operator CType(ByVal p1 As Func(Of List(Of String), Boolean)) As Blah
+            Return New Blah(p1)
+        End Operator
+        Public Shared Widening Operator CType(ByVal p1 As Blah) As Func(Of List(Of String), Boolean)
+            Return p1.Check
+        End Operator
+        Public Shared Operator -(ByVal p1 As Blah, ByVal p2 As Blah) As Blah
+            Return New Blah()
+        End Operator
+        Public Shared Operator +(ByVal p1 As Blah, ByVal p2 As Blah) As Blah
+            Return New Blah()
+        End Operator
+        Public Shared Operator <=(ByVal p1 As Blah, ByVal p2 As Blah) As Boolean
+            Return p1.Check(New List(Of String))
+        End Operator
+        Public Shared Operator >=(ByVal p1 As Blah, ByVal p2 As Blah) As Boolean
+            Return p2.Check(New List(Of String))
+        End Operator
+    End Class
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Linq;
+
+internal class ContrivedFuncInferenceExample
+{
+    private void TestMethod()
+    {
+        for (Blah index = (List<string> pList) => pList.All(x => true), loopTo = new Blah(); index <= loopTo; index += new Blah())
+        {
+            bool buffer = index.Check(new List<string>());
+            Console.WriteLine($""{buffer}"");
+        }
+    }
+
+    class Blah
+    {
+        public readonly Func<List<string>, bool> Check;
+
+        public Blah(Func<List<string>, bool> check = null)
+        {
+            check = check;
+        }
+
+        public static implicit operator Blah(Func<List<string>, bool> p1)
+        {
+            return new Blah(p1);
+        }
+        public static implicit operator Func<List<string>, bool>(Blah p1)
+        {
+            return p1.Check;
+        }
+        public static Blah operator -(Blah p1, Blah p2)
+        {
+            return new Blah();
+        }
+        public static Blah operator +(Blah p1, Blah p2)
+        {
+            return new Blah();
+        }
+        public static bool operator <=(Blah p1, Blah p2)
+        {
+            return p1.Check(new List<string>());
+        }
+        public static bool operator >=(Blah p1, Blah p2)
+        {
+            return p2.Check(new List<string>());
+        }
     }
 }");
         }
@@ -171,7 +318,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var b = new string(""test"");
+        string b = new string(""test"");
     }
 }");
         }
@@ -198,7 +345,7 @@ class UseClass
 {
     public void DoStuff()
     {
-        SurroundingClass surrounding = new SurroundingClass();
+        var surrounding = new SurroundingClass();
         surrounding.Arr[1] = ""bla"";
     }
 }");
@@ -237,7 +384,7 @@ class TestClass
     private void TestMethod()
     {
         var colFics = new List<int>();
-        string[] a = new string[colFics.Count - 1 + 1];
+        var a = new string[colFics.Count - 1 + 1];
     }
 }");
         }
@@ -274,7 +421,7 @@ public class TestClass
         numArray2 = new int[6];
         if (oldNumArray2 != null)
             Array.Copy(oldNumArray2, numArray2, Math.Min(6, oldNumArray2.Length));
-        int[,] y = new int[7, 6];
+        var y = new int[7, 6];
         y[2, 3] = 1;
         var oldY = y;
         y = new int[7, 9];
@@ -369,7 +516,7 @@ class TestClass
 {
     private void Save()
     {
-        using (SqlCommand cmd = new SqlCommand())
+        using (var cmd = new SqlCommand())
         {
             {
                 var withBlock = cmd;
@@ -404,7 +551,7 @@ End Structure", @"public class VisualBasicClass
 {
     public void Stuff()
     {
-        SomeStruct str = default(SomeStruct);
+        var str = default(SomeStruct);
         str
 .ArrField = new string[2];
         str.ArrProp = new string[3];
@@ -464,7 +611,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[] b = new[] { 1, 2, 3 };
+        var b = new[] { 1, 2, 3 };
     }
 }");
         }
@@ -496,7 +643,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[] b = new int[] { 1, 2, 3 };
+        var b = new int[] { 1, 2, 3 };
     }
 }");
         }
@@ -512,7 +659,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[] b = new int[3] { 1, 2, 3 };
+        var b = new int[3] { 1, 2, 3 };
     }
 }");
         }
@@ -528,7 +675,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[] b = new int[3];
+        var b = new int[3];
     }
 }");
         }
@@ -565,23 +712,23 @@ End Class", @"class TestClass
     private void TestMethod()
     {
         // Declare a single-dimension array of 5 numbers.
-        int[] numbers1 = new int[5];
+        var numbers1 = new int[5];
 
         // Declare a single-dimension array and set its 4 values.
         var numbers2 = new int[] { 1, 2, 4, 8 };
 
         // Declare a 6 x 6 multidimensional array.
-        double[,] matrix1 = new double[6, 6];
+        var matrix1 = new double[6, 6];
 
         // Declare a 4 x 3 multidimensional array and set array element values.
         var matrix2 = new int[4, 3] { { 1, 2, 3 }, { 2, 3, 4 }, { 3, 4, 5 }, { 4, 5, 6 } };
 
         // Combine rank specifiers with initializers of various kinds
-        double[,] rankSpecifiers = new double[2, 2] { { 1.0, 2.0 }, { 3.0, 4.0 } };
-        double[,] rankSpecifiers2 = new double[2, 2];
+        var rankSpecifiers = new double[2, 2] { { 1.0, 2.0 }, { 3.0, 4.0 } };
+        var rankSpecifiers2 = new double[2, 2];
 
         // Declare a jagged array
-        double[][] sales = new double[12][] { };
+        var sales = new double[12][] { };
     }
 }");
         }
@@ -613,7 +760,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[,] b = new[] { { 1, 2 }, { 3, 4 } };
+        var b = new[] { { 1, 2 }, { 3, 4 } };
     }
 }");
         }
@@ -629,7 +776,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[,] b = new int[,] { { 1, 2 }, { 3, 4 } };
+        var b = new int[,] { { 1, 2 }, { 3, 4 } };
     }
 }");
         }
@@ -650,12 +797,12 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[,] a = new int[,] { { 1, 2 }, { 3, 4 } };
-        int[,] b = new int[2, 2] { { 1, 2 }, { 3, 4 } };
-        int[,,] c = new int[,,] { { { 1 } } };
-        int[,,] d = new int[1, 1, 1] { { { 1 } } };
-        int[][,] e = new int[][,] { };
-        int[][,] f = new int[0][,] { };
+        var a = new int[,] { { 1, 2 }, { 3, 4 } };
+        var b = new int[2, 2] { { 1, 2 }, { 3, 4 } };
+        var c = new int[,,] { { { 1 } } };
+        var d = new int[1, 1, 1] { { { 1 } } };
+        var e = new int[][,] { };
+        var f = new int[0][,] { };
     }
 }");
         }
@@ -687,7 +834,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[][] b = new[] { new int[] { 1, 2 }, new int[] { 3, 4 } };
+        var b = new[] { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
 }");
         }
@@ -719,7 +866,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int[][] b = new int[2][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
+        var b = new int[2][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
 }");
         }
@@ -746,7 +893,7 @@ class Test
         ;
         int value = 1;
         const double myPIe = Math.PI;
-        var text = ""This is my text!"";
+        string text = ""This is my text!"";
         goto the_beginning;
     }
 }");
@@ -930,7 +1077,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        int charIndex = default(int);
+        int charIndex;
         // allow only digits and letters
         do
             charIndex = rand.Next(48, 123);
@@ -1158,7 +1305,7 @@ End Class", @"class TestClass
 {
     private void TestMethod(int end)
     {
-        int[] b = default(int[]), s = default(int[]);
+        var b = default(int[]), s = default(int[]);
         for (int i = 0, loopTo = end; i <= loopTo; i++)
             b[i] = s[i];
     }
@@ -1234,7 +1381,7 @@ End Class", @"class TestClass
 {
     private void TestMethod(int end)
     {
-        int[] b = default(int[]), s = default(int[]);
+        var b = default(int[]), s = default(int[]);
         for (int i = 0, loopTo = end - 1; i <= loopTo; i++)
             b[i] = s[i];
     }
@@ -1288,7 +1435,7 @@ class GotoTest1
         int x = 200;
         int y = 4;
         int count = 0;
-        string[,] array = new string[x - 1 + 1, y - 1 + 1];
+        var array = new string[x - 1 + 1, y - 1 + 1];
 
         for (int i = 0, loopTo = x - 1; i <= loopTo; i++)
         {

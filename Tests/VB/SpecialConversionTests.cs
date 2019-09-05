@@ -217,27 +217,6 @@ Friend Class TestClass
 End Class");
         }
 
-        [Fact]
-        public async Task CharacterizeRaiseEventWithMissingDefinitionActsLikeFunc()
-        {
-            await TestConversionCSharpToVisualBasic(
-                @"using System;
-
-class TestClass
-{
-    void TestMethod()
-    {
-        if (MyEvent != null) MyEvent(this, EventArgs.Empty);
-    }
-}", @"Imports System
-
-Friend Class TestClass
-    Private Sub TestMethod()
-        If MyEvent IsNot Nothing Then MyEvent(Me, EventArgs.Empty)
-    End Sub
-End Class");
-        }
-
         /// <summary>
         /// Intentionally unknown type used to ensure imperfect compilation errs towards common case
         /// </summary>

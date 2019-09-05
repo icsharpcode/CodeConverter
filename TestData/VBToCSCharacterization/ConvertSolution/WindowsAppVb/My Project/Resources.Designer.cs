@@ -42,7 +42,7 @@ namespace WindowsAppVb.My.Resources
             {
                 if (ReferenceEquals(resourceMan, null))
                 {
-                    System.Resources.ResourceManager temp = new System.Resources.ResourceManager("WindowsAppVb.Resources", typeof(Resources).Assembly);
+                    var temp = new System.Resources.ResourceManager("WindowsAppVb.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

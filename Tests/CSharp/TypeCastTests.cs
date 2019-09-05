@@ -82,8 +82,8 @@ class Class1
 {
     private void Test()
     {
-        var q = 2.37;
-        var j = Conversions.ToInteger(q);
+        double q = 2.37;
+        int j = Conversions.ToInteger(q);
     }
 }");
         }
@@ -105,7 +105,7 @@ class Class1
     private void Test()
     {
         object o = new List<int>();
-        List<int> l = (List<int>)o;
+        var l = (List<int>)o;
     }
 }");
         }
@@ -151,7 +151,7 @@ class Class1
     private void Test()
     {
         object o = new List<int>();
-        List<int> l = o as List<int>;
+        var l = o as List<int>;
     }
 }");
         }
@@ -218,7 +218,7 @@ End Class" + Environment.NewLine, @"class Class1
 End Sub
 ", @"private void Test()
 {
-    var CR = (char)0xD;
+    char CR = (char)0xD;
 }
 ");
         }
@@ -235,6 +235,23 @@ End Sub
     char CR = (char)0xD;
 }
 ");
+        }
+
+        [Fact]
+        public async Task TestSingleCharacterStringLiteralBecomesCharWhenNeeded()
+        {
+            await TestConversionVisualBasicToCSharp(
+                @"Class CharTestClass
+    Private Function QuoteSplit(ByVal text As String) As String()
+        Return text.Split("""""""")
+    End Function
+End Class", @"class CharTestClass
+{
+    private string[] Quotesplit(string text)
+    {
+        return text.Split('""');
+    }
+}");
         }
     }
 }

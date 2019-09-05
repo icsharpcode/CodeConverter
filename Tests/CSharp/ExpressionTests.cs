@@ -46,9 +46,9 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var x = @""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
+        string x = @""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!"";
-        var y = $@""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
+        string y = $@""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!"";
     }
 }");
@@ -128,9 +128,9 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var rslt = !(1 == 2);
-        var rslt2 = !true;
-        var rslt3 = !(true is bool);
+        bool rslt = !(1 == 2);
+        bool rslt2 = !true;
+        bool rslt3 = !(true is bool);
     }
 }");
         }
@@ -280,7 +280,7 @@ public class Class1
 {
     public void Foo()
     {
-        var x = true;
+        bool x = true;
         var argb = x == true;
         Bar(ref argb);
     }
@@ -425,8 +425,8 @@ public class Class1
     {
         Bar(Conversions.ToInteger(true));
         Bar(Conversions.ToInteger(""4""));
-        string[] ss = new string[2];
-        var y = ss[Conversions.ToInteger(""0"")];
+        var ss = new string[2];
+        string y = ss[Conversions.ToInteger(""0"")];
     }
 
     public void Bar(int x)
@@ -525,7 +525,7 @@ End Class",
     public void Main()
     {
         var e1 = E.A;
-        int e2 = default(int);
+        var e2 = default(int);
         switch (e1)
         {
             case 0:
@@ -536,7 +536,7 @@ End Class",
 
         switch (e2)
         {
-            case var @case when @case == E.A:
+            case (int)E.A:
                 {
                     break;
                 }
@@ -565,10 +565,10 @@ End Class", @"public class Class1
 {
     public void Foo()
     {
-        var w = Bar();
-        var x = Bar();
-        var y = Baz;
-        var z = Baz;
+        int w = Bar();
+        int x = Bar();
+        int y = Baz;
+        int z = Baz;
     }
 
     public int Bar()
@@ -591,7 +591,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var rslt = true.ToString();
+        string rslt = true.ToString();
         var rslt2 = (object)true;
     }
 }");
@@ -626,8 +626,8 @@ End Class", @"public class A
     public void Test()
     {
         var tmp = this;
-        var y = x;
-        var z = x;
+        int y = x;
+        int z = x;
     }
 }");
         }
@@ -647,7 +647,7 @@ public class A
     public void Test()
     {
         var dict = new Dictionary<string, string>() { { ""a"", ""AAA"" }, { ""b"", ""bbb"" } };
-        var v = dict?[""a""];
+        string v = dict?[""a""];
     }
 }");
         }
@@ -717,15 +717,15 @@ End Class", @"public class A
 {
     public void Test()
     {
-        var str1 = GetStringFromNone()[0];
+        string str1 = GetStringFromNone()[0];
         str1 = GetStringFromNone()[0];
-        var str2 = GetStringFromNone()[1];
+        string str2 = GetStringFromNone()[1];
         var str3 = GetStringsFromString(""abc"");
         str3 = GetStringsFromString(""abc"");
-        var str4 = GetStringsFromString(""abc"")[1];
-        var fromStr3 = GetMoreStringsFromString(""bc"")[1][0];
-        var explicitNoParameter = GetStringsFromAmbiguous()[0][1];
-        var usesParameter1 = GetStringsFromAmbiguous(0)[1][2];
+        string str4 = GetStringsFromString(""abc"")[1];
+        string fromStr3 = GetMoreStringsFromString(""bc"")[1][0];
+        string explicitNoParameter = GetStringsFromAmbiguous()[0][1];
+        string usesParameter1 = GetStringsFromAmbiguous(0)[1][2];
     }
 
     public string[] GetStringFromNone()
@@ -751,24 +751,6 @@ End Class", @"public class A
     public string[][] GetStringsFromAmbiguous(int amb)
     {
         return new string[][] { new string[] { ""1"" } };
-    }
-}");
-        }
-
-        [Fact]
-        public async Task UnknownTypeInvocation()
-        {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
-    Private property DefaultDate as System.SomeUnknownType
-    private sub TestMethod()
-        Dim a = DefaultDate(1, 2, 3).Blawer(1, 2, 3)
-    End Sub
-End Class", @"class TestClass
-{
-    private System.SomeUnknownType DefaultDate { get; set; }
-    private void TestMethod()
-    {
-        var a = DefaultDate[1, 2, 3].Blawer(1, 2, 3);
     }
 }");
         }
@@ -804,7 +786,7 @@ public class Class1
 {
     public void Foo()
     {
-        var x = LikeOperator.LikeString("""", ""*x*"", CompareMethod.Binary);
+        bool x = LikeOperator.LikeString("""", ""*x*"", CompareMethod.Binary);
     }
 }");
         }
@@ -826,7 +808,7 @@ public class Class1
     public void Foo()
     {
         var y = """".Split(',').Select(x => x);
-        var z = y.ElementAtOrDefault(0);
+        string z = y.ElementAtOrDefault(0);
     }
 }");
         }
@@ -848,7 +830,7 @@ public class Class1
     public void Foo()
     {
         var y = """".Split(',').Select(x => x);
-        var z = y.ElementAtOrDefault(0);
+        string z = y.ElementAtOrDefault(0);
     }
 }");
         }
@@ -931,42 +913,42 @@ End Class", @"public class Class1
 {
     Class1()
     {
-        int needsInitialization = default(int);
+        var needsInitialization = default(int);
         int notUsed;
-        var y = needsInitialization;
+        int y = needsInitialization;
     }
 
     public void Foo()
     {
-        int needsInitialization = default(int);
+        var needsInitialization = default(int);
         int notUsed;
-        var y = needsInitialization;
+        int y = needsInitialization;
     }
 
     public void Bar()
     {
-        int i = default(int);
+        var i = default(int);
         string temp = string.Empty;
         i += 1;
     }
 
     public void Bar2()
     {
-        int i = default(int);
+        var i = default(int);
         string temp = string.Empty;
         i = i + 1;
     }
 
     public void Bar3()
     {
-        int i = default(int);
+        var i = default(int);
         string temp = string.Empty;
         int k = i + 1;
     }
 
     public void Bar4()
     {
-        int i = default(int);
+        var i = default(int);
         string temp = string.Empty;
         int k = i + 1;
         i = 1;
@@ -976,9 +958,9 @@ End Class", @"public class Class1
     {
         get
         {
-            int needsInitialization = default(int);
+            var needsInitialization = default(int);
             int notUsed;
-            var y = needsInitialization;
+            int y = needsInitialization;
             return y;
         }
     }
@@ -998,7 +980,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var x = 1;
+        int x = 1;
         x <<= 4;
         x >>= 3;
     }
@@ -1114,7 +1096,7 @@ public class Class1
 {
     public void Foo()
     {
-        var x = ""x "" + Conversions.ToString(5 - 4) + "" y"";
+        string x = ""x "" + Conversions.ToString(5 - 4) + "" y"";
     }
 }");
         }
@@ -1137,7 +1119,7 @@ class TestClass
 {
     private void TestMethod()
     {
-        var x = Math.Pow(7, 6) % (5 / 4) + 3 * 2;
+        double x = Math.Pow(7, 6) % (5 / 4) + 3 * 2;
         x += 1;
         x -= 2;
         x *= 3;
@@ -1170,9 +1152,9 @@ class TestClass
         decimal y = 2;
         int i1 = 1;
         int i2 = 2;
-        var d1 = i1 / (double)i2;
-        var z = x + Conversions.ToDouble(y);
-        var z2 = Conversions.ToDouble(y) + x;
+        double d1 = i1 / (double)i2;
+        double z = x + Conversions.ToDouble(y);
+        double z2 = Conversions.ToDouble(y) + x;
     }
 }
 ");
@@ -1194,12 +1176,12 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var x = 10 / (double)3;
+        double x = 10 / (double)3;
         x /= 2;
-        var y = 10.0 / 3;
+        double y = 10.0 / 3;
         y /= 2;
         int z = 8;
-        z /= 3;
+        z /= (double)3;
     }
 }");
         }
@@ -1233,7 +1215,7 @@ class TestClass
 {
     private void TestMethod()
     {
-        var str = new ThreadStaticAttribute().ToString();
+        string str = new ThreadStaticAttribute().ToString();
     }
 }");
         }
@@ -1250,7 +1232,7 @@ End Class", @"class TestClass
 {
     private void TestMethod()
     {
-        var str = ""Hello, "";
+        string str = ""Hello, "";
         str += ""World"";
     }
 }");
@@ -1334,7 +1316,7 @@ End Class", @"class TestClass
 {
     private string[] TestMethod()
     {
-        var s = ""1,2"";
+        string s = ""1,2"";
         return s.Split(s[1]);
     }
 }");
@@ -1585,7 +1567,7 @@ class TestClass
 {
     private void TestMethod(string str)
     {
-        StudentName student2 = new StudentName() { FirstName = ""Craig"", LastName = ""Playstead"" };
+        var student2 = new StudentName() { FirstName = ""Craig"", LastName = ""Playstead"" };
     }
 }");
         }
@@ -1626,8 +1608,8 @@ class TestClass
     private void TestMethod()
     {
         DoStuff(new[] { 1, 2 });
-        List<int> intList = new List<int>() { 1 };
-        Dictionary<int, int> dict = new Dictionary<int, int>() { { 1, 2 }, { 3, 4 } };
+        var intList = new List<int>() { 1 };
+        var dict = new Dictionary<int, int>() { { 1, 2 }, { 3, 4 } };
     }
 }");
         }
@@ -1734,6 +1716,45 @@ class TestClass
         }
 
         [Fact]
+        public async Task TypeInferredLambdaBodyExpression()
+        {
+            // BUG: Should actually call:
+            // * Operators::DivideObject(object, object)
+            // * Operators::ConditionalCompareObjectGreater(object, object, bool)
+            // * Operators::MultiplyObject(object, object)
+            // * Operators::ModObject(object, object)
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+    Private Sub TestMethod()
+        Dim test = Function(a) a * 2
+        Dim test2 = Function(a, b)
+            If b > 0 Then Return a / b
+            Return 0
+        End Function
+
+        Dim test3 = Function(a, b) a Mod b
+        test(3)
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+class TestClass
+{
+    private void TestMethod()
+    {
+        object test(object a) => a * 2;
+        object test2(object a, object b)
+        {
+            if (Conversions.ToBoolean(b > 0))
+                return a / b;
+            return 0;
+        };
+
+        object test3(object a, object b) => a % b;
+        test(3);
+    }
+}");
+        }
+
+        [Fact]
         public async Task SingleLineLambdaWithStatementBody()
         {
             //Bug: Comments after action definition are lost
@@ -1750,7 +1771,7 @@ class TestClass
 {
     private void TestMethod()
     {
-        var x = 1;
+        int x = 1;
         Action simpleAssignmentAction = () => x = 1;
         Action nonBlockAction = () => Console.WriteLine(""Statement"");
         Action ifAction = () => { if (true) return; };
@@ -1804,7 +1825,7 @@ class TestClass
     public void TestMethod(string dir)
     {
         Path.Combine(dir, ""file.txt"");
-        System.Collections.ObjectModel.ObservableCollection<string> c = new System.Collections.ObjectModel.ObservableCollection<string>();
+        var c = new System.Collections.ObjectModel.ObservableCollection<string>();
     }
 }");
         }
@@ -2017,12 +2038,12 @@ namespace InnerNamespace
     {
         public string StringInter(string t, DateTime dt)
         {
-            var a = $""pre{t} t"";
-            var b = $""pre{t} \"" t"";
-            var c = $@""pre{t} """"\ t"";
-            var d = $""pre{t + ""\""""} \"" t"";
-            var e = $@""pre{t + ""\""""} """"\ t"";
-            var f = $""pre{{escapedBraces}}{dt,4:hh}"";
+            string a = $""pre{t} t"";
+            string b = $""pre{t} \"" t"";
+            string c = $@""pre{t} """"\ t"";
+            string d = $""pre{t + ""\""""} \"" t"";
+            string e = $@""pre{t + ""\""""} """"\ t"";
+            string f = $""pre{{escapedBraces}}{dt,4:hh}"";
             return a + b + c + d + e + f;
         }
     }

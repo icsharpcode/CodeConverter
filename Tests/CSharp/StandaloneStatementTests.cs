@@ -27,7 +27,7 @@ expectSurroundingBlock: true);
     .Inherited = False
 }
 obj = Nothing",
-@"AttributeUsageAttribute obj = new AttributeUsageAttribute()
+@"var obj = new AttributeUsageAttribute()
 {
     AllowMultiple = true,
     Inherited = false
@@ -60,7 +60,7 @@ obj = null;",
         {
             await TestConversionVisualBasicToCSharp(
                 @"Dim x = 3",
-                @"var x = 3;",
+                @"int x = 3;",
                 expectSurroundingBlock: true);
         }
 
@@ -121,7 +121,7 @@ For Each scr In _sponsorPayment.SponsorClaimRevisions
         End If
     Next
 Next", @"{
-    List<int> cmccIds = new List<int>();
+    var cmccIds = new List<int>();
     foreach (var scr in _sponsorPayment.SponsorClaimRevisions)
     {
         foreach (var claim in scr.Claims)

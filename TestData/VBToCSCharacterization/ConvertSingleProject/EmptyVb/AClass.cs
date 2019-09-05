@@ -17,17 +17,18 @@ namespace EmptyVb
 
         private void UseOutParameterInClass()
         {
-            var x = default(var);
+            var x = default(object);
             int argvalue = Conversions.ToInteger(x);
             dict.TryGetValue(1, out argvalue);
         }
 
         private void UseEnumFromOtherFileInSolution(AnEnum m)
         {
-            var nothing = Enumerable.Empty<string>().ToArray()[(int)AnEnum.AnEnumMember];
+            string nothing = Enumerable.Empty<string>().ToArray()[(int)AnEnum.AnEnumMember];
             switch (m)
             {
-                case -1:
+                case (EmptyVb.AnEnum)(-1
+               ):
                     {
                         return;
                     }

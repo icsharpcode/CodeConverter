@@ -46,7 +46,7 @@ End Sub",
 End Sub",
                 @"public static void Linq40()
 {
-    int[] numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };"/*TODO Remove need for new[]*/ + @"
+    var numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };"/*TODO Remove need for new[]*/ + @"
     var numberGroups = from n in numbers
                        group n by n % 5 into g
                        select new { Remainder = g.Key, Numbers = g };
@@ -103,8 +103,8 @@ class Test
 
     public void Linq102()
     {
-        string[] categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
-        Product[] products = GetProductList();
+        var categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
+        var products = GetProductList();
         var q = from c in categories
                 join p in products on c equals p.Category
                 select new { Category = c, p.ProductName };
@@ -159,7 +159,7 @@ class Test
 
     public void Linq103()
     {
-        string[] categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
+        var categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
         var products = GetProductList();
         var q = from c in categories
                 join p in products on c equals p.Category into ps

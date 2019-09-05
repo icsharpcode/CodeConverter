@@ -1,10 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
+using Microsoft.CodeAnalysis.FindSymbols;
+using Microsoft.CodeAnalysis.VisualBasic;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using Microsoft.VisualBasic.CompilerServices;
+using CastExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.CastExpressionSyntax;
+using Conversion = Microsoft.CodeAnalysis.VisualBasic.Conversion;
+using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
+using IdentifierNameSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax;
+using InvocationExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax;
+using MemberAccessExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.MemberAccessExpressionSyntax;
+using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -24,18 +37,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csSyntaxGenerator = csSyntaxGenerator;
         }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = false, bool alwaysExplicit = false, bool implicitCastFromIntToEnum = false)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool alwaysExplicit = false)
         {
-            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit, implicitCastFromIntToEnum);
+            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit);
             csNode = addParenthesisIfNeeded && (conversionKind == TypeConversionKind.DestructiveCast || conversionKind == TypeConversionKind.NonDestructiveCast)
                 ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;
             return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded);
         }
 
-        private ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false)
         {
-            var vbConvertedType = _semanticModel.GetTypeInfo(vbNode).ConvertedType;
+            var vbConvertedType = ModelExtensions.GetTypeInfo(_semanticModel, vbNode).ConvertedType;
             switch (conversionKind)
             {
                 case TypeConversionKind.Unknown:
@@ -55,9 +68,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        private TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool implicitCastFromIntToEnum = false)
+        public TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false)
         {
-            var typeInfo = _semanticModel.GetTypeInfo(vbNode);
+            var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, vbNode);
             var vbType = typeInfo.Type;
             var vbConvertedType = typeInfo.ConvertedType;
             if (vbType is null || vbConvertedType is null)
@@ -77,60 +90,84 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            var vbCompilation = _semanticModel.Compilation as Microsoft.CodeAnalysis.VisualBasic.VisualBasicCompilation;
+            var vbCompilation = _semanticModel.Compilation as VisualBasicCompilation;
             var vbConversion = vbCompilation.ClassifyConversion(vbType, vbConvertedType);
-
             var csType = _csCompilation.GetTypeByMetadataName(vbType.GetFullMetadataName());
             var csConvertedType = _csCompilation.GetTypeByMetadataName(vbConvertedType.GetFullMetadataName());
 
-            if (csType == null || csConvertedType == null)
-            {
-                if (alwaysExplicit && vbType != vbConvertedType) {
-                    return vbConversion.IsNarrowing ? TypeConversionKind.NonDestructiveCast : TypeConversionKind.DestructiveCast;
-                }
-                return TypeConversionKind.Unknown;
+            if (csType != null && csConvertedType != null && 
+                TryAnalyzeCsConversion(vbNode, csType, csConvertedType, vbConversion, vbConvertedType, vbType, vbCompilation, out TypeConversionKind analyzeConversion)) {
+                return analyzeConversion;
             }
 
+            return AnalyzeVbConversion(alwaysExplicit, vbType, vbConvertedType, vbConversion);
+        }
+
+        private bool TryAnalyzeCsConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, INamedTypeSymbol csType,
+            INamedTypeSymbol csConvertedType, Conversion vbConversion, ITypeSymbol vbConvertedType, ITypeSymbol vbType,
+            VisualBasicCompilation vbCompilation, out TypeConversionKind typeConversionKind)
+        {
             var csConversion = _csCompilation.ClassifyConversion(csType, csConvertedType);
-            
-            bool isConvertToString = vbConversion.IsString && vbConvertedType.SpecialType == SpecialType.System_String;
+
+            bool isConvertToString =
+                        vbConversion.IsString && vbConvertedType.SpecialType == SpecialType.System_String;
             bool isArithmetic = vbNode.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AddExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.SubtractExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.MultiplyExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DivideExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IntegerDivideExpression);
-            if (!csConversion.Exists || csConversion.IsUnboxing)
-            {
-                if (isConvertToString || vbConversion.IsNarrowing) return TypeConversionKind.Conversion;
-            }
-            else if (vbConversion.IsWidening && vbConversion.IsNumeric && csConversion.IsImplicit && csConversion.IsNumeric)
-            {
+            if (!csConversion.Exists || csConversion.IsUnboxing) {
+                if (ConvertStringToCharLiteral(vbNode as LiteralExpressionSyntax, vbConvertedType, out _)) {
+                    typeConversionKind = TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
+                    return true;
+                }
+                if (isConvertToString || vbConversion.IsNarrowing) {
+                    typeConversionKind = TypeConversionKind.Conversion;
+                    return true;
+                }
+            } else if (vbConversion.IsWidening && vbConversion.IsNumeric && csConversion.IsImplicit &&
+                       csConversion.IsNumeric) {
                 // Safe overapproximation: A cast is really only needed to help resolve the overload for the operator/method used.
                 // e.g. When VB "&" changes to C# "+", there are lots more overloads available that implicit casts could match.
                 // e.g. sbyte * ulong uses the decimal * operator in VB. In C# it's ambiguous - see ExpressionTests.vb "TestMul".
-                return TypeConversionKind.NonDestructiveCast;
-            }
-            else if (csConversion.IsExplicit && csConversion.IsEnumeration)
-            {
-                return implicitCastFromIntToEnum ? TypeConversionKind.Identity : TypeConversionKind.NonDestructiveCast;
-            }
-            else if (csConversion.IsExplicit && vbConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum)
-            {
-                return TypeConversionKind.Conversion;
-            }
-            else if (isArithmetic)
-            {
+                typeConversionKind = TypeConversionKind.NonDestructiveCast;
+                return true;
+            } else if (csConversion.IsExplicit && csConversion.IsEnumeration) {
+                typeConversionKind = TypeConversionKind.NonDestructiveCast;
+                return true;
+            } else if (csConversion.IsExplicit && vbConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
+                typeConversionKind = TypeConversionKind.Conversion;
+                return true;
+            } else if (isArithmetic) {
                 var arithmeticConversion =
-                    vbCompilation.ClassifyConversion(vbConvertedType, vbCompilation.GetTypeByMetadataName("System.Int32"));
-                if (arithmeticConversion.IsWidening && !arithmeticConversion.IsIdentity)
-                {
-                    return TypeConversionKind.Conversion;
+                    vbCompilation.ClassifyConversion(vbConvertedType,
+                        vbCompilation.GetTypeByMetadataName("System.Int32"));
+                if (arithmeticConversion.IsWidening && !arithmeticConversion.IsIdentity) {
+                    typeConversionKind = TypeConversionKind.Conversion;
+                    return true;
                 }
-            } else if (alwaysExplicit && vbType != vbConvertedType) {
-                return TypeConversionKind.DestructiveCast;
             }
 
-            return TypeConversionKind.Identity;
+            typeConversionKind = TypeConversionKind.Unknown;
+            return false;
+        }
+
+        private static TypeConversionKind AnalyzeVbConversion(bool alwaysExplicit, ITypeSymbol vbType,
+            ITypeSymbol vbConvertedType, Conversion vbConversion)
+        {
+            if (vbType.Equals(vbConvertedType) || vbConversion.IsIdentity) {
+                return TypeConversionKind.Identity;
+            }
+
+            if (vbConversion.IsNumeric && (vbType.IsEnumType() || vbConvertedType.IsEnumType())) {
+                return TypeConversionKind.NonDestructiveCast;
+            }
+
+            if (alwaysExplicit) {
+                return vbConversion.IsNarrowing ? TypeConversionKind.NonDestructiveCast : TypeConversionKind.DestructiveCast;
+            }
+
+            return TypeConversionKind.Unknown;
         }
 
         public ExpressionSyntax AddExplicitConvertTo(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol type)
@@ -143,7 +180,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return csNode;
             }
 
-            var method = typeof(Microsoft.VisualBasic.CompilerServices.Conversions).GetMethod($"To{displayType}");
+            var method = typeof(Conversions).GetMethod($"To{displayType}");
             if (method == null) {
                 throw new NotImplementedException($"Unimplemented conversion for {displayType}");
             }
@@ -163,6 +200,20 @@ namespace ICSharpCode.CodeConverter.CSharp
             DestructiveCast,
             NonDestructiveCast,
             Conversion
+        }
+
+        public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax node, ITypeSymbol convertedType,
+            out char chr)
+        {
+            if (convertedType?.SpecialType == SpecialType.System_Char && 
+                node?.Token.Value is string str &&
+                str.Length == 1) {
+                chr = str.Single();
+                return true;
+            }
+
+            chr = default;
+            return false;
         }
     }
 }

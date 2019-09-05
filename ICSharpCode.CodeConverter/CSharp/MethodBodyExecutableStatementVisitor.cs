@@ -85,13 +85,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             var modifiers = CommonConversions.ConvertModifiers(node.Declarators[0].Names[0], node.Modifiers, TokenContext.Local);
             var isConst = modifiers.Any(a => a.Kind() == SyntaxKind.ConstKeyword);
 
-            var declarations = new List<LocalDeclarationStatementSyntax>();
+            var declarations = new List<StatementSyntax>();
 
-            foreach (var declarator in node.Declarators)
-            foreach (var decl in CommonConversions.SplitVariableDeclarations(declarator, preferExplicitType: isConst))
-                declarations.Add(SyntaxFactory.LocalDeclarationStatement(modifiers, decl.Value));
+            foreach (var declarator in node.Declarators) {
+                var splitVariableDeclarations = CommonConversions.SplitVariableDeclarations(declarator, preferExplicitType: isConst);
+                var localDeclarationStatementSyntaxs = splitVariableDeclarations.Variables.Select(decl => SyntaxFactory.LocalDeclarationStatement(modifiers, decl));
+                declarations.AddRange(localDeclarationStatementSyntaxs);
+                var localFunctions = splitVariableDeclarations.Methods.Cast<LocalFunctionStatementSyntax>();
+                declarations.AddRange(localFunctions);
+            }
 
-            return SyntaxFactory.List<StatementSyntax>(declarations);
+            return SyntaxFactory.List(declarations);
         }
 
         public override SyntaxList<StatementSyntax> VisitAddRemoveHandlerStatement(VBSyntax.AddRemoveHandlerStatementSyntax node)
@@ -155,6 +159,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
             var kind = node.Kind().ConvertToken(TokenContext.Local);
 
+            rhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
             var assignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
 
             var postAssignment = GetPostAssignmentStatements(node);
@@ -427,6 +432,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SingleStatement(SyntaxFactory.IfStatement(condition, block.UnpackNonNestedBlock(), elseClause));
         }
 
+        /// <summary>
+        /// See https://docs.microsoft.com/en-us/dotnet/visual-basic/language-reference/statements/for-next-statement#BKMK_Counter
+        /// </summary>
         public override SyntaxList<StatementSyntax> VisitForBlock(VBSyntax.ForBlockSyntax node)
         {
             var stmt = node.ForStatement;
@@ -438,7 +446,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var initializers = new List<ExpressionSyntax>();
             if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                 var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
-                declaration = CommonConversions.SplitVariableDeclarations(v).Values.Single();
+                declaration = CommonConversions.SplitVariableDeclarations(v).Variables.Single();
                 declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(declaration.Variables[0].WithInitializer(SyntaxFactory.EqualsValueClause(startValue))));
                 id = SyntaxFactory.IdentifierName(declaration.Variables[0].Identifier);
             } else {
@@ -504,7 +512,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxToken id;
             if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                 var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
-                var declaration = CommonConversions.SplitVariableDeclarations(v).Values.Single();
+                var declaration = CommonConversions.SplitVariableDeclarations(v).Variables.Single();
                 type = declaration.Type;
                 id = declaration.Variables[0].Identifier;
             } else {
@@ -543,10 +551,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 foreach (var c in block.CaseStatement.Cases) {
                     if (c is VBSyntax.SimpleCaseClauseSyntax s) {
                         var originalExpressionSyntax = (ExpressionSyntax)s.Value.Accept(_expressionVisitor);
-                        // CSharp allows an implicit cast from the base type (e.g. int) in the special case of switching on an enum
-                        var expressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax, implicitCastFromIntToEnum: true);
+                        // CSharp requires an explicit cast from the base type (e.g. int) in most cases switching on an enum
+                        var typeConversionKind = CommonConversions.TypeConversionAnalyzer.AnalyzeConversion(s.Value);
+                        var expressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax, typeConversionKind, true);
                         SwitchLabelSyntax caseSwitchLabelSyntax = SyntaxFactory.CaseSwitchLabel(expressionSyntax);
-                        if (!_semanticModel.GetConstantValue(s.Value).HasValue || originalExpressionSyntax != expressionSyntax) {
+                        if (!_semanticModel.GetConstantValue(s.Value).HasValue || (typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.NonDestructiveCast && typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.Identity)) {
                             caseSwitchLabelSyntax =
                                 WrapInCasePatternSwitchLabelSyntax(node, expressionSyntax);
                         }
@@ -666,7 +675,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (node.UsingStatement.Expression == null) {
                 StatementSyntax stmt = statementSyntax;
                 foreach (var v in node.UsingStatement.Variables.Reverse())
-                foreach (var declaration in CommonConversions.SplitVariableDeclarations(v).Values.Reverse())
+                foreach (var declaration in CommonConversions.SplitVariableDeclarations(v).Variables.Reverse())
                     stmt = SyntaxFactory.UsingStatement(declaration, null, stmt);
                 return SingleStatement(stmt);
             }
@@ -747,13 +756,49 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             return block.Statements.Count == 1 && !block.ContainsNestedStatements() ? block.Statements[0] : block;
         }
+        
+        /// <summary>
+        /// Returns the single statement in a block
+        /// </summary>
+        public static bool TryUnpackSingleStatement(this IReadOnlyCollection<StatementSyntax> statements, out StatementSyntax singleStatement)
+        {
+            singleStatement = statements.Count == 1 ? statements.Single() : null;
+            if (singleStatement is BlockSyntax block && TryUnpackSingleStatement(block.Statements, out var s)) {
+                singleStatement = s;
+            }
+
+            return singleStatement != null;
+        }
+        
+        /// <summary>
+        /// Returns the single expression in a statement
+        /// </summary>
+        public static bool TryUnpackSingleExpressionFromStatement(this StatementSyntax statement, out ExpressionSyntax singleExpression)
+        {
+            switch(statement){
+                case BlockSyntax blockSyntax:
+                    singleExpression = null;
+                    return TryUnpackSingleStatement(blockSyntax.Statements, out var nestedStmt) &&
+                           TryUnpackSingleExpressionFromStatement(nestedStmt, out singleExpression);
+                case ExpressionStatementSyntax expressionStatementSyntax:
+                    singleExpression = expressionStatementSyntax.Expression;
+                    return true;
+                case ReturnStatementSyntax returnStatementSyntax:
+                    singleExpression = returnStatementSyntax.Expression;
+                    return true;
+                default:
+                    singleExpression = null;
+                    return false;
+            }
+        }
 
         /// <summary>
         /// Only use this over <see cref="UnpackNonNestedBlock"/> in special cases where it will display more neatly and where you're sure nested statements don't introduce ambiguity
         /// </summary>
         public static StatementSyntax UnpackPossiblyNestedBlock(this BlockSyntax block)
         {
-            return block.Statements.Count == 1 ? block.Statements[0] : block;
+            SyntaxList<StatementSyntax> statementSyntaxs = block.Statements;
+            return statementSyntaxs.Count == 1 ? statementSyntaxs[0] : block;
         }
 
         private static bool ContainsNestedStatements(this BlockSyntax block)
