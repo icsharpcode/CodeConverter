@@ -236,5 +236,22 @@ End Sub
 }
 ");
         }
+
+        [Fact]
+        public async Task TestSingleCharacterStringLiteralBecomesCharWhenNeeded()
+        {
+            await TestConversionVisualBasicToCSharp(
+                @"Class CharTestClass
+    Private Function QuoteSplit(ByVal text As String) As String()
+        Return text.Split("""""""")
+    End Function
+End Class", @"class CharTestClass
+{
+    private string[] Quotesplit(string text)
+    {
+        return text.Split('""');
+    }
+}");
+        }
     }
 }

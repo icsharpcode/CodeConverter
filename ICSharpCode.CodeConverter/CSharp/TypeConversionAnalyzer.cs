@@ -4,13 +4,20 @@ using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.VisualBasic;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using Microsoft.VisualBasic.CompilerServices;
+using CastExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.CastExpressionSyntax;
 using Conversion = Microsoft.CodeAnalysis.VisualBasic.Conversion;
+using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
+using IdentifierNameSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax;
+using InvocationExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax;
+using MemberAccessExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.MemberAccessExpressionSyntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -110,6 +117,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DivideExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IntegerDivideExpression);
             if (!csConversion.Exists || csConversion.IsUnboxing) {
+                if (ConvertStringToCharLiteral(vbNode as LiteralExpressionSyntax, vbConvertedType, out _)) {
+                    typeConversionKind = TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
+                    return true;
+                }
                 if (isConvertToString || vbConversion.IsNarrowing) {
                     typeConversionKind = TypeConversionKind.Conversion;
                     return true;
@@ -169,7 +180,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return csNode;
             }
 
-            var method = typeof(Microsoft.VisualBasic.CompilerServices.Conversions).GetMethod($"To{displayType}");
+            var method = typeof(Conversions).GetMethod($"To{displayType}");
             if (method == null) {
                 throw new NotImplementedException($"Unimplemented conversion for {displayType}");
             }
@@ -189,6 +200,20 @@ namespace ICSharpCode.CodeConverter.CSharp
             DestructiveCast,
             NonDestructiveCast,
             Conversion
+        }
+
+        public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax node, ITypeSymbol convertedType,
+            out char chr)
+        {
+            if (convertedType?.SpecialType == SpecialType.System_Char && 
+                node?.Token.Value is string str &&
+                str.Length == 1) {
+                chr = str.Single();
+                return true;
+            }
+
+            chr = default;
+            return false;
         }
     }
 }

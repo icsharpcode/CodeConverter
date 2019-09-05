@@ -183,13 +183,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override CSharpSyntaxNode VisitLiteralExpression(VBasic.Syntax.LiteralExpressionSyntax node)
         {
+            var convertedType = _semanticModel.GetTypeInfo(node).ConvertedType;
             if (node.Token.Value == null) {
-                var type = _semanticModel.GetTypeInfo(node).ConvertedType;
-                if (type == null) {
+                if (convertedType == null) {
                     return CommonConversions.Literal(null); //In future, we'll be able to just say "default" instead of guessing at "null" in this case
                 }
 
-                return !type.IsReferenceType ? SyntaxFactory.DefaultExpression(CommonConversions.GetTypeSyntax(type)) : CommonConversions.Literal(null);
+                return !convertedType.IsReferenceType ? SyntaxFactory.DefaultExpression(CommonConversions.GetTypeSyntax(convertedType)) : CommonConversions.Literal(null);
+            } else if (TypeConversionAnalyzer.ConvertStringToCharLiteral(node, convertedType, out char chr)) {
+                return CommonConversions.Literal(chr);
             }
             return CommonConversions.Literal(node.Token.Value, node.Token.Text);
         }
