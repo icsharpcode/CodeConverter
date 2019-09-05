@@ -401,6 +401,27 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public async Task TestFunctionWithNoReturnTypeSpecified()
+        {
+            // Note: "Inferred" type is always object except with local variables
+            // https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/variables/local-type-inference
+            await TestConversionVisualBasicToCSharp(
+@"Class TestClass
+    Private Function TurnFirstToUp(ByVal Text As String)
+        Dim firstCharacter = Text.Substring(0, 1).ToUpper()
+        Return firstCharacter + Text.Substring(1)
+    End Function
+End Class", @"class TestClass
+{
+    private object TurnFirstToUp(string Text)
+    {
+        string firstCharacter = Text.Substring(0, 1).ToUpper();
+        return firstCharacter + Text.Substring(1);
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestStaticMethod()
         {
             await TestConversionVisualBasicToCSharp(

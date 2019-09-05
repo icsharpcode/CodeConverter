@@ -869,7 +869,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             } else {
                 var tokenContext = GetMemberContext(node);
                 var convertedModifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext);
-                var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
+                var declaredSymbol = _semanticModel.GetDeclaredSymbol(node) as IMethodSymbol;
                 bool accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, declaredSymbol);
 
                 var isPartialDefinition = declaredSymbol.IsPartialMethodDefinition();
@@ -888,6 +888,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var csIdentifier = CommonConversions.ConvertIdentifier(node.Identifier);
                 // If the method is virtual, and there is a MyClass.SomeMethod() call,
                 // we need to emit a non-virtual method for it to call
+                var returnType = (TypeSyntax) (declaredSymbol != null ? _csSyntaxGenerator.TypeExpression(declaredSymbol.ReturnType) :
+                    node.AsClause?.Type?.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)));
                 if (accessedThroughMyClass)
                 {
                     var identifierName = "MyClass" + csIdentifier.ValueText;
@@ -897,7 +899,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var realDecl = SyntaxFactory.MethodDeclaration(
                         attributes,
                         convertedModifiers,
-                        (TypeSyntax)node.AsClause?.Type?.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)),
+                        returnType,
                         null, CommonConversions.ConvertIdentifier(node.Identifier),
                         typeParameters,
                         (ParameterListSyntax)node.ParameterList?.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList(),
@@ -915,7 +917,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var decl = SyntaxFactory.MethodDeclaration(
                     attributes,
                     convertedModifiers,
-                    (TypeSyntax)node.AsClause?.Type?.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)),
+                    returnType,
                     null,
                     csIdentifier,
                     typeParameters,
