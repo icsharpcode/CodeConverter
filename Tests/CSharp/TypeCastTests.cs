@@ -247,7 +247,7 @@ End Sub
     End Function
 End Class", @"class CharTestClass
 {
-    private string[] Quotesplit(string text)
+    private string[] QuoteSplit(string text)
     {
         return text.Split('""');
     }
