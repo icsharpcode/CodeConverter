@@ -3,6 +3,12 @@ All notable changes to the code converter will be documented here.
 
 # 7.1.0 07/09/2019
 
+### API
+Deprecated `ConvertSingle(Compilation compilation, SyntaxTree syntaxTree, TextSpan selected,
+            ILanguageConversion languageConversion, Project containingProject = null)`
+Please instead use `ConvertSingle(Document document, TextSpan selected, ILanguageConversion languageConversion)`
+See the implementation of the deprecated method for help in migrating.
+
 ### VB -> C#
 * Improve conversion for inline functions
 * Use visual basic "Conversions" functions to match VB logic
