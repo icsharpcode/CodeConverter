@@ -1,7 +1,25 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
-# 7.0.0 TBC/08/2019
+# 7.1.0 07/09/2019
+
+### VB -> C#
+* Improve conversion for inline functions
+* Use visual basic "Conversions" functions to match VB logic
+* Simplify output code by shortening some names
+* Improve out parameter conversion
+* No longer restricts converted files to solution directory
+* Improve iterator conversion
+* Improve with block conversion for value types
+* Improve for loop conversion initialization/bounds
+* No longer duplicates containing namespaces
+* Improve some enum handling
+* Avoid VB type appearing within `default(...)` expression
+
+### C# -> VB
+* Improve conversion of collection initializers
+
+# 7.0.0 01/08/2019
 * Compatible with Visual Studio ~15.5+
 
 ### VB -> C#
