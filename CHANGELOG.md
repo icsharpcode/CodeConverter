@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
-# 7.1.0 07/09/2019
+# 7.1.0 TBC/09/2019
 
 ### API
 Deprecated `ConvertSingle(Compilation compilation, SyntaxTree syntaxTree, TextSpan selected,
