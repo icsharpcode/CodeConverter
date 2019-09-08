@@ -24,32 +24,32 @@ namespace ICSharpCode.CodeConverter.CSharp
             TriviaConverter = triviaConverter;
             this._wrappedVisitor = wrappedVisitor;
         }
-        public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)
+        public override async Task<CSharpSyntaxNode> DefaultVisit(SyntaxNode node)
         {
             return TriviaConverter.PortConvertedTrivia(node, await _wrappedVisitor.Visit(node));
         }
 
-        public override CSharpSyntaxNode VisitModuleBlock(VbSyntax.ModuleBlockSyntax node)
+        public override async Task<CSharpSyntaxNode> VisitModuleBlock(VbSyntax.ModuleBlockSyntax node)
         {
             return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
         }
 
-        public override CSharpSyntaxNode VisitStructureBlock(VbSyntax.StructureBlockSyntax node)
+        public override async Task<CSharpSyntaxNode> VisitStructureBlock(VbSyntax.StructureBlockSyntax node)
         {
             return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
         }
 
-        public override CSharpSyntaxNode VisitInterfaceBlock(VbSyntax.InterfaceBlockSyntax node)
+        public override async Task<CSharpSyntaxNode> VisitInterfaceBlock(VbSyntax.InterfaceBlockSyntax node)
         {
             return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
         }
 
-        public override CSharpSyntaxNode VisitClassBlock(VbSyntax.ClassBlockSyntax node)
+        public override async Task<CSharpSyntaxNode> VisitClassBlock(VbSyntax.ClassBlockSyntax node)
         {
             return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
         }
 
-        public override CSharpSyntaxNode VisitCompilationUnit(VbSyntax.CompilationUnitSyntax node)
+        public override async Task<CSharpSyntaxNode> VisitCompilationUnit(VbSyntax.CompilationUnitSyntax node)
         {
             var cSharpSyntaxNode = (CsSyntax.CompilationUnitSyntax) base.VisitCompilationUnit(node);
             cSharpSyntaxNode = cSharpSyntaxNode.WithEndOfFileToken(
