@@ -452,7 +452,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxList<VBSyntax.ArrayRankSpecifierSyntax> arrayRankSpecifierSyntaxs,
             ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
         {
-            var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax)r.Accept(TriviaConvertingExpressionVisitor)));
+            var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax) await r.Accept(TriviaConvertingExpressionVisitor)));
 
             if (nodeArrayBounds != null) {
                 var sizesSpecified = nodeArrayBounds.Arguments.Any(a => !a.IsOmitted);
@@ -489,7 +489,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return SyntaxFactory.BinaryExpression(
                 CSSyntaxKind.SubtractExpression,
-                (ExpressionSyntax)expr.Accept(TriviaConvertingExpressionVisitor), SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+                (ExpressionSyntax) await expr.Accept(TriviaConvertingExpressionVisitor), SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
         }
 
         public static AttributeArgumentListSyntax CreateAttributeArgumentList(params AttributeArgumentSyntax[] attributeArgumentSyntaxs)
@@ -521,7 +521,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 !pro.Property.IsDefault()) {
                 var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.Children.First() == pro;
                 extraArg = isSetter
-                    ? (ExpressionSyntax)TriviaConvertingExpressionVisitor.Visit(operation.Parent.Syntax.ChildNodes().ElementAt(1))
+                    ? (ExpressionSyntax) await TriviaConvertingExpressionVisitor.Visit(operation.Parent.Syntax.ChildNodes().ElementAt(1))
                     : null;
                 return isSetter ? pro.Property.SetMethod.Name : pro.Property.GetMethod.Name;
             }

@@ -116,8 +116,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                         continuationClauses = continuationClauses.Add(letGroupKey);
                         selectOrGroup = SyntaxFactory.GroupClause(identifierNameSyntax, GetGroupExpression(gcs));
                     } else {
-                        var item = (CSSyntax.IdentifierNameSyntax)gcs.Items.Single().Expression.Accept(_triviaConvertingVisitor);
-                        var keyExpression = (CSSyntax.ExpressionSyntax)gcs.Keys.Single().Expression.Accept(_triviaConvertingVisitor);
+                        var item = (CSSyntax.IdentifierNameSyntax)gcs.Items.Single() await .Expression.Accept(_triviaConvertingVisitor);
+                        var keyExpression = (CSSyntax.ExpressionSyntax)gcs.Keys.Single() await .Expression.Accept(_triviaConvertingVisitor);
                         selectOrGroup = SyntaxFactory.GroupClause(item, keyExpression);
                     }
                     queryContinuation = CreateGroupByContinuation(gcs, continuationClauses, nestedClause);
@@ -145,7 +145,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBSyntax.DistinctClauseSyntax _:
                     return Enumerable.Empty<CSSyntax.ExpressionSyntax>();
                 case VBSyntax.PartitionClauseSyntax pcs:
-                    return new[] {(CSSyntax.ExpressionSyntax)pcs.Count.Accept(_triviaConvertingVisitor)};
+                    return new[] {(CSSyntax.ExpressionSyntax) await pcs.Count.Accept(_triviaConvertingVisitor)};
                 case VBSyntax.PartitionWhileClauseSyntax pwcs: {
                     var lambdaParam = SyntaxFactory.Parameter(fromClauseSyntax.Identifier);
                     var lambdaBody = (CSSyntax.ExpressionSyntax) await pwcs.Condition.Accept(_triviaConvertingVisitor);
@@ -195,8 +195,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         private CSSyntax.SelectClauseSyntax ConvertSelectClauseSyntax(VBSyntax.SelectClauseSyntax vbFromClause)
         {
             var selectedVariables = vbFromClause.Variables.Select(v => {
-                    var nameEquals = (CSSyntax.NameEqualsSyntax)v.NameEquals?.Accept(_triviaConvertingVisitor);
-                    var expression = (CSSyntax.ExpressionSyntax)v.Expression.Accept(_triviaConvertingVisitor);
+                    var nameEquals = (CSSyntax.NameEqualsSyntax) await v.NameEquals?.Accept(_triviaConvertingVisitor);
+                    var expression = (CSSyntax.ExpressionSyntax) await v.Expression.Accept(_triviaConvertingVisitor);
                     return SyntaxFactory.AnonymousObjectMemberDeclarator(nameEquals, expression);
                 }).ToList();
 
@@ -231,7 +231,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CSSyntax.ExpressionSyntax GetGroupExpression(VBSyntax.GroupByClauseSyntax gs)
         {
-            return (CSSyntax.ExpressionSyntax) gs.Keys.Single().Expression.Accept(_triviaConvertingVisitor);
+            return (CSSyntax.ExpressionSyntax) gs.Keys.Single() await .Expression.Accept(_triviaConvertingVisitor);
         }
 
         private SyntaxToken GetGroupIdentifier(VBSyntax.GroupByClauseSyntax gs)

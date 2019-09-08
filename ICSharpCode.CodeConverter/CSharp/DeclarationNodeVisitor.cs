@@ -94,7 +94,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : PrependRootNamespace(sourceAndConverted, SyntaxFactory.IdentifierName(options.RootNamespace));
 
             var usingDirectiveSyntax = importsClauses.GroupBy(c => c.ToString()).Select(g => g.First())
-                .Select(c => (UsingDirectiveSyntax)c.Accept(TriviaConvertingVisitor))
+                .Select(c => (UsingDirectiveSyntax) await c.Accept(TriviaConvertingVisitor))
                 .Concat(_extraUsingDirectives.Select(u => SyntaxFactory.UsingDirective(SyntaxFactory.ParseName(u))))
                 .GroupBy(u => u.ToString())
                 .Select(g => g.First());
@@ -136,7 +136,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var nameEqualsSyntax = node.Alias == null ? null
                 : SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(node.Alias.Identifier)));
-            var usingDirective = SyntaxFactory.UsingDirective(nameEqualsSyntax, (NameSyntax)node.Name.Accept(_triviaConvertingExpressionVisitor));
+            var usingDirective = SyntaxFactory.UsingDirective(nameEqualsSyntax, (NameSyntax) await node.Name.Accept(_triviaConvertingExpressionVisitor));
             return usingDirective;
         }
 
@@ -194,7 +194,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private MemberDeclarationSyntax ConvertMember(VBSyntax.StatementSyntax member)
         {
             try {
-                return (MemberDeclarationSyntax)member.Accept(TriviaConvertingVisitor);
+                return (MemberDeclarationSyntax) await member.Accept(TriviaConvertingVisitor);
             } catch (Exception e) {
                 return CreateErrorMember(member, e);
             }
@@ -329,7 +329,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     );
                 }
             }
-            var members = SyntaxFactory.SeparatedList(node.Members.Select(m => (EnumMemberDeclarationSyntax)m.Accept(TriviaConvertingVisitor)));
+            var members = SyntaxFactory.SeparatedList(node.Members.Select(m => (EnumMemberDeclarationSyntax) await m.Accept(TriviaConvertingVisitor)));
             return SyntaxFactory.EnumDeclaration(
                 SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(stmt, stmt.Modifiers, TokenContext.Global), CommonConversions.ConvertIdentifier(stmt.Identifier),
                 baseList,
@@ -342,7 +342,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var attributes = _expressionNodeVisitor.ConvertAttributes(node.AttributeLists);
             return SyntaxFactory.EnumMemberDeclaration(
                 attributes, CommonConversions.ConvertIdentifier(node.Identifier),
-                (EqualsValueClauseSyntax)node.Initializer?.Accept(_triviaConvertingExpressionVisitor)
+                (EqualsValueClauseSyntax) await node.Initializer?.Accept(_triviaConvertingExpressionVisitor)
             );
         }
 
@@ -359,7 +359,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (asClause == null) {
                 returnType = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword));
             } else {
-                returnType = (TypeSyntax)asClause.Type.Accept(_triviaConvertingExpressionVisitor);
+                returnType = (TypeSyntax) await asClause.Type.Accept(_triviaConvertingExpressionVisitor);
                 if (asClause.AttributeLists.Count > 0) {
                     attributes = attributes.Concat(
                         SyntaxFactory.AttributeList(
@@ -374,7 +374,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Global),
                 returnType, CommonConversions.ConvertIdentifier(node.Identifier),
                 typeParameters,
-                (ParameterListSyntax)node.ParameterList?.Accept(_triviaConvertingExpressionVisitor),
+                (ParameterListSyntax) await node.ParameterList?.Accept(_triviaConvertingExpressionVisitor),
                 constraints
             );
         }
@@ -555,7 +555,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, _semanticModel.GetDeclaredSymbol(node));
             bool isInInterface = node.Ancestors().OfType<VBSyntax.InterfaceBlockSyntax>().FirstOrDefault() != null;
 
-            var initializer = (EqualsValueClauseSyntax)node.Initializer?.Accept(_triviaConvertingExpressionVisitor);
+            var initializer = (EqualsValueClauseSyntax) await node.Initializer?.Accept(_triviaConvertingExpressionVisitor);
             var rawType = (TypeSyntax)node.AsClause?.TypeSwitch(
                               (VBSyntax.SimpleAsClauseSyntax c) => c.Type,
                               (VBSyntax.AsNewClauseSyntax c) => {
@@ -563,7 +563,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                   return VBasic.SyntaxExtensions.Type(c.NewExpression.WithoutTrivia()); // We'll end up visiting this twice so avoid trivia this time
                               },
                               _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
-                          )?.Accept(_triviaConvertingExpressionVisitor) ?? VarType;
+                          ) await ?.Accept(_triviaConvertingExpressionVisitor) ?? VarType;
 
             AccessorListSyntax accessors = null;
             if (node.Parent is VBSyntax.PropertyBlockSyntax propertyBlock) {
@@ -573,7 +573,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         throw new NotImplementedException("MyClass indexing not implemented");
                     }
                     var accessorMethods = propertyBlock.Accessors.Select(a =>
-                            (MethodDeclarationSyntax)a.Accept(TriviaConvertingVisitor))
+                            (MethodDeclarationSyntax) await a.Accept(TriviaConvertingVisitor))
                         .Select(WithMergedModifiers).ToArray();
                     _additionalDeclarations.Add(propertyBlock, accessorMethods.Skip(1).ToArray());
                     return accessorMethods[0];
@@ -582,7 +582,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 accessors = SyntaxFactory.AccessorList(
                     SyntaxFactory.List(
                         (propertyBlock.Accessors.Select(a =>
-                            (AccessorDeclarationSyntax)a.Accept(TriviaConvertingVisitor))
+                            (AccessorDeclarationSyntax) await a.Accept(TriviaConvertingVisitor))
                         )
                     ));
             } else {
@@ -596,7 +596,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     throw new NotImplementedException("MyClass indexing not implemented");
                 }
 
-                var parameters = SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(node.ParameterList.Parameters.Select(p => (ParameterSyntax)p.Accept(_triviaConvertingExpressionVisitor))));
+                var parameters = SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(node.ParameterList.Parameters.Select(p => (ParameterSyntax) await p.Accept(_triviaConvertingExpressionVisitor))));
                 return SyntaxFactory.IndexerDeclaration(
                     SyntaxFactory.List(attributes),
                     modifiers,
@@ -727,7 +727,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     potentialMethodId = $"set_{(containingProperty.Identifier.Text)}";
                         
                     if (containingProperty.AsClause is VBSyntax.SimpleAsClauseSyntax setAsClause && TryConvertAsParameterizedProperty(out var setMethod)) {
-                        var valueParameterType = (TypeSyntax)setAsClause.Type.Accept(_triviaConvertingExpressionVisitor);
+                        var valueParameterType = (TypeSyntax) await setAsClause.Type.Accept(_triviaConvertingExpressionVisitor);
                         return setMethod.AddParameterListParameters(SyntaxFactory.Parameter(SyntaxFactory.Identifier("value")).WithType(valueParameterType));
                     }
                     break;
@@ -741,7 +741,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var eventStatement = ((VBSyntax.EventBlockSyntax)node.Parent).EventStatement;
                     var eventName = CommonConversions.ConvertIdentifier(eventStatement.Identifier).ValueText;
                     potentialMethodId = $"On{eventName}";
-                    var parameterListSyntax = (ParameterListSyntax)node.AccessorStatement.ParameterList.Accept(_triviaConvertingExpressionVisitor);
+                    var parameterListSyntax = (ParameterListSyntax) await node.AccessorStatement.ParameterList.Accept(_triviaConvertingExpressionVisitor);
                     return CreateMethodDeclarationSyntax(parameterListSyntax);
                 default:
                     throw new NotSupportedException(node.Kind().ToString());
@@ -779,7 +779,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitMethodBlock(VBSyntax.MethodBlockSyntax node)
         {
-            var methodBlock = (BaseMethodDeclarationSyntax)node.SubOrFunctionStatement.Accept(TriviaConvertingVisitor);
+            var methodBlock = (BaseMethodDeclarationSyntax) await node.SubOrFunctionStatement.Accept(TriviaConvertingVisitor);
 
             if (_semanticModel.GetDeclaredSymbol(node).IsPartialMethodDefinition()) {
                 return methodBlock;
@@ -903,7 +903,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         returnType,
                         null, CommonConversions.ConvertIdentifier(node.Identifier),
                         typeParameters,
-                        (ParameterListSyntax)node.ParameterList?.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList(),
+                        (ParameterListSyntax) await node.ParameterList?.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList(),
                         constraints,
                         null,
                         arrowClause
@@ -922,7 +922,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     null,
                     csIdentifier,
                     typeParameters,
-                    (ParameterListSyntax)node.ParameterList?.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList(),
+                    (ParameterListSyntax) await node.ParameterList?.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList(),
                     constraints,
                     null,
                     null
@@ -956,7 +956,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var attributes = block.AttributeLists.SelectMany(_expressionNodeVisitor.ConvertAttribute);
             var modifiers = CommonConversions.ConvertModifiers(block, block.Modifiers, GetMemberContext(node));
 
-            var rawType = (TypeSyntax)block.AsClause?.Type.Accept(_triviaConvertingExpressionVisitor) ?? VarType;
+            var rawType = (TypeSyntax) await block.AsClause?.Type.Accept(_triviaConvertingExpressionVisitor) ?? VarType;
 
             var convertedAccessors = node.Accessors.Select(a => await a.Accept(TriviaConvertingVisitor)).ToList();
             _additionalDeclarations.Add(node, convertedAccessors.OfType<MemberDeclarationSyntax>().ToArray());
@@ -984,7 +984,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.ParseTypeName("void"),
                     delegateName,
                     null,
-                    (ParameterListSyntax)node.ParameterList.Accept(_triviaConvertingExpressionVisitor),
+                    (ParameterListSyntax) await node.ParameterList.Accept(_triviaConvertingExpressionVisitor),
                     SyntaxFactory.List<TypeParameterConstraintClauseSyntax>()
                 );
 
@@ -1016,8 +1016,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var containingBlock = (VBSyntax.OperatorBlockSyntax) node.Parent;
             var attributes = SyntaxFactory.List(node.AttributeLists.SelectMany(_expressionNodeVisitor.ConvertAttribute));
-            var returnType = (TypeSyntax)node.AsClause?.Type.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword));
-            var parameterList = (ParameterListSyntax)node.ParameterList.Accept(_triviaConvertingExpressionVisitor);
+            var returnType = (TypeSyntax) await node.AsClause?.Type.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword));
+            var parameterList = (ParameterListSyntax) await node.ParameterList.Accept(_triviaConvertingExpressionVisitor);
             var methodBodyVisitor = _expressionNodeVisitor.CreateMethodBodyVisitor(node);
             var body = SyntaxFactory.Block(containingBlock.Statements.SelectMany(s => await s.Accept(methodBodyVisitor)));
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, GetMemberContext(node));
@@ -1041,7 +1041,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var ctor = (node.Statements.FirstOrDefault() as VBSyntax.ExpressionStatementSyntax)?.Expression as VBSyntax.InvocationExpressionSyntax;
             var ctorExpression = ctor?.Expression as VBSyntax.MemberAccessExpressionSyntax;
-            var ctorArgs = (ArgumentListSyntax)ctor?.ArgumentList?.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ArgumentList();
+            var ctorArgs = (ArgumentListSyntax) await ctor?.ArgumentList?.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ArgumentList();
 
             IEnumerable<VBSyntax.StatementSyntax> statements;
             ConstructorInitializerSyntax ctorCall;
@@ -1063,7 +1063,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.ConstructorDeclaration(
                 SyntaxFactory.List(attributes),
                 modifiers, CommonConversions.ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier),
-                (ParameterListSyntax)block.ParameterList.Accept(_triviaConvertingExpressionVisitor),
+                (ParameterListSyntax) await block.ParameterList.Accept(_triviaConvertingExpressionVisitor),
                 ctorCall,
                 SyntaxFactory.Block(statements.SelectMany(s => await s.Accept(methodBodyVisitor)))
             );
@@ -1092,8 +1092,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var attributeLists = _expressionNodeVisitor.ConvertAttributes(node.AttributeLists).Add(dllImportAttributeList);
 
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers).Add(SyntaxFactory.Token(SyntaxKind.StaticKeyword)).Add(SyntaxFactory.Token(SyntaxKind.ExternKeyword));
-            var returnType = (TypeSyntax)node.AsClause?.Type.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParseTypeName("void");
-            var parameterListSyntax = (ParameterListSyntax)node.ParameterList?.Accept(_triviaConvertingExpressionVisitor) ??
+            var returnType = (TypeSyntax) await node.AsClause?.Type.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParseTypeName("void");
+            var parameterListSyntax = (ParameterListSyntax) await node.ParameterList?.Accept(_triviaConvertingExpressionVisitor) ??
                                       SyntaxFactory.ParameterList();
 
             return SyntaxFactory.MethodDeclaration(attributeLists, modifiers, returnType, null, CommonConversions.ConvertIdentifier(node.Identifier), null,
@@ -1103,7 +1103,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitTypeParameterList(VBSyntax.TypeParameterListSyntax node)
         {
             return SyntaxFactory.TypeParameterList(
-                SyntaxFactory.SeparatedList(node.Parameters.Select(p => (TypeParameterSyntax)p.Accept(TriviaConvertingVisitor)))
+                SyntaxFactory.SeparatedList(node.Parameters.Select(p => (TypeParameterSyntax) await p.Accept(TriviaConvertingVisitor)))
             );
         }
 
@@ -1119,9 +1119,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             var paramList = new List<TypeParameterSyntax>();
             var constraintList = new List<TypeParameterConstraintClauseSyntax>();
             foreach (var p in typeParameterList.Parameters) {
-                var tp = (TypeParameterSyntax)p.Accept(TriviaConvertingVisitor);
+                var tp = (TypeParameterSyntax) await p.Accept(TriviaConvertingVisitor);
                 paramList.Add(tp);
-                var constraint = (TypeParameterConstraintClauseSyntax)p.TypeParameterConstraintClause?.Accept(TriviaConvertingVisitor);
+                var constraint = (TypeParameterConstraintClauseSyntax) await p.TypeParameterConstraintClause?.Accept(TriviaConvertingVisitor);
                 if (constraint != null)
                     constraintList.Add(constraint);
             }
@@ -1147,7 +1147,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitTypeParameterMultipleConstraintClause(VBSyntax.TypeParameterMultipleConstraintClauseSyntax node)
         {
             var id = SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(((VBSyntax.TypeParameterSyntax)node.Parent).Identifier));
-            var constraints = node.Constraints.Select(c => (TypeParameterConstraintSyntax)c.Accept(TriviaConvertingVisitor));
+            var constraints = node.Constraints.Select(c => (TypeParameterConstraintSyntax) await c.Accept(TriviaConvertingVisitor));
             return SyntaxFactory.TypeParameterConstraintClause(id, SyntaxFactory.SeparatedList(constraints.OrderBy(c => c.Kind() == SyntaxKind.ConstructorConstraint ? 1 : 0)));
         }
 
