@@ -116,8 +116,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                         continuationClauses = continuationClauses.Add(letGroupKey);
                         selectOrGroup = SyntaxFactory.GroupClause(identifierNameSyntax, GetGroupExpression(gcs));
                     } else {
-                        var item = (CSSyntax.IdentifierNameSyntax)gcs.Items.Single() await .Expression.Accept(_triviaConvertingVisitor);
-                        var keyExpression = (CSSyntax.ExpressionSyntax)gcs.Keys.Single() await .Expression.Accept(_triviaConvertingVisitor);
+                        var item = (CSSyntax.IdentifierNameSyntax) await gcs.Items.Single().Expression.Accept(_triviaConvertingVisitor);
+                        var keyExpression = (CSSyntax.ExpressionSyntax) await gcs.Keys.Single().Expression.Accept(_triviaConvertingVisitor);
                         selectOrGroup = SyntaxFactory.GroupClause(item, keyExpression);
                     }
                     queryContinuation = CreateGroupByContinuation(gcs, continuationClauses, nestedClause);
@@ -231,7 +231,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CSSyntax.ExpressionSyntax GetGroupExpression(VBSyntax.GroupByClauseSyntax gs)
         {
-            return (CSSyntax.ExpressionSyntax) gs.Keys.Single() await .Expression.Accept(_triviaConvertingVisitor);
+            return (CSSyntax.ExpressionSyntax) await gs.Keys.Single().Expression.Accept(_triviaConvertingVisitor);
         }
 
         private SyntaxToken GetGroupIdentifier(VBSyntax.GroupByClauseSyntax gs)

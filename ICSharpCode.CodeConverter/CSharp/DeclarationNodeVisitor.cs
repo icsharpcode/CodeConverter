@@ -556,14 +556,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool isInInterface = node.Ancestors().OfType<VBSyntax.InterfaceBlockSyntax>().FirstOrDefault() != null;
 
             var initializer = (EqualsValueClauseSyntax) await node.Initializer?.Accept(_triviaConvertingExpressionVisitor);
-            var rawType = (TypeSyntax)node.AsClause?.TypeSwitch(
+            var rawType = (TypeSyntax)await node.AsClause?.TypeSwitch(
                               (VBSyntax.SimpleAsClauseSyntax c) => c.Type,
                               (VBSyntax.AsNewClauseSyntax c) => {
                                   initializer = SyntaxFactory.EqualsValueClause((ExpressionSyntax) await c.NewExpression.Accept(_triviaConvertingExpressionVisitor));
                                   return VBasic.SyntaxExtensions.Type(c.NewExpression.WithoutTrivia()); // We'll end up visiting this twice so avoid trivia this time
                               },
                               _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
-                          ) await ?.Accept(_triviaConvertingExpressionVisitor) ?? VarType;
+                          )?.Accept(_triviaConvertingExpressionVisitor) ?? VarType;
 
             AccessorListSyntax accessors = null;
             if (node.Parent is VBSyntax.PropertyBlockSyntax propertyBlock) {
