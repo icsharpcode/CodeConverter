@@ -12,7 +12,7 @@ using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    public class CommentConvertingMethodBodyVisitor : VisualBasicSyntaxVisitor<SyntaxList<CSSyntax.StatementSyntax>>
+    public class CommentConvertingMethodBodyVisitor : VisualBasicSyntaxVisitor<Task<SyntaxList<CSSyntax.StatementSyntax>>>
     {
         private readonly VisualBasicSyntaxVisitor<Task<SyntaxList<CSSyntax.StatementSyntax>>> _wrappedVisitor;
         private readonly TriviaConverter _triviaConverter;
@@ -23,10 +23,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             this._triviaConverter = triviaConverter;
         }
 
-        public override SyntaxList<CSSyntax.StatementSyntax> DefaultVisit(SyntaxNode node)
+        public override async Task<SyntaxList<CSSyntax.StatementSyntax>> DefaultVisit(SyntaxNode node)
         {
             try {
-                return ConvertWithTrivia(node);
+                return await ConvertWithTrivia(node);
             } catch (Exception e) {
                 var withTrailingErrorComment = SyntaxFactory.EmptyStatement()
                     .WithCsTrailingErrorComment<CSSyntax.StatementSyntax>((VisualBasicSyntaxNode) node, e);
@@ -34,7 +34,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        private SyntaxList<CSSyntax.StatementSyntax> ConvertWithTrivia(SyntaxNode node)
+        private async Task<SyntaxList<CSSyntax.StatementSyntax>> ConvertWithTrivia(SyntaxNode node)
         {
             var convertedNodes = await _wrappedVisitor.Visit(node);
             if (!convertedNodes.Any()) return convertedNodes;
@@ -43,7 +43,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return convertedNodes.Replace(convertedNodes.LastOrDefault(), lastWithConvertedTrivia);
         }
 
-        public override SyntaxList<CSSyntax.StatementSyntax> VisitTryBlock(TryBlockSyntax node)
+        public override async Task<SyntaxList<CSSyntax.StatementSyntax>> VisitTryBlock(TryBlockSyntax node)
         {
             var cSharpSyntaxNodes = await _wrappedVisitor.Visit(node);
             var tryStatementCs = (CSSyntax.TryStatementSyntax)cSharpSyntaxNodes.Single();

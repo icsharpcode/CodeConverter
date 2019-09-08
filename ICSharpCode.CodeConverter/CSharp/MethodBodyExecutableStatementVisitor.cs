@@ -35,7 +35,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public bool IsIterator { get; set; }
         public IdentifierNameSyntax ReturnVariable { get; set; }
         public bool HasReturnVariable => ReturnVariable != null;
-        public VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CommentConvertingVisitor { get; }
+        public VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> CommentConvertingVisitor { get; }
 
         private CommonConversions CommonConversions { get; }
 
@@ -656,7 +656,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SingleStatement(
                 SyntaxFactory.TryStatement(
                     block,
-                    SyntaxFactory.List(node.CatchBlocks.Select(c => (CatchClauseSyntax)c.Accept(_expressionVisitor))),
+                    SyntaxFactory.List(node.CatchBlocks.SelectAsync(c => (CatchClauseSyntax)c.Accept(_expressionVisitor))),
                     (FinallyClauseSyntax)node.FinallyBlock?.Accept(_expressionVisitor)
                 )
             );
