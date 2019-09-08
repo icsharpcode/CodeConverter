@@ -673,7 +673,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 convertedStatements = new[] { SyntaxFactory.ExpressionStatement((ExpressionSyntax)csNode)};
             }
             var param = (ParameterListSyntax) await node.SubOrFunctionHeader.ParameterList.AcceptAsync(TriviaConvertingVisitor);
-            return _lambdaConverter.Convert(node, param, convertedStatements);
+            return await _lambdaConverter.Convert(node, param, convertedStatements);
         }
 
         public override async Task<CSharpSyntaxNode> VisitMultiLineLambdaExpression(VBasic.Syntax.MultiLineLambdaExpressionSyntax node)
@@ -681,7 +681,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var methodBodyVisitor = CreateMethodBodyVisitor(node);
             var body = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor));
             var param = (ParameterListSyntax) await node.SubOrFunctionHeader.ParameterList.AcceptAsync(TriviaConvertingVisitor);
-            return _lambdaConverter.Convert(node, param, body.ToList());
+            return await _lambdaConverter.Convert(node, param, body.ToList());
         }
 
         public override async Task<CSharpSyntaxNode> VisitParameterList(VBSyntax.ParameterListSyntax node)

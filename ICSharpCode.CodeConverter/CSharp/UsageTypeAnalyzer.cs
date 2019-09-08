@@ -9,12 +9,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class UsageTypeAnalyzer
     {
-        public static bool? HasWriteUsages(this Solution solution, ISymbol symbol)
-        {
-            return HasWriteUsagesAsync(solution, symbol).GetAwaiter().GetResult(); //Should do: Inline and use async version everywhere
-        }
-
-        private static async Task<bool?> HasWriteUsagesAsync(Solution solution, ISymbol symbol)
+        public static async Task<bool?> HasWriteUsagesAsync(this Solution solution, ISymbol symbol)
         {
             var references = await SymbolFinder.FindReferencesAsync(symbol, solution);
             var operationsReferencingAsync = references.SelectMany(r => r.Locations).Select(async l => {
