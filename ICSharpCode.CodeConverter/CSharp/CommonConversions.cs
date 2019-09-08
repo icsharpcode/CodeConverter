@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -55,7 +56,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csCompilation = csCompilation;
         }
 
-        public (IReadOnlyCollection<VariableDeclarationSyntax> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods) SplitVariableDeclarations(
+        public async Task<(IReadOnlyCollection<VariableDeclarationSyntax> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarations(
             VariableDeclaratorSyntax declarator, bool preferExplicitType = false)
         {
             var vbInitValue = GetInitializerToConvert(declarator);
@@ -448,18 +449,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             return isConvOp;
         }
 
-        internal SyntaxList<ArrayRankSpecifierSyntax> ConvertArrayRankSpecifierSyntaxes(
+        internal async Task<SyntaxList<ArrayRankSpecifierSyntax>> ConvertArrayRankSpecifierSyntaxes(
             SyntaxList<VBSyntax.ArrayRankSpecifierSyntax> arrayRankSpecifierSyntaxs,
             ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
         {
-            var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax) await r.AcceptAsync(TriviaConvertingExpressionVisitor)));
+            var bounds = SyntaxFactory.List(await arrayRankSpecifierSyntaxs.SelectAsync(async r => (ArrayRankSpecifierSyntax) await r.AcceptAsync(TriviaConvertingExpressionVisitor)));
 
             if (nodeArrayBounds != null) {
                 var sizesSpecified = nodeArrayBounds.Arguments.Any(a => !a.IsOmitted);
                 var rank = nodeArrayBounds.Arguments.Count;
                 if (!sizesSpecified) rank += 1;
 
-                var convertedArrayBounds = withSizes && sizesSpecified ? ConvertArrayBounds(nodeArrayBounds)
+                var convertedArrayBounds = withSizes && sizesSpecified ? await ConvertArrayBounds(nodeArrayBounds)
                     : Enumerable.Repeat(SyntaxFactory.OmittedArraySizeExpression(), rank);
                 var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(
                     SyntaxFactory.SeparatedList(
@@ -470,9 +471,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return bounds;
         }
 
-        public IEnumerable<ExpressionSyntax> ConvertArrayBounds(ArgumentListSyntax argumentListSyntax)
+        public async Task<IEnumerable<ExpressionSyntax>> ConvertArrayBounds(ArgumentListSyntax argumentListSyntax)
         {
-            return argumentListSyntax.Arguments.Select(a => {
+            return await argumentListSyntax.Arguments.SelectAsync(a => {
                 VBSyntax.ExpressionSyntax upperBoundExpression = a is SimpleArgumentSyntax sas ? sas.Expression
                     : a is RangeArgumentSyntax ras ? ras.UpperBound
                     : throw new ArgumentOutOfRangeException(nameof(a), a, null);
@@ -481,7 +482,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             });
         }
 
-        private ExpressionSyntax IncreaseArrayUpperBoundExpression(VBSyntax.ExpressionSyntax expr)
+        private async Task<ExpressionSyntax> IncreaseArrayUpperBoundExpression(VBSyntax.ExpressionSyntax expr)
         {
             var constant = _semanticModel.GetConstantValue(expr);
             if (constant.HasValue && constant.Value is int)
@@ -515,19 +516,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             return variableDeclaratorSyntax;
         }
 
-        public string GetParameterizedPropertyAccessMethod(IOperation operation, out ExpressionSyntax extraArg)
+        public async Task<(string, ExpressionSyntax extraArg)> GetParameterizedPropertyAccessMethod(IOperation operation)
         {
             if (operation is IPropertyReferenceOperation pro && pro.Arguments.Any() &&
                 !pro.Property.IsDefault()) {
                 var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.Children.First() == pro;
-                extraArg = isSetter
+                var extraArg = isSetter
                     ? (ExpressionSyntax) await TriviaConvertingExpressionVisitor.Visit(operation.Parent.Syntax.ChildNodes().ElementAt(1))
                     : null;
-                return isSetter ? pro.Property.SetMethod.Name : pro.Property.GetMethod.Name;
+                return (isSetter ? pro.Property.SetMethod.Name : pro.Property.GetMethod.Name, extraArg);
             }
 
-            extraArg = null;
-            return null;
+            return (null, null);
         }
 
         public static bool IsDefaultIndexer(SyntaxNode node)
