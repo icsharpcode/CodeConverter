@@ -120,7 +120,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 );
             }
 
-            var filter = (CatchFilterClauseSyntax) await stmt.WhenClause?.Accept(TriviaConvertingVisitor);
+            var filter = (CatchFilterClauseSyntax) await stmt.WhenClause.Accept(TriviaConvertingVisitor);
             var methodBodyVisitor = CreateMethodBodyVisitor(node); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
             return SyntaxFactory.CatchClause(
                 catcher,
@@ -199,7 +199,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitInterpolation(VBasic.Syntax.InterpolationSyntax node)
         {
-            return SyntaxFactory.Interpolation((ExpressionSyntax) await node.Expression.Accept(TriviaConvertingVisitor), (InterpolationAlignmentClauseSyntax) await node.AlignmentClause?.Accept(TriviaConvertingVisitor), (InterpolationFormatClauseSyntax) await node.FormatClause?.Accept(TriviaConvertingVisitor));
+            return SyntaxFactory.Interpolation((ExpressionSyntax) await node.Expression.Accept(TriviaConvertingVisitor), (InterpolationAlignmentClauseSyntax) await node.AlignmentClause.Accept(TriviaConvertingVisitor), (InterpolationFormatClauseSyntax) await node.FormatClause.Accept(TriviaConvertingVisitor));
         }
 
         public override async Task<CSharpSyntaxNode> VisitInterpolatedStringExpression(VBasic.Syntax.InterpolatedStringExpressionSyntax node)
@@ -274,7 +274,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
             if (left == null) {
-                left = (ExpressionSyntax) await node.Expression?.Accept(TriviaConvertingVisitor);
+                left = (ExpressionSyntax) await node.Expression.Accept(TriviaConvertingVisitor);
             }
             if (left == null) {
                 if (IsSubPartOfConditionalAccess(node)) {
@@ -301,7 +301,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitConditionalAccessExpression(VBasic.Syntax.ConditionalAccessExpressionSyntax node)
         {
-            var leftExpression = (ExpressionSyntax) await node.Expression?.Accept(TriviaConvertingVisitor) ?? _withBlockLhs.Peek();
+            var leftExpression = (ExpressionSyntax) await node.Expression.Accept(TriviaConvertingVisitor) ?? _withBlockLhs.Peek();
             return SyntaxFactory.ConditionalAccessExpression(leftExpression, (ExpressionSyntax) await node.WhenNotNull.Accept(TriviaConvertingVisitor));
         }
 
@@ -396,8 +396,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.ObjectCreationExpression(
                 (TypeSyntax) await node.Type.Accept(TriviaConvertingVisitor),
                 // VB can omit empty arg lists:
-                (ArgumentListSyntax) await node.ArgumentList?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ArgumentList(),
-                (InitializerExpressionSyntax) await node.Initializer?.Accept(TriviaConvertingVisitor)
+                (ArgumentListSyntax) await node.ArgumentList.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ArgumentList(),
+                (InitializerExpressionSyntax) await node.Initializer.Accept(TriviaConvertingVisitor)
             );
         }
 
@@ -413,7 +413,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var initializerToConvert = allowInitializer ? node.Initializer : null;
             return SyntaxFactory.ArrayCreationExpression(
                 SyntaxFactory.ArrayType((TypeSyntax) await node.Type.Accept(TriviaConvertingVisitor), bounds),
-                (InitializerExpressionSyntax) await initializerToConvert?.Accept(TriviaConvertingVisitor)
+                (InitializerExpressionSyntax) await initializerToConvert.Accept(TriviaConvertingVisitor)
             );
         }
 
@@ -764,7 +764,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             return SyntaxFactory.AttributeList(
                 node.Target == null ? null : SyntaxFactory.AttributeTargetSpecifier(node.Target.AttributeModifier.ConvertToken()),
-                SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Attribute((NameSyntax) await node.Name.Accept(TriviaConvertingVisitor), (AttributeArgumentListSyntax) await node.ArgumentList?.Accept(TriviaConvertingVisitor)))
+                SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Attribute((NameSyntax) await node.Name.Accept(TriviaConvertingVisitor), (AttributeArgumentListSyntax) await node.ArgumentList.Accept(TriviaConvertingVisitor)))
             );
         }
 
@@ -868,7 +868,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitGenericName(VBasic.Syntax.GenericNameSyntax node)
         {
-            return SyntaxFactory.GenericName(ConvertIdentifier(node.Identifier), (TypeArgumentListSyntax) await node.TypeArgumentList?.Accept(TriviaConvertingVisitor));
+            return SyntaxFactory.GenericName(ConvertIdentifier(node.Identifier), (TypeArgumentListSyntax) await node.TypeArgumentList.Accept(TriviaConvertingVisitor));
         }
 
         public override async Task<CSharpSyntaxNode> VisitTypeArgumentList(VBasic.Syntax.TypeArgumentListSyntax node)
@@ -1066,7 +1066,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private ArgumentListSyntax ConvertArgumentListOrEmpty(VBasic.Syntax.ArgumentListSyntax argumentListSyntax)
         {
-            return (ArgumentListSyntax) await argumentListSyntax?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ArgumentList();
+            return (ArgumentListSyntax) await argumentListSyntax.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.ArgumentList();
         }
 
         private bool TrySubstituteVisualBasicMethod(VBasic.Syntax.InvocationExpressionSyntax node, out CSharpSyntaxNode cSharpSyntaxNode)
