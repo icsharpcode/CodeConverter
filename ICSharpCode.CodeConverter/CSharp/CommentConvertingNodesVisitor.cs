@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -14,12 +15,12 @@ using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    public class CommentConvertingNodesVisitor : VisualBasicSyntaxVisitor<CSharpSyntaxNode>
+    public class CommentConvertingNodesVisitor : VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
     {
         public TriviaConverter TriviaConverter { get; }
-        private readonly VisualBasicSyntaxVisitor<CSharpSyntaxNode> _wrappedVisitor;
+        private readonly VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>> _wrappedVisitor;
 
-        public CommentConvertingNodesVisitor(VisualBasicSyntaxVisitor<CSharpSyntaxNode> wrappedVisitor, TriviaConverter triviaConverter)
+        public CommentConvertingNodesVisitor(VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>> wrappedVisitor, TriviaConverter triviaConverter)
         {
             TriviaConverter = triviaConverter;
             this._wrappedVisitor = wrappedVisitor;
@@ -31,27 +32,27 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitModuleBlock(VbSyntax.ModuleBlockSyntax node)
         {
-            return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
+            return await WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
         }
 
         public override async Task<CSharpSyntaxNode> VisitStructureBlock(VbSyntax.StructureBlockSyntax node)
         {
-            return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
+            return await WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
         }
 
         public override async Task<CSharpSyntaxNode> VisitInterfaceBlock(VbSyntax.InterfaceBlockSyntax node)
         {
-            return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
+            return await WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
         }
 
         public override async Task<CSharpSyntaxNode> VisitClassBlock(VbSyntax.ClassBlockSyntax node)
         {
-            return WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
+            return await WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
         }
 
         public override async Task<CSharpSyntaxNode> VisitCompilationUnit(VbSyntax.CompilationUnitSyntax node)
         {
-            var cSharpSyntaxNode = (CsSyntax.CompilationUnitSyntax) base.VisitCompilationUnit(node);
+            var cSharpSyntaxNode = (CsSyntax.CompilationUnitSyntax) await base.VisitCompilationUnit(node);
             cSharpSyntaxNode = cSharpSyntaxNode.WithEndOfFileToken(
                 cSharpSyntaxNode.EndOfFileToken.WithConvertedLeadingTriviaFrom(node.EndOfFileToken));
 
@@ -60,9 +61,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : cSharpSyntaxNode.WithAppendedTrailingTrivia(SyntaxFactory.Comment("/* Some trivia (e.g. comments) could not be converted */"));
         }
 
-        private TDest WithPortedTrivia<TSource, TDest>(SyntaxNode node, Func<TSource, TDest, TDest> portExtraTrivia) where TSource : SyntaxNode where TDest : CSharpSyntaxNode
+        private async Task<TDest> WithPortedTrivia<TSource, TDest>(SyntaxNode node, Func<TSource, TDest, TDest> portExtraTrivia) where TSource : SyntaxNode where TDest : CSharpSyntaxNode
         {
-            var cSharpSyntaxNode = portExtraTrivia((TSource)node, (TDest)_wrappedVisitor.Visit(node));
+            var cSharpSyntaxNode = portExtraTrivia((TSource)node, (TDest) await _wrappedVisitor.Visit(node));
             return TriviaConverter.PortConvertedTrivia(node, cSharpSyntaxNode);
         }
 

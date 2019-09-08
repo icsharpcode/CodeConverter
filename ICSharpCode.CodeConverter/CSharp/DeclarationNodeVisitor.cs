@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -25,7 +26,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// e.g. Class, Enum, TypeConstraint
     /// </summary>
     /// <remarks>The split between this and the <see cref="ExpressionNodeVisitor"/> is purely organizational and serves no real runtime purpose.</remarks>
-    internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
+    internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
     {
         private static readonly Type DllImportType = typeof(DllImportAttribute);
         private static readonly Type CharSetType = typeof(CharSet);

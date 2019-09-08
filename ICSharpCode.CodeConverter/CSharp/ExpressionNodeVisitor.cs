@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -23,7 +24,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// http://source.roslyn.codeplex.com/#Microsoft.CodeAnalysis.VisualBasic/Binding/Binder_Expressions.vb,43
     /// 
     /// </summary>
-    internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<CSharpSyntaxNode>
+    internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
     {
         private static readonly Type ConvertType = typeof(Microsoft.VisualBasic.CompilerServices.Conversions);
         public CommentConvertingVisitorWrapper<CSharpSyntaxNode> TriviaConvertingVisitor { get; }
