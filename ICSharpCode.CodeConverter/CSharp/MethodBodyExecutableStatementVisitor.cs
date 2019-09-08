@@ -129,12 +129,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                                StringComparison.OrdinalIgnoreCase)) {
                     var eventSubscriptionStatements = _methodsWithHandles.GetPreResumeLayoutEventHandlers();
                     if (eventSubscriptionStatements.Any()) {
-                        return SyntaxFactory.List(eventSubscriptionStatements.Concat(SingleStatement((ExpressionSyntax)node.Expression.Accept(_expressionVisitor))));
+                        return SyntaxFactory.List(eventSubscriptionStatements.Concat(SingleStatement((ExpressionSyntax) await node.Expression.Accept(_expressionVisitor))));
                     }
                 }
             }
 
-            return SingleStatement((ExpressionSyntax)node.Expression.Accept(_expressionVisitor));
+            return SingleStatement((ExpressionSyntax) await node.Expression.Accept(_expressionVisitor));
         }
 
         public override async Task<SyntaxList<StatementSyntax>> VisitAssignmentStatement(VBSyntax.AssignmentStatementSyntax node)
@@ -326,7 +326,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<SyntaxList<StatementSyntax>> VisitThrowStatement(VBSyntax.ThrowStatementSyntax node)
         {
-            return SingleStatement(SyntaxFactory.ThrowStatement((ExpressionSyntax)node.Expression?.Accept(_expressionVisitor)));
+            return SingleStatement(SyntaxFactory.ThrowStatement((ExpressionSyntax) await node.Expression?.Accept(_expressionVisitor)));
         }
 
         public override async Task<SyntaxList<StatementSyntax>> VisitReturnStatement(VBSyntax.ReturnStatementSyntax node)
@@ -334,7 +334,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (IsIterator)
                 return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
 
-            return SingleStatement(SyntaxFactory.ReturnStatement((ExpressionSyntax)node.Expression?.Accept(_expressionVisitor)));
+            return SingleStatement(SyntaxFactory.ReturnStatement((ExpressionSyntax) await node.Expression?.Accept(_expressionVisitor)));
         }
 
         public override async Task<SyntaxList<StatementSyntax>> VisitContinueStatement(VBSyntax.ContinueStatementSyntax node)
@@ -426,7 +426,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             foreach (var elseIf in node.ElseIfBlocks.Reverse()) {
                 var elseBlock = SyntaxFactory.Block(elseIf.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
-                var ifStmt = SyntaxFactory.IfStatement((ExpressionSyntax)elseIf.ElseIfStatement.Condition.Accept(_expressionVisitor), elseBlock.UnpackNonNestedBlock(), elseClause);
+                var ifStmt = SyntaxFactory.IfStatement((ExpressionSyntax) await elseIf.ElseIfStatement.Condition.Accept(_expressionVisitor), elseBlock.UnpackNonNestedBlock(), elseClause);
                 elseClause = SyntaxFactory.ElseClause(ifStmt);
             }
 
@@ -706,7 +706,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         statements
                     ));
                 return SingleStatement(SyntaxFactory.WhileStatement(
-                    ((ExpressionSyntax)stmt.Condition.Accept(_expressionVisitor)).InvertCondition(),
+                    ((ExpressionSyntax) await stmt.Condition.Accept(_expressionVisitor)).InvertCondition(),
                     statements
                 ));
             }

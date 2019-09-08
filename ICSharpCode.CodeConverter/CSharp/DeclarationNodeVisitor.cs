@@ -230,7 +230,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return null;
             var baseTypes = new List<BaseTypeSyntax>();
             foreach (var t in inherits.SelectMany(c => c.Types).Concat(implements.SelectMany(c => c.Types)))
-                baseTypes.Add(SyntaxFactory.SimpleBaseType((TypeSyntax)t.Accept(_triviaConvertingExpressionVisitor)));
+                baseTypes.Add(SyntaxFactory.SimpleBaseType((TypeSyntax) await t.Accept(_triviaConvertingExpressionVisitor)));
             return SyntaxFactory.BaseList(SyntaxFactory.SeparatedList(baseTypes));
         }
 
@@ -318,7 +318,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var attributes = stmt.AttributeLists.SelectMany(_expressionNodeVisitor.ConvertAttribute);
             BaseListSyntax baseList = null;
             if (asClause != null) {
-                baseList = SyntaxFactory.BaseList(SyntaxFactory.SingletonSeparatedList<BaseTypeSyntax>(SyntaxFactory.SimpleBaseType((TypeSyntax)asClause.Type.Accept(_triviaConvertingExpressionVisitor))));
+                baseList = SyntaxFactory.BaseList(SyntaxFactory.SingletonSeparatedList<BaseTypeSyntax>(SyntaxFactory.SimpleBaseType((TypeSyntax) await asClause.Type.Accept(_triviaConvertingExpressionVisitor))));
                 if (asClause.AttributeLists.Count > 0) {
                     attributes = attributes.Concat(
                         SyntaxFactory.AttributeList(
@@ -558,7 +558,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var rawType = (TypeSyntax)node.AsClause?.TypeSwitch(
                               (VBSyntax.SimpleAsClauseSyntax c) => c.Type,
                               (VBSyntax.AsNewClauseSyntax c) => {
-                                  initializer = SyntaxFactory.EqualsValueClause((ExpressionSyntax)c.NewExpression.Accept(_triviaConvertingExpressionVisitor));
+                                  initializer = SyntaxFactory.EqualsValueClause((ExpressionSyntax) await c.NewExpression.Accept(_triviaConvertingExpressionVisitor));
                                   return VBasic.SyntaxExtensions.Type(c.NewExpression.WithoutTrivia()); // We'll end up visiting this twice so avoid trivia this time
                               },
                               _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
@@ -718,7 +718,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     if (containingProperty.AsClause is VBSyntax.SimpleAsClauseSyntax getAsClause && 
                         TryConvertAsParameterizedProperty(out var method)) {
-                        return method.WithReturnType((TypeSyntax)getAsClause.Type.Accept(_triviaConvertingExpressionVisitor));
+                        return method.WithReturnType((TypeSyntax) await getAsClause.Type.Accept(_triviaConvertingExpressionVisitor));
                     }
                     break;
                 case VBasic.SyntaxKind.SetAccessorBlock:
@@ -1001,7 +1001,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.EventFieldDeclaration(
                 SyntaxFactory.List(attributes),
                 modifiers,
-                SyntaxFactory.VariableDeclaration((TypeSyntax)node.AsClause.Type.Accept(_triviaConvertingExpressionVisitor),
+                SyntaxFactory.VariableDeclaration((TypeSyntax) await node.AsClause.Type.Accept(_triviaConvertingExpressionVisitor),
                     SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)))
             );
         }
@@ -1140,7 +1140,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override CSharpSyntaxNode VisitTypeParameterSingleConstraintClause(VBSyntax.TypeParameterSingleConstraintClauseSyntax node)
         {
             var id = SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(((VBSyntax.TypeParameterSyntax)node.Parent).Identifier));
-            return SyntaxFactory.TypeParameterConstraintClause(id, SyntaxFactory.SingletonSeparatedList((TypeParameterConstraintSyntax)node.Constraint.Accept(TriviaConvertingVisitor)));
+            return SyntaxFactory.TypeParameterConstraintClause(id, SyntaxFactory.SingletonSeparatedList((TypeParameterConstraintSyntax) await node.Constraint.Accept(TriviaConvertingVisitor)));
         }
 
         public override CSharpSyntaxNode VisitTypeParameterMultipleConstraintClause(VBSyntax.TypeParameterMultipleConstraintClauseSyntax node)
@@ -1159,7 +1159,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override CSharpSyntaxNode VisitTypeConstraint(VBSyntax.TypeConstraintSyntax node)
         {
-            return SyntaxFactory.TypeConstraint((TypeSyntax)node.Type.Accept(_triviaConvertingExpressionVisitor));
+            return SyntaxFactory.TypeConstraint((TypeSyntax) await node.Type.Accept(_triviaConvertingExpressionVisitor));
         }
 
     }

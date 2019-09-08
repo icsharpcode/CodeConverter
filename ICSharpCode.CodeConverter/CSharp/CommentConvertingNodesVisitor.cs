@@ -26,7 +26,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
         public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)
         {
-            return TriviaConverter.PortConvertedTrivia(node, _wrappedVisitor.Visit(node));
+            return TriviaConverter.PortConvertedTrivia(node, await _wrappedVisitor.Visit(node));
         }
 
         public override CSharpSyntaxNode VisitModuleBlock(VbSyntax.ModuleBlockSyntax node)
