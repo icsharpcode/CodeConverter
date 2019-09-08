@@ -408,7 +408,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitArrayCreationExpression(VBasic.Syntax.ArrayCreationExpressionSyntax node)
         {
-            var bounds = CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.RankSpecifiers, node.ArrayBounds);
+            var bounds = await CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.RankSpecifiers, node.ArrayBounds);
 
             var allowInitializer = node.Initializer.Initializers.Any()
                 || node.RankSpecifiers.Any()
@@ -437,7 +437,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitQueryExpression(VBasic.Syntax.QueryExpressionSyntax node)
         {
-            return _queryConverter.ConvertClauses(node.Clauses);
+            return await _queryConverter.ConvertClauses(node.Clauses);
         }
 
         public override async Task<CSharpSyntaxNode> VisitOrdering(VBasic.Syntax.OrderingSyntax node)
@@ -606,7 +606,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return csEquivalent;
             }
 
-            var overrideIdentifier = CommonConversions.GetParameterizedPropertyAccessMethod(operation, out var extraArg);
+            var (overrideIdentifier, extraArg) = await CommonConversions.GetParameterizedPropertyAccessMethod(operation);
             if (overrideIdentifier != null) {
                 var expr = await node.Expression.AcceptAsync(TriviaConvertingVisitor);
                 var idToken = expr.DescendantTokens().Last(t => t.IsKind(SyntaxKind.IdentifierToken));
@@ -702,7 +702,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 paramType = paramType ?? SyntaxFactory.ParseTypeName("object");
             }
 
-            var rankSpecifiers = CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.Identifier.ArrayRankSpecifiers, node.Identifier.ArrayBounds, false);
+            var rankSpecifiers = await CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.Identifier.ArrayRankSpecifiers, node.Identifier.ArrayBounds, false);
             if (rankSpecifiers.Any() && paramType != null) {
                 paramType = SyntaxFactory.ArrayType(paramType, rankSpecifiers);
             }
