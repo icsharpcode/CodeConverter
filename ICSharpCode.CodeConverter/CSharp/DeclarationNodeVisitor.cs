@@ -698,7 +698,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitPropertyBlock(VBSyntax.PropertyBlockSyntax node)
         {
-            return node.PropertyStatement.Accept(TriviaConvertingVisitor);
+            return await node.PropertyStatement.Accept(TriviaConvertingVisitor);
         }
 
         public override async Task<CSharpSyntaxNode> VisitAccessorBlock(VBSyntax.AccessorBlockSyntax node)
@@ -754,7 +754,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (containingProperty.ParameterList?.Parameters.Any() == true && !CommonConversions.IsDefaultIndexer(containingProperty))
                 {
                     var parameterListSyntax =
-                        (ParameterListSyntax) containingProperty?.ParameterList.Accept(_triviaConvertingExpressionVisitor);
+                        (ParameterListSyntax) await containingProperty?.ParameterList.Accept(_triviaConvertingExpressionVisitor);
                     methodDeclarationSyntax = CreateMethodDeclarationSyntax(parameterListSyntax);
                     return true;
                 }
@@ -831,7 +831,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private BlockSyntax ConvertStatements(SyntaxList<VBSyntax.StatementSyntax> statements, VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> methodBodyVisitor)
         {
-            return SyntaxFactory.Block(statements.SelectMany(s => s.Accept(methodBodyVisitor)));
+            return SyntaxFactory.Block(statements.SelectMany(s => await s.Accept(methodBodyVisitor)));
         }
 
         private static bool IsAccessedThroughMyClass(SyntaxNode node, SyntaxToken identifier, ISymbol symbol)
@@ -890,7 +890,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 // If the method is virtual, and there is a MyClass.SomeMethod() call,
                 // we need to emit a non-virtual method for it to call
                 var returnType = (TypeSyntax) (declaredSymbol != null ? _csSyntaxGenerator.TypeExpression(declaredSymbol.ReturnType) :
-                    node.AsClause?.Type?.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)));
+                    await node.AsClause?.Type?.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)));
                 if (accessedThroughMyClass)
                 {
                     var identifierName = "MyClass" + csIdentifier.ValueText;
@@ -958,7 +958,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var rawType = (TypeSyntax)block.AsClause?.Type.Accept(_triviaConvertingExpressionVisitor) ?? VarType;
 
-            var convertedAccessors = node.Accessors.Select(a => a.Accept(TriviaConvertingVisitor)).ToList();
+            var convertedAccessors = node.Accessors.Select(a => await a.Accept(TriviaConvertingVisitor)).ToList();
             _additionalDeclarations.Add(node, convertedAccessors.OfType<MemberDeclarationSyntax>().ToArray());
             return SyntaxFactory.EventDeclaration(
                 SyntaxFactory.List(attributes),
@@ -1009,7 +1009,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitOperatorBlock(VBSyntax.OperatorBlockSyntax node)
         {
-            return node.BlockStatement.Accept(TriviaConvertingVisitor);
+            return await node.BlockStatement.Accept(TriviaConvertingVisitor);
         }
 
         public override async Task<CSharpSyntaxNode> VisitOperatorStatement(VBSyntax.OperatorStatementSyntax node)
@@ -1019,7 +1019,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var returnType = (TypeSyntax)node.AsClause?.Type.Accept(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword));
             var parameterList = (ParameterListSyntax)node.ParameterList.Accept(_triviaConvertingExpressionVisitor);
             var methodBodyVisitor = _expressionNodeVisitor.CreateMethodBodyVisitor(node);
-            var body = SyntaxFactory.Block(containingBlock.Statements.SelectMany(s => s.Accept(methodBodyVisitor)));
+            var body = SyntaxFactory.Block(containingBlock.Statements.SelectMany(s => await s.Accept(methodBodyVisitor)));
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, GetMemberContext(node));
 
             var conversionModifiers = modifiers.Where(CommonConversions.IsConversionOperator).ToList();
@@ -1065,7 +1065,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 modifiers, CommonConversions.ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier),
                 (ParameterListSyntax)block.ParameterList.Accept(_triviaConvertingExpressionVisitor),
                 ctorCall,
-                SyntaxFactory.Block(statements.SelectMany(s => s.Accept(methodBodyVisitor)))
+                SyntaxFactory.Block(statements.SelectMany(s => await s.Accept(methodBodyVisitor)))
             );
         }
 
@@ -1079,7 +1079,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             importAttributes.Add(SyntaxFactory.AttributeArgument((ExpressionSyntax)dllImportLibLiteral));
 
             if (node.AliasName != null) {
-                importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("EntryPoint"), null, (ExpressionSyntax) node.AliasName.Accept(_triviaConvertingExpressionVisitor)));
+                importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("EntryPoint"), null, (ExpressionSyntax) await node.AliasName.Accept(_triviaConvertingExpressionVisitor)));
             }
 
             if (!node.CharsetKeyword.IsKind(SyntaxKind.None)) {

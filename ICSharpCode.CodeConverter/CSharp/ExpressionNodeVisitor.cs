@@ -125,7 +125,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.CatchClause(
                 catcher,
                 filter,
-                SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(methodBodyVisitor)))
+                SyntaxFactory.Block(node.Statements.SelectMany(s => await s.Accept(methodBodyVisitor)))
             );
         }
 
@@ -137,7 +137,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitFinallyBlock(VBasic.Syntax.FinallyBlockSyntax node)
         {
             var methodBodyVisitor = CreateMethodBodyVisitor(node); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
-            return SyntaxFactory.FinallyClause(SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(methodBodyVisitor))));
+            return SyntaxFactory.FinallyClause(SyntaxFactory.Block(node.Statements.SelectMany(s => await s.Accept(methodBodyVisitor))));
         }
 
         public override async Task<CSharpSyntaxNode> VisitCTypeExpression(VBasic.Syntax.CTypeExpressionSyntax node)
@@ -318,7 +318,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var invocation = node.Parent.Parent;
             if (invocation is VBasic.Syntax.ArrayCreationExpressionSyntax)
-                return node.Expression.Accept(TriviaConvertingVisitor);
+                return await node.Expression.Accept(TriviaConvertingVisitor);
             var symbol = GetInvocationSymbol(invocation);
             SyntaxToken token = default(SyntaxToken);
             string argName = null;
@@ -375,14 +375,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitObjectMemberInitializer(VBasic.Syntax.ObjectMemberInitializerSyntax node)
         {
             var memberDeclaratorSyntaxs = SyntaxFactory.SeparatedList(
-                node.Initializers.Select(initializer => initializer.Accept(TriviaConvertingVisitor)).Cast<ExpressionSyntax>());
+                node.Initializers.Select(initializer => await initializer.Accept(TriviaConvertingVisitor)).Cast<ExpressionSyntax>());
             return SyntaxFactory.InitializerExpression(SyntaxKind.ObjectInitializerExpression, memberDeclaratorSyntaxs);
         }
 
         public override async Task<CSharpSyntaxNode> VisitAnonymousObjectCreationExpression(VBasic.Syntax.AnonymousObjectCreationExpressionSyntax node)
         {
             var memberDeclaratorSyntaxs = SyntaxFactory.SeparatedList(
-                node.Initializer.Initializers.Select(initializer => initializer.Accept(TriviaConvertingVisitor)).Cast<AnonymousObjectMemberDeclaratorSyntax>());
+                node.Initializer.Initializers.Select(initializer => await initializer.Accept(TriviaConvertingVisitor)).Cast<AnonymousObjectMemberDeclaratorSyntax>());
             return SyntaxFactory.AnonymousObjectCreationExpression(memberDeclaratorSyntaxs);
         }
 
@@ -458,7 +458,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitObjectCollectionInitializer(VBasic.Syntax.ObjectCollectionInitializerSyntax node)
         {
-            return node.Initializer.Accept(TriviaConvertingVisitor); //Dictionary initializer comes through here despite the FROM keyword not being in the source code
+            return await node.Initializer.Accept(TriviaConvertingVisitor); //Dictionary initializer comes through here despite the FROM keyword not being in the source code
         }
 
         public override async Task<CSharpSyntaxNode> VisitBinaryConditionalExpression(VBasic.Syntax.BinaryConditionalExpressionSyntax node)
@@ -672,7 +672,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitMultiLineLambdaExpression(VBasic.Syntax.MultiLineLambdaExpressionSyntax node)
         {
             var methodBodyVisitor = CreateMethodBodyVisitor(node);
-            var body = node.Statements.SelectMany(s => s.Accept(methodBodyVisitor));
+            var body = node.Statements.SelectMany(s => await s.Accept(methodBodyVisitor));
             var param = (ParameterListSyntax)node.SubOrFunctionHeader.ParameterList.Accept(TriviaConvertingVisitor);
             return _lambdaConverter.Convert(node, param, body.ToList());
         }

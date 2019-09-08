@@ -148,7 +148,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return new[] {(CSSyntax.ExpressionSyntax)pcs.Count.Accept(_triviaConvertingVisitor)};
                 case VBSyntax.PartitionWhileClauseSyntax pwcs: {
                     var lambdaParam = SyntaxFactory.Parameter(fromClauseSyntax.Identifier);
-                    var lambdaBody = (CSSyntax.ExpressionSyntax) pwcs.Condition.Accept(_triviaConvertingVisitor);
+                    var lambdaBody = (CSSyntax.ExpressionSyntax) await pwcs.Condition.Accept(_triviaConvertingVisitor);
                     return new[] {(CSSyntax.ExpressionSyntax) SyntaxFactory.SimpleLambdaExpression(lambdaParam, lambdaBody)};
                 }
                 default:
@@ -188,7 +188,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var collectionRangeVariableSyntax = vbFromClause.Variables.Single();
             var fromClauseSyntax = SyntaxFactory.FromClause(
                 CommonConversions.ConvertIdentifier(collectionRangeVariableSyntax.Identifier.Identifier),
-                (CSSyntax.ExpressionSyntax) collectionRangeVariableSyntax.Expression.Accept(_triviaConvertingVisitor));
+                (CSSyntax.ExpressionSyntax) await collectionRangeVariableSyntax.Expression.Accept(_triviaConvertingVisitor));
             return fromClauseSyntax;
         }
 
@@ -252,29 +252,29 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CSSyntax.QueryClauseSyntax ConvertWhereClause(VBSyntax.WhereClauseSyntax ws)
         {
-            return SyntaxFactory.WhereClause((CSSyntax.ExpressionSyntax) ws.Condition.Accept(_triviaConvertingVisitor));
+            return SyntaxFactory.WhereClause((CSSyntax.ExpressionSyntax) await ws.Condition.Accept(_triviaConvertingVisitor));
         }
 
         private CSSyntax.QueryClauseSyntax ConvertLetClause(VBSyntax.LetClauseSyntax ls)
         {
             var singleVariable = ls.Variables.Single();
-            return SyntaxFactory.LetClause(CommonConversions.ConvertIdentifier(singleVariable.NameEquals.Identifier.Identifier), (CSSyntax.ExpressionSyntax) singleVariable.Expression.Accept(_triviaConvertingVisitor));
+            return SyntaxFactory.LetClause(CommonConversions.ConvertIdentifier(singleVariable.NameEquals.Identifier.Identifier), (CSSyntax.ExpressionSyntax) await singleVariable.Expression.Accept(_triviaConvertingVisitor));
         }
 
         private CSSyntax.QueryClauseSyntax ConvertOrderByClause(VBSyntax.OrderByClauseSyntax os)
         {
-            return SyntaxFactory.OrderByClause(SyntaxFactory.SeparatedList(os.Orderings.Select(o => (CSSyntax.OrderingSyntax) o.Accept(_triviaConvertingVisitor))));
+            return SyntaxFactory.OrderByClause(SyntaxFactory.SeparatedList(os.Orderings.Select(o => (CSSyntax.OrderingSyntax) await o.Accept(_triviaConvertingVisitor))));
         }
 
         private CSSyntax.QueryClauseSyntax ConvertJoinClause(VBSyntax.JoinClauseSyntax js)
         {
             var variable = js.JoinedVariables.Single();
-            var joinLhs = SingleExpression(js.JoinConditions.Select(c => c.Left.Accept(_triviaConvertingVisitor))
+            var joinLhs = SingleExpression(js.JoinConditions.Select(c => await c.Left.Accept(_triviaConvertingVisitor))
                 .Cast<CSSyntax.ExpressionSyntax>().ToList());
-            var joinRhs = SingleExpression(js.JoinConditions.Select(c => c.Right.Accept(_triviaConvertingVisitor))
+            var joinRhs = SingleExpression(js.JoinConditions.Select(c => await c.Right.Accept(_triviaConvertingVisitor))
                 .Cast<CSSyntax.ExpressionSyntax>().ToList());
             var convertIdentifier = CommonConversions.ConvertIdentifier(variable.Identifier.Identifier);
-            var expressionSyntax = (CSSyntax.ExpressionSyntax) variable.Expression.Accept(_triviaConvertingVisitor);
+            var expressionSyntax = (CSSyntax.ExpressionSyntax) await variable.Expression.Accept(_triviaConvertingVisitor);
 
             CSSyntax.JoinIntoClauseSyntax joinIntoClauseSyntax = null;
             if (js is VBSyntax.GroupJoinClauseSyntax gjs) {

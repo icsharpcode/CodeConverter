@@ -7,7 +7,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         public static Task<T> Accept<T>(this SyntaxNode node, CommentConvertingVisitorWrapper<T> visitorWrapper) where T: SyntaxNode
         {
-            return visitorWrapper.Visit(node);
+            return await visitorWrapper.Visit(node);
         }
     }
 }
