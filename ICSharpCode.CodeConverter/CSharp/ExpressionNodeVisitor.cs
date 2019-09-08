@@ -313,7 +313,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (node.Parent.IsKind(VBasic.SyntaxKind.Attribute)) {
                 return CommonConversions.CreateAttributeArgumentList(await node.Arguments.SelectAsync(ToAttributeArgument));
             }
-            var argumentSyntaxes = await Task.WhenAll(ConvertArguments(node));
+            var argumentSyntaxes = await ConvertArguments(node);
             return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(argumentSyntaxes));
         }
 
@@ -630,7 +630,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return convertedExpression; //Parameterless property access
             }
 
-            if (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault) && !expressionSymbol.Equals(invocationSymbol)) {
+            if (expressionSymbol != null && (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault) && !expressionSymbol.Equals(invocationSymbol))) {
                 _extraUsingDirectives.Add(nameof(System) + "." + nameof(System.Linq));
                 convertedExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, convertedExpression,
                     SyntaxFactory.IdentifierName(nameof(Enumerable.ElementAtOrDefault)));
@@ -978,10 +978,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             return firstPossiblyConditionalAncestor?.IsKind(VBasic.SyntaxKind.ConditionalAccessExpression) == true;
         }
 
-        private IEnumerable<Task<ArgumentSyntax>> ConvertArguments(VBasic.Syntax.ArgumentListSyntax node)
+        private async Task<IEnumerable<ArgumentSyntax>> ConvertArguments(VBasic.Syntax.ArgumentListSyntax node)
         {
             ISymbol invocationSymbolForForcedNames = null;
-            var argumentSyntaxs = node.Arguments.Select(async (a, i) => {
+            var argumentSyntaxs = (await node.Arguments.SelectAsync(async (a, i) => {
                 if (a.IsOmitted) {
                     invocationSymbolForForcedNames = GetInvocationSymbol(node.Parent);
                     if (invocationSymbolForForcedNames != null) {
@@ -1002,7 +1002,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 return argumentSyntax;
-            }).Where(a => a != null);
+            })).Where(a => a != null);
             return argumentSyntaxs;
         }
 
@@ -1083,7 +1083,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             CastExpressionSyntax cSharpSyntaxNode = null;
             var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
             if (symbol?.Name == "ChrW" || symbol?.Name == "Chr") {
-                var args = await Task.WhenAll(ConvertArguments(node.ArgumentList));
+                var args = await ConvertArguments(node.ArgumentList);
                 cSharpSyntaxNode = ValidSyntaxFactory.CastExpression(SyntaxFactory.ParseTypeName("char"),
                     args.Single().Expression);
             }

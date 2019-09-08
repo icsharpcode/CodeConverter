@@ -327,7 +327,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<SyntaxList<StatementSyntax>> VisitThrowStatement(VBSyntax.ThrowStatementSyntax node)
         {
-            return SingleStatement(SyntaxFactory.ThrowStatement((ExpressionSyntax) await node.Expression?.AcceptAsync(_expressionVisitor)));
+            return SingleStatement(SyntaxFactory.ThrowStatement((ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor)));
         }
 
         public override async Task<SyntaxList<StatementSyntax>> VisitReturnStatement(VBSyntax.ReturnStatementSyntax node)
@@ -335,7 +335,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (IsIterator)
                 return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
 
-            return SingleStatement(SyntaxFactory.ReturnStatement((ExpressionSyntax) await node.Expression?.AcceptAsync(_expressionVisitor)));
+            return SingleStatement(SyntaxFactory.ReturnStatement((ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor)));
         }
 
         public override async Task<SyntaxList<StatementSyntax>> VisitContinueStatement(VBSyntax.ContinueStatementSyntax node)
@@ -345,7 +345,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<SyntaxList<StatementSyntax>> VisitYieldStatement(VBSyntax.YieldStatementSyntax node)
         {
-            return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldReturnStatement, (ExpressionSyntax) await node.Expression?.AcceptAsync(_expressionVisitor)));
+            return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldReturnStatement, (ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor)));
         }
 
         public override async Task<SyntaxList<StatementSyntax>> VisitExitStatement(VBSyntax.ExitStatementSyntax node)
@@ -466,7 +466,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            var step = (ExpressionSyntax) await stmt.StepClause?.StepValue.AcceptAsync(_expressionVisitor);
+            var step = (ExpressionSyntax) await (stmt.StepClause?.StepValue).AcceptAsync(_expressionVisitor);
             PrefixUnaryExpressionSyntax value = step.SkipParens() as PrefixUnaryExpressionSyntax;
             ExpressionSyntax condition;
 
@@ -662,7 +662,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxFactory.TryStatement(
                     block,
                     SyntaxFactory.List(await node.CatchBlocks.SelectAsync(async c => (CatchClauseSyntax) await c.AcceptAsync(_expressionVisitor))),
-                    (FinallyClauseSyntax) await node.FinallyBlock?.AcceptAsync(_expressionVisitor)
+                    (FinallyClauseSyntax) await node.FinallyBlock.AcceptAsync(_expressionVisitor)
                 )
             );
         }

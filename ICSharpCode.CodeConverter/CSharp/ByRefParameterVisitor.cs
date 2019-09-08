@@ -60,7 +60,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 csNodes = csNodes.Select(csNode => csNode.ReplaceNodes(csNode.GetAnnotatedNodes(AdditionalLocals.Annotation),
                     (an, _) =>
                     {
-                        var id = (an as IdentifierNameSyntax).Identifier.ValueText;
+                        var id = ((IdentifierNameSyntax) an).Identifier.ValueText;
                         newNames[id] = NameGenerator.GetUniqueVariableNameInScope(_semanticModel, _generatedNames, node,
                             _additionalLocals[id].Prefix);
                         return SyntaxFactory.IdentifierName(newNames[id]);

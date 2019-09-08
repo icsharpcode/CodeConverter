@@ -36,6 +36,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             return await Task.WhenAll(nodes.Select(selector));
         }
 
+        public static async Task<TResult[]> SelectAsync<TArg, TResult>(this IEnumerable<TArg> nodes, Func<TArg, int, Task<TResult>> selector)
+        {
+            return await Task.WhenAll(nodes.Select(selector));
+        }
+
         public static async Task<TResult[]> SelectManyAsync<TArg, TResult>(this IEnumerable<TArg> nodes, Func<TArg, Task<IEnumerable<TResult>>> selector)
         {
             var selectAsync = await nodes.SelectAsync(selector);

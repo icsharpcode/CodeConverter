@@ -276,10 +276,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<CSSyntax.QueryClauseSyntax> ConvertJoinClause(VBSyntax.JoinClauseSyntax js)
         {
             var variable = js.JoinedVariables.Single();
-            var joinLhs = SingleExpression(js.JoinConditions.Select(async c => await c.Left.AcceptAsync(_triviaConvertingVisitor))
-                .Cast<CSSyntax.ExpressionSyntax>().ToList());
-            var joinRhs = SingleExpression(js.JoinConditions.Select(async c => await c.Right.AcceptAsync(_triviaConvertingVisitor))
-                .Cast<CSSyntax.ExpressionSyntax>().ToList());
+            var joinLhs = SingleExpression(await js.JoinConditions.SelectAsync(async c => (CSSyntax.ExpressionSyntax) await c.Left.AcceptAsync(_triviaConvertingVisitor)));
+            var joinRhs = SingleExpression(await js.JoinConditions.SelectAsync(async c => (CSSyntax.ExpressionSyntax) await c.Right.AcceptAsync(_triviaConvertingVisitor)));
             var convertIdentifier = CommonConversions.ConvertIdentifier(variable.Identifier.Identifier);
             var expressionSyntax = (CSSyntax.ExpressionSyntax) await variable.Expression.AcceptAsync(_triviaConvertingVisitor);
 
