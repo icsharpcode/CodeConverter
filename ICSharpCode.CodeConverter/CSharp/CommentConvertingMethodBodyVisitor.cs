@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -13,10 +14,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     public class CommentConvertingMethodBodyVisitor : VisualBasicSyntaxVisitor<SyntaxList<CSSyntax.StatementSyntax>>
     {
-        private readonly VisualBasicSyntaxVisitor<SyntaxList<CSSyntax.StatementSyntax>> _wrappedVisitor;
+        private readonly VisualBasicSyntaxVisitor<Task<SyntaxList<CSSyntax.StatementSyntax>>> _wrappedVisitor;
         private readonly TriviaConverter _triviaConverter;
 
-        public CommentConvertingMethodBodyVisitor(VisualBasicSyntaxVisitor<SyntaxList<CSSyntax.StatementSyntax>> wrappedVisitor, TriviaConverter triviaConverter)
+        public CommentConvertingMethodBodyVisitor(VisualBasicSyntaxVisitor<Task<SyntaxList<CSSyntax.StatementSyntax>>> wrappedVisitor, TriviaConverter triviaConverter)
         {
             this._wrappedVisitor = wrappedVisitor;
             this._triviaConverter = triviaConverter;
