@@ -615,7 +615,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             // VB doesn't have a specialized node for element access because the syntax is ambiguous. Instead, it just uses an invocation expression or dictionary access expression, then figures out using the semantic model which one is most likely intended.
             // https://github.com/dotnet/roslyn/blob/master/src/Workspaces/VisualBasic/Portable/LanguageServices/VisualBasicSyntaxFactsService.vb#L768
-            var convertedExpression = ConvertInvocationSubExpression(out var shouldBeElementAccess);
+            var (convertedExpression, shouldBeElementAccess) = await ConvertInvocationSubExpression();
             if (shouldBeElementAccess) {
                 return CreateElementAccess();
             }
@@ -632,14 +632,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return SyntaxFactory.InvocationExpression(convertedExpression, ConvertArgumentListOrEmpty(node.ArgumentList));
 
-            ExpressionSyntax ConvertInvocationSubExpression(out bool isElementAccess)
+            async Task<(ExpressionSyntax, bool isElementAccess)> ConvertInvocationSubExpression()
             {
-                isElementAccess = IsPropertyElementAccess(operation) ||
+                var isElementAccess = IsPropertyElementAccess(operation) ||
                                   IsArrayElementAccess(operation) ||
                                   ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
 
                 var expr = await node.Expression.Accept(TriviaConvertingVisitor);
-                return (ExpressionSyntax)expr;
+                return ((ExpressionSyntax)expr, isElementAccess);
             }
 
             CSharpSyntaxNode CreateElementAccess()
