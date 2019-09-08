@@ -59,7 +59,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             VariableDeclaratorSyntax declarator, bool preferExplicitType = false)
         {
             var vbInitValue = GetInitializerToConvert(declarator);
-            var initializerOrMethodDecl = await vbInitValue?.Accept(TriviaConvertingExpressionVisitor);
+            var initializerOrMethodDecl = await vbInitValue?.AcceptAsync(TriviaConvertingExpressionVisitor);
             var vbInitializerType = vbInitValue != null ? _semanticModel.GetTypeInfo(vbInitValue).Type : null;
 
             bool requireExplicitTypeForAll = false;
@@ -452,7 +452,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxList<VBSyntax.ArrayRankSpecifierSyntax> arrayRankSpecifierSyntaxs,
             ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
         {
-            var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax) await r.Accept(TriviaConvertingExpressionVisitor)));
+            var bounds = SyntaxFactory.List(arrayRankSpecifierSyntaxs.Select(r => (ArrayRankSpecifierSyntax) await r.AcceptAsync(TriviaConvertingExpressionVisitor)));
 
             if (nodeArrayBounds != null) {
                 var sizesSpecified = nodeArrayBounds.Arguments.Any(a => !a.IsOmitted);
@@ -489,7 +489,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return SyntaxFactory.BinaryExpression(
                 CSSyntaxKind.SubtractExpression,
-                (ExpressionSyntax) await expr.Accept(TriviaConvertingExpressionVisitor), SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+                (ExpressionSyntax) await expr.AcceptAsync(TriviaConvertingExpressionVisitor), SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
         }
 
         public static AttributeArgumentListSyntax CreateAttributeArgumentList(params AttributeArgumentSyntax[] attributeArgumentSyntaxs)
