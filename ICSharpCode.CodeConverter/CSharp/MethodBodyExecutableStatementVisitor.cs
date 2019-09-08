@@ -26,7 +26,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private readonly VBasic.VisualBasicSyntaxNode _methodNode;
         private readonly SemanticModel _semanticModel;
-        private readonly CommentConvertingVisitorWrapper<CSharpSyntaxNode> _expressionVisitor;
+        private readonly CommentConvertingVisitorWrapper<Task<CSharpSyntaxNode>> _expressionVisitor;
         private readonly Stack<ExpressionSyntax> _withBlockLhs;
         private readonly HashSet<string> _extraUsingDirectives;
         private readonly MethodsWithHandles _methodsWithHandles;
