@@ -59,7 +59,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             VariableDeclaratorSyntax declarator, bool preferExplicitType = false)
         {
             var vbInitValue = GetInitializerToConvert(declarator);
-            var initializerOrMethodDecl = vbInitValue?.Accept(TriviaConvertingExpressionVisitor);
+            var initializerOrMethodDecl = await vbInitValue?.Accept(TriviaConvertingExpressionVisitor);
             var vbInitializerType = vbInitValue != null ? _semanticModel.GetTypeInfo(vbInitValue).Type : null;
 
             bool requireExplicitTypeForAll = false;

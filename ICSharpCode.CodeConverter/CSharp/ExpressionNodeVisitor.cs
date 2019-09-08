@@ -242,7 +242,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override CSharpSyntaxNode VisitParenthesizedExpression(VBasic.Syntax.ParenthesizedExpressionSyntax node)
         {
-            var cSharpSyntaxNode = node.Expression.Accept(TriviaConvertingVisitor);
+            var cSharpSyntaxNode = await node.Expression.Accept(TriviaConvertingVisitor);
             // If structural changes are necessary the expression may have been lifted a statement (e.g. Type inferred lambda)
             return cSharpSyntaxNode is ExpressionSyntax expr ? SyntaxFactory.ParenthesizedExpression(expr) : cSharpSyntaxNode;
         }
@@ -601,7 +601,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var overrideIdentifier = CommonConversions.GetParameterizedPropertyAccessMethod(operation, out var extraArg);
             if (overrideIdentifier != null) {
-                var expr = node.Expression.Accept(TriviaConvertingVisitor);
+                var expr = await node.Expression.Accept(TriviaConvertingVisitor);
                 var idToken = expr.DescendantTokens().Last(t => t.IsKind(SyntaxKind.IdentifierToken));
                 expr = ReplaceRightmostIdentifierText(expr, idToken, overrideIdentifier);
 
@@ -637,7 +637,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                   IsArrayElementAccess(operation) ||
                                   ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
 
-                var expr = node.Expression.Accept(TriviaConvertingVisitor);
+                var expr = await node.Expression.Accept(TriviaConvertingVisitor);
                 return (ExpressionSyntax)expr;
             }
 
@@ -659,9 +659,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             IReadOnlyCollection<StatementSyntax> convertedStatements;
             if (node.Body is VBasic.Syntax.StatementSyntax statement) {
-                convertedStatements = statement.Accept(CreateMethodBodyVisitor(node));
+                convertedStatements = await statement.Accept(CreateMethodBodyVisitor(node));
             } else {
-                var csNode = node.Body.Accept(TriviaConvertingVisitor);
+                var csNode = await node.Body.Accept(TriviaConvertingVisitor);
                 convertedStatements = new[] { SyntaxFactory.ExpressionStatement((ExpressionSyntax)csNode)};
             }
             var param = (ParameterListSyntax)node.SubOrFunctionHeader.ParameterList.Accept(TriviaConvertingVisitor);

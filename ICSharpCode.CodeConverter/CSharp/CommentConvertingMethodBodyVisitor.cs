@@ -36,7 +36,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private SyntaxList<CSSyntax.StatementSyntax> ConvertWithTrivia(SyntaxNode node)
         {
-            var convertedNodes = _wrappedVisitor.Visit(node);
+            var convertedNodes = await _wrappedVisitor.Visit(node);
             if (!convertedNodes.Any()) return convertedNodes;
             // Port trivia to the last statement in the list
             var lastWithConvertedTrivia = _triviaConverter.PortConvertedTrivia(node, convertedNodes.LastOrDefault());
@@ -45,7 +45,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override SyntaxList<CSSyntax.StatementSyntax> VisitTryBlock(TryBlockSyntax node)
         {
-            var cSharpSyntaxNodes = _wrappedVisitor.Visit(node);
+            var cSharpSyntaxNodes = await _wrappedVisitor.Visit(node);
             var tryStatementCs = (CSSyntax.TryStatementSyntax)cSharpSyntaxNodes.Single();
             var tryTokenCs = tryStatementCs.TryKeyword;
             var tryStatementWithTryTrivia = tryStatementCs.ReplaceToken(tryTokenCs, tryTokenCs.WithConvertedTriviaFrom(node.TryStatement));

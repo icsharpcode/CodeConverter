@@ -176,7 +176,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<SyntaxList<StatementSyntax>> VisitEraseStatement(VBSyntax.EraseStatementSyntax node)
         {
             var eraseStatements = node.Expressions.Select<VBSyntax.ExpressionSyntax, StatementSyntax>(arrayExpression => {
-                var lhs = arrayExpression.Accept(_expressionVisitor);
+                var lhs = await arrayExpression.Accept(_expressionVisitor);
                 var rhs = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
                 var assignmentExpressionSyntax =
                     SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, (ExpressionSyntax)lhs,

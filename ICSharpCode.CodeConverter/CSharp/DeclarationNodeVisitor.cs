@@ -1074,7 +1074,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _extraUsingDirectives.Add(DllImportType.Namespace);
             _extraUsingDirectives.Add(CharSetType.Namespace);
             var dllImportAttributeName = SyntaxFactory.ParseName(DllImportType.Name.Replace("Attribute", ""));
-            var dllImportLibLiteral = node.LibraryName.Accept(_triviaConvertingExpressionVisitor);
+            var dllImportLibLiteral = await node.LibraryName.Accept(_triviaConvertingExpressionVisitor);
             importAttributes.Add(SyntaxFactory.AttributeArgument((ExpressionSyntax)dllImportLibLiteral));
 
             if (node.AliasName != null) {
