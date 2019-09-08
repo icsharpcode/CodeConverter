@@ -86,7 +86,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 bool isField = declarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
 
                 EqualsValueClauseSyntax equalsValueClauseSyntax;
-                if (GetInitializerFromNameAndType(declaredSymbolType, name, initializerOrMethodDecl) is ExpressionSyntax adjustedInitializerExpr) {
+                if (await GetInitializerFromNameAndType(declaredSymbolType, name, initializerOrMethodDecl) is ExpressionSyntax adjustedInitializerExpr) {
                     var convertedInitializer = vbInitValue != null ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr) : adjustedInitializerExpr;
                     equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
                 } else if (isField || _semanticModel.IsDefinitelyAssignedBeforeRead(declaredSymbol, name)) {
@@ -147,7 +147,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                    ) ?? declarator.Initializer?.Value;
         }
 
-        private CSharpSyntaxNode GetInitializerFromNameAndType(ITypeSymbol typeSymbol,
+        private async Task<CSharpSyntaxNode> GetInitializerFromNameAndType(ITypeSymbol typeSymbol,
             ModifiedIdentifierSyntax name, CSharpSyntaxNode initializer)
         {
             if (!SyntaxTokenExtensions.IsKind(name.Nullable, SyntaxKind.None))
@@ -158,10 +158,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            var rankSpecifiers = ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds, false);
+            var rankSpecifiers = await ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds, false);
             if (rankSpecifiers.Count > 0)
             {
-                var rankSpecifiersWithSizes = ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds);
+                var rankSpecifiersWithSizes = await ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds);
                 if (!rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).OfType<OmittedArraySizeExpressionSyntax>().Any())
                 {
                     var arrayTypeSyntax = (ArrayTypeSyntax) CsSyntaxGenerator.TypeExpression(typeSymbol);
