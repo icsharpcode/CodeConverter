@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -13,6 +14,7 @@ using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
 using Task = System.Threading.Tasks.Task;
 
 namespace CodeConverter.VsExtension
@@ -114,8 +116,14 @@ namespace CodeConverter.VsExtension
         /// </summary>
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
-            await Task.WhenAll(ConvertCSToVBCommand.InitializeAsync(this),
-                ConvertVBToCSCommand.InitializeAsync(this));
+            var oleMenuCommandService = await this.GetServiceAsync<IMenuCommandService, OleMenuCommandService>();
+            await JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            var codeConversion = await CodeConversion.CreateAsync(this, VsWorkspace, GetOptionsAsync);
+            ConvertCSToVBCommand.Initialize(this, oleMenuCommandService, codeConversion);
+            ConvertVBToCSCommand.Initialize(this, oleMenuCommandService, codeConversion);
+
+            await TaskScheduler.Default;
             await base.InitializeAsync(cancellationToken, progress);
         }
 
@@ -136,6 +144,11 @@ namespace CodeConverter.VsExtension
                         fvi.ProductPrivatePart);
                 } else return null;
             }
+        }
+
+        internal OleMenuCommandWithBlockingStatus CreateCommand(Func<object, EventArgs, Task> callbackAsync, CommandID menuCommandId)
+        {
+            return new OleMenuCommandWithBlockingStatus(JoinableTaskFactory, callbackAsync, menuCommandId);
         }
     }
 }

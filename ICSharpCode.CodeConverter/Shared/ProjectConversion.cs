@@ -40,6 +40,12 @@ namespace ICSharpCode.CodeConverter.Shared
             _returnSelectedNode = returnSelectedNode;
         }
 
+        private static async Task InitializeWithNoSynchronizationContext(ILanguageConversion languageConversion, Project documentProject)
+        {
+            await new SynchronizationContextRemover();
+            await languageConversion.Initialize(documentProject);
+        }
+
         public static Task<ConversionResult> ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null) where TLanguageConversion : ILanguageConversion, new()
         {
             var languageConversion = new TLanguageConversion {
@@ -60,7 +66,7 @@ namespace ICSharpCode.CodeConverter.Shared
             }
 
             var conversion = new ProjectConversion(document.Project, new[] { document}, languageConversion, returnSelectedNode);
-            await languageConversion.Initialize(document.Project);
+            await InitializeWithNoSynchronizationContext(languageConversion, document.Project);
             var conversionResults = (await ConvertProjectContents(conversion)).ToList();
             var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
                              ?? conversionResults.First();
@@ -94,7 +100,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var documentsToConvert = project.Documents.Where(d => !BannedPaths.Any(d.FilePath.Contains));
             var projectConversion = new ProjectConversion(project, documentsToConvert, languageConversion);
-            await languageConversion.Initialize(project);
+            await InitializeWithNoSynchronizationContext(languageConversion, project);
             return await ConvertProjectContents(projectConversion);
         }
 

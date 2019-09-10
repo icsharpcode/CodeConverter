@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Threading;
 using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
 using Project = EnvDTE.Project;
 using Task = System.Threading.Tasks.Task;
@@ -27,17 +28,17 @@ namespace CodeConverter.VsExtension
         private readonly VisualStudioWorkspace _visualStudioWorkspace;
         public static readonly string ConverterTitle = "Code converter";
         private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine;
-        private readonly VisualStudioInteraction.OutputWindow _outputWindow;
+        private readonly OutputWindow _outputWindow;
         private string SolutionDir => Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
 
         public static async Task<CodeConversion> CreateAsync(REConverterPackage serviceProvider, VisualStudioWorkspace visualStudioWorkspace, Func<Task<ConverterOptionsPage>> getOptions)
         {
             return new CodeConversion(serviceProvider, visualStudioWorkspace, 
-                getOptions, await VisualStudioInteraction.OutputWindow.CreateAsync());
+                getOptions, await OutputWindow.CreateAsync());
         }
 
         public CodeConversion(IAsyncServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace,
-            Func<Task<ConverterOptionsPage>> getOptions, VisualStudioInteraction.OutputWindow outputWindow)
+            Func<Task<ConverterOptionsPage>> getOptions, OutputWindow outputWindow)
         {
             GetOptions = getOptions;
             _serviceProvider = serviceProvider;
@@ -47,7 +48,7 @@ namespace CodeConverter.VsExtension
         
         public async Task PerformProjectConversionAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects) where TLanguageConversion : ILanguageConversion, new()
         {
-            await Task.Run(async () => {
+            await ThreadHelper.JoinableTaskFactory.RunAsync(async () => {
                 var convertedFiles = ConvertProjectUnhandledAsync<TLanguageConversion>(selectedProjects);
                 await WriteConvertedFilesAndShowSummaryAsync(await convertedFiles);
             });
@@ -55,7 +56,7 @@ namespace CodeConverter.VsExtension
 
         public async Task PerformDocumentConversionAsync<TLanguageConversion>(string documentFilePath, Span selected) where TLanguageConversion : ILanguageConversion, new()
         {
-            var conversionResult = await Task.Run(async () => {
+            var conversionResult = await ThreadHelper.JoinableTaskFactory.RunAsync(async () => {
                 var result = await ConvertDocumentUnhandledAsync<TLanguageConversion>(documentFilePath, selected);
                 await WriteConvertedFilesAndShowSummaryAsync(new[] { result });
                 return result;
@@ -246,9 +247,11 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread - ToList ensures this happens within the same thread just switched to above
             var projects = selectedProjects.Select(p => projectsByPath[p.FullName].First()).ToList();
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
-            var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects, new Progress<string>(s => {
-                var unusedFireAndForget = LogProgressAsync(s);
-            }));
+            await TaskScheduler.Default;
+            var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects,
+                    new Progress<string>(s => {
+                        var unusedFireAndForget = LogProgressAsync(s);
+                    }));
             
             return await ThreadHelper.JoinableTaskFactory.RunAsync(() => solutionConverter.Convert());
         }
@@ -270,28 +273,6 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
         public static bool IsVBFileName(string fileName)
         {
             return fileName.EndsWith(".vb", StringComparison.OrdinalIgnoreCase);
-        }
-
-        public async Task<ITextSelection> GetSelectionInCurrentViewAsync(Func<string, bool> predicate)
-        {
-            IWpfTextViewHost viewHost = await GetCurrentViewHostAsync(predicate);
-            if (viewHost == null)
-                return null;
-
-            return viewHost.TextView.Selection;
-        }
-
-        public async Task<IWpfTextViewHost> GetCurrentViewHostAsync(Func<string, bool> predicate)
-        {
-            IWpfTextViewHost viewHost = await VisualStudioInteraction.GetCurrentViewHostAsync(_serviceProvider);
-            if (viewHost == null)
-                return null;
-
-            ITextDocument textDocument = await viewHost.GetTextDocumentAsync();
-            if (textDocument == null || !predicate(textDocument.FilePath))
-                return null;
-
-            return viewHost;
         }
     }
 }

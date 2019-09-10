@@ -156,13 +156,14 @@
     <Compile Include="..\ICSharpCode.CodeConverter\Shared\DefaultReferences.cs">
       <Link>DefaultReferences.cs</Link>
     </Compile>
-    <Compile Include="BlockingOleMenuCommand.cs" />
+    <Compile Include="OleMenuCommandWithBlockingStatus.cs" />
     <Compile Include="CodeConversion.cs" />
     <Compile Include="ConvertCSToVBCommand.cs" />
     <Compile Include="ConverterOptionsPage.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="ConvertVBToCSCommand.cs" />
+    <Compile Include="OutputWindow.cs" />
     <Compile Include="REConverterPackage.cs" />
     <Compile Include="ServiceProviderExtensions.cs" />
     <Compile Include="SolutionProjectExtensions.cs" />
