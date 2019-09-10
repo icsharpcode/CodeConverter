@@ -19,7 +19,7 @@ namespace CodeConverter.VsExtension
         private const string PaneName = "Code Converter";
         private static readonly Guid PaneGuid = new Guid("44F575C6-36B5-4CDB-AAAE-E096E6A446BF");
         private readonly IVsOutputWindowPane _outputPane;
-        private readonly StringBuilder _cachedOutput = new StringBuilder();
+        private bool _hasOutputSinceSolutionOpened = false;
 
         // Reference to avoid GC https://docs.microsoft.com/en-us/dotnet/api/envdte.solutionevents?view=visualstudiosdk-2017#remarks
         // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
@@ -34,7 +34,7 @@ namespace CodeConverter.VsExtension
             outputWindow.GetPane(ref generalPaneGuid, out var pane);
 
             if (pane == null) {
-                outputWindow.CreatePane(ref generalPaneGuid, PaneName, 1, 1);
+                outputWindow.CreatePane(ref generalPaneGuid, PaneName, 1, 0);
                 outputWindow.GetPane(ref generalPaneGuid, out pane);
             }
 
@@ -56,7 +56,7 @@ namespace CodeConverter.VsExtension
         public async Task ClearAsync()
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            _cachedOutput.Clear();
+            _hasOutputSinceSolutionOpened = false;
             _outputPane.Clear();
             await TaskScheduler.Default;
         }
@@ -73,7 +73,7 @@ namespace CodeConverter.VsExtension
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             lock (_outputPane) {
-                _cachedOutput.AppendLine(message);
+                _hasOutputSinceSolutionOpened = true;;
                 _outputPane.OutputStringThreadSafe(message);
             }
             await TaskScheduler.Default;
@@ -83,7 +83,8 @@ namespace CodeConverter.VsExtension
         private async void OnSolutionOpened()
 #pragma warning restore VSTHRD100 // Avoid async void methods
         {
-            await WriteToOutputWindowAsync(_cachedOutput.ToString());
+            if (_hasOutputSinceSolutionOpened) await ForceShowOutputPaneAsync();
+            _hasOutputSinceSolutionOpened = false;
         }
 
         private static async Task<IVsOutputWindow> GetOutputWindowAsync()
