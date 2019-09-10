@@ -110,7 +110,7 @@ namespace CodeConverter.VsExtension
         {
             if (sender is OleMenuCommand menuItem) {
                 var selectionInCurrentViewAsync = await VisualStudioInteraction.GetFirstSelectedSpanInCurrentViewAsync(ServiceProvider, CodeConversion.IsVBFileName);
-                menuItem.Visible = selectionInCurrentViewAsync?.IsEmpty != false;
+                menuItem.Visible = selectionInCurrentViewAsync?.IsEmpty == false;
             }
         }
 
