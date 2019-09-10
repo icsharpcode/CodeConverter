@@ -124,7 +124,7 @@ namespace CodeConverter.VsExtension
                     fileToOverwrite.WriteToFile();
 
                     var targetPathRelativeToSolutionDir = PathRelativeToSolutionDir(fileToOverwrite.TargetPathOrNull);
-                    await _outputWindow.WriteToOutputWindowAsync($"* {targetPathRelativeToSolutionDir}");
+                    await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + $"* {targetPathRelativeToSolutionDir}");
                 }
                 files = files.Concat(filesToOverwrite.Select(f => f.SourcePathOrNull)).ToList();
             } else if (longestFilePath != null) {
