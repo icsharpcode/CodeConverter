@@ -25,6 +25,7 @@ namespace CodeConverter.VsExtension
     {
         public Func<Task<ConverterOptionsPage>> GetOptions { get; }
         private readonly IAsyncServiceProvider _serviceProvider;
+        private readonly JoinableTaskFactory _joinableTaskFactory;
         private readonly VisualStudioWorkspace _visualStudioWorkspace;
         public static readonly string ConverterTitle = "Code converter";
         private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine;
@@ -33,22 +34,24 @@ namespace CodeConverter.VsExtension
 
         public static async Task<CodeConversion> CreateAsync(REConverterPackage serviceProvider, VisualStudioWorkspace visualStudioWorkspace, Func<Task<ConverterOptionsPage>> getOptions)
         {
-            return new CodeConversion(serviceProvider, visualStudioWorkspace, 
+            return new CodeConversion(serviceProvider, serviceProvider.JoinableTaskFactory, visualStudioWorkspace, 
                 getOptions, await OutputWindow.CreateAsync());
         }
 
-        public CodeConversion(IAsyncServiceProvider serviceProvider, VisualStudioWorkspace visualStudioWorkspace,
+        public CodeConversion(IAsyncServiceProvider serviceProvider,
+            JoinableTaskFactory joinableTaskFactory, VisualStudioWorkspace visualStudioWorkspace,
             Func<Task<ConverterOptionsPage>> getOptions, OutputWindow outputWindow)
         {
             GetOptions = getOptions;
             _serviceProvider = serviceProvider;
+            _joinableTaskFactory = joinableTaskFactory;
             _visualStudioWorkspace = visualStudioWorkspace;
             _outputWindow = outputWindow;
         }
         
         public async Task PerformProjectConversionAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects) where TLanguageConversion : ILanguageConversion, new()
         {
-            await ThreadHelper.JoinableTaskFactory.RunAsync(async () => {
+            await _joinableTaskFactory.RunAsync(async () => {
                 var convertedFiles = ConvertProjectUnhandledAsync<TLanguageConversion>(selectedProjects);
                 await WriteConvertedFilesAndShowSummaryAsync(await convertedFiles);
             });
@@ -56,7 +59,7 @@ namespace CodeConverter.VsExtension
 
         public async Task PerformDocumentConversionAsync<TLanguageConversion>(string documentFilePath, Span selected) where TLanguageConversion : ILanguageConversion, new()
         {
-            var conversionResult = await ThreadHelper.JoinableTaskFactory.RunAsync(async () => {
+            var conversionResult = await _joinableTaskFactory.RunAsync(async () => {
                 var result = await ConvertDocumentUnhandledAsync<TLanguageConversion>(documentFilePath, selected);
                 await WriteConvertedFilesAndShowSummaryAsync(new[] { result });
                 return result;
@@ -89,7 +92,7 @@ namespace CodeConverter.VsExtension
                     continue;
                 }
 
-                await LogProgressAsync(convertedFile, errors);
+                LogProgressAsync(convertedFile, errors).ForgetNoThrow();
                 if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode)) continue;
 
                 files.Add(convertedFile.TargetPathOrNull);
@@ -249,20 +252,11 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             await TaskScheduler.Default;
             var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects,
-                    new Progress<string>(s => {
-                        var unusedFireAndForget = LogProgressAsync(s);
+                    new Progress<ConversionProgress>(s => {
+                        _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + s.Message).ForgetNoThrow();
                     }));
             
-            return await ThreadHelper.JoinableTaskFactory.RunAsync(() => solutionConverter.Convert());
-        }
-
-        private async Task LogProgressAsync(string s)
-        {
-            try {
-                await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + s);
-            } catch (Exception) {
-                //Logging failed. TODO consider logging such issues to external file
-            }
+            return await solutionConverter.Convert();
         }
 
         public static bool IsCSFileName(string fileName)

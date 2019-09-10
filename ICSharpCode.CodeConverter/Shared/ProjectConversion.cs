@@ -74,29 +74,15 @@ namespace ICSharpCode.CodeConverter.Shared
             return codeResult;
         }
 
-        [Obsolete("Use an alternate overload of ConvertSingle or ConvertText")]
-        public static async Task<ConversionResult> ConvertSingle(Compilation compilation, SyntaxTree syntaxTree, TextSpan selected,
-            ILanguageConversion languageConversion, Project containingProject = null)
+        public static async Task<IEnumerable<ConversionResult>> ConvertProject(Project project, ILanguageConversion languageConversion, IProgress<ConversionProgress> progress, params (string, string)[] replacements)
         {
-            if (containingProject != null) {
-                return await ConvertSingle(containingProject.GetDocument(syntaxTree), selected, languageConversion);
-            }
-            using (var workspace = new AdhocWorkspace()) {
-                var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, compilation.References);
-                return await ConvertSingle(document, new TextSpan(0, 0), languageConversion);
-            }
-        }
-
-        public static async Task<IEnumerable<ConversionResult>> ConvertProject(Project project, ILanguageConversion languageConversion,
-            params (string, string)[] replacements)
-        {
-            return (await ConvertProjectContents(project, languageConversion)).Concat(new[]
-                {ConvertProjectFile(project, languageConversion, replacements)}
+            return (await ConvertProjectContents(project, progress, languageConversion)).Concat(new[]
+                {ConvertProjectFile(project, progress, languageConversion, replacements)}
             );
         }
 
-        public static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(Project project,
-            ILanguageConversion languageConversion)
+
+        private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(Project project, IProgress<ConversionProgress> progress, ILanguageConversion languageConversion)
         {
             var documentsToConvert = project.Documents.Where(d => !BannedPaths.Any(d.FilePath.Contains));
             var projectConversion = new ProjectConversion(project, documentsToConvert, languageConversion);
@@ -104,9 +90,12 @@ namespace ICSharpCode.CodeConverter.Shared
             return await ConvertProjectContents(projectConversion);
         }
 
-        public static ConversionResult ConvertProjectFile(Project project, ILanguageConversion languageConversion, params (string, string)[] textReplacements)
+        private static ConversionResult ConvertProjectFile(Project project, IProgress<ConversionProgress> progress,
+            ILanguageConversion languageConversion,
+            params (string, string)[] textReplacements)
         {
-            return new FileInfo(project.FilePath).ConversionResultFromReplacements(textReplacements, languageConversion.PostTransformProjectFile);
+            return new FileInfo(project.FilePath).ConversionResultFromReplacements(textReplacements,
+                languageConversion.PostTransformProjectFile);
         }
 
         private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(ProjectConversion projectConversion)
@@ -223,5 +212,43 @@ namespace ICSharpCode.CodeConverter.Shared
 
             return selectedNode ?? resultNode;
         }
+
+        #region ObsoletePublicApi
+        
+        [Obsolete("Please use the overload which passes an IProgress")]
+        public static async Task<IEnumerable<ConversionResult>> ConvertProject(Project project, ILanguageConversion languageConversion,
+            params (string, string)[] replacements)
+        {
+            return await ConvertProject(project, languageConversion, new Progress<string>(), replacements);
+        }
+
+        [Obsolete("Please use the overload which passes an IProgress")]
+        public static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(Project project,
+            ILanguageConversion languageConversion)
+        {
+            return await ConvertProjectContents(project, new Progress<string>(), languageConversion);
+        }
+
+        [Obsolete("Please use the overload which passes an IProgress")]
+        public static ConversionResult ConvertProjectFile(Project project, ILanguageConversion languageConversion, params (string, string)[] textReplacements)
+        {
+            return ConvertProjectFile(project, new Progress<string>(), languageConversion, textReplacements);
+        }
+
+
+        [Obsolete("Use an alternate overload of ConvertSingle or ConvertText")]
+        public static async Task<ConversionResult> ConvertSingle(Compilation compilation, SyntaxTree syntaxTree, TextSpan selected,
+            ILanguageConversion languageConversion, Project containingProject = null)
+        {
+            if (containingProject != null) {
+                return await ConvertSingle(containingProject.GetDocument(syntaxTree), selected, languageConversion);
+            }
+            using (var workspace = new AdhocWorkspace()) {
+                var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, compilation.References);
+                return await ConvertSingle(document, new TextSpan(0, 0), languageConversion);
+            }
+        }
+
+        #endregion
     }
 }
