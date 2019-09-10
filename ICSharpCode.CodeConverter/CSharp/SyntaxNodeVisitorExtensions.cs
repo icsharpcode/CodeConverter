@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -23,28 +24,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static async Task<T[]> AcceptAsync<T>(this IEnumerable<SyntaxNode> nodes, CommentConvertingVisitorWrapper<T> visitorWrapper) where T : SyntaxNode
         {
             if (nodes == null) return default;
-            return await SelectAsync(nodes,  n => n.AcceptAsync(visitorWrapper));
+            return await nodes.SelectAsync(n => n.AcceptAsync(visitorWrapper));
         }
 
         public static async Task<CSharpSyntaxNode[]> AcceptAsync(this IEnumerable<SyntaxNode> nodes, CommentConvertingNodesVisitor visitorWrapper)
         {
-            return await SelectAsync(nodes,  n => n.AcceptAsync(visitorWrapper));
-        }
-
-        public static async Task<TResult[]> SelectAsync<TArg, TResult>(this IEnumerable<TArg> nodes, Func<TArg, Task<TResult>> selector)
-        {
-            return await Task.WhenAll(nodes.Select(selector));
-        }
-
-        public static async Task<TResult[]> SelectAsync<TArg, TResult>(this IEnumerable<TArg> nodes, Func<TArg, int, Task<TResult>> selector)
-        {
-            return await Task.WhenAll(nodes.Select(selector));
-        }
-
-        public static async Task<TResult[]> SelectManyAsync<TArg, TResult>(this IEnumerable<TArg> nodes, Func<TArg, Task<IEnumerable<TResult>>> selector)
-        {
-            var selectAsync = await nodes.SelectAsync(selector);
-            return selectAsync.SelectMany(x => x).ToArray();
+            return await nodes.SelectAsync(n => n.AcceptAsync(visitorWrapper));
         }
 
         public static async Task<TSpecific[]> AcceptAsync<TGeneral, TSpecific>(this IEnumerable<SyntaxNode> nodes, CommentConvertingVisitorWrapper<TGeneral> visitorWrapper) where TGeneral : SyntaxNode where TSpecific : TGeneral
