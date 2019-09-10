@@ -90,7 +90,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            var vbCompilation = _semanticModel.Compilation as VisualBasicCompilation;
+            var vbCompilation = (VisualBasicCompilation) _semanticModel.Compilation;
             var vbConversion = vbCompilation.ClassifyConversion(vbType, vbConvertedType);
             var csType = _csCompilation.GetTypeByMetadataName(vbType.GetFullMetadataName());
             var csConvertedType = _csCompilation.GetTypeByMetadataName(vbConvertedType.GetFullMetadataName());

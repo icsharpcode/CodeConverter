@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -26,7 +27,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public CommonConversions CommonConversions { get; }
 
-        public CSharpSyntaxNode Convert(VBSyntax.LambdaExpressionSyntax vbNode,
+        public async Task<CSharpSyntaxNode> Convert(VBSyntax.LambdaExpressionSyntax vbNode,
             ParameterListSyntax param, IReadOnlyCollection<StatementSyntax> convertedStatements)
         {
             BlockSyntax block = null;
@@ -39,7 +40,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 arrow = SyntaxFactory.ArrowExpressionClause(expressionBody);
             }
 
-            var functionStatement = ConvertToFunctionDeclarationOrNull(vbNode, param, block, arrow);
+            var functionStatement = await ConvertToFunctionDeclarationOrNull(vbNode, param, block, arrow);
             if (functionStatement != null) {
                 return functionStatement;
             }
@@ -52,7 +53,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.ParenthesizedLambdaExpression(param, body);
         }
 
-        private CSharpSyntaxNode ConvertToFunctionDeclarationOrNull(VBSyntax.LambdaExpressionSyntax vbNode,
+        private async Task<CSharpSyntaxNode> ConvertToFunctionDeclarationOrNull(VBSyntax.LambdaExpressionSyntax vbNode,
             ParameterListSyntax param, BlockSyntax block,
             ArrowExpressionClauseSyntax arrow)
         {
@@ -69,7 +70,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var potentialAncestorDeclarationOperation = operation?.Parent?.Parent?.Parent;
             if (potentialAncestorDeclarationOperation is IFieldInitializerOperation fieldInit) {
                 var fieldSymbol = fieldInit.InitializedFields.Single();
-                if (fieldSymbol.GetResultantVisibility() != SymbolVisibility.Public && !fieldSymbol.Type.IsDelegateReferencableByName() && _solution.HasWriteUsages(fieldSymbol) == false) {
+                if (fieldSymbol.GetResultantVisibility() != SymbolVisibility.Public && !fieldSymbol.Type.IsDelegateReferencableByName() && await _solution.HasWriteUsagesAsync(fieldSymbol) == false) {
                     return CreateMethodDeclaration(operation, fieldSymbol, block, arrow);
                 }
             }
@@ -81,7 +82,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (potentialDeclarationOperation is IVariableDeclarationOperation variableDeclaration) {
                 var variableDeclaratorOperation = variableDeclaration.Declarators.Single();
-                if (!variableDeclaratorOperation.Symbol.Type.IsDelegateReferencableByName() && _solution.HasWriteUsages(variableDeclaratorOperation.Symbol) == false) {
+                if (!variableDeclaratorOperation.Symbol.Type.IsDelegateReferencableByName() && await _solution.HasWriteUsagesAsync(variableDeclaratorOperation.Symbol) == false) {
                     //Should do: Check no (other) write usages exist: SymbolFinder.FindReferencesAsync + checking if they're an assignment LHS or out parameter
                     return CreateLocalFunction(operation, variableDeclaratorOperation, paramListWithTypes, block, arrow);
                 }

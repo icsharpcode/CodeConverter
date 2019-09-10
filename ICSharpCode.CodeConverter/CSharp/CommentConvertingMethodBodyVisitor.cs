@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -11,21 +12,21 @@ using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    public class CommentConvertingMethodBodyVisitor : VisualBasicSyntaxVisitor<SyntaxList<CSSyntax.StatementSyntax>>
+    public class CommentConvertingMethodBodyVisitor : VisualBasicSyntaxVisitor<Task<SyntaxList<CSSyntax.StatementSyntax>>>
     {
-        private readonly VisualBasicSyntaxVisitor<SyntaxList<CSSyntax.StatementSyntax>> _wrappedVisitor;
+        private readonly VisualBasicSyntaxVisitor<Task<SyntaxList<CSSyntax.StatementSyntax>>> _wrappedVisitor;
         private readonly TriviaConverter _triviaConverter;
 
-        public CommentConvertingMethodBodyVisitor(VisualBasicSyntaxVisitor<SyntaxList<CSSyntax.StatementSyntax>> wrappedVisitor, TriviaConverter triviaConverter)
+        public CommentConvertingMethodBodyVisitor(VisualBasicSyntaxVisitor<Task<SyntaxList<CSSyntax.StatementSyntax>>> wrappedVisitor, TriviaConverter triviaConverter)
         {
             this._wrappedVisitor = wrappedVisitor;
             this._triviaConverter = triviaConverter;
         }
 
-        public override SyntaxList<CSSyntax.StatementSyntax> DefaultVisit(SyntaxNode node)
+        public override async Task<SyntaxList<CSSyntax.StatementSyntax>> DefaultVisit(SyntaxNode node)
         {
             try {
-                return ConvertWithTrivia(node);
+                return await ConvertWithTrivia(node);
             } catch (Exception e) {
                 var withTrailingErrorComment = SyntaxFactory.EmptyStatement()
                     .WithCsTrailingErrorComment<CSSyntax.StatementSyntax>((VisualBasicSyntaxNode) node, e);
@@ -33,18 +34,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        private SyntaxList<CSSyntax.StatementSyntax> ConvertWithTrivia(SyntaxNode node)
+        private async Task<SyntaxList<CSSyntax.StatementSyntax>> ConvertWithTrivia(SyntaxNode node)
         {
-            var convertedNodes = _wrappedVisitor.Visit(node);
+            var convertedNodes = await _wrappedVisitor.Visit(node);
             if (!convertedNodes.Any()) return convertedNodes;
             // Port trivia to the last statement in the list
             var lastWithConvertedTrivia = _triviaConverter.PortConvertedTrivia(node, convertedNodes.LastOrDefault());
             return convertedNodes.Replace(convertedNodes.LastOrDefault(), lastWithConvertedTrivia);
         }
 
-        public override SyntaxList<CSSyntax.StatementSyntax> VisitTryBlock(TryBlockSyntax node)
+        public override async Task<SyntaxList<CSSyntax.StatementSyntax>> VisitTryBlock(TryBlockSyntax node)
         {
-            var cSharpSyntaxNodes = _wrappedVisitor.Visit(node);
+            var cSharpSyntaxNodes = await _wrappedVisitor.Visit(node);
             var tryStatementCs = (CSSyntax.TryStatementSyntax)cSharpSyntaxNodes.Single();
             var tryTokenCs = tryStatementCs.TryKeyword;
             var tryStatementWithTryTrivia = tryStatementCs.ReplaceToken(tryTokenCs, tryTokenCs.WithConvertedTriviaFrom(node.TryStatement));

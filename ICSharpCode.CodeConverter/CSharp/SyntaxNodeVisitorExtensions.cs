@@ -1,12 +1,56 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class SyntaxNodeVisitorExtensions
     {
-        public static T Accept<T>(this SyntaxNode node, CommentConvertingVisitorWrapper<T> visitorWrapper) where T: SyntaxNode
+        public static async Task<T> AcceptAsync<T>(this SyntaxNode node, CommentConvertingVisitorWrapper<T> visitorWrapper) where T: SyntaxNode
         {
-            return visitorWrapper.Visit(node);
+            if (node == null) return default(T);
+            return await visitorWrapper.Visit(node);
+        }
+        public static async Task<CSharpSyntaxNode> AcceptAsync(this SyntaxNode node, CommentConvertingNodesVisitor visitorWrapper)
+        {
+            if (node == null) return null;
+            return await visitorWrapper.Visit(node);
+        }
+
+        public static async Task<T[]> AcceptAsync<T>(this IEnumerable<SyntaxNode> nodes, CommentConvertingVisitorWrapper<T> visitorWrapper) where T : SyntaxNode
+        {
+            if (nodes == null) return default;
+            return await SelectAsync(nodes,  n => n.AcceptAsync(visitorWrapper));
+        }
+
+        public static async Task<CSharpSyntaxNode[]> AcceptAsync(this IEnumerable<SyntaxNode> nodes, CommentConvertingNodesVisitor visitorWrapper)
+        {
+            return await SelectAsync(nodes,  n => n.AcceptAsync(visitorWrapper));
+        }
+
+        public static async Task<TResult[]> SelectAsync<TArg, TResult>(this IEnumerable<TArg> nodes, Func<TArg, Task<TResult>> selector)
+        {
+            return await Task.WhenAll(nodes.Select(selector));
+        }
+
+        public static async Task<TResult[]> SelectAsync<TArg, TResult>(this IEnumerable<TArg> nodes, Func<TArg, int, Task<TResult>> selector)
+        {
+            return await Task.WhenAll(nodes.Select(selector));
+        }
+
+        public static async Task<TResult[]> SelectManyAsync<TArg, TResult>(this IEnumerable<TArg> nodes, Func<TArg, Task<IEnumerable<TResult>>> selector)
+        {
+            var selectAsync = await nodes.SelectAsync(selector);
+            return selectAsync.SelectMany(x => x).ToArray();
+        }
+
+        public static async Task<TSpecific[]> AcceptAsync<TGeneral, TSpecific>(this IEnumerable<SyntaxNode> nodes, CommentConvertingVisitorWrapper<TGeneral> visitorWrapper) where TGeneral : SyntaxNode where TSpecific : TGeneral
+        {
+            if (nodes == null) return default;
+            return await Task.WhenAll(nodes.Select(async n => (TSpecific) await n.AcceptAsync(visitorWrapper)));
         }
     }
 }

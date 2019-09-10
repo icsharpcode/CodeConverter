@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -21,7 +22,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// Executable statements - which includes executable blocks such as if statements
     /// Maintains state relevant to the called method-like object. A fresh one must be used for each method, and the same one must be reused for statements in the same method
     /// </summary>
-    internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>>
+    internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>
     {
         private readonly VBasic.VisualBasicSyntaxNode _methodNode;
         private readonly SemanticModel _semanticModel;
@@ -34,7 +35,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public bool IsIterator { get; set; }
         public IdentifierNameSyntax ReturnVariable { get; set; }
         public bool HasReturnVariable => ReturnVariable != null;
-        public VBasic.VisualBasicSyntaxVisitor<SyntaxList<StatementSyntax>> CommentConvertingVisitor { get; }
+        public VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> CommentConvertingVisitor { get; }
 
         private CommonConversions CommonConversions { get; }
 
@@ -55,13 +56,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor, triviaConverter);
         }
 
-        public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)
+        public override async Task<SyntaxList<StatementSyntax>> DefaultVisit(SyntaxNode node)
         {
             throw new NotImplementedException($"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
                 .WithNodeInformation(node);
         }
 
-        public override SyntaxList<StatementSyntax> VisitStopOrEndStatement(VBSyntax.StopOrEndStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitStopOrEndStatement(VBSyntax.StopOrEndStatementSyntax node)
         {
             return SingleStatement(SyntaxFactory.ParseStatement(ConvertStopOrEndToCSharpStatementText(node)));
         }
@@ -80,7 +81,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        public override SyntaxList<StatementSyntax> VisitLocalDeclarationStatement(VBSyntax.LocalDeclarationStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitLocalDeclarationStatement(VBSyntax.LocalDeclarationStatementSyntax node)
         {
             var modifiers = CommonConversions.ConvertModifiers(node.Declarators[0].Names[0], node.Modifiers, TokenContext.Local);
             var isConst = modifiers.Any(a => a.Kind() == SyntaxKind.ConstKeyword);
@@ -88,7 +89,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var declarations = new List<StatementSyntax>();
 
             foreach (var declarator in node.Declarators) {
-                var splitVariableDeclarations = CommonConversions.SplitVariableDeclarations(declarator, preferExplicitType: isConst);
+                var splitVariableDeclarations = await CommonConversions.SplitVariableDeclarations(declarator, preferExplicitType: isConst);
                 var localDeclarationStatementSyntaxs = splitVariableDeclarations.Variables.Select(decl => SyntaxFactory.LocalDeclarationStatement(modifiers, decl));
                 declarations.AddRange(localDeclarationStatementSyntaxs);
                 var localFunctions = splitVariableDeclarations.Methods.Cast<LocalFunctionStatementSyntax>();
@@ -98,12 +99,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.List(declarations);
         }
 
-        public override SyntaxList<StatementSyntax> VisitAddRemoveHandlerStatement(VBSyntax.AddRemoveHandlerStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitAddRemoveHandlerStatement(VBSyntax.AddRemoveHandlerStatementSyntax node)
         {
             var syntaxKind = ConvertAddRemoveHandlerToCSharpSyntaxKind(node);
             return SingleStatement(SyntaxFactory.AssignmentExpression(syntaxKind,
-                (ExpressionSyntax)node.EventExpression.Accept(_expressionVisitor),
-                (ExpressionSyntax)node.DelegateExpression.Accept(_expressionVisitor)));
+                (ExpressionSyntax) await node.EventExpression.AcceptAsync(_expressionVisitor),
+                (ExpressionSyntax) await node.DelegateExpression.AcceptAsync(_expressionVisitor)));
         }
 
         private static SyntaxKind ConvertAddRemoveHandlerToCSharpSyntaxKind(VBSyntax.AddRemoveHandlerStatementSyntax node)
@@ -118,7 +119,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        public override SyntaxList<StatementSyntax> VisitExpressionStatement(VBSyntax.ExpressionStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitExpressionStatement(VBSyntax.ExpressionStatementSyntax node)
         {
             if (node.Expression is VBSyntax.InvocationExpressionSyntax invoke && invoke.Expression is VBSyntax.MemberAccessExpressionSyntax access) {
                 if (access.Expression is VBSyntax.MyBaseExpressionSyntax && access.Name.Identifier.ValueText.Equals("Finalize", StringComparison.OrdinalIgnoreCase)) {
@@ -128,22 +129,23 @@ namespace ICSharpCode.CodeConverter.CSharp
                                StringComparison.OrdinalIgnoreCase)) {
                     var eventSubscriptionStatements = _methodsWithHandles.GetPreResumeLayoutEventHandlers();
                     if (eventSubscriptionStatements.Any()) {
-                        return SyntaxFactory.List(eventSubscriptionStatements.Concat(SingleStatement((ExpressionSyntax)node.Expression.Accept(_expressionVisitor))));
+                        return SyntaxFactory.List(eventSubscriptionStatements.Concat(SingleStatement((ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor))));
                     }
                 }
             }
 
-            return SingleStatement((ExpressionSyntax)node.Expression.Accept(_expressionVisitor));
+            return SingleStatement((ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor));
         }
 
-        public override SyntaxList<StatementSyntax> VisitAssignmentStatement(VBSyntax.AssignmentStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitAssignmentStatement(VBSyntax.AssignmentStatementSyntax node)
         {
-            var lhs = (ExpressionSyntax)node.Left.Accept(_expressionVisitor);
+            var lhs = (ExpressionSyntax) await node.Left.AcceptAsync(_expressionVisitor);
             var lOperation = _semanticModel.GetOperation(node.Left);
 
             //Already dealt with by call to the same method in VisitInvocationExpression
-            if (CommonConversions.GetParameterizedPropertyAccessMethod(lOperation, out var _) != null) return SingleStatement(lhs);
-            var rhs = (ExpressionSyntax)node.Right.Accept(_expressionVisitor);
+            var (parameterizedPropertyAccessMethod, _) = await CommonConversions.GetParameterizedPropertyAccessMethod(lOperation);
+            if (parameterizedPropertyAccessMethod != null) return SingleStatement(lhs);
+            var rhs = (ExpressionSyntax) await node.Right.AcceptAsync(_expressionVisitor);
 
             if (node.Left is VBSyntax.IdentifierNameSyntax id &&
                 _methodNode is VBSyntax.MethodBlockSyntax mb &&
@@ -172,10 +174,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             return _methodsWithHandles.GetPostAssignmentStatements(node, potentialPropertySymbol);
         }
 
-        public override SyntaxList<StatementSyntax> VisitEraseStatement(VBSyntax.EraseStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitEraseStatement(VBSyntax.EraseStatementSyntax node)
         {
-            var eraseStatements = node.Expressions.Select<VBSyntax.ExpressionSyntax, StatementSyntax>(arrayExpression => {
-                var lhs = arrayExpression.Accept(_expressionVisitor);
+            var eraseStatements = await node.Expressions.SelectAsync<VBSyntax.ExpressionSyntax, StatementSyntax>(async arrayExpression => {
+                var lhs = await arrayExpression.AcceptAsync(_expressionVisitor);
                 var rhs = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
                 var assignmentExpressionSyntax =
                     SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, (ExpressionSyntax)lhs,
@@ -185,21 +187,21 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.List(eraseStatements);
         }
 
-        public override SyntaxList<StatementSyntax> VisitReDimStatement(VBSyntax.ReDimStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitReDimStatement(VBSyntax.ReDimStatementSyntax node)
         {
-            return SyntaxFactory.List(node.Clauses.SelectMany(arrayExpression => ConvertRedimClause(arrayExpression)));
+            return SyntaxFactory.List(await node.Clauses.SelectManyAsync(async arrayExpression => (IEnumerable<StatementSyntax>) await ConvertRedimClause(arrayExpression)));
         }
 
         /// <remarks>
         /// RedimClauseSyntax isn't an executable statement, therefore this isn't a "Visit" method.
         /// Since it returns multiple statements it's easiest for it to be here in the current architecture.
         /// </remarks>
-        private SyntaxList<StatementSyntax> ConvertRedimClause(VBSyntax.RedimClauseSyntax node)
+        private async Task<SyntaxList<StatementSyntax>> ConvertRedimClause(VBSyntax.RedimClauseSyntax node)
         {
             bool preserve = node.Parent is VBSyntax.ReDimStatementSyntax rdss && rdss.PreserveKeyword.IsKind(VBasic.SyntaxKind.PreserveKeyword);
                 
-            var csTargetArrayExpression = (ExpressionSyntax) node.Expression.Accept(_expressionVisitor);
-            var convertedBounds = CommonConversions.ConvertArrayBounds(node.ArrayBounds).ToList();
+            var csTargetArrayExpression = (ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor);
+            var convertedBounds = (await CommonConversions.ConvertArrayBounds(node.ArrayBounds)).ToList();
 
             var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds, node.SpanStart);
             if (!preserve) return SingleStatement(newArrayAssignment);
@@ -323,30 +325,30 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.ParseTypeName(convertedType.ToMinimalCSharpDisplayString(_semanticModel, nodeSpanStart));
         }
 
-        public override SyntaxList<StatementSyntax> VisitThrowStatement(VBSyntax.ThrowStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitThrowStatement(VBSyntax.ThrowStatementSyntax node)
         {
-            return SingleStatement(SyntaxFactory.ThrowStatement((ExpressionSyntax)node.Expression?.Accept(_expressionVisitor)));
+            return SingleStatement(SyntaxFactory.ThrowStatement((ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor)));
         }
 
-        public override SyntaxList<StatementSyntax> VisitReturnStatement(VBSyntax.ReturnStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitReturnStatement(VBSyntax.ReturnStatementSyntax node)
         {
             if (IsIterator)
                 return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
 
-            return SingleStatement(SyntaxFactory.ReturnStatement((ExpressionSyntax)node.Expression?.Accept(_expressionVisitor)));
+            return SingleStatement(SyntaxFactory.ReturnStatement((ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor)));
         }
 
-        public override SyntaxList<StatementSyntax> VisitContinueStatement(VBSyntax.ContinueStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitContinueStatement(VBSyntax.ContinueStatementSyntax node)
         {
             return SingleStatement(SyntaxFactory.ContinueStatement());
         }
 
-        public override SyntaxList<StatementSyntax> VisitYieldStatement(VBSyntax.YieldStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitYieldStatement(VBSyntax.YieldStatementSyntax node)
         {
-            return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldReturnStatement, (ExpressionSyntax)node.Expression?.Accept(_expressionVisitor)));
+            return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldReturnStatement, (ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor)));
         }
 
-        public override SyntaxList<StatementSyntax> VisitExitStatement(VBSyntax.ExitStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitExitStatement(VBSyntax.ExitStatementSyntax node)
         {
             switch (VBasic.VisualBasicExtensions.Kind(node.BlockKeyword)) {
                 case VBasic.SyntaxKind.SubKeyword:
@@ -354,10 +356,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBasic.SyntaxKind.FunctionKeyword:
                     VBasic.VisualBasicSyntaxNode typeContainer = (VBasic.VisualBasicSyntaxNode)node.Ancestors().OfType<VBSyntax.LambdaExpressionSyntax>().FirstOrDefault()
                                                                  ?? node.Ancestors().OfType<VBSyntax.MethodBlockSyntax>().FirstOrDefault();
-                    var info = typeContainer.TypeSwitch(
-                        (VBSyntax.LambdaExpressionSyntax e) => _semanticModel.GetTypeInfo(e).Type.GetReturnType(),
-                        (VBSyntax.MethodBlockSyntax e) => {
-                            var type = (TypeSyntax)e.SubOrFunctionStatement.AsClause?.Type.Accept(_expressionVisitor) ?? SyntaxFactory.ParseTypeName("object");
+                    var info = await typeContainer.TypeSwitch(
+                        async (VBSyntax.LambdaExpressionSyntax e) => _semanticModel.GetTypeInfo(e).Type.GetReturnType(), async (VBSyntax.MethodBlockSyntax e) => {
+                            var type = (TypeSyntax) await (e.SubOrFunctionStatement.AsClause?.Type).AcceptAsync(_expressionVisitor) ?? SyntaxFactory.ParseTypeName("object");
                             return _semanticModel.GetSymbolInfo(type).Symbol?.GetReturnType();
                         }
                     );
@@ -378,9 +379,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        public override SyntaxList<StatementSyntax> VisitRaiseEventStatement(VBSyntax.RaiseEventStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitRaiseEventStatement(VBSyntax.RaiseEventStatementSyntax node)
         {
-            var argumentListSyntax = (ArgumentListSyntax)node.ArgumentList.Accept(_expressionVisitor);
+            var argumentListSyntax = (ArgumentListSyntax) await node.ArgumentList.AcceptAsync(_expressionVisitor);
 
             var symbolInfo = _semanticModel.GetSymbolInfo(node.Name).ExtractBestMatch() as IEventSymbol;
             if (symbolInfo?.RaiseMethod != null) {
@@ -391,7 +392,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var memberBindingExpressionSyntax = SyntaxFactory.MemberBindingExpression(SyntaxFactory.IdentifierName("Invoke"));
             var conditionalAccessExpressionSyntax = SyntaxFactory.ConditionalAccessExpression(
-                (NameSyntax)node.Name.Accept(_expressionVisitor),
+                (NameSyntax) await node.Name.AcceptAsync(_expressionVisitor),
                 SyntaxFactory.InvocationExpression(memberBindingExpressionSyntax, argumentListSyntax)
             );
             return SingleStatement(
@@ -399,46 +400,51 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
-        public override SyntaxList<StatementSyntax> VisitSingleLineIfStatement(VBSyntax.SingleLineIfStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitSingleLineIfStatement(VBSyntax.SingleLineIfStatementSyntax node)
         {
-            var condition = (ExpressionSyntax)node.Condition.Accept(_expressionVisitor);
-            var block = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
+            var condition = (ExpressionSyntax) await node.Condition.AcceptAsync(_expressionVisitor);
+            var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
             ElseClauseSyntax elseClause = null;
 
             if (node.ElseClause != null) {
-                var elseBlock = SyntaxFactory.Block(node.ElseClause.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
+                var elseBlock = SyntaxFactory.Block(await ConvertStatements(node.ElseClause.Statements));
                 elseClause = SyntaxFactory.ElseClause(elseBlock.UnpackNonNestedBlock());
             }
             return SingleStatement(SyntaxFactory.IfStatement(condition, block.UnpackNonNestedBlock(), elseClause));
         }
 
-        public override SyntaxList<StatementSyntax> VisitMultiLineIfBlock(VBSyntax.MultiLineIfBlockSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitMultiLineIfBlock(VBSyntax.MultiLineIfBlockSyntax node)
         {
-            var condition = (ExpressionSyntax)node.IfStatement.Condition.Accept(_expressionVisitor);
-            var block = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
+            var condition = (ExpressionSyntax) await node.IfStatement.Condition.AcceptAsync(_expressionVisitor);
+            var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
             ElseClauseSyntax elseClause = null;
 
             if (node.ElseBlock != null) {
-                var elseBlock = SyntaxFactory.Block(node.ElseBlock.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
+                var elseBlock = SyntaxFactory.Block(await ConvertStatements(node.ElseBlock.Statements));
                 elseClause = SyntaxFactory.ElseClause(elseBlock.UnpackPossiblyNestedBlock());// so that you get a neat "else if" at the end
             }
 
             foreach (var elseIf in node.ElseIfBlocks.Reverse()) {
-                var elseBlock = SyntaxFactory.Block(elseIf.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
-                var ifStmt = SyntaxFactory.IfStatement((ExpressionSyntax)elseIf.ElseIfStatement.Condition.Accept(_expressionVisitor), elseBlock.UnpackNonNestedBlock(), elseClause);
+                var elseBlock = SyntaxFactory.Block(await ConvertStatements(elseIf.Statements));
+                var ifStmt = SyntaxFactory.IfStatement((ExpressionSyntax) await elseIf.ElseIfStatement.Condition.AcceptAsync(_expressionVisitor), elseBlock.UnpackNonNestedBlock(), elseClause);
                 elseClause = SyntaxFactory.ElseClause(ifStmt);
             }
 
             return SingleStatement(SyntaxFactory.IfStatement(condition, block.UnpackNonNestedBlock(), elseClause));
         }
 
+        private async Task<StatementSyntax[]> ConvertStatements(SyntaxList<VBSyntax.StatementSyntax> statementSyntaxs)
+        {
+            return await statementSyntaxs.SelectManyAsync(async s => (IEnumerable<StatementSyntax>)await s.Accept(CommentConvertingVisitor));
+        }
+
         /// <summary>
         /// See https://docs.microsoft.com/en-us/dotnet/visual-basic/language-reference/statements/for-next-statement#BKMK_Counter
         /// </summary>
-        public override SyntaxList<StatementSyntax> VisitForBlock(VBSyntax.ForBlockSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitForBlock(VBSyntax.ForBlockSyntax node)
         {
             var stmt = node.ForStatement;
-            ExpressionSyntax startValue = (ExpressionSyntax)stmt.FromValue.Accept(_expressionVisitor);
+            ExpressionSyntax startValue = (ExpressionSyntax) await stmt.FromValue.AcceptAsync(_expressionVisitor);
             VariableDeclarationSyntax declaration = null;
             ExpressionSyntax id;
             var controlVarOp = _semanticModel.GetOperation(stmt.ControlVariable) as IVariableDeclaratorOperation;
@@ -446,11 +452,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             var initializers = new List<ExpressionSyntax>();
             if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                 var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
-                declaration = CommonConversions.SplitVariableDeclarations(v).Variables.Single();
+                declaration = (await CommonConversions.SplitVariableDeclarations(v)).Variables.Single();
                 declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(declaration.Variables[0].WithInitializer(SyntaxFactory.EqualsValueClause(startValue))));
                 id = SyntaxFactory.IdentifierName(declaration.Variables[0].Identifier);
             } else {
-                id = (ExpressionSyntax)stmt.ControlVariable.Accept(_expressionVisitor);
+                id = (ExpressionSyntax) await stmt.ControlVariable.AcceptAsync(_expressionVisitor);
                 var controlVarSymbol = controlVarOp?.Symbol;
                 if (controlVarSymbol != null && controlVarSymbol.DeclaringSyntaxReferences.Any(r => r.Span.OverlapsWith(stmt.ControlVariable.Span))) {
                     declaration = CommonConversions.CreateVariableDeclarationAndAssignment(controlVarSymbol.Name, startValue, CommonConversions.GetTypeSyntax(controlVarType));
@@ -460,14 +466,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            var step = (ExpressionSyntax)stmt.StepClause?.StepValue.Accept(_expressionVisitor);
+            var step = (ExpressionSyntax) await (stmt.StepClause?.StepValue).AcceptAsync(_expressionVisitor);
             PrefixUnaryExpressionSyntax value = step.SkipParens() as PrefixUnaryExpressionSyntax;
             ExpressionSyntax condition;
 
             // In Visual Basic, the To expression is only evaluated once, but in C# will be evaluated every loop.
             // If it could evaluate differently or has side effects, it must be extracted as a variable
             var preLoopStatements = new List<SyntaxNode>();
-            var csToValue = (ExpressionSyntax)stmt.ToValue.Accept(_expressionVisitor);
+            var csToValue = (ExpressionSyntax) await stmt.ToValue.AcceptAsync(_expressionVisitor);
             if (!_semanticModel.GetConstantValue(stmt.ToValue).HasValue) {
                 var loopToVariableName = GetUniqueVariableNameInScope(node, "loopTo");
                 var toValueType = _semanticModel.GetTypeInfo(stmt.ToValue).ConvertedType;
@@ -494,7 +500,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 step = SyntaxFactory.PostfixUnaryExpression(SyntaxKind.PostIncrementExpression, id);
             else
                 step = SyntaxFactory.AssignmentExpression(SyntaxKind.AddAssignmentExpression, id, step);
-            var block = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
+            var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
             var forStatementSyntax = SyntaxFactory.ForStatement(
                 declaration,
                 SyntaxFactory.SeparatedList(initializers),
@@ -504,7 +510,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.List(preLoopStatements.Concat(new[] {forStatementSyntax}));
         }
 
-        public override SyntaxList<StatementSyntax> VisitForEachBlock(VBSyntax.ForEachBlockSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitForEachBlock(VBSyntax.ForEachBlockSyntax node)
         {
             var stmt = node.ForEachStatement;
 
@@ -512,45 +518,45 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxToken id;
             if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                 var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
-                var declaration = CommonConversions.SplitVariableDeclarations(v).Variables.Single();
+                var declaration = (await CommonConversions.SplitVariableDeclarations(v)).Variables.Single();
                 type = declaration.Type;
                 id = declaration.Variables[0].Identifier;
             } else {
-                var v = (IdentifierNameSyntax)stmt.ControlVariable.Accept(_expressionVisitor);
+                var v = (IdentifierNameSyntax) await stmt.ControlVariable.AcceptAsync(_expressionVisitor);
                 id = v.Identifier;
                 type = SyntaxFactory.ParseTypeName("var");
             }
 
-            var block = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
+            var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
             return SingleStatement(SyntaxFactory.ForEachStatement(
                 type,
                 id,
-                (ExpressionSyntax)stmt.Expression.Accept(_expressionVisitor),
+                (ExpressionSyntax) await stmt.Expression.AcceptAsync(_expressionVisitor),
                 block.UnpackNonNestedBlock()
             ));
         }
 
-        public override SyntaxList<StatementSyntax> VisitLabelStatement(VBSyntax.LabelStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitLabelStatement(VBSyntax.LabelStatementSyntax node)
         {
             return SingleStatement(SyntaxFactory.LabeledStatement(node.LabelToken.Text, SyntaxFactory.EmptyStatement()));
         }
 
-        public override SyntaxList<StatementSyntax> VisitGoToStatement(VBSyntax.GoToStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitGoToStatement(VBSyntax.GoToStatementSyntax node)
         {
             return SingleStatement(SyntaxFactory.GotoStatement(SyntaxKind.GotoStatement,
                 SyntaxFactory.IdentifierName(node.Label.LabelToken.Text)));
         }
 
-        public override SyntaxList<StatementSyntax> VisitSelectBlock(VBSyntax.SelectBlockSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitSelectBlock(VBSyntax.SelectBlockSyntax node)
         {
-            var expr = (ExpressionSyntax)node.SelectStatement.Expression.Accept(_expressionVisitor);
+            var expr = (ExpressionSyntax) await node.SelectStatement.Expression.AcceptAsync(_expressionVisitor);
             var exprWithoutTrivia = expr.WithoutTrivia().WithoutAnnotations();
             var sections = new List<SwitchSectionSyntax>();
             foreach (var block in node.CaseBlocks) {
                 var labels = new List<SwitchLabelSyntax>();
                 foreach (var c in block.CaseStatement.Cases) {
                     if (c is VBSyntax.SimpleCaseClauseSyntax s) {
-                        var originalExpressionSyntax = (ExpressionSyntax)s.Value.Accept(_expressionVisitor);
+                        var originalExpressionSyntax = (ExpressionSyntax) await s.Value.AcceptAsync(_expressionVisitor);
                         // CSharp requires an explicit cast from the base type (e.g. int) in most cases switching on an enum
                         var typeConversionKind = CommonConversions.TypeConversionAnalyzer.AnalyzeConversion(s.Value);
                         var expressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax, typeConversionKind, true);
@@ -565,17 +571,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                         labels.Add(SyntaxFactory.DefaultSwitchLabel());
                     } else if (c is VBSyntax.RelationalCaseClauseSyntax relational) {
                         var operatorKind = VBasic.VisualBasicExtensions.Kind(relational);
-                        var cSharpSyntaxNode = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(TokenContext.Local), exprWithoutTrivia, (ExpressionSyntax) relational.Value.Accept(_expressionVisitor));
+                        var cSharpSyntaxNode = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(TokenContext.Local), exprWithoutTrivia, (ExpressionSyntax) await relational.Value.AcceptAsync(_expressionVisitor));
                         labels.Add(WrapInCasePatternSwitchLabelSyntax(node, cSharpSyntaxNode, treatAsBoolean: true));
                     } else if (c is VBSyntax.RangeCaseClauseSyntax range) {
-                        var lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, (ExpressionSyntax) range.LowerBound.Accept(_expressionVisitor), exprWithoutTrivia);
-                        var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, exprWithoutTrivia, (ExpressionSyntax) range.UpperBound.Accept(_expressionVisitor));
+                        var lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, (ExpressionSyntax) await range.LowerBound.AcceptAsync(_expressionVisitor), exprWithoutTrivia);
+                        var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, exprWithoutTrivia, (ExpressionSyntax) await range.UpperBound.AcceptAsync(_expressionVisitor));
                         var withinBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LogicalAndExpression, lowerBoundCheck, upperBoundCheck);
                         labels.Add(WrapInCasePatternSwitchLabelSyntax(node, withinBounds, treatAsBoolean: true));
                     } else throw new NotSupportedException(c.Kind().ToString());
                 }
 
-                var csBlockStatements = block.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)).ToList();
+                var csBlockStatements = (await ConvertStatements(block.Statements)).ToList();
                 if (csBlockStatements.LastOrDefault()
                         ?.IsKind(SyntaxKind.ReturnStatement) != true) {
                     csBlockStatements.Add(SyntaxFactory.BreakStatement());
@@ -609,9 +615,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return casePatternSwitchLabelSyntax;
         }
 
-        public override SyntaxList<StatementSyntax> VisitWithBlock(VBSyntax.WithBlockSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitWithBlock(VBSyntax.WithBlockSyntax node)
         {
-            var withExpression = (ExpressionSyntax)node.WithStatement.Expression.Accept(_expressionVisitor);
+            var withExpression = (ExpressionSyntax) await node.WithStatement.Expression.AcceptAsync(_expressionVisitor);
             var generateVariableName = !_semanticModel.GetTypeInfo(node.WithStatement.Expression).Type.IsValueType;
 
             ExpressionSyntax lhsExpression;
@@ -628,7 +634,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             _withBlockLhs.Push(lhsExpression);
             try {
-                var statements = node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor));
+                var statements = await ConvertStatements(node.Statements);
 
                 IEnumerable<StatementSyntax> statementSyntaxs = prefixDeclarations.Concat(statements).ToArray();
                 return generateVariableName
@@ -649,63 +655,63 @@ namespace ICSharpCode.CodeConverter.CSharp
             return NameGenerator.GetUniqueVariableNameInScope(_semanticModel, _generatedNames, node, variableNameBase);
         }
 
-        public override SyntaxList<StatementSyntax> VisitTryBlock(VBSyntax.TryBlockSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitTryBlock(VBSyntax.TryBlockSyntax node)
         {
-            var block = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
+            var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
             return SingleStatement(
                 SyntaxFactory.TryStatement(
                     block,
-                    SyntaxFactory.List(node.CatchBlocks.Select(c => (CatchClauseSyntax)c.Accept(_expressionVisitor))),
-                    (FinallyClauseSyntax)node.FinallyBlock?.Accept(_expressionVisitor)
+                    SyntaxFactory.List(await node.CatchBlocks.SelectAsync(async c => (CatchClauseSyntax) await c.AcceptAsync(_expressionVisitor))),
+                    (FinallyClauseSyntax) await node.FinallyBlock.AcceptAsync(_expressionVisitor)
                 )
             );
         }
 
-        public override SyntaxList<StatementSyntax> VisitSyncLockBlock(VBSyntax.SyncLockBlockSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitSyncLockBlock(VBSyntax.SyncLockBlockSyntax node)
         {
             return SingleStatement(SyntaxFactory.LockStatement(
-                (ExpressionSyntax)node.SyncLockStatement.Expression.Accept(_expressionVisitor),
-                SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackNonNestedBlock()
+                (ExpressionSyntax) await node.SyncLockStatement.Expression.AcceptAsync(_expressionVisitor),
+                SyntaxFactory.Block(await ConvertStatements(node.Statements)).UnpackNonNestedBlock()
             ));
         }
 
-        public override SyntaxList<StatementSyntax> VisitUsingBlock(VBSyntax.UsingBlockSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitUsingBlock(VBSyntax.UsingBlockSyntax node)
         {
-            var statementSyntax = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor)));
+            var statementSyntax = SyntaxFactory.Block(await ConvertStatements(node.Statements));
             if (node.UsingStatement.Expression == null) {
                 StatementSyntax stmt = statementSyntax;
                 foreach (var v in node.UsingStatement.Variables.Reverse())
-                foreach (var declaration in CommonConversions.SplitVariableDeclarations(v).Variables.Reverse())
+                foreach (var declaration in (await CommonConversions.SplitVariableDeclarations(v)).Variables.Reverse())
                     stmt = SyntaxFactory.UsingStatement(declaration, null, stmt);
                 return SingleStatement(stmt);
             }
 
-            var expr = (ExpressionSyntax)node.UsingStatement.Expression.Accept(_expressionVisitor);
+            var expr = (ExpressionSyntax) await node.UsingStatement.Expression.AcceptAsync(_expressionVisitor);
             var unpackPossiblyNestedBlock = statementSyntax.UnpackPossiblyNestedBlock(); // Allow reduced indentation for multiple usings in a row
             return SingleStatement(SyntaxFactory.UsingStatement(null, expr, unpackPossiblyNestedBlock));
         }
 
-        public override SyntaxList<StatementSyntax> VisitWhileBlock(VBSyntax.WhileBlockSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitWhileBlock(VBSyntax.WhileBlockSyntax node)
         {
             return SingleStatement(SyntaxFactory.WhileStatement(
-                (ExpressionSyntax)node.WhileStatement.Condition.Accept(_expressionVisitor),
-                SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackNonNestedBlock()
+                (ExpressionSyntax) await node.WhileStatement.Condition.AcceptAsync(_expressionVisitor),
+                SyntaxFactory.Block(await ConvertStatements(node.Statements)).UnpackNonNestedBlock()
             ));
         }
 
-        public override SyntaxList<StatementSyntax> VisitDoLoopBlock(VBSyntax.DoLoopBlockSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitDoLoopBlock(VBSyntax.DoLoopBlockSyntax node)
         {
-            var statements = SyntaxFactory.Block(node.Statements.SelectMany(s => s.Accept(CommentConvertingVisitor))).UnpackNonNestedBlock();
+            var statements = SyntaxFactory.Block(await ConvertStatements(node.Statements)).UnpackNonNestedBlock();
 
             if (node.DoStatement.WhileOrUntilClause != null) {
                 var stmt = node.DoStatement.WhileOrUntilClause;
                 if (SyntaxTokenExtensions.IsKind(stmt.WhileOrUntilKeyword, VBasic.SyntaxKind.WhileKeyword))
                     return SingleStatement(SyntaxFactory.WhileStatement(
-                        (ExpressionSyntax)stmt.Condition.Accept(_expressionVisitor),
+                        (ExpressionSyntax) await stmt.Condition.AcceptAsync(_expressionVisitor),
                         statements
                     ));
                 return SingleStatement(SyntaxFactory.WhileStatement(
-                    ((ExpressionSyntax)stmt.Condition.Accept(_expressionVisitor)).InvertCondition(),
+                    ((ExpressionSyntax) await stmt.Condition.AcceptAsync(_expressionVisitor)).InvertCondition(),
                     statements
                 ));
             }
@@ -714,7 +720,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             ExpressionSyntax conditionExpression;
             bool isUntilStmt;
             if (whileOrUntilStmt != null) {
-                conditionExpression = (ExpressionSyntax)whileOrUntilStmt.Condition.Accept(_expressionVisitor);
+                conditionExpression = (ExpressionSyntax) await whileOrUntilStmt.Condition.AcceptAsync(_expressionVisitor);
                 isUntilStmt = SyntaxTokenExtensions.IsKind(whileOrUntilStmt.WhileOrUntilKeyword, VBasic.SyntaxKind.UntilKeyword);
             } else {
                 conditionExpression = SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
@@ -728,9 +734,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SingleStatement(SyntaxFactory.DoStatement(statements, conditionExpression));
         }
 
-        public override SyntaxList<StatementSyntax> VisitCallStatement(VBSyntax.CallStatementSyntax node)
+        public override async Task<SyntaxList<StatementSyntax>> VisitCallStatement(VBSyntax.CallStatementSyntax node)
         {
-            return SingleStatement((ExpressionSyntax) node.Invocation.Accept(_expressionVisitor));
+            return SingleStatement((ExpressionSyntax) await node.Invocation.AcceptAsync(_expressionVisitor));
         }
 
         SyntaxList<StatementSyntax> SingleStatement(StatementSyntax statement)
