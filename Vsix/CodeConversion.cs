@@ -51,6 +51,9 @@ namespace CodeConverter.VsExtension
         
         public async Task PerformProjectConversionAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects) where TLanguageConversion : ILanguageConversion, new()
         {
+            await _outputWindow.ClearAsync();
+            await _outputWindow.ForceShowOutputPaneAsync();
+
             await _joinableTaskFactory.RunAsync(async () => {
                 var convertedFiles = ConvertProjectUnhandledAsync<TLanguageConversion>(selectedProjects);
                 await WriteConvertedFilesAndShowSummaryAsync(await convertedFiles);
@@ -59,6 +62,9 @@ namespace CodeConverter.VsExtension
 
         public async Task PerformDocumentConversionAsync<TLanguageConversion>(string documentFilePath, Span selected) where TLanguageConversion : ILanguageConversion, new()
         {
+            await _outputWindow.ClearAsync();
+            await _outputWindow.ForceShowOutputPaneAsync();
+
             var conversionResult = await _joinableTaskFactory.RunAsync(async () => {
                 var result = await ConvertDocumentUnhandledAsync<TLanguageConversion>(documentFilePath, selected);
                 await WriteConvertedFilesAndShowSummaryAsync(new[] { result });
@@ -67,7 +73,7 @@ namespace CodeConverter.VsExtension
 
             if ((await GetOptions()).CopyResultToClipboardForSingleDocument) {
                 Clipboard.SetText(conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString());
-                await _outputWindow.WriteToOutputWindowAsync("Conversion result copied to clipboard.");
+                await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + "Conversion result copied to clipboard.");
                 await VisualStudioInteraction.ShowMessageBoxAsync(_serviceProvider, "Conversion result copied to clipboard.", conversionResult.GetExceptionsAsString(), false);
             }
 
@@ -179,7 +185,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                 output += $" contains errors{Environment.NewLine}    {indentedException}";
             }
 
-            await _outputWindow.WriteToOutputWindowAsync(output);
+            await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + output);
         }
 
         private string PathRelativeToSolutionDir(string path)
@@ -253,10 +259,24 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             await TaskScheduler.Default;
             var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects,
                     new Progress<ConversionProgress>(s => {
-                        _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + s.Message).ForgetNoThrow();
+                        _outputWindow.WriteToOutputWindowAsync(FormatForOutputWindow(s)).ForgetNoThrow();
                     }));
             
             return await solutionConverter.Convert();
+        }
+
+        private static string FormatForOutputWindow(ConversionProgress s)
+        {
+            string preMessage = Environment.NewLine;
+            switch (s.NestingLevel)
+            {
+                case 0:
+                    return preMessage + Environment.NewLine + s.Message;
+                case 1:
+                    return preMessage + "* " + s.Message;
+            }
+
+            return "";
         }
 
         public static bool IsCSFileName(string fileName)
