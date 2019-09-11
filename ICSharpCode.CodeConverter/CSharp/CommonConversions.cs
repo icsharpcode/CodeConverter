@@ -81,7 +81,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var declaredSymbol = _semanticModel.GetDeclaredSymbol(name);
                 var declaredSymbolType = declaredSymbol.GetSymbolType();
                 var requireExplicitType = requireExplicitTypeForAll || vbInitializerType != null && !Equals(declaredSymbolType, vbInitializerType);
-                var csTypeSyntax = (TypeSyntax)CsSyntaxGenerator.TypeExpression(declaredSymbolType);
+                var csTypeSyntax = (TypeSyntax)GetTypeSyntax(declaredSymbolType);
 
                 bool isField = declarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
 
@@ -164,7 +164,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var rankSpecifiersWithSizes = await ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds);
                 if (!rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).OfType<OmittedArraySizeExpressionSyntax>().Any())
                 {
-                    var arrayTypeSyntax = (ArrayTypeSyntax) CsSyntaxGenerator.TypeExpression(typeSymbol);
+                    var arrayTypeSyntax = (ArrayTypeSyntax) GetTypeSyntax(typeSymbol);
                     arrayTypeSyntax = arrayTypeSyntax.WithRankSpecifiers(rankSpecifiersWithSizes);
                     initializer = SyntaxFactory.ArrayCreationExpression(arrayTypeSyntax);
                 }
