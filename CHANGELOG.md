@@ -3,11 +3,8 @@ All notable changes to the code converter will be documented here.
 
 # 7.1.0 TBC/09/2019
 
-### API
-Deprecated `ConvertSingle(Compilation compilation, SyntaxTree syntaxTree, TextSpan selected,
-            ILanguageConversion languageConversion, Project containingProject = null)`
-Please instead use `ConvertSingle(Document document, TextSpan selected, ILanguageConversion languageConversion)`
-See the implementation of the deprecated method for help in migrating.
+### Vsix
+* Improve UI feedback during conversion
 
 ### VB -> C#
 * Improve conversion for inline functions
@@ -24,6 +21,19 @@ See the implementation of the deprecated method for help in migrating.
 
 ### C# -> VB
 * Improve conversion of collection initializers
+
+### API
+
+`ProjectConversion` methods now require an IProgress parameter, deprecated overloads without it:
+* `ProjectConversion.ConvertProject`
+* `ProjectConversion.ConvertProjectContents`
+* `ProjectConversion.ConvertProjectFile`
+
+Deprecated overload of `ProjectConversion.ConvertSingle` in favour of one requiring a `Document`
+
+
+Please instead use `ConvertSingle(Document document, TextSpan selected, ILanguageConversion languageConversion)`
+See the implementation of the deprecated method for help in migrating.
 
 # 7.0.0 01/08/2019
 * Compatible with Visual Studio ~15.5+
