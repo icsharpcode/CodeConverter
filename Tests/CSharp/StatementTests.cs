@@ -59,6 +59,35 @@ End Class", @"class TestClass
         }
 
         [Fact]
+        public async Task EnumAssignmentStatement()
+        {
+            await TestConversionVisualBasicToCSharp(@"Enum MyEnum
+    AMember
+End Enum
+
+Class TestClass
+    Private Sub TestMethod(v as String)
+        Dim b As MyEnum = MyEnum.Parse(GetType(MyEnum), v)
+        b = MyEnum.Parse(GetType(MyEnum), v)
+    End Sub
+End Class", @"using System;
+
+enum MyEnum
+{
+    AMember
+}
+
+class TestClass
+{
+    private void TestMethod(string v)
+    {
+        MyEnum b = (MyEnum)Enum.Parse(typeof(MyEnum), v);
+        b = (MyEnum)Enum.Parse(typeof(MyEnum), v);
+    }
+}");
+        }
+
+        [Fact]
         public async Task AssignmentStatementInDeclaration()
         {
             await TestConversionVisualBasicToCSharp(@"Class TestClass

@@ -27,6 +27,15 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _extraUsingDirectives;
         private readonly SyntaxGenerator _csSyntaxGenerator;
+        private static readonly Dictionary<string, string> ConversionsTypeFullNames = GetConversionsMethodsByTypeFullName();
+
+        private static Dictionary<string, string> GetConversionsMethodsByTypeFullName()
+        {
+            return typeof(Conversions).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(n => n.Name.StartsWith("To") && n.GetParameters().Length == 1 && n.ReturnType?.FullName != null)
+                .ToLookup(n => n.ReturnType.FullName, n => n.Name)
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.First());
+        }
 
         public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation,
             HashSet<string> extraUsingDirectives, SyntaxGenerator csSyntaxGenerator)
@@ -56,16 +65,22 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return addParenthesisIfNeeded ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
                 case TypeConversionKind.DestructiveCast:
                 case TypeConversionKind.NonDestructiveCast:
-                    var typeName = (TypeSyntax) _csSyntaxGenerator.TypeExpression(vbConvertedType);
-                    if (csNode is CastExpressionSyntax cast && cast.Type.IsEquivalentTo(typeName)) {
-                        return csNode;
-                    }
-                    return ValidSyntaxFactory.CastExpression(typeName, csNode);
+                    return CreateCast(csNode, vbConvertedType);
                 case TypeConversionKind.Conversion:
                     return AddExplicitConvertTo(vbNode, csNode, vbConvertedType);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+        }
+
+        private ExpressionSyntax CreateCast(ExpressionSyntax csNode, ITypeSymbol vbConvertedType)
+        {
+            var typeName = (TypeSyntax) _csSyntaxGenerator.TypeExpression(vbConvertedType);
+            if (csNode is CastExpressionSyntax cast && cast.Type.IsEquivalentTo(typeName)) {
+                return csNode;
+            }
+
+            return ValidSyntaxFactory.CastExpression(typeName, csNode);
         }
 
         public TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false)
@@ -180,15 +195,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return csNode;
             }
 
-            var method = typeof(Conversions).GetMethod($"To{displayType}");
-            if (method == null) {
-                throw new NotImplementedException($"Unimplemented conversion for {displayType}");
+            if (!ConversionsTypeFullNames.TryGetValue(type.GetFullMetadataName(), out var methodId)) {
+                return CreateCast(csNode, type);
             }
 
             // Need to use Conversions rather than Convert to match what VB does, eg. True -> -1
             _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
             var memberAccess = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                SyntaxFactory.IdentifierName("Conversions"), SyntaxFactory.IdentifierName($"To{displayType}"));
+                SyntaxFactory.IdentifierName("Conversions"), SyntaxFactory.IdentifierName(methodId));
             var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(csNode)));
             return SyntaxFactory.InvocationExpression(memberAccess, arguments);
         }
