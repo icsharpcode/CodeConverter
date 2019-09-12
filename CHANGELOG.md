@@ -3,6 +3,8 @@ All notable changes to the code converter will be documented here.
 
 # 7.1.0 TBC/09/2019
 
+No longer restricts converted files to solution directory
+
 ### Vsix
 * Improve UI feedback during conversion
 
@@ -11,7 +13,6 @@ All notable changes to the code converter will be documented here.
 * Use visual basic "Conversions" functions to match VB logic
 * Simplify output code by shortening some names
 * Improve out parameter conversion
-* No longer restricts converted files to solution directory
 * Improve iterator conversion
 * Improve with block conversion for value types
 * Improve for loop conversion initialization/bounds
