@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -27,9 +25,9 @@ namespace ICSharpCode.CodeConverter.CSharp
     internal class VisualBasicEqualityComparison
     {
         private readonly SemanticModel _semanticModel;
-        private readonly ConcurrentHashSet<string> _extraUsingDirectives;
+        private readonly HashSet<string> _extraUsingDirectives;
 
-        public VisualBasicEqualityComparison(SemanticModel semanticModel, ConcurrentHashSet<string> extraUsingDirectives)
+        public VisualBasicEqualityComparison(SemanticModel semanticModel, HashSet<string> extraUsingDirectives)
         {
             _extraUsingDirectives = extraUsingDirectives;
             _semanticModel = semanticModel;

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -42,7 +41,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly AdditionalInitializers _additionalInitializers;
         private readonly AdditionalLocals _additionalLocals = new AdditionalLocals();
         private uint _failedMemberConversionMarkerCount;
-        private readonly ConcurrentHashSet<string> _extraUsingDirectives = new ConcurrentHashSet<string>();
+        private readonly HashSet<string> _extraUsingDirectives = new HashSet<string>();
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
         private static HashSet<string> _accessedThroughMyClass;
         public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
