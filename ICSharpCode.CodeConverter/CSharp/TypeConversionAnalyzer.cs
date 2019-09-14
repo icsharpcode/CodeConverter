@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -25,7 +27,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private readonly CSharpCompilation _csCompilation;
         private readonly SemanticModel _semanticModel;
-        private readonly HashSet<string> _extraUsingDirectives;
+        private readonly ConcurrentHashSet<string> _extraUsingDirectives;
         private readonly SyntaxGenerator _csSyntaxGenerator;
         private static readonly Dictionary<string, string> ConversionsTypeFullNames = GetConversionsMethodsByTypeFullName();
 
@@ -38,7 +40,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation,
-            HashSet<string> extraUsingDirectives, SyntaxGenerator csSyntaxGenerator)
+            ConcurrentHashSet<string> extraUsingDirectives, SyntaxGenerator csSyntaxGenerator)
         {
             _semanticModel = semanticModel;
             _csCompilation = csCompilation;

@@ -41,7 +41,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public MethodBodyExecutableStatementVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
             CommentConvertingVisitorWrapper<CSharpSyntaxNode> expressionVisitor, CommonConversions commonConversions,
-            Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
+            Stack<ExpressionSyntax> withBlockLhs, ConcurrentHashSet<string> extraUsingDirectives,
             AdditionalLocals additionalLocals, MethodsWithHandles methodsWithHandles,
             TriviaConverter triviaConverter)
         {
