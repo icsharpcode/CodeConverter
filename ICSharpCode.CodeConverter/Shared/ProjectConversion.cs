@@ -18,8 +18,6 @@ namespace ICSharpCode.CodeConverter.Shared
     public class ProjectConversion
     {
         private readonly IReadOnlyCollection<Document> _documentsToConvert;
-        private readonly ConcurrentDictionary<string, string> _errors = new ConcurrentDictionary<string, string>();
-        private readonly Dictionary<string, Document> _firstPassResults = new Dictionary<string, Document>();
         private readonly Project _project;
         private readonly ILanguageConversion _languageConversion;
         private readonly bool _showCompilationErrors =
@@ -101,45 +99,49 @@ namespace ICSharpCode.CodeConverter.Shared
         private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(
             ProjectConversion projectConversion, IProgress<ConversionProgress> progress)
         {
-            var pathNodePairs = await Task.WhenAll(await projectConversion.Convert(progress));
-            var results = pathNodePairs.Select(pathNodePair => {
-                var errors = projectConversion._errors.TryRemove(pathNodePair.Path, out var nonFatalException)
-                    ? new[] {nonFatalException}
-                    : new string[0];
-                return new ConversionResult(pathNodePair.Node.ToFullString())
-                    {SourcePathOrNull = pathNodePair.Path, Exceptions = errors};
-            });
+            var pathNodePairs = await projectConversion.Convert(progress);
+            var results = pathNodePairs.Select(pathNodePair => new ConversionResult(pathNodePair.Node.ToFullString())
+                {SourcePathOrNull = pathNodePair.Path, Exceptions = pathNodePair.Errors.ToList() });
 
-            await projectConversion.AddProjectWarnings();
+            var warnings = await projectConversion.GetProjectWarnings();
+            if (warnings != null) {
+                string projectFilePath = projectConversion._project.FilePath;
+                string projectDir = projectFilePath != null ? Path.GetDirectoryName(projectFilePath) : projectConversion._project.AssemblyName;
+                var warningPath = Path.Combine(projectDir, "ConversionWarnings.txt");
+                results = results.Concat(new[]{new ConversionResult { SourcePathOrNull = warningPath, Exceptions = new[] { warnings } }});
+            }
 
-            return results.Concat(projectConversion._errors
-                .Select(error => new ConversionResult {SourcePathOrNull = error.Key, Exceptions = new[] {error.Value}})
-            );
+            return results;
         }
 
-        private async Task<IEnumerable<Task<(string Path, SyntaxNode Node)>>> Convert(
+        private async Task<(string Path, SyntaxNode Node, string[] Errors)[]> Convert(
             IProgress<ConversionProgress> progress)
         {
             progress.Report(new ConversionProgress("Phase 1 of 2:"));
             var strProgress = new Progress<string>(m => progress.Report(new ConversionProgress(m, 1)));
-            await FirstPass(strProgress);
+            var firstPassResults = await _documentsToConvert.ParallelSelectAsync(d => FirstPass(d, strProgress), Env.MaxDop);
             progress.Report(new ConversionProgress("Phase 2 of 2:"));
-            return SecondPass(strProgress);
+            var secondPass = await firstPassResults.ParallelSelectAsync(r => SecondPass(r, strProgress), Env.MaxDop);
+            return secondPass;
         }
 
-        private IEnumerable<Task<(string Path, SyntaxNode Node)>> SecondPass(IProgress<string> progress)
+        private async Task<(string Path, SyntaxNode Node, string[] Errors)> SecondPass(
+            (string Path, Document Doc, string[] Errors) firstPassResult, IProgress<string> progress)
         {
-            foreach (var firstPassResult in _firstPassResults) {
-                progress.Report(firstPassResult.Key);
-                yield return SingleSecondPassHandled(firstPassResult);
+            if (firstPassResult.Doc != null) {
+                progress.Report(firstPassResult.Path);
+                return await SingleSecondPassHandled(firstPassResult);
             }
+
+            return (firstPassResult.Path, null, firstPassResult.Errors);
         }
 
-        private async Task<(string Key, SyntaxNode singleSecondPass)> SingleSecondPassHandled(KeyValuePair<string, Document> firstPassResult)
+        private async Task<(string treeFilePath, SyntaxNode convertedDoc, string[] errors)> SingleSecondPassHandled((string treeFilePath, Document convertedDoc, string[] errors) firstPassResult)
         {
             SyntaxNode selectedNode = null;
+            string[] errors = new string[0];
             try {
-                var document = await firstPassResult.Value.WithSimplifiedSyntaxRootAsync();
+                var document = await firstPassResult.convertedDoc.WithSimplifiedSyntaxRootAsync();
                 if (_returnSelectedNode) {
                     selectedNode = await GetSelectedNode(document);
                     selectedNode = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
@@ -149,47 +151,33 @@ namespace ICSharpCode.CodeConverter.Shared
                     var convertedDoc = document.WithSyntaxRoot(selectedNode);
                     selectedNode = await _languageConversion.SingleSecondPass(convertedDoc);
                 }
+            } catch (Exception e) {
+                errors = new[] {e.ToString()};
+            }
+
+            return (firstPassResult.treeFilePath, selectedNode ?? await firstPassResult.convertedDoc.GetSyntaxRootAsync(), firstPassResult.errors.Concat(errors).ToArray());
+        }
+
+        private async Task<string> GetProjectWarnings()
+        {
+            if (!_showCompilationErrors) return null;
+            return await _languageConversion.GetWarningsOrNull();
+        }
+
+        private async Task<(string treeFilePath, Document convertedDoc, string[] errors)> FirstPass(Document document, IProgress<string> progress)
+        {
+            var treeFilePath = document.FilePath ?? "";
+            progress.Report(treeFilePath);
+            try {
+                var convertedDoc = await _languageConversion.SingleFirstPass(document);
+                var errorAnnotations = (await convertedDoc.GetSyntaxRootAsync()).GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
+                string[] errors = errorAnnotations.Select(a => a.Data).ToArray();
+
+                return (treeFilePath, convertedDoc, errors);
             }
             catch (Exception e)
             {
-                _errors.TryAdd(firstPassResult.Key, e.ToString());
-            }
-
-            return (firstPassResult.Key, selectedNode ?? await firstPassResult.Value.GetSyntaxRootAsync());
-        }
-
-        private async Task AddProjectWarnings()
-        {
-            if (!_showCompilationErrors) return;
-
-            var nonFatalWarningsOrNull = await _languageConversion.GetWarningsOrNull();
-            if (!string.IsNullOrWhiteSpace(nonFatalWarningsOrNull))
-            {
-                var warningsDescription = Path.Combine(_project.AssemblyName, "ConversionWarnings.txt");
-                _errors.TryAdd(warningsDescription, nonFatalWarningsOrNull);
-            }
-        }
-
-        private async Task FirstPass(IProgress<string> progress)
-        {
-            foreach (var document in _documentsToConvert)
-            {
-                var treeFilePath = document.FilePath ?? "";
-                progress.Report(treeFilePath);
-                try {
-                    var convertedDoc = await _languageConversion.SingleFirstPass(document);
-                    _firstPassResults.Add(treeFilePath, convertedDoc);
-                    var errorAnnotations = (await convertedDoc.GetSyntaxRootAsync()).GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
-                    if (errorAnnotations.Any()) {
-                        _errors.TryAdd(treeFilePath,
-                            string.Join(Environment.NewLine, errorAnnotations.Select(a => a.Data))
-                        );
-                    }
-                }
-                catch (Exception e)
-                {
-                    _errors.TryAdd(treeFilePath, e.ToString());
-                }
+                return (treeFilePath, null, new[]{e.ToString()});
             }
         }
 

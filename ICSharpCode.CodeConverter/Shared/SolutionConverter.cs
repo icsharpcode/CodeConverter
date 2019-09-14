@@ -52,7 +52,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private Task<IEnumerable<ConversionResult>[]> ConvertProjects()
         {
             var projectFileReplacementRegexes = _languageConversion.GetProjectFileReplacementRegexes().Concat(_languageConversion.GetProjectTypeGuidMappings());
-            return Task.WhenAll(_projectsToConvert.Select(project => ConvertProject(projectFileReplacementRegexes, project)));
+            return _projectsToConvert.SelectAsync(project => ConvertProject(projectFileReplacementRegexes, project));
         }
 
         private async Task<IEnumerable<ConversionResult>> ConvertProject(IEnumerable<(string, string)> projectFileReplacementRegexes, Project project)

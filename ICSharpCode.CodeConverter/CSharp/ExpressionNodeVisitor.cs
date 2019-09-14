@@ -377,7 +377,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitObjectMemberInitializer(VBasic.Syntax.ObjectMemberInitializerSyntax node)
         {
-            var initializers = await Task.WhenAll(node.Initializers.Select(initializer => initializer.AcceptAsync(TriviaConvertingVisitor)));
+            var initializers = await node.Initializers.SelectAsync(initializer => initializer.AcceptAsync(TriviaConvertingVisitor));
             var memberDeclaratorSyntaxs = SyntaxFactory.SeparatedList(
                 initializers.Cast<ExpressionSyntax>());
             return SyntaxFactory.InitializerExpression(SyntaxKind.ObjectInitializerExpression, memberDeclaratorSyntaxs);
@@ -385,7 +385,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitAnonymousObjectCreationExpression(VBasic.Syntax.AnonymousObjectCreationExpressionSyntax node)
         {
-            var initializers = await Task.WhenAll(node.Initializer.Initializers.Select(initializer => initializer.AcceptAsync(TriviaConvertingVisitor)));
+            var initializers = await node.Initializer.Initializers.SelectAsync(initializer => initializer.AcceptAsync(TriviaConvertingVisitor));
             var memberDeclaratorSyntaxs = SyntaxFactory.SeparatedList(
                 initializers.Cast<AnonymousObjectMemberDeclaratorSyntax>());
             return SyntaxFactory.AnonymousObjectCreationExpression(memberDeclaratorSyntaxs);
@@ -428,7 +428,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                                   || node.Parent is VBasic.Syntax.CollectionInitializerSyntax
                                                   || node.Parent is VBasic.Syntax.ArrayCreationExpressionSyntax;
             var initializerType = isExplicitCollectionInitializer ? SyntaxKind.CollectionInitializerExpression : SyntaxKind.ArrayInitializerExpression;
-            var initializers = (await Task.WhenAll(node.Initializers.Select(i => i.AcceptAsync(TriviaConvertingVisitor)))).Cast<ExpressionSyntax>();
+            var initializers = (await node.Initializers.SelectAsync(i => i.AcceptAsync(TriviaConvertingVisitor))).Cast<ExpressionSyntax>();
             var initializer = SyntaxFactory.InitializerExpression(initializerType, SyntaxFactory.SeparatedList(initializers));
             return isExplicitCollectionInitializer
                 ? initializer

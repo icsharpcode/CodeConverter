@@ -1,5 +1,7 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.FindSymbols;
@@ -12,13 +14,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static async Task<bool?> HasWriteUsagesAsync(this Solution solution, ISymbol symbol)
         {
             var references = await SymbolFinder.FindReferencesAsync(symbol, solution);
-            var operationsReferencingAsync = references.SelectMany(r => r.Locations).Select(async l => {
+            var operationsReferencing = await references.SelectMany(r => r.Locations).SelectAsync(async l => {
                 var semanticModel = await l.Document.GetSemanticModelAsync();
                 var syntaxRoot = await l.Document.GetSyntaxRootAsync();
                 var syntaxNode = syntaxRoot.FindNode(l.Location.SourceSpan);
                 return semanticModel.GetOperation(syntaxNode);
             });
-            var operationsReferencing = await Task.WhenAll(operationsReferencingAsync);
             if (operationsReferencing.Any(IsWriteUsage)) return true;
             if (symbol.GetResultantVisibility() == SymbolVisibility.Public) return null;
             return false;
