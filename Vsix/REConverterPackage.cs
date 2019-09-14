@@ -130,11 +130,6 @@ namespace CodeConverter.VsExtension
                 .SkipWhile(a => a == GetType().Assembly);
         }
 
-        public async Task<ConverterOptionsPage> GetOptionsAsync()
-        {
-            return await this.GetDialogPageAsync<ConverterOptionsPage>();
-        }
-
         /// <summary>
         /// Initialization of the package; this method is called right after the package is sited, so this is the place
         /// where you can put all the initialization code that rely on services provided by VisualStudio.
@@ -144,7 +139,7 @@ namespace CodeConverter.VsExtension
             var oleMenuCommandService = await this.GetServiceAsync<IMenuCommandService, OleMenuCommandService>();
             await JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var codeConversion = await CodeConversion.CreateAsync(this, VsWorkspace, GetOptionsAsync);
+            var codeConversion = await CodeConversion.CreateAsync(this, VsWorkspace, this.GetDialogPageAsync<ConverterOptionsPage>);
             ConvertCSToVBCommand.Initialize(this, oleMenuCommandService, codeConversion);
             ConvertVBToCSCommand.Initialize(this, oleMenuCommandService, codeConversion);
 
