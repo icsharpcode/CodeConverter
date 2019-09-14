@@ -57,11 +57,11 @@ namespace CodeConverter.VsExtension
         expression: "DotVb", termNames: new[] { "DotVb" },
         termValues: new[] { "HierSingleSelectionName:.vb$"})]
     [ProvideUIContextRule(CsProjMenuVisibilityGuid, name: nameof(CsProjMenuVisibilityGuid),
-        expression: "DotCsProj | DotSln", termNames: new[] { "DotCsProj", "DotSln" },
-        termValues: new[] { "HierSingleSelectionName:.csproj$", "HierSingleSelectionName:.sln$" })]
+        expression: "DotCsProj", termNames: new[] { "DotCsProj" },
+        termValues: new[] { "HierSingleSelectionName:.csproj$" })]
     [ProvideUIContextRule(VbProjMenuVisibilityGuid, name: nameof(VbProjMenuVisibilityGuid),
-        expression: "DotVbProj | DotSln", termNames: new[] { "DotVbProj", "DotSln" },
-        termValues: new[] { "HierSingleSelectionName:.vbproj$", "HierSingleSelectionName:.sln$" })]
+        expression: "DotVbProj", termNames: new[] { "DotVbProj" },
+        termValues: new[] { "HierSingleSelectionName:.vbproj$" })]
     public sealed class REConverterPackage : AsyncPackage
     {
         public VisualStudioWorkspace VsWorkspace {
