@@ -130,7 +130,7 @@ namespace CodeConverter.Tests.TestRunners
                 return new[]{CompilationWarnings.WarningsForCompilation(c, c.AssemblyName)}.Concat(
                     valueDiagnostics.Where(d => d.Kind > WorkspaceDiagnosticKind.Warning).Select(d => d.Message));
             }, Env.MaxDop);
-            var errorString = string.Join("\r\n", errors.Where(w => w != null));
+            var errorString = string.Join("\r\n", errors.SelectMany(w => w).Where(w => w != null));
             Assert.True(errorString == "", errorString);
         }
 
