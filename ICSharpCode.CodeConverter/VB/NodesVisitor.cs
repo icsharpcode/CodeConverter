@@ -6,6 +6,7 @@ using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -39,10 +40,13 @@ using static ICSharpCode.CodeConverter.VB.SyntaxKindExtensions;
 
 namespace ICSharpCode.CodeConverter.VB
 {
-    class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
+    internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     {
+        private readonly Document _document;
+        private readonly CS.CSharpCompilation _compilation;
         readonly SemanticModel _semanticModel;
-        readonly VisualBasicCompilationOptions _options;
+        private readonly VisualBasicCompilation _vbViewOfCsSymbols;
+        private readonly SyntaxGenerator _vbSyntaxGenerator;
 
         readonly List<ImportsStatementSyntax> _allImports = new List<ImportsStatementSyntax>();
 
@@ -61,28 +65,20 @@ namespace ICSharpCode.CodeConverter.VB
         {
             foreach (var import in allImports.GroupBy(c => c.ToString()).Select(g => g.First()))
                 foreach (var clause in import.ImportsClauses) {
-                    if (ImportIsNecessary(clause))
                         yield return SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList(clause));
                 }
         }
 
-        bool ImportIsNecessary(ImportsClauseSyntax import)
+        public NodesVisitor(Document document, CS.CSharpCompilation compilation, SemanticModel semanticModel,
+            VisualBasicCompilation vbViewOfCsSymbols, SyntaxGenerator vbSyntaxGenerator)
         {
-            if (import is SimpleImportsClauseSyntax) {
-                var i = (SimpleImportsClauseSyntax)import;
-                if (i.Alias != null)
-                    return true;
-                return _options?.GlobalImports.Any(g => i.ToString().Equals(g.Clause.ToString(), StringComparison.OrdinalIgnoreCase)) != true;
-            }
-            return true;
-        }
-
-        public NodesVisitor(SemanticModel semanticModel, VisualBasicCompilationOptions compilationOptions = null)
-        {
+            _document = document;
+            _compilation = compilation;
             _semanticModel = semanticModel;
+            _vbViewOfCsSymbols = vbViewOfCsSymbols;
+            _vbSyntaxGenerator = vbSyntaxGenerator;
             TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
             _commonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
-            _options = compilationOptions;
             _cSharpHelperMethodDefinition = new CSharpHelperMethodDefinition();
         }
 
@@ -106,9 +102,11 @@ namespace ICSharpCode.CodeConverter.VB
             var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => SyntaxFactory.AttributesStatement(SyntaxFactory.SingletonList((AttributeListSyntax)a.Accept(TriviaConvertingVisitor)))));
             var members = SyntaxFactory.List(node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor)));
 
+            //TODO Add Usings from compilationoptions
+            var importsStatementSyntaxs = SyntaxFactory.List(TidyImportsList(_allImports));
             return SyntaxFactory.CompilationUnit(
                 SyntaxFactory.List<OptionStatementSyntax>(),
-                SyntaxFactory.List(TidyImportsList(_allImports)),
+                importsStatementSyntaxs,
                 attributes,
                 members
             );

@@ -38,7 +38,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public async Task<Document> SingleFirstPass(Document document)
         {
-            var convertedTree = await CSharpConverter.ConvertCompilationTree(document);
+            var convertedTree = await CSharpConverter.ConvertCompilationTree(document, _vbViewOfCsSymbols, _vbReferenceProject);
             var convertedDocument = _convertedVbProject.AddDocument(document.FilePath, convertedTree);
             _convertedVbProject = convertedDocument.Project;
             return convertedDocument;
