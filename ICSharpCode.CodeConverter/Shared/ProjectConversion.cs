@@ -17,7 +17,6 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     public class ProjectConversion
     {
-        private readonly byte _maxDop = (byte) Math.Min(Math.Max(Environment.ProcessorCount, byte.MinValue + 1), byte.MaxValue);
         private readonly IReadOnlyCollection<Document> _documentsToConvert;
         private readonly Project _project;
         private readonly ILanguageConversion _languageConversion;
@@ -120,9 +119,9 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             progress.Report(new ConversionProgress("Phase 1 of 2:"));
             var strProgress = new Progress<string>(m => progress.Report(new ConversionProgress(m, 1)));
-            var firstPassResults = await _documentsToConvert.SelectAsync(d => FirstPass(d, strProgress), _maxDop);
+            var firstPassResults = await _documentsToConvert.ParallelSelectAsync(d => FirstPass(d, strProgress), Env.MaxDop);
             progress.Report(new ConversionProgress("Phase 2 of 2:"));
-            var secondPass = await firstPassResults.SelectAsync(r => SecondPass(r, strProgress), _maxDop);
+            var secondPass = await firstPassResults.ParallelSelectAsync(r => SecondPass(r, strProgress), Env.MaxDop);
             return secondPass;
         }
 

@@ -125,12 +125,12 @@ namespace CodeConverter.Tests.TestRunners
         private static async Task AssertMSBuildIsWorkingAndProjectsValid(
             ImmutableList<WorkspaceDiagnostic> valueDiagnostics, IEnumerable<Project> projectsToConvert)
         {
-            var compilations = await Task.WhenAll(projectsToConvert.Select(x => x.GetCompilationAsync()));
-            IEnumerable<string> errors = compilations
-                .Select(c => CompilationWarnings.WarningsForCompilation(c, c.AssemblyName)).Concat(
-                    valueDiagnostics.Where(d => d.Kind > WorkspaceDiagnosticKind.Warning).Select(d => d.Message)
-                ).Where(w => w != null);
-            var errorString = string.Join("\r\n", errors);
+            var errors = await projectsToConvert.ParallelSelectAsync(async x => {
+                var c = await x.GetCompilationAsync();
+                return new[]{CompilationWarnings.WarningsForCompilation(c, c.AssemblyName)}.Concat(
+                    valueDiagnostics.Where(d => d.Kind > WorkspaceDiagnosticKind.Warning).Select(d => d.Message));
+            }, Env.MaxDop);
+            var errorString = string.Join("\r\n", errors.Where(w => w != null));
             Assert.True(errorString == "", errorString);
         }
 

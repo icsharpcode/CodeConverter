@@ -35,7 +35,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static async Task<TSpecific[]> AcceptAsync<TGeneral, TSpecific>(this IEnumerable<SyntaxNode> nodes, CommentConvertingVisitorWrapper<TGeneral> visitorWrapper) where TGeneral : SyntaxNode where TSpecific : TGeneral
         {
             if (nodes == null) return default;
-            return await Task.WhenAll(nodes.Select(async n => (TSpecific) await n.AcceptAsync(visitorWrapper)));
+            return await nodes.SelectAsync(async n => (TSpecific) await n.AcceptAsync(visitorWrapper));
         }
     }
 }
