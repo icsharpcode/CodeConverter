@@ -25,7 +25,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private Project _convertedCsProject;
         /// <summary>
         /// It's really hard to change simplifier options since everything is done on the Object hashcode of internal fields.
-        /// I wanted to avoid saying "default" instead of "default(string)" because I don't want to force a later language version on people in such a general case.
+        /// I wanted to avoid saying "default" instead of "default(string)" because I don't want to force a later language version on people in such a common case.
         /// This will have that effect, but also has the possibility of failing to interpret code output by this converter.
         /// If this has such unintended effects in future, investigate the code that loads options from an editorconfig file
         /// </summary>
@@ -47,9 +47,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         public async Task<Document> SingleFirstPass(Document document)
         {
             var converted = await VisualBasicConverter.ConvertCompilationTree(document, _csharpViewOfVbSymbols, _csharpReferenceProject);
-            var convertedDocument = _convertedCsProject.AddDocument(document.FilePath, converted);
-            _convertedCsProject = convertedDocument.Project;
-            return convertedDocument;
+            lock (_convertedCsProject) {
+                var convertedDocument = _convertedCsProject.AddDocument(document.FilePath, converted);
+                _convertedCsProject = convertedDocument.Project;
+                return convertedDocument;
+            }
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
