@@ -19,7 +19,7 @@
     </Groups>
 
     <Buttons>
-      <!-- C# to VB convertion commands -->
+      <!-- C# to VB conversion commands -->
       <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBCommandId" type="Button" priority="0x0300">
         <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterMenuGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
@@ -88,6 +88,16 @@
       </Button>
     </Buttons>
   </Commands>
+  <VisibilityConstraints>
+    <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBCommandId" context="CsEditorMenuVisibilityGuid" />
+    <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSCommandId" context="VbEditorMenuVisibilityGuid" />
+    <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBCtxCommandId" context="CsEditorMenuVisibilityGuid" />
+    <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSCtxCommandId" context="VbEditorMenuVisibilityGuid" />
+    <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBProjectItemCtxCommandId" context="CsFileMenuVisibilityGuid" />
+    <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSProjectItemCtxCommandId" context="VbFileMenuVisibilityGuid" />
+    <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBSolutionOrProjectCtxCommandId" context="CsProjMenuVisibilityGuid" />
+    <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSSolutionOrProjectCtxCommandId" context="VbProjMenuVisibilityGuid" />
+  </VisibilityConstraints>
   <CommandPlacements>
     <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" priority="0x0300">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_PROJNODE"/>
@@ -100,8 +110,14 @@
     </CommandPlacement>
   </CommandPlacements>
   <Symbols>
-    <!-- This is the package guid. -->
     <GuidSymbol name="guidREConverterPackage" value="{60378c8b-d75c-4fb2-aa2b-58609d67f886}" />
+
+    <GuidSymbol name="CsEditorMenuVisibilityGuid" value="{64448be3-dcfe-467c-8659-408d672a9909}" />
+    <GuidSymbol name="VbEditorMenuVisibilityGuid" value="{8eb86734-0b20-4986-9f20-9ed22824d0e2}" />
+    <GuidSymbol name="CsFileMenuVisibilityGuid" value="{e32d529f-034b-4fe8-8e27-33a8ecf8f9ca}" />
+    <GuidSymbol name="VbFileMenuVisibilityGuid" value="{207ed41c-1bf3-4e92-ad4f-f910b461acfc}" />
+    <GuidSymbol name="CsProjMenuVisibilityGuid" value="{045a3ed1-4cb2-4c47-95be-0d99948e854f}" />
+    <GuidSymbol name="VbProjMenuVisibilityGuid" value="{11700acc-38d7-4fc1-88dd-9e316aa5d6d5}" />
 
     <!-- This is the guid used to group the menu commands together -->
     <GuidSymbol name="guidREConverterCommandPackageCmdSet" value="{a3378a21-e939-40c9-9e4b-eb0cec7b7854}">

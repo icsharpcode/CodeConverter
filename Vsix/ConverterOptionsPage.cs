@@ -3,7 +3,7 @@ using Microsoft.VisualStudio.Shell;
 
 namespace CodeConverter.VsExtension
 {
-    public class ConverterOptionsPage : DialogPage
+    internal sealed class ConverterOptionsPage : DialogPage
     {
         [Category("Settings")]
         [DisplayName("Copy result to clipboard")]

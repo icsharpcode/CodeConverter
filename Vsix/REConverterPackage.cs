@@ -44,6 +44,24 @@ namespace CodeConverter.VsExtension
     [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionOpening_string, PackageAutoLoadFlags.BackgroundLoad)]
     [Guid(PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
+    [ProvideUIContextRule(CsEditorMenuVisibilityGuid, name: nameof(CsEditorMenuVisibilityGuid),
+        expression: "Cs", termNames: new[] { "Cs" },
+        termValues: new[] { "ActiveEditorContentType:CSharp" })]
+    [ProvideUIContextRule(VbEditorMenuVisibilityGuid, name: nameof(VbEditorMenuVisibilityGuid),
+        expression: "Vb", termNames: new[] { "Vb" },
+        termValues: new[] { "ActiveEditorContentType:Basic" })]
+    [ProvideUIContextRule(CsFileMenuVisibilityGuid, name: nameof(CsFileMenuVisibilityGuid),
+        expression: "DotCs", termNames: new[] { "DotCs" },
+        termValues: new[] { "HierSingleSelectionName:.cs$"})]
+    [ProvideUIContextRule(VbFileMenuVisibilityGuid, name: nameof(VbFileMenuVisibilityGuid),
+        expression: "DotVb", termNames: new[] { "DotVb" },
+        termValues: new[] { "HierSingleSelectionName:.vb$"})]
+    [ProvideUIContextRule(CsProjMenuVisibilityGuid, name: nameof(CsProjMenuVisibilityGuid),
+        expression: "DotCsProj | DotSln", termNames: new[] { "DotCsProj", "DotSln" },
+        termValues: new[] { "HierSingleSelectionName:.csproj$", "HierSingleSelectionName:.sln$" })]
+    [ProvideUIContextRule(VbProjMenuVisibilityGuid, name: nameof(VbProjMenuVisibilityGuid),
+        expression: "DotVbProj | DotSln", termNames: new[] { "DotVbProj", "DotSln" },
+        termValues: new[] { "HierSingleSelectionName:.vbproj$", "HierSingleSelectionName:.sln$" })]
     public sealed class REConverterPackage : AsyncPackage
     {
         public VisualStudioWorkspace VsWorkspace {
@@ -57,6 +75,13 @@ namespace CodeConverter.VsExtension
         /// ConvertCSToVBCommandPackage GUID string.
         /// </summary>
         public const string PackageGuidString = "60378c8b-d75c-4fb2-aa2b-58609d67f886";
+
+        public const string CsEditorMenuVisibilityGuid = "64448be3-dcfe-467c-8659-408d672a9909";
+        public const string VbEditorMenuVisibilityGuid = "8eb86734-0b20-4986-9f20-9ed22824d0e2";
+        public const string CsFileMenuVisibilityGuid = "e32d529f-034b-4fe8-8e27-33a8ecf8f9ca";
+        public const string VbFileMenuVisibilityGuid = "207ed41c-1bf3-4e92-ad4f-f910b461acfc";
+        public const string CsProjMenuVisibilityGuid = "045a3ed1-4cb2-4c47-95be-0d99948e854f";
+        public const string VbProjMenuVisibilityGuid = "11700acc-38d7-4fc1-88dd-9e316aa5d6d5";
 
         /// <summary>
         /// Initializes a new instance of package class.
