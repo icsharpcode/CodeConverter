@@ -84,7 +84,7 @@ namespace CodeConverter.VsExtension
                 // Command in main menu
                 var menuCommandId = new CommandID(CommandSet, MainMenuCommandId);
                 var menuItem = package.CreateCommand(CodeEditorMenuItemCallbackAsync, menuCommandId);
-                menuItem.BeforeQueryStatus += CodeEditorMenuItem_BeforeQueryStatusAsync;
+                menuItem.BeforeQueryStatus += MainEditMenuItem_BeforeQueryStatusAsync;
                 commandService.AddCommand(menuItem);
 
                 // Command in code editor's context menu
@@ -113,11 +113,19 @@ namespace CodeConverter.VsExtension
             }
         }
 
+        private async Task MainEditMenuItem_BeforeQueryStatusAsync(object sender, EventArgs e)
+        {
+            if (sender is OleMenuCommand menuItem) {
+                var selectionInCurrentViewAsync = await VisualStudioInteraction.GetFirstSelectedSpanInCurrentViewAsync(ServiceProvider, CodeConversion.IsVBFileName, true);
+                menuItem.Visible = selectionInCurrentViewAsync != null;
+            }
+        }
+
         private async Task CodeEditorMenuItem_BeforeQueryStatusAsync(object sender, EventArgs e)
         {
             if (sender is OleMenuCommand menuItem) {
-                var selectionInCurrentViewAsync = await VisualStudioInteraction.GetFirstSelectedSpanInCurrentViewAsync(ServiceProvider, CodeConversion.IsVBFileName);
-                menuItem.Visible = selectionInCurrentViewAsync?.IsEmpty == false;
+                var selectionInCurrentViewAsync = await VisualStudioInteraction.GetFirstSelectedSpanInCurrentViewAsync(ServiceProvider, CodeConversion.IsVBFileName, false);
+                menuItem.Visible = selectionInCurrentViewAsync != null;
             }
         }
 
@@ -146,7 +154,7 @@ namespace CodeConverter.VsExtension
 
         private async Task CodeEditorMenuItemCallbackAsync(object sender, EventArgs e)
         {
-            var (filePath, selection) = await VisualStudioInteraction.GetCurrentFilenameAndSelectionAsync(ServiceProvider, CodeConversion.IsVBFileName);
+            var (filePath, selection) = await VisualStudioInteraction.GetCurrentFilenameAndSelectionAsync(ServiceProvider, CodeConversion.IsVBFileName, false);
             if (filePath != null && selection != null) {
                 await ConvertDocumentAsync(filePath, selection.Value);
             }  

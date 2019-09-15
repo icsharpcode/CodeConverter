@@ -124,21 +124,22 @@ namespace CodeConverter.VsExtension
         }
 
         public static async Task<Span?> GetFirstSelectedSpanInCurrentViewAsync(IAsyncServiceProvider serviceProvider,
-            Func<string, bool> predicate)
+            Func<string, bool> predicate, bool mustHaveFocus)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            var span = await FirstSelectedSpanInCurrentViewPrivateAsync(serviceProvider, predicate);
+            var span = await FirstSelectedSpanInCurrentViewPrivateAsync(serviceProvider, predicate, mustHaveFocus);
             await TaskScheduler.Default;
             return span;
         }
 
-        public static async Task<(string FilePath, Span? Selection)> GetCurrentFilenameAndSelectionAsync(IAsyncServiceProvider asyncServiceProvider, Func<string, bool> predicate)
+        public static async Task<(string FilePath, Span? Selection)> GetCurrentFilenameAndSelectionAsync(
+            IAsyncServiceProvider asyncServiceProvider, Func<string, bool> predicate, bool mustHaveFocus)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var span = await GetFirstSelectedSpanInCurrentViewAsync(asyncServiceProvider, predicate); ;
+            var span = await GetFirstSelectedSpanInCurrentViewAsync(asyncServiceProvider, predicate, mustHaveFocus); ;
             var currentViewHostAsync =
-                await GetCurrentViewHostAsync(asyncServiceProvider, predicate);
+                await GetCurrentViewHostAsync(asyncServiceProvider, predicate, mustHaveFocus);
             var textDocumentAsync = await currentViewHostAsync.GetTextDocumentAsync();
             var result = (textDocumentAsync?.FilePath, span);
 
@@ -206,16 +207,15 @@ namespace CodeConverter.VsExtension
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
         }
 
-        private static async Task<IWpfTextViewHost> GetCurrentViewHostAsync(IAsyncServiceProvider serviceProvider)
+        private static async Task<IWpfTextViewHost> GetCurrentViewHostAsync(IAsyncServiceProvider serviceProvider, bool mustHaveFocus)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             var txtMgr = await serviceProvider.GetServiceAsync<SVsTextManager, IVsTextManager>();
-            int mustHaveFocus = 1;
             if (txtMgr == null) {
                 return null;
             }
 
-            txtMgr.GetActiveView(mustHaveFocus, null, out IVsTextView vTextView);
+            txtMgr.GetActiveView(mustHaveFocus ? 1 : 0, null, out IVsTextView vTextView);
             if (!(vTextView is IVsUserData userData)) {
                 return null;
             }
@@ -226,17 +226,18 @@ namespace CodeConverter.VsExtension
             return holder as IWpfTextViewHost;
         }
 
-        private static async Task<Span?> FirstSelectedSpanInCurrentViewPrivateAsync(IAsyncServiceProvider serviceProvider,
-            Func<string, bool> predicate)
+        private static async Task<Span?> FirstSelectedSpanInCurrentViewPrivateAsync(
+            IAsyncServiceProvider serviceProvider,
+            Func<string, bool> predicate, bool mustHaveFocus)
         {
-            var selection = await GetSelectionInCurrentViewAsync(serviceProvider, predicate);
+            var selection = await GetSelectionInCurrentViewAsync(serviceProvider, predicate, mustHaveFocus);
             return selection?.SelectedSpans.First().Span;
         }
 
         private static async Task<ITextSelection> GetSelectionInCurrentViewAsync(IAsyncServiceProvider serviceProvider,
-            Func<string, bool> predicate)
+            Func<string, bool> predicate, bool mustHaveFocus)
         {
-            IWpfTextViewHost viewHost = await GetCurrentViewHostAsync(serviceProvider, predicate);
+            IWpfTextViewHost viewHost = await GetCurrentViewHostAsync(serviceProvider, predicate, mustHaveFocus);
             if (viewHost == null)
                 return null;
 
@@ -244,9 +245,9 @@ namespace CodeConverter.VsExtension
         }
 
         private static async Task<IWpfTextViewHost> GetCurrentViewHostAsync(IAsyncServiceProvider serviceProvider,
-            Func<string, bool> predicate)
+            Func<string, bool> predicate, bool mustHaveFocus)
         {
-            IWpfTextViewHost viewHost = await GetCurrentViewHostAsync(serviceProvider);
+            IWpfTextViewHost viewHost = await GetCurrentViewHostAsync(serviceProvider, mustHaveFocus);
             if (viewHost == null)
                 return null;
 

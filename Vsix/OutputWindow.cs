@@ -64,19 +64,25 @@ namespace CodeConverter.VsExtension
         public async Task ForceShowOutputPaneAsync()
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            VisualStudioInteraction.Dte.Windows.Item(Constants.vsWindowKindOutput).Visible = true;
-            _outputPane.Activate();
+            ForceShowInner();
             await TaskScheduler.Default;
         }
 
-        public async Task WriteToOutputWindowAsync(string message)
+        public async Task WriteToOutputWindowAsync(string message, bool clearFirst = false, bool forceShow = false)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            lock (_outputPane) {
-                _hasOutputSinceSolutionOpened = true;;
-                _outputPane.OutputStringThreadSafe(message);
-            }
+            _hasOutputSinceSolutionOpened = true;
+            if (clearFirst) _outputPane.Clear();
+            _outputPane.OutputStringThreadSafe(message);
+            if (forceShow) ForceShowInner();
             await TaskScheduler.Default;
+        }
+
+        private void ForceShowInner()
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            VisualStudioInteraction.Dte.Windows.Item(Constants.vsWindowKindOutput).Visible = true;
+            _outputPane.Activate();
         }
 
 #pragma warning disable VSTHRD100 // Avoid async void methods - fire and forget event handler

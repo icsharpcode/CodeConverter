@@ -51,9 +51,6 @@ namespace CodeConverter.VsExtension
         
         public async Task PerformProjectConversionAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects) where TLanguageConversion : ILanguageConversion, new()
         {
-            await _outputWindow.ClearAsync();
-            await _outputWindow.ForceShowOutputPaneAsync();
-
             await _joinableTaskFactory.RunAsync(async () => {
                 var convertedFiles = ConvertProjectUnhandledAsync<TLanguageConversion>(selectedProjects);
                 await WriteConvertedFilesAndShowSummaryAsync(await convertedFiles);
@@ -62,9 +59,6 @@ namespace CodeConverter.VsExtension
 
         public async Task PerformDocumentConversionAsync<TLanguageConversion>(string documentFilePath, Span selected) where TLanguageConversion : ILanguageConversion, new()
         {
-            await _outputWindow.ClearAsync();
-            await _outputWindow.ForceShowOutputPaneAsync();
-
             var conversionResult = await _joinableTaskFactory.RunAsync(async () => {
                 var result = await ConvertDocumentUnhandledAsync<TLanguageConversion>(documentFilePath, selected);
                 await WriteConvertedFilesAndShowSummaryAsync(new[] { result });
@@ -81,9 +75,7 @@ namespace CodeConverter.VsExtension
 
         private async Task WriteConvertedFilesAndShowSummaryAsync(IEnumerable<ConversionResult> convertedFiles)
         {
-            await _outputWindow.ClearAsync();
-            await _outputWindow.WriteToOutputWindowAsync(Intro);
-            await _outputWindow.ForceShowOutputPaneAsync();
+            await _outputWindow.WriteToOutputWindowAsync(Intro, true, true);
 
             var files = new List<string>();
             var filesToOverwrite = new List<ConversionResult>();
@@ -141,8 +133,7 @@ namespace CodeConverter.VsExtension
             }
 
             var conversionSummary = await GetConversionSummaryAsync(files, errors);
-            await _outputWindow.WriteToOutputWindowAsync(conversionSummary);
-            await _outputWindow.ForceShowOutputPaneAsync();
+            await _outputWindow.WriteToOutputWindowAsync(conversionSummary, false, true);
 
         }
 
@@ -221,7 +212,9 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
         }
 
         private async Task<ConversionResult> ConvertDocumentUnhandledAsync<TLanguageConversion>(string documentPath, Span selected) where TLanguageConversion : ILanguageConversion, new()
-        {   
+        {
+            await _outputWindow.WriteToOutputWindowAsync($"Converting {documentPath}...", true, true);
+
             //TODO Figure out when there are multiple document ids for a single file path
             var documentId = _visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(documentPath).SingleOrDefault();
             if (documentId == null) {
@@ -251,12 +244,18 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             where TLanguageConversion : ILanguageConversion, new()
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            var projectDesc = selectedProjects.Count == 1
+                ? selectedProjects.Single().Name
+                : selectedProjects.Count + " projects";
+            await _outputWindow.WriteToOutputWindowAsync($"Converting {projectDesc}...", true, true);
+
             var projectsByPath =
                 _visualStudioWorkspace.CurrentSolution.Projects.ToLookup(p => p.FilePath, p => p);
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread - ToList ensures this happens within the same thread just switched to above
             var projects = selectedProjects.Select(p => projectsByPath[p.FullName].First()).ToList();
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             await TaskScheduler.Default;
+
             var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects,
                     new Progress<ConversionProgress>(s => {
                         _outputWindow.WriteToOutputWindowAsync(FormatForOutputWindow(s)).ForgetNoThrow();
