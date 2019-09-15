@@ -405,10 +405,8 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitMethodDeclaration(CSS.MethodDeclarationSyntax node)
         {
             var isIteratorState = new MethodBodyVisitor(_semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter, _commonConversions);
+            bool requiresBody = node.Body != null || node.ExpressionBody != null || node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword));
             var block = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
-            if (node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword))) {
-                block = SyntaxFactory.List<StatementSyntax>();
-            }
             var id = _commonConversions.ConvertIdentifier(node.Identifier);
             var methodInfo = _semanticModel.GetDeclaredSymbol(node);
             var containingType = methodInfo?.ContainingType;
@@ -435,8 +433,7 @@ namespace ICSharpCode.CodeConverter.VB
                     parameterList,
                     null, null, implementsClause
                 );
-                if (node.Body == null && node.ExpressionBody == null)
-                    return stmt;
+                if (!requiresBody) return stmt;
                 return SyntaxFactory.SubBlock(stmt, block);
             } else {
                 var stmt = SyntaxFactory.FunctionStatement(
@@ -446,8 +443,7 @@ namespace ICSharpCode.CodeConverter.VB
                     parameterList,
                     SyntaxFactory.SimpleAsClause((TypeSyntax)node.ReturnType.Accept(TriviaConvertingVisitor)), null, implementsClause
                 );
-                if (node.Body == null && node.ExpressionBody == null)
-                    return stmt;
+                if (!requiresBody) return stmt;
                 return SyntaxFactory.FunctionBlock(stmt, block);
             }
         }

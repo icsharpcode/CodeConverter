@@ -582,6 +582,17 @@ End Class");
         }
 
         [Fact]
+        public async Task TestExternDllImport()
+        {
+            await TestConversionCSharpToVisualBasic(
+                @"[DllImport(""kernel32.dll"", SetLastError = true)]
+static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);", @"
+<DllImport(""kernel32.dll"", SetLastError:=True)>
+Private Shared Function OpenProcess(ByVal dwDesiredAccess As AccessMask, ByVal bInheritHandle As Boolean, ByVal dwProcessId As UInteger) As IntPtr
+End Function");
+        }
+
+        [Fact]
         public async Task TestEvent()
         {
             await TestConversionCSharpToVisualBasic(
