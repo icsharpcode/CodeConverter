@@ -19,7 +19,7 @@ namespace CodeConverter.Tests.CSharp
     End Sub
 
     Shared Val As Integer
-End Class", @"public class TestClass
+End Class", @"public partial class TestClass
 {
     public void TestMethod()
     {
@@ -42,7 +42,7 @@ World!""
         Dim y = $""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!""
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -82,7 +82,7 @@ World!"";
     End Function
 End Class", @"using Microsoft.VisualBasic.CompilerServices;
 
-class TestClass
+internal partial class TestClass
 {
     public static string GetTextFeedInput(string pStream, string pTitle, string pText)
     {
@@ -124,7 +124,7 @@ class TestClass
         Dim rslt2 = Not True
         Dim rslt3 = TypeOf True IsNot Boolean
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -147,7 +147,7 @@ End Class", @"using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod([Optional, DateTimeConstant(599266080000000000L)] DateTime date)
     {
@@ -167,7 +167,7 @@ class TestClass
 
   Public Sub Stuff(ByRef strs As String())
   End Sub
-End Class", @"public class VisualBasicClass
+End Class", @"public partial class VisualBasicClass
 {
     public void UseStuff()
     {
@@ -201,7 +201,7 @@ End Class", @"public class VisualBasicClass
 
     Sub Bar(ByRef class1)
     End Sub
-End Class", @"public class Class1
+End Class", @"public partial class Class1
 {
     private Class1 C1 { get; set; }
     private Class1 _c2;
@@ -276,7 +276,7 @@ End Class", @"public class Class1
 
 End Class", @"using Microsoft.VisualBasic;
 
-public class Class1
+public partial class Class1
 {
     public void Foo()
     {
@@ -363,7 +363,7 @@ Public Class Class1
     End Sub
 End Class", @"using System.Data.SqlClient;
 
-public class Class1
+public partial class Class1
 {
     public void Foo()
     {
@@ -387,7 +387,7 @@ public class Class1
     Public Shared Function Foo(ByRef c1 As Class1) As Class1
         Return c1
     End Function
-End Class", @"public class Class1
+End Class", @"public partial class Class1
 {
     static Class1 Foo__p1()
     {
@@ -419,7 +419,7 @@ End Class", @"public class Class1
     End Sub
 End Class", @"using Microsoft.VisualBasic.CompilerServices;
 
-public class Class1
+public partial class Class1
 {
     public void Foo()
     {
@@ -448,7 +448,7 @@ public class Class1
 End Class",
 @"using Microsoft.VisualBasic;
 
-public class Class1
+public partial class Class1
 {
     public void Foo(TriState arg)
     {
@@ -475,7 +475,7 @@ public class Class1
         Dim t1 As Integer = EnumVariable
     End Sub
 End Class",
-@"public class MyTest
+@"public partial class MyTest
 {
     public enum TestEnum : int
     {
@@ -515,9 +515,9 @@ End Class",
 
     End Sub
 End Class",
-@"public class Class1
+@"public partial class Class1
 {
-    enum E
+    public enum E
     {
         A
     }
@@ -561,7 +561,7 @@ End Class",
         Return 1
     End Function
     Property Baz As Integer
-End Class", @"public class Class1
+End Class", @"public partial class Class1
 {
     public void Foo()
     {
@@ -587,7 +587,7 @@ End Class", @"public class Class1
         Dim rslt = Ctype(true, Object).ToString()
         Dim rslt2 = Ctype(true, Object)
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -604,7 +604,7 @@ End Class", @"class TestClass
     Private DefaultDate as Date = Nothing
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private DateTime DefaultDate = default(DateTime);
 }");
@@ -620,7 +620,7 @@ class TestClass
         Dim y = Me.x
         Dim z = tmp.x
     End Sub
-End Class", @"public class A
+End Class", @"public partial class A
 {
     public static int x = 2;
     public void Test()
@@ -642,7 +642,7 @@ End Class", @"public class A
     End Sub
 End Class", @"using System.Collections.Generic;
 
-public class A
+public partial class A
 {
     public void Test()
     {
@@ -666,7 +666,7 @@ Public Class A
     End Function
 End Class", @"using System.Data;
 
-public class A
+public partial class A
 {
     public string ReadDataSet(DataSet myData)
     {
@@ -713,7 +713,7 @@ public class A
     Function GetStringsFromAmbiguous(amb As Integer) As String()()
         Return New String()() { New String() { ""1"" }}
     End Function
-End Class", @"public class A
+End Class", @"public partial class A
 {
     public void Test()
     {
@@ -763,7 +763,7 @@ End Class", @"public class A
     Private bIsNot as Boolean = New Object IsNot New Object
     Private bLeftShift as Integer = 1 << 3
     Private bRightShift as Integer = 8 >> 3
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private bool bIs = new object() == new object();
     private bool bIsNot = new object() != new object();
@@ -782,7 +782,7 @@ End Class", @"class TestClass
 End Class", @"using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
 
-public class Class1
+public partial class Class1
 {
     public void Foo()
     {
@@ -803,7 +803,7 @@ Public Class Class1
     End Sub
 End Class", @"using System.Linq;
 
-public class Class1
+public partial class Class1
 {
     public void Foo()
     {
@@ -825,7 +825,7 @@ Public Class Class1
     End Sub
 End Class", @"using System.Linq;
 
-public class Class1
+public partial class Class1
 {
     public void Foo()
     {
@@ -849,7 +849,7 @@ public class Class1
     End Sub
 End Class", @"using System;
 
-public class Class1
+public partial class Class1
 {
     public void Main()
     {
@@ -909,7 +909,7 @@ public class Class1
             Return y
         End Get
     End Property
-End Class", @"public class Class1
+End Class", @"public partial class Class1
 {
     Class1()
     {
@@ -976,7 +976,7 @@ End Class", @"public class Class1
         x <<= 4
         x >>= 3
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1012,7 +1012,7 @@ End Class", @"class TestClass
     End Sub
 End Class", @"using System;
 
-public class Class1
+public partial class Class1
 {
     public void Foo()
     {
@@ -1061,7 +1061,7 @@ Public Class Class1
 End Class", @"using System;
 using System.Globalization;
 
-public class Class1
+public partial class Class1
 {
     public void Foo()
     {
@@ -1092,7 +1092,7 @@ public class Class1
     End Sub
 End Class", @"using Microsoft.VisualBasic.CompilerServices;
 
-public class Class1
+public partial class Class1
 {
     public void Foo()
     {
@@ -1115,7 +1115,7 @@ public class Class1
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1144,7 +1144,7 @@ class TestClass
     End Sub
 End Class", @"using Microsoft.VisualBasic.CompilerServices;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1172,7 +1172,7 @@ class TestClass
         Dim z As Integer = 8
         z /= 3
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1193,7 +1193,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim strings = { ""1"", ""2"" }
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1211,7 +1211,7 @@ End Class", @"class TestClass
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1228,7 +1228,7 @@ class TestClass
         Dim str = ""Hello, ""
         str &= ""World""
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1245,7 +1245,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim typ = GetType(String)
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1267,7 +1267,7 @@ End Class", @"class TestClass
             Return Nothing
         End If
     End Function
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     public int? Bar(string value)
     {
@@ -1292,7 +1292,7 @@ End Class", @"class TestClass
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     public void Bar()
     {
@@ -1312,7 +1312,7 @@ class TestClass
         Dim s = ""1,2""
         Return s.Split(s(1))
     End Function
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private string[] TestMethod()
     {
@@ -1333,7 +1333,7 @@ Class TestClass
     End Function
 End Class", @"using System.Data;
 
-class TestClass
+internal partial class TestClass
 {
     public object GetItem(DataRow dr)
     {
@@ -1349,7 +1349,7 @@ class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = If((str = """"), True, False)
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod(string str)
     {
@@ -1365,7 +1365,7 @@ End Class", @"class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = Not If((str = """"), True, False)
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod(string str)
     {
@@ -1381,7 +1381,7 @@ End Class", @"class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Integer = 5 - If((str = """"), 1, 2)
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod(string str)
     {
@@ -1399,7 +1399,7 @@ End Class", @"class TestClass
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod(string str)
     {
@@ -1423,7 +1423,7 @@ Public Module MyExtensions
     End Sub
 End Module", @"using System;
 
-public static class MyExtensions
+public partial static class MyExtensions
 {
     public static void NewColumn(Type type, string strV1 = null, string code = ""code"")
     {
@@ -1451,7 +1451,7 @@ public static class MyExtensions
 End Class", @"using System;
 using Microsoft.VisualBasic.CompilerServices;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod(string str)
     {
@@ -1474,7 +1474,7 @@ class TestClass
     End Sub
 End Class", @"using System.Collections.Generic;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod(string str)
     {
@@ -1499,7 +1499,7 @@ Class TestClass
     Private Sub TestMethod(ByVal str As String)
         str.Use(Of object)
     End Sub
-End Class", @"static class AppBuilderUseExtensions
+End Class", @"internal partial static class AppBuilderUseExtensions
 {
     public static object Use<T>(this string app, params object[] args)
     {
@@ -1507,7 +1507,7 @@ End Class", @"static class AppBuilderUseExtensions
     }
 }
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod(string str)
     {
@@ -1531,9 +1531,9 @@ class TestClass
     End Function
 End Class", @"using System;
 
-class TestClass3
+internal partial class TestClass3
 {
-    private class Rec
+    private partial class Rec
     {
         public Rec Prop { get; private set; } = new Rec();
     }
@@ -1558,12 +1558,12 @@ Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 As StudentName = New StudentName With {.FirstName = ""Craig"", .LastName = ""Playstead""}
     End Sub
-End Class", @"class StudentName
+End Class", @"internal partial class StudentName
 {
     public string LastName, FirstName;
 }
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod(string str)
     {
@@ -1579,7 +1579,7 @@ class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 = New With {Key .FirstName = ""Craig"", Key .LastName = ""Playstead""}
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod(string str)
     {
@@ -1600,7 +1600,7 @@ End Class", @"class TestClass
     End Sub
 End Class", @"using System.Collections.Generic;
 
-class TestClass
+internal partial class TestClass
 {
     private void DoStuff(object a)
     {
@@ -1623,7 +1623,7 @@ class TestClass
     Private Sub TestMethod()
         Me.member = 0
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private int member;
 
@@ -1647,12 +1647,12 @@ Class TestClass
     Private Sub TestMethod()
         MyBase.member = 0
     End Sub
-End Class", @"class BaseTestClass
+End Class", @"internal partial class BaseTestClass
 {
     public int member;
 }
 
-class TestClass : BaseTestClass
+internal partial class TestClass : BaseTestClass
 {
     private void TestMethod()
     {
@@ -1671,7 +1671,7 @@ class TestClass : BaseTestClass
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1697,7 +1697,7 @@ class TestClass
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1736,7 +1736,7 @@ class TestClass
     End Sub
 End Class", @"using Microsoft.VisualBasic.CompilerServices;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1767,7 +1767,7 @@ class TestClass
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1794,7 +1794,7 @@ class TestClass
 End Class", @"using System;
 using System.Threading.Tasks;
 
-class TestClass
+internal partial class TestClass
 {
     private Task<int> SomeAsyncMethod()
     {
@@ -1820,7 +1820,7 @@ Class TestClass
     End Sub
 End Class", @"using System.IO;
 
-class TestClass
+internal partial class TestClass
 {
     public void TestMethod(string dir)
     {
@@ -1846,7 +1846,7 @@ Class TestClass
     End Sub
 End Class", @"namespace TestNamespace
 {
-    public static class TestModule
+    public partial static class TestModule
     {
         public static void ModuleFunction()
         {
@@ -1854,7 +1854,7 @@ End Class", @"namespace TestNamespace
     }
 }
 
-class TestClass
+internal partial class TestClass
 {
     public void TestMethod(string dir)
     {
@@ -1875,14 +1875,14 @@ Class TestClass
     Private Sub TestMethod()
         DoStuff()
     End Sub
-End Class", @"class TestClassBase
+End Class", @"internal partial class TestClassBase
 {
     public void DoStuff()
     {
     }
 }
 
-class TestClass : TestClassBase
+internal partial class TestClass : TestClassBase
 {
     private void TestMethod()
     {
@@ -1900,7 +1900,7 @@ class TestClass : TestClassBase
     End Function
 End Class", @"using Microsoft.VisualBasic;
 
-class TestClass
+internal partial class TestClass
 {
     public string TestMethod()
     {
@@ -1935,7 +1935,7 @@ end class", @"public enum TestState
     two
 }
 
-public class test
+public partial class test
 {
     private TestState _state;
     public TestState State
@@ -1997,7 +1997,7 @@ End Class",
                 @"using System;
 using System.Diagnostics;
 
-public class Foo
+public partial class Foo
 {
     public event EventHandler<EventArgs> Bar;
 
@@ -2034,7 +2034,7 @@ End Namespace",
 
 namespace InnerNamespace
 {
-    public class Test
+    public partial class Test
     {
         public string StringInter(string t, DateTime dt)
         {
@@ -2059,7 +2059,7 @@ namespace InnerNamespace
     End Sub
 End Class", @"using Microsoft.VisualBasic;
 
-public class Class1
+public partial class Class1
 {
     public void Foo()
     {
@@ -2075,7 +2075,7 @@ public class Class1
     Protected Overrides Sub Finalize()
         MyBase.Finalize()
     End Sub
-End Class", @"public class Class1
+End Class", @"public partial class Class1
 {
     ~Class1()
     {
@@ -2095,7 +2095,7 @@ End Class", @"public class Class1
         bar()
         me.bar()
     End Sub
-End Class", @"public class Class1
+End Class", @"public partial class Class1
 {
     public void Bar()
     {

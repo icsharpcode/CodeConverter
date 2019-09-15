@@ -88,13 +88,13 @@ End Class",
                 @"using System;
 using System.Linq;
 
-class Product
+internal partial class Product
 {
     public string Category;
     public string ProductName;
 }
 
-class Test
+internal partial class Test
 {
     public Product[] GetProductList()
     {
@@ -144,13 +144,13 @@ Class Test
 End Class", @"using System;
 using System.Linq;
 
-class Product
+internal partial class Product
 {
     public string Category;
     public string ProductName;
 }
 
-class Test
+internal partial class Test
 {
     public Product[] GetProductList()
     {
@@ -330,7 +330,7 @@ Module Ext
 End Module", @"using System.Collections.Generic;
 using System.Linq;
 
-public class AccountEntry
+public partial class AccountEntry
 {
     public object LookupAccountEntryTypeId { get; set; }
     public object LookupAccountEntrySourceId { get; set; }
@@ -346,7 +346,7 @@ public class AccountEntry
     public List<AccountEntry> AccountEntryClaimDetails { get; set; }
 }
 
-static class Ext
+internal partial static class Ext
 {
     public static IEnumerable<AccountEntry> Reduce(this IEnumerable<AccountEntry> accountEntries)
     {

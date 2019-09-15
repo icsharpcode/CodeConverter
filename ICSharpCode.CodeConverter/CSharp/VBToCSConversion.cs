@@ -14,6 +14,7 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Operations;
+using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using LanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 
 namespace ICSharpCode.CodeConverter.CSharp
@@ -186,8 +187,8 @@ End Class";
             IEnumerable<MetadataReference> references)
         {
             return VisualBasicCompiler.CreateCompilationOptions(RootNamespace)
-                .CreateProjectDocumentFromTree(workspace, tree, references,
-                    DoNotAllowImplicitDefault);
+                .CreateProjectDocumentFromTree(workspace, tree, references, VisualBasicParseOptions.Default,
+                    ISymbolExtensions.ForcePartialTypesAssemblyName);
         }
     }
 }

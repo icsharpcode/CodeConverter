@@ -78,7 +78,7 @@ obj = null;",
             await TestConversionVisualBasicToCSharp(
 @"Public Class Test
 End Class",
-@"public class Test
+@"public partial class Test
 {
 }");
         }

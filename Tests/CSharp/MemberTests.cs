@@ -16,7 +16,7 @@ namespace CodeConverter.Tests.CSharp
     Const answer As Integer = 42
     Private value As Integer = 10
     ReadOnly v As Integer = 15
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private const int answer = 42;
     private int value = 10;
@@ -30,7 +30,7 @@ End Class", @"class TestClass
             await TestConversionVisualBasicToCSharp(
 @"Module TestModule
     Const answer As Integer = 42
-End Module", @"static class TestModule
+End Module", @"internal partial static class TestModule
 {
     private const int answer = 42;
 }");
@@ -44,7 +44,7 @@ End Module", @"static class TestModule
     Sub New()
         Dim someValue As Integer = 0
     End Sub
-End Module", @"static class Module1
+End Module", @"internal partial static class Module1
 {
     static Module1()
     {
@@ -64,7 +64,7 @@ End Module", @"static class Module1
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private const int someConstField = 42;
     public void TestMethod()
@@ -89,7 +89,7 @@ class TestClass
     End Sub
 End Class", @"using Microsoft.VisualBasic.CompilerServices;
 
-class TestClass
+internal partial class TestClass
 {
     public enum TestEnum : int
     {
@@ -118,7 +118,7 @@ class TestClass
 End Class", @"using System;
 using System.Linq;
 
-class TestClass
+internal partial class TestClass
 {
     public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
@@ -147,7 +147,7 @@ class TestClass
             TestMethod = TestMethod(1)
         End If
     End Function
-End Class", @"class Class1
+End Class", @"internal partial class Class1
 {
     public int TestMethod(int x)
     {
@@ -195,7 +195,7 @@ End Class", @"class Class1
     End Property
 End Class", @"using Microsoft.VisualBasic.CompilerServices;
 
-public class Class1
+public partial class Class1
 {
     public string Foo
     {
@@ -244,7 +244,7 @@ public class Class1
     End Function
 End Class", @"using System;
 
-public class Class1
+public partial class Class1
 {
     public event EventHandler MyEvent;
     protected override string Foo()
@@ -273,7 +273,7 @@ public class Class1
             TestMethod *= TestMethod(1)
         End If
     End Function
-End Class", @"class Class1
+End Class", @"internal partial class Class1
 {
     public int TestMethod(int x)
     {
@@ -300,7 +300,7 @@ End Class", @"class Class1
     Function TestMethod() As Integer
 
     End Function
-End Class", @"class Class1
+End Class", @"internal partial class Class1
 {
     public int TestMethod()
     {
@@ -322,7 +322,7 @@ End Class", @"class Class1
   End Property
 End Class", @"using System.Collections.Generic;
 
-public class VisualBasicClass
+public partial class VisualBasicClass
 {
     public static IEnumerable<object[]> SomeObjects
     {
@@ -346,7 +346,7 @@ public class VisualBasicClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     /// <summary>Xml doc</summary>
     public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
@@ -371,7 +371,7 @@ End Class", @"class TestClass
     End Function
 End Class", @"using System.Collections.Generic;
 
-class TestClass
+internal partial class TestClass
 {
     public bool TryGet(out List<string> strs)
     {
@@ -389,7 +389,7 @@ class TestClass
     Public Function TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) As Integer
         Return 0
     End Function
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     public int TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
@@ -411,7 +411,7 @@ End Class", @"class TestClass
         Dim firstCharacter = Text.Substring(0, 1).ToUpper()
         Return firstCharacter + Text.Substring(1)
     End Function
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private object TurnFirstToUp(string Text)
     {
@@ -431,7 +431,7 @@ End Class", @"class TestClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     public static void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
@@ -450,7 +450,7 @@ End Class", @"class TestClass
             await TestConversionVisualBasicToCSharp(
 @"MustInherit Class TestClass
     Public MustOverride Sub TestMethod()
-End Class", @"abstract class TestClass
+End Class", @"internal abstract partial class TestClass
 {
     public abstract void TestMethod();
 }");
@@ -466,7 +466,7 @@ End Class", @"abstract class TestClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     public sealed void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
@@ -500,7 +500,7 @@ Class TestSubclass
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     public void TestMethod()
     {
@@ -511,7 +511,7 @@ class TestClass
     }
 }
 
-class TestSubclass : TestClass
+internal partial class TestSubclass : TestClass
 {
     public new void TestMethod()
     {
@@ -533,7 +533,7 @@ class TestSubclass : TestClass
     <System.Runtime.CompilerServices.Extension()>
     Sub TestMethod2Parameters(ByVal str As String, other As String)
     End Sub
-End Module", @"static class TestClass
+End Module", @"internal partial static class TestClass
 {
     public static void TestMethod(this string str)
     {
@@ -555,7 +555,7 @@ Module TestClass
     <Extension()>
     Sub TestMethod(ByVal str As String)
     End Sub
-End Module", @"static class TestClass
+End Module", @"internal partial static class TestClass
 {
     public static void TestMethod(this string str)
     {
@@ -586,7 +586,7 @@ End Module", @"static class TestClass
             Me.m_test3 = value
         End Set
     End Property
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     public int Test { get; set; }
 
@@ -640,7 +640,7 @@ End Class", @"class TestClass
         FullName(False, True) = ""hello""
         Return FullName(False, True)
     End Function
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     public string FirstName { get; set; }
     public string LastName { get; set; }
@@ -699,7 +699,7 @@ End Class", @"class TestClass
     End Sub
 End Class", @"using System.Linq;
 
-public class ParameterizedPropertiesAndEnumTest
+public partial class ParameterizedPropertiesAndEnumTest
 {
     public enum MyEnum
     {
@@ -749,7 +749,7 @@ public class ParameterizedPropertiesAndEnumTest
 @"Public Interface Foo
     ReadOnly Property P1() As String
     WriteOnly Property P2() As String
-End Interface", @"public interface Foo
+End Interface", @"public partial interface Foo
 {
     string P1 { get; }
     string P2 { set; }
@@ -763,7 +763,7 @@ End Interface", @"public interface Foo
 @"Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
     Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
     End Sub
-End Class", @"class TestClass<T, T2, T3>
+End Class", @"internal partial class TestClass<T, T2, T3>
     where T : class, new()
     where T2 : struct
 {
@@ -800,7 +800,7 @@ End Sub", @"static SurroundingClass()
 @"Class TestClass
     Protected Overrides Sub Finalize()
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     ~TestClass()
     {
@@ -816,7 +816,7 @@ End Class", @"class TestClass
     Public Event MyEvent As EventHandler
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     public event EventHandler MyEvent;
 }");
@@ -845,7 +845,7 @@ Module Module1
     End Sub
 End Module", @"using System.Runtime.CompilerServices;
 
-class MyEventClass
+internal partial class MyEventClass
 {
     public event TestEventEventHandler TestEvent;
 
@@ -857,7 +857,7 @@ class MyEventClass
     }
 }
 
-static class Module1
+internal partial static class Module1
 {
     static Module1()
     {
@@ -940,14 +940,14 @@ Class Class1
     End Sub
 End Class", @"using System.Runtime.CompilerServices;
 
-class MyEventClass
+internal partial class MyEventClass
 {
     public event TestEventEventHandler TestEvent;
 
     public delegate void TestEventEventHandler();
 }
 
-class Class1
+internal partial class Class1
 {
     private MyEventClass _MyEventClassInstance;
 
@@ -1016,7 +1016,7 @@ Class Class1
     End Sub
 End Class", @"using System.Runtime.CompilerServices;
 
-class MyEventClass
+internal partial class MyEventClass
 {
     public event TestEventEventHandler TestEvent;
 
@@ -1028,7 +1028,7 @@ class MyEventClass
     }
 }
 
-class Class1
+internal partial class Class1
 {
     static Class1()
     {
@@ -1147,7 +1147,7 @@ Public Partial Class Class1
     End Sub
 End Class", @"using System.Runtime.CompilerServices;
 
-class MyEventClass
+internal partial class MyEventClass
 {
     public event TestEventEventHandler TestEvent;
 
@@ -1248,7 +1248,7 @@ public partial class Class1
     Private Shared Property First As Integer
 
     Private Second As Integer = _First
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private static int First { get; set; }
 
@@ -1264,7 +1264,7 @@ End Class", @"class TestClass
     Private Property Second As Integer = 0
 End Class", @"using System.Collections.Generic;
 
-class TestClass
+internal partial class TestClass
 {
     private List<string> First { get; private set; } = new List<string>();
     private int Second { get; set; } = 0;
@@ -1319,7 +1319,7 @@ End Class",
     }
 }
 
-internal class TestClass2 : TestClass1
+internal partial class TestClass2 : TestClass1
 {
     public new static void CreateStatic()
     {
@@ -1350,7 +1350,7 @@ internal class TestClass2 : TestClass1
         Return 1
     End Operator
 End Class"
-                , @"public class MyInt
+                , @"public partial class MyInt
 {
     public static explicit operator MyInt(int i)
     {
@@ -1422,7 +1422,7 @@ End Class"
     Public Shared Operator Or(s As String, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-End Class", @"public class AcmeClass
+End Class", @"public partial class AcmeClass
 {
     public static AcmeClass operator +(int i, AcmeClass ac)
     {
@@ -1528,7 +1528,7 @@ Class TestClass
 End Class", @"using System.Diagnostics;
 
 [DebuggerDisplay(""Hello World"")]
-class TestClass
+internal partial class TestClass
 {
 }");
         }
@@ -1541,7 +1541,7 @@ class TestClass
     Private Shared First As Integer
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     [ThreadStatic]
     private static int First;
@@ -1554,7 +1554,7 @@ class TestClass
             await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub SomeBools(ParamArray anyName As Boolean())
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void SomeBools(params bool[] anyName)
     {
@@ -1568,7 +1568,7 @@ End Class", @"class TestClass
             await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub SomeBools(ParamArray bool As Boolean())
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void SomeBools(params bool[] @bool)
     {
@@ -1585,7 +1585,7 @@ End Class", @"class TestClass
         Dim moreStrs() As String
     End Sub
 End Class",
-@"class TestClass
+@"internal partial class TestClass
 {
     public void DoNothing(string[] strs)
     {
@@ -1602,7 +1602,7 @@ End Class",
     Public Sub DoNothing(obj, objs())
     End Sub
 End Class",
-@"class TestClass
+@"internal partial class TestClass
 {
     public void DoNothing(object obj, object[] objs)
     {
@@ -1664,7 +1664,7 @@ Class MyClassC
         ClA.MA()
         ClA.ClassB.MB()
     End Sub
-End Class", @"class ClA
+End Class", @"internal partial class ClA
 {
     public static void MA()
     {
@@ -1672,7 +1672,7 @@ End Class", @"class ClA
         MyClassC.MC();
     }
 
-    public class ClassB
+    public partial class ClassB
     {
         public static ClassB MB()
         {
@@ -1683,7 +1683,7 @@ End Class", @"class ClA
     }
 }
 
-class MyClassC
+internal partial class MyClassC
 {
     public static void MC()
     {
@@ -1716,7 +1716,7 @@ Class MyClassC
         ClA.MA()
         ClA.ClassB.MB()
     End Sub
-End Class", @"class ClA
+End Class", @"internal partial class ClA
 {
     public static void MA()
     {
@@ -1724,7 +1724,7 @@ End Class", @"class ClA
         MyClassC.MC();
     }
 
-    public class ClassB
+    public partial class ClassB
     {
         public static ClassB MB()
         {
@@ -1735,7 +1735,7 @@ End Class", @"class ClA
     }
 }
 
-class MyClassC
+internal partial class MyClassC
 {
     public static void MC()
     {
@@ -1777,7 +1777,7 @@ class MyClassC
             Me.m_test3 = value
         End Set
     End Property
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private int[] _Items;
 
@@ -1823,7 +1823,7 @@ End Class", @"class TestClass
             await TestConversionVisualBasicToCSharpWithoutComments(
 @"Interface TestInterface
     WriteOnly Property Items As Integer()
-End Interface", @"interface TestInterface
+End Interface", @"internal partial interface TestInterface
 {
     int[] Items { set; }
 }");
@@ -1839,7 +1839,7 @@ End Interface", @"interface TestInterface
     Public Sub SetValue(value1 As Integer, value2 As Integer)
         _SomeValue = value1 + value2
     End Sub
-End Class", @"public class SomeClass
+End Class", @"public partial class SomeClass
 {
     public int SomeValue { get; private set; }
 
@@ -1864,7 +1864,7 @@ End Class", @"public class SomeClass
             _Items = v
         End Set
     End Property
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private int[] _Items;
     public int[] Items

@@ -22,14 +22,17 @@ namespace ICSharpCode.CodeConverter.Shared
         }
 
         public static Document CreateProjectDocumentFromTree(this CompilationOptions options,
-            Workspace workspace, SyntaxTree tree, IEnumerable<MetadataReference> references, ParseOptions parseOptions)
+            Workspace workspace, SyntaxTree tree, IEnumerable<MetadataReference> references, ParseOptions parseOptions,
+            string singleDocumentAssemblyName = null)
         {
+            singleDocumentAssemblyName = singleDocumentAssemblyName ?? "ProjectToBeConverted";
             ProjectId projectId = ProjectId.CreateNewId();
-            var solution = workspace.CurrentSolution.AddProject(projectId, "ProjectToBeConverted",
-                "ProjectToBeConverted", options.Language);
+            var solution = workspace.CurrentSolution.AddProject(projectId, singleDocumentAssemblyName,
+                singleDocumentAssemblyName, options.Language);
 
             var project = solution.GetProject(projectId)
                 .WithCompilationOptions(options)
+                .WithParseOptions(parseOptions)
                 .WithMetadataReferences(references);
             return project.AddDocument("CodeToConvert", tree.GetRoot(), filePath: Path.Combine(Directory.GetCurrentDirectory(), "TempCodeToConvert.txt"));
         }
