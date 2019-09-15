@@ -218,6 +218,22 @@ End Class");
         }
 
         [Fact]
+        public async Task CallInvoke()
+        {
+            await TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    void TestMethod(string str)
+    {
+        Dispatcher.Invoke(new Action(() => Console.WriteLine(1)));
+    }
+}", @"Friend Class TestClass
+    Private Sub TestMethod(ByVal str As String)
+        Dispatcher.Invoke(New Action(Function() Console.WriteLine(1)))
+    End Sub
+End Class");
+        }
+
+        [Fact]
         public async Task ShiftOperators()
         {
             await TestConversionCSharpToVisualBasic(@"public class Test

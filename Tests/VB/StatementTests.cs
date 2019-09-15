@@ -868,18 +868,18 @@ End Class");
 
 class TestClass
 {
-    public event EventHandler MyEvent;
+    public event EventHandler SomethingHappening;
 
     void TestMethod(EventHandler e)
     {
-        this.MyEvent += e;
-        this.MyEvent += MyHandler;
+        this.SomethingHappening += e;
+        SomethingHappening += MyHandler;
     }
 
     void TestMethod2(EventHandler e)
     {
-        this.MyEvent -= e;
-        this.MyEvent -= MyHandler;
+        this.SomethingHappening -= e;
+        SomethingHappening -= MyHandler;
     }
 
     void MyHandler(object sender, EventArgs e)
@@ -889,16 +889,16 @@ class TestClass
 }", @"Imports System
 
 Friend Class TestClass
-    Public Event MyEvent As EventHandler
+    Public Event SomethingHappening As EventHandler
 
     Private Sub TestMethod(ByVal e As EventHandler)
-        AddHandler MyEvent, e
-        AddHandler MyEvent, AddressOf MyHandler
+        AddHandler SomethingHappening, e
+        AddHandler SomethingHappening, AddressOf MyHandler
     End Sub
 
     Private Sub TestMethod2(ByVal e As EventHandler)
-        RemoveHandler MyEvent, e
-        RemoveHandler MyEvent, AddressOf MyHandler
+        RemoveHandler SomethingHappening, e
+        RemoveHandler SomethingHappening, AddressOf MyHandler
     End Sub
 
     Private Sub MyHandler(ByVal sender As Object, ByVal e As EventArgs)

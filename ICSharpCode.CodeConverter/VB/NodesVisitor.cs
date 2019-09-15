@@ -956,16 +956,11 @@ namespace ICSharpCode.CodeConverter.VB
                 return SyntaxFactory.NameOfExpression(convertedExpression);
             }
 
-            var invokedCsExpression = node.Expression;
-            if (invokedCsExpression is CSS.MemberAccessExpressionSyntax csMemberAccess && IsInvokeIdentifier(csMemberAccess.Name)) {
-                invokedCsExpression = csMemberAccess.Expression;
-            }
-
-            if (TryCreateRaiseEventStatement(invokedCsExpression, node.ArgumentList, out VisualBasicSyntaxNode visitInvocationExpression)) {
+            if (TryCreateRaiseEventStatement(node.Expression, node.ArgumentList, out VisualBasicSyntaxNode visitInvocationExpression)) {
                 return visitInvocationExpression;
             }
 
-            var vbEventExpression = (ExpressionSyntax)invokedCsExpression.Accept(TriviaConvertingVisitor);
+            var vbEventExpression = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
             var argumentListSyntax = (ArgumentListSyntax)node.ArgumentList.Accept(TriviaConvertingVisitor);
             return SyntaxFactory.InvocationExpression(vbEventExpression, argumentListSyntax);
         }
@@ -973,10 +968,15 @@ namespace ICSharpCode.CodeConverter.VB
         private bool TryCreateRaiseEventStatement(CSS.ExpressionSyntax invokedCsExpression,
             CSS.ArgumentListSyntax argumentListSyntax, out VisualBasicSyntaxNode visitInvocationExpression)
         {
+            if (invokedCsExpression is CSS.MemberAccessExpressionSyntax csMemberAccess &&
+                IsInvokeIdentifier(csMemberAccess.Name)) {
+                invokedCsExpression = csMemberAccess.Expression;
+            }
+
             if (_commonConversions.IsEventHandlerIdentifier(invokedCsExpression))
             {
                 var expressionSyntax = (ExpressionSyntax)invokedCsExpression.Accept(TriviaConvertingVisitor);
-                var identifierNameSyntax = RemoveEventSuffix(GetSimpleName(expressionSyntax));
+                var identifierNameSyntax = GetIdentifierNameFromName(expressionSyntax);
                 var argumentList = (ArgumentListSyntax)argumentListSyntax.Accept(TriviaConvertingVisitor);
                 visitInvocationExpression = SyntaxFactory.RaiseEventStatement(identifierNameSyntax, argumentList);
                 return true;
@@ -986,23 +986,14 @@ namespace ICSharpCode.CodeConverter.VB
             return false;
         }
 
-        private IdentifierNameSyntax RemoveEventSuffix(SimpleNameSyntax name)
-        {
-            var identifierName = name.Identifier.ValueText;
-            if (identifierName.EndsWith("Event")) {
-                identifierName = identifierName.Substring(0, identifierName.Length - "Event".Length);
-            }
-            return SyntaxFactory.IdentifierName(identifierName);
-        }
-
-        private SimpleNameSyntax GetSimpleName(ExpressionSyntax expressionSyntax)
+        private IdentifierNameSyntax GetIdentifierNameFromName(ExpressionSyntax expressionSyntax)
         {
             switch (expressionSyntax)
             {
-                case SimpleNameSyntax simpleName:
+                case IdentifierNameSyntax simpleName:
                     return simpleName;
                 case MemberAccessExpressionSyntax memberAccess:
-                    return GetSimpleName(memberAccess.Name);
+                    return GetIdentifierNameFromName(memberAccess.Name);
                 default:
                     throw new NotSupportedException(
                         $"Cannot get SimpleNameSyntax from {expressionSyntax.Kind()}:\r\n{expressionSyntax}");
@@ -1028,7 +1019,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitConditionalAccessExpression(CSS.ConditionalAccessExpressionSyntax node)
         {
-            if (node.WhenNotNull is CSS.InvocationExpressionSyntax invocation && invocation.Expression is CSS.MemberBindingExpressionSyntax binding && IsInvokeIdentifier(binding.Name) &&  TryCreateRaiseEventStatement(node.Expression, invocation.ArgumentList, out var raiseEventStatement)) {
+            if (node.WhenNotNull is CSS.InvocationExpressionSyntax invocation && TryCreateRaiseEventStatement(node.Expression, invocation.ArgumentList, out var raiseEventStatement)) {
                 return raiseEventStatement;
             }
 
