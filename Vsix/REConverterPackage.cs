@@ -68,13 +68,6 @@ namespace CodeConverter.VsExtension
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     public sealed class REConverterPackage : AsyncPackage
     {
-        public VisualStudioWorkspace VsWorkspace {
-            get {
-                var componentModel = (IComponentModel)GetGlobalService(typeof(SComponentModel));
-                return componentModel.GetService<VisualStudioWorkspace>();
-            }
-        }
-
         /// <summary>
         /// ConvertCSToVBCommandPackage GUID string.
         /// </summary>
@@ -144,9 +137,11 @@ namespace CodeConverter.VsExtension
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
             var oleMenuCommandService = await this.GetServiceAsync<IMenuCommandService, OleMenuCommandService>();
-            await JoinableTaskFactory.SwitchToMainThreadAsync();
+            var componentModel = await this.GetServiceAsync<SComponentModel, IComponentModel>();
 
-            var codeConversion = await CodeConversion.CreateAsync(this, VsWorkspace, this.GetDialogPageAsync<ConverterOptionsPage>);
+            await JoinableTaskFactory.SwitchToMainThreadAsync();
+            var visualStudioWorkspace = componentModel.GetService<VisualStudioWorkspace>();
+            var codeConversion = await CodeConversion.CreateAsync(this, visualStudioWorkspace, this.GetDialogPageAsync<ConverterOptionsPage>);
             ConvertCSToVBCommand.Initialize(this, oleMenuCommandService, codeConversion);
             ConvertVBToCSCommand.Initialize(this, oleMenuCommandService, codeConversion);
 

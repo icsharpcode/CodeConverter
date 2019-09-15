@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -79,14 +78,6 @@ namespace CodeConverter.VsExtension
             return textDocument;
         }
 
-        public static async Task<VisualStudioWorkspace> GetWorkspaceAsync(IAsyncServiceProvider serviceProvider)
-        {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            var visualStudioWorkspace = await serviceProvider.GetServiceAsync<VisualStudioWorkspace>();
-            await TaskScheduler.Default;
-            return visualStudioWorkspace;
-        }
-
         public static async Task ShowExceptionAsync(IAsyncServiceProvider serviceProvider, string title, Exception ex)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -137,14 +128,16 @@ namespace CodeConverter.VsExtension
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var span = await GetFirstSelectedSpanInCurrentViewAsync(asyncServiceProvider, predicate, mustHaveFocus); ;
+            var span = await GetFirstSelectedSpanInCurrentViewAsync(asyncServiceProvider, predicate, mustHaveFocus);
             var currentViewHostAsync =
                 await GetCurrentViewHostAsync(asyncServiceProvider, predicate, mustHaveFocus);
-            var textDocumentAsync = await currentViewHostAsync.GetTextDocumentAsync();
-            var result = (textDocumentAsync?.FilePath, span);
+            using (var textDocumentAsync = await currentViewHostAsync.GetTextDocumentAsync())
+            {
+                var result = (textDocumentAsync?.FilePath, span);
+                await TaskScheduler.Default;
+                return result;
+            }
 
-            await TaskScheduler.Default;
-            return result;
         }
 
         private static async Task<VsDocument> GetSingleSelectedItemOrDefaultAsync()
@@ -155,31 +148,19 @@ namespace CodeConverter.VsExtension
 
             if ((monitorSelection == null) || (solution == null))
                 return null;
-
-            IntPtr hierarchyPtr = IntPtr.Zero;
-            IntPtr selectionContainerPtr = IntPtr.Zero;
-
+            
+            var hResult = monitorSelection.GetCurrentSelection(out var hierarchyPtr, out uint itemId, out var multiItemSelect, out var selectionContainerPtr);
             try {
-                var hresult = monitorSelection.GetCurrentSelection(out hierarchyPtr, out uint itemId, out var multiItemSelect, out selectionContainerPtr);
-                if (ErrorHandler.Failed(hresult) || (hierarchyPtr == IntPtr.Zero) || (itemId == VSConstants.VSITEMID_NIL))
+                if (ErrorHandler.Failed(hResult) || hierarchyPtr == IntPtr.Zero || itemId == VSConstants.VSITEMID_NIL ||
+                    multiItemSelect != null || itemId == VSConstants.VSITEMID_ROOT ||
+                    !(Marshal.GetObjectForIUnknown(hierarchyPtr) is IVsHierarchy hierarchy)) {
                     return null;
+                }
 
-                if (multiItemSelect != null)
-                    return null;
+                int result = solution.GetGuidOfProject(hierarchy, out Guid guidProjectId);
+                // ReSharper disable once SuspiciousTypeConversion.Global - COM Object
+                return ErrorHandler.Succeeded(result) ? new VsDocument((IVsProject) hierarchy, guidProjectId, itemId) : null;
 
-                if (itemId == VSConstants.VSITEMID_ROOT)
-                    return null;
-
-                var hierarchy = Marshal.GetObjectForIUnknown(hierarchyPtr) as IVsHierarchy;
-                if (hierarchy == null)
-                    return null;
-
-                Guid guidProjectId = Guid.Empty;
-
-                if (ErrorHandler.Failed(solution.GetGuidOfProject(hierarchy, out guidProjectId)))
-                    return null;
-
-                return new VsDocument((IVsProject) hierarchy, guidProjectId, itemId);
             } finally {
                 if (selectionContainerPtr != IntPtr.Zero) {
                     Marshal.Release(selectionContainerPtr);
@@ -216,6 +197,7 @@ namespace CodeConverter.VsExtension
             }
 
             txtMgr.GetActiveView(mustHaveFocus ? 1 : 0, null, out IVsTextView vTextView);
+            // ReSharper disable once SuspiciousTypeConversion.Global - COM Object
             if (!(vTextView is IVsUserData userData)) {
                 return null;
             }
@@ -237,25 +219,19 @@ namespace CodeConverter.VsExtension
         private static async Task<ITextSelection> GetSelectionInCurrentViewAsync(IAsyncServiceProvider serviceProvider,
             Func<string, bool> predicate, bool mustHaveFocus)
         {
-            IWpfTextViewHost viewHost = await GetCurrentViewHostAsync(serviceProvider, predicate, mustHaveFocus);
-            if (viewHost == null)
-                return null;
-
-            return viewHost.TextView.Selection;
+            var viewHost = await GetCurrentViewHostAsync(serviceProvider, predicate, mustHaveFocus);
+            return viewHost?.TextView.Selection;
         }
 
         private static async Task<IWpfTextViewHost> GetCurrentViewHostAsync(IAsyncServiceProvider serviceProvider,
             Func<string, bool> predicate, bool mustHaveFocus)
         {
-            IWpfTextViewHost viewHost = await GetCurrentViewHostAsync(serviceProvider, mustHaveFocus);
+            var viewHost = await GetCurrentViewHostAsync(serviceProvider, mustHaveFocus);
             if (viewHost == null)
                 return null;
 
-            ITextDocument textDocument = await viewHost.GetTextDocumentAsync();
-            if (textDocument == null || !predicate(textDocument.FilePath))
-                return null;
-
-            return viewHost;
+            var textDocument = await viewHost.GetTextDocumentAsync();
+            return textDocument != null && predicate(textDocument.FilePath) ? viewHost : null;
         }
     }
 }
