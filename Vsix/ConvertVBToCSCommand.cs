@@ -24,7 +24,8 @@ namespace CodeConverter.VsExtension
         public const int MainMenuCommandId = 0x0200;
         public const int CtxMenuCommandId = 0x0201;
         public const int ProjectItemCtxMenuCommandId = 0x0202;
-        public const int SolutionOrProjectCtxMenuCommandId = 0x0203;
+        public const int ProjectCtxMenuCommandId = 0x0203;
+        public const int SolutionCtxMenuCommandId = 0x0204;
         private const string ProjectExtension = ".vbproj";
 
         /// <summary>
@@ -35,9 +36,9 @@ namespace CodeConverter.VsExtension
         /// <summary>
         /// VS Package that provides this command, not null.
         /// </summary>
-        readonly REConverterPackage _package;
+        private readonly REConverterPackage _package;
 
-        private CodeConversion _codeConversion;
+        private readonly CodeConversion _codeConversion;
 
         /// <summary>
         /// Gets the instance of the command.
@@ -99,10 +100,16 @@ namespace CodeConverter.VsExtension
                 commandService.AddCommand(projectItemCtxMenuItem);
 
                 // Command in project context menu
-                var solutionOrProjectCtxMenuCommandId = new CommandID(CommandSet, SolutionOrProjectCtxMenuCommandId);
-                var solutionOrProjectCtxMenuItem = package.CreateCommand(SolutionOrProjectMenuItemCallbackAsync, solutionOrProjectCtxMenuCommandId);
-                solutionOrProjectCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatusAsync;
-                commandService.AddCommand(solutionOrProjectCtxMenuItem);
+                var projectCtxMenuCommandId = new CommandID(CommandSet, ProjectCtxMenuCommandId);
+                var projectCtxMenuItem = package.CreateCommand(SolutionOrProjectMenuItemCallbackAsync, projectCtxMenuCommandId);
+                projectCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatusAsync;
+                commandService.AddCommand(projectCtxMenuItem);
+
+                // Command in project context menu
+                var solutionCtxMenuCommandId = new CommandID(CommandSet, SolutionCtxMenuCommandId);
+                var solutionCtxMenuItem = package.CreateCommand(SolutionOrProjectMenuItemCallbackAsync, solutionCtxMenuCommandId);
+                solutionCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatusAsync;
+                commandService.AddCommand(solutionCtxMenuItem);
             }
         }
 

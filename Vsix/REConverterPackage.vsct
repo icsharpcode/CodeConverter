@@ -15,7 +15,8 @@
       <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectItemCtxMenuGroup" priority="0x0300">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE"/>
       </Group>
-      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" priority="0x0300" />
+      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectCtxMenuGroup" priority="0x0300" />
+      <Group guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionCtxMenuGroup" priority="0x0300" />
     </Groups>
 
     <Buttons>
@@ -44,8 +45,16 @@
           <ButtonText>Convert to VB</ButtonText>
         </Strings>
       </Button>
-      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBSolutionOrProjectCtxCommandId" type="Button" priority="0x0300">
-        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" />
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBProjectCtxCommandId" type="Button" priority="0x0300">
+        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectCtxMenuGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Convert to VB</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBSolutionCtxCommandId" type="Button" priority="0x0300">
+        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionCtxMenuGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
@@ -78,8 +87,16 @@
           <ButtonText>Convert to C#</ButtonText>
         </Strings>
       </Button>
-      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSSolutionOrProjectCtxCommandId" type="Button" priority="0x0300">
-        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" />
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSProjectCtxCommandId" type="Button" priority="0x0300">
+        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectCtxMenuGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Convert to C#</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSSolutionCtxCommandId" type="Button" priority="0x0300">
+        <Parent guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionCtxMenuGroup" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
@@ -95,17 +112,19 @@
     <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSCtxCommandId" context="VbEditorMenuVisibilityGuid" />
     <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBProjectItemCtxCommandId" context="CsFileMenuVisibilityGuid" />
     <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSProjectItemCtxCommandId" context="VbFileMenuVisibilityGuid" />
-    <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBSolutionOrProjectCtxCommandId" context="CsProjMenuVisibilityGuid" />
-    <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSSolutionOrProjectCtxCommandId" context="VbProjMenuVisibilityGuid" />
+    <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBProjectCtxCommandId" context="CsProjMenuVisibilityGuid" />
+    <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSProjectCtxCommandId" context="VbProjMenuVisibilityGuid" />
+    <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertCSToVBSolutionCtxCommandId" context="CsSolutionMenuVisibilityGuid" />
+    <VisibilityItem guid="guidREConverterCommandPackageCmdSet" id="ConvertVBToCSSolutionCtxCommandId" context="VbSolutionMenuVisibilityGuid" />
   </VisibilityConstraints>
   <CommandPlacements>
-    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" priority="0x0300">
+    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectCtxMenuGroup" priority="0x0300">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_PROJNODE"/>
     </CommandPlacement>
-    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" priority="0x0300">
+    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterProjectCtxMenuGroup" priority="0x0300">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_XPROJ_MULTIPROJ"/>
     </CommandPlacement>
-    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionOrProjectCtxMenuGroup" priority="0x0300">
+    <CommandPlacement guid="guidREConverterCommandPackageCmdSet" id="REConverterSolutionCtxMenuGroup" priority="0x0300">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_SOLNNODE"/>
     </CommandPlacement>
   </CommandPlacements>
@@ -118,21 +137,26 @@
     <GuidSymbol name="VbFileMenuVisibilityGuid" value="{207ed41c-1bf3-4e92-ad4f-f910b461acfc}" />
     <GuidSymbol name="CsProjMenuVisibilityGuid" value="{045a3ed1-4cb2-4c47-95be-0d99948e854f}" />
     <GuidSymbol name="VbProjMenuVisibilityGuid" value="{11700acc-38d7-4fc1-88dd-9e316aa5d6d5}" />
+    <GuidSymbol name="CsSolutionMenuVisibilityGuid" value="{cbe34396-af03-49ab-8945-3611a641abf6}" />
+    <GuidSymbol name="VbSolutionMenuVisibilityGuid" value="{3332e9e5-019c-4e93-b75a-2499f6f1cec6}" />
 
     <!-- This is the guid used to group the menu commands together -->
     <GuidSymbol name="guidREConverterCommandPackageCmdSet" value="{a3378a21-e939-40c9-9e4b-eb0cec7b7854}">
       <IDSymbol name="REConverterMenuGroup" value="0x1020" />
       <IDSymbol name="REConverterCtxMenuGroup" value="0x1021" />
       <IDSymbol name="REConverterProjectItemCtxMenuGroup" value="0x1022" />
-      <IDSymbol name="REConverterSolutionOrProjectCtxMenuGroup" value="0x1023" />
+      <IDSymbol name="REConverterProjectCtxMenuGroup" value="0x1023" />
+      <IDSymbol name="REConverterSolutionCtxMenuGroup" value="0x1024" />
       <IDSymbol name="ConvertCSToVBCommandId" value="0x0100" />
       <IDSymbol name="ConvertCSToVBCtxCommandId" value="0x0101" />
       <IDSymbol name="ConvertCSToVBProjectItemCtxCommandId" value="0x0102" />
-      <IDSymbol name="ConvertCSToVBSolutionOrProjectCtxCommandId" value="0x0103" />
+      <IDSymbol name="ConvertCSToVBProjectCtxCommandId" value="0x0103" />
+      <IDSymbol name="ConvertCSToVBSolutionCtxCommandId" value="0x0104" />
       <IDSymbol name="ConvertVBToCSCommandId" value="0x0200" />
       <IDSymbol name="ConvertVBToCSCtxCommandId" value="0x0201" />
       <IDSymbol name="ConvertVBToCSProjectItemCtxCommandId" value="0x0202" />
-      <IDSymbol name="ConvertVBToCSSolutionOrProjectCtxCommandId" value="0x0203" />
+      <IDSymbol name="ConvertVBToCSProjectCtxCommandId" value="0x0203" />
+      <IDSymbol name="ConvertVBToCSSolutionCtxCommandId" value="0x0204" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

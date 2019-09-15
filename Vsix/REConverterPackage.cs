@@ -41,9 +41,12 @@ namespace CodeConverter.VsExtension
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [ProvideOptionPage(typeof(ConverterOptionsPage),
         "Code Converter", "General", 0, 0, true)]
-    [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionOpening_string, PackageAutoLoadFlags.BackgroundLoad)]
     [Guid(PackageGuidString)]
-    [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
+    [ProvideAutoLoad(ConvertableSolutionMenuVisibilityGuid, PackageAutoLoadFlags.SkipWhenUIContextRulesActive)]
+    //See https://docs.microsoft.com/en-us/visualstudio/extensibility/how-to-use-rule-based-ui-context-for-visual-studio-extensions?view=vs-2019#term-types
+    [ProvideUIContextRule(ConvertableSolutionMenuVisibilityGuid, name: nameof(ConvertableSolutionMenuVisibilityGuid),
+        expression: "HasVbproj | HasCsproj", termNames: new[] { "HasVbproj", "HasCsproj" },
+        termValues: new[] { "SolutionHasProjectCapability:VB", "SolutionHasProjectCapability:CSharp" })]
     [ProvideUIContextRule(CsEditorMenuVisibilityGuid, name: nameof(CsEditorMenuVisibilityGuid),
         expression: "Cs", termNames: new[] { "Cs" },
         termValues: new[] { "ActiveEditorContentType:CSharp" })]
@@ -57,11 +60,18 @@ namespace CodeConverter.VsExtension
         expression: "DotVb", termNames: new[] { "DotVb" },
         termValues: new[] { "HierSingleSelectionName:.vb$"})]
     [ProvideUIContextRule(CsProjMenuVisibilityGuid, name: nameof(CsProjMenuVisibilityGuid),
-        expression: "DotCsProj", termNames: new[] { "DotCsProj" },
-        termValues: new[] { "HierSingleSelectionName:.csproj$" })]
+        expression: "Csproj", termNames: new[] { "Csproj" },
+        termValues: new[] { "ActiveProjectCapability:CSharp" })]
     [ProvideUIContextRule(VbProjMenuVisibilityGuid, name: nameof(VbProjMenuVisibilityGuid),
-        expression: "DotVbProj", termNames: new[] { "DotVbProj" },
-        termValues: new[] { "HierSingleSelectionName:.vbproj$" })]
+        expression: "Vbproj", termNames: new[] { "Vbproj" },
+        termValues: new[] { "ActiveProjectCapability:VB" })]
+    [ProvideUIContextRule(CsSolutionMenuVisibilityGuid, name: nameof(CsSolutionMenuVisibilityGuid),
+        expression: "HasCsproj", termNames: new[] { "HasCsproj" },
+        termValues: new[] { "SolutionHasProjectCapability:CSharp" })]
+    [ProvideUIContextRule(VbSolutionMenuVisibilityGuid, name: nameof(VbSolutionMenuVisibilityGuid),
+        expression: "HasVbproj", termNames: new[] { "HasVbproj" },
+        termValues: new[] { "SolutionHasProjectCapability:VB" })]
+    [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     public sealed class REConverterPackage : AsyncPackage
     {
         public VisualStudioWorkspace VsWorkspace {
@@ -82,6 +92,9 @@ namespace CodeConverter.VsExtension
         public const string VbFileMenuVisibilityGuid = "207ed41c-1bf3-4e92-ad4f-f910b461acfc";
         public const string CsProjMenuVisibilityGuid = "045a3ed1-4cb2-4c47-95be-0d99948e854f";
         public const string VbProjMenuVisibilityGuid = "11700acc-38d7-4fc1-88dd-9e316aa5d6d5";
+        public const string CsSolutionMenuVisibilityGuid = "cbe34396-af03-49ab-8945-3611a641abf6";
+        public const string VbSolutionMenuVisibilityGuid = "3332e9e5-019c-4e93-b75a-2499f6f1cec6";
+        public const string ConvertableSolutionMenuVisibilityGuid = "8e7192d0-28b7-4fe7-8d84-82c1db98d459";
 
         /// <summary>
         /// Initializes a new instance of package class.
