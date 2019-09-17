@@ -124,8 +124,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private bool ShouldBeNestedInRootNamespace(VBSyntax.StatementSyntax vbStatement, string rootNamespace)
         {
-            var declSymbol = _semanticModel.GetDeclaredSymbol(vbStatement);
-            return declSymbol.ToDisplayString().StartsWith(rootNamespace);
+            return _semanticModel.GetDeclaredSymbol(vbStatement)?.ToDisplayString().StartsWith(rootNamespace) == true;
         }
 
         private bool IsNamespaceDeclaration(VBSyntax.StatementSyntax m)
@@ -144,7 +143,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitNamespaceBlock(VBSyntax.NamespaceBlockSyntax node)
         {
             var members = (await node.Members.SelectAsync(ConvertMember)).Where(m => m != null);
-            var namespaceToDeclare = _semanticModel.GetDeclaredSymbol(node).ToDisplayString();
+            var namespaceToDeclare = _semanticModel.GetDeclaredSymbol(node)?.ToDisplayString() ?? node.NamespaceStatement.Name.ToString();
             var parentNamespaceSyntax = node.GetAncestor<VBSyntax.NamespaceBlockSyntax>();
             var parentNamespaceDecl = parentNamespaceSyntax != null ? _semanticModel.GetDeclaredSymbol(parentNamespaceSyntax) : null;
             var parentNamespaceFullName = parentNamespaceDecl?.ToDisplayString() ?? _topAncestorNamespace;
@@ -502,9 +501,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private List<MethodWithHandles> GetMethodWithHandles(VBSyntax.TypeBlockSyntax parentType)
         {
-            if (parentType == null) return new List<MethodWithHandles>();
+            if (parentType == null || !(_semanticModel.GetDeclaredSymbol(parentType) is ITypeSymbol containingType)) return new List<MethodWithHandles>();
 
-            var containingType = (ITypeSymbol) _semanticModel.GetDeclaredSymbol(parentType);
             var methodWithHandleses = containingType.GetMembers().OfType<IMethodSymbol>()
                 .Where(m => VBasic.VisualBasicExtensions.HandledEvents(m).Any())
                 .Select(m => {
@@ -798,24 +796,27 @@ namespace ICSharpCode.CodeConverter.CSharp
             var postBodyStatements = new List<StatementSyntax>();
 
             var functionSym = _semanticModel.GetDeclaredSymbol(node);
-            var returnType = CommonConversions.GetTypeSyntax(functionSym.GetReturnType());
+            if (functionSym != null) {
+                var returnType = CommonConversions.GetTypeSyntax(functionSym.GetReturnType());
 
-            if (csReturnVariableOrNull != null)
-            {
-                var retDeclaration = CommonConversions.CreateVariableDeclarationAndAssignment(
-                    csReturnVariableOrNull.Identifier.ValueText, SyntaxFactory.DefaultExpression(returnType), returnType);
-                preBodyStatements.Add(SyntaxFactory.LocalDeclarationStatement(retDeclaration));
-            }
+                if (csReturnVariableOrNull != null) {
+                    var retDeclaration = CommonConversions.CreateVariableDeclarationAndAssignment(
+                        csReturnVariableOrNull.Identifier.ValueText, SyntaxFactory.DefaultExpression(returnType),
+                        returnType);
+                    preBodyStatements.Add(SyntaxFactory.LocalDeclarationStatement(retDeclaration));
+                }
 
-            ControlFlowAnalysis controlFlowAnalysis = null;
-            if (!node.Statements.IsEmpty())
-                controlFlowAnalysis = _semanticModel.AnalyzeControlFlow(node.Statements.First(), node.Statements.Last());
+                ControlFlowAnalysis controlFlowAnalysis = null;
+                if (!node.Statements.IsEmpty())
+                    controlFlowAnalysis =
+                        _semanticModel.AnalyzeControlFlow(node.Statements.First(), node.Statements.Last());
 
-            bool mayNeedReturn = controlFlowAnalysis?.EndPointIsReachable != false;
-            if (mayNeedReturn)
-            {
-                var csReturnExpression = csReturnVariableOrNull ?? (ExpressionSyntax) SyntaxFactory.DefaultExpression(returnType);
-                postBodyStatements.Add(SyntaxFactory.ReturnStatement(csReturnExpression));
+                bool mayNeedReturn = controlFlowAnalysis?.EndPointIsReachable != false;
+                if (mayNeedReturn) {
+                    var csReturnExpression = csReturnVariableOrNull ??
+                                             (ExpressionSyntax)SyntaxFactory.DefaultExpression(returnType);
+                    postBodyStatements.Add(SyntaxFactory.ReturnStatement(csReturnExpression));
+                }
             }
 
             var statements = preBodyStatements
@@ -830,10 +831,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.Block(await statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor)));
         }
 
-        private static bool IsAccessedThroughMyClass(SyntaxNode node, SyntaxToken identifier, ISymbol symbol)
+        private static bool IsAccessedThroughMyClass(SyntaxNode node, SyntaxToken identifier, ISymbol symbolOrNull)
         {
             bool accessedThroughMyClass = false;
-            if (symbol.IsVirtual && !symbol.IsAbstract) {
+            if (symbolOrNull != null && symbolOrNull.IsVirtual && !symbolOrNull.IsAbstract) {
                 var classBlock = node.Ancestors().OfType<VBSyntax.ClassBlockSyntax>().FirstOrDefault();
                 if (classBlock != null) {
                     accessedThroughMyClass = _accessedThroughMyClass.Contains(identifier.Text);
