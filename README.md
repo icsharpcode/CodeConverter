@@ -1,4 +1,4 @@
-# Code Converter [![Build status](https://ci.appveyor.com/api/projects/status/w9x7r8b9otds16oj/branch/master?svg=true)](https://ci.appveyor.com/project/icsharpcode/codeconverter/branch/master) 
+# Code Converter
 
 Convert code from VB.NET to C# and vice versa via Roslyn using a [Visual Studio Extension](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter) or [Online snippet converter](https://codeconverter.icsharpcode.net/)
 
