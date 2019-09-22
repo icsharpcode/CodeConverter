@@ -31,7 +31,7 @@ Currently, the VB -> C# conversion quality is higher than the C# -> VB conversio
 * NuGet package: [https://www.nuget.org/packages/ICSharpCode.CodeConverter/](https://www.nuget.org/packages/ICSharpCode.CodeConverter/)
 
   * Check out the [CodeConversion class](https://github.com/icsharpcode/CodeConverter/blob/master/Vsix/CodeConversion.cs#L188) in the VSIX project.
-  * Or check out the [ConverterController](https://github.com/icsharpcode/CodeConverter/blob/master/Web/Controllers/ConverterController.cs) for a more web-focused API.
+  * Or check out the [ConverterController](https://github.com/icsharpcode/CodeConverter/blob/master/CodeConverter.Web/ConverterController.cs) for a more web-focused API.
 
 ## Building/running from source
 1. Ensure you have [.NET Core SDK 2.2+](https://dotnet.microsoft.com/download/dotnet-core/2.2)
