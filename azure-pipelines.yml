@@ -8,10 +8,10 @@ pool:
   vmImage: 'windows-2019'
 
 variables:
-  solution: '**/*.sln'
+  solution: '**/CodeConverter.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Debug'
-  buildVersion: '7.3.$(Build.BuildId)'
+  buildVersion: '7.1.$(Build.BuildId)'
 
 steps:
 - task: NuGetToolInstaller@1
@@ -19,6 +19,7 @@ steps:
 - task: NuGetCommand@2
   inputs:
     restoreSolution: '$(solution)'
+
 - task: Assembly-Info-NetCore@2
   inputs:
     Path: '$(Build.SourcesDirectory)'
@@ -29,6 +30,7 @@ steps:
     VersionNumber: '$(buildVersion)'
     FileVersionNumber: '$(buildVersion)'
     PackageVersion: '$(buildVersion)'
+
 - task: VSBuild@1
   inputs:
     solution: '$(solution)'
@@ -40,3 +42,16 @@ steps:
   inputs:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+
+- task: CopyFiles@2
+  displayName: Move vsix/nupkg to publish directory
+  inputs:
+    contents: |
+      **\*.vsix
+      **\*.nupkg
+    targetFolder: $(Build.ArtifactStagingDirectory)
+
+- task: PublishPipelineArtifact@0
+  displayName: Publish Artifacts
+  inputs:
+    targetPath: $(Build.ArtifactStagingDirectory)
