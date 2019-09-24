@@ -4,14 +4,19 @@ trigger:
 pr:
 - master
 
-pool:
-  vmImage: 'windows-2019'
-
 variables:
   solution: '**/CodeConverter.sln'
   buildPlatform: 'Any CPU'
-  buildConfiguration: 'Debug'
   buildVersion: '7.1.$(Build.BuildId)'
+
+pool:
+  vmImage: 'windows-2019'
+strategy:
+  matrix:
+    Config_Release:
+        buildConfiguration: 'Release'
+    Config_Debug:
+        buildConfiguration: 'Debug'
 
 steps:
 - task: NuGetToolInstaller@1
@@ -43,10 +48,17 @@ steps:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
 
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'pack'
+    packagesToPack: '**/ICSharpCode.CodeConverter.csproj'
+    versioningScheme: 'off'
+
 - task: CopyFiles@2
   displayName: Move vsix/nupkg to publish directory
   inputs:
     contents: |
+      **\ICSharpCode.CodeConverter.*.nupkg
       **\CodeConverter.VsExtension.vsix
     targetFolder: $(Build.ArtifactStagingDirectory)
 
