@@ -90,33 +90,22 @@ End Sub";
         {
             var convertedTextFollowedByExceptions =
                 (conversionResult.ConvertedCode ?? "") + (conversionResult.GetExceptionsAsString() ?? "");
-            var txt = Utils.HomogenizeEol(convertedTextFollowedByExceptions).TrimEnd();
-            expectedConversionResultText = Utils.HomogenizeEol(expectedConversionResultText).TrimEnd();
+            var txt = convertedTextFollowedByExceptions.TrimEnd();
+            expectedConversionResultText = expectedConversionResultText.TrimEnd();
             AssertCodeEqual(originalSource, expectedConversionResultText, txt);
         }
 
         private static void AssertCodeEqual(string originalSource, string expectedConversion, string actualConversion)
         {
-            if (expectedConversion != actualConversion) {
-                int l = Math.Max(expectedConversion.Length, actualConversion.Length);
-                StringBuilder sb = new StringBuilder(l * 4);
-                sb.AppendLine("expected:");
-                sb.AppendLine(expectedConversion);
-                sb.AppendLine("got:");
-                sb.AppendLine(actualConversion);
-                sb.AppendLine("diff:");
-                for (int i = 0; i < l; i++) {
-                    if (i >= expectedConversion.Length || i >= actualConversion.Length || expectedConversion[i] != actualConversion[i])
-                        sb.Append('x');
-                    else
-                        sb.Append(expectedConversion[i]);
-                }
+            OurAssert.StringsEqualIgnoringNewlines(expectedConversion, actualConversion, () => 
+            {
+                StringBuilder sb = OurAssert.DescribeStringDiff(expectedConversion, actualConversion);
                 sb.AppendLine();
                 sb.AppendLine("source:");
                 sb.AppendLine(originalSource);
                 if (WriteNewCharacterization) TestFileRewriter.UpdateFiles(expectedConversion, actualConversion);
-                Assert.True(false, sb.ToString());
-            }
+                return sb.ToString();
+            });
             Assert.False(WriteNewCharacterization, $"Test setup issue: Set {nameof(WriteNewCharacterization)} to false after using it");
         }
 

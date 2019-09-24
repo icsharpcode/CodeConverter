@@ -177,12 +177,11 @@ namespace CodeConverter.Tests.TestRunners
 
             Assert.True(conversionResults.ContainsKey(convertedFilePath), expectedFile.Name + " is missing from the conversion result of [" + string.Join(",", conversionResults.Keys) + "]");
 
-            var expectedText = Utils.HomogenizeEol(File.ReadAllText(expectedFile.FullName));
+            var expectedText = File.ReadAllText(expectedFile.FullName);
             var conversionResult = conversionResults[convertedFilePath];
-            var actualText =
-                Utils.HomogenizeEol(conversionResult.ConvertedCode ?? "" + conversionResult.GetExceptionsAsString() ?? "");
+            var actualText = conversionResult.ConvertedCode ?? "" + conversionResult.GetExceptionsAsString() ?? "";
 
-            Assert.Equal(expectedText, actualText);
+            OurAssert.StringsEqualIgnoringNewlines(expectedText, actualText);
             Assert.Equal(GetEncoding(expectedFile.FullName), GetEncoding(conversionResult));
         }
 
