@@ -47,8 +47,7 @@ steps:
   displayName: Move vsix/nupkg to publish directory
   inputs:
     contents: |
-      **\*.vsix
-      **\*.nupkg
+      **\CodeConverter.VsExtension.vsix
     targetFolder: $(Build.ArtifactStagingDirectory)
 
 - task: PublishPipelineArtifact@0
