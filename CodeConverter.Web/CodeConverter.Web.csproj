@@ -19,7 +19,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="2.10.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="2.10.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="2.10.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.0.0-rc3" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="5.0.0-rc2" />
   </ItemGroup>
 
 
