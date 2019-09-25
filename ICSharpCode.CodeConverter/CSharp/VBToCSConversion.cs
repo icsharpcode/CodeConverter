@@ -22,6 +22,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private Project _sourceVbProject;
         private CSharpCompilation _csharpViewOfVbSymbols;
+        private readonly object _conertedCsProjectLock = new object();
         private Project _convertedCsProject;
         /// <summary>
         /// It's really hard to change simplifier options since everything is done on the Object hashcode of internal fields.
@@ -47,7 +48,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public async Task<Document> SingleFirstPass(Document document)
         {
             var converted = await VisualBasicConverter.ConvertCompilationTree(document, _csharpViewOfVbSymbols, _csharpReferenceProject);
-            lock (_convertedCsProject) {
+            lock (_conertedCsProjectLock) {
                 var convertedDocument = _convertedCsProject.AddDocument(document.FilePath, converted);
                 _convertedCsProject = convertedDocument.Project;
                 return convertedDocument;
