@@ -306,8 +306,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private bool IsPartialType(VBSyntax.DeclarationStatementSyntax stmt)
         {
-            var declaredSymbol = _semanticModel.GetDeclaredSymbol(stmt);
-            return declaredSymbol.GetDeclarations().Count() > 1;
+            return _semanticModel.GetDeclaredSymbol(stmt).IsPartialClassDefinition();
         }
 
         public override async Task<CSharpSyntaxNode> VisitEnumBlock(VBSyntax.EnumBlockSyntax node)

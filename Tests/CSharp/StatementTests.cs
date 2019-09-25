@@ -20,7 +20,7 @@ namespace CodeConverter.Tests.CSharp
         Do
         Loop While True
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -48,7 +48,7 @@ End Class", @"class TestClass
         Dim b As Integer
         b = 0
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -72,12 +72,12 @@ Class TestClass
     End Sub
 End Class", @"using System;
 
-enum MyEnum
+internal enum MyEnum
 {
     AMember
 }
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod(string v)
     {
@@ -94,7 +94,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As Integer = 0
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -110,7 +110,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim b = 0
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -129,7 +129,7 @@ End Class", @"class TestClass
     End Sub
 End Class", @"using System.Xml.Linq;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -172,7 +172,7 @@ End Class", @"using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public class TestFunc
+public partial class TestFunc
 {
     public Func<int, int> pubIdent = (row) => row;
     public Func<int, object> pubWrite = (row) => Console.WriteLine(row);
@@ -238,7 +238,7 @@ End Class", @"using System;
 using System.Collections.Generic;
 using System.Linq;
 
-internal class ContrivedFuncInferenceExample
+internal partial class ContrivedFuncInferenceExample
 {
     private void TestMethod()
     {
@@ -249,7 +249,7 @@ internal class ContrivedFuncInferenceExample
         }
     }
 
-    class Blah
+    public partial class Blah
     {
         public readonly Func<List<string>, bool> Check;
 
@@ -294,7 +294,7 @@ internal class ContrivedFuncInferenceExample
         Dim b As String
         b = New String(""test"")
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -311,7 +311,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim totales As (fics As Integer, dirs As Integer) = (0, 0)
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -327,7 +327,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim b As String = New String(""test"")
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -343,7 +343,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim b = New String(""test"")
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -365,12 +365,12 @@ Class UseClass
         Dim surrounding As SurroundingClass = New SurroundingClass()
         surrounding.Arr(1) = ""bla""
     End Sub
-End Class", @"class SurroundingClass
+End Class", @"internal partial class SurroundingClass
 {
     public string[] Arr;
 }
 
-class UseClass
+internal partial class UseClass
 {
     public void DoStuff()
     {
@@ -387,7 +387,7 @@ class UseClass
     Private Sub TestMethod()
         Dim b As Integer()
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -408,7 +408,7 @@ Class TestClass
     End Sub
 End Class", @"using System.Collections.Generic;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -435,7 +435,7 @@ class TestClass
     End Function
 End Class", @"using System;
 
-public class TestClass
+public partial class TestClass
 {
     public static int[] TestMethod(int[] numArray, int[] numArray2)
     {
@@ -471,7 +471,7 @@ public class TestClass
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -489,7 +489,7 @@ class TestClass
     End Sub
 End Class", @"using System.Diagnostics;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -510,7 +510,7 @@ class TestClass
     End Sub
 End Class", @"using System.Text;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -541,7 +541,7 @@ Class TestClass
     End Sub
 End Class", @"using System.Data.SqlClient;
 
-class TestClass
+internal partial class TestClass
 {
     private void Save()
     {
@@ -576,7 +576,7 @@ End Class
 Public Structure SomeStruct
     Public ArrField As String()
     Public Property ArrProp As String()
-End Structure", @"public class VisualBasicClass
+End Structure", @"public partial class VisualBasicClass
 {
     public void Stuff()
     {
@@ -587,7 +587,7 @@ End Structure", @"public class VisualBasicClass
     }
 }
 
-public struct SomeStruct
+public partial struct SomeStruct
 {
     public string[] ArrField;
     public string[] ArrProp { get; set; }
@@ -611,7 +611,7 @@ public struct SomeStruct
     End Sub
 End Class", @"using System.Text;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -636,7 +636,7 @@ class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = {1, 2, 3}
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -652,7 +652,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim b = {1, 2, 3}
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -668,7 +668,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer() {1, 2, 3}
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -684,7 +684,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer(2) {1, 2, 3}
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -700,7 +700,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer(2) { }
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -736,7 +736,7 @@ End Class", @"class TestClass
         ' Declare a jagged array
         Dim sales()() As Double = New Double(11)() {}
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -769,7 +769,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,)
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -785,7 +785,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = {{1, 2}, {3, 4}}
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -801,7 +801,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = New Integer(,) {{1, 2}, {3, 4}}
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -822,7 +822,7 @@ End Class", @"class TestClass
         Dim e As Integer()(,) = New Integer()(,) {}
         Dim f As Integer()(,) = New Integer(-1)(,) {}
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -843,7 +843,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim b As Integer()()
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -859,7 +859,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -875,7 +875,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim b = New Integer()() {New Integer() {1}}
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -891,7 +891,7 @@ End Class", @"class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -914,7 +914,7 @@ the_beginning:
     End Sub
 End Class", @"using System;
 
-class Test
+internal partial class Test
 {
     private void TestMethod()
     {
@@ -952,7 +952,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-public class AcmeClass
+public partial class AcmeClass
 {{
     [DllImport(""user32"")]
     private static extern {csType} SetForegroundWindow(int hwnd);
@@ -977,7 +977,7 @@ public class AcmeClass
 End Class"
                 , @"using System.Runtime.InteropServices;
 
-public class AcmeClass
+public partial class AcmeClass
 {
     [DllImport(""CP210xManufacturing.dll"", EntryPoint = ""CP210x_GetNumDevices"", CharSet = CharSet.Ansi)]
     internal static extern int GetNumDevices(ref string NumDevices);
@@ -1001,7 +1001,7 @@ public class AcmeClass
             b = 3
         End If
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod(int a)
     {
@@ -1038,7 +1038,7 @@ End Class", @"class TestClass
         Next
         Return -1
     End Function
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     public static int FindTextInCol(string w, int pTitleRow, int startCol, string needle)
     {
@@ -1071,7 +1071,7 @@ End Class", @"class TestClass
             b = 1
         End While
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1102,7 +1102,7 @@ End Class", @"class TestClass
             charIndex = rand.Next(48, 123)
         Loop Until (charIndex >= 48 AndAlso charIndex <= 57) OrElse (charIndex >= 65 AndAlso charIndex <= 90) OrElse (charIndex >= 97 AndAlso charIndex <= 122)
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1129,7 +1129,7 @@ End Class", @"class TestClass
             b = 1
         Loop
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1163,7 +1163,7 @@ End Class", @"class TestClass
             b = 1
         Loop While b = 0
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1197,7 +1197,7 @@ End Class", @"class TestClass
             b = 1
         Loop While b = 0
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1227,7 +1227,7 @@ End Class", @"class TestClass
             If val = 3 Then Exit For
         Next
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod(int[] values)
     {
@@ -1252,7 +1252,7 @@ End Class", @"class TestClass
             If val = 3 Then Exit For
         Next
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod(int[] values)
     {
@@ -1278,7 +1278,7 @@ End Class", @"class TestClass
         For idx = 0 To 10
         Next
     End Sub
-End Class", @"internal class Program
+End Class", @"internal partial class Program
 {
     public static void Main(string[] args)
     {
@@ -1306,7 +1306,7 @@ End Class", @"internal class Program
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod(object nullObject)
     {
@@ -1330,7 +1330,7 @@ class TestClass
             b(i) = s(i)
         Next
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod(int end)
     {
@@ -1353,7 +1353,7 @@ End Class", @"class TestClass
 
         Next
     End Sub
-End Class", @"public class Class1
+End Class", @"public partial class Class1
 {
     private int Index;
 
@@ -1381,7 +1381,7 @@ End Class", @"public class Class1
 End Class", @"using System;
 using Microsoft.VisualBasic.CompilerServices;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1406,7 +1406,7 @@ class TestClass
             b(i) = s(i)
         Next
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private void TestMethod(int end)
     {
@@ -1457,7 +1457,7 @@ Finish:
     End Sub
 End Class", @"using System;
 
-class GotoTest1
+internal partial class GotoTest1
 {
     private static void Main()
     {
@@ -1507,7 +1507,7 @@ class GotoTest1
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod(object nullObject)
     {
@@ -1529,7 +1529,7 @@ class TestClass
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1561,7 +1561,7 @@ class TestClass
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     public event EventHandler MyEvent;
 
@@ -1599,7 +1599,7 @@ class TestClass
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private void TestMethod(int number)
     {
@@ -1645,7 +1645,7 @@ class TestClass
     End Function
 End Class", @"using Microsoft.VisualBasic.CompilerServices;
 
-public class TestClass
+public partial class TestClass
 {
     public static string TimeAgo(int daysAgo)
     {
@@ -1692,7 +1692,7 @@ public class TestClass
     End Function
 End Class", @"using Microsoft.VisualBasic;
 
-public class TestClass
+public partial class TestClass
 {
     public static string TimeAgo(string x)
     {
@@ -1751,7 +1751,7 @@ public class TestClass
 End Class", @"using System;
 using Microsoft.VisualBasic;
 
-public class TestClass2
+public partial class TestClass2
 {
     public bool CanDoWork(object Something)
     {
@@ -1827,7 +1827,7 @@ public class TestClass2
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private static bool Log(string message)
     {
@@ -1892,7 +1892,7 @@ class TestClass
     End Function
 End Class", @"using System.Collections.Generic;
 
-class TestClass
+internal partial class TestClass
 {
     private IEnumerable<int> TestMethod(int number)
     {

@@ -23,13 +23,13 @@ Namespace NestedWithinRoot
 End Namespace",
                 @"namespace TheRootNamespace
 {
-    class AClassInRootNamespace
+    internal partial class AClassInRootNamespace
     {
     }
 
     namespace NestedWithinRoot
     {
-        class AClassInANamespace
+        internal partial class AClassInANamespace
         {
         }
     }
@@ -44,7 +44,7 @@ End Namespace",
 End Class",
                 @"namespace TheRootNamespace
 {
-    class AClassInRootNamespace
+    internal partial class AClassInRootNamespace
     {
     }
 }");
@@ -59,7 +59,7 @@ End Class",
 End Namespace",
                 @"namespace TheRootNamespace.A.B
 {
-    public class Class1
+    public partial class Class1
     {
     }
 }");
@@ -78,7 +78,7 @@ End Namespace",
 {
     namespace C
     {
-        public class Class1
+        public partial class Class1
         {
         }
     }
@@ -103,13 +103,13 @@ End Class",
     {
         namespace C
         {
-            public class Class1
+            public partial class Class1
             {
             }
         }
     }
 
-    public class RootClass
+    public partial class RootClass
     {
     }
 }");
@@ -124,7 +124,7 @@ End Class",
 End Namespace",
                 @"namespace A.B
 {
-    public class Class1
+    public partial class Class1
     {
     }
 }");
@@ -141,7 +141,7 @@ Namespace NestedWithinRoot
 End Namespace",
                 @"namespace TheRootNamespace.NestedWithinRoot
 {
-    class AClassInANamespace
+    internal partial class AClassInANamespace
     {
     }
 }");
@@ -158,7 +158,7 @@ Namespace Global.NotNestedWithinRoot
 End Namespace",
                 @"namespace NotNestedWithinRoot
 {
-    class AClassInANamespace
+    internal partial class AClassInANamespace
     {
     }
 }");
@@ -183,20 +183,20 @@ Namespace NestedWithinRoot
 End Namespace",
                 @"namespace NotNestedWithinRoot
 {
-    class AClassInANamespace
+    internal partial class AClassInANamespace
     {
     }
 }
 
 namespace TheRootNamespace
 {
-    class AClassInRootNamespace
+    internal partial class AClassInRootNamespace
     {
     }
 
     namespace NestedWithinRoot
     {
-        class AClassInANamespace
+        internal partial class AClassInANamespace
         {
         }
     }

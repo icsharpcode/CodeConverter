@@ -56,7 +56,7 @@ Public Class Test
 End Class",
                 @"using tr = System.IO.TextReader;
 
-public class Test
+public partial class Test
 {
     private tr aliased;
 }");
@@ -78,7 +78,7 @@ public class Test
     End Class
 End Namespace", @"namespace Test.@class
 {
-    class TestClass<T>
+    internal partial class TestClass<T>
     {
     }
 }");
@@ -97,7 +97,7 @@ End Namespace", @"namespace Test.@class
     End Module
 End Namespace", @"namespace Test.@class
 {
-    internal static class TestClass
+    internal partial static class TestClass
     {
         public static void Test()
         {
@@ -118,7 +118,7 @@ End Namespace", @"namespace Test.@class
     End Class
 End Namespace", @"namespace Test.@class
 {
-    abstract class TestClass
+    internal abstract partial class TestClass
     {
     }
 }");
@@ -132,7 +132,7 @@ End Namespace", @"namespace Test.@class
     End Class
 End Namespace", @"namespace Test.@class
 {
-    sealed class TestClass
+    internal sealed partial class TestClass
     {
     }
 }");
@@ -148,7 +148,7 @@ End Namespace", @"namespace Test.@class
     Sub Test()
 End Interface", @"using System;
 
-interface ITest : IDisposable
+internal partial interface ITest : IDisposable
 {
     void Test();
 }");
@@ -182,7 +182,7 @@ End Enum", @"internal enum ExceptionResource
     Protected MustOverride Sub Test()
 End Class", @"using System;
 
-abstract class ClassA : IDisposable
+internal abstract partial class ClassA : IDisposable
 {
     protected abstract void Test();
 }");
@@ -195,7 +195,7 @@ abstract class ClassA : IDisposable
     Protected MustOverride Sub Test()
 End Class", @"using System;
 
-abstract class ClassA : EventArgs, IDisposable
+internal abstract partial class ClassA : EventArgs, IDisposable
 {
     protected abstract void Test();
 }");
@@ -212,7 +212,7 @@ abstract class ClassA : EventArgs, IDisposable
     End Sub
 End Structure", @"using System;
 
-struct MyType : IComparable<MyType>
+internal partial struct MyType : IComparable<MyType>
 {
     private void Test()
     {
@@ -245,7 +245,7 @@ struct MyType : IComparable<MyType>
 End Class",
                 @"using System;
 
-class test : IComparable
+internal partial class test : IComparable
 {
 }");
         }
@@ -258,7 +258,7 @@ class test : IComparable
 End Class",
                 @"using System;
 
-class test : IComparable
+internal partial class test : IComparable
 {
 }");
         }
@@ -273,7 +273,7 @@ Class test
 End Class",
                 @"using System.IO;
 
-class test : InvalidDataException
+internal partial class test : InvalidDataException
 {
 }");
         }
@@ -286,7 +286,7 @@ class test : InvalidDataException
 End Class",
                 @"using System.IO;
 
-class test : InvalidDataException
+internal partial class test : InvalidDataException
 {
 }");
         }
@@ -301,7 +301,7 @@ class test : InvalidDataException
         MyBase.New
     End Sub
 End Class",
-                @"public class DataSet1 : System.Data.DataSet
+                @"public partial class DataSet1 : System.Data.DataSet
 {
     public DataSet1() : base()
     {
@@ -321,7 +321,7 @@ End Class",
         Return """"
     End Function
 End Class",
-                @"public class MyTestClass
+                @"public partial class MyTestClass
 {
     /// <summary>
     /// Returns empty
@@ -479,47 +479,47 @@ Module Module1
 
 End Module", @"using Microsoft.VisualBasic.CompilerServices;
 
-enum ESByte : sbyte
+internal enum ESByte : sbyte
 {
     M1 = 0
 }
 
-enum EByte : byte
+internal enum EByte : byte
 {
     M1 = 0
 }
 
-enum EShort : short
+internal enum EShort : short
 {
     M1 = 0
 }
 
-enum EUShort : ushort
+internal enum EUShort : ushort
 {
     M1 = 0
 }
 
-enum EInteger : int
+internal enum EInteger : int
 {
     M1 = 0
 }
 
-enum EUInteger : uint
+internal enum EUInteger : uint
 {
     M1 = 0
 }
 
-enum ELong : long
+internal enum ELong : long
 {
     M1 = 0
 }
 
-enum EULong : ulong
+internal enum EULong : ulong
 {
     M1 = 0
 }
 
-static class Module1
+internal partial static class Module1
 {
     public static void Main()
     {
@@ -649,11 +649,11 @@ End Interface
 Public Class Bar(Of x As {New, Foo})
 
 End Class",
-                @"public interface Foo
+                @"public partial interface Foo
 {
 }
 
-public class Bar<x> where x : Foo, new()
+public partial class Bar<x> where x : Foo, new()
 {
 }");
         }
@@ -673,7 +673,7 @@ public class Bar<x> where x : Foo, new()
         Dim z = Me.F2()
     End Sub
 End Class",
-                @"public class A
+                @"public partial class A
 {
     public int MyClassF1()
     {
@@ -705,7 +705,7 @@ End Class",
         Dim z = Me.P2
     End Sub
 End Class",
-                @"public class A
+                @"public partial class A
 {
     public int MyClassP1 { get; set; } = 1;
 

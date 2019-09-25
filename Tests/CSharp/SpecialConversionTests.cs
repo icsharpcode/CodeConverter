@@ -18,7 +18,7 @@ namespace CodeConverter.Tests.CSharp
     End Sub
 End Class", @"using System;
 
-class TestClass
+internal partial class TestClass
 {
     private event EventHandler MyEvent;
 
@@ -54,7 +54,7 @@ class TestClass
     End Sub
 End Class", @"using System;
 
-class TestClass45
+internal partial class TestClass45
 {
     private event EventHandler backingField;
 
@@ -87,7 +87,7 @@ class TestClass45
         await TestConversionVisualBasicToCSharp(
         @"Class Test
     Public CR As Integer = &HD * &B1
-End Class", @"class Test
+End Class", @"internal partial class Test
 {
     public int CR = 0xD * 0b1;
 }");

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Editing;
 
@@ -15,6 +16,8 @@ namespace ICSharpCode.CodeConverter.Util
         // and some have different names/arguments, eg. DateAdd(). This needs to be handled properly
         // as part of #174
         private static readonly string[] TypesToConvertToDateTime = new[] { "DateTime" };
+
+        public const string ForcePartialTypesAssemblyName = "ProjectToBeConvertedWithPartialTypes";
 
         /// <summary>
         /// Checks if 'symbol' is accessible from within 'within'.
@@ -231,7 +234,8 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsPartialClassDefinition(this ISymbol declaredSymbol)
         {
-            return declaredSymbol is ITypeSymbol ts && ts.DeclaringSyntaxReferences.Length > 1;
+            return declaredSymbol is ITypeSymbol ts && (ts.DeclaringSyntaxReferences.Length > 1
+                || ts.ContainingAssembly.Name == ForcePartialTypesAssemblyName);
         }
     }
 }

@@ -18,7 +18,7 @@ namespace CodeConverter.Tests.CSharp
     End Sub
 End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
 
-class Class1
+internal partial class Class1
 {
     private void Test()
     {
@@ -37,7 +37,7 @@ class Class1
         Dim x = CDate(""2019-09-04"")
 End Class", @"using Microsoft.VisualBasic.CompilerServices;
 
-public class Class1
+public partial class Class1
 {
     public void Foo()
     {
@@ -57,7 +57,7 @@ public class Class1
     End Sub
 End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
 
-class Class1
+internal partial class Class1
 {
     private void Test()
     {
@@ -78,7 +78,7 @@ class Class1
     End Sub
 End Class", @"using Microsoft.VisualBasic.CompilerServices;
 
-class Class1
+internal partial class Class1
 {
     private void Test()
     {
@@ -100,7 +100,7 @@ class Class1
 End Class",
 @"using System.Collections.Generic;
 
-class Class1
+internal partial class Class1
 {
     private void Test()
     {
@@ -123,7 +123,7 @@ class Class1
 End Class",
 @"using Microsoft.VisualBasic.CompilerServices;
 
-class Class1
+internal partial class Class1
 {
     private void Test()
     {
@@ -146,7 +146,7 @@ class Class1
 End Class",
 @"using System.Collections.Generic;
 
-class Class1
+internal partial class Class1
 {
     private void Test()
     {
@@ -165,7 +165,7 @@ class Class1
         Dim o As Object = 5L
     End Sub
 End Class",
-@"class Class1
+@"internal partial class Class1
 {
     private void Test()
     {
@@ -183,7 +183,7 @@ End Class",
         Dim o As Object = 5F
     End Sub
 End Class",
-@"class Class1
+@"internal partial class Class1
 {
     private void Test()
     {
@@ -200,7 +200,7 @@ End Class",
     Private Sub Test()
         Dim o As Object = 5.0D
     End Sub
-End Class" + Environment.NewLine, @"class Class1
+End Class" + Environment.NewLine, @"internal partial class Class1
 {
     private void Test()
     {
@@ -245,7 +245,7 @@ End Sub
     Private Function QuoteSplit(ByVal text As String) As String()
         Return text.Split("""""""")
     End Function
-End Class", @"class CharTestClass
+End Class", @"internal partial class CharTestClass
 {
     private string[] QuoteSplit(string text)
     {

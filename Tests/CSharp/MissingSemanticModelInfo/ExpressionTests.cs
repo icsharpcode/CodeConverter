@@ -16,7 +16,7 @@ Public Property SomeProperty As System.Some.UnknownType
     Private Sub TestMethod()
         Dim value = SomeProperty(0)
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     public System.Some.UnknownType SomeProperty { get; set; }
     private void TestMethod()
@@ -51,7 +51,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.VisualBasic;
 
-public class Class1
+public partial class Class1
 {
     public void Foo()
     {
@@ -75,7 +75,7 @@ public class Class1
 
         Next
     End Sub
-End Class", @"public class Class1
+End Class", @"public partial class Class1
 {
     public void Foo()
     {
@@ -121,7 +121,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.VisualBasic;
 
-public class OutParameterWithMissingType
+public partial class OutParameterWithMissingType
 {
     private static void AddToDict(Dictionary<int, MissingType> pDict, int pKey)
     {
@@ -134,7 +134,7 @@ public class OutParameterWithMissingType
     }
 }
 
-public class OutParameterWithNonCompilingType
+public partial class OutParameterWithNonCompilingType
 {
     private static void AddToDict(Dictionary<OutParameterWithMissingType, MissingType> pDict, OutParameterWithMissingType pKey)
     {
@@ -201,7 +201,7 @@ using System.Threading.Tasks;
 using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
 
-public class EnumAndValTest
+public partial class EnumAndValTest
 {
     public enum PositionEnum : int
     {
@@ -276,7 +276,7 @@ public class EnumAndValTest
     private sub TestMethod()
         Dim a = DefaultDate(1, 2, 3).Blawer(1, 2, 3)
     End Sub
-End Class", @"class TestClass
+End Class", @"internal partial class TestClass
 {
     private System.SomeUnknownType DefaultDate { get; set; }
     private void TestMethod()

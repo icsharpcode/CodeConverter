@@ -11,7 +11,7 @@ using Microsoft.VisualBasic.CompilerServices;
 
 namespace EmptyVb
 {
-    internal class AClass
+    internal partial class AClass
     {
         private Dictionary<int, int> dict = new Dictionary<int, int>();
 
