@@ -15,8 +15,6 @@ strategy:
   matrix:
     Config_Release:
         buildConfiguration: 'Release'
-    Config_Debug:
-        buildConfiguration: 'Debug'
 
 steps:
 - task: NuGetToolInstaller@1
