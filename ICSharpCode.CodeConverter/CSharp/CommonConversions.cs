@@ -80,7 +80,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             foreach (var name in declarator.Names) {
                 var declaredSymbol = _semanticModel.GetDeclaredSymbol(name);
                 var declaredSymbolType = declaredSymbol.GetSymbolType();
-                var requireExplicitType = requireExplicitTypeForAll || vbInitializerType != null && !Equals(declaredSymbolType, vbInitializerType);
+                var requireExplicitType = requireExplicitTypeForAll || vbInitializerType != null && !Equals(declaredSymbolType, vbInitializerType) || declarator.Names.Count>1 && name.SpanStart == declarator.SpanStart;
                 var csTypeSyntax = (TypeSyntax)GetTypeSyntax(declaredSymbolType);
 
                 bool isField = declarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
