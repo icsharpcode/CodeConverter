@@ -361,7 +361,7 @@ End Module");
 {
     public int CR = 0x0D * 0b1;
 }", @"Friend Class Test
-    Public CR As Integer = &H0D * &B1
+    Public CR = &H0D * &B1
 End Class");
         }
     }

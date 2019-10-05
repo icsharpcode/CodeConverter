@@ -20,9 +20,9 @@ namespace CodeConverter.Tests.VB
     int value = 10;
     readonly int v = 15;
 }", @"Friend Class TestClass
-    Const answer As Integer = 42
-    Private value As Integer = 10
-    Private ReadOnly v As Integer = 15
+    Const answer = 42
+    Private value = 10
+    Private ReadOnly v = 15
 End Class");
         }
 

@@ -120,28 +120,50 @@ namespace ICSharpCode.CodeConverter.Shared
             progress.Report(new ConversionProgress("Phase 1 of 2:"));
             var strProgress = new Progress<string>(m => progress.Report(new ConversionProgress(m, 1)));
             var firstPassResults = await _documentsToConvert.ParallelSelectAsync(d => FirstPass(d, strProgress), Env.MaxDop);
+            var firstPassDocs = CreateConvertedProject(firstPassResults);
             progress.Report(new ConversionProgress("Phase 2 of 2:"));
-            var secondPass = await firstPassResults.ParallelSelectAsync(r => SecondPass(r, strProgress), Env.MaxDop);
+            var secondPass = await firstPassDocs.ParallelSelectAsync(r => SecondPass(r, strProgress), Env.MaxDop);
             return secondPass;
         }
 
-        private async Task<(string Path, SyntaxNode Node, string[] Errors)> SecondPass(
-            (string Path, Document Doc, string[] Errors) firstPassResult, IProgress<string> progress)
+        private IEnumerable<(string treeFilePath, Document document, string[] errors)> CreateConvertedProject(
+            (string treeFilePath, SyntaxNode convertedDoc, string[] errors)[] firstPassResults)
         {
-            if (firstPassResult.Doc != null) {
+            var project = _languageConversion.GetConvertedProject();
+            var firstPassDocIds = firstPassResults.Select(firstPassResult =>
+            {
+                if (firstPassResult.convertedDoc != null)
+                {
+                    var document = project.AddDocument(firstPassResult.treeFilePath, firstPassResult.convertedDoc,
+                        filePath: firstPassResult.treeFilePath);
+                    project = document.Project;
+                    return (firstPassResult.treeFilePath, document.Id, firstPassResult.errors);
+                }
+
+                return (firstPassResult.treeFilePath, null, firstPassResult.errors);
+            }).ToList();
+            //We want the versions of the documents from the fully populated project, so after all projects are added, lookup doc in the final version of the project:
+
+            return firstPassDocIds.Select(f => (f.treeFilePath, f.Id != null ? project.GetDocument(f.Id) : null, f.errors));
+        }
+
+        private async Task<(string Path, SyntaxNode Node, string[] Errors)> SecondPass((string Path, Document document, string[] Errors) firstPassResult, IProgress<string> progress)
+        {
+            if (firstPassResult.document != null) {
                 progress.Report(firstPassResult.Path);
-                return await SingleSecondPassHandled(firstPassResult);
+                var (convertedNode, errors) = await SingleSecondPassHandled(firstPassResult.document);
+                return (firstPassResult.Path, convertedNode, firstPassResult.Errors.Concat(errors).ToArray());
             }
 
             return (firstPassResult.Path, null, firstPassResult.Errors);
         }
 
-        private async Task<(string treeFilePath, SyntaxNode convertedDoc, string[] errors)> SingleSecondPassHandled((string treeFilePath, Document convertedDoc, string[] errors) firstPassResult)
+        private async Task<(SyntaxNode convertedDoc, string[] errors)> SingleSecondPassHandled(Document convertedDocument)
         {
             SyntaxNode selectedNode = null;
             string[] errors = new string[0];
             try {
-                var document = await firstPassResult.convertedDoc.WithSimplifiedSyntaxRootAsync();
+                Document document = await _languageConversion.SingleSecondPass(convertedDocument);
                 if (_returnSelectedNode) {
                     selectedNode = await GetSelectedNode(document);
                     selectedNode = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
@@ -149,13 +171,13 @@ namespace ICSharpCode.CodeConverter.Shared
                     selectedNode = await document.GetSyntaxRootAsync();
                     selectedNode = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
                     var convertedDoc = document.WithSyntaxRoot(selectedNode);
-                    selectedNode = await _languageConversion.SingleSecondPass(convertedDoc);
+                    selectedNode = await convertedDoc.GetSyntaxRootAsync();
                 }
             } catch (Exception e) {
                 errors = new[] {e.ToString()};
             }
 
-            return (firstPassResult.treeFilePath, selectedNode ?? await firstPassResult.convertedDoc.GetSyntaxRootAsync(), firstPassResult.errors.Concat(errors).ToArray());
+            return (selectedNode ?? await convertedDocument.GetSyntaxRootAsync(), errors);
         }
 
         private async Task<string> GetProjectWarnings()
@@ -164,13 +186,13 @@ namespace ICSharpCode.CodeConverter.Shared
             return await _languageConversion.GetWarningsOrNull();
         }
 
-        private async Task<(string treeFilePath, Document convertedDoc, string[] errors)> FirstPass(Document document, IProgress<string> progress)
+        private async Task<(string treeFilePath, SyntaxNode convertedDoc, string[] errors)> FirstPass(Document document, IProgress<string> progress)
         {
             var treeFilePath = document.FilePath ?? "";
             progress.Report(treeFilePath);
             try {
                 var convertedDoc = await _languageConversion.SingleFirstPass(document);
-                var errorAnnotations = (await convertedDoc.GetSyntaxRootAsync()).GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
+                var errorAnnotations = convertedDoc.GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
                 string[] errors = errorAnnotations.Select(a => a.Data).ToArray();
 
                 return (treeFilePath, convertedDoc, errors);
