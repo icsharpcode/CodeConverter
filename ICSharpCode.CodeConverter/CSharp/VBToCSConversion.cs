@@ -25,7 +25,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         private const string UnresolvedNamespaceDiagnosticId = "CS0246";
         private Project _sourceVbProject;
         private CSharpCompilation _csharpViewOfVbSymbols;
-        private readonly object _conertedCsProjectLock = new object();
         private Project _convertedCsProject;
         /// <summary>
         /// It's really hard to change simplifier options since everything is done on the Object hashcode of internal fields.
