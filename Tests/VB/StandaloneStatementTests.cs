@@ -66,7 +66,7 @@ obj = Nothing",
         {
             await TestConversionCSharpToVisualBasic(
 @"private int x = 3;",
-@"Private x As Integer = 3");
+@"Private x = 3");
         }
 
         [Fact]

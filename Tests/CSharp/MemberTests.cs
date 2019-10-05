@@ -555,7 +555,8 @@ Module TestClass
     <Extension()>
     Sub TestMethod(ByVal str As String)
     End Sub
-End Module", @"internal partial static class TestClass
+End Module", @"
+internal partial static class TestClass
 {
     public static void TestMethod(this string str)
     {

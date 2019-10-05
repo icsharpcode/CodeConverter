@@ -47,9 +47,7 @@ namespace global::InnerNamespace
         }
     }
 }",
-                @"Imports System
-
-Namespace Global.InnerNamespace
+                @"Namespace Global.InnerNamespace
     Public Class Test
         Public Function StringInter(ByVal t As String, ByVal dt As Date) As String
             Dim a = $""pre{t} t""
@@ -172,7 +170,7 @@ End Class");
     {
     }
 }", @"Friend Class TestClass
-    Private n As String = NameOf(TestMethod)
+    Private n = NameOf(TestMethod)
 
     Private Sub TestMethod()
     End Sub
@@ -356,7 +354,7 @@ Friend Class SomeSettings
 End Class
 
 Friend Class Converter
-    Public Shared ReadOnly Settings As SomeSettings = New SomeSettings With {
+    Public Shared ReadOnly Settings = New SomeSettings With {
         .Converters = {}
     }
 End Class");
@@ -458,8 +456,8 @@ Imports System.Collections.Generic
 
 Namespace PreHOPL
     Friend Module Program
-        Private ReadOnly dict As Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) = New Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) From {
-            {""SAY"", (1, CType(AddressOf Console.WriteLine, Action(Of String)))}
+        Private ReadOnly dict = New Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) From {
+            {""SAY"", (1, CType(AddressOf System.Console.WriteLine, Action(Of String)))}
         }
 
         Private Sub Main(ByVal args As String())
