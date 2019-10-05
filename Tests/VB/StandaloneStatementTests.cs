@@ -100,14 +100,6 @@ End Namespace");
         }
 
         [Fact]
-        public async Task SingleUsing()
-        {
-            await TestConversionCSharpToVisualBasic(
-@"using s = System.String;",
-@"Imports s = System.String");
-        }
-
-        [Fact]
         public async Task SingleFieldAssignment()
         {
             await TestConversionCSharpToVisualBasic(
