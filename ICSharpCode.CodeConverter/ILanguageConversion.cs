@@ -7,8 +7,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     public interface ILanguageConversion
     {
-        Task<Document> SingleFirstPass(Document document);
-        Task<SyntaxNode> SingleSecondPass(Document doc);
+        Task<SyntaxNode> SingleFirstPass(Document document);
+        Task<Document> SingleSecondPass(Document doc);
         Task<string> GetWarningsOrNull();
         SyntaxTree CreateTree(string text);
         Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
@@ -27,5 +27,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         string RootNamespace { get; set; }
         Task Initialize(Project project);
         string PostTransformProjectFile(string xml);
+        Project GetConvertedProject();
     }
 }

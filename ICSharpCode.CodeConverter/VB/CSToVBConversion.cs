@@ -19,6 +19,7 @@ namespace ICSharpCode.CodeConverter.VB
 {
     public class CSToVBConversion : ILanguageConversion
     {
+        private const string UnresolvedNamespaceDiagnosticId = "BC40056";
         private Project _sourceCsProject;
         private Project _convertedVbProject;
         private VisualBasicCompilation _vbViewOfCsSymbols;
@@ -36,12 +37,9 @@ namespace ICSharpCode.CodeConverter.VB
             _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync();
         }
 
-        public async Task<Document> SingleFirstPass(Document document)
+        public async Task<SyntaxNode> SingleFirstPass(Document document)
         {
-            var convertedTree = await CSharpConverter.ConvertCompilationTree(document, _vbViewOfCsSymbols, _vbReferenceProject);
-            var convertedDocument = _convertedVbProject.AddDocument(document.FilePath, convertedTree);
-            _convertedVbProject = convertedDocument.Project;
-            return convertedDocument;
+            return await CSharpConverter.ConvertCompilationTree(document, _vbViewOfCsSymbols, _vbReferenceProject);
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
@@ -71,6 +69,11 @@ namespace ICSharpCode.CodeConverter.VB
             xml = TweakDefineConstantsSeparator(xml);
             xml = AddInfer(xml);
             return xml;
+        }
+
+        public Project GetConvertedProject()
+        {
+            return _convertedVbProject;
         }
 
         private string AddInfer(string xml)
@@ -153,9 +156,9 @@ namespace ICSharpCode.CodeConverter.VB
             return children;
         }
 
-        public Task<SyntaxNode> SingleSecondPass(Document doc)
+        public async Task<Document> SingleSecondPass(Document doc)
         {
-            return doc.GetSyntaxRootAsync();
+            return await doc.SimplifyStatements<VBSyntax.ImportsStatementSyntax, VBSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId);
         }
 
         public async Task<string> GetWarningsOrNull()
