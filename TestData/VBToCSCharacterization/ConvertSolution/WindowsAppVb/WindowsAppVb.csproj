@@ -74,9 +74,7 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="My Project\MergedDeclaration1.Designer.vb" />
-    <Compile Include="My Project\MergedDeclaration2.Designer.vb" />
-    <Compile Include="My Project\MergedDeclaration3.Designer.vb" />
+    <Compile Include="My Project\MyNamespace.Static.Designer.vb" />
     <Compile Include="WinformsDesignerTest.cs">
       <SubType>Form</SubType>
     </Compile>

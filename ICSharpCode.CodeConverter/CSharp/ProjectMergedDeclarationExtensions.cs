@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -29,11 +30,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var projectDir = Path.Combine(Path.GetDirectoryName(vbProject.FilePath), "My Project");
             var roots = await ns.Locations.Where(l => !l.IsInSource).Select(GetEmbeddedSyntaxTree).SelectAsync(t => t.GetTextAsync());
-            foreach (var root in roots) {
-                string name = "MergedDeclaration" + mergedDeclarationCount++;
-                var modifiedText = root.ToString().Replace("Namespace My", $"Namespace {Constants.MergedMyNamespace}");
-                vbProject = vbProject.AddDocument(name, modifiedText, filePath: Path.Combine(projectDir, name + ".Designer.vb")).Project;
-            }
+            var renamespacesRootTexts = roots.Select(r => r.ToString().Replace("Namespace My", $"Namespace {Constants.MergedMyNamespace}"));
+            var combined = string.Join(Environment.NewLine, renamespacesRootTexts);
+            string name = "MyNamespace";
+            vbProject = vbProject.AddDocument(name, combined, filePath: Path.Combine(projectDir, name + ".Static.Designer.vb")).Project;
 
             return vbProject;
         }

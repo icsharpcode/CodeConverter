@@ -71,9 +71,7 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="My Project\MergedDeclaration1.Designer.vb" />
-    <Compile Include="My Project\MergedDeclaration2.Designer.vb" />
-    <Compile Include="My Project\MergedDeclaration3.Designer.vb" />
+    <Compile Include="My Project\MyNamespace.Static.Designer.vb" />
     <Compile Include="AClass.cs" />
     <Compile Include="AnEnum.cs" />
     <Compile Include="Module1.cs" />
