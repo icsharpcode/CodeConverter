@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
@@ -35,6 +36,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 project.ProjectReferences, parseOptions);
             var convertedSolution = project.Solution.RemoveProject(project.Id).AddProject(projectInfo);
             return convertedSolution.GetProject(project.Id);
+        }
+
+        public static string GetDirectoryPath(this Project proj)
+        {
+            string projectFilePath = proj.FilePath;
+            return projectFilePath != null ? Path.GetDirectoryName(projectFilePath) : null;
         }
     }
 }

@@ -14,7 +14,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly string _solutionFilePath;
         private readonly string _sourceSolutionContents;
         private readonly IReadOnlyCollection<Project> _projectsToConvert;
-        private readonly List<(string, string)> _projectReferenceReplacements;
+        private readonly List<(string Find, string Replace, bool FirstOnly)> _projectReferenceReplacements;
         private readonly IProgress<ConversionProgress> _progress;
         private readonly ILanguageConversion _languageConversion;
 
@@ -29,7 +29,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private SolutionConverter(string solutionFilePath,
             string sourceSolutionContents, IReadOnlyCollection<Project> projectsToConvert,
-            List<(string, string)> projectReferenceReplacements, IProgress<ConversionProgress> showProgressMessage,
+            List<(string Find, string Replace, bool FirstOnly)> projectReferenceReplacements, IProgress<ConversionProgress> showProgressMessage,
             ILanguageConversion languageConversion)
         {
             _solutionFilePath = solutionFilePath;
@@ -51,11 +51,12 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private Task<IEnumerable<ConversionResult>[]> ConvertProjects()
         {
-            var projectFileReplacementRegexes = _languageConversion.GetProjectFileReplacementRegexes().Concat(_languageConversion.GetProjectTypeGuidMappings());
+            var projectFileReplacementRegexes = _languageConversion.GetProjectFileReplacementRegexes().Concat(_languageConversion.GetProjectTypeGuidMappings())
+                .Select(m => (m.Item1, m.Item2, false));
             return _projectsToConvert.SelectAsync(project => ConvertProject(projectFileReplacementRegexes, project));
         }
 
-        private async Task<IEnumerable<ConversionResult>> ConvertProject(IEnumerable<(string, string)> projectFileReplacementRegexes, Project project)
+        private async Task<IEnumerable<ConversionResult>> ConvertProject(IEnumerable<(string Find, string Replace, bool FirstOnly)> projectFileReplacementRegexes, Project project)
         {
             var replacements = _projectReferenceReplacements.Concat(projectFileReplacementRegexes).ToArray();
             _progress.Report(new ConversionProgress($"Converting {project.Name}..."));
@@ -74,15 +75,15 @@ namespace ICSharpCode.CodeConverter.Shared
                 });
         }
 
-        private static List<(string, string)> GetProjectReferenceReplacements(IReadOnlyCollection<Project> projectsToConvert,
+        private static List<(string Find, string Replace, bool FirstOnly)> GetProjectReferenceReplacements(IReadOnlyCollection<Project> projectsToConvert,
             string sourceSolutionContents)
         {
-            var projectReferenceReplacements = new List<(string, string)>();
+            var projectReferenceReplacements = new List<(string Find, string Replace, bool FirstOnly)>();
             foreach (var project in projectsToConvert)
             {
                 var projFilename = Path.GetFileName(project.FilePath);
                 var newProjFilename = PathConverter.TogglePathExtension(projFilename);
-                projectReferenceReplacements.Add((projFilename, newProjFilename));
+                projectReferenceReplacements.Add((projFilename, newProjFilename, false));
                 projectReferenceReplacements.Add(GetProjectGuidReplacement(projFilename, sourceSolutionContents));
             }
 
@@ -101,18 +102,18 @@ namespace ICSharpCode.CodeConverter.Shared
             };
         }
 
-        private static (string, string) GetProjectGuidReplacement(string projFilename, string contents)
+        private static (string Find, string Replace, bool FirstOnly) GetProjectGuidReplacement(string projFilename, string contents)
         {
             var projGuidRegex = new Regex(projFilename + @""", ""({[0-9A-Fa-f\-]{32,36}})("")");
             var projGuidMatch = projGuidRegex.Match(contents);
             var oldGuid = projGuidMatch.Groups[1].Value;
             var newGuid = GetDeterministicGuidFrom(new Guid(oldGuid));
-            return (oldGuid, newGuid.ToString("B").ToUpperInvariant());
+            return (oldGuid, newGuid.ToString("B").ToUpperInvariant(), false);
         }
 
-        private IEnumerable<(string, string)> GetProjectTypeReplacement(Project project, IReadOnlyCollection<(string, string)> typeGuidMappings)
+        private IEnumerable<(string, string, bool)> GetProjectTypeReplacement(Project project, IReadOnlyCollection<(string, string)> typeGuidMappings)
         {
-            return typeGuidMappings.Select(guidReplacement => ($@"Project\s*\(\s*""{guidReplacement.Item1}""\s*\)\s*=\s*""{project.Name}""", $@"Project(""{guidReplacement.Item2}"") = ""{project.Name}"""));
+            return typeGuidMappings.Select(guidReplacement => ($@"Project\s*\(\s*""{guidReplacement.Item1}""\s*\)\s*=\s*""{project.Name}""", $@"Project(""{guidReplacement.Item2}"") = ""{project.Name}""", false));
         }
 
         private static Guid GetDeterministicGuidFrom(Guid guidToConvert)
