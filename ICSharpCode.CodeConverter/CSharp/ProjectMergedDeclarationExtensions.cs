@@ -11,6 +11,12 @@ using Microsoft.CodeAnalysis.Rename;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
+    /// <summary>
+    /// Allows transforming embedded/merged declarations into real documents. i.e. the VB My namespace
+    /// </summary>
+    /// <remarks>
+    /// Rather than renaming the declarations, it may make more sense to change the parse options to eliminate the original one using the internal: WithSuppressEmbeddedDeclarations.
+    /// </remarks>
     internal static class ProjectMergedDeclarationExtensions
     {
         private static Func<Location, SyntaxTree> _getEmbeddedSyntaxTree;
@@ -21,12 +27,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             var compilation = await vbProject.GetCompilationAsync();
             var ns = compilation.SourceModule.GlobalNamespace;
 
-            var projectDir = Path.GetDirectoryName(vbProject.FilePath);
+            var projectDir = Path.Combine(Path.GetDirectoryName(vbProject.FilePath), "My Project");
             var roots = await ns.Locations.Where(l => !l.IsInSource).Select(GetEmbeddedSyntaxTree).SelectAsync(t => t.GetTextAsync());
             foreach (var root in roots) {
                 string name = "MergedDeclaration" + mergedDeclarationCount++;
                 var modifiedText = root.ToString().Replace("Namespace My", $"Namespace {Constants.MergedMyNamespace}");
-                vbProject = vbProject.AddDocument(name, modifiedText, filePath: Path.Combine(projectDir, name + ".vb")).Project;
+                vbProject = vbProject.AddDocument(name, modifiedText, filePath: Path.Combine(projectDir, name + ".Designer.vb")).Project;
             }
 
             return vbProject;

@@ -175,9 +175,6 @@ namespace WindowsAppVb.My
             {
                 return base.ToString();
             }
-
-            private Form _winformsDesignerTest;
-            public Form WinformsDesignerTest => _winformsDesignerTest = Create__Instance__(_winformsDesignerTest);
         }
 
         private static ThreadSafeObjectProvider<MyForms> m_MyFormsObjectProvider = new ThreadSafeObjectProvider<MyForms>();

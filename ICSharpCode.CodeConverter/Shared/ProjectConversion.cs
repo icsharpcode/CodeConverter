@@ -76,7 +76,8 @@ namespace ICSharpCode.CodeConverter.Shared
 
         public static async Task<IEnumerable<ConversionResult>> ConvertProject(Project project, ILanguageConversion languageConversion, IProgress<ConversionProgress> progress, params (string, string)[] replacements)
         {
-            return (await ConvertProjectContents(project, progress, languageConversion)).Concat(new[]
+            var convertProjectContents = await ConvertProjectContents(project, progress, languageConversion);
+            return convertProjectContents.Concat(new[]
                 {ConvertProjectFile(project, languageConversion, replacements)}
             );
         }
