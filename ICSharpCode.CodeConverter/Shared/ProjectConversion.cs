@@ -40,14 +40,15 @@ namespace ICSharpCode.CodeConverter.Shared
             _returnSelectedNode = returnSelectedNode;
         }
 
-        private static async Task InitializeWithNoSynchronizationContext(ILanguageConversion languageConversion, Project documentProject)
+        private static async Task Initialize(ILanguageConversion languageConversion, Project documentProject)
         {
-            await new SynchronizationContextRemover();
             await languageConversion.Initialize(documentProject);
         }
 
         public static async Task<ConversionResult> ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null) where TLanguageConversion : ILanguageConversion, new()
         {
+            await new SynchronizationContextRemover();
+
             var languageConversion = new TLanguageConversion {
                 RootNamespace = rootNamespace
             };
@@ -60,13 +61,15 @@ namespace ICSharpCode.CodeConverter.Shared
 
         public static async Task<ConversionResult> ConvertSingle(Document document, TextSpan selected, ILanguageConversion languageConversion)
         {
+            await new SynchronizationContextRemover();
+
             bool returnSelectedNode = selected.Length > 0;
             if (returnSelectedNode) {
                 document = await WithAnnotatedSelection(document, selected);
             }
 
             var conversion = new ProjectConversion(document.Project, new[] { document}, languageConversion, returnSelectedNode);
-            await InitializeWithNoSynchronizationContext(languageConversion, document.Project);
+            await Initialize(languageConversion, document.Project);
             var conversionResults = (await ConvertProjectContents(conversion, new Progress<ConversionProgress>())).ToList();
             var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
                              ?? conversionResults.First();
@@ -76,6 +79,8 @@ namespace ICSharpCode.CodeConverter.Shared
 
         public static async Task<IEnumerable<ConversionResult>> ConvertProject(Project project, ILanguageConversion languageConversion, IProgress<ConversionProgress> progress, params (string, string)[] replacements)
         {
+            await new SynchronizationContextRemover();
+
             var convertProjectContents = await ConvertProjectContents(project, progress, languageConversion);
             return convertProjectContents.Concat(new[]
                 {ConvertProjectFile(project, languageConversion, replacements)}
@@ -88,7 +93,7 @@ namespace ICSharpCode.CodeConverter.Shared
             project = await project.WithRenamedMergedMyNamespace();
             var documentsToConvert = project.Documents.Where(d => !BannedPaths.Any(d.FilePath.Contains));
             var projectConversion = new ProjectConversion(project, documentsToConvert, languageConversion);
-            await InitializeWithNoSynchronizationContext(languageConversion, project);
+            await Initialize(languageConversion, project);
             return await ConvertProjectContents(projectConversion, progress);
         }
 
