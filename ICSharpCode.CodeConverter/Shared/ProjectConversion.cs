@@ -82,6 +82,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(Project project, IProgress<ConversionProgress> progress, ILanguageConversion languageConversion)
         {
+            project = await project.WithFilePathsForEmbeddedDocuments();
             var documentsToConvert = project.Documents.Where(d => !BannedPaths.Any(d.FilePath.Contains));
             var projectConversion = new ProjectConversion(project, documentsToConvert, languageConversion);
             await InitializeWithNoSynchronizationContext(languageConversion, project);
