@@ -23,16 +23,16 @@ namespace WindowsAppVb.My
         [DebuggerStepThrough()]
         public MyApplication() : base(Microsoft.VisualBasic.ApplicationServices.AuthenticationMode.Windows)
         {
-            IsSingleInstance = false;
-            EnableVisualStyles = true;
-            SaveMySettingsOnExit = true;
-            ShutdownStyle = Microsoft.VisualBasic.ApplicationServices.ShutdownMode.AfterMainFormCloses;
+            this.IsSingleInstance = false;
+            this.EnableVisualStyles = true;
+            this.SaveMySettingsOnExit = true;
+            this.ShutdownStyle = Microsoft.VisualBasic.ApplicationServices.ShutdownMode.AfterMainFormCloses;
         }
 
         [DebuggerStepThrough()]
         protected override void OnCreateMainForm()
         {
-            MainForm = WinformsDesignerTest;
+            this.MainForm = WindowsAppVb.WinformsDesignerTest;
         }
     }
 }

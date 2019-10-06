@@ -24,8 +24,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             return await Simplifier.ReduceAsync(withSyntaxRoot);
         }
 
-
-
         public static async Task<Document> SimplifyStatements<TUsingDirectiveSyntax, TExpressionSyntax>(this Document convertedDocument, string unresolvedTypeDiagnosticId)
         where TUsingDirectiveSyntax : SyntaxNode where TExpressionSyntax : SyntaxNode
         {

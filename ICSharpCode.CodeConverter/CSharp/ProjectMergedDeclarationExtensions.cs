@@ -13,7 +13,6 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private static Func<Location, SyntaxTree> _getEmbeddedSyntaxTree;
 
-
         public static async Task<Project> WithFilePathsForEmbeddedDocuments(this Project vbProject)
         {
             int mergedDeclarationCount = 1;
@@ -21,10 +20,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             var ns = compilation.SourceModule.GlobalNamespace;
 
             var projectDir = Path.GetDirectoryName(vbProject.FilePath);
-            var roots = await ns.Locations.Where(l => !l.IsInSource).Select(GetEmbeddedSyntaxTree).SelectAsync(t => t.GetRootAsync());
+            var roots = await ns.Locations.Where(l => !l.IsInSource).Select(GetEmbeddedSyntaxTree).SelectAsync(t => t.GetTextAsync());
             foreach (var root in roots) {
-                string name = "mergedDeclaration" + mergedDeclarationCount++;
-                vbProject = vbProject.AddDocument(name, root, filePath: Path.Combine(projectDir, name + ".vb")).Project;
+                string name = "MergedDeclaration" + mergedDeclarationCount++;
+                var modifiedText = root.ToString().Replace("Namespace My", $"Namespace {Constants.MergedMyNamespace}My");
+                vbProject = vbProject.AddDocument(name, modifiedText, filePath: Path.Combine(projectDir, name + ".vb")).Project;
             }
 
             return vbProject;

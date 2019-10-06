@@ -9,7 +9,7 @@ using System.Diagnostics;
                                                                                                                                                                                                                                                                                                                                                                 /* TODO ERROR: Skipped DefineDirectiveTrivia *//* TODO ERROR: Skipped DefineDirectiveTrivia *//* TODO ERROR: Skipped DefineDirectiveTrivia *//* TODO ERROR: Skipped DefineDirectiveTrivia */
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              /* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  /* TODO ERROR: Skipped IfDirectiveTrivia */
-namespace EmptyVb.My
+namespace EmptyVb.MergedMyNamespace50E26D7D27174AAEABCA70DEBD52E2FAMy
 {
 
     /* TODO ERROR: Skipped IfDirectiveTrivia */
@@ -45,7 +45,7 @@ namespace EmptyVb.My
             [DebuggerHidden()]
             get
             {
-                return m_ComputerObjectProvider.GetInstance();
+                return m_ComputerObjectProvider.GetInstance;
             }
         }
 
@@ -58,7 +58,7 @@ namespace EmptyVb.My
             [DebuggerHidden()]
             get
             {
-                return m_AppObjectProvider.GetInstance();
+                return m_AppObjectProvider.GetInstance;
             }
         }
         private readonly static ThreadSafeObjectProvider<MyApplication> m_AppObjectProvider = new ThreadSafeObjectProvider<MyApplication>();
@@ -70,7 +70,7 @@ namespace EmptyVb.My
             [DebuggerHidden()]
             get
             {
-                return m_UserObjectProvider.GetInstance();
+                return m_UserObjectProvider.GetInstance;
             }
         }
         private readonly static ThreadSafeObjectProvider<Microsoft.VisualBasic.ApplicationServices.User> m_UserObjectProvider = new ThreadSafeObjectProvider<Microsoft.VisualBasic.ApplicationServices.User>();
@@ -83,7 +83,7 @@ namespace EmptyVb.My
             [DebuggerHidden()]
             get
             {
-                return m_MyWebServicesObjectProvider.GetInstance();
+                return m_MyWebServicesObjectProvider.GetInstance;
             }
         }
 

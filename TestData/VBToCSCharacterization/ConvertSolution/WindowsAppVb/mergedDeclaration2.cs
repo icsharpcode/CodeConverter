@@ -10,7 +10,7 @@ using System.Linq;
 using System.Xml.Linq;
 using Microsoft.VisualBasic.CompilerServices;
 
-namespace WindowsAppVb.My
+namespace WindowsAppVb.MergedMyNamespace50E26D7D27174AAEABCA70DEBD52E2FAMy
 {
     [Embedded()]
     [DebuggerNonUserCode()]
@@ -24,14 +24,14 @@ namespace WindowsAppVb.My
         }
         public static string get_Value(IEnumerable<XElement> source)
         {
-            foreach (var item in source)
+            foreach (XElement item in source)
                 return item.Value;
             return null;
         }
 
         public static void set_Value(IEnumerable<XElement> source, string value)
         {
-            foreach (var item in source)
+            foreach (XElement item in source)
             {
                 item.Value = value;
                 break;
@@ -39,14 +39,14 @@ namespace WindowsAppVb.My
         }
         public static string get_AttributeValue(IEnumerable<XElement> source, XName name)
         {
-            foreach (var item in source)
+            foreach (XElement item in source)
                 return Conversions.ToString(item.Attribute(name));
             return null;
         }
 
         public static void set_AttributeValue(IEnumerable<XElement> source, XName name, string value)
         {
-            foreach (var item in source)
+            foreach (XElement item in source)
             {
                 item.SetAttributeValue(name, value);
                 break;
@@ -110,9 +110,9 @@ namespace WindowsAppVb.My
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         private sealed class RemoveNamespaceAttributesClosure
         {
-            private readonly var m_inScopePrefixes;
-            private readonly var m_inScopeNs;
-            private readonly var m_attributes;
+            private readonly string[] m_inScopePrefixes;
+            private readonly XNamespace[] m_inScopeNs;
+            private readonly List<XAttribute> m_attributes;
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             internal RemoveNamespaceAttributesClosure(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes)
             {
@@ -123,14 +123,14 @@ namespace WindowsAppVb.My
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             internal XElement ProcessXElement(XElement elem)
             {
-                return InternalXmlHelper.RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
+                return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
             }
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             internal object ProcessObject(object obj)
             {
                 var elem = obj as XElement;
                 if (elem != null)
-                    return InternalXmlHelper.RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
+                    return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
                 else
                     return obj;
             }
@@ -146,21 +146,21 @@ namespace WindowsAppVb.My
                 {
                     var nextA = a.NextAttribute;
 
-                    if (a.IsNamespaceDeclaration())
+                    if (a.IsNamespaceDeclaration)
                     {
                         var ns = a.Annotation<XNamespace>();
-                        var prefix = a.Name.LocalName;
+                        string prefix = a.Name.LocalName;
 
                         if (ns != null)
                         {
                             if (inScopePrefixes != null && inScopeNs != null)
                             {
-                                var lastIndex = inScopePrefixes.Length - 1;
-                                var loopTo = lastIndex;
-                                for (var i = 0; i <= loopTo; i++)
+                                int lastIndex = inScopePrefixes.Length - 1;
+
+                                for (int i = 0, loopTo = lastIndex; i <= loopTo; i++)
                                 {
-                                    var currentInScopePrefix = inScopePrefixes(i);
-                                    var currentInScopeNs = inScopeNs(i);
+                                    string currentInScopePrefix = inScopePrefixes[i];
+                                    var currentInScopeNs = inScopeNs[i];
                                     if (prefix.Equals(currentInScopePrefix))
                                     {
                                         if (ns == currentInScopeNs)
@@ -181,12 +181,11 @@ namespace WindowsAppVb.My
 
                                 if (attributes != null)
                                 {
-                                    var lastIndex = attributes.Count - 1;
-                                    var loopTo1 = lastIndex;
-                                    for (var i = 0; i <= loopTo1; i++)
+                                    int lastIndex = attributes.Count - 1;
+                                    for (int i = 0, loopTo1 = lastIndex; i <= loopTo1; i++)
                                     {
-                                        var currentA = attributes(i);
-                                        var currentInScopePrefix = currentA.Name.LocalName;
+                                        var currentA = attributes[i];
+                                        string currentInScopePrefix = currentA.Name.LocalName;
                                         var currentInScopeNs = currentA.Annotation<XNamespace>();
                                         if (currentInScopeNs != null)
                                         {

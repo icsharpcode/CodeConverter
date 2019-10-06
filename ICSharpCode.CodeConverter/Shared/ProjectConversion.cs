@@ -10,6 +10,8 @@ using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Formatting;
+using Microsoft.CodeAnalysis.Options;
+using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 
@@ -121,13 +123,13 @@ namespace ICSharpCode.CodeConverter.Shared
             progress.Report(new ConversionProgress("Phase 1 of 2:"));
             var strProgress = new Progress<string>(m => progress.Report(new ConversionProgress(m, 1)));
             var firstPassResults = await _documentsToConvert.ParallelSelectAsync(d => FirstPass(d, strProgress), Env.MaxDop);
-            var firstPassDocs = CreateConvertedProject(firstPassResults);
+            var firstPassDocs = await CreateConvertedProject(firstPassResults);
             progress.Report(new ConversionProgress("Phase 2 of 2:"));
             var secondPass = await firstPassDocs.ParallelSelectAsync(r => SecondPass(r, strProgress), Env.MaxDop);
             return secondPass;
         }
 
-        private IEnumerable<(string treeFilePath, Document document, string[] errors)> CreateConvertedProject(
+        private async Task<IEnumerable<(string treeFilePath, Document document, string[] errors)>> CreateConvertedProject(
             (string treeFilePath, SyntaxNode convertedDoc, string[] errors)[] firstPassResults)
         {
             var project = _languageConversion.GetConvertedProject();
@@ -143,9 +145,25 @@ namespace ICSharpCode.CodeConverter.Shared
 
                 return (firstPassResult.treeFilePath, null, firstPassResult.errors);
             }).ToList();
+            project = await RenameMergedMyNamespace(project);
             //We want the versions of the documents from the fully populated project, so after all projects are added, lookup doc in the final version of the project:
 
             return firstPassDocIds.Select(f => (f.treeFilePath, f.Id != null ? project.GetDocument(f.Id) : null, f.errors));
+        }
+
+        private static async Task<Project> RenameMergedMyNamespace(Project project)
+        {
+            for (var symbolToRename = await GetFirstSymbolWithName(project); symbolToRename != null; symbolToRename = await GetFirstSymbolWithName(project)) {
+                var renamedSolution = await Renamer.RenameSymbolAsync(project.Solution, symbolToRename, "My", default(OptionSet));
+                project = renamedSolution.GetProject(project.Id);
+            }
+
+            return project;
+        }
+
+        private static async Task<ISymbol> GetFirstSymbolWithName(Project project)
+        {
+            return (await project.GetCompilationAsync()).GetSymbolsWithName(s => s == Constants.MergedMyNamespace, SymbolFilter.Namespace).FirstOrDefault();
         }
 
         private async Task<(string Path, SyntaxNode Node, string[] Errors)> SecondPass((string Path, Document document, string[] Errors) firstPassResult, IProgress<string> progress)
@@ -192,11 +210,11 @@ namespace ICSharpCode.CodeConverter.Shared
             var treeFilePath = document.FilePath ?? "";
             progress.Report(treeFilePath);
             try {
-                var convertedDoc = await _languageConversion.SingleFirstPass(document);
-                var errorAnnotations = convertedDoc.GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
+                var convertedNode = await _languageConversion.SingleFirstPass(document);
+                var errorAnnotations = convertedNode.GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
                 string[] errors = errorAnnotations.Select(a => a.Data).ToArray();
 
-                return (treeFilePath, convertedDoc, errors);
+                return (treeFilePath, convertedNode, errors);
             }
             catch (Exception e)
             {
