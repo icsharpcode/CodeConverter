@@ -10,7 +10,7 @@ using System.Linq;
 using System.Xml.Linq;
 using Microsoft.VisualBasic.CompilerServices;
 
-namespace WindowsAppVb.MergedMyNamespace50E26D7D27174AAEABCA70DEBD52E2FAMy
+namespace WindowsAppVb.My
 {
     [Embedded()]
     [DebuggerNonUserCode()]

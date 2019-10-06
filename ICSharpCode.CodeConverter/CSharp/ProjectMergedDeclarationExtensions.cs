@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Options;
+using Microsoft.CodeAnalysis.Rename;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -23,7 +25,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var roots = await ns.Locations.Where(l => !l.IsInSource).Select(GetEmbeddedSyntaxTree).SelectAsync(t => t.GetTextAsync());
             foreach (var root in roots) {
                 string name = "MergedDeclaration" + mergedDeclarationCount++;
-                var modifiedText = root.ToString().Replace("Namespace My", $"Namespace {Constants.MergedMyNamespace}My");
+                var modifiedText = root.ToString().Replace("Namespace My", $"Namespace {Constants.MergedMyNamespace}");
                 vbProject = vbProject.AddDocument(name, modifiedText, filePath: Path.Combine(projectDir, name + ".vb")).Project;
             }
 
@@ -38,6 +40,21 @@ namespace ICSharpCode.CodeConverter.CSharp
                     .CreateOpenInstanceDelegateForcingType<Location, SyntaxTree>();
             }
             return _getEmbeddedSyntaxTree?.Invoke(loc);
+        }
+
+        public static async Task<Project> RenameMergedMyNamespace(this Project project)
+        {
+            for (var symbolToRename = await GetFirstSymbolWithName(project); symbolToRename != null; symbolToRename = await GetFirstSymbolWithName(project)) {
+                var renamedSolution = await Renamer.RenameSymbolAsync(project.Solution, symbolToRename, "My", default(OptionSet));
+                project = renamedSolution.GetProject(project.Id);
+            }
+
+            return project;
+        }
+
+        private static async Task<ISymbol> GetFirstSymbolWithName(Project project)
+        {
+            return (await project.GetCompilationAsync()).GetSymbolsWithName(s => s == Constants.MergedMyNamespace, SymbolFilter.Namespace).FirstOrDefault();
         }
     }
 }

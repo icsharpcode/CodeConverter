@@ -11,7 +11,7 @@ using System.Windows.Forms;
                                                                                        /* TODO ERROR: Skipped DefineDirectiveTrivia *//* TODO ERROR: Skipped DefineDirectiveTrivia *//* TODO ERROR: Skipped DefineDirectiveTrivia *//* TODO ERROR: Skipped DefineDirectiveTrivia *//* TODO ERROR: Skipped DefineDirectiveTrivia */
                                                                                                                                                                                                                                                                                    /* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   /* TODO ERROR: Skipped IfDirectiveTrivia */
-namespace WindowsAppVb.MergedMyNamespace50E26D7D27174AAEABCA70DEBD52E2FAMy
+namespace WindowsAppVb.My
 {
 
     /* TODO ERROR: Skipped IfDirectiveTrivia */
@@ -32,7 +32,7 @@ namespace WindowsAppVb.MergedMyNamespace50E26D7D27174AAEABCA70DEBD52E2FAMy
             finally
             {
             }
-            My.MyProject.Application.Run(Args);
+            MyProject.Application.Run(Args);
         }
     }
 

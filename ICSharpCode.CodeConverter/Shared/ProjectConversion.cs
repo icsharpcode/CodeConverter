@@ -120,50 +120,51 @@ namespace ICSharpCode.CodeConverter.Shared
         private async Task<(string Path, SyntaxNode Node, string[] Errors)[]> Convert(
             IProgress<ConversionProgress> progress)
         {
-            progress.Report(new ConversionProgress("Phase 1 of 2:"));
-            var strProgress = new Progress<string>(m => progress.Report(new ConversionProgress(m, 1)));
-            var firstPassResults = await _documentsToConvert.ParallelSelectAsync(d => FirstPass(d, strProgress), Env.MaxDop);
-            var firstPassDocs = await CreateConvertedProject(firstPassResults);
-            progress.Report(new ConversionProgress("Phase 2 of 2:"));
-            var secondPass = await firstPassDocs.ParallelSelectAsync(r => SecondPass(r, strProgress), Env.MaxDop);
-            return secondPass;
+            var (proj1, results1) = await ExecutePhase(_documentsToConvert, FirstPass, progress, "Phase 1 of 2:");
+            var firstPassDocs = GetDocuments(proj1, results1);
+
+            var (proj2, results2) = await ExecutePhase(firstPassDocs, SecondPass, progress, "Phase 2 of 2:");
+            var withRenamedMergedMyNamespace = await proj2.RenameMergedMyNamespace();
+
+            return await GetDocuments(withRenamedMergedMyNamespace, results2)
+                .SelectAsync(async d => (d.Path, await d.Doc.GetSyntaxRootAsync(), d.Errors));
         }
 
-        private async Task<IEnumerable<(string treeFilePath, Document document, string[] errors)>> CreateConvertedProject(
-            (string treeFilePath, SyntaxNode convertedDoc, string[] errors)[] firstPassResults)
+        private async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
+            ExecutePhase<T>(IEnumerable<T> parameters, Func<T, Progress<string>, Task<(string treeFilePath, SyntaxNode convertedDoc,
+                string[] errors)>> executePass, IProgress<ConversionProgress> progress, string phaseTitle)
+        {
+            progress.Report(new ConversionProgress(phaseTitle));
+            var strProgress = new Progress<string>(m => progress.Report(new ConversionProgress(m, 1)));
+            var firstPassResults = await parameters.ParallelSelectAsync(d => executePass(d, strProgress), Env.MaxDop);
+            return CreateConvertedProject(firstPassResults);
+        }
+
+        private (Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds) CreateConvertedProject(
+            (string Path, SyntaxNode Node, string[] Errors)[] firstPassResults)
         {
             var project = _languageConversion.GetConvertedProject();
             var firstPassDocIds = firstPassResults.Select(firstPassResult =>
             {
-                if (firstPassResult.convertedDoc != null)
+                DocumentId docId = null;
+                if (firstPassResult.Node != null)
                 {
-                    var document = project.AddDocument(firstPassResult.treeFilePath, firstPassResult.convertedDoc,
-                        filePath: firstPassResult.treeFilePath);
+                    var document = project.AddDocument(firstPassResult.Path, firstPassResult.Node,
+                        filePath: firstPassResult.Path);
                     project = document.Project;
-                    return (firstPassResult.treeFilePath, document.Id, firstPassResult.errors);
+                    docId = document.Id;
                 }
 
-                return (firstPassResult.treeFilePath, null, firstPassResult.errors);
+                return (firstPassResult.Path, docId, firstPassResult.Errors);
             }).ToList();
-            project = await RenameMergedMyNamespace(project);
-            //We want the versions of the documents from the fully populated project, so after all projects are added, lookup doc in the final version of the project:
 
-            return firstPassDocIds.Select(f => (f.treeFilePath, f.Id != null ? project.GetDocument(f.Id) : null, f.errors));
+            //ToList ensures that the project returned has all documents added. We only return DocumentIds so it's easy to look up the final version of the doc later
+            return (project, firstPassDocIds);
         }
 
-        private static async Task<Project> RenameMergedMyNamespace(Project project)
+        private static IEnumerable<(string Path, Document Doc, string[] Errors)> GetDocuments(Project project, List<(string treeFilePath, DocumentId docId, string[] errors)> docIds)
         {
-            for (var symbolToRename = await GetFirstSymbolWithName(project); symbolToRename != null; symbolToRename = await GetFirstSymbolWithName(project)) {
-                var renamedSolution = await Renamer.RenameSymbolAsync(project.Solution, symbolToRename, "My", default(OptionSet));
-                project = renamedSolution.GetProject(project.Id);
-            }
-
-            return project;
-        }
-
-        private static async Task<ISymbol> GetFirstSymbolWithName(Project project)
-        {
-            return (await project.GetCompilationAsync()).GetSymbolsWithName(s => s == Constants.MergedMyNamespace, SymbolFilter.Namespace).FirstOrDefault();
+            return docIds.Select(f => (f.treeFilePath, f.docId != null ? project.GetDocument(f.docId) : null, f.errors));
         }
 
         private async Task<(string Path, SyntaxNode Node, string[] Errors)> SecondPass((string Path, Document document, string[] Errors) firstPassResult, IProgress<string> progress)
