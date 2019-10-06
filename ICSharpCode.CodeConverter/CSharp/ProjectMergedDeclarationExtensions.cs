@@ -15,7 +15,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private static Func<Location, SyntaxTree> _getEmbeddedSyntaxTree;
 
-        public static async Task<Project> WithFilePathsForEmbeddedDocuments(this Project vbProject)
+        public static async Task<Project> WithRenamedMergedMyNamespace(this Project vbProject)
         {
             int mergedDeclarationCount = 1;
             var compilation = await vbProject.GetCompilationAsync();

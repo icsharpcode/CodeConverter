@@ -161,13 +161,6 @@ namespace ICSharpCode.CodeConverter.VB
             return await doc.SimplifyStatements<VBSyntax.ImportsStatementSyntax, VBSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId);
         }
 
-        public async Task<string> GetWarningsOrNull()
-        {
-            var sourceCompilation = await _sourceCsProject.GetCompilationAsync();
-            var convertedCompilation = await _convertedVbProject.GetCompilationAsync();
-            return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(convertedCompilation, "target");
-        }
-
         public SyntaxTree CreateTree(string text)
         {
             return new CSharpCompiler().CreateTree(text);

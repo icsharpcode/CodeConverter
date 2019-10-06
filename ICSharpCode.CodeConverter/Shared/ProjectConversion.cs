@@ -84,7 +84,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(Project project, IProgress<ConversionProgress> progress, ILanguageConversion languageConversion)
         {
-            project = await project.WithFilePathsForEmbeddedDocuments();
+            project = await project.WithRenamedMergedMyNamespace();
             var documentsToConvert = project.Documents.Where(d => !BannedPaths.Any(d.FilePath.Contains));
             var projectConversion = new ProjectConversion(project, documentsToConvert, languageConversion);
             await InitializeWithNoSynchronizationContext(languageConversion, project);
@@ -102,11 +102,13 @@ namespace ICSharpCode.CodeConverter.Shared
         private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(
             ProjectConversion projectConversion, IProgress<ConversionProgress> progress)
         {
-            var pathNodePairs = await projectConversion.Convert(progress);
+            var (convertedProject, docResults) = await projectConversion.Convert(progress);
+            var pathNodePairs = await GetDocuments(convertedProject, docResults)
+                .SelectAsync(async d => (d.Path, Node: await d.Doc.GetSyntaxRootAsync(), d.Errors));
             var results = pathNodePairs.Select(pathNodePair => new ConversionResult(pathNodePair.Node.ToFullString())
                 {SourcePathOrNull = pathNodePair.Path, Exceptions = pathNodePair.Errors.ToList() });
 
-            var warnings = await projectConversion.GetProjectWarnings();
+            var warnings = await projectConversion.GetProjectWarnings(projectConversion._project, convertedProject);
             if (warnings != null) {
                 string projectFilePath = projectConversion._project.FilePath;
                 string projectDir = projectFilePath != null ? Path.GetDirectoryName(projectFilePath) : projectConversion._project.AssemblyName;
@@ -117,7 +119,7 @@ namespace ICSharpCode.CodeConverter.Shared
             return results;
         }
 
-        private async Task<(string Path, SyntaxNode Node, string[] Errors)[]> Convert(
+        private async Task<(Project withRenamedMergedMyNamespace, List<(string Path, DocumentId DocId, string[] Errors)> results2)> Convert(
             IProgress<ConversionProgress> progress)
         {
             var (proj1, results1) = await ExecutePhase(_documentsToConvert, FirstPass, progress, "Phase 1 of 2:");
@@ -126,8 +128,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var (proj2, results2) = await ExecutePhase(firstPassDocs, SecondPass, progress, "Phase 2 of 2:");
             var withRenamedMergedMyNamespace = await proj2.RenameMergedMyNamespace();
 
-            return await GetDocuments(withRenamedMergedMyNamespace, results2)
-                .SelectAsync(async d => (d.Path, await d.Doc.GetSyntaxRootAsync(), d.Errors));
+            return (withRenamedMergedMyNamespace, results2);
         }
 
         private async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
@@ -200,10 +201,13 @@ namespace ICSharpCode.CodeConverter.Shared
             return (selectedNode ?? await convertedDocument.GetSyntaxRootAsync(), errors);
         }
 
-        private async Task<string> GetProjectWarnings()
+        private async Task<string> GetProjectWarnings(Project source, Project converted)
         {
             if (!_showCompilationErrors) return null;
-            return await _languageConversion.GetWarningsOrNull();
+
+            var sourceCompilation = await source.GetCompilationAsync();
+            var convertedCompilation = await converted.GetCompilationAsync();
+            return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(convertedCompilation, "target");
         }
 
         private async Task<(string treeFilePath, SyntaxNode convertedDoc, string[] errors)> FirstPass(Document document, IProgress<string> progress)

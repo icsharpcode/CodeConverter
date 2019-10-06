@@ -164,13 +164,6 @@ End Class";
             return await doc.SimplifyStatements<CSSyntax.UsingDirectiveSyntax, CSSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId);
         }
 
-        public async Task<string> GetWarningsOrNull()
-        {
-            var sourceCompilation = await _sourceVbProject.GetCompilationAsync();
-            var convertedCompilation = await _convertedCsProject.GetCompilationAsync();
-            return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation( convertedCompilation, "target");
-        }
-
         public SyntaxTree CreateTree(string text)
         {
             return CreateCompiler().CreateTree(text);

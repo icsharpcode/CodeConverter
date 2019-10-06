@@ -9,7 +9,6 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         Task<SyntaxNode> SingleFirstPass(Document document);
         Task<Document> SingleSecondPass(Document doc);
-        Task<string> GetWarningsOrNull();
         SyntaxTree CreateTree(string text);
         Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
             IEnumerable<MetadataReference> references);
