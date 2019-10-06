@@ -32,7 +32,7 @@ namespace WindowsAppVb.My
         [DebuggerStepThrough()]
         protected override void OnCreateMainForm()
         {
-            this.MainForm = WindowsAppVb.WinformsDesignerTest;
+            this.MainForm = MyProject.Forms.WinformsDesignerTest;
         }
     }
 }
