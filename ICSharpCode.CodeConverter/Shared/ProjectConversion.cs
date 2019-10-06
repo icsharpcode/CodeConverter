@@ -46,7 +46,7 @@ namespace ICSharpCode.CodeConverter.Shared
             await languageConversion.Initialize(documentProject);
         }
 
-        public static Task<ConversionResult> ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null) where TLanguageConversion : ILanguageConversion, new()
+        public static async Task<ConversionResult> ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null) where TLanguageConversion : ILanguageConversion, new()
         {
             var languageConversion = new TLanguageConversion {
                 RootNamespace = rootNamespace
@@ -54,7 +54,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var syntaxTree = languageConversion.MakeFullCompilationUnit(text, out var textSpan);
             using (var workspace = new AdhocWorkspace()) {
                 var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, references);
-                return ConvertSingle(document, textSpan ?? new TextSpan(0,0), languageConversion);
+                return await ConvertSingle(document, textSpan ?? new TextSpan(0,0), languageConversion);
             }
         }
 
