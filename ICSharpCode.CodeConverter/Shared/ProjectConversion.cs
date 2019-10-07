@@ -124,7 +124,7 @@ namespace ICSharpCode.CodeConverter.Shared
             ProjectConversion projectConversion, IProgress<ConversionProgress> progress)
         {
             var (convertedProject, docResults) = await projectConversion.Convert(progress);
-            var pathNodePairs = await GetDocuments(convertedProject, docResults)
+            var pathNodePairs = await convertedProject.GetDocuments(docResults)
                 .SelectAsync(async d => (d.Path, Node: await d.Doc.GetSyntaxRootAsync(), d.Errors));
             var results = pathNodePairs.Select(pathNodePair => new ConversionResult(pathNodePair.Node.ToFullString())
                 {SourcePathOrNull = pathNodePair.Path, Exceptions = pathNodePair.Errors.ToList() });
@@ -143,8 +143,7 @@ namespace ICSharpCode.CodeConverter.Shared
             IProgress<ConversionProgress> progress)
         {
             var (proj1, results1) = await ExecutePhase(_documentsToConvert, FirstPass, progress, "Phase 1 of 2:");
-            var firstPassDocs = GetDocuments(proj1, results1);
-            return await ExecutePhase(firstPassDocs, SecondPass, progress, "Phase 2 of 2:");
+            return await ExecutePhase(proj1.GetDocuments(results1), SecondPass, progress, "Phase 2 of 2:");
         }
 
         private async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
@@ -155,11 +154,6 @@ namespace ICSharpCode.CodeConverter.Shared
             var strProgress = new Progress<string>(m => progress.Report(new ConversionProgress(m, 1)));
             var firstPassResults = await parameters.ParallelSelectAsync(d => executePass(d, strProgress), Env.MaxDop);
             return await _languageConversion.GetConvertedProject(firstPassResults);
-        }
-
-        private static IEnumerable<(string Path, Document Doc, string[] Errors)> GetDocuments(Project project, List<(string treeFilePath, DocumentId docId, string[] errors)> docIds)
-        {
-            return docIds.Select(f => (f.treeFilePath, f.docId != null ? project.GetDocument(f.docId) : null, f.errors));
         }
 
         private async Task<(string Path, SyntaxNode Node, string[] Errors)> SecondPass((string Path, Document document, string[] Errors) firstPassResult, IProgress<string> progress)

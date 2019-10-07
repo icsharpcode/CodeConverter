@@ -64,5 +64,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             //ToList ensures that the project returned has all documents added. We only return DocumentIds so it's easy to look up the final version of the doc later
             return (project, firstPassDocIds);
         }
+
+        public static IEnumerable<(string Path, Document Doc, string[] Errors)> GetDocuments(this Project project, List<(string treeFilePath, DocumentId docId, string[] errors)> docIds)
+        {
+            return docIds.Select(f => (f.treeFilePath, f.docId != null ? project.GetDocument(f.docId) : null, f.errors));
+        }
     }
 }
