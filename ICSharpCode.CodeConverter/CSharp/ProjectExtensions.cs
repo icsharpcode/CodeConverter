@@ -43,5 +43,26 @@ namespace ICSharpCode.CodeConverter.CSharp
             string projectFilePath = proj.FilePath;
             return projectFilePath != null ? Path.GetDirectoryName(projectFilePath) : null;
         }
+
+        public static (Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)
+            WithDocuments(this Project project, (string Path, SyntaxNode Node, string[] Errors)[] results)
+        {
+            var firstPassDocIds = results.Select(firstPassResult =>
+            {
+                DocumentId docId = null;
+                if (firstPassResult.Node != null)
+                {
+                    var document = project.AddDocument(firstPassResult.Path, firstPassResult.Node,
+                        filePath: firstPassResult.Path);
+                    project = document.Project;
+                    docId = document.Id;
+                }
+
+                return (firstPassResult.Path, docId, firstPassResult.Errors);
+            }).ToList();
+
+            //ToList ensures that the project returned has all documents added. We only return DocumentIds so it's easy to look up the final version of the doc later
+            return (project, firstPassDocIds);
+        }
     }
 }

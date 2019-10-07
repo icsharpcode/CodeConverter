@@ -24,8 +24,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         IEnumerable<(string, string)> GetProjectFileReplacementRegexes();
         string TargetLanguage { get; }
         string RootNamespace { get; set; }
-        Task Initialize(Project project);
+        Task<Project> InitializeSource(Project project);
         string PostTransformProjectFile(string xml);
-        Project GetConvertedProject();
+        Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
+            GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults);
     }
 }

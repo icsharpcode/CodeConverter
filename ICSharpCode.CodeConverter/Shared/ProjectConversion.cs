@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -8,14 +7,9 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
-using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Formatting;
-using Microsoft.CodeAnalysis.Options;
-using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.Text;
-using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
@@ -42,11 +36,6 @@ namespace ICSharpCode.CodeConverter.Shared
             _returnSelectedNode = returnSelectedNode;
         }
 
-        private static async Task Initialize(ILanguageConversion languageConversion, Project documentProject)
-        {
-            await languageConversion.Initialize(documentProject);
-        }
-
         public static async Task<ConversionResult> ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null) where TLanguageConversion : ILanguageConversion, new()
         {
             await new SynchronizationContextRemover();
@@ -70,8 +59,10 @@ namespace ICSharpCode.CodeConverter.Shared
                 document = await WithAnnotatedSelection(document, selected);
             }
 
-            var conversion = new ProjectConversion(document.Project, new[] { document}, languageConversion, returnSelectedNode);
-            await Initialize(languageConversion, document.Project);
+            var project = await languageConversion.InitializeSource(document.Project);
+            document = project.GetDocument(document.Id);
+
+            var conversion = new ProjectConversion(project, new[] { document }, languageConversion, returnSelectedNode);
             var conversionResults = (await ConvertProjectContents(conversion, new Progress<ConversionProgress>())).ToList();
             var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
                              ?? conversionResults.First();
@@ -114,10 +105,10 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(Project project, IProgress<ConversionProgress> progress, ILanguageConversion languageConversion)
         {
-            project = await project.WithRenamedMergedMyNamespace();
+            project = await languageConversion.InitializeSource(project);
             var documentsToConvert = project.Documents.Where(d => !BannedPaths.Any(d.FilePath.Contains));
             var projectConversion = new ProjectConversion(project, documentsToConvert, languageConversion);
-            await Initialize(languageConversion, project);
+            
             return await ConvertProjectContents(projectConversion, progress);
         }
 
@@ -152,12 +143,8 @@ namespace ICSharpCode.CodeConverter.Shared
             IProgress<ConversionProgress> progress)
         {
             var (proj1, results1) = await ExecutePhase(_documentsToConvert, FirstPass, progress, "Phase 1 of 2:");
-            var withRenamedMergedMyNamespace = await proj1.RenameMergedMyNamespace();
-            var firstPassDocs = GetDocuments(withRenamedMergedMyNamespace, results1);
-
-            var (proj2, results2) = await ExecutePhase(firstPassDocs, SecondPass, progress, "Phase 2 of 2:");
-
-            return (proj2, results2);
+            var firstPassDocs = GetDocuments(proj1, results1);
+            return await ExecutePhase(firstPassDocs, SecondPass, progress, "Phase 2 of 2:");
         }
 
         private async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
@@ -167,29 +154,7 @@ namespace ICSharpCode.CodeConverter.Shared
             progress.Report(new ConversionProgress(phaseTitle));
             var strProgress = new Progress<string>(m => progress.Report(new ConversionProgress(m, 1)));
             var firstPassResults = await parameters.ParallelSelectAsync(d => executePass(d, strProgress), Env.MaxDop);
-            return CreateConvertedProject(firstPassResults);
-        }
-
-        private (Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds) CreateConvertedProject(
-            (string Path, SyntaxNode Node, string[] Errors)[] firstPassResults)
-        {
-            var project = _languageConversion.GetConvertedProject();
-            var firstPassDocIds = firstPassResults.Select(firstPassResult =>
-            {
-                DocumentId docId = null;
-                if (firstPassResult.Node != null)
-                {
-                    var document = project.AddDocument(firstPassResult.Path, firstPassResult.Node,
-                        filePath: firstPassResult.Path);
-                    project = document.Project;
-                    docId = document.Id;
-                }
-
-                return (firstPassResult.Path, docId, firstPassResult.Errors);
-            }).ToList();
-
-            //ToList ensures that the project returned has all documents added. We only return DocumentIds so it's easy to look up the final version of the doc later
-            return (project, firstPassDocIds);
+            return await _languageConversion.GetConvertedProject(firstPassResults);
         }
 
         private static IEnumerable<(string Path, Document Doc, string[] Errors)> GetDocuments(Project project, List<(string treeFilePath, DocumentId docId, string[] errors)> docIds)
