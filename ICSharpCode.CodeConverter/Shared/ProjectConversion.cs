@@ -152,12 +152,12 @@ namespace ICSharpCode.CodeConverter.Shared
             IProgress<ConversionProgress> progress)
         {
             var (proj1, results1) = await ExecutePhase(_documentsToConvert, FirstPass, progress, "Phase 1 of 2:");
-            var firstPassDocs = GetDocuments(proj1, results1);
+            var withRenamedMergedMyNamespace = await proj1.RenameMergedMyNamespace();
+            var firstPassDocs = GetDocuments(withRenamedMergedMyNamespace, results1);
 
             var (proj2, results2) = await ExecutePhase(firstPassDocs, SecondPass, progress, "Phase 2 of 2:");
-            var withRenamedMergedMyNamespace = await proj2.RenameMergedMyNamespace();
 
-            return (withRenamedMergedMyNamespace, results2);
+            return (proj2, results2);
         }
 
         private async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
