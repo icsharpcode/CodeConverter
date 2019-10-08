@@ -27,7 +27,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static async Task<Project> WithRenamedMergedMyNamespace(this Project vbProject)
         {
             string name = "MyNamespace";
-            var projectDir = Path.Combine(Path.GetDirectoryName(vbProject.FilePath), "My Project");
+            var projectDir = Path.Combine(vbProject.GetDirectoryPath() ?? vbProject.AssemblyName, "My Project");
 
             var compilation = await vbProject.GetCompilationAsync();
             string embeddedSourceText = (await GetAllEmbeddedSourceText(compilation));
