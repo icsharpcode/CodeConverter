@@ -71,7 +71,7 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="My Project\MyNamespace.Static.Designer.vb" />
+    <Compile Include="My Project\MyNamespace.Static.Designer.cs" />
     <Compile Include="AClass.cs" />
     <Compile Include="AnEnum.cs" />
     <Compile Include="Module1.cs" />

@@ -158,7 +158,7 @@ namespace WindowsAppVb
         /* TODO ERROR: Skipped EndIfDirectiveTrivia */
         [HideModuleName()]
         [System.CodeDom.Compiler.GeneratedCode("MyTemplate", "11.0.0.0")]
-        internal static class MyProject
+        internal partial static class MyProject
         {
 
             /* TODO ERROR: Skipped IfDirectiveTrivia */
@@ -212,7 +212,7 @@ namespace WindowsAppVb
 
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [MyGroupCollection("System.Windows.Forms.Form", "Create__Instance__", "Dispose__Instance__", "My.MyProject.Forms")]
-            internal sealed class MyForms
+            internal sealed partial class MyForms
             {
                 [DebuggerHidden()]
                 private static T Create__Instance__<T>(T Instance) where T : Form, new()

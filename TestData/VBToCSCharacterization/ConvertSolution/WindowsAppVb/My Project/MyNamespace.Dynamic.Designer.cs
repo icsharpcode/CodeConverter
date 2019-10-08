@@ -4,27 +4,30 @@ using System.ComponentModel;
 
 namespace WindowsAppVb.My
 {
-    internal partial class MyForms
+    internal partial static class MyProject
     {
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public WinformsDesignerTest m_WinformsDesignerTest;
-
-        public WinformsDesignerTest WinformsDesignerTest
+        internal partial class MyForms
         {
-            [DebuggerHidden]
-            get
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            public WinformsDesignerTest m_WinformsDesignerTest;
+
+            public WinformsDesignerTest WinformsDesignerTest
             {
-                m_WinformsDesignerTest = Create__Instance__<WinformsDesignerTest>(m_WinformsDesignerTest);
-                return m_WinformsDesignerTest;
-            }
-            [DebuggerHidden]
-            set
-            {
-                if (value == m_WinformsDesignerTest)
-                    return;
-                if (value != null)
-                    throw new ArgumentException("Property can only be set to Nothing");
-                this.Dispose__Instance__<WinformsDesignerTest>(m_WinformsDesignerTest);
+                [DebuggerHidden]
+                get
+                {
+                    m_WinformsDesignerTest = Create__Instance__(m_WinformsDesignerTest);
+                    return m_WinformsDesignerTest;
+                }
+                [DebuggerHidden]
+                set
+                {
+                    if (value == m_WinformsDesignerTest)
+                        return;
+                    if (value != null)
+                        throw new ArgumentException("Property can only be set to Nothing");
+                    Dispose__Instance__(ref m_WinformsDesignerTest);
+                }
             }
         }
     }

@@ -81,7 +81,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var projectPath = Path.GetFullPath(project.GetDirectoryPath());
             string[] relativeFilePathsToAdd = 
                 convertProjectContents.Select(r => r.SourcePathOrNull).Where(p => !sourceFilePathsWithoutExtension.Contains(p))
-                    .Select(p => Path.GetFullPath(p).Replace(projectPath +"\\", ""))
+                    .Select(p => PathConverter.TogglePathExtension(Path.GetFullPath(p)).Replace(projectPath +"\\", ""))
                     .OrderBy(x => x).ToArray();
 
             var addFilesRegexSpec = AddCompiledItemsRegexFromRelativePaths(relativeFilePathsToAdd);

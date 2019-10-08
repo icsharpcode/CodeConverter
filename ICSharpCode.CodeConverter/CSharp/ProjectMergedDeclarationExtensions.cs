@@ -69,9 +69,11 @@ Imports System.ComponentModel
 Imports System.Diagnostics
 
 Namespace My
+    Public Partial Module MyProject
 {myForms}
 
 {myWebServices}
+    End Module
 End Namespace";
         }
 
@@ -81,27 +83,27 @@ End Namespace";
             var propertiesToReplicate = containerType?.GetMembers().Where(m => m.IsKind(SymbolKind.Property)).ToArray();
             if (propertiesToReplicate?.Any() != true) return "";
             var vbTextForProperties = propertiesToReplicate.Select(s => $@"
-        <EditorBrowsable(EditorBrowsableState.Never)>
-        Public m_{s.Name} As {s.Name}
-        
-        Public Property {s.Name} As {s.Name}
-            <DebuggerHidden>
-            Get
-                m_{s.Name} = Create__Instance__(Of {s.Name})(m_{s.Name})
-                Return m_{s.Name}
-            End Get
-            <DebuggerHidden>
-            Set(ByVal value As {s.Name})
-                If value Is m_{s.Name} Then Return
-                If value IsNot Nothing Then Throw New ArgumentException(""Property can only be set to Nothing"")
-                Me.Dispose__Instance__(Of {s.Name})(m_{s.Name})
-            End Set
-        End Property
+            <EditorBrowsable(EditorBrowsableState.Never)>
+            Public m_{s.Name} As {s.Name}
+            
+            Public Property {s.Name} As {s.Name}
+                <DebuggerHidden>
+                Get
+                    m_{s.Name} = Create__Instance__(Of {s.Name})(m_{s.Name})
+                    Return m_{s.Name}
+                End Get
+                <DebuggerHidden>
+                Set(ByVal value As {s.Name})
+                    If value Is m_{s.Name} Then Return
+                    If value IsNot Nothing Then Throw New ArgumentException(""Property can only be set to Nothing"")
+                    Me.Dispose__Instance__(Of {s.Name})(m_{s.Name})
+                End Set
+            End Property
 ");
             string propertiesWithoutContainer = string.Join(Environment.NewLine, vbTextForProperties);
-            return $@"    Friend Partial Class {propertyContainerClassName}
+            return $@"        Friend Partial Class {propertyContainerClassName}
 {propertiesWithoutContainer}
-    End Class";
+        End Class";
         }
 
         private static string Renamespace(this string sourceText)
