@@ -123,13 +123,11 @@ namespace ICSharpCode.CodeConverter.Shared
         private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(
             ProjectConversion projectConversion, IProgress<ConversionProgress> progress)
         {
-            var (convertedProject, docResults) = await projectConversion.Convert(progress);
-            var pathNodePairs = await convertedProject.GetDocuments(docResults)
-                .SelectAsync(async d => (d.Path, Node: await d.Doc.GetSyntaxRootAsync(), d.Errors));
+            var pathNodePairs = await projectConversion.Convert(progress);
             var results = pathNodePairs.Select(pathNodePair => new ConversionResult(pathNodePair.Node.ToFullString())
                 {SourcePathOrNull = pathNodePair.Path, Exceptions = pathNodePair.Errors.ToList() });
 
-            var warnings = await projectConversion.GetProjectWarnings(projectConversion._project, convertedProject);
+            var warnings = await projectConversion.GetProjectWarnings(projectConversion._project, pathNodePairs);
             if (warnings != null) {
                 string projectDir = projectConversion._project.GetDirectoryPath() ?? projectConversion._project.AssemblyName;
                 var warningPath = Path.Combine(projectDir, "ConversionWarnings.txt");
@@ -139,21 +137,21 @@ namespace ICSharpCode.CodeConverter.Shared
             return results;
         }
 
-        private async Task<(Project withRenamedMergedMyNamespace, List<(string Path, DocumentId DocId, string[] Errors)> results2)> Convert(
+        private async Task<(string Path, SyntaxNode Node, string[] Errors)[]> Convert(
             IProgress<ConversionProgress> progress)
         {
-            var (proj1, results1) = await ExecutePhase(_documentsToConvert, FirstPass, progress, "Phase 1 of 2:");
-            return await ExecutePhase(proj1.GetDocuments(results1), SecondPass, progress, "Phase 2 of 2:");
+            var firstPassResults = await ExecutePhase(_documentsToConvert, FirstPass, progress, "Phase 1 of 2:");
+            var (proj1, docs1) = await _languageConversion.GetConvertedProject(firstPassResults);
+            return await ExecutePhase(proj1.GetDocuments(docs1), SecondPass, progress, "Phase 2 of 2:");
         }
 
-        private async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
-            ExecutePhase<T>(IEnumerable<T> parameters, Func<T, Progress<string>, Task<(string treeFilePath, SyntaxNode convertedDoc,
+        private async Task<(string Path, SyntaxNode Node, string[] Errors)[]> ExecutePhase<T>(IEnumerable<T> parameters, Func<T, Progress<string>, Task<(string treeFilePath, SyntaxNode convertedDoc,
                 string[] errors)>> executePass, IProgress<ConversionProgress> progress, string phaseTitle)
         {
             progress.Report(new ConversionProgress(phaseTitle));
             var strProgress = new Progress<string>(m => progress.Report(new ConversionProgress(m, 1)));
-            var firstPassResults = await parameters.ParallelSelectAsync(d => executePass(d, strProgress), Env.MaxDop);
-            return await _languageConversion.GetConvertedProject(firstPassResults);
+            return await parameters.ParallelSelectAsync(d => executePass(d, strProgress), Env.MaxDop);
+            ;
         }
 
         private async Task<(string Path, SyntaxNode Node, string[] Errors)> SecondPass((string Path, Document document, string[] Errors) firstPassResult, IProgress<string> progress)
@@ -189,12 +187,12 @@ namespace ICSharpCode.CodeConverter.Shared
             return (selectedNode ?? await convertedDocument.GetSyntaxRootAsync(), errors);
         }
 
-        private async Task<string> GetProjectWarnings(Project source, Project converted)
+        private async Task<string> GetProjectWarnings(Project source, (string Path, SyntaxNode Node, string[] Errors)[] converted)
         {
             if (!_showCompilationErrors) return null;
 
             var sourceCompilation = await source.GetCompilationAsync();
-            var convertedCompilation = await converted.GetCompilationAsync();
+            var convertedCompilation = await (await _languageConversion.GetConvertedProject(converted)).project.GetCompilationAsync();
             return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(convertedCompilation, "target");
         }
 

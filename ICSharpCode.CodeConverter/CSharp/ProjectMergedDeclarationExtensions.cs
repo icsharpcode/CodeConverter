@@ -131,7 +131,8 @@ End Namespace";
 
         private static async Task<ISymbol> GetFirstSymbolWithName(Project project)
         {
-            return (await project.GetCompilationAsync()).GetSymbolsWithName(s => s == Constants.MergedMyNamespace, SymbolFilter.Namespace).FirstOrDefault();
+            var compilation = await project.GetCompilationAsync();
+            return compilation.GetSymbolsWithName(s => s == Constants.MergedMyNamespace, SymbolFilter.Namespace).FirstOrDefault();
         }
     }
 }
