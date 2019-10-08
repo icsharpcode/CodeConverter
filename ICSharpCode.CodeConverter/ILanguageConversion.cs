@@ -9,7 +9,6 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         Task<SyntaxNode> SingleFirstPass(Document document);
         Task<Document> SingleSecondPass(Document doc);
-        Task<string> GetWarningsOrNull();
         SyntaxTree CreateTree(string text);
         Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
             IEnumerable<MetadataReference> references);
@@ -25,8 +24,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         IEnumerable<(string, string)> GetProjectFileReplacementRegexes();
         string TargetLanguage { get; }
         string RootNamespace { get; set; }
-        Task Initialize(Project project);
+        Task<Project> InitializeSource(Project project);
         string PostTransformProjectFile(string xml);
-        Project GetConvertedProject();
+        Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
+            GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults);
     }
 }

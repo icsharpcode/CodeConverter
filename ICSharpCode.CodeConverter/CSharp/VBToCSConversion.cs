@@ -38,13 +38,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public string RootNamespace { get; set; }
 
-        public async Task Initialize(Project project)
+        public async Task<Project> InitializeSource(Project project)
         {
-            _sourceVbProject = project;
             var cSharpCompilationOptions = CSharpCompiler.CreateCompilationOptions();
             _convertedCsProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, DoNotAllowImplicitDefault);
             _csharpReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptionsAsync(cSharpCompilationOptions);
             _csharpViewOfVbSymbols = (CSharpCompilation) await _csharpReferenceProject.GetCompilationAsync();
+
+            project = await project.WithRenamedMergedMyNamespace();
+            _sourceVbProject = project;
+            return project;
         }
 
         public async Task<SyntaxNode> SingleFirstPass(Document document)
@@ -95,9 +98,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                    xml.Substring(defineConstantsEnd);
         }
 
-        public Project GetConvertedProject()
+        public async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
+            GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults)
         {
-            return _convertedCsProject;
+            var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults);
+            return (await project.RenameMergedMyNamespace(), docIds);
         }
 
         public string TargetLanguage { get; } = LanguageNames.CSharp;
@@ -162,13 +167,6 @@ End Class";
         public async Task<Document> SingleSecondPass(Document doc)
         {
             return await doc.SimplifyStatements<CSSyntax.UsingDirectiveSyntax, CSSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId);
-        }
-
-        public async Task<string> GetWarningsOrNull()
-        {
-            var sourceCompilation = await _sourceVbProject.GetCompilationAsync();
-            var convertedCompilation = await _convertedCsProject.GetCompilationAsync();
-            return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation( convertedCompilation, "target");
         }
 
         public SyntaxTree CreateTree(string text)

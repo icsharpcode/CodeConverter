@@ -346,7 +346,7 @@ public partial class AccountEntry
     public List<AccountEntry> AccountEntryClaimDetails { get; set; }
 }
 
-internal partial static class Ext
+internal static partial class Ext
 {
     public static IEnumerable<AccountEntry> Reduce(this IEnumerable<AccountEntry> accountEntries)
     {

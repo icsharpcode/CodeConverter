@@ -30,7 +30,7 @@ End Class", @"internal partial class TestClass
             await TestConversionVisualBasicToCSharp(
 @"Module TestModule
     Const answer As Integer = 42
-End Module", @"internal partial static class TestModule
+End Module", @"internal static partial class TestModule
 {
     private const int answer = 42;
 }");
@@ -44,7 +44,7 @@ End Module", @"internal partial static class TestModule
     Sub New()
         Dim someValue As Integer = 0
     End Sub
-End Module", @"internal partial static class Module1
+End Module", @"internal static partial class Module1
 {
     static Module1()
     {
@@ -533,7 +533,7 @@ internal partial class TestSubclass : TestClass
     <System.Runtime.CompilerServices.Extension()>
     Sub TestMethod2Parameters(ByVal str As String, other As String)
     End Sub
-End Module", @"internal partial static class TestClass
+End Module", @"internal static partial class TestClass
 {
     public static void TestMethod(this string str)
     {
@@ -556,7 +556,7 @@ Module TestClass
     Sub TestMethod(ByVal str As String)
     End Sub
 End Module", @"
-internal partial static class TestClass
+internal static partial class TestClass
 {
     public static void TestMethod(this string str)
     {
@@ -858,7 +858,7 @@ internal partial class MyEventClass
     }
 }
 
-internal partial static class Module1
+internal static partial class Module1
 {
     static Module1()
     {

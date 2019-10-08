@@ -291,7 +291,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             var id = _commonConversions.ConvertIdentifier(node.Identifier);
             var methodInfo = (INamedTypeSymbol) _semanticModel.GetDeclaredSymbol(node);
-            if (methodInfo.DelegateInvokeMethod.GetReturnType()?.SpecialType == SpecialType.System_Void) {
+            if (methodInfo?.DelegateInvokeMethod.GetReturnType()?.SpecialType == SpecialType.System_Void) {
                 return SyntaxFactory.DelegateSubStatement(
                     SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CommonConversions.ConvertModifiers(node.Modifiers),
                     id, (TypeParameterListSyntax)node.TypeParameterList?.Accept(TriviaConvertingVisitor),
@@ -424,7 +424,7 @@ namespace ICSharpCode.CodeConverter.VB
                 modifiers = SyntaxFactory.TokenList(modifiers.Where(t => !(t.IsKind(SyntaxKind.SharedKeyword, SyntaxKind.PublicKeyword))));
             }
 
-            var implementsClause = CreateImplementsClauseSyntaxOrNull(methodInfo);
+            var implementsClause = methodInfo == null ? null : CreateImplementsClauseSyntaxOrNull(methodInfo);
             if (methodInfo?.GetReturnType()?.SpecialType == SpecialType.System_Void) {
                 var stmt = SyntaxFactory.SubStatement(
                     attributes,
@@ -514,13 +514,14 @@ namespace ICSharpCode.CodeConverter.VB
                 modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword));
             }
 
+            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
             var stmt = SyntaxFactory.PropertyStatement(
                 attributes,
                 modifiers,
                 id, parameterListSyntax,
                 SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax) node.Type.Accept(TriviaConvertingVisitor)),
                 initializerOrNull,
-                CreateImplementsClauseSyntaxOrNull(_semanticModel.GetDeclaredSymbol(node))
+                declaredSymbol == null ? null : CreateImplementsClauseSyntaxOrNull(declaredSymbol)
             );
             if (hasAccessors && HasNoAccessorBody(node.AccessorList))
                 return stmt;
@@ -561,10 +562,11 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitEventDeclaration(CSS.EventDeclarationSyntax node)
         {
             ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
+            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
             var stmt = SyntaxFactory.EventStatement(
                 attributes, CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)), _commonConversions.ConvertIdentifier(node.Identifier), null,
                 SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)),
-                CreateImplementsClauseSyntaxOrNull(_semanticModel.GetDeclaredSymbol(node))
+                declaredSymbol == null ? null : CreateImplementsClauseSyntaxOrNull(declaredSymbol)
             );
             if (HasNoAccessorBody(node.AccessorList))
                 return stmt;

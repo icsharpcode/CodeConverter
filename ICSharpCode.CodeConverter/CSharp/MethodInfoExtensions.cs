@@ -30,7 +30,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         {
             var func = method.CreateOpenDelegate<Func<TTarget, TReturn>>();
-            return (TDesiredTarget target) => (TDesiredReturn)(object)func((TTarget)target);
+            return (TDesiredTarget target) => target is TTarget tt ? (TDesiredReturn)(object)func(tt) : default;
         }
 
         /// <summary>
@@ -45,8 +45,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             where TTarget : class, TDesiredTarget
 
         {
+            var paramIsReferenceType = default(TParam) == null;
             var func = method.CreateOpenDelegate<Func<TTarget, TParam, TReturn>>();
-            return (TDesiredTarget target, TDesiredParam param) => (TDesiredReturn)(object) func((TTarget) target, (TParam)(object) param);
+            return (TDesiredTarget target, TDesiredParam param) => {
+                var desiredParam = paramIsReferenceType ? param is TParam p ? p : default : (TParam)(object)param;
+                return target is TTarget desiredTarget ? (TDesiredReturn)(object)func(desiredTarget, desiredParam) : default;
+            };
         }
 
 

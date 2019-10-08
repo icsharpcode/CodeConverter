@@ -83,7 +83,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var declaredSymbolType = declaredSymbol.GetSymbolType();
                 var equalsValueClauseSyntax = await ConvertEqualsValueClauseSyntax(declarator, name, vbInitValue, declaredSymbolType, declaredSymbol, initializerOrMethodDecl);
                 var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier), null, equalsValueClauseSyntax);
-                string k = declaredSymbolType.GetFullMetadataName();
+                string k = declaredSymbolType?.GetFullMetadataName() ?? name.ToString();//Use likely unique key if the type symbol isn't available
 
                 if (csVars.TryGetValue(k, out var decl)) {
                     csVars[k] = decl.AddVariables(v);
@@ -122,7 +122,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     : adjustedInitializerExpr;
                 equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
             }
-            else if (isField || _semanticModel.IsDefinitelyAssignedBeforeRead(declaredSymbol, vbName))
+            else if (isField || declaredSymbol != null && _semanticModel.IsDefinitelyAssignedBeforeRead(declaredSymbol, vbName))
             {
                 equalsValueClauseSyntax = null;
             }
@@ -391,16 +391,20 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public SyntaxTokenList ConvertModifiers(SyntaxNode node, IEnumerable<SyntaxToken> modifiers,
-            TokenContext context = TokenContext.Global, bool isVariableOrConst = false, bool isConstructor = false)
+            TokenContext context = TokenContext.Global, bool isVariableOrConst = false, bool isConstructor = false, params CSSyntaxKind[] extraCsModifierKinds)
         {
             ISymbol declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
-            var declaredAccessibility = declaredSymbol.DeclaredAccessibility;
+            var declaredAccessibility = declaredSymbol?.DeclaredAccessibility ?? Accessibility.NotApplicable;
 
             var contextsWithIdenticalDefaults = new[] { TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface };
             bool isPartial = declaredSymbol.IsPartialClassDefinition() || declaredSymbol.IsPartialMethodDefinition() || declaredSymbol.IsPartialMethodImplementation();
             bool implicitVisibility = contextsWithIdenticalDefaults.Contains(context) || isVariableOrConst || isConstructor;
             if (implicitVisibility && !isPartial) declaredAccessibility = Accessibility.NotApplicable;
-            return SyntaxFactory.TokenList(ConvertModifiersCore(declaredAccessibility, modifiers, context).Where(t => CSharpExtensions.Kind(t) != CSSyntaxKind.None));
+            var modifierSyntaxs = ConvertModifiersCore(declaredAccessibility, modifiers, context)
+                .Concat(extraCsModifierKinds.Select(SyntaxFactory.Token))
+                .Where(t => CSharpExtensions.Kind(t) != CSSyntaxKind.None)
+                .OrderBy(m => SyntaxTokenExtensions.IsKind(m, CSSyntaxKind.PartialKeyword));
+            return SyntaxFactory.TokenList(modifierSyntaxs);
         }
 
         private SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)
@@ -425,7 +429,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            foreach (var token in remainingModifiers.Where(m => !IgnoreInContext(m, context)).OrderBy(m => SyntaxTokenExtensions.IsKind(m, SyntaxKind.PartialKeyword))) {
+            foreach (var token in remainingModifiers.Where(m => !IgnoreInContext(m, context))) {
                 var m = ConvertModifier(token, context);
                 if (m.HasValue) yield return m.Value;
             }

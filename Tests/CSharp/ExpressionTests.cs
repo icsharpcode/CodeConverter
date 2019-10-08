@@ -1423,7 +1423,7 @@ Public Module MyExtensions
     End Sub
 End Module", @"using System;
 
-public partial static class MyExtensions
+public static partial class MyExtensions
 {
     public static void NewColumn(Type type, string strV1 = null, string code = ""code"")
     {
@@ -1499,7 +1499,7 @@ Class TestClass
     Private Sub TestMethod(ByVal str As String)
         str.Use(Of object)
     End Sub
-End Class", @"internal partial static class AppBuilderUseExtensions
+End Class", @"internal static partial class AppBuilderUseExtensions
 {
     public static object Use<T>(this string app, params object[] args)
     {
@@ -1846,7 +1846,7 @@ Class TestClass
     End Sub
 End Class", @"namespace TestNamespace
 {
-    public partial static class TestModule
+    public static partial class TestModule
     {
         public static void ModuleFunction()
         {

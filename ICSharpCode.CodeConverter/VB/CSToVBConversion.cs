@@ -27,7 +27,7 @@ namespace ICSharpCode.CodeConverter.VB
         private Project _vbReferenceProject;
         public string RootNamespace { get; set; }
 
-        public async Task Initialize(Project project)
+        public async Task<Project> InitializeSource(Project project)
         {
             _sourceCsProject = project;
             var cSharpCompilationOptions = VisualBasicCompiler.CreateCompilationOptions(RootNamespace);
@@ -35,6 +35,7 @@ namespace ICSharpCode.CodeConverter.VB
             _convertedVbProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, _visualBasicParseOptions);
             _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptionsAsync(cSharpCompilationOptions);
             _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync();
+            return project;
         }
 
         public async Task<SyntaxNode> SingleFirstPass(Document document)
@@ -71,9 +72,10 @@ namespace ICSharpCode.CodeConverter.VB
             return xml;
         }
 
-        public Project GetConvertedProject()
+        public async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
+            GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults)
         {
-            return _convertedVbProject;
+            return _convertedVbProject.WithDocuments(firstPassResults);
         }
 
         private string AddInfer(string xml)
@@ -159,13 +161,6 @@ namespace ICSharpCode.CodeConverter.VB
         public async Task<Document> SingleSecondPass(Document doc)
         {
             return await doc.SimplifyStatements<VBSyntax.ImportsStatementSyntax, VBSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId);
-        }
-
-        public async Task<string> GetWarningsOrNull()
-        {
-            var sourceCompilation = await _sourceCsProject.GetCompilationAsync();
-            var convertedCompilation = await _convertedVbProject.GetCompilationAsync();
-            return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(convertedCompilation, "target");
         }
 
         public SyntaxTree CreateTree(string text)
