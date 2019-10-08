@@ -86,7 +86,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive = optionCompareText;
 
             var attributes = SyntaxFactory.List(await node.Attributes.SelectMany(a => a.AttributeLists).SelectManyAsync(_expressionNodeVisitor.ConvertAttribute));
-            var sourceAndConverted = await node.Members.SelectAsync(async m => (Source: m, Converted: await ConvertMember(m)));
+            var sourceAndConverted = await node.Members
+                .Where(m => !(m is VBSyntax.OptionStatementSyntax)) //TODO Record values for use in conversion
+                .SelectAsync(async m => (Source: m, Converted: await ConvertMember(m)));
 
 
             var convertedMembers = string.IsNullOrEmpty(options.RootNamespace)
