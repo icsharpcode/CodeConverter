@@ -4,7 +4,7 @@ using System.ComponentModel;
 
 namespace WindowsAppVb.My
 {
-    internal partial static class MyProject
+    internal static partial class MyProject
     {
         internal partial class MyForms
         {

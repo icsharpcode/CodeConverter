@@ -158,7 +158,7 @@ namespace WindowsAppVb
         /* TODO ERROR: Skipped EndIfDirectiveTrivia */
         [HideModuleName()]
         [System.CodeDom.Compiler.GeneratedCode("MyTemplate", "11.0.0.0")]
-        internal partial static class MyProject
+        internal static partial class MyProject
         {
 
             /* TODO ERROR: Skipped IfDirectiveTrivia */

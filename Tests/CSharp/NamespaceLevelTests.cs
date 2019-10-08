@@ -97,7 +97,7 @@ End Namespace", @"namespace Test.@class
     End Module
 End Namespace", @"namespace Test.@class
 {
-    internal partial static class TestClass
+    internal static partial class TestClass
     {
         public static void Test()
         {
@@ -519,7 +519,7 @@ internal enum EULong : ulong
     M1 = 0
 }
 
-internal partial static class Module1
+internal static partial class Module1
 {
     public static void Main()
     {

@@ -248,7 +248,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var (parameters, constraints) = await SplitTypeParameters(stmt.TypeParameterList);
 
             return SyntaxFactory.ClassDeclaration(
-                attributes, ConvertTypeBlockModifiers(stmt, TokenContext.InterfaceOrModule).Add(SyntaxFactory.Token(SyntaxKind.StaticKeyword)), CommonConversions.ConvertIdentifier(stmt.Identifier),
+                attributes, ConvertTypeBlockModifiers(stmt, TokenContext.InterfaceOrModule, SyntaxKind.StaticKeyword), 
+                CommonConversions.ConvertIdentifier(stmt.Identifier),
                 parameters,
                 await ConvertInheritsAndImplements(node.Inherits, node.Implements),
                 constraints,
@@ -290,12 +291,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
-        private SyntaxTokenList ConvertTypeBlockModifiers(VBSyntax.TypeStatementSyntax stmt, TokenContext interfaceOrModule)
+        private SyntaxTokenList ConvertTypeBlockModifiers(VBSyntax.TypeStatementSyntax stmt,
+            TokenContext interfaceOrModule, params SyntaxKind[] extraModifiers)
         {
-            var extraModifiers = IsPartialType(stmt) && !HasPartialKeyword(stmt.Modifiers)
-                ? new[] {SyntaxFactory.Token(SyntaxKind.PartialKeyword)}
-                : new SyntaxToken[0];
-            return CommonConversions.ConvertModifiers(stmt, stmt.Modifiers, interfaceOrModule).AddRange(extraModifiers);
+            if (IsPartialType(stmt) && !HasPartialKeyword(stmt.Modifiers)) {
+                extraModifiers = extraModifiers.Concat(new[] {SyntaxKind.PartialKeyword})
+                    .ToArray();
+            }
+
+            return CommonConversions.ConvertModifiers(stmt, stmt.Modifiers, interfaceOrModule, extraCsModifierKinds: extraModifiers);
         }
 
         private static bool HasPartialKeyword(SyntaxTokenList modifiers)

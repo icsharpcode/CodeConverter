@@ -391,7 +391,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public SyntaxTokenList ConvertModifiers(SyntaxNode node, IEnumerable<SyntaxToken> modifiers,
-            TokenContext context = TokenContext.Global, bool isVariableOrConst = false, bool isConstructor = false)
+            TokenContext context = TokenContext.Global, bool isVariableOrConst = false, bool isConstructor = false, params CSSyntaxKind[] extraCsModifierKinds)
         {
             ISymbol declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
             var declaredAccessibility = declaredSymbol?.DeclaredAccessibility ?? Accessibility.NotApplicable;
@@ -400,7 +400,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool isPartial = declaredSymbol.IsPartialClassDefinition() || declaredSymbol.IsPartialMethodDefinition() || declaredSymbol.IsPartialMethodImplementation();
             bool implicitVisibility = contextsWithIdenticalDefaults.Contains(context) || isVariableOrConst || isConstructor;
             if (implicitVisibility && !isPartial) declaredAccessibility = Accessibility.NotApplicable;
-            return SyntaxFactory.TokenList(ConvertModifiersCore(declaredAccessibility, modifiers, context).Where(t => CSharpExtensions.Kind(t) != CSSyntaxKind.None));
+            var modifierSyntaxs = ConvertModifiersCore(declaredAccessibility, modifiers, context)
+                .Concat(extraCsModifierKinds.Select(SyntaxFactory.Token))
+                .Where(t => CSharpExtensions.Kind(t) != CSSyntaxKind.None)
+                .OrderBy(m => SyntaxTokenExtensions.IsKind(m, CSSyntaxKind.PartialKeyword));
+            return SyntaxFactory.TokenList(modifierSyntaxs);
         }
 
         private SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)
@@ -425,7 +429,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            foreach (var token in remainingModifiers.Where(m => !IgnoreInContext(m, context)).OrderBy(m => SyntaxTokenExtensions.IsKind(m, SyntaxKind.PartialKeyword))) {
+            foreach (var token in remainingModifiers.Where(m => !IgnoreInContext(m, context))) {
                 var m = ConvertModifier(token, context);
                 if (m.HasValue) yield return m.Value;
             }
