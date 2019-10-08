@@ -40,12 +40,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public async Task<Project> InitializeSource(Project project)
         {
-            project = await project.WithRenamedMergedMyNamespace();
-            _sourceVbProject = project;
             var cSharpCompilationOptions = CSharpCompiler.CreateCompilationOptions();
             _convertedCsProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, DoNotAllowImplicitDefault);
             _csharpReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptionsAsync(cSharpCompilationOptions);
             _csharpViewOfVbSymbols = (CSharpCompilation) await _csharpReferenceProject.GetCompilationAsync();
+
+            project = await project.WithRenamedMergedMyNamespace();
+            _sourceVbProject = project;
             return project;
         }
 
