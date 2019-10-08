@@ -519,22 +519,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (node.IsKind(VBasic.SyntaxKind.IsExpression)) {
                 ExpressionSyntax otherArgument = null;
                 if (node.Left.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    otherArgument = (ExpressionSyntax) await node.Right.AcceptAsync(TriviaConvertingVisitor);
+                    otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Right);
                 }
                 if (node.Right.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    otherArgument = (ExpressionSyntax) await node.Left.AcceptAsync(TriviaConvertingVisitor);
+                    otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Left);
                 }
                 if (otherArgument != null) {
-                    return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, otherArgument, SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression));
+                    return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, otherArgument,
+                        SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression));
                 }
             }
+
             if (node.IsKind(VBasic.SyntaxKind.IsNotExpression)) {
                 ExpressionSyntax otherArgument = null;
                 if (node.Left.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    otherArgument = (ExpressionSyntax) await node.Right.AcceptAsync(TriviaConvertingVisitor);
+                    otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Right);
                 }
                 if (node.Right.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    otherArgument = (ExpressionSyntax) await node.Left.AcceptAsync(TriviaConvertingVisitor);
+                    otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Left);
                 }
                 if (otherArgument != null) {
                     return SyntaxFactory.BinaryExpression(SyntaxKind.NotEqualsExpression, otherArgument, SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression));
@@ -594,6 +596,29 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var csBinExp = SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
             return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, csBinExp);
+        }
+
+        private async Task<CSharpSyntaxNode> ConvertIsOrIsNotExpressionArg(VBSyntax.ExpressionSyntax binaryExpressionArg)
+        {
+            return await ConvertMyGroupCollectionPropertyGetWithUnderlyingField(binaryExpressionArg)
+                   ?? await binaryExpressionArg.AcceptAsync(TriviaConvertingVisitor);
+        }
+
+        private async Task<ExpressionSyntax> ConvertMyGroupCollectionPropertyGetWithUnderlyingField(SyntaxNode node)
+        {
+            var operation = _semanticModel.GetOperation(node);
+            switch (operation)
+            {
+                case IConversionOperation co:
+                    return await ConvertMyGroupCollectionPropertyGetWithUnderlyingField(co.Operand.Syntax);
+                case IPropertyReferenceOperation pro when pro.Property.IsMyGroupCollectionProperty():
+                    var associatedField = pro.Property.GetAssociatedField();
+                    var propertyAccessExpression = (VBSyntax.MemberAccessExpressionSyntax)pro.Syntax;
+                    var qualification = await propertyAccessExpression.Expression.AcceptAsync(TriviaConvertingVisitor);
+                    return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, (ExpressionSyntax) qualification, SyntaxFactory.IdentifierName(associatedField.Name));
+                default:
+                    return null;
+            }
         }
 
         public override async Task<CSharpSyntaxNode> VisitInvocationExpression(VBasic.Syntax.InvocationExpressionSyntax node)
