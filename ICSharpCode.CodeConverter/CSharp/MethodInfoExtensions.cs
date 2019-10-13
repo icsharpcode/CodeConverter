@@ -19,10 +19,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <summary>
         /// Creates open instance delegate of the given type which casts inputs, calls the method delegate and then casts the return type
         /// </summary>
-        public static Func<TDesiredTarget, TDesiredReturn> CreateOpenInstanceDelegateForcingType<TDesiredTarget, TDesiredReturn>(this MethodInfo m)
-        {
-            return CreateOpenInstanceDelegateForcingType<Func<TDesiredTarget, TDesiredReturn>>(m, nameof(CreateWeaklyTypedDelegateFor0Params));
-        }
+        public static Func<TDesiredTarget, TDesiredReturn> CreateOpenInstanceDelegateForcingType<TDesiredTarget, TDesiredReturn>(this MethodInfo m) => 
+            CreateOpenInstanceDelegateForcingType<Func<TDesiredTarget, TDesiredReturn>>(m, nameof(CreateWeaklyTypedDelegateFor0Params));
 
         private static Func<TDesiredTarget, TDesiredReturn> CreateWeaklyTypedDelegateFor0Params<TTarget, TReturn, TDesiredTarget, TDesiredReturn>(MethodInfo method)
             where TTarget : class, TDesiredTarget
@@ -36,10 +34,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <summary>
         /// Creates an open instance delegate of the given type which casts inputs, calls the method delegate and then casts the return type
         /// </summary>
-        public static Func<TDesiredTarget, TDesiredParam1, TDesiredReturn> CreateOpenInstanceDelegateForcingType<TDesiredTarget, TDesiredParam1, TDesiredReturn>(this MethodInfo m)
-        {
-            return CreateOpenInstanceDelegateForcingType<Func<TDesiredTarget, TDesiredParam1, TDesiredReturn>>(m, nameof(CreateWeaklyTypedDelegateFor1Param));
-        }
+        public static Func<TDesiredTarget, TDesiredParam1, TDesiredReturn> CreateOpenInstanceDelegateForcingType<TDesiredTarget, TDesiredParam1, TDesiredReturn>(this MethodInfo m) => CreateOpenInstanceDelegateForcingType<Func<TDesiredTarget, TDesiredParam1, TDesiredReturn>>(m, nameof(CreateWeaklyTypedDelegateFor1Param));
 
         private static Func<TDesiredTarget, TDesiredParam, TDesiredReturn> CreateWeaklyTypedDelegateFor1Param<TTarget, TParam, TReturn, TDesiredTarget, TDesiredParam, TDesiredReturn>(MethodInfo method) 
             where TTarget : class, TDesiredTarget
@@ -53,7 +48,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             };
         }
 
-
         /// <typeparam name="TDesiredFunc">Must be a Func</typeparam>
         private static TDesiredFunc CreateOpenInstanceDelegateForcingType<TDesiredFunc>(this MethodInfo m, string createWeaklyTypedDelegateMethodName) where TDesiredFunc : Delegate
         {
@@ -64,6 +58,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .MakeGenericMethod(genericArgs)
                 .CreateOpenDelegate<Func<MethodInfo, TDesiredFunc>>();
             return createWeaklyTypedDelegateInner(m);
+        }
+
+        public static MethodInfo ReflectedPropertyGetter<TInstance>(this TInstance instance,
+            string propertyToAccess)
+        {
+            var propertyInfo = instance.GetType().GetProperty(propertyToAccess);
+            return propertyInfo?.GetMethod.GetRuntimeBaseDefinition();
         }
     }
 }

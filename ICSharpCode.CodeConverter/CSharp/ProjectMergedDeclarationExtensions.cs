@@ -22,8 +22,6 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// </remarks>
     internal static class ProjectMergedDeclarationExtensions
     {
-        private static Func<Location, SyntaxTree> _getEmbeddedSyntaxTree;
-
         public static async Task<Project> WithRenamedMergedMyNamespace(this Project vbProject)
         {
             string name = "MyNamespace";
@@ -48,7 +46,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static async Task<string> GetAllEmbeddedSourceText(Compilation compilation)
         {
             var roots = await compilation.SourceModule.GlobalNamespace.Locations.
-                Where(l => !l.IsInSource).Select(GetEmbeddedSyntaxTree)
+                Where(l => !l.IsInSource).Select(CachedReflectedDelegates.GetEmbeddedSyntaxTree)
                 .SelectAsync(t => t.GetTextAsync());
             var renamespacesRootTexts =
                 roots.Select(r => r.ToString());
@@ -109,16 +107,6 @@ End Namespace";
         private static string Renamespace(this string sourceText)
         {
             return sourceText.Replace("Namespace My", $"Namespace {Constants.MergedMyNamespace}");
-        }
-
-        private static SyntaxTree GetEmbeddedSyntaxTree(Location loc)
-        {
-            if (_getEmbeddedSyntaxTree == null) {
-                var property = loc.GetType().GetProperty("PossiblyEmbeddedOrMySourceTree");
-                _getEmbeddedSyntaxTree = property?.GetMethod.GetRuntimeBaseDefinition()
-                    .CreateOpenInstanceDelegateForcingType<Location, SyntaxTree>();
-            }
-            return _getEmbeddedSyntaxTree?.Invoke(loc);
         }
 
         public static async Task<Project> RenameMergedMyNamespace(this Project project)

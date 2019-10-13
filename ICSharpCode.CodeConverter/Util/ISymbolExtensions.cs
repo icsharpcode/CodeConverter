@@ -239,32 +239,6 @@ namespace ICSharpCode.CodeConverter.Util
             return declaredSymbol is ITypeSymbol ts && (ts.DeclaringSyntaxReferences.Length > 1
                 || ts.ContainingAssembly.Name == ForcePartialTypesAssemblyName);
         }
-
-        private static Func<ISymbol, bool> _isMyGroupCollectionProperty;
-        public static bool IsMyGroupCollectionProperty(this IPropertySymbol declaredSymbol)
-        {
-            if (_isMyGroupCollectionProperty == null) {
-                var propertyInfo = declaredSymbol.GetType().GetProperty("IsMyGroupCollectionProperty");
-                if (propertyInfo == null) return false;
-                _isMyGroupCollectionProperty = propertyInfo.GetMethod.GetRuntimeBaseDefinition().CreateOpenInstanceDelegateForcingType<ISymbol, bool>();
-            }
-
-            return _isMyGroupCollectionProperty(declaredSymbol);
-
-        }
-
-        private static Func<ISymbol, ISymbol> _getAssociatedField;
-        public static ISymbol GetAssociatedField(this IPropertySymbol declaredSymbol)
-        {
-            if (_getAssociatedField == null) {
-                var propertyInfo = declaredSymbol.GetType().GetProperty("AssociatedField");
-                if (propertyInfo == null) return null;
-                _getAssociatedField = propertyInfo.GetMethod.GetRuntimeBaseDefinition().CreateOpenInstanceDelegateForcingType<ISymbol, ISymbol>();
-            }
-
-            return _getAssociatedField(declaredSymbol);
-
-        }
     }
 }
 
