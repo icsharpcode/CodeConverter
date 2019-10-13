@@ -10,7 +10,6 @@ All notable changes to the code converter will be documented here.
 * Visual Studio built-in simplification applied post-conversion (#386)
 
 ### Vsix
-* Load extension only when menu item clicked (multi-project conversion menu not present until project loaded)
 * Improve UI responsiveness and output window details while converting
 
 ### VB -> C#
