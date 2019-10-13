@@ -3,7 +3,10 @@ All notable changes to the code converter will be documented here.
 
 # 7.3.0 TBC
 
-# 7.2.0 TBC/10/2019
+### Vsix
+* Load extension only when menu item clicked (multi-project conversion menu not present until project loaded)
+
+# 7.2.0 13/10/2019
 * Parallelize multi-file conversion
 * Make snippet conversion (ConvertText method) make classes partial by default since context isn't known (#379)
 * Web converter requires .NET Core 3.0
