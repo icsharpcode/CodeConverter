@@ -2,9 +2,9 @@ Param($major = $false)
 
 # https://stackoverflow.com/a/9121679/1128762
 function Get-FileEncoding($filePath) {  
-    $sr = New-Object System.IO.StreamReader($filePath, $true)
-    [char[]] $buffer = new-object char[] 3
-    $sr.Read($buffer, 0, 3) | Out-Null
+    $sr = New-Object System.IO.StreamReader($filePath, (New-Object System.Text.UTF8Encoding $false), $true)
+    [char[]] $buffer = new-object char[] 5
+    $sr.Read($buffer, 0, 5) | Out-Null
     $encoding = [System.Text.Encoding] $sr.CurrentEncoding
     $sr.Close()
     return $encoding
