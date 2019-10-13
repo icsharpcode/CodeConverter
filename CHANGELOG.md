@@ -1,6 +1,26 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
+# 7.3.0 TBC
+
+# 7.2.0 TBC/10/2019
+* Parallelize multi-file conversion
+* Make snippet conversion (ConvertText method) make classes partial by default since context isn't known (#379)
+* Web converter requires .NET Core 3.0
+* Visual Studio built-in simplification applied post-conversion (#386)
+
+### Vsix
+* Load extension only when menu item clicked (multi-project conversion menu not present until project loaded)
+* Improve UI responsiveness and output window details while converting
+
+### VB -> C#
+* Implicitly typed local multi-variable declarations type converted correctly (#373)
+* "My" namespace - first attempt at conversion (#169)
+
+### C# -> VB
+* Converts extern functions correctly (#352)
+* Converts invoke on non-events correctly (#377)
+
 # 7.1.0 12/09/2019
 
 No longer restricts converted files to solution directory
