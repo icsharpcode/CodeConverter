@@ -86,8 +86,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         public TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false)
         {
             var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, vbNode);
-            var vbType = typeInfo.Type;
+            var vbType = typeInfo.Type; 
             var vbConvertedType = typeInfo.ConvertedType;
+
             if (vbType is null || vbConvertedType is null)
             {
                 return TypeConversionKind.Unknown;
@@ -177,10 +178,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (vbConversion.IsNumeric && (vbType.IsEnumType() || vbConvertedType.IsEnumType())) {
                 return TypeConversionKind.NonDestructiveCast;
             }
-
+            //TODO: Conversion for implicit object to string conversion handle case vbTYpe="Error ?"
             if (alwaysExplicit) {
                 return vbConversion.IsNarrowing ? TypeConversionKind.NonDestructiveCast : TypeConversionKind.DestructiveCast;
             }
+       
 
             return TypeConversionKind.Unknown;
         }
