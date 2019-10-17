@@ -98,8 +98,31 @@ internal partial class Class1
         Dim xs(1) As String
 
         xs(0) = x(0)
+    End Sub
+End Class" + Environment.NewLine, @"using System.Collections;
+using Microsoft.VisualBasic.CompilerServices;
 
+internal partial class Class1
+{
+    private void Test()
+    {
+        var x = new ArrayList();
+        x.Add(""a"");
 
+        var xs = new string[2];
+
+        xs[0] = Conversions.ToString(x[0]);
+    }
+}" + Environment.NewLine);
+        }
+        [Fact]
+        public async Task ImplicitCastObjecStringToString()
+        {
+            await TestConversionVisualBasicToCSharp(
+@"Class Class1
+    Private Sub Test()
+        Dim o As Object = ""Test""
+        Dim s As String = o
     End Sub
 End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
 
@@ -107,13 +130,9 @@ internal partial class Class1
 {
     private void Test()
     {
-        ArrayList x = new ArrayList();
-            x.Add(""a"");
-
-            string[] xs = new string[2];
-
-            xs[0] = Conversions.ToString(x[0]);
-        }
+        object o = ""Test"";
+        string s = Conversions.ToString(o);
+    }
 }" + Environment.NewLine);
         }
         [Fact]
