@@ -273,7 +273,7 @@ namespace ICSharpCode.CodeConverter.Util
             Func<char, char> convert)
         {
             // Special case the common .net pattern of "IFoo" as a type name.  In this case we
-            // want to generate "foo" as the parameter name.  
+            // want to generate "foo" as the parameter name.
             if (!String.IsNullOrEmpty(shortName)) {
                 if (trimLeadingTypePrefix && (shortName.LooksLikeInterfaceName() || shortName.LooksLikeTypeParameterName())) {
                     return convert(shortName[1]) + shortName.Substring(2);
@@ -419,19 +419,19 @@ namespace ICSharpCode.CodeConverter.Util
             return -1;
         }
 
-        // String isn't IEnumerable<char> in the current Portable profile. 
+        // String isn't IEnumerable<char> in the current Portable profile.
         internal static char First(this string arg)
         {
             return arg[0];
         }
 
-        // String isn't IEnumerable<char> in the current Portable profile. 
+        // String isn't IEnumerable<char> in the current Portable profile.
         internal static char Last(this string arg)
         {
             return arg[arg.Length - 1];
         }
 
-        // String isn't IEnumerable<char> in the current Portable profile. 
+        // String isn't IEnumerable<char> in the current Portable profile.
         internal static bool All(this string arg, Predicate<char> predicate)
         {
             foreach (char c in arg) {

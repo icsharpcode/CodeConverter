@@ -126,7 +126,7 @@ namespace ICSharpCode.CodeConverter.Shared
                         continue;
                     };
 
-                    // Only port trivia if this replacement hasn't been superseded by another 
+                    // Only port trivia if this replacement hasn't been superseded by another
                     if (foundAnnotation && // BUG: Fix sometimes not finding annotation
                         _trailingTriviaConversionsBySource.TryGetValue(sourceSyntaxToken, out var latestReplacementId) &&
                         latestReplacementId == conversionId) {

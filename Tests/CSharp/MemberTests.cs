@@ -622,7 +622,7 @@ End Class", @"internal partial class TestClass
 @"Class TestClass
     Public Property FirstName As String
     Public Property LastName As String
-    
+
     Public Property FullName(ByVal lastNameFirst As Boolean, ByVal isFirst As Boolean) As String
         Get
             If lastNameFirst Then
@@ -676,7 +676,7 @@ End Class", @"internal partial class TestClass
     Public Enum MyEnum
         First
     End Enum
-    
+
     Public Property MyProp(ByVal blah As Integer) As String
         Get
             Return blah
@@ -684,7 +684,7 @@ End Class", @"internal partial class TestClass
         Set
         End Set
     End Property
-            
+
 
     Public Sub ReturnWhatever(ByVal m As MyEnum)
         Dim enumerableThing = Enumerable.Empty(Of String)
@@ -1302,7 +1302,7 @@ Friend Class TestClass2
 
     Public Overrides Sub CreateVirtualInstance()
     End Sub
-End Class", 
+End Class",
 @"internal abstract partial class TestClass1
 {
     public static void CreateStatic()

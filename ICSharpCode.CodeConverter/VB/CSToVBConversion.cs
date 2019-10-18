@@ -109,8 +109,8 @@ namespace ICSharpCode.CodeConverter.VB
 
         public bool CanBeContainedByMethod(SyntaxNode node)
         {
-            return node is CSSyntax.IncompleteMemberSyntax || 
-                   node is CSSyntax.StatementSyntax || 
+            return node is CSSyntax.IncompleteMemberSyntax ||
+                   node is CSSyntax.StatementSyntax ||
                    node.ContainsSkippedText ||
                    node.IsMissing ||
                    ParsedAsFieldButCouldBeLocalVariableDeclaration(node); ;

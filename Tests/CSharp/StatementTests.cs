@@ -949,7 +949,7 @@ internal partial class Test
     }
 }");
         }
-        
+
         [Theory]
         [InlineData("Sub", "", "void")]
         [InlineData("Function", " As Long", "long")]

@@ -110,7 +110,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csType = _csCompilation.GetTypeByMetadataName(vbType.GetFullMetadataName());
             var csConvertedType = _csCompilation.GetTypeByMetadataName(vbConvertedType.GetFullMetadataName());
 
-            if (csType != null && csConvertedType != null && 
+            if (csType != null && csConvertedType != null &&
                 TryAnalyzeCsConversion(vbNode, csType, csConvertedType, vbConversion, vbConvertedType, vbType, vbCompilation, out TypeConversionKind analyzeConversion)) {
                 return analyzeConversion;
             }
@@ -221,7 +221,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax node, ITypeSymbol convertedType,
             out char chr)
         {
-            if (convertedType?.SpecialType == SpecialType.System_Char && 
+            if (convertedType?.SpecialType == SpecialType.System_Char &&
                 node?.Token.Value is string str &&
                 str.Length == 1) {
                 chr = str.Single();

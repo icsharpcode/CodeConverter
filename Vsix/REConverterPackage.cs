@@ -21,7 +21,7 @@ namespace CodeConverter.VsExtension
 {
     /// <summary>
     /// Implements the VS package exposed by this assembly.
-    ///
+    /// 
     /// This package will load when:
     /// * Visual Studio has been configured not to support UIContextRules and has a solution with a csproj or vbproj
     /// * Someone clicks one of the menu items

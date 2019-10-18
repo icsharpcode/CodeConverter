@@ -106,7 +106,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public string TargetLanguage { get; } = LanguageNames.CSharp;
-        
+
         public bool CanBeContainedByMethod(SyntaxNode node)
         {
             return node is VBSyntax.IncompleteMemberSyntax ||
@@ -124,7 +124,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static bool IsNonTypeEndBlock(SyntaxNode node)
         {
-            return node is VBSyntax.EndBlockStatementSyntax ebs && 
+            return node is VBSyntax.EndBlockStatementSyntax ebs &&
                    !ebs.BlockKeyword.IsKind(SyntaxKind.ClassKeyword, SyntaxKind.StructureKeyword, SyntaxKind.InterfaceKeyword, SyntaxKind.ModuleKeyword);
         }
 

@@ -94,7 +94,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var projectTypeGuidMappings = _languageConversion.GetProjectTypeGuidMappings();
             var projectTypeReplacements = _projectsToConvert.SelectMany(project => GetProjectTypeReplacement(project, projectTypeGuidMappings)).ToList();
-            
+
             var convertedSolutionContents = _sourceSolutionContents.Replace(_projectReferenceReplacements.Concat(projectTypeReplacements));
             return new ConversionResult(convertedSolutionContents) {
                 SourcePathOrNull = _solutionFilePath,

@@ -17,7 +17,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var semanticModel = compilation.GetSemanticModel(tree, true);
             var root = (VBasic.VisualBasicSyntaxNode)await document.GetSyntaxRootAsync();
             var csSyntaxGenerator = SyntaxGenerator.GetGenerator(csharpReferenceProject);
-            var visualBasicSyntaxVisitor = new 
+            var visualBasicSyntaxVisitor = new
                 DeclarationNodeVisitor(document, compilation, semanticModel, csharpViewOfVbSymbols, csSyntaxGenerator);
             return await root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
         }

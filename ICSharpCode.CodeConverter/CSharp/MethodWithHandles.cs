@@ -88,7 +88,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             return handlesSpecs.SelectMany(hs => hs.CreateHandlesUpdater(propertyIdentifier, fieldIdSyntax, assignmentExpressionKind));
         }
-        
+
         public IEnumerable<StatementSyntax> GetPostInitializationStatements(string propertyIdentifier,
             IdentifierNameSyntax fieldIdSyntax)
         {

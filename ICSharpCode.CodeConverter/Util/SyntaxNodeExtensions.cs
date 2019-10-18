@@ -590,7 +590,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         /// <summary>
         /// Returns the list of using directives that affect <paramref name="node"/>. The list will be returned in
-        /// top down order.  
+        /// top down order.
         /// </summary>
         public static IEnumerable<UsingDirectiveSyntax> GetEnclosingUsingDirectives(this SyntaxNode node)
         {
@@ -666,11 +666,11 @@ namespace ICSharpCode.CodeConverter.Util
 
         // Matches the following:
         //
-        // (whitespace* newline)+ 
+        // (whitespace* newline)+
         private static readonly Matcher<SyntaxTrivia> s_oneOrMoreBlankLines;
 
         // Matches the following:
-        // 
+        //
         // (whitespace* (single-comment|multi-comment) whitespace* newline)+ OneOrMoreBlankLines
         private static readonly Matcher<SyntaxTrivia> s_bannerMatcher;
 
@@ -1074,7 +1074,7 @@ namespace ICSharpCode.CodeConverter.Util
         //                    // This node cannot be moved at all.  It is in a group that
         //                    // only contains itself (and thus can never be moved).
         //
-        //                    // add whatever group we've built up to now. And reset the 
+        //                    // add whatever group we've built up to now. And reset the
         //                    // next group to empty.
         //                    result.Add(currentGroup);
         //                    currentGroup = new List<TSyntaxNode>();
@@ -1084,14 +1084,14 @@ namespace ICSharpCode.CodeConverter.Util
         //                else if (hasLeadingDirective)
         //                {
         //                    // We have a PP directive before us.  i.e.:
-        //                    // 
+        //                    //
         //                    //   #if ...
         //                    //      void Foo() {
         //                    //
         //                    // That means we start a new group that is contained between
         //                    // the above directive and the following directive.
         //
-        //                    // add whatever group we've built up to now. And reset the 
+        //                    // add whatever group we've built up to now. And reset the
         //                    // next group to empty.
         //                    result.Add(currentGroup);
         //                    currentGroup = new List<TSyntaxNode>();
@@ -1167,7 +1167,7 @@ namespace ICSharpCode.CodeConverter.Util
         {
             var leadingTrivia = node.GetLeadingTrivia();
 
-            // Rules for stripping trivia: 
+            // Rules for stripping trivia:
             // 1) If there is a pp directive, then it (and all preceding trivia) *must* be stripped.
             //    This rule supersedes all other rules.
             // 2) If there is a doc comment, it cannot be stripped.  Even if there is a doc comment,
@@ -1678,7 +1678,7 @@ namespace ICSharpCode.CodeConverter.Util
             var parent = node.Parent;
             while (parent != null) {
                 // Because the syntax for conditional access is right associate, we cannot
-                // simply take the first ancestor ConditionalAccessExpression. Instead, we 
+                // simply take the first ancestor ConditionalAccessExpression. Instead, we
                 // must walk upward until we find the ConditionalAccessExpression whose
                 // OperatorToken appears left of the MemberBinding.
                 if (parent.IsKind(CSSyntaxKind.ConditionalAccessExpression) &&

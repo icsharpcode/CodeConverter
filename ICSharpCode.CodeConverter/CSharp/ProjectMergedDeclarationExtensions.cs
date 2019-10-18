@@ -83,7 +83,7 @@ End Namespace";
             var vbTextForProperties = propertiesToReplicate.Select(s => $@"
             <EditorBrowsable(EditorBrowsableState.Never)>
             Public m_{s.Name} As {s.Name}
-            
+
             Public Property {s.Name} As {s.Name}
                 <DebuggerHidden>
                 Get
