@@ -348,10 +348,10 @@ namespace EmptyVb
                                         if (prefix.Equals(currentInScopePrefix))
                                         {
                                             if (ns == currentInScopeNs)
-                                                // prefix and namespace match.  Remove the unneeded ns attribute
+                                                // prefix and namespace match.  Remove the unneeded ns attribute 
                                                 a.Remove();
 
-                                            // prefix is in scope but refers to something else.  Leave the ns attribute.
+                                            // prefix is in scope but refers to something else.  Leave the ns attribute. 
                                             a = null;
                                             break;
                                         }
@@ -360,8 +360,8 @@ namespace EmptyVb
 
                                 if (a != null)
                                 {
-                                    // Prefix is not in scope
-                                    // Now check whether it's going to be in scope because it is in the attributes list
+                                    // Prefix is not in scope 
+                                    // Now check whether it's going to be in scope because it is in the attributes list 
 
                                     if (attributes != null)
                                     {
@@ -376,10 +376,10 @@ namespace EmptyVb
                                                 if (prefix.Equals(currentInScopePrefix))
                                                 {
                                                     if (ns == currentInScopeNs)
-                                                        // prefix and namespace match.  Remove the unneeded ns attribute
+                                                        // prefix and namespace match.  Remove the unneeded ns attribute 
                                                         a.Remove();
 
-                                                    // prefix is in scope but refers to something else.  Leave the ns attribute.
+                                                    // prefix is in scope but refers to something else.  Leave the ns attribute. 
                                                     a = null;
                                                     break;
                                                 }
@@ -389,9 +389,9 @@ namespace EmptyVb
 
                                     if (a != null)
                                     {
-                                        // Prefix is definitely not in scope
+                                        // Prefix is definitely not in scope  
                                         a.Remove();
-                                        // namespace is not defined either.  Add this attributes list
+                                        // namespace is not defined either.  Add this attributes list 
                                         attributes.Add(a);
                                     }
                                 }
