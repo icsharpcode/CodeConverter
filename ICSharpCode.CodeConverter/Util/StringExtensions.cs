@@ -16,8 +16,6 @@ namespace ICSharpCode.CodeConverter.Util
     {
         public static int? GetFirstNonWhitespaceOffset(this string line)
         {
-            // Contract.ThrowIfNull(line);
-
             for (int i = 0; i < line.Length; i++) {
                 if (!Char.IsWhiteSpace(line[i])) {
                     return i;
@@ -29,8 +27,6 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static string GetLeadingWhitespace(this string lineText)
         {
-            // Contract.ThrowIfNull(lineText);
-
             var firstOffset = lineText.GetFirstNonWhitespaceOffset();
 
             return firstOffset.HasValue
@@ -50,9 +46,6 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static int ConvertTabToSpace(this string textSnippet, int tabSize, int initialColumn, int endPosition)
         {
-            // Contract.Requires(tabSize > 0);
-            // Contract.Requires(endPosition >= 0 && endPosition <= textSnippet.Length);
-
             int column = initialColumn;
 
             // now this will calculate indentation regardless of actual content on the buffer except TAB
@@ -160,19 +153,11 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static int GetColumnFromLineOffset(this string line, int endPosition, int tabSize)
         {
-            //            Contract.ThrowIfNull(line);
-            //            Contract.ThrowIfFalse(0 <= endPosition && endPosition <= line.Length);
-            //            Contract.ThrowIfFalse(tabSize > 0);
-
             return ConvertTabToSpace(line, tabSize, 0, endPosition);
         }
 
         public static int GetLineOffsetFromColumn(this string line, int column, int tabSize)
         {
-            //            Contract.ThrowIfNull(line);
-            //            Contract.ThrowIfFalse(column >= 0);
-            //            Contract.ThrowIfFalse(tabSize > 0);
-
             var currentColumn = 0;
 
             for (int i = 0; i < line.Length; i++) {
@@ -190,28 +175,6 @@ namespace ICSharpCode.CodeConverter.Util
             // We're asking for a column past the end of the line, so just go to the end.
             return line.Length;
         }
-
-        //        public static void AppendToAliasNameSet(this string alias, ImmutableHashSet<string>.Builder builder)
-        //        {
-        //            if (string.IsNullOrWhiteSpace(alias))
-        //            {
-        //                return;
-        //            }
-        //
-        //            builder.Add(alias);
-        //
-        //            var caseSensitive = builder.KeyComparer == StringComparer.Ordinal;
-        //        //    Contract.Requires(builder.KeyComparer == StringComparer.Ordinal || builder.KeyComparer == StringComparer.OrdinalIgnoreCase);
-        //
-        //            string aliasWithoutAttribute;
-        //            if (alias.TryGetWithoutAttributeSuffix(caseSensitive, out aliasWithoutAttribute))
-        //            {
-        //                builder.Add(aliasWithoutAttribute);
-        //                return;
-        //            }
-        //
-        //            builder.Add(alias.GetWithSingleAttributeSuffix(caseSensitive));
-        //        }
 
         private static ImmutableArray<string> s_lazyNumerals;
 
