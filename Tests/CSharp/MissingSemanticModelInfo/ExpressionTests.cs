@@ -38,7 +38,6 @@ End Class", @"internal partial class TestClass
     End Function
 
 End Class", @"public partial class Class1
-using System.Collections;
 {
     public void Foo()
     {
@@ -95,7 +94,6 @@ Public Class OutParameterWithNonCompilingType
         End If
     End Sub
 End Class", @"using System.Collections.Generic;
-using System.Collections;
 
 public partial class OutParameterWithMissingType
 {
@@ -163,7 +161,6 @@ public partial class OutParameterWithNonCompilingType
     End Function
 End Class",
 @"using Microsoft.VisualBasic;
-using System.Collections;
 using Microsoft.VisualBasic.CompilerServices;
 
 public partial class EnumAndValTest
