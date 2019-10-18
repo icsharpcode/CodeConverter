@@ -6,6 +6,12 @@ All notable changes to the code converter will be documented here.
 ### Vsix
 * Load extension only when menu item clicked (multi-project conversion menu not present until project loaded)
 
+### VB -> C#
+* Convert implicit object->string cast correctly (#365)
+
+### C# -> VB
+
+
 # 7.2.0 13/10/2019
 * Parallelize multi-file conversion
 * Make snippet conversion (ConvertText method) make classes partial by default since context isn't known (#379)
