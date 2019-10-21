@@ -471,7 +471,7 @@ public partial class Class1
     End Enum
 
     Sub Main()
-        Dim EnumVariable = TestEnum.Test1 
+        Dim EnumVariable = TestEnum.Test1
         Dim t1 As Integer = EnumVariable
     End Sub
 End Class",
@@ -1778,7 +1778,7 @@ internal partial class TestClass
     }
 }");
         }
-        
+
         [Fact]
         public async Task Await()
         {
@@ -1862,7 +1862,7 @@ internal partial class TestClass
     }
 }");
         }
-        
+
         [Fact]
         public async Task NameQualifyingHandlesInheritance()
         {

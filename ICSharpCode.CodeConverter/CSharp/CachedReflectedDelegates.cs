@@ -29,11 +29,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                     BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance)
                 .CreateOpenInstanceDelegateForcingType<CompilationOptions, byte, CompilationOptions>());
 
-        public static bool IsMyGroupCollectionProperty(this IPropertySymbol declaredSymbol) => 
+        public static bool IsMyGroupCollectionProperty(this IPropertySymbol declaredSymbol) =>
             GetCachedReflectedPropertyDelegate(declaredSymbol, "IsMyGroupCollectionProperty", ref _isMyGroupCollectionProperty);
         private static Func<ISymbol, bool> _isMyGroupCollectionProperty;
 
-        public static ISymbol GetAssociatedField(this IPropertySymbol declaredSymbol) => 
+        public static ISymbol GetAssociatedField(this IPropertySymbol declaredSymbol) =>
             GetCachedReflectedPropertyDelegate(declaredSymbol, "AssociatedField", ref _associatedField);
         private static Func<ISymbol, ISymbol> _associatedField;
 

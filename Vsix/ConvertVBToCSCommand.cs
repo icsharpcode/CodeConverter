@@ -157,7 +157,7 @@ namespace CodeConverter.VsExtension
             var (filePath, selection) = await VisualStudioInteraction.GetCurrentFilenameAndSelectionAsync(ServiceProvider, CodeConversion.IsVBFileName, false);
             if (filePath != null && selection != null) {
                 await ConvertDocumentAsync(filePath, selection.Value);
-            }  
+            }
         }
 
         private async Task ProjectItemMenuItemCallbackAsync(object sender, EventArgs e)

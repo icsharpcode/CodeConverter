@@ -34,7 +34,7 @@ namespace CodeConverter.VsExtension
 
         public static async Task<CodeConversion> CreateAsync(REConverterPackage serviceProvider, VisualStudioWorkspace visualStudioWorkspace, Func<Task<ConverterOptionsPage>> getOptions)
         {
-            return new CodeConversion(serviceProvider, serviceProvider.JoinableTaskFactory, visualStudioWorkspace, 
+            return new CodeConversion(serviceProvider, serviceProvider.JoinableTaskFactory, visualStudioWorkspace,
                 getOptions, await OutputWindow.CreateAsync());
         }
 
@@ -48,7 +48,7 @@ namespace CodeConverter.VsExtension
             _visualStudioWorkspace = visualStudioWorkspace;
             _outputWindow = outputWindow;
         }
-        
+
         public async Task PerformProjectConversionAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects) where TLanguageConversion : ILanguageConversion, new()
         {
             await _joinableTaskFactory.RunAsync(async () => {
@@ -170,7 +170,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode))
             {
                 var sourcePathRelativeToSolutionDir = PathRelativeToSolutionDir(convertedFile.SourcePathOrNull ?? "unknown");
-                output = $"* Failure processing {sourcePathRelativeToSolutionDir}{Environment.NewLine}    {indentedException}";    
+                output = $"* Failure processing {sourcePathRelativeToSolutionDir}{Environment.NewLine}    {indentedException}";
             }
             else if (containsErrors){
                 output += $" contains errors{Environment.NewLine}    {indentedException}";
@@ -260,7 +260,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                     new Progress<ConversionProgress>(s => {
                         _outputWindow.WriteToOutputWindowAsync(FormatForOutputWindow(s)).ForgetNoThrow();
                     }));
-            
+
             return await solutionConverter.Convert();
         }
 

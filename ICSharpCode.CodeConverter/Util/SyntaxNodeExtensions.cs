@@ -48,11 +48,6 @@ namespace ICSharpCode.CodeConverter.Util
 #endif
     static partial class SyntaxNodeExtensions
     {
-        //public static IEnumerable<SyntaxNodeOrToken> DepthFirstTraversal(this SyntaxNode node)
-        //{
-        //    return CommonSyntaxNodeOrTokenExtensions.DepthFirstTraversal(node);
-        //}
-
         public static IEnumerable<SyntaxNode> GetAncestors(this SyntaxNode node)
         {
             var current = node.Parent;
@@ -121,32 +116,6 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return node.GetAncestors<TNode>().Any();
         }
-
-        //public static IEnumerable<TSyntaxNode> Traverse<TSyntaxNode>(
-        //    this SyntaxNode node, TextSpan searchSpan, Func<SyntaxNode, bool> predicate)
-        //    where TSyntaxNode : SyntaxNode
-        //{
-        ////    Contract.ThrowIfNull(node);
-
-        //    var nodes = new LinkedList<SyntaxNode>();
-        //    nodes.AddFirst(node);
-
-        //    while (nodes.Count > 0)
-        //    {
-        //        var currentNode = nodes.First.Value;
-        //        nodes.RemoveFirst();
-
-        //        if (currentNode != null && searchSpan.Contains(currentNode.FullSpan) && predicate(currentNode))
-        //        {
-        //            if (currentNode is TSyntaxNode)
-        //            {
-        //                yield return (TSyntaxNode)currentNode;
-        //            }
-
-        //            nodes.AddRangeAtHead(currentNode.ChildNodes());
-        //        }
-        //    }
-        //}
 
         public static bool CheckParent<T>(this SyntaxNode node, Func<T, bool> valueChecker) where T : SyntaxNode
         {
@@ -278,9 +247,6 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static TextSpan GetContainedSpan(this IEnumerable<SyntaxNode> nodes)
         {
-            //            Contract.ThrowIfNull(nodes);
-            //            Contract.ThrowIfFalse(nodes.Any());
-
             TextSpan fullSpan = nodes.First().Span;
             foreach (var node in nodes) {
                 fullSpan = TextSpan.FromBounds(
@@ -321,25 +287,6 @@ namespace ICSharpCode.CodeConverter.Util
             }
         }
 
-        //public static bool OverlapsHiddenPosition(this SyntaxNode node, CancellationToken cancellationToken)
-        //{
-        //    return node.OverlapsHiddenPosition(node.Span, cancellationToken);
-        //}
-
-        //public static bool OverlapsHiddenPosition(this SyntaxNode node, TextSpan span, CancellationToken cancellationToken)
-        //{
-        //    return node.SyntaxTree.OverlapsHiddenPosition(span, cancellationToken);
-        //}
-
-        //public static bool OverlapsHiddenPosition(this SyntaxNode declaration, SyntaxNode startNode, SyntaxNode endNode, CancellationToken cancellationToken)
-        //{
-        //    var start = startNode.Span.End;
-        //    var end = endNode.SpanStart;
-
-        //    var textSpan = TextSpan.FromBounds(start, end);
-        //    return declaration.OverlapsHiddenPosition(textSpan, cancellationToken);
-        //}
-
         public static IEnumerable<T> GetAnnotatedNodes<T>(this SyntaxNode node, SyntaxAnnotation syntaxAnnotation) where T : SyntaxNode
         {
             return node.GetAnnotatedNodesAndTokens(syntaxAnnotation).Select(n => n.AsNode()).OfType<T>();
@@ -366,41 +313,6 @@ namespace ICSharpCode.CodeConverter.Util
                 trivia: null, computeReplacementTriviaAsync: null,
                 cancellationToken: cancellationToken);
         }
-
-        //        /// <summary>
-        //        /// Creates a new tree of tokens from the existing tree with the specified old tokens replaced with a newly computed tokens.
-        //        /// </summary>
-        //        /// <param name="root">The root of the tree that contains all the specified tokens.</param>
-        //        /// <param name="tokens">The tokens from the tree to be replaced.</param>
-        //        /// <param name="computeReplacementAsync">A function that computes a replacement token for
-        //        /// the argument tokens. The first argument is one of the originally specified tokens. The second argument is
-        //        /// the same token possibly rewritten with replaced trivia.</param>
-        //        /// <param name="cancellationToken"></param>
-        //        public static Task<TRootNode> ReplaceTokensAsync<TRootNode>(
-        //            this TRootNode root,
-        //            IEnumerable<SyntaxToken> tokens,
-        //            Func<SyntaxToken, SyntaxToken, CancellationToken, Task<SyntaxToken>> computeReplacementAsync,
-        //            CancellationToken cancellationToken) where TRootNode : SyntaxNode
-        //        {
-        //            return root.ReplaceSyntaxAsync(
-        //                nodes: null, computeReplacementNodeAsync: null,
-        //                tokens: tokens, computeReplacementTokenAsync: computeReplacementAsync,
-        //                trivia: null, computeReplacementTriviaAsync: null,
-        //                cancellationToken: cancellationToken);
-        //        }
-        //
-        //        public static Task<TRoot> ReplaceTriviaAsync<TRoot>(
-        //            this TRoot root,
-        //            IEnumerable<SyntaxTrivia> trivia,
-        //            Func<SyntaxTrivia, SyntaxTrivia, CancellationToken, Task<SyntaxTrivia>> computeReplacementAsync,
-        //            CancellationToken cancellationToken) where TRoot : SyntaxNode
-        //        {
-        //            return root.ReplaceSyntaxAsync(
-        //                nodes: null, computeReplacementNodeAsync: null,
-        //                tokens: null, computeReplacementTokenAsync: null,
-        //                trivia: trivia, computeReplacementTriviaAsync: computeReplacementAsync,
-        //                cancellationToken: cancellationToken);
-        //        }
 
         public static async Task<TRoot> ReplaceSyntaxAsync<TRoot>(
             this TRoot root,
@@ -590,7 +502,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         /// <summary>
         /// Returns the list of using directives that affect <paramref name="node"/>. The list will be returned in
-        /// top down order.  
+        /// top down order.
         /// </summary>
         public static IEnumerable<UsingDirectiveSyntax> GetEnclosingUsingDirectives(this SyntaxNode node)
         {
@@ -666,11 +578,11 @@ namespace ICSharpCode.CodeConverter.Util
 
         // Matches the following:
         //
-        // (whitespace* newline)+ 
+        // (whitespace* newline)+
         private static readonly Matcher<SyntaxTrivia> s_oneOrMoreBlankLines;
 
         // Matches the following:
-        // 
+        //
         // (whitespace* (single-comment|multi-comment) whitespace* newline)+ OneOrMoreBlankLines
         private static readonly Matcher<SyntaxTrivia> s_bannerMatcher;
 
@@ -1043,107 +955,6 @@ namespace ICSharpCode.CodeConverter.Util
             return node.IsAnyLambda() || node.IsKind(CSSyntaxKind.AnonymousMethodExpression);
         }
 
-        //        /// <summary>
-        //        /// Breaks up the list of provided nodes, based on how they are interspersed with pp
-        //        /// directives, into groups.  Within these groups nodes can be moved around safely, without
-        //        /// breaking any pp constructs.
-        //        /// </summary>
-        //        public static IList<IList<TSyntaxNode>> SplitNodesOnPreprocessorBoundaries<TSyntaxNode>(
-        //            this IEnumerable<TSyntaxNode> nodes,
-        //            CancellationToken cancellationToken)
-        //            where TSyntaxNode : SyntaxNode
-        //        {
-        //            var result = new List<IList<TSyntaxNode>>();
-        //
-        //            var currentGroup = new List<TSyntaxNode>();
-        //            foreach (var node in nodes)
-        //            {
-        //                var hasUnmatchedInteriorDirective = node.ContainsInterleavedDirective(cancellationToken);
-        //                var hasLeadingDirective = node.GetLeadingTrivia().Any(t => SyntaxFacts.IsPreprocessorDirective(t.Kind()));
-        //
-        //                if (hasUnmatchedInteriorDirective)
-        //                {
-        //                    // we have a #if/#endif/#region/#endregion/#else/#elif in
-        //                    // this node that belongs to a span of pp directives that
-        //                    // is not entirely contained within the node.  i.e.:
-        //                    //
-        //                    //   void Foo() {
-        //                    //      #if ...
-        //                    //   }
-        //                    //
-        //                    // This node cannot be moved at all.  It is in a group that
-        //                    // only contains itself (and thus can never be moved).
-        //
-        //                    // add whatever group we've built up to now. And reset the 
-        //                    // next group to empty.
-        //                    result.Add(currentGroup);
-        //                    currentGroup = new List<TSyntaxNode>();
-        //
-        //                    result.Add(new List<TSyntaxNode> { node });
-        //                }
-        //                else if (hasLeadingDirective)
-        //                {
-        //                    // We have a PP directive before us.  i.e.:
-        //                    // 
-        //                    //   #if ...
-        //                    //      void Foo() {
-        //                    //
-        //                    // That means we start a new group that is contained between
-        //                    // the above directive and the following directive.
-        //
-        //                    // add whatever group we've built up to now. And reset the 
-        //                    // next group to empty.
-        //                    result.Add(currentGroup);
-        //                    currentGroup = new List<TSyntaxNode>();
-        //
-        //                    currentGroup.Add(node);
-        //                }
-        //                else
-        //                {
-        //                    // simple case.  just add ourselves to the current group
-        //                    currentGroup.Add(node);
-        //                }
-        //            }
-        //
-        //            // add the remainder of the final group.
-        //            result.Add(currentGroup);
-        //
-        //            // Now, filter out any empty groups.
-        //            result = result.Where(group => !group.IsEmpty()).ToList();
-        //            return result;
-        //        }
-        //
-        //        public static IEnumerable<SyntaxTrivia> GetLeadingBlankLines<TSyntaxNode>(
-        //            this TSyntaxNode node)
-        //            where TSyntaxNode : SyntaxNode
-        //        {
-        //            IEnumerable<SyntaxTrivia> blankLines;
-        //            node.GetNodeWithoutLeadingBlankLines(out blankLines);
-        //            return blankLines;
-        //        }
-        //
-        //        public static TSyntaxNode GetNodeWithoutLeadingBlankLines<TSyntaxNode>(
-        //            this TSyntaxNode node)
-        //            where TSyntaxNode : SyntaxNode
-        //        {
-        //            IEnumerable<SyntaxTrivia> blankLines;
-        //            return node.GetNodeWithoutLeadingBlankLines(out blankLines);
-        //        }
-        //
-        //        public static TSyntaxNode GetNodeWithoutLeadingBlankLines<TSyntaxNode>(
-        //            this TSyntaxNode node, out IEnumerable<SyntaxTrivia> strippedTrivia)
-        //            where TSyntaxNode : SyntaxNode
-        //        {
-        //            var leadingTriviaToKeep = new List<SyntaxTrivia>(node.GetLeadingTrivia());
-        //
-        //            var index = 0;
-        //            s_oneOrMoreBlankLines.TryMatch(leadingTriviaToKeep, ref index);
-        //
-        //            strippedTrivia = new List<SyntaxTrivia>(leadingTriviaToKeep.Take(index));
-        //
-        //            return node.WithLeadingTrivia(leadingTriviaToKeep.Skip(index));
-        //        }
-
         public static IEnumerable<SyntaxTrivia> GetLeadingBannerAndPreprocessorDirectives<TSyntaxNode>(
             this TSyntaxNode node)
             where TSyntaxNode : SyntaxNode
@@ -1167,7 +978,7 @@ namespace ICSharpCode.CodeConverter.Util
         {
             var leadingTrivia = node.GetLeadingTrivia();
 
-            // Rules for stripping trivia: 
+            // Rules for stripping trivia:
             // 1) If there is a pp directive, then it (and all preceding trivia) *must* be stripped.
             //    This rule supersedes all other rules.
             // 2) If there is a doc comment, it cannot be stripped.  Even if there is a doc comment,
@@ -1290,22 +1101,6 @@ namespace ICSharpCode.CodeConverter.Util
             return FindTokenHelper.FindTokenOnRightOfPosition<CompilationUnitSyntax>(
                 root, position, skippedTokenFinder, includeSkipped, includeDirectives, includeDocumentationComments);
         }
-
-        //        /// <summary>
-        //        /// If the position is inside of token, return that token; otherwise, return the token to the left.
-        //        /// </summary>
-        //        public static SyntaxToken FindTokenOnLeftOfPosition(
-        //            this SyntaxNode root,
-        //            int position,
-        //            bool includeSkipped = true,
-        //            bool includeDirectives = false,
-        //            bool includeDocumentationComments = false)
-        //        {
-        //            var skippedTokenFinder = includeSkipped ? s_findSkippedTokenBackward : (Func<SyntaxTriviaList, int, SyntaxToken>)null;
-        //
-        //            return FindTokenHelper.FindTokenOnLeftOfPosition<CompilationUnitSyntax>(
-        //                root, position, skippedTokenFinder, includeSkipped, includeDirectives, includeDocumentationComments);
-        //        }
 
         /// <summary>
         /// Returns child node or token that contains given position.
@@ -1678,7 +1473,7 @@ namespace ICSharpCode.CodeConverter.Util
             var parent = node.Parent;
             while (parent != null) {
                 // Because the syntax for conditional access is right associate, we cannot
-                // simply take the first ancestor ConditionalAccessExpression. Instead, we 
+                // simply take the first ancestor ConditionalAccessExpression. Instead, we
                 // must walk upward until we find the ConditionalAccessExpression whose
                 // OperatorToken appears left of the MemberBinding.
                 if (parent.IsKind(CSSyntaxKind.ConditionalAccessExpression) &&

@@ -11,7 +11,7 @@ namespace CodeConverter.Tests.VB
         {
             await TestConversionCSharpToVisualBasic(@"namespace Test
 {
-    
+
 }", @"Namespace Test
 End Namespace");
         }

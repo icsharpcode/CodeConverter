@@ -79,7 +79,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var convertProjectContents = (await ConvertProjectContents(project, progress, languageConversion)).ToArray();
             var sourceFilePathsWithoutExtension = project.Documents.Select(f => f.FilePath).ToImmutableHashSet();
             var projectPath = Path.GetFullPath(project.GetDirectoryPath());
-            string[] relativeFilePathsToAdd = 
+            string[] relativeFilePathsToAdd =
                 convertProjectContents.Select(r => r.SourcePathOrNull).Where(p => !sourceFilePathsWithoutExtension.Contains(p))
                     .Select(p => PathConverter.TogglePathExtension(Path.GetFullPath(p)).Replace(projectPath +"\\", ""))
                     .OrderBy(x => x).ToArray();
@@ -108,7 +108,7 @@ namespace ICSharpCode.CodeConverter.Shared
             project = await languageConversion.InitializeSource(project);
             var documentsToConvert = project.Documents.Where(d => !BannedPaths.Any(d.FilePath.Contains));
             var projectConversion = new ProjectConversion(project, documentsToConvert, languageConversion);
-            
+
             return await ConvertProjectContents(projectConversion, progress);
         }
 
@@ -241,12 +241,12 @@ namespace ICSharpCode.CodeConverter.Shared
         }
 
         #region ObsoletePublicApi
-        
+
         [Obsolete("Please use the overload which passes an IProgress")]
         public static async Task<IEnumerable<ConversionResult>> ConvertProject(Project project, ILanguageConversion languageConversion,
             params (string, string)[] replacements)
         {
-            return await ConvertProject(project, languageConversion, new Progress<ConversionProgress>(), 
+            return await ConvertProject(project, languageConversion, new Progress<ConversionProgress>(),
                 replacements.Select(r => (r.Item1, r.Item2, false)).ToArray());
         }
 

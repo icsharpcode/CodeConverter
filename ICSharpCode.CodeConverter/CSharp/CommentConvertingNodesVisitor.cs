@@ -56,8 +56,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             cSharpSyntaxNode = cSharpSyntaxNode.WithEndOfFileToken(
                 cSharpSyntaxNode.EndOfFileToken.WithConvertedLeadingTriviaFrom(node.EndOfFileToken));
 
-            return TriviaConverter.IsAllTriviaConverted() 
-                ? cSharpSyntaxNode 
+            return TriviaConverter.IsAllTriviaConverted()
+                ? cSharpSyntaxNode
                 : cSharpSyntaxNode.WithAppendedTrailingTrivia(SyntaxFactory.Comment("/* Some trivia (e.g. comments) could not be converted */"));
         }
 

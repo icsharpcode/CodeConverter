@@ -542,7 +542,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             return accessorListSyntaxOrNull.Accessors.All(a => a.Body == null && a.ExpressionBody == null);
         }
-        
+
         private TokenContext GetMemberContext(CSS.MemberDeclarationSyntax member)
         {
             var parentType = member.GetAncestorOrThis<CSS.BaseTypeDeclarationSyntax>();
@@ -1343,7 +1343,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static bool IsGroupKeyAccess(MemberAccessExpressionSyntax node, SyntaxToken csGroupId)
         {
-            return node.Name.Identifier.Text == "Key" && 
+            return node.Name.Identifier.Text == "Key" &&
                    node.Expression is IdentifierNameSyntax ins &&
                    ins.Identifier.Text == csGroupId.Text;
         }

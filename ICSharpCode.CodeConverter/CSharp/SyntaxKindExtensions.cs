@@ -206,7 +206,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxKind.DoubleKeyword;
                 case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.CStrKeyword:
                     return SyntaxKind.StringKeyword;
-                // Converts 
+                // Converts
                 case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NarrowingKeyword:
                     return SyntaxKind.ExplicitKeyword;
                 case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.WideningKeyword:

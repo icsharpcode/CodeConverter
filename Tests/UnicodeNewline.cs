@@ -296,7 +296,7 @@ namespace CodeConverter.Tests
         }
 
         /// <summary>
-        /// Determines if a char is a new line delimiter. 
+        /// Determines if a char is a new line delimiter.
         /// 
         /// Note that the only 2 char wide new line is CR LF and both chars are new line
         /// chars on their own. For most cases GetDelimiterLength is the better choice.

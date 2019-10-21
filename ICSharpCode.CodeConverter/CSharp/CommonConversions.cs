@@ -267,7 +267,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var worthBeingAVerbatimString = IsWorthBeingAVerbatimString(valueTextForCompiler);
             var destQuotedTextForUser =
                 $"\"{EscapeQuotes(sourceUnquotedTextForUser, valueTextForCompiler, worthBeingAVerbatimString)}\"";
-            
+
             return worthBeingAVerbatimString ? "@" + destQuotedTextForUser : destQuotedTextForUser;
 
         }
@@ -344,7 +344,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false)
         {
             string text = id.ValueText;
-            
+
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
                 var symbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol;
                 if (symbol != null && !String.IsNullOrWhiteSpace(symbol.Name)) {
@@ -357,7 +357,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         if (text.EndsWith("Attribute", StringComparison.OrdinalIgnoreCase))
                             text = text.Remove(text.Length - "Attribute".Length);
                     } else if (symbol.IsKind(SymbolKind.Parameter) && symbol.ContainingSymbol.IsAccessorPropertySet() && ((symbol.IsImplicitlyDeclared && symbol.Name == "Value") || symbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared) == symbol)) {
-                        // The case above is basically that if the symbol is a parameter, and the corresponding definition is a property set definition 
+                        // The case above is basically that if the symbol is a parameter, and the corresponding definition is a property set definition
                         // AND the first explicitly declared parameter is this symbol, we need to replace it with value.
                         text = "value";
                     } else if (text.StartsWith("_", StringComparison.OrdinalIgnoreCase) && symbol is IFieldSymbol propertyFieldSymbol && propertyFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {

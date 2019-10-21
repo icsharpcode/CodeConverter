@@ -74,7 +74,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             throw new NotImplementedException($"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
                 .WithNodeInformation(node);
         }
-        
+
         public override async Task<CSharpSyntaxNode> VisitCompilationUnit(VBSyntax.CompilationUnitSyntax node)
         {
             var options = (VBasic.VisualBasicCompilationOptions)_semanticModel.Compilation.Options;
@@ -114,7 +114,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             IReadOnlyCollection<(VBSyntax.StatementSyntax VbNode, MemberDeclarationSyntax CsNode)> membersConversions,
             IdentifierNameSyntax rootNamespaceIdentifier)
         {
-            
+
             if (_topAncestorNamespace != null) {
                 var csMembers = membersConversions.ToLookup(c => ShouldBeNestedInRootNamespace(c.VbNode, rootNamespaceIdentifier.Identifier.Text), c => c.CsNode);
                 var nestedMembers = csMembers[true].Select<MemberDeclarationSyntax, SyntaxNode>(x => x);
@@ -174,9 +174,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             async Task<IEnumerable<MemberDeclarationSyntax>> GetDirectlyConvertMembers()
             {
-                return await members.SelectManyAsync(async member => 
+                return await members.SelectManyAsync(async member =>
                     new[]{await ConvertMember(member)}.Concat(GetAdditionalDeclarations(member)));
-                
+
             }
         }
 
@@ -250,7 +250,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var (parameters, constraints) = await SplitTypeParameters(stmt.TypeParameterList);
 
             return SyntaxFactory.ClassDeclaration(
-                attributes, ConvertTypeBlockModifiers(stmt, TokenContext.InterfaceOrModule, SyntaxKind.StaticKeyword), 
+                attributes, ConvertTypeBlockModifiers(stmt, TokenContext.InterfaceOrModule, SyntaxKind.StaticKeyword),
                 CommonConversions.ConvertIdentifier(stmt.Identifier),
                 parameters,
                 await ConvertInheritsAndImplements(node.Inherits, node.Implements),
@@ -719,7 +719,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     blockKind = SyntaxKind.GetAccessorDeclaration;
                     potentialMethodId = $"get_{(containingProperty.Identifier.Text)}";
 
-                    if (containingProperty.AsClause is VBSyntax.SimpleAsClauseSyntax getAsClause && 
+                    if (containingProperty.AsClause is VBSyntax.SimpleAsClauseSyntax getAsClause &&
                         await ShouldConvertAsParameterizedProperty()) {
                         var method = await CreateMethodDeclarationSyntax(containingProperty?.ParameterList);
                         return method.WithReturnType((TypeSyntax) await getAsClause.Type.AcceptAsync(_triviaConvertingExpressionVisitor));
@@ -728,7 +728,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBasic.SyntaxKind.SetAccessorBlock:
                     blockKind = SyntaxKind.SetAccessorDeclaration;
                     potentialMethodId = $"set_{(containingProperty.Identifier.Text)}";
-                        
+
                     if (containingProperty.AsClause is VBSyntax.SimpleAsClauseSyntax setAsClause && await ShouldConvertAsParameterizedProperty()) {
                         var setMethod = await CreateMethodDeclarationSyntax(containingProperty?.ParameterList);
                         var valueParameterType = (TypeSyntax) await setAsClause.Type.AcceptAsync(_triviaConvertingExpressionVisitor);
