@@ -613,6 +613,38 @@ End Class", @"internal partial class TestClass
     }
 }");
         }
+        [Fact]
+        public async Task TestPropertyWithModifiers()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(
+@"Class TestClass
+    Private m_test3 As Integer
+
+    Public Property Test3 As Integer
+        Get
+            Return Me.m_test3
+        End Get
+        Private Set(ByVal value As Integer)
+            Me.m_test3 = value
+        End Set
+    End Property
+End Class", @"internal partial class TestClass
+{
+    private int m_test3;
+
+    public int Test3
+    {
+        get
+        {
+            return m_test3;
+        }
+        private set
+        {
+            m_test3 = value;
+        }
+    }
+}");
+        }
 
         [Fact]
         public async Task TestParameterizedProperty()

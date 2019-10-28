@@ -27,7 +27,8 @@ Public Property Text As String
     Private Set(ByVal value As String)
         _Text = value
     End Set
-End PropertyEnd Class");
+End Property
+End Class");
         }
         [Fact]
         public async Task TestField()

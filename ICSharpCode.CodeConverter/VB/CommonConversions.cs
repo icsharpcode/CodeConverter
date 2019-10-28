@@ -343,7 +343,7 @@ namespace ICSharpCode.CodeConverter.VB
                         break;
                     }
                 }
-                if (!visibility)
+                if (!visibility && context != TokenContext.MemberInProperty)
                     yield return CSharpDefaultVisibility(context);
             }
             foreach (var token in modifiers.Where(m => !IgnoreInContext(m, context))) {
@@ -371,6 +371,7 @@ namespace ICSharpCode.CodeConverter.VB
                 case TokenContext.Local:
                 case TokenContext.MemberInClass:
                 case TokenContext.MemberInModule:
+                case TokenContext.MemberInProperty:
                 case TokenContext.MemberInStruct:
                     return SyntaxFactory.Token(SyntaxKind.PrivateKeyword);
                 case TokenContext.MemberInInterface:
