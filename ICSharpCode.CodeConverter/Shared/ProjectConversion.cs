@@ -1,17 +1,15 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
-using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
-using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
@@ -38,33 +36,33 @@ namespace ICSharpCode.CodeConverter.Shared
             _returnSelectedNode = returnSelectedNode;
         }
 
-        private static async Task InitializeWithNoSynchronizationContext(ILanguageConversion languageConversion, Project documentProject)
+        public static async Task<ConversionResult> ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null) where TLanguageConversion : ILanguageConversion, new()
         {
             await new SynchronizationContextRemover();
-            await languageConversion.Initialize(documentProject);
-        }
 
-        public static Task<ConversionResult> ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null) where TLanguageConversion : ILanguageConversion, new()
-        {
             var languageConversion = new TLanguageConversion {
                 RootNamespace = rootNamespace
             };
             var syntaxTree = languageConversion.MakeFullCompilationUnit(text, out var textSpan);
             using (var workspace = new AdhocWorkspace()) {
                 var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, references);
-                return ConvertSingle(document, textSpan ?? new TextSpan(0,0), languageConversion);
+                return await ConvertSingle(document, textSpan ?? new TextSpan(0,0), languageConversion);
             }
         }
 
         public static async Task<ConversionResult> ConvertSingle(Document document, TextSpan selected, ILanguageConversion languageConversion)
         {
+            await new SynchronizationContextRemover();
+
             bool returnSelectedNode = selected.Length > 0;
             if (returnSelectedNode) {
                 document = await WithAnnotatedSelection(document, selected);
             }
 
-            var conversion = new ProjectConversion(document.Project, new[] { document}, languageConversion, returnSelectedNode);
-            await InitializeWithNoSynchronizationContext(languageConversion, document.Project);
+            var project = await languageConversion.InitializeSource(document.Project);
+            document = project.GetDocument(document.Id);
+
+            var conversion = new ProjectConversion(project, new[] { document }, languageConversion, returnSelectedNode);
             var conversionResults = (await ConvertProjectContents(conversion, new Progress<ConversionProgress>())).ToList();
             var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
                              ?? conversionResults.First();
@@ -72,25 +70,51 @@ namespace ICSharpCode.CodeConverter.Shared
             return codeResult;
         }
 
-        public static async Task<IEnumerable<ConversionResult>> ConvertProject(Project project, ILanguageConversion languageConversion, IProgress<ConversionProgress> progress, params (string, string)[] replacements)
+        public static async Task<IEnumerable<ConversionResult>> ConvertProject(Project project,
+            ILanguageConversion languageConversion, IProgress<ConversionProgress> progress,
+            params (string Find, string Replace, bool FirstOnly)[] replacements)
         {
-            return (await ConvertProjectContents(project, progress, languageConversion)).Concat(new[]
-                {ConvertProjectFile(project, languageConversion, replacements)}
+            await new SynchronizationContextRemover();
+
+            var convertProjectContents = (await ConvertProjectContents(project, progress, languageConversion)).ToArray();
+            var sourceFilePathsWithoutExtension = project.Documents.Select(f => f.FilePath).ToImmutableHashSet();
+            var projectPath = Path.GetFullPath(project.GetDirectoryPath());
+            string[] relativeFilePathsToAdd =
+                convertProjectContents.Select(r => r.SourcePathOrNull).Where(p => !sourceFilePathsWithoutExtension.Contains(p))
+                    .Select(p => PathConverter.TogglePathExtension(Path.GetFullPath(p)).Replace(projectPath +"\\", ""))
+                    .OrderBy(x => x).ToArray();
+
+            var addFilesRegexSpec = AddCompiledItemsRegexFromRelativePaths(relativeFilePathsToAdd);
+            var replacementSpecs = replacements.Concat(new[] {addFilesRegexSpec}).ToArray();
+
+            return convertProjectContents.Concat(new[]
+                {ConvertProjectFile(project, languageConversion, replacementSpecs)}
             );
+        }
+
+        private static (string Find, string Replace, bool FirstOnly) AddCompiledItemsRegexFromRelativePaths(
+            string[] relativeFilePathsToAdd)
+        {
+            var addFilesRegex = new Regex(@"(\s*<\s*Compile\s*Include\s*=\s*"".*\.(vb|cs)"")");
+            var addedFiles = string.Join("",
+                relativeFilePathsToAdd.Select(f => $@"{Environment.NewLine}    <Compile Include=""{f}"" />"));
+            var addFilesRegexSpec = (Find: addFilesRegex.ToString(), Replace: addedFiles + @"$1", FirstOnly: true);
+            return addFilesRegexSpec;
         }
 
 
         private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(Project project, IProgress<ConversionProgress> progress, ILanguageConversion languageConversion)
         {
+            project = await languageConversion.InitializeSource(project);
             var documentsToConvert = project.Documents.Where(d => !BannedPaths.Any(d.FilePath.Contains));
             var projectConversion = new ProjectConversion(project, documentsToConvert, languageConversion);
-            await InitializeWithNoSynchronizationContext(languageConversion, project);
+
             return await ConvertProjectContents(projectConversion, progress);
         }
 
         public static ConversionResult ConvertProjectFile(Project project,
             ILanguageConversion languageConversion,
-            params (string, string)[] textReplacements)
+            params (string Find, string Replace, bool FirstOnly)[] textReplacements)
         {
             return new FileInfo(project.FilePath).ConversionResultFromReplacements(textReplacements,
                 languageConversion.PostTransformProjectFile);
@@ -103,10 +127,9 @@ namespace ICSharpCode.CodeConverter.Shared
             var results = pathNodePairs.Select(pathNodePair => new ConversionResult(pathNodePair.Node.ToFullString())
                 {SourcePathOrNull = pathNodePair.Path, Exceptions = pathNodePair.Errors.ToList() });
 
-            var warnings = await projectConversion.GetProjectWarnings();
+            var warnings = await projectConversion.GetProjectWarnings(projectConversion._project, pathNodePairs);
             if (warnings != null) {
-                string projectFilePath = projectConversion._project.FilePath;
-                string projectDir = projectFilePath != null ? Path.GetDirectoryName(projectFilePath) : projectConversion._project.AssemblyName;
+                string projectDir = projectConversion._project.GetDirectoryPath() ?? projectConversion._project.AssemblyName;
                 var warningPath = Path.Combine(projectDir, "ConversionWarnings.txt");
                 results = results.Concat(new[]{new ConversionResult { SourcePathOrNull = warningPath, Exceptions = new[] { warnings } }});
             }
@@ -117,31 +140,37 @@ namespace ICSharpCode.CodeConverter.Shared
         private async Task<(string Path, SyntaxNode Node, string[] Errors)[]> Convert(
             IProgress<ConversionProgress> progress)
         {
-            progress.Report(new ConversionProgress("Phase 1 of 2:"));
-            var strProgress = new Progress<string>(m => progress.Report(new ConversionProgress(m, 1)));
-            var firstPassResults = await _documentsToConvert.ParallelSelectAsync(d => FirstPass(d, strProgress), Env.MaxDop);
-            progress.Report(new ConversionProgress("Phase 2 of 2:"));
-            var secondPass = await firstPassResults.ParallelSelectAsync(r => SecondPass(r, strProgress), Env.MaxDop);
-            return secondPass;
+            var firstPassResults = await ExecutePhase(_documentsToConvert, FirstPass, progress, "Phase 1 of 2:");
+            var (proj1, docs1) = await _languageConversion.GetConvertedProject(firstPassResults);
+            return await ExecutePhase(proj1.GetDocuments(docs1), SecondPass, progress, "Phase 2 of 2:");
         }
 
-        private async Task<(string Path, SyntaxNode Node, string[] Errors)> SecondPass(
-            (string Path, Document Doc, string[] Errors) firstPassResult, IProgress<string> progress)
+        private async Task<(string Path, SyntaxNode Node, string[] Errors)[]> ExecutePhase<T>(IEnumerable<T> parameters, Func<T, Progress<string>, Task<(string treeFilePath, SyntaxNode convertedDoc,
+                string[] errors)>> executePass, IProgress<ConversionProgress> progress, string phaseTitle)
         {
-            if (firstPassResult.Doc != null) {
+            progress.Report(new ConversionProgress(phaseTitle));
+            var strProgress = new Progress<string>(m => progress.Report(new ConversionProgress(m, 1)));
+            return await parameters.ParallelSelectAsync(d => executePass(d, strProgress), Env.MaxDop);
+            ;
+        }
+
+        private async Task<(string Path, SyntaxNode Node, string[] Errors)> SecondPass((string Path, Document document, string[] Errors) firstPassResult, IProgress<string> progress)
+        {
+            if (firstPassResult.document != null) {
                 progress.Report(firstPassResult.Path);
-                return await SingleSecondPassHandled(firstPassResult);
+                var (convertedNode, errors) = await SingleSecondPassHandled(firstPassResult.document);
+                return (firstPassResult.Path, convertedNode, firstPassResult.Errors.Concat(errors).ToArray());
             }
 
             return (firstPassResult.Path, null, firstPassResult.Errors);
         }
 
-        private async Task<(string treeFilePath, SyntaxNode convertedDoc, string[] errors)> SingleSecondPassHandled((string treeFilePath, Document convertedDoc, string[] errors) firstPassResult)
+        private async Task<(SyntaxNode convertedDoc, string[] errors)> SingleSecondPassHandled(Document convertedDocument)
         {
             SyntaxNode selectedNode = null;
             string[] errors = new string[0];
             try {
-                var document = await firstPassResult.convertedDoc.WithSimplifiedSyntaxRootAsync();
+                Document document = await _languageConversion.SingleSecondPass(convertedDocument);
                 if (_returnSelectedNode) {
                     selectedNode = await GetSelectedNode(document);
                     selectedNode = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
@@ -149,31 +178,34 @@ namespace ICSharpCode.CodeConverter.Shared
                     selectedNode = await document.GetSyntaxRootAsync();
                     selectedNode = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
                     var convertedDoc = document.WithSyntaxRoot(selectedNode);
-                    selectedNode = await _languageConversion.SingleSecondPass(convertedDoc);
+                    selectedNode = await convertedDoc.GetSyntaxRootAsync();
                 }
             } catch (Exception e) {
                 errors = new[] {e.ToString()};
             }
 
-            return (firstPassResult.treeFilePath, selectedNode ?? await firstPassResult.convertedDoc.GetSyntaxRootAsync(), firstPassResult.errors.Concat(errors).ToArray());
+            return (selectedNode ?? await convertedDocument.GetSyntaxRootAsync(), errors);
         }
 
-        private async Task<string> GetProjectWarnings()
+        private async Task<string> GetProjectWarnings(Project source, (string Path, SyntaxNode Node, string[] Errors)[] converted)
         {
             if (!_showCompilationErrors) return null;
-            return await _languageConversion.GetWarningsOrNull();
+
+            var sourceCompilation = await source.GetCompilationAsync();
+            var convertedCompilation = await (await _languageConversion.GetConvertedProject(converted)).project.GetCompilationAsync();
+            return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(convertedCompilation, "target");
         }
 
-        private async Task<(string treeFilePath, Document convertedDoc, string[] errors)> FirstPass(Document document, IProgress<string> progress)
+        private async Task<(string treeFilePath, SyntaxNode convertedDoc, string[] errors)> FirstPass(Document document, IProgress<string> progress)
         {
             var treeFilePath = document.FilePath ?? "";
             progress.Report(treeFilePath);
             try {
-                var convertedDoc = await _languageConversion.SingleFirstPass(document);
-                var errorAnnotations = (await convertedDoc.GetSyntaxRootAsync()).GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
+                var convertedNode = await _languageConversion.SingleFirstPass(document);
+                var errorAnnotations = convertedNode.GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
                 string[] errors = errorAnnotations.Select(a => a.Data).ToArray();
 
-                return (treeFilePath, convertedDoc, errors);
+                return (treeFilePath, convertedNode, errors);
             }
             catch (Exception e)
             {
@@ -209,12 +241,13 @@ namespace ICSharpCode.CodeConverter.Shared
         }
 
         #region ObsoletePublicApi
-        
+
         [Obsolete("Please use the overload which passes an IProgress")]
         public static async Task<IEnumerable<ConversionResult>> ConvertProject(Project project, ILanguageConversion languageConversion,
             params (string, string)[] replacements)
         {
-            return await ConvertProject(project, languageConversion, new Progress<ConversionProgress>(), replacements);
+            return await ConvertProject(project, languageConversion, new Progress<ConversionProgress>(),
+                replacements.Select(r => (r.Item1, r.Item2, false)).ToArray());
         }
 
         [Obsolete("Please use the overload which passes an IProgress")]

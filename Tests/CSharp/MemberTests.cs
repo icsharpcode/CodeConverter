@@ -30,7 +30,7 @@ End Class", @"internal partial class TestClass
             await TestConversionVisualBasicToCSharp(
 @"Module TestModule
     Const answer As Integer = 42
-End Module", @"internal partial static class TestModule
+End Module", @"internal static partial class TestModule
 {
     private const int answer = 42;
 }");
@@ -44,7 +44,7 @@ End Module", @"internal partial static class TestModule
     Sub New()
         Dim someValue As Integer = 0
     End Sub
-End Module", @"internal partial static class Module1
+End Module", @"internal static partial class Module1
 {
     static Module1()
     {
@@ -533,7 +533,7 @@ internal partial class TestSubclass : TestClass
     <System.Runtime.CompilerServices.Extension()>
     Sub TestMethod2Parameters(ByVal str As String, other As String)
     End Sub
-End Module", @"internal partial static class TestClass
+End Module", @"internal static partial class TestClass
 {
     public static void TestMethod(this string str)
     {
@@ -555,7 +555,8 @@ Module TestClass
     <Extension()>
     Sub TestMethod(ByVal str As String)
     End Sub
-End Module", @"internal partial static class TestClass
+End Module", @"
+internal static partial class TestClass
 {
     public static void TestMethod(this string str)
     {
@@ -653,7 +654,7 @@ End Class", @"internal partial class TestClass
 @"Class TestClass
     Public Property FirstName As String
     Public Property LastName As String
-    
+
     Public Property FullName(ByVal lastNameFirst As Boolean, ByVal isFirst As Boolean) As String
         Get
             If lastNameFirst Then
@@ -707,7 +708,7 @@ End Class", @"internal partial class TestClass
     Public Enum MyEnum
         First
     End Enum
-    
+
     Public Property MyProp(ByVal blah As Integer) As String
         Get
             Return blah
@@ -715,7 +716,7 @@ End Class", @"internal partial class TestClass
         Set
         End Set
     End Property
-            
+
 
     Public Sub ReturnWhatever(ByVal m As MyEnum)
         Dim enumerableThing = Enumerable.Empty(Of String)
@@ -889,7 +890,7 @@ internal partial class MyEventClass
     }
 }
 
-internal partial static class Module1
+internal static partial class Module1
 {
     static Module1()
     {
@@ -1333,7 +1334,7 @@ Friend Class TestClass2
 
     Public Overrides Sub CreateVirtualInstance()
     End Sub
-End Class", 
+End Class",
 @"internal abstract partial class TestClass1
 {
     public static void CreateStatic()

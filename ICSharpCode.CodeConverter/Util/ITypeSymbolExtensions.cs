@@ -93,7 +93,7 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return symbol?.IsAnonymousType == true;
         }
-        
+
         public static IEnumerable<ITypeSymbol> GetBaseTypesAndThis(this ITypeSymbol type)
         {
             var current = type;
@@ -369,7 +369,7 @@ namespace ICSharpCode.CodeConverter.Util
                 .GetMembers(WellKnownMemberNames.CollectionInitializerAddMethodName)
                 .OfType<IMethodSymbol>().Any(m => m.Parameters.Any());
         }
-        
+
         public static bool IsEnumType(this ITypeSymbol type)
         {
             return type.IsValueType && type.TypeKind == TypeKind.Enum;

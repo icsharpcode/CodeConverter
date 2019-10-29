@@ -11,7 +11,6 @@
 using Microsoft.VisualBasic;
 using System.Diagnostics;
 
-
 namespace WindowsAppVb.My.Resources
 {
 

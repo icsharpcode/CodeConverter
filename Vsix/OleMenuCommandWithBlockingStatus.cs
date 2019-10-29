@@ -11,7 +11,7 @@ namespace CodeConverter.VsExtension
     {
         private readonly JoinableTaskFactory _joinableTaskFactory;
         private readonly OleMenuCommand _command;
-        
+
         public OleMenuCommandWithBlockingStatus(JoinableTaskFactory joinableTaskFactory, Func<object, EventArgs, Task> callbackAsync, CommandID menuCommandId)
         {
             _joinableTaskFactory = joinableTaskFactory;

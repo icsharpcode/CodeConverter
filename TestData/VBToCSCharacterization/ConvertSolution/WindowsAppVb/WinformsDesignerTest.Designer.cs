@@ -28,16 +28,16 @@ namespace WindowsAppVb
         private System.ComponentModel.IContainer components;
 
         // NOTE: The following procedure is required by the Windows Form Designer
-        // It can be modified using the Windows Form Designer.  
+        // It can be modified using the Windows Form Designer.
         // Do not modify it using the code editor.
         [DebuggerStepThrough()]
         private void InitializeComponent()
         {
             _Button1 = new Button();
             _Button1.Click += Button1_Click;
-            _Button1.Click += CheckBox1_CheckedChanged; // In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
+            _Button1.Click += CheckedChangedOrButtonClicked; // In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
             _CheckBox1 = new CheckBox();
-            _CheckBox1.CheckedChanged += CheckBox1_CheckedChanged;
+            _CheckBox1.CheckedChanged += CheckedChangedOrButtonClicked;
             SuspendLayout();
             // 
             // Button1
@@ -95,14 +95,14 @@ namespace WindowsAppVb
                 if (_Button1 != null)
                 {
                     _Button1.Click -= Button1_Click;
-                    _Button1.Click -= CheckBox1_CheckedChanged;
+                    _Button1.Click -= CheckedChangedOrButtonClicked;
                 }
 
                 _Button1 = value;
                 if (_Button1 != null)
                 {
                     _Button1.Click += Button1_Click;
-                    _Button1.Click += CheckBox1_CheckedChanged;
+                    _Button1.Click += CheckedChangedOrButtonClicked;
                 }
             }
         }
@@ -122,13 +122,13 @@ namespace WindowsAppVb
             {
                 if (_CheckBox1 != null)
                 {
-                    _CheckBox1.CheckedChanged -= CheckBox1_CheckedChanged;
+                    _CheckBox1.CheckedChanged -= CheckedChangedOrButtonClicked;
                 }
 
                 _CheckBox1 = value;
                 if (_CheckBox1 != null)
                 {
-                    _CheckBox1.CheckedChanged += CheckBox1_CheckedChanged;
+                    _CheckBox1.CheckedChanged += CheckedChangedOrButtonClicked;
                 }
             }
         }

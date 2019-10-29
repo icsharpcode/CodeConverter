@@ -199,13 +199,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<SyntaxList<StatementSyntax>> ConvertRedimClause(VBSyntax.RedimClauseSyntax node)
         {
             bool preserve = node.Parent is VBSyntax.ReDimStatementSyntax rdss && rdss.PreserveKeyword.IsKind(VBasic.SyntaxKind.PreserveKeyword);
-                
+
             var csTargetArrayExpression = (ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor);
             var convertedBounds = (await CommonConversions.ConvertArrayBounds(node.ArrayBounds)).ToList();
 
             var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds, node.SpanStart);
             if (!preserve) return SingleStatement(newArrayAssignment);
-                
+
             var oldTargetName = GetUniqueVariableNameInScope(node, "old" + csTargetArrayExpression.ToString().ToPascalCase());
             var oldArrayAssignment = CreateLocalVariableDeclarationAndAssignment(oldTargetName, csTargetArrayExpression);
 
@@ -224,8 +224,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             List<ExpressionSyntax> convertedBounds)
         {
             var sourceLength = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, sourceArrayExpression, SyntaxFactory.IdentifierName("Length"));
-            var arrayCopyStatement = convertedBounds.Count == 1 
-                ? CreateArrayCopyWithMinOfLengths(sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds.Single()) 
+            var arrayCopyStatement = convertedBounds.Count == 1
+                ? CreateArrayCopyWithMinOfLengths(sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds.Single())
                 : CreateArrayCopy(originalVbNode, sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds);
 
             var oldTargetNotEqualToNull = SyntaxFactory.BinaryExpression(SyntaxKind.NotEqualsExpression, sourceArrayExpression,
@@ -237,7 +237,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// Array copy for multiple array dimensions represented by <paramref name="convertedBounds"/>
         /// </summary>
         /// <remarks>
-        /// Exception cases will sometimes silently succeed in the converted code, 
+        /// Exception cases will sometimes silently succeed in the converted code,
         ///  but existing VB code relying on the exception thrown from a multidimensional redim preserve on
         ///  different rank arrays is hopefully rare enough that it's worth saving a few lines of code
         /// </remarks>
@@ -490,7 +490,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 csToValue = toVariableId;
             };
-                
+
             if (value == null) {
                 condition = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, id, csToValue);
             } else {
@@ -715,7 +715,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     statements
                 ));
             }
-                
+
             var whileOrUntilStmt = node.LoopStatement.WhileOrUntilClause;
             ExpressionSyntax conditionExpression;
             bool isUntilStmt;
@@ -754,7 +754,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         /// <summary>
         /// Returns the single statement in a block if it has no nested statements.
-        /// If it has nested statements, and the surrounding block was removed, it could be ambiguous, 
+        /// If it has nested statements, and the surrounding block was removed, it could be ambiguous,
         /// e.g. if (...) { if (...) return null; } else return "";
         /// Unbundling the middle if statement would bind the else to it, rather than the outer if statement
         /// </summary>
@@ -762,7 +762,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             return block.Statements.Count == 1 && !block.ContainsNestedStatements() ? block.Statements[0] : block;
         }
-        
+
         /// <summary>
         /// Returns the single statement in a block
         /// </summary>
@@ -775,7 +775,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return singleStatement != null;
         }
-        
+
         /// <summary>
         /// Returns the single expression in a statement
         /// </summary>

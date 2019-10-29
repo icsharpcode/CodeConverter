@@ -74,6 +74,8 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="My Project\MyNamespace.Dynamic.Designer.cs" />
+    <Compile Include="My Project\MyNamespace.Static.Designer.cs" />
     <Compile Include="WinformsDesignerTest.cs">
       <SubType>Form</SubType>
     </Compile>

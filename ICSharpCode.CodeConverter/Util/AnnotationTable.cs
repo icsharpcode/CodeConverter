@@ -6,16 +6,16 @@ using Microsoft.CodeAnalysis;
 namespace ICSharpCode.CodeConverter.Util
 {
     /// <summary>
-    /// An AnnotationTable helps you attach your own annotation types/instances to syntax.  
+    /// An AnnotationTable helps you attach your own annotation types/instances to syntax.
     /// 
     /// It maintains a map between your instances and actual SyntaxAnnotation's used to annotate the nodes
     /// and offers an API that matches the true annotation API on SyntaxNode.
     /// 
-    /// The table controls the lifetime of when you can find and retrieve your annotations. You won't be able to 
+    /// The table controls the lifetime of when you can find and retrieve your annotations. You won't be able to
     /// find your annotations via HasAnnotations/GetAnnotations unless you use the same annotation table for these operations
-    /// that you used for the WithAdditionalAnnotations operation.  
+    /// that you used for the WithAdditionalAnnotations operation.
     /// 
-    /// Your custom annotations are not serialized with the syntax tree, so they won't move across boundaries unless the 
+    /// Your custom annotations are not serialized with the syntax tree, so they won't move across boundaries unless the
     /// same AnnotationTable is available on both ends.
     /// 
     /// also, note that this table is not thread safe.

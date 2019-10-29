@@ -4,7 +4,7 @@ Imports Xunit
 
 
 Public Class StringEqualityTests
-     
+
     <Fact>
     Public Sub TestStringComparison()
         Dim s1 As String = Nothing

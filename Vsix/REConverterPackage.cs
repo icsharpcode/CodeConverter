@@ -21,7 +21,7 @@ namespace CodeConverter.VsExtension
 {
     /// <summary>
     /// Implements the VS package exposed by this assembly.
-    ///
+    /// 
     /// This package will load when:
     /// * Visual Studio has been configured not to support UIContextRules and has a solution with a csproj or vbproj
     /// * Someone clicks one of the menu items
@@ -36,7 +36,6 @@ namespace CodeConverter.VsExtension
     [ProvideOptionPage(typeof(ConverterOptionsPage),
         "Code Converter", "General", 0, 0, true)]
     [Guid(PackageGuidString)]
-    [ProvideAutoLoad(ConvertableSolutionMenuVisibilityGuid, PackageAutoLoadFlags.SkipWhenUIContextRulesActive)]
     //See https://docs.microsoft.com/en-us/visualstudio/extensibility/how-to-use-rule-based-ui-context-for-visual-studio-extensions?view=vs-2019#term-types
     [ProvideUIContextRule(ConvertableSolutionMenuVisibilityGuid, name: nameof(ConvertableSolutionMenuVisibilityGuid),
         expression: "HasVbproj | HasCsproj", termNames: new[] { "HasVbproj", "HasCsproj" },

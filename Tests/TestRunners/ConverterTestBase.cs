@@ -97,7 +97,7 @@ End Sub";
 
         private static void AssertCodeEqual(string originalSource, string expectedConversion, string actualConversion)
         {
-            OurAssert.StringsEqualIgnoringNewlines(expectedConversion, actualConversion, () => 
+            OurAssert.StringsEqualIgnoringNewlines(expectedConversion, actualConversion, () =>
             {
                 StringBuilder sb = OurAssert.DescribeStringDiff(expectedConversion, actualConversion);
                 sb.AppendLine();

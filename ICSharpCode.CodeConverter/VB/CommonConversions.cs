@@ -245,7 +245,7 @@ namespace ICSharpCode.CodeConverter.VB
             }
 
             return CreateLambdaExpression(singleLineExpressionKind, multiLineExpressionKind, header, statements, endBlock);
-            
+
         }
 
         private static LambdaExpressionSyntax CreateLambdaExpression(SyntaxKind singleLineKind,

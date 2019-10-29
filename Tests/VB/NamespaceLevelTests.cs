@@ -11,7 +11,7 @@ namespace CodeConverter.Tests.VB
         {
             await TestConversionCSharpToVisualBasic(@"namespace Test
 {
-    
+
 }", @"Namespace Test
 End Namespace");
         }
@@ -26,13 +26,25 @@ End Namespace");
         }
 
         [Fact]
-        public async Task TestImports()
+        public async Task NamedImport()
         {
             await TestConversionCSharpToVisualBasic(
-                @"using SomeNamespace;
-using VB = Microsoft.VisualBasic;",
-                @"Imports SomeNamespace
-Imports VB = Microsoft.VisualBasic");
+                @"using s = System.String;
+
+public class X
+{
+    s GetStr()
+    {
+        return s.Empty;
+    }
+}",
+                @"Imports s = System.String
+
+Public Class X
+    Private Function GetStr() As s
+        Return s.Empty
+    End Function
+End Class");
         }
 
         [Fact]

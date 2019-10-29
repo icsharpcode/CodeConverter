@@ -225,7 +225,7 @@ namespace ICSharpCode.CodeConverter.Util
                 }
 
                 return textBuilder.ToString().TrimEnd();
-            } 
+            }
 
             throw new NotImplementedException($"Comment cannot be parsed:\r\n'{commentText}'");
         }

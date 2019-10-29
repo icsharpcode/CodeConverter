@@ -17,9 +17,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         public IReadOnlyCollection<MemberDeclarationSyntax> WithAdditionalInitializers(ITypeSymbol parentType,
             List<MemberDeclarationSyntax> convertedMembers, SyntaxToken parentTypeName)
         {
-            var constructorsInAllParts = parentType.GetMembers().OfType<IMethodSymbol>().Where(m => m.IsConstructor()).ToList();
-            var hasInstanceConstructors = constructorsInAllParts.Any(c => !c.IsStatic);
-            var hasStaticConstructors = constructorsInAllParts.Any(c => c.IsStatic);
+            var constructorsInAllParts = parentType?.GetMembers().OfType<IMethodSymbol>().Where(m => m.IsConstructor()).ToList();
+            var hasInstanceConstructors = constructorsInAllParts?.Any(c => !c.IsStatic) == true;
+            var hasStaticConstructors = constructorsInAllParts?.Any(c => c.IsStatic) == true;
 
             var rootConstructors = convertedMembers.OfType<ConstructorDeclarationSyntax>()
                 .Where(cds => !cds.Initializer.IsKind(SyntaxKind.ThisConstructorInitializer))

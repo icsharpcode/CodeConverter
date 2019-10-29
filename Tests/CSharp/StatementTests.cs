@@ -927,6 +927,28 @@ internal partial class Test
     }
 }");
         }
+        [Fact]
+        public async Task DeclarationStatementTwoVariables()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(
+@"Class Test
+    Private Sub TestMethod()
+        Dim x, y As Date
+        Console.WriteLine(x)
+        Console.WriteLine(y)
+    End Sub
+End Class", @"using System;
+
+internal partial class Test
+{
+    private void TestMethod()
+    {
+        DateTime x = default(DateTime), y = default(DateTime);
+        Console.WriteLine(x);
+        Console.WriteLine(y);
+    }
+}");
+        }
 
         [Theory]
         [InlineData("Sub", "", "void")]
@@ -1334,7 +1356,7 @@ End Class", @"internal partial class TestClass
 {
     private void TestMethod(int end)
     {
-        var b = default(int[]), s = default(int[]);
+        int[] b = default(int[]), s = default(int[]);
         for (int i = 0, loopTo = end; i <= loopTo; i++)
             b[i] = s[i];
     }
@@ -1410,7 +1432,7 @@ End Class", @"internal partial class TestClass
 {
     private void TestMethod(int end)
     {
-        var b = default(int[]), s = default(int[]);
+        int[] b = default(int[]), s = default(int[]);
         for (int i = 0, loopTo = end - 1; i <= loopTo; i++)
             b[i] = s[i];
     }

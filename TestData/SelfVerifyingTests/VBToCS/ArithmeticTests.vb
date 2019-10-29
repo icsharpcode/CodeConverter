@@ -20,7 +20,7 @@ Public Class ArithmeticTests
     Public Sub TestDecimalDivisionOfDecimals()
         Dim x = 7D / 2D
         Assert.Equal(x, 3.5D)
-    End Sub 
+    End Sub
 
     <Fact>
     Public Sub TestIntFunctionFloorsDecimal() 'https://github.com/icsharpcode/CodeConverter/issues/238

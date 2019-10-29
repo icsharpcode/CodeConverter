@@ -55,6 +55,7 @@ namespace ICSharpCode.CodeConverter.Util
             var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithGlobalImports(GlobalImport.Parse(
                     "System",
+                    "System.Collections",
                     "System.Collections.Generic",
                     "System.Diagnostics",
                     "System.Globalization",

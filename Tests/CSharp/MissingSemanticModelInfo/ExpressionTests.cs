@@ -37,21 +37,7 @@ End Class", @"internal partial class TestClass
         Return x
     End Function
 
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.VisualBasic;
-
-public partial class Class1
+End Class", @"public partial class Class1
 {
     public void Foo()
     {
@@ -107,19 +93,7 @@ Public Class OutParameterWithNonCompilingType
             pDict.Add(pKey, anInstance)
         End If
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.VisualBasic;
+End Class", @"using System.Collections.Generic;
 
 public partial class OutParameterWithMissingType
 {
@@ -186,19 +160,7 @@ public partial class OutParameterWithNonCompilingType
         Return tS
     End Function
 End Class",
-@"using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.VisualBasic;
+@"using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
 
 public partial class EnumAndValTest
