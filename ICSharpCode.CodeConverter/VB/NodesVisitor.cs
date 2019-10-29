@@ -539,7 +539,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static bool HasNoAccessorBody(CSS.AccessorListSyntax accessorListSyntaxOrNull)
         {
-            return accessorListSyntaxOrNull.Accessors.All(a => a.Body == null && a.ExpressionBody == null  && a.Modifiers ==null);
+            return accessorListSyntaxOrNull.Accessors.All(a => a.Body == null && a.ExpressionBody == null  && a.Modifiers.Count==0);
         }
         
         private TokenContext GetMemberContext(CSS.MemberDeclarationSyntax member)
