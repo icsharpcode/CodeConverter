@@ -108,8 +108,7 @@ namespace ICSharpCode.CodeConverter.VB
             List<IsPatternExpressionSyntax> isPatternExpressions)
         {
             IEnumerable<VariableDeclaratorSyntax> variableDeclaratorSyntaxs = des.Select(ConvertToVariableDeclarator)
-                .Concat(isPatternExpressions.Select(ConvertToVariableDeclarator))
-                ;
+                .Concat(isPatternExpressions.Select(ConvertToVariableDeclarator));
             return CreateLocalDeclarationStatement(variableDeclaratorSyntaxs.ToArray());
         }
         private StatementSyntax ConvertToDeclarationStatement(List<PropertyDeclarationSyntax> propertyBlocks)
@@ -198,7 +197,7 @@ namespace ICSharpCode.CodeConverter.VB
             var modifiers = ConvertModifiers(node.Modifiers, TokenContext.Local);
             var parent = (BasePropertyDeclarationSyntax)node.Parent.Parent;
             Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterSyntax valueParam;
-            
+
             switch (CSharpExtensions.Kind(node)) {
                 case CSSyntaxKind.GetAccessorDeclaration:
                     blockKind = SyntaxKind.GetAccessorBlock;

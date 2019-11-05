@@ -45,6 +45,7 @@ End Class");
     Private ReadOnly v = 15
 End Class");
         }
+
         [Fact]
         public async Task TestMethod()
         {

@@ -614,6 +614,7 @@ End Class", @"internal partial class TestClass
     }
 }");
         }
+
         [Fact]
         public async Task TestPropertyWithModifiers()
         {
