@@ -222,7 +222,9 @@ namespace ICSharpCode.CodeConverter.VB
 
         private IEnumerable<StatementSyntax> ConvertMembers(CSS.TypeDeclarationSyntax node)
         {
-            return node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor));
+            var members= node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor));
+            var newmembers = _commonConversions.InsertRequiredClassDeclarations(SyntaxFactory.List( members), node);
+            return newmembers;
         }
 
         public override VisualBasicSyntaxNode VisitStructDeclaration(CSS.StructDeclarationSyntax node)

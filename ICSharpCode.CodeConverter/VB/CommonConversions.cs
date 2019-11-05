@@ -91,13 +91,31 @@ namespace ICSharpCode.CodeConverter.VB
 
             return convertedStatements;
         }
+        public SyntaxList<StatementSyntax> InsertRequiredClassDeclarations(
+            SyntaxList<StatementSyntax> convertedStatements, CSharpSyntaxNode originaNode)
+        {
+            var descendantNodes = originaNode.DescendantNodes().ToList();
+            var propertyBlocks = descendantNodes.OfType<PropertyDeclarationSyntax>()
+                .Where(e => e.AccessorList != null && e.AccessorList.Accessors.Any(a => a.Body == null && a.ExpressionBody == null && a.Modifiers.Count > 0))
+                .ToList();
+            if (propertyBlocks.Any()) {
+                convertedStatements = convertedStatements.Insert(0, ConvertToDeclarationStatement(propertyBlocks));
+            }
 
+            return convertedStatements;
+        }
         private StatementSyntax ConvertToDeclarationStatement(List<DeclarationExpressionSyntax> des,
             List<IsPatternExpressionSyntax> isPatternExpressions)
         {
             IEnumerable<VariableDeclaratorSyntax> variableDeclaratorSyntaxs = des.Select(ConvertToVariableDeclarator)
-                .Concat(isPatternExpressions.Select(ConvertToVariableDeclarator));
+                .Concat(isPatternExpressions.Select(ConvertToVariableDeclarator))
+                ;
             return CreateLocalDeclarationStatement(variableDeclaratorSyntaxs.ToArray());
+        }
+        private StatementSyntax ConvertToDeclarationStatement(List<PropertyDeclarationSyntax> propertyBlocks)
+        {
+            IEnumerable<VariableDeclaratorSyntax> variableDeclaratorSyntaxs = propertyBlocks.Select(ConvertToVariableDeclarator);
+            return CreateLocalDeclarationStatement(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PrivateKeyword)), variableDeclaratorSyntaxs.ToArray());
         }
 
         public static StatementSyntax CreateLocalDeclarationStatement(params VariableDeclaratorSyntax[] variableDeclarators)
@@ -107,6 +125,11 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.LocalDeclarationStatement(syntaxTokenList, declarators);
         }
 
+        public static StatementSyntax CreateLocalDeclarationStatement(SyntaxTokenList syntaxTokenList, params VariableDeclaratorSyntax[] DimVariableDeclarators)
+        {
+            var declarators = SyntaxFactory.SeparatedList(DimVariableDeclarators);
+            return SyntaxFactory.LocalDeclarationStatement(syntaxTokenList, declarators);
+        }
         private VariableDeclaratorSyntax ConvertToVariableDeclarator(DeclarationExpressionSyntax des)
         {
             var id = ((IdentifierNameSyntax)des.Accept(_nodesVisitor)).Identifier;
@@ -138,6 +161,23 @@ namespace ICSharpCode.CodeConverter.VB
                 p => throw new ArgumentOutOfRangeException(nameof(p), p, null));
         }
 
+        private VariableDeclaratorSyntax ConvertToVariableDeclarator(PropertyDeclarationSyntax des)
+        {
+            var id = Identifier( "_" + des.Identifier.Text);
+            var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
+            TypeSyntax typeSyntax;
+            if (des.Type.IsVar) {
+                var typeSymbol = (ITypeSymbol)ModelExtensions.GetSymbolInfo(_semanticModel, des.Type).ExtractBestMatch();
+                typeSyntax = typeSymbol?.ToVbSyntax(_semanticModel, des.Type);
+            } else {
+                typeSyntax = (TypeSyntax)des.Type.Accept(_nodesVisitor);
+            }
+
+            var simpleAsClauseSyntax = typeSyntax != null ? SyntaxFactory.SimpleAsClause(typeSyntax) : null; //Gracefully degrade when no type information available
+            EqualsValueSyntax equalsValueSyntax = null; 
+            return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
+        }
+
         private CSharpSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(MethodBodyVisitor methodBodyVisitor = null)
         {
             var visitor = methodBodyVisitor ?? new MethodBodyVisitor(_semanticModel, _nodesVisitor, _triviaConverter, this);
@@ -158,12 +198,14 @@ namespace ICSharpCode.CodeConverter.VB
             var modifiers = ConvertModifiers(node.Modifiers, TokenContext.Local);
             var parent = (BasePropertyDeclarationSyntax)node.Parent.Parent;
             Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterSyntax valueParam;
-
+            
             switch (CSharpExtensions.Kind(node)) {
                 case CSSyntaxKind.GetAccessorDeclaration:
                     blockKind = SyntaxKind.GetAccessorBlock;
                     stmt = SyntaxFactory.GetAccessorStatement(attributes, modifiers, null);
                     endStmt = SyntaxFactory.EndGetStatement();
+                    body = body.Count >0 ? body :
+                        SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName("_" + ((PropertyDeclarationSyntax)parent).Identifier.Text )));
                     break;
                 case CSSyntaxKind.SetAccessorDeclaration:
                     blockKind = SyntaxKind.SetAccessorBlock;
@@ -172,6 +214,8 @@ namespace ICSharpCode.CodeConverter.VB
                         .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword)));
                     stmt = SyntaxFactory.SetAccessorStatement(attributes, modifiers, SyntaxFactory.ParameterList(SyntaxFactory.SingletonSeparatedList(valueParam)));
                     endStmt = SyntaxFactory.EndSetStatement();
+                    body = body.Count>0 ? body :
+                    SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.AssignmentStatement(SyntaxKind.SimpleAssignmentStatement, SyntaxFactory.IdentifierName("_" + ((PropertyDeclarationSyntax)parent).Identifier.Text),SyntaxFactory.Token( VBUtil.GetExpressionOperatorTokenKind( SyntaxKind.SimpleAssignmentStatement)), SyntaxFactory.IdentifierName("value")));
                     break;
                 case CSSyntaxKind.AddAccessorDeclaration:
                     blockKind = SyntaxKind.AddHandlerAccessorBlock;

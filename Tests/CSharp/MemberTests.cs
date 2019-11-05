@@ -647,7 +647,7 @@ End Class", @"internal partial class TestClass
 }");
         }
 
-        [Fact]
+         [Fact]
         public async Task TestParameterizedProperty()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(

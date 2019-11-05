@@ -18,16 +18,16 @@ namespace CodeConverter.Tests.VB
 {
     public string Text { get; private set; };
 }", @"Friend Class TestClass
-Private _Text As String
+    Private _Text As String
 
-Public Property Text As String
-    Get
-        Return _Text
-    End Get
-    Private Set(ByVal value As String)
-        _Text = value
-    End Set
-End Property
+    Public Property Text As String
+        Get
+            Return _Text
+        End Get
+        Private Set(ByVal value As String)
+            _Text = value
+        End Set
+    End Property
 End Class");
         }
         [Fact]
