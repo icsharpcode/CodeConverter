@@ -20,9 +20,9 @@ namespace CodeConverter.Tests.VB
     int value = 10;
     readonly int v = 15;
 }", @"Friend Class TestClass
-    Const answer As Integer = 42
-    Private value As Integer = 10
-    Private ReadOnly v As Integer = 15
+    Const answer = 42
+    Private value = 10
+    Private ReadOnly v = 15
 End Class");
         }
 
@@ -402,7 +402,7 @@ End Class");
                 @"public class ConversionResult
 {
     private string _sourcePathOrNull;
-    
+
     public string SourcePathOrNull {
         get => _sourcePathOrNull;
         set => _sourcePathOrNull = string.IsNullOrWhiteSpace(value) ? null : value;
@@ -425,11 +425,11 @@ End Class");
         public async Task TestOmmittedAccessorsReplacedWithExpressionBody()
         {
             await TestConversionCSharpToVisualBasic(
-                @"class MyFavColor  
-{  
+                @"class MyFavColor
+{
     private string[] favColor => new string[] {""Red"", ""Green""};
     public string this[int index] => favColor[index];
-}  
+}
 ", @"Friend Class MyFavColor
     Private ReadOnly Property favColor As String()
         Get
@@ -452,7 +452,7 @@ End Class");
                 @"public class ConversionResult
 {
     private int _num;
-    
+
     public string Num {
         set => _num++;
     }
@@ -545,8 +545,8 @@ End Sub");
     }
 }
 
-public sealed class MyClass 
- : MyBaseClass 
+public sealed class MyClass
+ : MyBaseClass
 {
 	 public MyClass(object o)
 	  : base(o)

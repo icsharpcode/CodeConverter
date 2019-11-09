@@ -97,7 +97,7 @@ End Namespace", @"namespace Test.@class
     End Module
 End Namespace", @"namespace Test.@class
 {
-    internal partial static class TestClass
+    internal static partial class TestClass
     {
         public static void Test()
         {
@@ -564,7 +564,7 @@ internal enum EULong : ulong
     M1 = 0
 }
 
-internal partial static class Module1
+internal static partial class Module1
 {
     public static void Main()
     {
@@ -711,7 +711,7 @@ public partial class Bar<x> where x : Foo, new()
         Return 1
     End Function
     MustOverride Function F2() As Integer
-    Public Sub TestMethod() 
+    Public Sub TestMethod()
         Dim w = MyClass.f1()"/* Intentionally access with the wrong case which is valid VB */ + @"
         Dim x = Me.F1()
         Dim y = MyClass.F2()
@@ -743,7 +743,7 @@ End Class",
             await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class A
     Overridable Property P1() As Integer = 1
     MustOverride Property P2() As Integer
-    Public Sub TestMethod() 
+    Public Sub TestMethod()
         Dim w = MyClass.p1"/* Intentionally access with the wrong case which is valid VB */ + @"
         Dim x = Me.P1
         Dim y = MyClass.P2

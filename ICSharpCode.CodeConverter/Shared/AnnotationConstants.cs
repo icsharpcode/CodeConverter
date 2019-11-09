@@ -1,6 +1,6 @@
 ﻿namespace ICSharpCode.CodeConverter.Shared
 {
-    public class AnnotationConstants
+    internal class AnnotationConstants
     {
         public const string SelectedNodeAnnotationKind = "CodeConverter.SelectedNode";
         public const string AnnotatedNodeIsParentData = "CodeConverter.SelectedNode.IsAllChildrenOfThisNode";

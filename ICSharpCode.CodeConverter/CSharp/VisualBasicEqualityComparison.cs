@@ -41,7 +41,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public bool OptionCompareTextCaseInsensitive { get; set; }
-        
+
         public RequiredType GetObjectEqualityType(VBSyntax.BinaryExpressionSyntax node, TypeInfo leftType, TypeInfo rightType)
         {
             var typeInfos = new[] {leftType, rightType};

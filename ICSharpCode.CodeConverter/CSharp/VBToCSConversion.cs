@@ -14,6 +14,7 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.Simplification;
 using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using LanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 
@@ -21,9 +22,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     public class VBToCSConversion : ILanguageConversion
     {
+        private const string UnresolvedNamespaceDiagnosticId = "CS0246";
         private Project _sourceVbProject;
         private CSharpCompilation _csharpViewOfVbSymbols;
-        private readonly object _conertedCsProjectLock = new object();
         private Project _convertedCsProject;
         /// <summary>
         /// It's really hard to change simplifier options since everything is done on the Object hashcode of internal fields.
@@ -37,23 +38,21 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public string RootNamespace { get; set; }
 
-        public async Task Initialize(Project project)
+        public async Task<Project> InitializeSource(Project project)
         {
-            _sourceVbProject = project;
             var cSharpCompilationOptions = CSharpCompiler.CreateCompilationOptions();
             _convertedCsProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, DoNotAllowImplicitDefault);
             _csharpReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptionsAsync(cSharpCompilationOptions);
             _csharpViewOfVbSymbols = (CSharpCompilation) await _csharpReferenceProject.GetCompilationAsync();
+
+            project = await project.WithRenamedMergedMyNamespace();
+            _sourceVbProject = project;
+            return project;
         }
 
-        public async Task<Document> SingleFirstPass(Document document)
+        public async Task<SyntaxNode> SingleFirstPass(Document document)
         {
-            var converted = await VisualBasicConverter.ConvertCompilationTree(document, _csharpViewOfVbSymbols, _csharpReferenceProject);
-            lock (_conertedCsProjectLock) {
-                var convertedDocument = _convertedCsProject.AddDocument(document.FilePath, converted);
-                _convertedCsProject = convertedDocument.Project;
-                return convertedDocument;
-            }
+            return await VisualBasicConverter.ConvertCompilationTree(document, _csharpViewOfVbSymbols, _csharpReferenceProject);
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
@@ -99,8 +98,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                    xml.Substring(defineConstantsEnd);
         }
 
+        public async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
+            GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults)
+        {
+            var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults);
+            return (await project.RenameMergedMyNamespace(), docIds);
+        }
+
         public string TargetLanguage { get; } = LanguageNames.CSharp;
-        
+
         public bool CanBeContainedByMethod(SyntaxNode node)
         {
             return node is VBSyntax.IncompleteMemberSyntax ||
@@ -118,7 +124,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static bool IsNonTypeEndBlock(SyntaxNode node)
         {
-            return node is VBSyntax.EndBlockStatementSyntax ebs && 
+            return node is VBSyntax.EndBlockStatementSyntax ebs &&
                    !ebs.BlockKeyword.IsKind(SyntaxKind.ClassKeyword, SyntaxKind.StructureKeyword, SyntaxKind.InterfaceKeyword, SyntaxKind.ModuleKeyword);
         }
 
@@ -158,19 +164,9 @@ End Class";
             return children;
         }
 
-        public async Task<SyntaxNode> SingleSecondPass(Document doc)
+        public async Task<Document> SingleSecondPass(Document doc)
         {
-            var cSharpSyntaxNode = new CompilationErrorFixer((CSharpCompilation) await doc.Project.GetCompilationAsync(), (CSharpSyntaxTree) await doc.GetSyntaxTreeAsync()).Fix();
-            var simplifiedDocument = doc.WithSyntaxRoot(cSharpSyntaxNode);
-            _convertedCsProject = simplifiedDocument.Project;
-            return await simplifiedDocument.GetSyntaxRootAsync();
-        }
-
-        public async Task<string> GetWarningsOrNull()
-        {
-            var sourceCompilation = await _sourceVbProject.GetCompilationAsync();
-            var convertedCompilation = await _convertedCsProject.GetCompilationAsync();
-            return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation( convertedCompilation, "target");
+            return await doc.SimplifyStatements<CSSyntax.UsingDirectiveSyntax, CSSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId);
         }
 
         public SyntaxTree CreateTree(string text)

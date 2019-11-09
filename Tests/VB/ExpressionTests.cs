@@ -47,9 +47,7 @@ namespace global::InnerNamespace
         }
     }
 }",
-                @"Imports System
-
-Namespace Global.InnerNamespace
+                @"Namespace Global.InnerNamespace
     Public Class Test
         Public Function StringInter(ByVal t As String, ByVal dt As Date) As String
             Dim a = $""pre{t} t""
@@ -172,7 +170,7 @@ End Class");
     {
     }
 }", @"Friend Class TestClass
-    Private n As String = NameOf(TestMethod)
+    Private n = NameOf(TestMethod)
 
     Private Sub TestMethod()
     End Sub
@@ -356,7 +354,7 @@ Friend Class SomeSettings
 End Class
 
 Friend Class Converter
-    Public Shared ReadOnly Settings As SomeSettings = New SomeSettings With {
+    Public Shared ReadOnly Settings = New SomeSettings With {
         .Converters = {}
     }
 End Class");
@@ -423,7 +421,7 @@ End Function");
         [Fact]
         public async Task TupleType()
         {
-            await TestConversionCSharpToVisualBasic(@"public interface ILanguageConversion 
+            await TestConversionCSharpToVisualBasic(@"public interface ILanguageConversion
 {
     IReadOnlyCollection<(string, string)> GetProjectTypeGuidMappings();
     IEnumerable<(string, string)> GetProjectFileReplacementRegexes();
@@ -443,7 +441,7 @@ namespace PreHOPL
 {
     static class Program
     {
-        private static readonly Dictionary<string, ValueTuple<int, Delegate>> dict = 
+        private static readonly Dictionary<string, ValueTuple<int, Delegate>> dict =
             new Dictionary<string, ValueTuple<int, Delegate>>()
         {
             [""SAY""] =  (1, (Action<string>)System.Console.WriteLine)
@@ -458,8 +456,8 @@ Imports System.Collections.Generic
 
 Namespace PreHOPL
     Friend Module Program
-        Private ReadOnly dict As Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) = New Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) From {
-            {""SAY"", (1, CType(AddressOf Console.WriteLine, Action(Of String)))}
+        Private ReadOnly dict = New Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) From {
+            {""SAY"", (1, CType(AddressOf System.Console.WriteLine, Action(Of String)))}
         }
 
         Private Sub Main(ByVal args As String())
@@ -472,7 +470,7 @@ End Namespace");
         [Fact]
         public async Task DelegateExpression()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass 
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
 
     private static Action<int> m_Event1 = delegate { };
@@ -517,7 +515,7 @@ End Module");
         [Fact]
         public async Task LambdaBodyExpression()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass 
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     void TestMethod()
     {
@@ -544,7 +542,7 @@ End Class");
         [Fact]
         public async Task Await()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass 
+            await TestConversionCSharpToVisualBasic(@"class TestClass
 {
     Task<int> SomeAsyncMethod()
     {
@@ -574,11 +572,11 @@ End Class");
             await TestConversionCSharpToVisualBasic(@"static void SimpleQuery()
 {
     int[] numbers = { 7, 9, 5, 3, 6 };
- 
+
     var res = from n in numbers
                 where n > 5
                 select n;
- 
+
     foreach (var n in res)
         Console.WriteLine(n);
 }",
@@ -595,21 +593,21 @@ End Sub");
         [Fact]
         public async Task Linq2()
         {
-            await TestConversionCSharpToVisualBasic(@"public static void Linq40() 
-    { 
-        int[] numbers = { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 }; 
-      
-        var numberGroups = 
-            from n in numbers 
-            group n by n % 5 into g 
-            select new { 
+            await TestConversionCSharpToVisualBasic(@"public static void Linq40()
+    {
+        int[] numbers = { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };
+
+        var numberGroups =
+            from n in numbers
+            group n by n % 5 into g
+            select new {
                 Remainder = g.Key,
                 Numbers = g
-            }; 
-      
-        foreach (var g in numberGroups) 
-        { 
-            Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:""); 
+            };
+
+        foreach (var g in numberGroups)
+        {
+            Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"");
             foreach (var n in g.Numbers)
             {
                 Console.WriteLine(n);
@@ -642,10 +640,10 @@ End Sub");
 }
 
 class Test {
-    public void Linq102() 
-    { 
-        string[] categories = new string[]{  
-            ""Beverages"",   
+    public void Linq102()
+    {
+        string[] categories = new string[]{
+            ""Beverages"",
             ""Condiments"",
             ""Vegetables"",
             ""Dairy Products"",
@@ -658,11 +656,11 @@ class Test {
                 join p in products on c equals p.Category
                 select new {
                     Category = c, p.ProductName
-                }; 
- 
-        foreach (var v in q) 
-        { 
-            Console.WriteLine($""{v.ProductName}: {v.Category}"");  
+                };
+
+        foreach (var v in q)
+        {
+            Console.WriteLine($""{v.ProductName}: {v.Category}"");
         }
     }
 }",
@@ -689,10 +687,10 @@ End Class");
         [Fact]
         public async Task Linq4()
         {
-            await TestConversionCSharpToVisualBasic(@"public void Linq103() 
-{ 
-    string[] categories = new string[]{  
-        ""Beverages"",  
+            await TestConversionCSharpToVisualBasic(@"public void Linq103()
+{
+    string[] categories = new string[]{
+        ""Beverages"",
         ""Condiments"",
         ""Vegetables"",
         ""Dairy Products"",
@@ -706,14 +704,14 @@ End Class");
             select new {
                 Category = c,
                 Products = ps
-            }; 
-  
-    foreach (var v in q) 
-    { 
-        Console.WriteLine(v.Category + "":""); 
-        foreach (var p in v.Products) 
-        { 
-            Console.WriteLine(""   "" + p.ProductName); 
+            };
+
+    foreach (var v in q)
+    {
+        Console.WriteLine(v.Category + "":"");
+        foreach (var p in v.Products)
+        {
+            Console.WriteLine(""   "" + p.ProductName);
         }
     }
 }", @"Public Sub Linq103()

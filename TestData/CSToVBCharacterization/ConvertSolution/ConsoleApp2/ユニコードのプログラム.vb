@@ -1,6 +1,5 @@
 Imports System
 Imports System.Diagnostics
-Imports System.Linq
 
 Namespace ConsoleApp2
     Public Class ユニコードのプログラム

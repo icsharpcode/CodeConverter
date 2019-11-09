@@ -110,7 +110,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csType = _csCompilation.GetTypeByMetadataName(vbType.GetFullMetadataName());
             var csConvertedType = _csCompilation.GetTypeByMetadataName(vbConvertedType.GetFullMetadataName());
 
-            if (csType != null && csConvertedType != null && 
+            if (csType != null && csConvertedType != null &&
                 TryAnalyzeCsConversion(vbNode, csType, csConvertedType, vbConversion, vbConvertedType, vbType, vbCompilation, out TypeConversionKind analyzeConversion)) {
                 return analyzeConversion;
             }
@@ -125,7 +125,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csConversion = _csCompilation.ClassifyConversion(csType, csConvertedType);
 
             bool isConvertToString =
-                        vbConversion.IsString && vbConvertedType.SpecialType == SpecialType.System_String;
+                        (vbConversion.IsString || vbConversion.IsReference && vbConversion.IsNarrowing)  && vbConvertedType.SpecialType == SpecialType.System_String;
             bool isArithmetic = vbNode.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AddExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.SubtractExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.MultiplyExpression,
@@ -161,6 +161,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     typeConversionKind = TypeConversionKind.Conversion;
                     return true;
                 }
+            } else if (isConvertToString && vbType.SpecialType ==  SpecialType.System_Object) {
+                typeConversionKind = TypeConversionKind.Conversion;
+                return true;
             }
 
             typeConversionKind = TypeConversionKind.Unknown;
@@ -177,7 +180,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (vbConversion.IsNumeric && (vbType.IsEnumType() || vbConvertedType.IsEnumType())) {
                 return TypeConversionKind.NonDestructiveCast;
             }
-
             if (alwaysExplicit) {
                 return vbConversion.IsNarrowing ? TypeConversionKind.NonDestructiveCast : TypeConversionKind.DestructiveCast;
             }
@@ -219,7 +221,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax node, ITypeSymbol convertedType,
             out char chr)
         {
-            if (convertedType?.SpecialType == SpecialType.System_Char && 
+            if (convertedType?.SpecialType == SpecialType.System_Char &&
                 node?.Token.Value is string str &&
                 str.Length == 1) {
                 chr = str.Single();

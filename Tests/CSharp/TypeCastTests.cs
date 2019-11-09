@@ -66,7 +66,75 @@ internal partial class Class1
     }
 }" + Environment.NewLine);
         }
+        [Fact]
+        public async Task ImplicitCastObjectToString()
+        {
+            await TestConversionVisualBasicToCSharp(
+@"Class Class1
+    Private Sub Test()
+        Dim o As Object = ""Test""
+        Dim s As String = o
+    End Sub
+End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
 
+internal partial class Class1
+{
+    private void Test()
+    {
+        object o = ""Test"";
+        string s = Conversions.ToString(o);
+    }
+}" + Environment.NewLine);
+        }
+        [Fact]
+        public async Task CastArrayListAssignmentToString()
+        {
+            await TestConversionVisualBasicToCSharp(
+@"Class Class1
+    Private Sub Test()
+        Dim x As New ArrayList
+        x.Add(""a"")
+
+        Dim xs(1) As String
+
+        xs(0) = x(0)
+    End Sub
+End Class" + Environment.NewLine, @"using System.Collections;
+using Microsoft.VisualBasic.CompilerServices;
+
+internal partial class Class1
+{
+    private void Test()
+    {
+        var x = new ArrayList();
+        x.Add(""a"");
+
+        var xs = new string[2];
+
+        xs[0] = Conversions.ToString(x[0]);
+    }
+}" + Environment.NewLine);
+        }
+        [Fact]
+        public async Task ImplicitCastObjecStringToString()
+        {
+            await TestConversionVisualBasicToCSharp(
+@"Class Class1
+    Private Sub Test()
+        Dim o As Object = ""Test""
+        Dim s As String = o
+    End Sub
+End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
+
+internal partial class Class1
+{
+    private void Test()
+    {
+        object o = ""Test"";
+        string s = Conversions.ToString(o);
+    }
+}" + Environment.NewLine);
+        }
         [Fact]
         public async Task CTypeDoubleToInt()
         {

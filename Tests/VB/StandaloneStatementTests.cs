@@ -66,7 +66,7 @@ obj = Nothing",
         {
             await TestConversionCSharpToVisualBasic(
 @"private int x = 3;",
-@"Private x As Integer = 3");
+@"Private x = 3");
         }
 
         [Fact]
@@ -97,14 +97,6 @@ End Class");
 }",
 @"Namespace nam
 End Namespace");
-        }
-
-        [Fact]
-        public async Task SingleUsing()
-        {
-            await TestConversionCSharpToVisualBasic(
-@"using s = System.String;",
-@"Imports s = System.String");
         }
 
         [Fact]

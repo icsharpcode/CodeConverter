@@ -148,7 +148,7 @@ namespace CodeConverter.VsExtension
 
             if ((monitorSelection == null) || (solution == null))
                 return null;
-            
+
             var hResult = monitorSelection.GetCurrentSelection(out var hierarchyPtr, out uint itemId, out var multiItemSelect, out var selectionContainerPtr);
             try {
                 if (ErrorHandler.Failed(hResult) || hierarchyPtr == IntPtr.Zero || itemId == VSConstants.VSITEMID_NIL ||

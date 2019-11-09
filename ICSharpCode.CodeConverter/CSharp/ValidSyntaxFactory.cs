@@ -40,7 +40,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return lhs;
         }
-        
+
         public static CastExpressionSyntax CastExpression(TypeSyntax type, ExpressionSyntax expressionSyntax)
         {
             expressionSyntax = ParenthesizeExpressionForCast(expressionSyntax);

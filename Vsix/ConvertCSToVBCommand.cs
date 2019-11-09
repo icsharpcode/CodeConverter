@@ -80,7 +80,7 @@ namespace CodeConverter.VsExtension
             ThreadHelper.ThrowIfNotOnUIThread();
             this._package = package ?? throw new ArgumentNullException(nameof(package));
             _codeConversion = codeConversion;
-            
+
             if (commandService != null) {
                 // Command in main menu
                 var menuCommandId = new CommandID(CommandSet, MainMenuCommandId);

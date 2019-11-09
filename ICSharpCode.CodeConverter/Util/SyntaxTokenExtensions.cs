@@ -136,7 +136,7 @@ namespace ICSharpCode.CodeConverter.Util
             // }
             // |
 
-            // Note, the following is *not* a legal statement context: 
+            // Note, the following is *not* a legal statement context:
             //    do { } |
 
             // ...;
@@ -809,7 +809,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool SpansPreprocessorDirective(this IEnumerable<SyntaxToken> tokens)
         {
-            // we want to check all leading trivia of all tokens (except the 
+            // we want to check all leading trivia of all tokens (except the
             // first one), and all trailing trivia of all tokens (except the
             // last one).
 

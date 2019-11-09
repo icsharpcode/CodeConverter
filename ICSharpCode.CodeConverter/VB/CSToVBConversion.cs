@@ -19,6 +19,7 @@ namespace ICSharpCode.CodeConverter.VB
 {
     public class CSToVBConversion : ILanguageConversion
     {
+        private const string UnresolvedNamespaceDiagnosticId = "BC40056";
         private Project _sourceCsProject;
         private Project _convertedVbProject;
         private VisualBasicCompilation _vbViewOfCsSymbols;
@@ -26,7 +27,7 @@ namespace ICSharpCode.CodeConverter.VB
         private Project _vbReferenceProject;
         public string RootNamespace { get; set; }
 
-        public async Task Initialize(Project project)
+        public async Task<Project> InitializeSource(Project project)
         {
             _sourceCsProject = project;
             var cSharpCompilationOptions = VisualBasicCompiler.CreateCompilationOptions(RootNamespace);
@@ -34,14 +35,12 @@ namespace ICSharpCode.CodeConverter.VB
             _convertedVbProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, _visualBasicParseOptions);
             _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptionsAsync(cSharpCompilationOptions);
             _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync();
+            return project;
         }
 
-        public async Task<Document> SingleFirstPass(Document document)
+        public async Task<SyntaxNode> SingleFirstPass(Document document)
         {
-            var convertedTree = await CSharpConverter.ConvertCompilationTree(document, _vbViewOfCsSymbols, _vbReferenceProject);
-            var convertedDocument = _convertedVbProject.AddDocument(document.FilePath, convertedTree);
-            _convertedVbProject = convertedDocument.Project;
-            return convertedDocument;
+            return await CSharpConverter.ConvertCompilationTree(document, _vbViewOfCsSymbols, _vbReferenceProject);
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
@@ -71,6 +70,12 @@ namespace ICSharpCode.CodeConverter.VB
             xml = TweakDefineConstantsSeparator(xml);
             xml = AddInfer(xml);
             return xml;
+        }
+
+        public async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
+            GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults)
+        {
+            return _convertedVbProject.WithDocuments(firstPassResults);
         }
 
         private string AddInfer(string xml)
@@ -104,8 +109,8 @@ namespace ICSharpCode.CodeConverter.VB
 
         public bool CanBeContainedByMethod(SyntaxNode node)
         {
-            return node is CSSyntax.IncompleteMemberSyntax || 
-                   node is CSSyntax.StatementSyntax || 
+            return node is CSSyntax.IncompleteMemberSyntax ||
+                   node is CSSyntax.StatementSyntax ||
                    node.ContainsSkippedText ||
                    node.IsMissing ||
                    ParsedAsFieldButCouldBeLocalVariableDeclaration(node); ;
@@ -153,16 +158,9 @@ namespace ICSharpCode.CodeConverter.VB
             return children;
         }
 
-        public Task<SyntaxNode> SingleSecondPass(Document doc)
+        public async Task<Document> SingleSecondPass(Document doc)
         {
-            return doc.GetSyntaxRootAsync();
-        }
-
-        public async Task<string> GetWarningsOrNull()
-        {
-            var sourceCompilation = await _sourceCsProject.GetCompilationAsync();
-            var convertedCompilation = await _convertedVbProject.GetCompilationAsync();
-            return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(convertedCompilation, "target");
+            return await doc.SimplifyStatements<VBSyntax.ImportsStatementSyntax, VBSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId);
         }
 
         public SyntaxTree CreateTree(string text)
