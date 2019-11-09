@@ -46,13 +46,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (nodesWithUnresolvedTypes[null].Any() || !unusedUsings.Any()) {
                 return root;
             }
-
+            var oldFirstChild = root.ChildNodes().FirstOrDefault();
             root = root.RemoveNodes(unusedUsings, SyntaxRemoveOptions.KeepNoTrivia);
             var firstChild = root.ChildNodes().FirstOrDefault();
-            if (firstChild != null) {
+            if (firstChild != null  && oldFirstChild !=null) {
                 root = root.ReplaceNode(firstChild,
-                    firstChild.WithLeadingTrivia(firstChild.GetLeadingTrivia()
-                        .SkipWhile(t => t.IsWhitespaceTrivia())));
+                firstChild.WithLeadingTrivia(oldFirstChild.GetLeadingTrivia()
+                 .SkipWhile(t => t.IsWhitespaceTrivia())));
             }
 
             return root;
