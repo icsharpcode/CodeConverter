@@ -526,7 +526,7 @@ namespace ICSharpCode.CodeConverter.VB
                 initializerOrNull,
                 declaredSymbol == null ? null : CreateImplementsClauseSyntaxOrNull(declaredSymbol)
             );
-            if (hasAccessors && HasNoAccessorBody(node.AccessorList))
+            if (hasAccessors && !RequiresAccessorBody(node.AccessorList))
                 return stmt;
             return SyntaxFactory.PropertyBlock(stmt, SyntaxFactory.List(accessors));
         }
@@ -541,9 +541,9 @@ namespace ICSharpCode.CodeConverter.VB
             return new[] {SyntaxFactory.Token(accessLimitation)};
         }
 
-        private static bool HasNoAccessorBody(CSS.AccessorListSyntax accessorListSyntaxOrNull)
+        private static bool RequiresAccessorBody(CSS.AccessorListSyntax accessorListSyntaxOrNull)
         {
-            return accessorListSyntaxOrNull.Accessors.All(a => a.Body == null && a.ExpressionBody == null && !a.Modifiers.ContainsDeclaredVisibility());
+            return accessorListSyntaxOrNull.Accessors.Any(a => a.Body != null || a.ExpressionBody != null || a.Modifiers.ContainsDeclaredVisibility());
         }
 
         private TokenContext GetMemberContext(CSS.MemberDeclarationSyntax member)
@@ -571,7 +571,7 @@ namespace ICSharpCode.CodeConverter.VB
                 SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)),
                 declaredSymbol == null ? null : CreateImplementsClauseSyntaxOrNull(declaredSymbol)
             );
-            if (HasNoAccessorBody(node.AccessorList))
+            if (!RequiresAccessorBody(node.AccessorList))
                 return stmt;
             var accessors = node.AccessorList?.Accessors.Select(a => _commonConversions.ConvertAccessor(a, out bool unused)).ToArray();
             return SyntaxFactory.EventBlock(stmt, SyntaxFactory.List(accessors));
