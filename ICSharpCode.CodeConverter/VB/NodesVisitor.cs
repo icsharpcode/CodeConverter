@@ -37,6 +37,7 @@ using TypeParameterSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeParame
 using TypeSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax;
 using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using static ICSharpCode.CodeConverter.VB.SyntaxKindExtensions;
+using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 
 namespace ICSharpCode.CodeConverter.VB
 {
@@ -223,7 +224,7 @@ namespace ICSharpCode.CodeConverter.VB
         private IEnumerable<StatementSyntax> ConvertMembers(CSS.TypeDeclarationSyntax node)
         {
             var members= node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor));
-            var newmembers = _commonConversions.InsertRequiredClassDeclarations(SyntaxFactory.List( members), node);
+            var newmembers = _commonConversions.InsertGeneratedClassMemberDeclarations(SyntaxFactory.List(members), node);
             return newmembers;
         }
 
@@ -542,7 +543,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static bool HasNoAccessorBody(CSS.AccessorListSyntax accessorListSyntaxOrNull)
         {
-            return accessorListSyntaxOrNull.Accessors.All(a => a.Body == null && a.ExpressionBody == null  && a.Modifiers.Count==0);
+            return accessorListSyntaxOrNull.Accessors.All(a => a.Body == null && a.ExpressionBody == null && !a.Modifiers.ContainsDeclaredVisibility());
         }
 
         private TokenContext GetMemberContext(CSS.MemberDeclarationSyntax member)

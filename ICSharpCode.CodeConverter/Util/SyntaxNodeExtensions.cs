@@ -1550,5 +1550,10 @@ namespace ICSharpCode.CodeConverter.Util
                 .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind,
                     exception.ToString()));
         }
+
+        public static bool ContainsDeclaredVisibility(this SyntaxTokenList modifiers, bool isVariableOrConst = false, bool isConstructor = false)
+        {
+            return modifiers.Any(m => m.IsCsVisibility(isVariableOrConst, isConstructor));
+        }
     }
 }

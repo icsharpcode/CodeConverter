@@ -91,12 +91,12 @@ namespace ICSharpCode.CodeConverter.VB
 
             return convertedStatements;
         }
-        public SyntaxList<StatementSyntax> InsertRequiredClassDeclarations(
+        public SyntaxList<StatementSyntax> InsertGeneratedClassMemberDeclarations(
             SyntaxList<StatementSyntax> convertedStatements, CSharpSyntaxNode originaNode)
         {
             var descendantNodes = originaNode.DescendantNodes().ToList();
             var propertyBlocks = descendantNodes.OfType<PropertyDeclarationSyntax>()
-                .Where(e => e.AccessorList != null && e.AccessorList.Accessors.Any(a => a.Body == null && a.ExpressionBody == null && a.Modifiers.Count > 0))
+                .Where(e => e.AccessorList != null && e.AccessorList.Accessors.Any(a => a.Body == null && a.ExpressionBody == null && a.Modifiers.ContainsDeclaredVisibility()))
                 .ToList();
             if (propertyBlocks.Any()) {
                 convertedStatements = convertedStatements.Insert(0, ConvertToDeclarationStatement(propertyBlocks));
