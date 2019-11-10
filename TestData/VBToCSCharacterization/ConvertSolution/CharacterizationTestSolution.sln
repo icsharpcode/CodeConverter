@@ -16,6 +16,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmptyVb", "EmptyVb\EmptyVb.csproj", "{913DD733-37BF-05CF-35C5-5BD4A0431C47}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VbNetStandardLib", "VbNetStandardLib\VbNetStandardLib.csproj", "{49DF6752-696A-0F7B-1455-E2F06769DFAE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +40,10 @@ Global
 		{913DD733-37BF-05CF-35C5-5BD4A0431C47}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{913DD733-37BF-05CF-35C5-5BD4A0431C47}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{913DD733-37BF-05CF-35C5-5BD4A0431C47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49DF6752-696A-0F7B-1455-E2F06769DFAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49DF6752-696A-0F7B-1455-E2F06769DFAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49DF6752-696A-0F7B-1455-E2F06769DFAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49DF6752-696A-0F7B-1455-E2F06769DFAE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
