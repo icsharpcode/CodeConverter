@@ -206,7 +206,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds, node.SpanStart);
             if (!preserve) return SingleStatement(newArrayAssignment);
 
-            var oldTargetName = GetUniqueVariableNameInScope(node, "old" + csTargetArrayExpression.ToString().ToPascalCase());
+            var lastIdentifierText = node.Expression.DescendantNodesAndSelf().OfType<VBSyntax.IdentifierNameSyntax>().Last().Identifier.Text;
+            var oldTargetName = GetUniqueVariableNameInScope(node, "old" + lastIdentifierText.ToPascalCase());
             var oldArrayAssignment = CreateLocalVariableDeclarationAndAssignment(oldTargetName, csTargetArrayExpression);
 
             var oldTargetExpression = SyntaxFactory.IdentifierName(oldTargetName);

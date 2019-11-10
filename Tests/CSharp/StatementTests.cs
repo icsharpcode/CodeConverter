@@ -467,9 +467,10 @@ public partial class TestClass
         {
             // One statement turns into two, so can't auto-test comments
             await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Dim test() As List(Of Integer)
+
     Private Sub test123(sender As Object, e As EventArgs)
-        Dim test() As List(Of Integer)
-        ReDim test(42)
+        ReDim Me.test(42)
 
         Dim test1() As Tuple(Of Integer, Integer)
         ReDim test1(42)
@@ -479,9 +480,10 @@ using System.Collections.Generic;
 
 public partial class Class1
 {
+    private List<int>[] test;
+
     private void test123(object sender, EventArgs e)
     {
-        List<int>[] test;
         test = new List<int>[43];
 
         Tuple<int, int>[] test1;
