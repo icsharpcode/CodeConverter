@@ -167,7 +167,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private VariableDeclaratorSyntax ConvertToVariableDeclarator(PropertyDeclarationSyntax des)
         {
-            var id = Identifier( "_" + des.Identifier.Text);
+            var id = GetVbPropertyBackingFieldName(des);
             var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
             TypeSyntax typeSyntax;
             if (des.Type.IsVar) {
@@ -209,7 +209,7 @@ namespace ICSharpCode.CodeConverter.VB
                     stmt = SyntaxFactory.GetAccessorStatement(attributes, modifiers, null);
                     endStmt = SyntaxFactory.EndGetStatement();
                     body = body.Count > 0 ? body :
-                        SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName("_" + ((PropertyDeclarationSyntax)parent).Identifier.Text )));
+                        SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName(GetVbPropertyBackingFieldName(parent))));
                     break;
                 case CSSyntaxKind.SetAccessorDeclaration:
                     blockKind = SyntaxKind.SetAccessorBlock;
@@ -219,7 +219,7 @@ namespace ICSharpCode.CodeConverter.VB
                     stmt = SyntaxFactory.SetAccessorStatement(attributes, modifiers, SyntaxFactory.ParameterList(SyntaxFactory.SingletonSeparatedList(valueParam)));
                     endStmt = SyntaxFactory.EndSetStatement();
                     body = body.Count > 0 ? body :
-                    SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.AssignmentStatement(SyntaxKind.SimpleAssignmentStatement, SyntaxFactory.IdentifierName("_" + ((PropertyDeclarationSyntax)parent).Identifier.Text),SyntaxFactory.Token( VBUtil.GetExpressionOperatorTokenKind( SyntaxKind.SimpleAssignmentStatement)), SyntaxFactory.IdentifierName("value")));
+                    SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.AssignmentStatement(SyntaxKind.SimpleAssignmentStatement, SyntaxFactory.IdentifierName(GetVbPropertyBackingFieldName(parent)), SyntaxFactory.Token( VBUtil.GetExpressionOperatorTokenKind( SyntaxKind.SimpleAssignmentStatement)), SyntaxFactory.IdentifierName("value")));
                     break;
                 case CSSyntaxKind.AddAccessorDeclaration:
                     blockKind = SyntaxKind.AddHandlerAccessorBlock;
@@ -241,6 +241,11 @@ namespace ICSharpCode.CodeConverter.VB
                     throw new NotSupportedException();
             }
             return SyntaxFactory.AccessorBlock(blockKind, stmt, body, endStmt);
+        }
+
+        private static SyntaxToken GetVbPropertyBackingFieldName(BasePropertyDeclarationSyntax parent)
+        {
+            return Identifier("_" + ((PropertyDeclarationSyntax)parent).Identifier.Text);
         }
 
         public ExpressionSyntax ReduceArrayUpperBoundExpression(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax expr)
