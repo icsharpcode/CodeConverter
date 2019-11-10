@@ -6,6 +6,7 @@
     <RootNamespace>CodeConverter.Tests</RootNamespace>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <LangVersion>7.3</LangVersion>
+    <NoWarn>$(NoWarn);1998</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Locator" Version="1.2.2" />

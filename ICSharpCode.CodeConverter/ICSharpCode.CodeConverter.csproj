@@ -24,12 +24,7 @@
     <PackageReleaseNotes>See https://github.com/icsharpcode/CodeConverter/blob/master/CHANGELOG.md </PackageReleaseNotes>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
     <LangVersion>7.3</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DefineConstants>TRACE;RELEASE</DefineConstants>
+    <NoWarn>$(NoWarn);1998</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Shared\DefaultReferences.cs" />
