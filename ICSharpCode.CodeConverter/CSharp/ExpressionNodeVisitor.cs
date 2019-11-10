@@ -22,7 +22,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// To understand the difference between how expressions are expressed, compare:
     /// http://source.roslyn.codeplex.com/#Microsoft.CodeAnalysis.CSharp/Binder/Binder_Expressions.cs,365
     /// http://source.roslyn.codeplex.com/#Microsoft.CodeAnalysis.VisualBasic/Binding/Binder_Expressions.vb,43
-    /// 
+    ///
     /// </summary>
     internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
     {
@@ -36,7 +36,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly AdditionalLocals _additionalLocals;
         private readonly MethodsWithHandles _methodsWithHandles;
         private readonly QueryConverter _queryConverter;
-        private readonly Dictionary<ITypeSymbol, string> _convertMethodsLookupByReturnType;
+        private readonly Lazy<IDictionary<ITypeSymbol, string>> _convertMethodsLookupByReturnType;
         private readonly Compilation _csCompilation;
         private readonly LambdaConverter _lambdaConverter;
 
@@ -52,16 +52,23 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csCompilation = csCompilation;
             _methodsWithHandles = methodsWithHandles;
             _extraUsingDirectives = extraUsingDirectives;
-            _convertMethodsLookupByReturnType = CreateConvertMethodsLookupByReturnType(semanticModel);
+
+            // If this isn't needed, the assembly with Conversions may not be referenced, so this must be done lazily
+            _convertMethodsLookupByReturnType = new Lazy<IDictionary<ITypeSymbol, string>>(() => CreateConvertMethodsLookupByReturnType(semanticModel));
         }
 
         private static Dictionary<ITypeSymbol, string> CreateConvertMethodsLookupByReturnType(SemanticModel semanticModel)
         {
-            var systemDotConvert = ConvertType.FullName;
-            var convertMethods = semanticModel.Compilation.GetTypeByMetadataName(systemDotConvert).GetMembers().Where(m =>
+            // In some projects there's a source declaration as well as the referenced one, which causes the first of these methods to fail
+             var convertType =
+                semanticModel.Compilation.GetTypeByMetadataName(ConvertType.FullName) ??
+                (ITypeSymbol)semanticModel.Compilation
+                    .GetSymbolsWithName(n => n.Equals(ConvertType.Name), SymbolFilter.Type).First(s => s.ContainingNamespace.ToDisplayString().Equals(ConvertType.Namespace));
+
+            var convertMethods = convertType.GetMembers().Where(m =>
                 m.Name.StartsWith("To", StringComparison.Ordinal) && m.GetParameters().Length == 1);
             var methodsByType = convertMethods
-                .GroupBy(m => new { ReturnType = m.GetReturnType(), Name = $"{systemDotConvert}.{m.Name}" })
+                .GroupBy(m => new { ReturnType = m.GetReturnType(), Name = $"{ConvertType.FullName}.{m.Name}" })
                 .ToDictionary(m => m.Key.ReturnType, m => m.Key.Name);
             return methodsByType;
         }
@@ -976,7 +983,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var convertedType = _semanticModel.GetTypeInfo(type).Type;
             _extraUsingDirectives.Add(ConvertType.Namespace);
-            return _convertMethodsLookupByReturnType.TryGetValue(convertedType, out var convertMethodName)
+            return _convertMethodsLookupByReturnType.Value.TryGetValue(convertedType, out var convertMethodName)
                 ? SyntaxFactory.ParseExpression(convertMethodName) : null;
         }
 
