@@ -334,6 +334,51 @@ End Class",
         }
 
         [Fact]
+        public async Task MultilineCommentRootOfFile()
+        {
+            await TestConversionVisualBasicToCSharp(@"''' <summary>
+''' Returns empty
+''' </summary>
+Public Class MyTestClass
+    Private Function MyFunc() As String
+        Return """"
+    End Function
+End Class",
+                @"/// <summary>
+/// Returns empty
+/// </summary>
+public partial class MyTestClass
+{
+    private string MyFunc()
+    {
+        return """";
+    }
+}");
+        }
+
+        [Fact (Skip ="This test currently fails.  The initial line is trimmed. Not sure of importance")]
+        public async Task MultilineCommentRootOfFileLeadingSpaces()
+        {
+            await TestConversionVisualBasicToCSharp(@"    ''' <summary>
+    ''' Returns empty
+    ''' </summary>
+Public Class MyTestClass
+    Private Function MyFunc() As String
+        Return """"
+    End Function
+End Class",
+                @"    /// <summary>
+    /// Returns empty
+    /// </summary>
+public partial class MyTestClass
+{
+    private string MyFunc()
+    {
+        return """";
+    }
+}");
+        }
+        [Fact]
         public async Task EnumConversion()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(@"Enum ESByte As SByte
