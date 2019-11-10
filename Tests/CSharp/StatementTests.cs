@@ -463,6 +463,34 @@ public partial class TestClass
         }
 
         [Fact]
+        public async Task RedimArrayOfGenerics()
+        {
+            // One statement turns into two, so can't auto-test comments
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Private Sub test123(sender As Object, e As EventArgs)
+        Dim test() As List(Of Integer)
+        ReDim test(42)
+
+        Dim test1() As Tuple(Of Integer, Integer)
+        ReDim test1(42)
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+
+public partial class Class1
+{
+    private void test123(object sender, EventArgs e)
+    {
+        List<int>[] test;
+        test = new List<int>[43];
+
+        Tuple<int, int>[] test1;
+        test1 = new Tuple<int, int>[43];
+    }
+}");
+        }
+
+        [Fact]
         public async Task EndStatement()
         {
             await TestConversionVisualBasicToCSharp(@"Class TestClass
