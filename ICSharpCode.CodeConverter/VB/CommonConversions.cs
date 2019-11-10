@@ -383,7 +383,7 @@ namespace ICSharpCode.CodeConverter.VB
         private static IEnumerable<SyntaxToken> ConvertModifiersCore(IReadOnlyCollection<SyntaxToken> modifiers,
             TokenContext context, bool isConstructor)
         {
-            if (context != TokenContext.Local && context != TokenContext.MemberInInterface) {
+            if (context != TokenContext.Local && context != TokenContext.MemberInInterface && context != TokenContext.MemberInProperty) {
                 bool visibility = false;
                 foreach (var token in modifiers) {
                     if (token.IsCsVisibility(true, isConstructor)) { //TODO Don't always treat as variable or const, pass in more context to detect this
@@ -391,7 +391,7 @@ namespace ICSharpCode.CodeConverter.VB
                         break;
                     }
                 }
-                if (!visibility && context != TokenContext.MemberInProperty)
+                if (!visibility)
                     yield return CSharpDefaultVisibility(context);
             }
             foreach (var token in modifiers.Where(m => !IgnoreInContext(m, context))) {
