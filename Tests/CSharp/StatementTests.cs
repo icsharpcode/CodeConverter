@@ -413,7 +413,27 @@ internal partial class TestClass
     private void TestMethod()
     {
         var colFics = new List<int>();
-        var a = new string[colFics.Count - 1 + 1];
+        var a = new string[colFics.Count];
+    }
+}");
+        }
+
+        [Fact]
+        public async Task InitializeArrayOfArrays()
+        {
+            await TestConversionVisualBasicToCSharp(@"Module Module1
+    Sub Main()
+        Dim ls As New ArrayList(5)
+        Dim s(ls.Count - 1)() As String
+    End Sub
+End Module", @"using System.Collections;
+
+internal static partial class Module1
+{
+    public static void Main()
+    {
+        var ls = new ArrayList(5);
+        var s = new string[ls.Count][];
     }
 }");
         }
@@ -1516,7 +1536,7 @@ internal partial class GotoTest1
         int x = 200;
         int y = 4;
         int count = 0;
-        var array = new string[x - 1 + 1, y - 1 + 1];
+        var array = new string[x, y];
 
         for (int i = 0, loopTo = x - 1; i <= loopTo; i++)
         {

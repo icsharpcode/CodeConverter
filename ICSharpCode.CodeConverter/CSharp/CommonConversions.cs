@@ -194,7 +194,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (rankSpecifiers.Count > 0)
             {
                 var rankSpecifiersWithSizes = await ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds);
-                if (!rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).OfType<OmittedArraySizeExpressionSyntax>().Any())
+                if (rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).Any(e => !e.IsKind(CSSyntaxKind.OmittedArraySizeExpression)))
                 {
                     var arrayTypeSyntax = (ArrayTypeSyntax) GetTypeSyntax(typeSymbol);
                     arrayTypeSyntax = arrayTypeSyntax.WithRankSpecifiers(rankSpecifiersWithSizes);
@@ -520,13 +520,21 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<ExpressionSyntax> IncreaseArrayUpperBoundExpression(VBSyntax.ExpressionSyntax expr)
         {
-            var constant = _semanticModel.GetConstantValue(expr);
+            var op = _semanticModel.GetOperation(expr);
+            var constant = op.ConstantValue;
             if (constant.HasValue && constant.Value is int)
                 return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((int)constant.Value + 1));
 
+            var convertedExpression = (ExpressionSyntax)await expr.AcceptAsync(TriviaConvertingExpressionVisitor);
+
+            if (op is IBinaryOperation bOp && bOp.OperatorKind == BinaryOperatorKind.Subtract &&
+                bOp.RightOperand.ConstantValue.HasValue && bOp.RightOperand.ConstantValue.Value is int subtractedVal && subtractedVal == 1
+                && convertedExpression is CSSyntax.BinaryExpressionSyntax bExp && bExp.IsKind(CSSyntaxKind.SubtractExpression))
+                return bExp.Left;
+
             return SyntaxFactory.BinaryExpression(
                 CSSyntaxKind.SubtractExpression,
-                (ExpressionSyntax) await expr.AcceptAsync(TriviaConvertingExpressionVisitor), SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+                convertedExpression, SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
         }
 
         public static AttributeArgumentListSyntax CreateAttributeArgumentList(params AttributeArgumentSyntax[] attributeArgumentSyntaxs)
