@@ -91,6 +91,7 @@ namespace ICSharpCode.CodeConverter.VB
 
             return convertedStatements;
         }
+
         public SyntaxList<StatementSyntax> InsertGeneratedClassMemberDeclarations(
             SyntaxList<StatementSyntax> convertedStatements, CSharpSyntaxNode originaNode)
         {
@@ -104,6 +105,7 @@ namespace ICSharpCode.CodeConverter.VB
 
             return convertedStatements;
         }
+
         private StatementSyntax ConvertToDeclarationStatement(List<DeclarationExpressionSyntax> des,
             List<IsPatternExpressionSyntax> isPatternExpressions)
         {
@@ -111,6 +113,7 @@ namespace ICSharpCode.CodeConverter.VB
                 .Concat(isPatternExpressions.Select(ConvertToVariableDeclarator));
             return CreateLocalDeclarationStatement(variableDeclaratorSyntaxs.ToArray());
         }
+
         private StatementSyntax ConvertToDeclarationStatement(List<PropertyDeclarationSyntax> propertyBlocks)
         {
             IEnumerable<VariableDeclaratorSyntax> variableDeclaratorSyntaxs = propertyBlocks.Select(ConvertToVariableDeclarator);
@@ -129,6 +132,7 @@ namespace ICSharpCode.CodeConverter.VB
             var declarators = SyntaxFactory.SeparatedList(DimVariableDeclarators);
             return SyntaxFactory.LocalDeclarationStatement(syntaxTokenList, declarators);
         }
+
         private VariableDeclaratorSyntax ConvertToVariableDeclarator(DeclarationExpressionSyntax des)
         {
             var id = ((IdentifierNameSyntax)des.Accept(_nodesVisitor)).Identifier;
@@ -145,6 +149,7 @@ namespace ICSharpCode.CodeConverter.VB
             var equalsValueSyntax = SyntaxFactory.EqualsValue(SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression, SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
             return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
         }
+
         private VariableDeclaratorSyntax ConvertToVariableDeclarator(IsPatternExpressionSyntax node)
         {
             return node.Pattern.TypeSwitch(
@@ -173,7 +178,7 @@ namespace ICSharpCode.CodeConverter.VB
             }
 
             var simpleAsClauseSyntax = typeSyntax != null ? SyntaxFactory.SimpleAsClause(typeSyntax) : null; //Gracefully degrade when no type information available
-            EqualsValueSyntax equalsValueSyntax = null; 
+            EqualsValueSyntax equalsValueSyntax = null;
             return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
         }
 
@@ -203,7 +208,7 @@ namespace ICSharpCode.CodeConverter.VB
                     blockKind = SyntaxKind.GetAccessorBlock;
                     stmt = SyntaxFactory.GetAccessorStatement(attributes, modifiers, null);
                     endStmt = SyntaxFactory.EndGetStatement();
-                    body = body.Count >0 ? body :
+                    body = body.Count > 0 ? body :
                         SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName("_" + ((PropertyDeclarationSyntax)parent).Identifier.Text )));
                     break;
                 case CSSyntaxKind.SetAccessorDeclaration:
@@ -213,7 +218,7 @@ namespace ICSharpCode.CodeConverter.VB
                         .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword)));
                     stmt = SyntaxFactory.SetAccessorStatement(attributes, modifiers, SyntaxFactory.ParameterList(SyntaxFactory.SingletonSeparatedList(valueParam)));
                     endStmt = SyntaxFactory.EndSetStatement();
-                    body = body.Count>0 ? body :
+                    body = body.Count > 0 ? body :
                     SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.AssignmentStatement(SyntaxKind.SimpleAssignmentStatement, SyntaxFactory.IdentifierName("_" + ((PropertyDeclarationSyntax)parent).Identifier.Text),SyntaxFactory.Token( VBUtil.GetExpressionOperatorTokenKind( SyntaxKind.SimpleAssignmentStatement)), SyntaxFactory.IdentifierName("value")));
                     break;
                 case CSSyntaxKind.AddAccessorDeclaration:

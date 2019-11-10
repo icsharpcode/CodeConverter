@@ -219,7 +219,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         /// <summary>
         /// create a new root node from the given root after adding annotations to the tokens
-        /// 
+        ///
         /// tokens should belong to the given root
         /// </summary>
         public static SyntaxNode AddAnnotations(this SyntaxNode root, IEnumerable<Tuple<SyntaxToken, SyntaxAnnotation>> pairs)
@@ -233,7 +233,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         /// <summary>
         /// create a new root node from the given root after adding annotations to the nodes
-        /// 
+        ///
         /// nodes should belong to the given root
         /// </summary>
         public static SyntaxNode AddAnnotations(this SyntaxNode root, IEnumerable<Tuple<SyntaxNode, SyntaxAnnotation>> pairs)
@@ -1546,7 +1546,7 @@ namespace ICSharpCode.CodeConverter.Util
             var errorDescription = problematicSourceNode.DescribeConversionError(exception);
             var commentedText = "''' " + errorDescription.Replace("\r\n", "\r\n''' ");
             return dummyDestNode
-                .WithTrailingTrivia(Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.CommentTrivia(commentedText))
+                .WithTrailingTrivia(VBSyntaxFactory.CommentTrivia(commentedText))
                 .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind,
                     exception.ToString()));
         }

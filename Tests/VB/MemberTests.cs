@@ -30,6 +30,7 @@ namespace CodeConverter.Tests.VB
     End Property
 End Class");
         }
+
         [Fact]
         public async Task TestField()
         {

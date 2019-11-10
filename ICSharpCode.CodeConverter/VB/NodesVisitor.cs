@@ -223,7 +223,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private IEnumerable<StatementSyntax> ConvertMembers(CSS.TypeDeclarationSyntax node)
         {
-            var members= node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor));
+            var members = node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor));
             var newmembers = _commonConversions.InsertGeneratedClassMemberDeclarations(SyntaxFactory.List(members), node);
             return newmembers;
         }
