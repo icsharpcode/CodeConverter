@@ -8,9 +8,10 @@ All notable changes to the code converter will be documented here.
 
 ### VB -> C#
 * Convert implicit object->string cast correctly (#365)
+* Convert trivia (e.g. comments) at start of file (#333)
 
 ### C# -> VB
-
+* Convert property accessors with visiblity modifiers (#92)
 
 # 7.2.0 13/10/2019
 * Parallelize multi-file conversion
