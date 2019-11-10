@@ -206,7 +206,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds, node.SpanStart);
             if (!preserve) return SingleStatement(newArrayAssignment);
 
-            var oldTargetName = GetUniqueVariableNameInScope(node, "old" + csTargetArrayExpression.ToString().ToPascalCase());
+            var lastIdentifierText = node.Expression.DescendantNodesAndSelf().OfType<VBSyntax.IdentifierNameSyntax>().Last().Identifier.Text;
+            var oldTargetName = GetUniqueVariableNameInScope(node, "old" + lastIdentifierText.ToPascalCase());
             var oldArrayAssignment = CreateLocalVariableDeclarationAndAssignment(oldTargetName, csTargetArrayExpression);
 
             var oldTargetExpression = SyntaxFactory.IdentifierName(oldTargetName);
@@ -308,7 +309,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(convertedBounds));
             var convertedType = (IArrayTypeSymbol) _semanticModel.GetTypeInfo(vbArrayExpression).ConvertedType;
-            var typeSyntax = GetTypeSyntaxFromTypeSymbol(convertedType.ElementType, nodeSpanStart);
+            var typeSyntax = CommonConversions.GetTypeSyntax(convertedType.ElementType);
             var arrayCreation =
                 SyntaxFactory.ArrayCreationExpression(SyntaxFactory.ArrayType(typeSyntax,
                     SyntaxFactory.SingletonList(arrayRankSpecifierSyntax)));
@@ -316,13 +317,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, csArrayExpression, arrayCreation);
             var newArrayAssignment = SyntaxFactory.ExpressionStatement(assignmentExpressionSyntax);
             return newArrayAssignment;
-        }
-
-        private TypeSyntax GetTypeSyntaxFromTypeSymbol(ITypeSymbol convertedType, int nodeSpanStart)
-        {
-            var predefinedKeywordKind = convertedType.SpecialType.GetPredefinedKeywordKind();
-            if (predefinedKeywordKind != SyntaxKind.None) return SyntaxFactory.PredefinedType(SyntaxFactory.Token(predefinedKeywordKind));
-            return SyntaxFactory.ParseTypeName(convertedType.ToMinimalCSharpDisplayString(_semanticModel, nodeSpanStart));
         }
 
         public override async Task<SyntaxList<StatementSyntax>> VisitThrowStatement(VBSyntax.ThrowStatementSyntax node)

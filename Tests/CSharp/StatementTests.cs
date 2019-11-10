@@ -413,7 +413,27 @@ internal partial class TestClass
     private void TestMethod()
     {
         var colFics = new List<int>();
-        var a = new string[colFics.Count - 1 + 1];
+        var a = new string[colFics.Count];
+    }
+}");
+        }
+
+        [Fact]
+        public async Task InitializeArrayOfArrays()
+        {
+            await TestConversionVisualBasicToCSharp(@"Module Module1
+    Sub Main()
+        Dim ls As New ArrayList(5)
+        Dim s(ls.Count - 1)() As String
+    End Sub
+End Module", @"using System.Collections;
+
+internal static partial class Module1
+{
+    public static void Main()
+    {
+        var ls = new ArrayList(5);
+        var s = new string[ls.Count][];
     }
 }");
         }
@@ -458,6 +478,36 @@ public partial class TestClass
             for (var i = 0; i <= oldY.Length / oldY.GetLength(1) - 1; ++i)
                 Array.Copy(oldY, i * oldY.GetLength(1), y, i * y.GetLength(1), Math.Min(oldY.GetLength(1), y.GetLength(1)));
         return numArray2;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task RedimArrayOfGenerics()
+        {
+            // One statement turns into two, so can't auto-test comments
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Dim test() As List(Of Integer)
+
+    Private Sub test123(sender As Object, e As EventArgs)
+        ReDim Me.test(42)
+
+        Dim test1() As Tuple(Of Integer, Integer)
+        ReDim test1(42)
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+
+public partial class Class1
+{
+    private List<int>[] test;
+
+    private void test123(object sender, EventArgs e)
+    {
+        test = new List<int>[43];
+
+        Tuple<int, int>[] test1;
+        test1 = new Tuple<int, int>[43];
     }
 }");
         }
@@ -1486,7 +1536,7 @@ internal partial class GotoTest1
         int x = 200;
         int y = 4;
         int count = 0;
-        var array = new string[x - 1 + 1, y - 1 + 1];
+        var array = new string[x, y];
 
         for (int i = 0, loopTo = x - 1; i <= loopTo; i++)
         {

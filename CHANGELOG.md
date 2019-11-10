@@ -9,6 +9,8 @@ All notable changes to the code converter will be documented here.
 ### VB -> C#
 * Convert implicit object->string cast correctly (#365)
 * Convert trivia (e.g. comments) at start of file (#333)
+* Improvements to redim conversion (#403, #393)
+* Convert array of arrays initializer (#364)
 
 ### C# -> VB
 * Convert property accessors with visiblity modifiers (#92)
