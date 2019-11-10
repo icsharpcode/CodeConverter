@@ -983,7 +983,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var convertedType = _semanticModel.GetTypeInfo(type).Type;
             _extraUsingDirectives.Add(ConvertType.Namespace);
-            return _convertMethodsLookupByReturnType.Value.TryGetValue(convertedType, out var convertMethodName)
+            return convertedType != null && _convertMethodsLookupByReturnType.Value.TryGetValue(convertedType, out var convertMethodName)
                 ? SyntaxFactory.ParseExpression(convertMethodName) : null;
         }
 
