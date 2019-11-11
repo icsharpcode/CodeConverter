@@ -553,7 +553,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             var exprWithoutTrivia = expr.WithoutTrivia().WithoutAnnotations();
             var usedConstantValues = new HashSet<object>();
             var sections = new List<SwitchSectionSyntax>();
-            var cases = new List<String>();
             foreach (var block in node.CaseBlocks) {
                 var labels = new List<SwitchLabelSyntax>();
                 foreach (var c in block.CaseStatement.Cases) {
