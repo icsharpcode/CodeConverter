@@ -136,6 +136,33 @@ End Class", @"internal partial class TestClass
         }
 
         [Fact]
+        public async Task DictionaryIndexingIssue362()
+        {
+            await TestConversionVisualBasicToCSharp(@"Imports System
+Imports System.Collections.Generic
+Imports System.Linq
+
+Module Module1
+    Dim Dict As New Dictionary(Of Integer, String)
+
+    Sub Main()
+        Dim x = Dict.Values(0).Length
+    End Sub
+End Module", @"using System.Collections.Generic;
+using System.Linq;
+
+internal static partial class Module1
+{
+    private static Dictionary<int, string> Dict = new Dictionary<int, string>();
+
+    public static void Main()
+    {
+        int x = Dict.Values.ElementAtOrDefault(0).Length;
+    }
+}");
+        }
+
+        [Fact]
         public async Task DateLiterals()
         {
             await TestConversionVisualBasicToCSharp(@"Class TestClass
