@@ -1550,10 +1550,10 @@ namespace ICSharpCode.CodeConverter.Util
             CSharpSyntaxNode convertedNode
             ) where T : CSharpSyntaxNode
         {
-            var errorDirective = SyntaxFactory.ParseTrailingTrivia($"#warning {warning}{Environment.NewLine}");
-            var errorDescription = convertedNode.DescribeConversionWarning(addtlInfo);
-            var commentedText = "/* " + errorDescription + " */";
-            var trailingTrivia = SyntaxFactory.TriviaList(errorDirective.Concat(SyntaxFactory.Comment(commentedText)));
+            var warningDirective = SyntaxFactory.ParseTrailingTrivia($"#warning {warning}{Environment.NewLine}");
+            var warningDescription = convertedNode.DescribeConversionWarning(addtlInfo);
+            var commentedText = "/* " + warningDescription + " */";
+            var trailingTrivia = SyntaxFactory.TriviaList(warningDirective.Concat(SyntaxFactory.Comment(commentedText)));
 
             return dummyDestNode
                 .WithTrailingTrivia(trailingTrivia);
