@@ -16,6 +16,7 @@ All notable changes to the code converter will be documented here.
 * Convert implicit `ElementAtOrDefault` (#362)
 * Convert types in ternary expressions (#363)
 * Support for converting dot net standard VB projects (#398)
+* Avoid compilation error for duplicate cases (#374)
 
 ### C# -> VB
 * Convert property accessors with visiblity modifiers (#92)
