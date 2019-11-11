@@ -43,7 +43,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private uint _failedMemberConversionMarkerCount;
         private readonly HashSet<string> _extraUsingDirectives = new HashSet<string>();
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
-        private static HashSet<string> _accessedThroughMyClass;
+        private HashSet<string> _accessedThroughMyClass;
         public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
         private readonly CommentConvertingVisitorWrapper<CSharpSyntaxNode> _triviaConvertingExpressionVisitor;
         private readonly ExpressionNodeVisitor _expressionNodeVisitor;
@@ -837,7 +837,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.Block(await statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor)));
         }
 
-        private static bool IsAccessedThroughMyClass(SyntaxNode node, SyntaxToken identifier, ISymbol symbolOrNull)
+        private bool IsAccessedThroughMyClass(SyntaxNode node, SyntaxToken identifier, ISymbol symbolOrNull)
         {
             bool accessedThroughMyClass = false;
             if (symbolOrNull != null && symbolOrNull.IsVirtual && !symbolOrNull.IsAbstract) {
