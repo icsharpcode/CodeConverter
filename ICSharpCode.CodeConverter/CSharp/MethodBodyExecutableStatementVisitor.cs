@@ -564,11 +564,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                              typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.Identity)) {
                             caseSwitchLabelSyntax =
                                 WrapInCasePatternSwitchLabelSyntax(node, expressionSyntax);
-                            if (isRepeatedConstantValue) {
-                                caseSwitchLabelSyntax = caseSwitchLabelSyntax.WithLeadingTrivia(
-                                    SyntaxFactory.ParseLeadingTrivia(
-                                        $"#warning This case was not executable prior to code conversion, but is preserved here in case it helps troubleshoot a bug{Environment.NewLine}"));
-                            }
                         }
                         labels.Add(caseSwitchLabelSyntax);
                     } else if (c is VBSyntax.ElseCaseClauseSyntax) {
