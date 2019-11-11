@@ -1257,7 +1257,7 @@ namespace Microsoft.VisualBasic
         }
 #error Cannot convert FieldDeclarationSyntax - see comment for details
         /* Cannot convert FieldDeclarationSyntax, System.NullReferenceException: Object reference not set to an instance of an object.
-           at ICSharpCode.CodeConverter.CSharp.ExpressionNodeVisitor.<VisitBinaryExpression>d__62.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\ExpressionNodeVisitor.cs:line 565
+           at ICSharpCode.CodeConverter.CSharp.ExpressionNodeVisitor.<VisitBinaryExpression>d__62.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\ExpressionNodeVisitor.cs:line 570
         --- End of stack trace from previous location where exception was thrown ---
            at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
            at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
@@ -1294,7 +1294,7 @@ namespace Microsoft.VisualBasic
            at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
            at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<ConvertMember>d__35.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 204
 
-        Input: 
+        Input:
                 Public Const vbCrLf As String = ChrW(13) & ChrW(10)
 
          */
@@ -1303,7 +1303,7 @@ namespace Microsoft.VisualBasic
         }
 #error Cannot convert FieldDeclarationSyntax - see comment for details
         /* Cannot convert FieldDeclarationSyntax, System.NullReferenceException: Object reference not set to an instance of an object.
-           at ICSharpCode.CodeConverter.CSharp.ExpressionNodeVisitor.<VisitBinaryExpression>d__62.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\ExpressionNodeVisitor.cs:line 565
+           at ICSharpCode.CodeConverter.CSharp.ExpressionNodeVisitor.<VisitBinaryExpression>d__62.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\ExpressionNodeVisitor.cs:line 570
         --- End of stack trace from previous location where exception was thrown ---
            at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
            at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
@@ -1340,7 +1340,7 @@ namespace Microsoft.VisualBasic
            at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
            at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<ConvertMember>d__35.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 204
 
-        Input: 
+        Input:
                 Public Const vbNewLine As String = ChrW(13) & ChrW(10)
 
          */

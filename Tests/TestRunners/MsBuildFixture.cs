@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -55,9 +56,19 @@ namespace CodeConverter.Tests.TestRunners
 
         private async Task<Solution> GetSolutionAsync(string solutionFile)
         {
+            await RestorePackagesForSolution(solutionFile);
             var solution = await _msBuildWorkspace.Value.OpenSolutionAsync(solutionFile);
             await AssertMSBuildIsWorkingAndProjectsValid(_msBuildWorkspace.Value.Diagnostics, solution.Projects);
             return solution;
+        }
+
+        private static async Task RestorePackagesForSolution(string solutionFile)
+        {
+            var psi = new ProcessStartInfo("dotnet", $"restore \"{solutionFile}\""){UseShellExecute = false, RedirectStandardError =  true, RedirectStandardOutput = true};
+            Process dotnetRestore = Process.Start(psi);
+            Assert.NotNull(dotnetRestore);
+            await dotnetRestore.WaitForExitAsync();
+            if (dotnetRestore.ExitCode != 0) Assert.True(false, dotnetRestore.StandardOutput.ReadToEnd() + " " + dotnetRestore.StandardError.ReadToEnd());
         }
 
         public void Dispose()
