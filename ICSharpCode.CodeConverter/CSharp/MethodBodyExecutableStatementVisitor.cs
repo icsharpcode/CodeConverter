@@ -616,7 +616,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<SyntaxList<StatementSyntax>> VisitWithBlock(VBSyntax.WithBlockSyntax node)
         {
             var withExpression = (ExpressionSyntax) await node.WithStatement.Expression.AcceptAsync(_expressionVisitor);
-            var generateVariableName = !_semanticModel.GetTypeInfo(node.WithStatement.Expression).Type.IsValueType;
+            var generateVariableName = _semanticModel.GetTypeInfo(node.WithStatement.Expression).Type?.IsValueType != true;
 
             ExpressionSyntax lhsExpression;
             List<StatementSyntax> prefixDeclarations = new List<StatementSyntax>();

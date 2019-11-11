@@ -645,130 +645,42 @@ namespace Microsoft.VisualBasic
             private static System.Globalization.NumberFormatInfo GetNormalizedNumberFormat(System.Globalization.NumberFormatInfo InNumberFormat)
             {
                 var OutNumberFormat = default(var);
-                ;
-#error Cannot convert WithBlockSyntax - see comment for details
-                /* Cannot convert WithBlockSyntax, System.NullReferenceException: Object reference not set to an instance of an object.
-                   at ICSharpCode.CodeConverter.CSharp.MethodBodyExecutableStatementVisitor.<VisitWithBlock>d__57.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\MethodBodyExecutableStatementVisitor.cs:line 615
-                --- End of stack trace from previous location where exception was thrown ---
-                   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-                   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-                   at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-                   at ICSharpCode.CodeConverter.CSharp.ByRefParameterVisitor.<CreateLocals>d__7.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\ByRefParameterVisitor.cs:line 53
-                --- End of stack trace from previous location where exception was thrown ---
-                   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-                   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-                   at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-                   at ICSharpCode.CodeConverter.CSharp.ByRefParameterVisitor.<AddLocalVariables>d__6.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\ByRefParameterVisitor.cs:line 43
-                --- End of stack trace from previous location where exception was thrown ---
-                   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-                   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-                   at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-                   at ICSharpCode.CodeConverter.CSharp.CommentConvertingMethodBodyVisitor.<ConvertWithTrivia>d__4.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommentConvertingMethodBodyVisitor.cs:line 39
-                --- End of stack trace from previous location where exception was thrown ---
-                   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-                   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-                   at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-                   at ICSharpCode.CodeConverter.CSharp.CommentConvertingMethodBodyVisitor.<DefaultVisit>d__3.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommentConvertingMethodBodyVisitor.cs:line 29
+                {
+                    var withBlock = InNumberFormat;
+                    if (!(withBlock.CurrencyDecimalSeparator == null) && !(withBlock.NumberDecimalSeparator == null) && !(withBlock.CurrencyGroupSeparator == null) && !(withBlock.NumberGroupSeparator == null) && withBlock.CurrencyDecimalSeparator.Length == 1 && withBlock.NumberDecimalSeparator.Length == 1 && withBlock.CurrencyGroupSeparator.Length == 1 && withBlock.NumberGroupSeparator.Length == 1 && withBlock.CurrencyDecimalSeparator.Chars(0) == withBlock.NumberDecimalSeparator.Chars(0) && withBlock.CurrencyGroupSeparator.Chars(0) == withBlock.NumberGroupSeparator.Chars(0) && withBlock.CurrencyDecimalDigits == withBlock.NumberDecimalDigits)
+                        return InNumberFormat;
+                }
+                {
+                    var withBlock1 = InNumberFormat;
+                    if (!(withBlock1.CurrencyDecimalSeparator == null) && !(withBlock1.NumberDecimalSeparator == null) && withBlock1.CurrencyDecimalSeparator.Length == withBlock1.NumberDecimalSeparator.Length && !(withBlock1.CurrencyGroupSeparator == null) && !(withBlock1.NumberGroupSeparator == null) && withBlock1.CurrencyGroupSeparator.Length == withBlock1.NumberGroupSeparator.Length)
+                    {
+                        var i = default(var);
+                        var loopTo = withBlock1.CurrencyDecimalSeparator.Length - 1;
+                        for (i = 0; i <= loopTo; i++)
+                        {
+                            if (withBlock1.CurrencyDecimalSeparator.Chars(i) != withBlock1.NumberDecimalSeparator.Chars(i))
+                                goto MisMatch;
+                        }
 
-                Input: 
-                                With InNumberFormat
-                                    If (Not .CurrencyDecimalSeparator Is Nothing) AndAlso
-                                    (Not .NumberDecimalSeparator Is Nothing) AndAlso
-                                    (Not .CurrencyGroupSeparator Is Nothing) AndAlso
-                                    (Not .NumberGroupSeparator Is Nothing) AndAlso
-                                    (.CurrencyDecimalSeparator.Length = 1) AndAlso
-                                    (.NumberDecimalSeparator.Length = 1) AndAlso
-                                    (.CurrencyGroupSeparator.Length = 1) AndAlso
-                                    (.NumberGroupSeparator.Length = 1) AndAlso
-                                    (.CurrencyDecimalSeparator.Chars(0) = .NumberDecimalSeparator.Chars(0)) AndAlso
-                                    (.CurrencyGroupSeparator.Chars(0) = .NumberGroupSeparator.Chars(0)) AndAlso
-                                    (.CurrencyDecimalDigits = .NumberDecimalDigits) Then
-                                        Return InNumberFormat
-                                    End If
-                                End With
+                        var loopTo1 = withBlock1.CurrencyGroupSeparator.Length - 1;
+                        for (i = 0; i <= loopTo1; i++)
+                        {
+                            if (withBlock1.CurrencyGroupSeparator.Chars(i) != withBlock1.NumberGroupSeparator.Chars(i))
+                                goto MisMatch;
+                        }
+                        return InNumberFormat;
+                    }
+                }
 
-                 */
-                ;
-#error Cannot convert WithBlockSyntax - see comment for details
-            /* Cannot convert WithBlockSyntax, System.NullReferenceException: Object reference not set to an instance of an object.
-               at ICSharpCode.CodeConverter.CSharp.MethodBodyExecutableStatementVisitor.<VisitWithBlock>d__57.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\MethodBodyExecutableStatementVisitor.cs:line 615
-            --- End of stack trace from previous location where exception was thrown ---
-               at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-               at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-               at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-               at ICSharpCode.CodeConverter.CSharp.ByRefParameterVisitor.<CreateLocals>d__7.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\ByRefParameterVisitor.cs:line 53
-            --- End of stack trace from previous location where exception was thrown ---
-               at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-               at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-               at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-               at ICSharpCode.CodeConverter.CSharp.ByRefParameterVisitor.<AddLocalVariables>d__6.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\ByRefParameterVisitor.cs:line 43
-            --- End of stack trace from previous location where exception was thrown ---
-               at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-               at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-               at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-               at ICSharpCode.CodeConverter.CSharp.CommentConvertingMethodBodyVisitor.<ConvertWithTrivia>d__4.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommentConvertingMethodBodyVisitor.cs:line 39
-            --- End of stack trace from previous location where exception was thrown ---
-               at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-               at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-               at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-               at ICSharpCode.CodeConverter.CSharp.CommentConvertingMethodBodyVisitor.<DefaultVisit>d__3.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommentConvertingMethodBodyVisitor.cs:line 29
-
-            Input: 
-                            With InNumberFormat
-                                If (Not .CurrencyDecimalSeparator Is Nothing) AndAlso
-                                (Not .NumberDecimalSeparator Is Nothing) AndAlso
-                                (.CurrencyDecimalSeparator.Length = .NumberDecimalSeparator.Length) AndAlso
-                                (Not .CurrencyGroupSeparator Is Nothing) AndAlso
-                                (Not .NumberGroupSeparator Is Nothing) AndAlso
-                                (.CurrencyGroupSeparator.Length = .NumberGroupSeparator.Length) Then
-                                    Dim i As Integer
-                                    For i = 0 To .CurrencyDecimalSeparator.Length - 1
-                                        If (.CurrencyDecimalSeparator.Chars(i) <> .NumberDecimalSeparator.Chars(i)) Then GoTo MisMatch
-                                    Next
-                                    For i = 0 To .CurrencyGroupSeparator.Length - 1
-                                        If (.CurrencyGroupSeparator.Chars(i) <> .NumberGroupSeparator.Chars(i)) Then GoTo MisMatch
-                                    Next
-                                    Return InNumberFormat
-                                End If
-                            End With
-
-             */
             MisMatch:
                 ;
                 OutNumberFormat = (System.Globalization.NumberFormatInfo)InNumberFormat.Clone;
-                ;
-#error Cannot convert WithBlockSyntax - see comment for details
-                /* Cannot convert WithBlockSyntax, System.NullReferenceException: Object reference not set to an instance of an object.
-                   at ICSharpCode.CodeConverter.CSharp.MethodBodyExecutableStatementVisitor.<VisitWithBlock>d__57.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\MethodBodyExecutableStatementVisitor.cs:line 615
-                --- End of stack trace from previous location where exception was thrown ---
-                   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-                   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-                   at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-                   at ICSharpCode.CodeConverter.CSharp.ByRefParameterVisitor.<CreateLocals>d__7.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\ByRefParameterVisitor.cs:line 53
-                --- End of stack trace from previous location where exception was thrown ---
-                   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-                   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-                   at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-                   at ICSharpCode.CodeConverter.CSharp.ByRefParameterVisitor.<AddLocalVariables>d__6.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\ByRefParameterVisitor.cs:line 43
-                --- End of stack trace from previous location where exception was thrown ---
-                   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-                   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-                   at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-                   at ICSharpCode.CodeConverter.CSharp.CommentConvertingMethodBodyVisitor.<ConvertWithTrivia>d__4.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommentConvertingMethodBodyVisitor.cs:line 39
-                --- End of stack trace from previous location where exception was thrown ---
-                   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-                   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-                   at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-                   at ICSharpCode.CodeConverter.CSharp.CommentConvertingMethodBodyVisitor.<DefaultVisit>d__3.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommentConvertingMethodBodyVisitor.cs:line 29
-
-                Input: 
-                                With OutNumberFormat
-                                    .CurrencyDecimalSeparator = .NumberDecimalSeparator
-                                    .CurrencyGroupSeparator = .NumberGroupSeparator
-                                    .CurrencyDecimalDigits = .NumberDecimalDigits
-                                End With
-
-                 */
+                {
+                    var withBlock2 = OutNumberFormat;
+                    withBlock2.CurrencyDecimalSeparator = withBlock2.NumberDecimalSeparator;
+                    withBlock2.CurrencyGroupSeparator = withBlock2.NumberGroupSeparator;
+                    withBlock2.CurrencyDecimalDigits = withBlock2.NumberDecimalDigits;
+                }
                 return OutNumberFormat;
             }
             public static float ToSingle(string Value)
