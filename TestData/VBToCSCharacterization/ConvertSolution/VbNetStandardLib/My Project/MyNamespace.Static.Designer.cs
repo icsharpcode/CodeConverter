@@ -39,17 +39,17 @@ namespace Microsoft.VisualBasic
                     return 0;
                 if (Left == null)
                 {
-                    if (Right.Length() == 0)
+                    if (Right.Length == 0)
                         return 0;
                     return -1;
                 }
                 if (Right == null)
                 {
-                    if (Left.Length() == 0)
+                    if (Left.Length == 0)
                         return 0;
                     return 1;
                 }
-                var Result = default(var);
+                int Result;
                 if (TextCompare)
                 {
                     var OptionCompareTextFlags = System.Globalization.CompareOptions.IgnoreCase | System.Globalization.CompareOptions.IgnoreWidth | System.Globalization.CompareOptions.IgnoreKanaType;
@@ -107,10 +107,10 @@ namespace Microsoft.VisualBasic
                         return false;
                     else if (loc.CompareInfo.Compare(Value, bool.TrueString, System.Globalization.CompareOptions.IgnoreCase) == 0)
                         return true;
-                    var i64Value = default(var);
-                    if (IsHexOrOctValue(Value, i64Value))
-                        return (bool)i64Value;
-                    return (bool)ParseDouble(Value);
+                    var i64Value = default(long);
+                    if (IsHexOrOctValue(Value, ref i64Value))
+                        return ToBoolean(i64Value);
+                    return ToBoolean(ParseDouble(Value));
                 }
                 catch (FormatException e)
                 {
@@ -124,31 +124,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return (bool)Value;
+                    return ToBoolean((bool)Value);
                 else if (Value is sbyte)
-                    return (bool)(sbyte)Value;
+                    return ToBoolean((sbyte)Value);
                 else if (Value is byte)
-                    return (bool)(byte)Value;
+                    return ToBoolean((byte)Value);
                 else if (Value is short)
-                    return (bool)(short)Value;
+                    return ToBoolean((short)Value);
                 else if (Value is ushort)
-                    return (bool)(ushort)Value;
+                    return ToBoolean((ushort)Value);
                 else if (Value is int)
-                    return (bool)(int)Value;
+                    return ToBoolean((int)Value);
                 else if (Value is uint)
-                    return (bool)(uint)Value;
+                    return ToBoolean((uint)Value);
                 else if (Value is long)
-                    return (bool)(long)Value;
+                    return ToBoolean((long)Value);
                 else if (Value is ulong)
-                    return (bool)(ulong)Value;
+                    return ToBoolean((ulong)Value);
                 else if (Value is decimal)
-                    return (bool)(decimal)Value;
+                    return ToBoolean((decimal)Value);
                 else if (Value is float)
-                    return (bool)(float)Value;
+                    return ToBoolean((float)Value);
                 else if (Value is double)
-                    return (bool)(double)Value;
+                    return ToBoolean((double)Value);
                 else if (Value is string)
-                    return (bool)(string)Value;
+                    return ToBoolean((string)Value);
                 throw new InvalidCastException();
             }
             public static byte ToByte(string Value)
@@ -157,10 +157,10 @@ namespace Microsoft.VisualBasic
                     return 0;
                 try
                 {
-                    var i64Value = default(var);
-                    if (IsHexOrOctValue(Value, i64Value))
-                        return (byte)i64Value;
-                    return (byte)ParseDouble(Value);
+                    var i64Value = default(long);
+                    if (IsHexOrOctValue(Value, ref i64Value))
+                        return ToByte(i64Value);
+                    return ToByte(ParseDouble(Value));
                 }
                 catch (FormatException e)
                 {
@@ -174,31 +174,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return (byte)(bool)Value;
+                    return ToByte((bool)Value);
                 else if (Value is sbyte)
-                    return (byte)(sbyte)Value;
+                    return ToByte((sbyte)Value);
                 else if (Value is byte)
-                    return (byte)Value;
+                    return ToByte((byte)Value);
                 else if (Value is short)
-                    return (byte)(short)Value;
+                    return ToByte((short)Value);
                 else if (Value is ushort)
-                    return (byte)(ushort)Value;
+                    return ToByte((ushort)Value);
                 else if (Value is int)
-                    return (byte)(int)Value;
+                    return ToByte((int)Value);
                 else if (Value is uint)
-                    return (byte)(uint)Value;
+                    return ToByte((uint)Value);
                 else if (Value is long)
-                    return (byte)(long)Value;
+                    return ToByte((long)Value);
                 else if (Value is ulong)
-                    return (byte)(ulong)Value;
+                    return ToByte((ulong)Value);
                 else if (Value is decimal)
-                    return (byte)(decimal)Value;
+                    return ToByte((decimal)Value);
                 else if (Value is float)
-                    return (byte)(float)Value;
+                    return ToByte((float)Value);
                 else if (Value is double)
-                    return (byte)(double)Value;
+                    return ToByte((double)Value);
                 else if (Value is string)
-                    return (byte)(string)Value;
+                    return ToByte((string)Value);
                 throw new InvalidCastException();
             }
             [CLSCompliant(false)]
@@ -208,10 +208,10 @@ namespace Microsoft.VisualBasic
                     return 0;
                 try
                 {
-                    var i64Value = default(var);
-                    if (IsHexOrOctValue(Value, i64Value))
-                        return (sbyte)i64Value;
-                    return (sbyte)ParseDouble(Value);
+                    var i64Value = default(long);
+                    if (IsHexOrOctValue(Value, ref i64Value))
+                        return ToSByte(i64Value);
+                    return ToSByte(ParseDouble(Value));
                 }
                 catch (FormatException e)
                 {
@@ -226,31 +226,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return (sbyte)(bool)Value;
+                    return ToSByte((bool)Value);
                 else if (Value is sbyte)
-                    return (sbyte)Value;
+                    return ToSByte((sbyte)Value);
                 else if (Value is byte)
-                    return (sbyte)(byte)Value;
+                    return ToSByte((byte)Value);
                 else if (Value is short)
-                    return (sbyte)(short)Value;
+                    return ToSByte((short)Value);
                 else if (Value is ushort)
-                    return (sbyte)(ushort)Value;
+                    return ToSByte((ushort)Value);
                 else if (Value is int)
-                    return (sbyte)(int)Value;
+                    return ToSByte((int)Value);
                 else if (Value is uint)
-                    return (sbyte)(uint)Value;
+                    return ToSByte((uint)Value);
                 else if (Value is long)
-                    return (sbyte)(long)Value;
+                    return ToSByte((long)Value);
                 else if (Value is ulong)
-                    return (sbyte)(ulong)Value;
+                    return ToSByte((ulong)Value);
                 else if (Value is decimal)
-                    return (sbyte)(decimal)Value;
+                    return ToSByte((decimal)Value);
                 else if (Value is float)
-                    return (sbyte)(float)Value;
+                    return ToSByte((float)Value);
                 else if (Value is double)
-                    return (sbyte)(double)Value;
+                    return ToSByte((double)Value);
                 else if (Value is string)
-                    return (sbyte)(string)Value;
+                    return ToSByte((string)Value);
                 throw new InvalidCastException();
             }
             public static short ToShort(string Value)
@@ -259,10 +259,10 @@ namespace Microsoft.VisualBasic
                     return 0;
                 try
                 {
-                    var i64Value = default(var);
-                    if (IsHexOrOctValue(Value, i64Value))
-                        return (short)i64Value;
-                    return (short)ParseDouble(Value);
+                    var i64Value = default(long);
+                    if (IsHexOrOctValue(Value, ref i64Value))
+                        return ToShort(i64Value);
+                    return ToShort(ParseDouble(Value));
                 }
                 catch (FormatException e)
                 {
@@ -276,31 +276,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return (short)(bool)Value;
+                    return ToShort((bool)Value);
                 else if (Value is sbyte)
-                    return (sbyte)Value;
+                    return ToShort((sbyte)Value);
                 else if (Value is byte)
-                    return (byte)Value;
+                    return ToShort((byte)Value);
                 else if (Value is short)
-                    return (short)Value;
+                    return ToShort((short)Value);
                 else if (Value is ushort)
-                    return (short)(ushort)Value;
+                    return ToShort((ushort)Value);
                 else if (Value is int)
-                    return (short)(int)Value;
+                    return ToShort((int)Value);
                 else if (Value is uint)
-                    return (short)(uint)Value;
+                    return ToShort((uint)Value);
                 else if (Value is long)
-                    return (short)(long)Value;
+                    return ToShort((long)Value);
                 else if (Value is ulong)
-                    return (short)(ulong)Value;
+                    return ToShort((ulong)Value);
                 else if (Value is decimal)
-                    return (short)(decimal)Value;
+                    return ToShort((decimal)Value);
                 else if (Value is float)
-                    return (short)(float)Value;
+                    return ToShort((float)Value);
                 else if (Value is double)
-                    return (short)(double)Value;
+                    return ToShort((double)Value);
                 else if (Value is string)
-                    return (short)(string)Value;
+                    return ToShort((string)Value);
                 throw new InvalidCastException();
             }
             [CLSCompliant(false)]
@@ -310,10 +310,10 @@ namespace Microsoft.VisualBasic
                     return 0;
                 try
                 {
-                    var i64Value = default(var);
-                    if (IsHexOrOctValue(Value, i64Value))
-                        return (ushort)i64Value;
-                    return (ushort)ParseDouble(Value);
+                    var i64Value = default(long);
+                    if (IsHexOrOctValue(Value, ref i64Value))
+                        return ToUShort(i64Value);
+                    return ToUShort(ParseDouble(Value));
                 }
                 catch (FormatException e)
                 {
@@ -328,31 +328,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return (ushort)(bool)Value;
+                    return ToUShort((bool)Value);
                 else if (Value is sbyte)
-                    return (ushort)(sbyte)Value;
+                    return ToUShort((sbyte)Value);
                 else if (Value is byte)
-                    return (byte)Value;
+                    return ToUShort((byte)Value);
                 else if (Value is short)
-                    return (ushort)(short)Value;
+                    return ToUShort((short)Value);
                 else if (Value is ushort)
-                    return (ushort)Value;
+                    return ToUShort((ushort)Value);
                 else if (Value is int)
-                    return (ushort)(int)Value;
+                    return ToUShort((int)Value);
                 else if (Value is uint)
-                    return (ushort)(uint)Value;
+                    return ToUShort((uint)Value);
                 else if (Value is long)
-                    return (ushort)(long)Value;
+                    return ToUShort((long)Value);
                 else if (Value is ulong)
-                    return (ushort)(ulong)Value;
+                    return ToUShort((ulong)Value);
                 else if (Value is decimal)
-                    return (ushort)(decimal)Value;
+                    return ToUShort((decimal)Value);
                 else if (Value is float)
-                    return (ushort)(float)Value;
+                    return ToUShort((float)Value);
                 else if (Value is double)
-                    return (ushort)(double)Value;
+                    return ToUShort((double)Value);
                 else if (Value is string)
-                    return (ushort)(string)Value;
+                    return ToUShort((string)Value);
                 throw new InvalidCastException();
             }
             public static int ToInteger(string Value)
@@ -361,10 +361,10 @@ namespace Microsoft.VisualBasic
                     return 0;
                 try
                 {
-                    var i64Value = default(var);
-                    if (IsHexOrOctValue(Value, i64Value))
-                        return (int)i64Value;
-                    return (int)ParseDouble(Value);
+                    var i64Value = default(long);
+                    if (IsHexOrOctValue(Value, ref i64Value))
+                        return ToInteger(i64Value);
+                    return ToInteger(ParseDouble(Value));
                 }
                 catch (FormatException e)
                 {
@@ -378,31 +378,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return (int)(bool)Value;
+                    return ToInteger((bool)Value);
                 else if (Value is sbyte)
-                    return (sbyte)Value;
+                    return ToInteger((sbyte)Value);
                 else if (Value is byte)
-                    return (byte)Value;
+                    return ToInteger((byte)Value);
                 else if (Value is short)
-                    return (short)Value;
+                    return ToInteger((short)Value);
                 else if (Value is ushort)
-                    return (ushort)Value;
+                    return ToInteger((ushort)Value);
                 else if (Value is int)
-                    return (int)Value;
+                    return ToInteger((int)Value);
                 else if (Value is uint)
-                    return (int)(uint)Value;
+                    return ToInteger((uint)Value);
                 else if (Value is long)
-                    return (int)(long)Value;
+                    return ToInteger((long)Value);
                 else if (Value is ulong)
-                    return (int)(ulong)Value;
+                    return ToInteger((ulong)Value);
                 else if (Value is decimal)
-                    return (int)(decimal)Value;
+                    return ToInteger((decimal)Value);
                 else if (Value is float)
-                    return (int)(float)Value;
+                    return ToInteger((float)Value);
                 else if (Value is double)
-                    return (int)(double)Value;
+                    return ToInteger((double)Value);
                 else if (Value is string)
-                    return (int)(string)Value;
+                    return ToInteger((string)Value);
                 throw new InvalidCastException();
             }
             [CLSCompliant(false)]
@@ -412,10 +412,10 @@ namespace Microsoft.VisualBasic
                     return 0;
                 try
                 {
-                    var i64Value = default(var);
-                    if (IsHexOrOctValue(Value, i64Value))
-                        return (uint)i64Value;
-                    return (uint)ParseDouble(Value);
+                    var i64Value = default(long);
+                    if (IsHexOrOctValue(Value, ref i64Value))
+                        return ToUInteger(i64Value);
+                    return ToUInteger(ParseDouble(Value));
                 }
                 catch (FormatException e)
                 {
@@ -430,31 +430,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return (uint)(bool)Value;
+                    return ToUInteger((bool)Value);
                 else if (Value is sbyte)
-                    return (uint)(sbyte)Value;
+                    return ToUInteger((sbyte)Value);
                 else if (Value is byte)
-                    return (byte)Value;
+                    return ToUInteger((byte)Value);
                 else if (Value is short)
-                    return (uint)(short)Value;
+                    return ToUInteger((short)Value);
                 else if (Value is ushort)
-                    return (ushort)Value;
+                    return ToUInteger((ushort)Value);
                 else if (Value is int)
-                    return (uint)(int)Value;
+                    return ToUInteger((int)Value);
                 else if (Value is uint)
-                    return (uint)Value;
+                    return ToUInteger((uint)Value);
                 else if (Value is long)
-                    return (uint)(long)Value;
+                    return ToUInteger((long)Value);
                 else if (Value is ulong)
-                    return (uint)(ulong)Value;
+                    return ToUInteger((ulong)Value);
                 else if (Value is decimal)
-                    return (uint)(decimal)Value;
+                    return ToUInteger((decimal)Value);
                 else if (Value is float)
-                    return (uint)(float)Value;
+                    return ToUInteger((float)Value);
                 else if (Value is double)
-                    return (uint)(double)Value;
+                    return ToUInteger((double)Value);
                 else if (Value is string)
-                    return (uint)(string)Value;
+                    return ToUInteger((string)Value);
                 throw new InvalidCastException();
             }
             public static long ToLong(string Value)
@@ -463,10 +463,10 @@ namespace Microsoft.VisualBasic
                     return 0;
                 try
                 {
-                    var i64Value = default(var);
-                    if (IsHexOrOctValue(Value, i64Value))
-                        return (long)i64Value;
-                    return (long)ParseDecimal(Value, null);
+                    var i64Value = default(long);
+                    if (IsHexOrOctValue(Value, ref i64Value))
+                        return ToLong(i64Value);
+                    return ToLong(ParseDecimal(Value, null));
                 }
                 catch (FormatException e)
                 {
@@ -480,31 +480,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return (long)(bool)Value;
+                    return ToLong((bool)Value);
                 else if (Value is sbyte)
-                    return (sbyte)Value;
+                    return ToLong((sbyte)Value);
                 else if (Value is byte)
-                    return (byte)Value;
+                    return ToLong((byte)Value);
                 else if (Value is short)
-                    return (short)Value;
+                    return ToLong((short)Value);
                 else if (Value is ushort)
-                    return (ushort)Value;
+                    return ToLong((ushort)Value);
                 else if (Value is int)
-                    return (int)Value;
+                    return ToLong((int)Value);
                 else if (Value is uint)
-                    return (uint)Value;
+                    return ToLong((uint)Value);
                 else if (Value is long)
-                    return (long)Value;
+                    return ToLong((long)Value);
                 else if (Value is ulong)
-                    return (long)(ulong)Value;
+                    return ToLong((ulong)Value);
                 else if (Value is decimal)
-                    return (long)(decimal)Value;
+                    return ToLong((decimal)Value);
                 else if (Value is float)
-                    return (long)(float)Value;
+                    return ToLong((float)Value);
                 else if (Value is double)
-                    return (long)(double)Value;
+                    return ToLong((double)Value);
                 else if (Value is string)
-                    return (long)(string)Value;
+                    return ToLong((string)Value);
                 throw new InvalidCastException();
             }
             [CLSCompliant(false)]
@@ -514,10 +514,10 @@ namespace Microsoft.VisualBasic
                     return 0;
                 try
                 {
-                    var ui64Value = default(var);
-                    if (IsHexOrOctValue(Value, ui64Value))
-                        return (ulong)ui64Value;
-                    return (ulong)ParseDecimal(Value, null);
+                    var ui64Value = default(ulong);
+                    if (IsHexOrOctValue(Value, ref ui64Value))
+                        return ToULong(ui64Value);
+                    return ToULong(ParseDecimal(Value, null));
                 }
                 catch (FormatException e)
                 {
@@ -532,31 +532,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return (ulong)(bool)Value;
+                    return ToULong((bool)Value);
                 else if (Value is sbyte)
-                    return (ulong)(sbyte)Value;
+                    return ToULong((sbyte)Value);
                 else if (Value is byte)
-                    return (byte)Value;
+                    return ToULong((byte)Value);
                 else if (Value is short)
-                    return (ulong)(short)Value;
+                    return ToULong((short)Value);
                 else if (Value is ushort)
-                    return (ushort)Value;
+                    return ToULong((ushort)Value);
                 else if (Value is int)
-                    return (ulong)(int)Value;
+                    return ToULong((int)Value);
                 else if (Value is uint)
-                    return (uint)Value;
+                    return ToULong((uint)Value);
                 else if (Value is long)
-                    return (ulong)(long)Value;
+                    return ToULong((long)Value);
                 else if (Value is ulong)
-                    return (ulong)Value;
+                    return ToULong((ulong)Value);
                 else if (Value is decimal)
-                    return (ulong)(decimal)Value;
+                    return ToULong((decimal)Value);
                 else if (Value is float)
-                    return (ulong)(float)Value;
+                    return ToULong((float)Value);
                 else if (Value is double)
-                    return (ulong)(double)Value;
+                    return ToULong((double)Value);
                 else if (Value is string)
-                    return (ulong)(string)Value;
+                    return ToULong((string)Value);
                 throw new InvalidCastException();
             }
             public static decimal ToDecimal(bool Value)
@@ -572,9 +572,9 @@ namespace Microsoft.VisualBasic
                     return 0M;
                 try
                 {
-                    var i64Value = default(var);
-                    if (IsHexOrOctValue(Value, i64Value))
-                        return (decimal)i64Value;
+                    var i64Value = default(long);
+                    if (IsHexOrOctValue(Value, ref i64Value))
+                        return ToDecimal(i64Value);
                     return ParseDecimal(Value, null);
                 }
                 catch (OverflowException e1)
@@ -593,41 +593,41 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return (decimal)(bool)Value;
+                    return ToDecimal((bool)Value);
                 else if (Value is sbyte)
-                    return (sbyte)Value;
+                    return ToDecimal((sbyte)Value);
                 else if (Value is byte)
-                    return (byte)Value;
+                    return ToDecimal((byte)Value);
                 else if (Value is short)
-                    return (short)Value;
+                    return ToDecimal((short)Value);
                 else if (Value is ushort)
-                    return (ushort)Value;
+                    return ToDecimal((ushort)Value);
                 else if (Value is int)
-                    return (int)Value;
+                    return ToDecimal((int)Value);
                 else if (Value is uint)
-                    return (uint)Value;
+                    return ToDecimal((uint)Value);
                 else if (Value is long)
-                    return (long)Value;
+                    return ToDecimal((long)Value);
                 else if (Value is ulong)
-                    return (ulong)Value;
+                    return ToDecimal((ulong)Value);
                 else if (Value is decimal)
-                    return (decimal)Value;
+                    return ToDecimal((decimal)Value);
                 else if (Value is float)
-                    return (decimal)(float)Value;
+                    return ToDecimal((float)Value);
                 else if (Value is double)
-                    return (decimal)(double)Value;
+                    return ToDecimal((double)Value);
                 else if (Value is string)
-                    return (decimal)(string)Value;
+                    return ToDecimal((string)Value);
                 throw new InvalidCastException();
             }
             private static decimal ParseDecimal(string Value, System.Globalization.NumberFormatInfo NumberFormat)
             {
-                var NormalizedNumberFormat = default(var);
+                System.Globalization.NumberFormatInfo NormalizedNumberFormat;
                 var culture = GetCultureInfo();
                 if (NumberFormat == null)
                     NumberFormat = culture.NumberFormat;
                 NormalizedNumberFormat = GetNormalizedNumberFormat(NumberFormat);
-                const var flags = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingSign | System.Globalization.NumberStyles.AllowParentheses | System.Globalization.NumberStyles.AllowTrailingWhite | System.Globalization.NumberStyles.AllowCurrencySymbol;
+                const System.Globalization.NumberStyles flags = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingSign | System.Globalization.NumberStyles.AllowParentheses | System.Globalization.NumberStyles.AllowTrailingWhite | System.Globalization.NumberStyles.AllowCurrencySymbol;
                 Value = ToHalfwidthNumbers(Value, culture);
                 try
                 {
@@ -644,28 +644,28 @@ namespace Microsoft.VisualBasic
             }
             private static System.Globalization.NumberFormatInfo GetNormalizedNumberFormat(System.Globalization.NumberFormatInfo InNumberFormat)
             {
-                var OutNumberFormat = default(var);
+                System.Globalization.NumberFormatInfo OutNumberFormat;
                 {
                     var withBlock = InNumberFormat;
-                    if (!(withBlock.CurrencyDecimalSeparator == null) && !(withBlock.NumberDecimalSeparator == null) && !(withBlock.CurrencyGroupSeparator == null) && !(withBlock.NumberGroupSeparator == null) && withBlock.CurrencyDecimalSeparator.Length == 1 && withBlock.NumberDecimalSeparator.Length == 1 && withBlock.CurrencyGroupSeparator.Length == 1 && withBlock.NumberGroupSeparator.Length == 1 && withBlock.CurrencyDecimalSeparator.Chars(0) == withBlock.NumberDecimalSeparator.Chars(0) && withBlock.CurrencyGroupSeparator.Chars(0) == withBlock.NumberGroupSeparator.Chars(0) && withBlock.CurrencyDecimalDigits == withBlock.NumberDecimalDigits)
+                    if (!(withBlock.CurrencyDecimalSeparator == null) && !(withBlock.NumberDecimalSeparator == null) && !(withBlock.CurrencyGroupSeparator == null) && !(withBlock.NumberGroupSeparator == null) && withBlock.CurrencyDecimalSeparator.Length == 1 && withBlock.NumberDecimalSeparator.Length == 1 && withBlock.CurrencyGroupSeparator.Length == 1 && withBlock.NumberGroupSeparator.Length == 1 && withBlock.CurrencyDecimalSeparator[0] == withBlock.NumberDecimalSeparator[0] && withBlock.CurrencyGroupSeparator[0] == withBlock.NumberGroupSeparator[0] && withBlock.CurrencyDecimalDigits == withBlock.NumberDecimalDigits)
                         return InNumberFormat;
                 }
                 {
                     var withBlock1 = InNumberFormat;
                     if (!(withBlock1.CurrencyDecimalSeparator == null) && !(withBlock1.NumberDecimalSeparator == null) && withBlock1.CurrencyDecimalSeparator.Length == withBlock1.NumberDecimalSeparator.Length && !(withBlock1.CurrencyGroupSeparator == null) && !(withBlock1.NumberGroupSeparator == null) && withBlock1.CurrencyGroupSeparator.Length == withBlock1.NumberGroupSeparator.Length)
                     {
-                        var i = default(var);
+                        int i;
                         var loopTo = withBlock1.CurrencyDecimalSeparator.Length - 1;
                         for (i = 0; i <= loopTo; i++)
                         {
-                            if (withBlock1.CurrencyDecimalSeparator.Chars(i) != withBlock1.NumberDecimalSeparator.Chars(i))
+                            if (withBlock1.CurrencyDecimalSeparator[i] != withBlock1.NumberDecimalSeparator[i])
                                 goto MisMatch;
                         }
 
                         var loopTo1 = withBlock1.CurrencyGroupSeparator.Length - 1;
                         for (i = 0; i <= loopTo1; i++)
                         {
-                            if (withBlock1.CurrencyGroupSeparator.Chars(i) != withBlock1.NumberGroupSeparator.Chars(i))
+                            if (withBlock1.CurrencyGroupSeparator[i] != withBlock1.NumberGroupSeparator[i])
                                 goto MisMatch;
                         }
                         return InNumberFormat;
@@ -674,7 +674,7 @@ namespace Microsoft.VisualBasic
 
             MisMatch:
                 ;
-                OutNumberFormat = (System.Globalization.NumberFormatInfo)InNumberFormat.Clone;
+                OutNumberFormat = (System.Globalization.NumberFormatInfo)InNumberFormat.Clone();
                 {
                     var withBlock2 = OutNumberFormat;
                     withBlock2.CurrencyDecimalSeparator = withBlock2.NumberDecimalSeparator;
@@ -689,13 +689,13 @@ namespace Microsoft.VisualBasic
                     return 0;
                 try
                 {
-                    var i64Value = default(var);
-                    if (IsHexOrOctValue(Value, i64Value))
-                        return (float)i64Value;
-                    var Result = ParseDouble(Value);
+                    var i64Value = default(long);
+                    if (IsHexOrOctValue(Value, ref i64Value))
+                        return ToSingle(i64Value);
+                    double Result = ParseDouble(Value);
                     if ((Result < float.MinValue || Result > float.MaxValue) && !double.IsInfinity(Result))
                         throw new OverflowException();
-                    return (float)Result;
+                    return ToSingle(Result);
                 }
                 catch (FormatException e)
                 {
@@ -709,31 +709,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return (float)(bool)Value;
+                    return ToSingle((bool)Value);
                 else if (Value is sbyte)
-                    return (sbyte)Value;
+                    return ToSingle((sbyte)Value);
                 else if (Value is byte)
-                    return (byte)Value;
+                    return ToSingle((byte)Value);
                 else if (Value is short)
-                    return (short)Value;
+                    return ToSingle((short)Value);
                 else if (Value is ushort)
-                    return (ushort)Value;
+                    return ToSingle((ushort)Value);
                 else if (Value is int)
-                    return (int)Value;
+                    return ToSingle((int)Value);
                 else if (Value is uint)
-                    return (uint)Value;
+                    return ToSingle((uint)Value);
                 else if (Value is long)
-                    return (long)Value;
+                    return ToSingle((long)Value);
                 else if (Value is ulong)
-                    return (ulong)Value;
+                    return ToSingle((ulong)Value);
                 else if (Value is decimal)
-                    return (float)(decimal)Value;
+                    return ToSingle((decimal)Value);
                 else if (Value is float)
-                    return (float)Value;
+                    return ToSingle((float)Value);
                 else if (Value is double)
-                    return (float)(double)Value;
+                    return ToSingle((double)Value);
                 else if (Value is string)
-                    return (float)(string)Value;
+                    return ToSingle((string)Value);
                 throw new InvalidCastException();
             }
             public static double ToDouble(string Value)
@@ -742,9 +742,9 @@ namespace Microsoft.VisualBasic
                     return 0;
                 try
                 {
-                    var i64Value = default(var);
-                    if (IsHexOrOctValue(Value, i64Value))
-                        return (double)i64Value;
+                    var i64Value = default(long);
+                    if (IsHexOrOctValue(Value, ref i64Value))
+                        return ToDouble(i64Value);
                     return ParseDouble(Value);
                 }
                 catch (FormatException e)
@@ -759,40 +759,40 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return (double)(bool)Value;
+                    return ToDouble((bool)Value);
                 else if (Value is sbyte)
-                    return (sbyte)Value;
+                    return ToDouble((sbyte)Value);
                 else if (Value is byte)
-                    return (byte)Value;
+                    return ToDouble((byte)Value);
                 else if (Value is short)
-                    return (short)Value;
+                    return ToDouble((short)Value);
                 else if (Value is ushort)
-                    return (ushort)Value;
+                    return ToDouble((ushort)Value);
                 else if (Value is int)
-                    return (int)Value;
+                    return ToDouble((int)Value);
                 else if (Value is uint)
-                    return (uint)Value;
+                    return ToDouble((uint)Value);
                 else if (Value is long)
-                    return (long)Value;
+                    return ToDouble((long)Value);
                 else if (Value is ulong)
-                    return (ulong)Value;
+                    return ToDouble((ulong)Value);
                 else if (Value is decimal)
-                    return (double)(decimal)Value;
+                    return ToDouble((decimal)Value);
                 else if (Value is float)
-                    return (float)Value;
+                    return ToDouble((float)Value);
                 else if (Value is double)
-                    return (double)Value;
+                    return ToDouble((double)Value);
                 else if (Value is string)
-                    return (double)(string)Value;
+                    return ToDouble((string)Value);
                 throw new InvalidCastException();
             }
             private static double ParseDouble(string Value)
             {
-                var NormalizedNumberFormat = default(var);
+                System.Globalization.NumberFormatInfo NormalizedNumberFormat;
                 var culture = GetCultureInfo();
                 var NumberFormat = culture.NumberFormat;
                 NormalizedNumberFormat = GetNormalizedNumberFormat(NumberFormat);
-                const var flags = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingSign | System.Globalization.NumberStyles.AllowParentheses | System.Globalization.NumberStyles.AllowTrailingWhite | System.Globalization.NumberStyles.AllowCurrencySymbol;
+                const System.Globalization.NumberStyles flags = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingSign | System.Globalization.NumberStyles.AllowParentheses | System.Globalization.NumberStyles.AllowTrailingWhite | System.Globalization.NumberStyles.AllowCurrencySymbol;
                 Value = ToHalfwidthNumbers(Value, culture);
                 try
                 {
@@ -809,10 +809,10 @@ namespace Microsoft.VisualBasic
             }
             public static DateTime ToDate(string Value)
             {
-                var ParsedDate = default(var);
-                const var ParseStyle = System.Globalization.DateTimeStyles.AllowWhiteSpaces | System.Globalization.DateTimeStyles.NoCurrentDateDefault;
+                DateTime ParsedDate;
+                const System.Globalization.DateTimeStyles ParseStyle = System.Globalization.DateTimeStyles.AllowWhiteSpaces | System.Globalization.DateTimeStyles.NoCurrentDateDefault;
                 var Culture = GetCultureInfo();
-                var result = DateTime.TryParse(ToHalfwidthNumbers(Value, Culture), Culture, ParseStyle, ParsedDate);
+                bool result = DateTime.TryParse(ToHalfwidthNumbers(Value, Culture), Culture, ParseStyle, out ParsedDate);
                 if (result)
                     return ParsedDate;
                 else
@@ -821,7 +821,7 @@ namespace Microsoft.VisualBasic
             public static DateTime ToDate(object Value)
             {
                 if (Value == null)
-                    return null;
+                    return default(DateTime);
                 if (Value is DateTime)
                     return ToDate((DateTime)Value);
                 else if (Value is string)
@@ -832,16 +832,16 @@ namespace Microsoft.VisualBasic
             {
                 if (Value == null || Value.Length == 0)
                     return Convert.ToChar(0 & 0xFFFF);
-                return Value.Chars(0);
+                return Value[0];
             }
             public static char ToChar(object Value)
             {
                 if (Value == null)
                     return Convert.ToChar(0 & 0xFFFF);
                 if (Value is char)
-                    return (char)Value;
+                    return ToChar((char)Value);
                 else if (Value is string)
-                    return (char)(string)Value;
+                    return ToChar((string)Value);
                 throw new InvalidCastException();
             }
             public static char[] ToCharArrayRankOne(string Value)
@@ -893,7 +893,7 @@ namespace Microsoft.VisualBasic
             }
             public static new string ToString(DateTime Value)
             {
-                var TimeTicks = Value.TimeOfDay.Ticks;
+                long TimeTicks = Value.TimeOfDay.Ticks;
                 if (TimeTicks == Value.Ticks || Value.Year == 1899 && Value.Month == 12 && Value.Day == 30)
                     return Value.ToString("T");
                 else if (TimeTicks == 0)
@@ -911,40 +911,40 @@ namespace Microsoft.VisualBasic
                     return null;
                 else
                 {
-                    var StringValue = Value as string;
+                    string StringValue = Value as string;
                     if (StringValue != null)
                         return StringValue;
                 }
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return (string)(bool)Value;
+                    return ToString((bool)Value);
                 else if (Value is sbyte)
-                    return (string)(sbyte)Value;
+                    return ToString((sbyte)Value);
                 else if (Value is byte)
-                    return (string)(byte)Value;
+                    return ToString((byte)Value);
                 else if (Value is short)
-                    return (string)(short)Value;
+                    return ToString((short)Value);
                 else if (Value is ushort)
-                    return (string)(ushort)Value;
+                    return ToString((ushort)Value);
                 else if (Value is int)
-                    return (string)(int)Value;
+                    return ToString((int)Value);
                 else if (Value is uint)
-                    return (string)(uint)Value;
+                    return ToString((uint)Value);
                 else if (Value is long)
-                    return (string)(long)Value;
+                    return ToString((long)Value);
                 else if (Value is ulong)
-                    return (string)(ulong)Value;
+                    return ToString((ulong)Value);
                 else if (Value is decimal)
-                    return (string)(decimal)Value;
+                    return ToString((decimal)Value);
                 else if (Value is float)
-                    return (string)(float)Value;
+                    return ToString((float)Value);
                 else if (Value is double)
-                    return (string)(double)Value;
+                    return ToString((double)Value);
                 else if (Value is char)
-                    return (string)(char)Value;
+                    return ToString((char)Value);
                 else if (Value is DateTime)
-                    return (string)(DateTime)Value;
+                    return ToString((DateTime)Value);
                 else
                 {
                     var CharArray = Value as char[];
@@ -978,14 +978,14 @@ namespace Microsoft.VisualBasic
             }
             internal static bool IsHexOrOctValue(string Value, ref long i64Value)
             {
-                var ch = default(var);
-                var Length = default(var);
-                var FirstNonspace = default(var);
-                var TmpValue = default(var);
+                char ch;
+                int Length;
+                var FirstNonspace = default(int);
+                string TmpValue;
                 Length = Value.Length;
                 while (FirstNonspace < Length)
                 {
-                    ch = Value.Chars(FirstNonspace);
+                    ch = Value[FirstNonspace];
                     if (ch == '&' && FirstNonspace + 2 < Length)
                         goto GetSpecialValue;
                     if (ch != Strings.ChrW(32) && ch != Strings.ChrW(0x3000))
@@ -995,7 +995,7 @@ namespace Microsoft.VisualBasic
                 return false;
             GetSpecialValue:
                 ;
-                ch = char.ToLowerInvariant(Value.Chars(FirstNonspace + 1));
+                ch = char.ToLowerInvariant(Value[FirstNonspace + 1]);
                 TmpValue = ToHalfwidthNumbers(Value.Substring(FirstNonspace + 2), GetCultureInfo());
                 if (ch == 'h')
                     i64Value = Convert.ToInt64(TmpValue, 16);
@@ -1007,14 +1007,14 @@ namespace Microsoft.VisualBasic
             }
             internal static bool IsHexOrOctValue(string Value, ref ulong ui64Value)
             {
-                var ch = default(var);
-                var Length = default(var);
-                var FirstNonspace = default(var);
-                var TmpValue = default(var);
+                char ch;
+                int Length;
+                var FirstNonspace = default(int);
+                string TmpValue;
                 Length = Value.Length;
                 while (FirstNonspace < Length)
                 {
-                    ch = Value.Chars(FirstNonspace);
+                    ch = Value[FirstNonspace];
                     if (ch == '&' && FirstNonspace + 2 < Length)
                         goto GetSpecialValue;
                     if (ch != Strings.ChrW(32) && ch != Strings.ChrW(0x3000))
@@ -1024,7 +1024,7 @@ namespace Microsoft.VisualBasic
                 return false;
             GetSpecialValue:
                 ;
-                ch = char.ToLowerInvariant(Value.Chars(FirstNonspace + 1));
+                ch = char.ToLowerInvariant(Value[FirstNonspace + 1]);
                 TmpValue = ToHalfwidthNumbers(Value.Substring(FirstNonspace + 2), GetCultureInfo());
                 if (ch == 'h')
                     ui64Value = Convert.ToUInt64(TmpValue, 16);
@@ -1037,38 +1037,38 @@ namespace Microsoft.VisualBasic
             public static T ToGenericParameter<T>(object Value)
             {
                 if (Value == null)
-                    return null;
+                    return default(T);
                 var reflectedType = typeof(T);
                 if (Equals(reflectedType, typeof(bool)))
-                    return (T)(object)(bool)Value;
+                    return (T)(object)ToBoolean(Value);
                 else if (Equals(reflectedType, typeof(sbyte)))
-                    return (T)(object)(sbyte)Value;
+                    return (T)(object)ToSByte(Value);
                 else if (Equals(reflectedType, typeof(byte)))
-                    return (T)(object)(byte)Value;
+                    return (T)(object)ToByte(Value);
                 else if (Equals(reflectedType, typeof(short)))
-                    return (T)(object)(short)Value;
+                    return (T)(object)ToShort(Value);
                 else if (Equals(reflectedType, typeof(ushort)))
-                    return (T)(object)(ushort)Value;
+                    return (T)(object)ToUShort(Value);
                 else if (Equals(reflectedType, typeof(int)))
-                    return (T)(object)(int)Value;
+                    return (T)(object)ToInteger(Value);
                 else if (Equals(reflectedType, typeof(uint)))
-                    return (T)(object)(uint)Value;
+                    return (T)(object)ToUInteger(Value);
                 else if (Equals(reflectedType, typeof(long)))
-                    return (T)(object)(long)Value;
+                    return (T)(object)ToLong(Value);
                 else if (Equals(reflectedType, typeof(ulong)))
-                    return (T)(object)(ulong)Value;
+                    return (T)(object)ToULong(Value);
                 else if (Equals(reflectedType, typeof(decimal)))
-                    return (T)(object)(decimal)Value;
+                    return (T)(object)ToDecimal(Value);
                 else if (Equals(reflectedType, typeof(float)))
-                    return (T)(object)(float)Value;
+                    return (T)(object)ToSingle(Value);
                 else if (Equals(reflectedType, typeof(double)))
-                    return (T)(object)(double)Value;
+                    return (T)(object)ToDouble(Value);
                 else if (Equals(reflectedType, typeof(DateTime)))
                     return (T)(object)ToDate(Value);
                 else if (Equals(reflectedType, typeof(char)))
-                    return (T)(object)(char)Value;
+                    return (T)(object)ToChar(Value);
                 else if (Equals(reflectedType, typeof(string)))
-                    return (T)(object)(string)Value;
+                    return (T)(object)ToString(Value);
                 else
                     return (T)Value;
             }
@@ -1105,14 +1105,14 @@ namespace Microsoft.VisualBasic
             {
                 if (arySrc == null)
                     return aryDest;
-                var lLength = default(var);
+                int lLength;
                 lLength = arySrc.Length;
                 if (lLength == 0)
                     return aryDest;
-                if (aryDest.Rank() != arySrc.Rank())
+                if (aryDest.Rank != arySrc.Rank)
                     throw new InvalidCastException();
-                var iDim = default(var);
-                var loopTo = aryDest.Rank() - 2;
+                int iDim;
+                var loopTo = aryDest.Rank - 2;
                 for (iDim = 0; iDim <= loopTo; iDim++)
                 {
                     if (aryDest.GetUpperBound(iDim) != arySrc.GetUpperBound(iDim))
@@ -1122,13 +1122,13 @@ namespace Microsoft.VisualBasic
                     lLength = aryDest.Length;
                 if (arySrc.Rank > 1)
                 {
-                    var LastRank = arySrc.Rank;
-                    var lenSrcLastRank = arySrc.GetLength(LastRank - 1);
-                    var lenDestLastRank = aryDest.GetLength(LastRank - 1);
+                    int LastRank = arySrc.Rank;
+                    int lenSrcLastRank = arySrc.GetLength(LastRank - 1);
+                    int lenDestLastRank = aryDest.GetLength(LastRank - 1);
                     if (lenDestLastRank == 0)
                         return aryDest;
-                    var lenCopy = lenSrcLastRank > lenDestLastRank ? lenDestLastRank : lenSrcLastRank;
-                    var i = default(var);
+                    int lenCopy = lenSrcLastRank > lenDestLastRank ? lenDestLastRank : lenSrcLastRank;
+                    int i;
                     var loopTo1 = arySrc.Length / lenSrcLastRank - 1;
                     for (i = 0; i <= loopTo1; i++)
                         Array.Copy(arySrc, i * lenSrcLastRank, aryDest, i * lenDestLastRank, lenCopy);
@@ -1175,7 +1175,7 @@ namespace Microsoft.VisualBasic
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         internal sealed class StaticLocalInitFlag
         {
-            public var State;
+            public short State;
         }
         [Embedded()]
         [DebuggerNonUserCode()]
@@ -1239,7 +1239,7 @@ namespace Microsoft.VisualBasic
         {
             if (String == null || String.Length == 0)
                 throw new ArgumentException();
-            return AscW(String.Chars(0));
+            return AscW(String[0]);
         }
         public static int AscW(char String)
         {
@@ -1252,27 +1252,23 @@ namespace Microsoft.VisualBasic
     [StandardModule]
     internal static class Constants
     {
+        public const string vbCrLf = Conversions.ToString(Strings.ChrW(13)) + Conversions.ToString(Strings.ChrW(10));
+        public const string vbNewLine = Conversions.ToString(Strings.ChrW(13)) + Conversions.ToString(Strings.ChrW(10));
+
         class _failedMemberConversionMarker1
         {
         }
 #error Cannot convert FieldDeclarationSyntax - see comment for details
-        /* Cannot convert FieldDeclarationSyntax, System.NullReferenceException: Object reference not set to an instance of an object.
-           at ICSharpCode.CodeConverter.CSharp.ExpressionNodeVisitor.<VisitBinaryExpression>d__62.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\ExpressionNodeVisitor.cs:line 570
+        /* Cannot convert FieldDeclarationSyntax, System.Exception: Exception of type 'System.Exception' was thrown.
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.ConstantFold(ExpressionSyntax vbNode, ITypeSymbol type) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 236
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.AddExplicitConversion(ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, Boolean addParenthesisIfNeeded) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 73
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.AddExplicitConversion(ExpressionSyntax vbNode, ExpressionSyntax csNode, Boolean addParenthesisIfNeeded, Boolean alwaysExplicit, Boolean isConst) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 56
+           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<ConvertEqualsValueClauseSyntax>d__19.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 122
         --- End of stack trace from previous location where exception was thrown ---
            at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
            at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
            at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-           at ICSharpCode.CodeConverter.CSharp.CommentConvertingVisitorWrapper`1.<Visit>d__5.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommentConvertingVisitorWrapper.cs:line 22
-        --- End of stack trace from previous location where exception was thrown ---
-           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-           at ICSharpCode.CodeConverter.CSharp.SyntaxNodeVisitorExtensions.<AcceptAsync>d__0`1.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\SyntaxNodeVisitorExtensions.cs:line 16
-        --- End of stack trace from previous location where exception was thrown ---
-           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<SplitVariableDeclarations>d__18.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 63
+           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<SplitVariableDeclarations>d__18.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 84
         --- End of stack trace from previous location where exception was thrown ---
            at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
            at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
@@ -1295,30 +1291,23 @@ namespace Microsoft.VisualBasic
            at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<ConvertMember>d__35.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 204
 
         Input:
-                Public Const vbCrLf As String = ChrW(13) & ChrW(10)
+                Public Const vbCr As String = ChrW(13)
 
          */
         class _failedMemberConversionMarker2
         {
         }
 #error Cannot convert FieldDeclarationSyntax - see comment for details
-        /* Cannot convert FieldDeclarationSyntax, System.NullReferenceException: Object reference not set to an instance of an object.
-           at ICSharpCode.CodeConverter.CSharp.ExpressionNodeVisitor.<VisitBinaryExpression>d__62.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\ExpressionNodeVisitor.cs:line 570
+        /* Cannot convert FieldDeclarationSyntax, System.Exception: Exception of type 'System.Exception' was thrown.
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.ConstantFold(ExpressionSyntax vbNode, ITypeSymbol type) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 236
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.AddExplicitConversion(ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, Boolean addParenthesisIfNeeded) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 73
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.AddExplicitConversion(ExpressionSyntax vbNode, ExpressionSyntax csNode, Boolean addParenthesisIfNeeded, Boolean alwaysExplicit, Boolean isConst) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 56
+           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<ConvertEqualsValueClauseSyntax>d__19.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 122
         --- End of stack trace from previous location where exception was thrown ---
            at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
            at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
            at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-           at ICSharpCode.CodeConverter.CSharp.CommentConvertingVisitorWrapper`1.<Visit>d__5.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommentConvertingVisitorWrapper.cs:line 22
-        --- End of stack trace from previous location where exception was thrown ---
-           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-           at ICSharpCode.CodeConverter.CSharp.SyntaxNodeVisitorExtensions.<AcceptAsync>d__0`1.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\SyntaxNodeVisitorExtensions.cs:line 16
-        --- End of stack trace from previous location where exception was thrown ---
-           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
-           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<SplitVariableDeclarations>d__18.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 63
+           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<SplitVariableDeclarations>d__18.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 84
         --- End of stack trace from previous location where exception was thrown ---
            at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
            at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
@@ -1341,17 +1330,205 @@ namespace Microsoft.VisualBasic
            at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<ConvertMember>d__35.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 204
 
         Input:
-                Public Const vbNewLine As String = ChrW(13) & ChrW(10)
+                Public Const vbLf As String = ChrW(10)
 
          */
-        public const var vbCr = ChrW(13);
-        public const var vbLf = ChrW(10);
-        public const var vbBack = ChrW(8);
-        public const var vbFormFeed = ChrW(12);
-        public const var vbTab = ChrW(9);
-        public const var vbVerticalTab = ChrW(11);
-        public const var vbNullChar = ChrW(0);
-        public const var vbNullString = null;
+        class _failedMemberConversionMarker3
+        {
+        }
+#error Cannot convert FieldDeclarationSyntax - see comment for details
+        /* Cannot convert FieldDeclarationSyntax, System.Exception: Exception of type 'System.Exception' was thrown.
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.ConstantFold(ExpressionSyntax vbNode, ITypeSymbol type) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 236
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.AddExplicitConversion(ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, Boolean addParenthesisIfNeeded) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 73
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.AddExplicitConversion(ExpressionSyntax vbNode, ExpressionSyntax csNode, Boolean addParenthesisIfNeeded, Boolean alwaysExplicit, Boolean isConst) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 56
+           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<ConvertEqualsValueClauseSyntax>d__19.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 122
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<SplitVariableDeclarations>d__18.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 84
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<GetMemberDeclarations>d__48.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 412
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<VisitFieldDeclaration>d__47.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 392
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.CommentConvertingNodesVisitor.<DefaultVisit>d__5.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommentConvertingNodesVisitor.cs:line 30
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<ConvertMember>d__35.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 204
+
+        Input:
+                Public Const vbBack As String = ChrW(8)
+
+         */
+        class _failedMemberConversionMarker4
+        {
+        }
+#error Cannot convert FieldDeclarationSyntax - see comment for details
+        /* Cannot convert FieldDeclarationSyntax, System.Exception: Exception of type 'System.Exception' was thrown.
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.ConstantFold(ExpressionSyntax vbNode, ITypeSymbol type) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 236
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.AddExplicitConversion(ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, Boolean addParenthesisIfNeeded) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 73
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.AddExplicitConversion(ExpressionSyntax vbNode, ExpressionSyntax csNode, Boolean addParenthesisIfNeeded, Boolean alwaysExplicit, Boolean isConst) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 56
+           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<ConvertEqualsValueClauseSyntax>d__19.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 122
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<SplitVariableDeclarations>d__18.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 84
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<GetMemberDeclarations>d__48.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 412
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<VisitFieldDeclaration>d__47.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 392
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.CommentConvertingNodesVisitor.<DefaultVisit>d__5.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommentConvertingNodesVisitor.cs:line 30
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<ConvertMember>d__35.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 204
+
+        Input:
+                Public Const vbFormFeed As String = ChrW(12)
+
+         */
+        class _failedMemberConversionMarker5
+        {
+        }
+#error Cannot convert FieldDeclarationSyntax - see comment for details
+        /* Cannot convert FieldDeclarationSyntax, System.Exception: Exception of type 'System.Exception' was thrown.
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.ConstantFold(ExpressionSyntax vbNode, ITypeSymbol type) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 236
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.AddExplicitConversion(ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, Boolean addParenthesisIfNeeded) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 73
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.AddExplicitConversion(ExpressionSyntax vbNode, ExpressionSyntax csNode, Boolean addParenthesisIfNeeded, Boolean alwaysExplicit, Boolean isConst) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 56
+           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<ConvertEqualsValueClauseSyntax>d__19.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 122
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<SplitVariableDeclarations>d__18.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 84
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<GetMemberDeclarations>d__48.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 412
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<VisitFieldDeclaration>d__47.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 392
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.CommentConvertingNodesVisitor.<DefaultVisit>d__5.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommentConvertingNodesVisitor.cs:line 30
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<ConvertMember>d__35.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 204
+
+        Input:
+                Public Const vbTab As String = ChrW(9)
+
+         */
+        class _failedMemberConversionMarker6
+        {
+        }
+#error Cannot convert FieldDeclarationSyntax - see comment for details
+        /* Cannot convert FieldDeclarationSyntax, System.Exception: Exception of type 'System.Exception' was thrown.
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.ConstantFold(ExpressionSyntax vbNode, ITypeSymbol type) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 236
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.AddExplicitConversion(ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, Boolean addParenthesisIfNeeded) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 73
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.AddExplicitConversion(ExpressionSyntax vbNode, ExpressionSyntax csNode, Boolean addParenthesisIfNeeded, Boolean alwaysExplicit, Boolean isConst) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 56
+           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<ConvertEqualsValueClauseSyntax>d__19.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 122
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<SplitVariableDeclarations>d__18.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 84
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<GetMemberDeclarations>d__48.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 412
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<VisitFieldDeclaration>d__47.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 392
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.CommentConvertingNodesVisitor.<DefaultVisit>d__5.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommentConvertingNodesVisitor.cs:line 30
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<ConvertMember>d__35.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 204
+
+        Input:
+                Public Const vbVerticalTab As String = ChrW(11)
+
+         */
+        class _failedMemberConversionMarker7
+        {
+        }
+#error Cannot convert FieldDeclarationSyntax - see comment for details
+        /* Cannot convert FieldDeclarationSyntax, System.Exception: Exception of type 'System.Exception' was thrown.
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.ConstantFold(ExpressionSyntax vbNode, ITypeSymbol type) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 236
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.AddExplicitConversion(ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, Boolean addParenthesisIfNeeded) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 73
+           at ICSharpCode.CodeConverter.CSharp.TypeConversionAnalyzer.AddExplicitConversion(ExpressionSyntax vbNode, ExpressionSyntax csNode, Boolean addParenthesisIfNeeded, Boolean alwaysExplicit, Boolean isConst) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\TypeConversionAnalyzer.cs:line 56
+           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<ConvertEqualsValueClauseSyntax>d__19.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 122
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.CommonConversions.<SplitVariableDeclarations>d__18.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommonConversions.cs:line 84
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<GetMemberDeclarations>d__48.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 412
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<VisitFieldDeclaration>d__47.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 392
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.CommentConvertingNodesVisitor.<DefaultVisit>d__5.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommentConvertingNodesVisitor.cs:line 30
+        --- End of stack trace from previous location where exception was thrown ---
+           at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+           at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+           at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
+           at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<ConvertMember>d__35.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 204
+
+        Input:
+                Public Const vbNullChar As String = ChrW(0)
+
+         */
+        public const string vbNullString = null;
     }
 }
 
