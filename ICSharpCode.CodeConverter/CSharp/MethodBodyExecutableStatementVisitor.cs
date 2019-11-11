@@ -364,7 +364,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     else if (info.IsReferenceType)
                         expr = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
                     else if (info.CanBeReferencedByName)
-                        expr = SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(info.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart)));
+                        expr = SyntaxFactory.DefaultExpression(CommonConversions.GetTypeSyntax(info));
                     else
                         throw new NotSupportedException();
                     return SingleStatement(SyntaxFactory.ReturnStatement(expr));

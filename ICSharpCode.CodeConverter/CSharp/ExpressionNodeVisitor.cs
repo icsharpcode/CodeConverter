@@ -1161,8 +1161,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     !nodeSymbolInfo.IsConstructor() /* Constructors are implicitly qualified with their type */) {
                     // Qualify with a type to handle VB's type promotion https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/declared-elements/type-promotion
                     var qualification =
-                        containingTypeSymbol.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart);
-                    return Qualify(qualification, left);
+                        CommonConversions.GetTypeSyntax(containingTypeSymbol);
+                    return Qualify(qualification.ToString(), left);
                 } else if (nodeSymbolInfo.IsNamespace()) {
                     // Turn partial namespace qualification into full namespace qualification
                     var qualification =
