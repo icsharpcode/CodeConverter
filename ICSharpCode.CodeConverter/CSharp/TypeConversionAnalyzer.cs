@@ -324,14 +324,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                         result = Operators.ConcatenateObject(leftResult, rightResult);
                         break;
                     case BinaryOperatorKind.Equals:
+                    case BinaryOperatorKind.ObjectValueEquals:
                         result = Operators.CompareObjectEqual(leftResult, rightResult, textComparisonCaseInsensitive);
                         break;
-                    case BinaryOperatorKind.ObjectValueEquals:
-                        result = leftResult == rightResult;
-                        break;
                     case BinaryOperatorKind.NotEquals:
-                        result = Operators.IntDivideObject(leftResult, rightResult);
-                        break;
                     case BinaryOperatorKind.ObjectValueNotEquals:
                         result = Operators.CompareObjectNotEqual(leftResult, rightResult, textComparisonCaseInsensitive);
                         break;
