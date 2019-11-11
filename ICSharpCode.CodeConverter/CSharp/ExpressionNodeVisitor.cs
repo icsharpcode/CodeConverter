@@ -651,7 +651,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return await CreateElementAccess();
             }
 
-            if (expressionSymbol != null && expressionSymbol.IsKind(SymbolKind.Property)) {
+            if (expressionSymbol != null && expressionSymbol.IsKind(SymbolKind.Property) && invocationSymbol.GetParameters().Length == 0) {
                 return convertedExpression; //Parameterless property access
             }
 

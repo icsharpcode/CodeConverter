@@ -13,6 +13,7 @@ All notable changes to the code converter will be documented here.
 * Convert array of arrays initializer (#364)
 * Improvements to implicit enum -> int conversion (#361)
 * Convert expressions in constants (#329)
+* Convert implicit `ElementAtOrDefault` (#362)
 
 ### C# -> VB
 * Convert property accessors with visiblity modifiers (#92)
