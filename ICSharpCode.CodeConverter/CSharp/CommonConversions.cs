@@ -112,13 +112,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csTypeSyntax = GetTypeSyntax(declaredSymbolType);
 
             bool isField = vbDeclarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
+            bool isConst = declaredSymbol is IFieldSymbol fieldSymbol && fieldSymbol.IsConst ||
+                           declaredSymbol is ILocalSymbol localSymbol && localSymbol.IsConst;
 
             EqualsValueClauseSyntax equalsValueClauseSyntax;
             if (await GetInitializerFromNameAndType(declaredSymbolType, vbName, initializerOrMethodDecl) is ExpressionSyntax
                 adjustedInitializerExpr)
             {
                 var convertedInitializer = vbInitValue != null
-                    ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr)
+                    ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr, isConst: isConst)
                     : adjustedInitializerExpr;
                 equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
             }

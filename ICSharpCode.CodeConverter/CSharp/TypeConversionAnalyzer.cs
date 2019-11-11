@@ -4,10 +4,11 @@ using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.VisualBasic;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.VisualBasic.CompilerServices;
 using CastExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.CastExpressionSyntax;
 using Conversion = Microsoft.CodeAnalysis.VisualBasic.Conversion;
@@ -46,9 +47,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csSyntaxGenerator = csSyntaxGenerator;
         }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool alwaysExplicit = false)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool alwaysExplicit = false, bool isConst = false)
         {
-            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit);
+            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit, isConst);
             csNode = addParenthesisIfNeeded && (conversionKind == TypeConversionKind.DestructiveCast || conversionKind == TypeConversionKind.NonDestructiveCast)
                 ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;
@@ -68,6 +69,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return CreateCast(csNode, vbConvertedType);
                 case TypeConversionKind.Conversion:
                     return AddExplicitConvertTo(vbNode, csNode, vbConvertedType);
+                case TypeConversionKind.ConstConversion:
+                    return ConstantFold(vbNode, vbConvertedType);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -83,7 +86,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return ValidSyntaxFactory.CastExpression(typeName, csNode);
         }
 
-        public TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false)
+        public TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool isConst = false)
         {
             var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, vbNode);
             var vbType = typeInfo.Type;
@@ -111,7 +114,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csConvertedType = _csCompilation.GetTypeByMetadataName(vbConvertedType.GetFullMetadataName());
 
             if (csType != null && csConvertedType != null &&
-                TryAnalyzeCsConversion(vbNode, csType, csConvertedType, vbConversion, vbConvertedType, vbType, vbCompilation, out TypeConversionKind analyzeConversion)) {
+                TryAnalyzeCsConversion(vbNode, csType, csConvertedType, vbConversion, vbConvertedType, vbType, vbCompilation, isConst, out TypeConversionKind analyzeConversion)) {
                 return analyzeConversion;
             }
 
@@ -120,7 +123,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private bool TryAnalyzeCsConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, INamedTypeSymbol csType,
             INamedTypeSymbol csConvertedType, Conversion vbConversion, ITypeSymbol vbConvertedType, ITypeSymbol vbType,
-            VisualBasicCompilation vbCompilation, out TypeConversionKind typeConversionKind)
+            VisualBasicCompilation vbCompilation, bool isConst, out TypeConversionKind typeConversionKind)
         {
             var csConversion = _csCompilation.ClassifyConversion(csType, csConvertedType);
 
@@ -132,12 +135,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DivideExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IntegerDivideExpression);
             if (!csConversion.Exists || csConversion.IsUnboxing) {
-                if (ConvertStringToCharLiteral(vbNode as LiteralExpressionSyntax, vbConvertedType, out _)) {
+                if (ConvertStringToCharLiteral(vbNode as VBSyntax.LiteralExpressionSyntax, vbConvertedType, out _)) {
                     typeConversionKind = TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
                     return true;
                 }
                 if (isConvertToString || vbConversion.IsNarrowing) {
-                    typeConversionKind = TypeConversionKind.Conversion;
+                    typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
                     return true;
                 }
             } else if (vbConversion.IsWidening && vbConversion.IsNumeric && csConversion.IsImplicit &&
@@ -150,19 +153,22 @@ namespace ICSharpCode.CodeConverter.CSharp
             } else if (csConversion.IsExplicit && csConversion.IsEnumeration) {
                 typeConversionKind = TypeConversionKind.NonDestructiveCast;
                 return true;
+            } else if (csConversion.IsExplicit && csConversion.IsNumeric && vbConversion.IsNarrowing && isConst) {
+                typeConversionKind = TypeConversionKind.NonDestructiveCast;
+                return true;
             } else if (csConversion.IsExplicit && vbConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
-                typeConversionKind = TypeConversionKind.Conversion;
+                typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
                 return true;
             } else if (isArithmetic) {
                 var arithmeticConversion =
                     vbCompilation.ClassifyConversion(vbConvertedType,
                         vbCompilation.GetTypeByMetadataName("System.Int32"));
                 if (arithmeticConversion.IsWidening && !arithmeticConversion.IsIdentity) {
-                    typeConversionKind = TypeConversionKind.Conversion;
+                    typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
                     return true;
                 }
             } else if (isConvertToString && vbType.SpecialType ==  SpecialType.System_Object) {
-                typeConversionKind = TypeConversionKind.Conversion;
+                typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
                 return true;
             }
 
@@ -186,6 +192,32 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return TypeConversionKind.Unknown;
         }
+
+        private ExpressionSyntax ConstantFold(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol type)
+        {
+            if (vbNode is VBSyntax.LiteralExpressionSyntax vbLiteral && ConversionsTypeFullNames.TryGetValue(type.GetFullMetadataName(), out var methodId)) {
+                var conversionMethod = typeof(Conversions).GetMethods(methodId).Where(mi => mi.GetParameters().First().ParameterType == typeof(object)).First();
+                var result = conversionMethod.Invoke(null, new[] { vbLiteral.Token.Value });
+
+                if (type.SpecialType == SpecialType.System_SByte || type.SpecialType == SpecialType.System_Byte ||
+                    type.SpecialType == SpecialType.System_Int16 || type.SpecialType == SpecialType.System_UInt16 ||
+                    type.SpecialType == SpecialType.System_Int32 || type.SpecialType == SpecialType.System_UInt32 ||
+                    type.SpecialType == SpecialType.System_Int64 || type.SpecialType == SpecialType.System_UInt64 ||
+                    type.SpecialType == SpecialType.System_Decimal || type.SpecialType == SpecialType.System_Single ||
+                    type.SpecialType == SpecialType.System_Double) {
+                    return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((decimal)result));
+                } else if (type.SpecialType == SpecialType.System_Char) {
+                    return SyntaxFactory.LiteralExpression(SyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal((char)result));
+                } else if (type.SpecialType == SpecialType.System_Boolean) {
+                    return SyntaxFactory.LiteralExpression(Convert.ToBoolean(result) ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression);
+                } else if (type.SpecialType == SpecialType.System_String) {
+                    return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal((string)result));
+                }
+            }
+
+            throw new Exception();
+        }
+
 
         public ExpressionSyntax AddExplicitConvertTo(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol type)
         {
@@ -215,7 +247,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             Identity,
             DestructiveCast,
             NonDestructiveCast,
-            Conversion
+            Conversion,
+            ConstConversion,
         }
 
         public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax node, ITypeSymbol convertedType,

@@ -12,6 +12,7 @@ All notable changes to the code converter will be documented here.
 * Improvements to redim conversion (#403, #393)
 * Convert array of arrays initializer (#364)
 * Improvements to implicit enum -> int conversion (#361)
+* Convert expressions in constants (#329)
 
 ### C# -> VB
 * Convert property accessors with visiblity modifiers (#92)
