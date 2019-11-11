@@ -1516,7 +1516,13 @@ namespace ICSharpCode.CodeConverter.Util
         public static string DescribeConversionError(this SyntaxNode node, Exception e)
         {
             return $"Cannot convert {node.GetType().Name}, {e}{Environment.NewLine}{Environment.NewLine}" +
-                $"Input: {Environment.NewLine}{node.ToFullString()}{Environment.NewLine}";
+                $"Input:{Environment.NewLine}{node.ToFullString()}{Environment.NewLine}";
+        }
+
+        public static string DescribeConversionWarning(this SyntaxNode node, string addtlInfo)
+        {
+            return $"{addtlInfo}{Environment.NewLine}" +
+                $"{node.NormalizeWhitespace().ToFullString()}{Environment.NewLine}";
         }
 
         private static string Truncate(this string input, int maxLength = 30, string truncationIndicator = "...")
@@ -1538,6 +1544,19 @@ namespace ICSharpCode.CodeConverter.Util
             return dummyDestNode
                 .WithTrailingTrivia(trailingTrivia)
                 .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, exception.ToString()));
+        }
+
+        public static T WithCsTrailingWarningComment<T>(this T dummyDestNode, string warning, string addtlInfo,
+            CSharpSyntaxNode convertedNode
+            ) where T : CSharpSyntaxNode
+        {
+            var warningDirective = SyntaxFactory.ParseTrailingTrivia($"#warning {warning}{Environment.NewLine}");
+            var warningDescription = convertedNode.DescribeConversionWarning(addtlInfo);
+            var commentedText = "/* " + warningDescription + " */";
+            var trailingTrivia = SyntaxFactory.TriviaList(warningDirective.Concat(SyntaxFactory.Comment(commentedText)));
+
+            return dummyDestNode
+                .WithTrailingTrivia(trailingTrivia);
         }
 
         public static T WithVbTrailingErrorComment<T>(

@@ -545,6 +545,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var expr = (ExpressionSyntax) await node.SelectStatement.Expression.AcceptAsync(_expressionVisitor);
             var exprWithoutTrivia = expr.WithoutTrivia().WithoutAnnotations();
+            var usedConstantValues = new HashSet<object>();
             var sections = new List<SwitchSectionSyntax>();
             foreach (var block in node.CaseBlocks) {
                 var labels = new List<SwitchLabelSyntax>();
@@ -555,11 +556,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                         var typeConversionKind = CommonConversions.TypeConversionAnalyzer.AnalyzeConversion(s.Value);
                         var expressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax, typeConversionKind, true);
                         SwitchLabelSyntax caseSwitchLabelSyntax = SyntaxFactory.CaseSwitchLabel(expressionSyntax);
-                        if (!_semanticModel.GetConstantValue(s.Value).HasValue || (typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.NonDestructiveCast && typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.Identity)) {
+                        var constantValue = _semanticModel.GetConstantValue(s.Value);
+                        var isRepeatedConstantValue = constantValue.HasValue && !usedConstantValues.Add(constantValue);
+                        if (!constantValue.HasValue || isRepeatedConstantValue ||
+                            (typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.NonDestructiveCast &&
+                             typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.Identity)) {
                             caseSwitchLabelSyntax =
                                 WrapInCasePatternSwitchLabelSyntax(node, expressionSyntax);
                         }
-
                         labels.Add(caseSwitchLabelSyntax);
                     } else if (c is VBSyntax.ElseCaseClauseSyntax) {
                         labels.Add(SyntaxFactory.DefaultSwitchLabel());
