@@ -551,6 +551,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var expr = (ExpressionSyntax) await node.SelectStatement.Expression.AcceptAsync(_expressionVisitor);
             var exprWithoutTrivia = expr.WithoutTrivia().WithoutAnnotations();
+            var usedConstantValues = new HashSet<object>();
             var sections = new List<SwitchSectionSyntax>();
             var cases = new List<String>();
             foreach (var block in node.CaseBlocks) {
@@ -562,11 +563,19 @@ namespace ICSharpCode.CodeConverter.CSharp
                         var typeConversionKind = CommonConversions.TypeConversionAnalyzer.AnalyzeConversion(s.Value);
                         var expressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax, typeConversionKind, true);
                         SwitchLabelSyntax caseSwitchLabelSyntax = SyntaxFactory.CaseSwitchLabel(expressionSyntax);
-                        if (!_semanticModel.GetConstantValue(s.Value).HasValue || (typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.NonDestructiveCast && typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.Identity)) {
+                        var constantValue = _semanticModel.GetConstantValue(s.Value);
+                        var isRepeatedConstantValue = constantValue.HasValue && !usedConstantValues.Add(constantValue);
+                        if (!constantValue.HasValue || isRepeatedConstantValue ||
+                            (typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.NonDestructiveCast &&
+                             typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.Identity)) {
                             caseSwitchLabelSyntax =
                                 WrapInCasePatternSwitchLabelSyntax(node, expressionSyntax);
+                            if (isRepeatedConstantValue) {
+                                caseSwitchLabelSyntax = caseSwitchLabelSyntax.WithLeadingTrivia(
+                                    SyntaxFactory.ParseLeadingTrivia(
+                                        $"#warning This case was not executable prior to code conversion, but is preserved here in case it helps troubleshoot a bug{Environment.NewLine}"));
+                            }
                         }
-
                         labels.Add(caseSwitchLabelSyntax);
                     } else if (c is VBSyntax.ElseCaseClauseSyntax) {
                         labels.Add(SyntaxFactory.DefaultSwitchLabel());
@@ -588,18 +597,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     csBlockStatements.Add(SyntaxFactory.BreakStatement());
                 }
                 var list = SingleStatement(SyntaxFactory.Block(csBlockStatements));
-                var labelDesc = string.Join(" ", labels.Select(l => l.ToFullString()));
-                var numMatch = cases.Count(c => c == labelDesc);
-                if (numMatch == 0) {
-                    cases.Add(labelDesc);
-                    sections.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), list));
-                } else {
-                    //Else write comment to code?
-                    var lastCase = sections.Last();
-                    sections.Remove(lastCase);
-                    lastCase = lastCase.WithCsTrailingWarningComment("Unreachable case label","This case was not executable prior to code conversion, but is preserved here in case it helps troubleshoot a bug", SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), list));
-                    sections.Add(lastCase);
-                }
+                sections.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), list));
             }
 
             var switchStatementSyntax = ValidSyntaxFactory.SwitchStatement(expr, sections);
