@@ -2014,6 +2014,46 @@ End Function",
         }
 
         [Fact]
+        public async Task SelectCaseIssue361()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(
+                @"Module Module1
+    Enum E
+        A = 1
+    End Enum
+
+    Sub Main()
+        Dim x = 1
+        Select Case x
+            Case E.A
+                Console.WriteLine(""z"")
+        End Select
+    End Sub
+End Module", @"using System;
+
+internal static partial class Module1
+{
+    public enum E
+    {
+        A = 1
+    }
+
+    public static void Main()
+    {
+        int x = 1;
+        switch (x)
+        {
+            case (int)E.A:
+                {
+                    Console.WriteLine(""z"");
+                    break;
+                }
+        }
+    }
+}");
+        }
+
+        [Fact]
         public async Task Tuple()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(
