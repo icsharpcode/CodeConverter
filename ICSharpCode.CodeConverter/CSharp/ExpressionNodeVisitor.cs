@@ -116,13 +116,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitCatchBlock(VBasic.Syntax.CatchBlockSyntax node)
         {
             var stmt = node.CatchStatement;
-            CatchDeclarationSyntax catcher;
-            if (stmt.IdentifierName == null)
-                catcher = null;
-            else {
-                var typeInfo = _semanticModel.GetTypeInfo(stmt.IdentifierName).Type;
+            CatchDeclarationSyntax catcher = null;
+            if (stmt.AsClause != null) {
                 catcher = SyntaxFactory.CatchDeclaration(
-                    SyntaxFactory.ParseTypeName(typeInfo.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart)),
+                    ConvertTypeSyntax(stmt.AsClause.Type),
                     ConvertIdentifier(stmt.IdentifierName.Identifier)
                 );
             }
@@ -135,6 +132,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 filter,
                 SyntaxFactory.Block(stmts)
             );
+        }
+
+        private TypeSyntax ConvertTypeSyntax(VBSyntax.TypeSyntax vbType)
+        {
+            if (_semanticModel.GetSymbolInfo(vbType).Symbol is ITypeSymbol typeSymbol)
+                return CommonConversions.GetTypeSyntax(typeSymbol);
+            return SyntaxFactory.ParseTypeName(vbType.ToString());
         }
 
         public override async Task<CSharpSyntaxNode> VisitCatchFilterClause(VBasic.Syntax.CatchFilterClauseSyntax node)
