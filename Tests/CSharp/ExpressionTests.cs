@@ -602,14 +602,12 @@ internal static partial class Module1
                     Console.WriteLine(""a"");
                     break;
                 }
-#warning Unreachable case label
-                /* This case was not executable prior to code conversion, but is preserved here in case it helps troubleshoot a bug
-                case 1:
+
+            case var @case when @case == 1:
                 {
                     Console.WriteLine(""b"");
                     break;
                 }
-                 */
         }
     }
 }");
