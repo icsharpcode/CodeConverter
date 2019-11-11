@@ -14,6 +14,7 @@ All notable changes to the code converter will be documented here.
 * Improvements to implicit enum -> int conversion (#361)
 * Convert expressions in constants (#329)
 * Convert implicit `ElementAtOrDefault` (#362)
+* Convert types in ternary expressions (#363)
 
 ### C# -> VB
 * Convert property accessors with visiblity modifiers (#92)

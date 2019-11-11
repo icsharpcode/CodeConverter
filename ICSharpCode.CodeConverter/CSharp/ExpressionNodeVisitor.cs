@@ -478,11 +478,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitTernaryConditionalExpression(VBasic.Syntax.TernaryConditionalExpressionSyntax node)
         {
-            var expr = SyntaxFactory.ConditionalExpression(
-                (ExpressionSyntax) await node.Condition.AcceptAsync(TriviaConvertingVisitor),
-                (ExpressionSyntax) await node.WhenTrue.AcceptAsync(TriviaConvertingVisitor),
-                (ExpressionSyntax) await node.WhenFalse.AcceptAsync(TriviaConvertingVisitor)
-            );
+            var condition = (ExpressionSyntax)await node.Condition.AcceptAsync(TriviaConvertingVisitor);
+
+            var whenTrue = (ExpressionSyntax)await node.WhenTrue.AcceptAsync(TriviaConvertingVisitor);
+            whenTrue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.WhenTrue, whenTrue);
+
+            var whenFalse = (ExpressionSyntax)await node.WhenFalse.AcceptAsync(TriviaConvertingVisitor);
+            whenFalse = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.WhenFalse, whenFalse);
+
+            var expr = SyntaxFactory.ConditionalExpression(condition, whenTrue, whenFalse);
+
 
             if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || VbSyntaxNodeExtensions.PrecedenceCouldChange(node))
                 return SyntaxFactory.ParenthesizedExpression(expr);
