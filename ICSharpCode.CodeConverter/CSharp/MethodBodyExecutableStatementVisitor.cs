@@ -552,6 +552,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var expr = (ExpressionSyntax) await node.SelectStatement.Expression.AcceptAsync(_expressionVisitor);
             var exprWithoutTrivia = expr.WithoutTrivia().WithoutAnnotations();
             var sections = new List<SwitchSectionSyntax>();
+            var cases = new List<String>();
+            var emptyCodeList = SingleStatement(SyntaxFactory.BreakStatement()); ;
             foreach (var block in node.CaseBlocks) {
                 var labels = new List<SwitchLabelSyntax>();
                 foreach (var c in block.CaseStatement.Cases) {
@@ -587,7 +589,19 @@ namespace ICSharpCode.CodeConverter.CSharp
                     csBlockStatements.Add(SyntaxFactory.BreakStatement());
                 }
                 var list = SingleStatement(SyntaxFactory.Block(csBlockStatements));
-                sections.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), list));
+                var newSectionNoCode = SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), emptyCodeList);
+                var curNodeDesc = newSectionNoCode.ToFullString();
+                var numMatch = cases.Count(c => c == curNodeDesc);
+                if (numMatch == 0) {
+                    cases.Add(curNodeDesc);
+                    sections.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), list));
+                } else {
+                    //Else write comment to code?
+                    var lastCase = sections.Last();
+                    sections.Remove(lastCase);
+                    lastCase = lastCase.WithCsTrailingWarningComment(block, new NotSupportedException("Duplicate Case label commented out"));
+                    sections.Add(lastCase);
+                }
             }
 
             var switchStatementSyntax = ValidSyntaxFactory.SwitchStatement(expr, sections);

@@ -1540,6 +1540,20 @@ namespace ICSharpCode.CodeConverter.Util
                 .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, exception.ToString()));
         }
 
+        public static T WithCsTrailingWarningComment<T>(this T dummyDestNode,
+            VisualBasicSyntaxNode sourceNode,
+            Exception exception) where T : CSharpSyntaxNode
+        {
+            var errorDirective = SyntaxFactory.ParseTrailingTrivia($"#warning Cannot convert {sourceNode.GetType().Name} - see comment for details{Environment.NewLine}");
+            var errorDescription = sourceNode.DescribeConversionError(exception);
+            var commentedText = "/* " + errorDescription + " */";
+            var trailingTrivia = SyntaxFactory.TriviaList(errorDirective.Concat(SyntaxFactory.Comment(commentedText)));
+
+            return dummyDestNode
+                .WithTrailingTrivia(trailingTrivia)
+                .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, exception.ToString()));
+        }
+
         public static T WithVbTrailingErrorComment<T>(
             this T dummyDestNode, CSharpSyntaxNode problematicSourceNode, Exception exception) where T : VisualBasicSyntaxNode
         {
