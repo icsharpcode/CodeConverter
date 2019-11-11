@@ -106,23 +106,32 @@ End Namespace";
 
         private static string Renamespace(this string sourceText)
         {
-            return sourceText.Replace("Namespace My", $"Namespace {Constants.MergedMyNamespace}");
+            return sourceText
+                .Replace("Namespace Global.Microsoft.VisualBasic", $"Namespace Global.Microsoft.{Constants.MergedMsVbNamespace}")
+                .Replace("Namespace My", $"Namespace {Constants.MergedMyNamespace}");
         }
 
-        public static async Task<Project> RenameMergedMyNamespace(this Project project)
+        public static async Task<Project> RenameMergedNamespaces(this Project project)
         {
-            for (var symbolToRename = await GetFirstSymbolWithName(project); symbolToRename != null; symbolToRename = await GetFirstSymbolWithName(project)) {
-                var renamedSolution = await Renamer.RenameSymbolAsync(project.Solution, symbolToRename, "My", default(OptionSet));
-                project = renamedSolution.GetProject(project.Id);
-            }
-
+            project = await RenameNamespace(project, Constants.MergedMyNamespace, "My");
+            project = await RenameNamespace(project, Constants.MergedMsVbNamespace, "VisualBasic");
             return project;
         }
 
-        private static async Task<ISymbol> GetFirstSymbolWithName(Project project)
+        private static async Task<Project> RenameNamespace(Project project, string oldName, string newName)
+        {
+            for (var symbolToRename = await GetFirstSymbolWithName(project, oldName); symbolToRename != null; symbolToRename = await GetFirstSymbolWithName(project, oldName))
+            {
+                var renamedSolution = await Renamer.RenameSymbolAsync(project.Solution, symbolToRename, newName, default(OptionSet));
+                project = renamedSolution.GetProject(project.Id);
+            }
+            return project;
+        }
+
+        private static async Task<ISymbol> GetFirstSymbolWithName(Project project, string mergedMyNamespace)
         {
             var compilation = await project.GetCompilationAsync();
-            return compilation.GetSymbolsWithName(s => s == Constants.MergedMyNamespace, SymbolFilter.Namespace).FirstOrDefault();
+            return compilation.GetSymbolsWithName(s => s == mergedMyNamespace, SymbolFilter.Namespace).FirstOrDefault();
         }
     }
 }

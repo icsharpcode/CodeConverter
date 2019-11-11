@@ -364,7 +364,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     else if (info.IsReferenceType)
                         expr = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
                     else if (info.CanBeReferencedByName)
-                        expr = SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(info.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart)));
+                        expr = SyntaxFactory.DefaultExpression(CommonConversions.GetTypeSyntax(info));
                     else
                         throw new NotSupportedException();
                     return SingleStatement(SyntaxFactory.ReturnStatement(expr));
@@ -616,7 +616,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<SyntaxList<StatementSyntax>> VisitWithBlock(VBSyntax.WithBlockSyntax node)
         {
             var withExpression = (ExpressionSyntax) await node.WithStatement.Expression.AcceptAsync(_expressionVisitor);
-            var generateVariableName = !_semanticModel.GetTypeInfo(node.WithStatement.Expression).Type.IsValueType;
+            var generateVariableName = _semanticModel.GetTypeInfo(node.WithStatement.Expression).Type?.IsValueType != true;
 
             ExpressionSyntax lhsExpression;
             List<StatementSyntax> prefixDeclarations = new List<StatementSyntax>();
