@@ -597,7 +597,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     //Else write comment to code?
                     var lastCase = sections.Last();
                     sections.Remove(lastCase);
-                    lastCase = lastCase.WithCsTrailingWarningComment(block, new NotSupportedException("Duplicate Case label commented out"));
+                    lastCase = lastCase.WithCsTrailingWarningComment("Unreachable case label","This case was not executable prior to code conversion, but is preserved here in case it helps troubleshoot a bug", SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), list));
                     sections.Add(lastCase);
                 }
             }

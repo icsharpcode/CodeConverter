@@ -1519,6 +1519,12 @@ namespace ICSharpCode.CodeConverter.Util
                 $"Input:{Environment.NewLine}{node.ToFullString()}{Environment.NewLine}";
         }
 
+        public static string DescribeConversionWarning(this SyntaxNode node, string addtlInfo)
+        {
+            return $"{addtlInfo}{Environment.NewLine}" +
+                $"{node.NormalizeWhitespace().ToFullString()}{Environment.NewLine}";
+        }
+
         private static string Truncate(this string input, int maxLength = 30, string truncationIndicator = "...")
         {
             input = input.Replace(Environment.NewLine, "\\r\\n").Replace("    ", " ").Replace("\t", " ");
@@ -1540,18 +1546,17 @@ namespace ICSharpCode.CodeConverter.Util
                 .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, exception.ToString()));
         }
 
-        public static T WithCsTrailingWarningComment<T>(this T dummyDestNode,
-            VisualBasicSyntaxNode sourceNode,
-            Exception exception) where T : CSharpSyntaxNode
+        public static T WithCsTrailingWarningComment<T>(this T dummyDestNode, string warning, string addtlInfo,
+            CSharpSyntaxNode convertedNode
+            ) where T : CSharpSyntaxNode
         {
-            var errorDirective = SyntaxFactory.ParseTrailingTrivia($"#warning Cannot convert {sourceNode.GetType().Name} - see comment for details{Environment.NewLine}");
-            var errorDescription = sourceNode.DescribeConversionError(exception);
+            var errorDirective = SyntaxFactory.ParseTrailingTrivia($"#warning {warning}{Environment.NewLine}");
+            var errorDescription = convertedNode.DescribeConversionWarning(addtlInfo);
             var commentedText = "/* " + errorDescription + " */";
             var trailingTrivia = SyntaxFactory.TriviaList(errorDirective.Concat(SyntaxFactory.Comment(commentedText)));
 
             return dummyDestNode
-                .WithTrailingTrivia(trailingTrivia)
-                .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, exception.ToString()));
+                .WithTrailingTrivia(trailingTrivia);
         }
 
         public static T WithVbTrailingErrorComment<T>(
