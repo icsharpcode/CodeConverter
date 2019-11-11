@@ -33,6 +33,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly SyntaxGenerator _csSyntaxGenerator;
         private static readonly Dictionary<string, MethodInfo> ConversionsTypeFullNames = GetConversionsMethodsByTypeFullName();
         private static readonly Dictionary<string, MethodInfo> ConversionsMethodNames = ConversionsTypeFullNames.Values.Concat(GetStringsMethods()).ToDictionary(m => m.Name, m => m);
+        private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
 
         private static Dictionary<string, MethodInfo> GetConversionsMethodsByTypeFullName()
         {
@@ -54,12 +55,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation,
-            HashSet<string> extraUsingDirectives, SyntaxGenerator csSyntaxGenerator)
+            HashSet<string> extraUsingDirectives, SyntaxGenerator csSyntaxGenerator, VisualBasicEqualityComparison visualBasicEqualityComparison)
         {
             _semanticModel = semanticModel;
             _csCompilation = csCompilation;
             _extraUsingDirectives = extraUsingDirectives;
             _csSyntaxGenerator = csSyntaxGenerator;
+            _visualBasicEqualityComparison = visualBasicEqualityComparison;
         }
 
         public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool alwaysExplicit = false, bool isConst = false)
@@ -253,13 +255,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             throw new NotImplementedException("Cannot generate constant C# expression");
         }
 
-        private static bool TryCompileTimeEvaluate(IOperation vbOperation, out object result)
+        private bool TryCompileTimeEvaluate(IOperation vbOperation, out object result)
         {
             result = null;
-            return TryCompileTimeEvaluateInvocation(vbOperation, out result) || TryCompileTimeEvaluateBinaryExpression(vbOperation, out result, false);
+            return TryCompileTimeEvaluateInvocation(vbOperation, out result) || TryCompileTimeEvaluateBinaryExpression(vbOperation, out result);
         }
 
-        private static bool TryCompileTimeEvaluateInvocation(IOperation vbOperation, out object result)
+        private bool TryCompileTimeEvaluateInvocation(IOperation vbOperation, out object result)
         {
             if (vbOperation is IInvocationOperation invocationOperation &&
                 ConversionsMethodNames.TryGetValue(invocationOperation.TargetMethod.Name,
@@ -276,11 +278,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             return false;
         }
 
-        private static bool TryCompileTimeEvaluateBinaryExpression(IOperation vbOperation, out object result, bool textCompare = false)//todo set textcompare
+        private bool TryCompileTimeEvaluateBinaryExpression(IOperation vbOperation, out object result)
         {
             result = null;
             if (vbOperation is IBinaryOperation binaryOperation && TryCompileTimeEvaluate(binaryOperation.LeftOperand, out var leftResult) && TryCompileTimeEvaluate(binaryOperation.RightOperand, out var rightResult)) {
-
+                var textComparisonCaseInsensitive = _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive;
                 switch (binaryOperation.OperatorKind) {
                     case BinaryOperatorKind.Add:
                         result = Operators.AddObject(leftResult, rightResult);
@@ -322,7 +324,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         result = Operators.ConcatenateObject(leftResult, rightResult);
                         break;
                     case BinaryOperatorKind.Equals:
-                        result = Operators.CompareObjectEqual(leftResult, rightResult, textCompare/*TODO*/);
+                        result = Operators.CompareObjectEqual(leftResult, rightResult, textComparisonCaseInsensitive);
                         break;
                     case BinaryOperatorKind.ObjectValueEquals:
                         result = leftResult == rightResult;
@@ -331,19 +333,19 @@ namespace ICSharpCode.CodeConverter.CSharp
                         result = Operators.IntDivideObject(leftResult, rightResult);
                         break;
                     case BinaryOperatorKind.ObjectValueNotEquals:
-                        result = Operators.CompareObjectNotEqual(leftResult, rightResult, textCompare);
+                        result = Operators.CompareObjectNotEqual(leftResult, rightResult, textComparisonCaseInsensitive);
                         break;
                     case BinaryOperatorKind.LessThan:
-                        result = Operators.CompareObjectLess(leftResult, rightResult, textCompare);
+                        result = Operators.CompareObjectLess(leftResult, rightResult, textComparisonCaseInsensitive);
                         break;
                     case BinaryOperatorKind.LessThanOrEqual:
-                        result = Operators.CompareObjectLessEqual(leftResult, rightResult, textCompare);
+                        result = Operators.CompareObjectLessEqual(leftResult, rightResult, textComparisonCaseInsensitive);
                         break;
                     case BinaryOperatorKind.GreaterThanOrEqual:
-                        result = Operators.CompareObjectGreaterEqual(leftResult, rightResult, textCompare);
+                        result = Operators.CompareObjectGreaterEqual(leftResult, rightResult, textComparisonCaseInsensitive);
                         break;
                     case BinaryOperatorKind.GreaterThan:
-                        result = Operators.CompareObjectGreater(leftResult, rightResult, textCompare);
+                        result = Operators.CompareObjectGreater(leftResult, rightResult, textComparisonCaseInsensitive);
                         break;
                     default:
                         return false;
