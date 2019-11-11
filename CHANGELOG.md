@@ -11,6 +11,7 @@ All notable changes to the code converter will be documented here.
 * Convert trivia (e.g. comments) at start of file (#333)
 * Improvements to redim conversion (#403, #393)
 * Convert array of arrays initializer (#364)
+* Improvements to implicit enum -> int conversion (#361)
 
 ### C# -> VB
 * Convert property accessors with visiblity modifiers (#92)
