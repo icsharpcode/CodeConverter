@@ -545,7 +545,49 @@ End Class",
 }");
         }
 
+        [Fact]
+        public async Task DuplicateCaseDiscarded()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Imports System
+    Friend Module Module1
+    Sub Main()
+        Select Case 1
+            Case 1
+                Console.WriteLine(""a"")
 
+            Case 1
+                Console.WriteLine(""b"")
+
+        End Select
+
+    End Sub
+End Module",
+@"using System;
+
+internal static partial class Module1
+{
+    public static void Main()
+    {
+        switch (1)
+        {
+            case 1:
+                {
+                    Console.WriteLine(""a"");
+                    break;
+                }
+#warning Cannot convert CaseBlockSyntax - see comment for details
+                /* Cannot convert CaseBlockSyntax, System.NotSupportedException: Duplicate Case label commented out
+
+                Input:
+
+                            Case 1
+                                Console.WriteLine(""b"")
+
+                 */
+        }
+    }
+}");
+        }
         [Fact]
         public async Task MethodCallWithoutParens()
         {

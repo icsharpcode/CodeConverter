@@ -553,7 +553,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             var exprWithoutTrivia = expr.WithoutTrivia().WithoutAnnotations();
             var sections = new List<SwitchSectionSyntax>();
             var cases = new List<String>();
-            var emptyCodeList = SingleStatement(SyntaxFactory.BreakStatement()); ;
             foreach (var block in node.CaseBlocks) {
                 var labels = new List<SwitchLabelSyntax>();
                 foreach (var c in block.CaseStatement.Cases) {
@@ -589,11 +588,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     csBlockStatements.Add(SyntaxFactory.BreakStatement());
                 }
                 var list = SingleStatement(SyntaxFactory.Block(csBlockStatements));
-                var newSectionNoCode = SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), emptyCodeList);
-                var curNodeDesc = newSectionNoCode.ToFullString();
-                var numMatch = cases.Count(c => c == curNodeDesc);
+                var labelDesc = string.Join(" ", labels.Select(l => l.ToFullString()));
+                var numMatch = cases.Count(c => c == labelDesc);
                 if (numMatch == 0) {
-                    cases.Add(curNodeDesc);
+                    cases.Add(labelDesc);
                     sections.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), list));
                 } else {
                     //Else write comment to code?
