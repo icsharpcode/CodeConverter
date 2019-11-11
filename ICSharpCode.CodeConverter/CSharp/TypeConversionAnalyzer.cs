@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.VisualBasic;
+using Microsoft.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.VisualBasic.CompilerServices;
 using CastExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.CastExpressionSyntax;
@@ -28,14 +31,26 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _extraUsingDirectives;
         private readonly SyntaxGenerator _csSyntaxGenerator;
-        private static readonly Dictionary<string, string> ConversionsTypeFullNames = GetConversionsMethodsByTypeFullName();
+        private static readonly Dictionary<string, MethodInfo> ConversionsTypeFullNames = GetConversionsMethodsByTypeFullName();
+        private static readonly Dictionary<string, MethodInfo> ConversionsMethodNames = ConversionsTypeFullNames.Values.Concat(GetStringsMethods()).ToDictionary(m => m.Name, m => m);
 
-        private static Dictionary<string, string> GetConversionsMethodsByTypeFullName()
+        private static Dictionary<string, MethodInfo> GetConversionsMethodsByTypeFullName()
         {
             return typeof(Conversions).GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(n => n.Name.StartsWith("To") && n.GetParameters().Length == 1 && n.ReturnType?.FullName != null)
-                .ToLookup(n => n.ReturnType.FullName, n => n.Name)
-                .ToDictionary(kvp => kvp.Key, kvp => kvp.First());
+                .Where(m => m.Name.StartsWith("To") && m.GetParameters().Length == 1 && m.ReturnType?.FullName != null)
+                .ToLookup(m => m.ReturnType.FullName, m => m)
+                .ToDictionary(kvp => kvp.Key, GetMostGeneralOverload);
+        }
+        private static MethodInfo GetMostGeneralOverload(IGrouping<string, MethodInfo> kvp)
+        {
+            return kvp.OrderByDescending(mi => mi.GetParameters().First().ParameterType == typeof(object)).First();
+        }
+
+        private static IEnumerable<MethodInfo> GetStringsMethods()
+        {
+            return typeof(Strings).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .ToLookup(m => m.Name, m => m)
+                .Where(g => g.Count() == 1).SelectMany(ms => ms);
         }
 
         public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation,
@@ -212,9 +227,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private ExpressionSyntax ConstantFold(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol type)
         {
-            if (vbNode is VBSyntax.LiteralExpressionSyntax vbLiteral && ConversionsTypeFullNames.TryGetValue(type.GetFullMetadataName(), out var methodId)) {
-                var conversionMethod = typeof(Conversions).GetMethods(methodId).Where(mi => mi.GetParameters().First().ParameterType == typeof(object)).First();
-                var result = conversionMethod.Invoke(null, new[] { vbLiteral.Token.Value });
+            var vbOperation = _semanticModel.GetOperation(vbNode);
+
+            if (vbOperation.ConstantValue.HasValue && ConversionsTypeFullNames.TryGetValue(type.GetFullMetadataName(), out var method)) {
+                var result = method.Invoke(null, new[] { vbOperation.ConstantValue.Value });
 
                 if (type.SpecialType == SpecialType.System_SByte || type.SpecialType == SpecialType.System_Byte ||
                     type.SpecialType == SpecialType.System_Int16 || type.SpecialType == SpecialType.System_UInt16 ||
@@ -230,9 +246,113 @@ namespace ICSharpCode.CodeConverter.CSharp
                 } else if (type.SpecialType == SpecialType.System_String) {
                     return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal((string)result));
                 }
+            } else if (TryCompileTimeEvaluate(vbOperation, out var result)) {
+                return LiteralConversions.GetLiteralExpression(result);
             }
 
-            throw new Exception();
+            throw new NotImplementedException("Cannot generate constant C# expression");
+        }
+
+        private static bool TryCompileTimeEvaluate(IOperation vbOperation, out object result)
+        {
+            result = null;
+            return TryCompileTimeEvaluateInvocation(vbOperation, out result) || TryCompileTimeEvaluateBinaryExpression(vbOperation, out result, false);
+        }
+
+        private static bool TryCompileTimeEvaluateInvocation(IOperation vbOperation, out object result)
+        {
+            if (vbOperation is IInvocationOperation invocationOperation &&
+                ConversionsMethodNames.TryGetValue(invocationOperation.TargetMethod.Name,
+                    out var conversionMethodInfo) && invocationOperation.Arguments.Length == 1 &&
+                invocationOperation.Arguments.Single().Value.ConstantValue.HasValue)
+            {
+                result = conversionMethodInfo.Invoke(null,
+                    new[] {invocationOperation.Arguments.Single().Value.ConstantValue.Value});
+
+                return true;
+            }
+
+            result = null;
+            return false;
+        }
+
+        private static bool TryCompileTimeEvaluateBinaryExpression(IOperation vbOperation, out object result, bool textCompare = false)//todo set textcompare
+        {
+            result = null;
+            if (vbOperation is IBinaryOperation binaryOperation && TryCompileTimeEvaluate(binaryOperation.LeftOperand, out var leftResult) && TryCompileTimeEvaluate(binaryOperation.RightOperand, out var rightResult)) {
+
+                switch (binaryOperation.OperatorKind) {
+                    case BinaryOperatorKind.Add:
+                        result = Operators.AddObject(leftResult, rightResult);
+                        break;
+                    case BinaryOperatorKind.Subtract:
+                        result = Operators.SubtractObject(leftResult, rightResult);
+                        break;
+                    case BinaryOperatorKind.Multiply:
+                        result = Operators.MultiplyObject(leftResult, rightResult);
+                        break;
+                    case BinaryOperatorKind.Divide:
+                        result = Operators.DivideObject(leftResult, rightResult);
+                        break;
+                    case BinaryOperatorKind.IntegerDivide:
+                        result = Operators.IntDivideObject(leftResult, rightResult);
+                        break;
+                    case BinaryOperatorKind.Remainder:
+                        result = Operators.ModObject(leftResult, rightResult);
+                        break;
+                    case BinaryOperatorKind.Power:
+                        result = Operators.ExponentObject(leftResult, rightResult);
+                        break;
+                    case BinaryOperatorKind.LeftShift:
+                        result = Operators.LeftShiftObject(leftResult, rightResult);
+                        break;
+                    case BinaryOperatorKind.RightShift:
+                        result = Operators.RightShiftObject(leftResult, rightResult);
+                        break;
+                    case BinaryOperatorKind.And:
+                        result = Operators.AndObject(leftResult, rightResult);
+                        break;
+                    case BinaryOperatorKind.Or:
+                        result = Operators.OrObject(leftResult, rightResult);
+                        break;
+                    case BinaryOperatorKind.ExclusiveOr:
+                        result = Operators.XorObject(leftResult, rightResult);
+                        break;
+                    case BinaryOperatorKind.Concatenate:
+                        result = Operators.ConcatenateObject(leftResult, rightResult);
+                        break;
+                    case BinaryOperatorKind.Equals:
+                        result = Operators.CompareObjectEqual(leftResult, rightResult, textCompare/*TODO*/);
+                        break;
+                    case BinaryOperatorKind.ObjectValueEquals:
+                        result = leftResult == rightResult;
+                        break;
+                    case BinaryOperatorKind.NotEquals:
+                        result = Operators.IntDivideObject(leftResult, rightResult);
+                        break;
+                    case BinaryOperatorKind.ObjectValueNotEquals:
+                        result = Operators.CompareObjectNotEqual(leftResult, rightResult, textCompare);
+                        break;
+                    case BinaryOperatorKind.LessThan:
+                        result = Operators.CompareObjectLess(leftResult, rightResult, textCompare);
+                        break;
+                    case BinaryOperatorKind.LessThanOrEqual:
+                        result = Operators.CompareObjectLessEqual(leftResult, rightResult, textCompare);
+                        break;
+                    case BinaryOperatorKind.GreaterThanOrEqual:
+                        result = Operators.CompareObjectGreaterEqual(leftResult, rightResult, textCompare);
+                        break;
+                    case BinaryOperatorKind.GreaterThan:
+                        result = Operators.CompareObjectGreater(leftResult, rightResult, textCompare);
+                        break;
+                    default:
+                        return false;
+
+                }
+
+                return true;
+            }
+            return false;
         }
 
 
@@ -253,7 +373,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             // Need to use Conversions rather than Convert to match what VB does, eg. True -> -1
             _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
             var memberAccess = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                SyntaxFactory.IdentifierName("Conversions"), SyntaxFactory.IdentifierName(methodId));
+                SyntaxFactory.IdentifierName("Conversions"), SyntaxFactory.IdentifierName(methodId.Name));
             var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(csNode)));
             return SyntaxFactory.InvocationExpression(memberAccess, arguments);
         }
