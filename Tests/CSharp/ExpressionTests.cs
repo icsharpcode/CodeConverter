@@ -2237,6 +2237,25 @@ End Class", @"public partial class Class1
         }
 
         [Fact]
+        public async Task TernaryConversionIssue363()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Module Module1
+    Sub Main()
+        Dim x As Short = If(True, CShort(50), 100S)
+    End Sub
+End Module", @"using Microsoft.VisualBasic.CompilerServices;
+
+internal static partial class Module1
+{
+    public static void Main()
+    {
+        short x = true ? Conversions.ToShort(50) : Conversions.ToShort(100);
+    }
+}
+");
+        }
+
+        [Fact]
         public async Task MemberAccessCasing()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1

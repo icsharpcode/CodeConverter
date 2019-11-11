@@ -110,7 +110,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var vbCompilation = (VisualBasicCompilation) _semanticModel.Compilation;
             var vbConversion = vbCompilation.ClassifyConversion(vbType, vbConvertedType);
-            var csType = _csCompilation.GetTypeByMetadataName(vbType.GetFullMetadataName());
+            var csType = GetCSType(vbNode, vbType);
             var csConvertedType = _csCompilation.GetTypeByMetadataName(vbConvertedType.GetFullMetadataName());
 
             if (csType != null && csConvertedType != null &&
@@ -119,6 +119,20 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return AnalyzeVbConversion(alwaysExplicit, vbType, vbConvertedType, vbConversion);
+        }
+
+        private INamedTypeSymbol GetCSType(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbType)
+        {
+            // C# does not have literals for short/ushort, so the actual type here is integer
+            if (vbNode is VBSyntax.LiteralExpressionSyntax literal &&
+                literal.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NumericLiteralExpression) &&
+                literal.Token.Text.EndsWith("S")) {
+                return _csCompilation.GetSpecialType(SpecialType.System_Int32);
+            }
+
+            var csType = _csCompilation.GetTypeByMetadataName(vbType.GetFullMetadataName());
+
+            return csType;
         }
 
         private bool TryAnalyzeCsConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, INamedTypeSymbol csType,
@@ -157,6 +171,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 typeConversionKind = TypeConversionKind.NonDestructiveCast;
                 return true;
             } else if (csConversion.IsExplicit && vbConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
+                typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
+                return true;
+            } else if (csConversion.IsExplicit && vbConversion.IsIdentity && csConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
                 typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
                 return true;
             } else if (isArithmetic) {
