@@ -106,9 +106,7 @@ End Namespace");
 @"this.DataContext = from task in tasks
     where task.Priority == pri
     select task;",
-@"Me.DataContext = From task In tasks
-                                                                      Where task.Priority Is pri
-                                                                      Select task");
+@"Me.DataContext = From task In tasks Where task.Priority Is pri Select task");
         }
     }
 }

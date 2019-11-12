@@ -765,7 +765,7 @@ namespace ICSharpCode.CodeConverter.Util
         {
             if (sourceToken == null) return node;
             var convertedTrivia = ConvertTrivia(sourceToken.Value.LeadingTrivia);
-            return node.WithLeadingTrivia(convertedTrivia);
+            return node.WithLeadingTrivia(node.LeadingTrivia.Concat(convertedTrivia.Where(n => !n.IsWhitespaceTrivia())));
         }
 
         public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)

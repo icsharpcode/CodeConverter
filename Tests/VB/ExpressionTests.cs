@@ -296,7 +296,8 @@ class TestClass
             LastName = ""Playstead"",
         };
     }
-}", @"Friend Class StudentName
+}", @"
+Friend Class StudentName
     Public LastName, FirstName As String
 End Class
 
@@ -355,8 +356,7 @@ Friend Class SomeSettings
 End Class
 
 Friend Class Converter
-    Public Shared ReadOnly Settings = New SomeSettings
-With {
+    Public Shared ReadOnly Settings = New SomeSettings With {
     .Converters = {}
     }
 End Class");
@@ -489,7 +489,6 @@ End Namespace");
 
     Private Sub TestMethod()
         Dim test = Function(ByVal a As Integer) a * 2
-
         test(3)
     End Sub
 End Class");
@@ -537,7 +536,6 @@ End Module");
                     End Function
 
         Dim test3 = Function(a, b) a Mod b
-
         test(3)
     End Sub
 End Class");
@@ -586,10 +584,7 @@ End Class");
 }",
 @"Private Shared Sub SimpleQuery()
     Dim numbers = {7, 9, 5, 3, 6}
-
-    Dim res = From n In numbers
-              Where n > 5
-              Select n
+    Dim res = From n In numbers Where n > 5 Select n
 
     For Each n In res
         Console.WriteLine(n)
@@ -623,12 +618,10 @@ End Sub");
     }",
 @"Public Shared Sub Linq40()
     Dim numbers = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
-
-    Dim numberGroups = From n In numbers
-                       Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {
-                                   .Remainder = __groupByKey1__,
-                                   .Numbers = g
-                       }
+    Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {
+        .Remainder = __groupByKey1__,
+        .Numbers = g
+    }
 
     For Each g In numberGroups
         Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"")
@@ -681,14 +674,10 @@ End Class
 Friend Class Test
     Public Sub Linq102()
         Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
-
         Dim products As Product() = GetProductList
-
-        Dim q = From c In categories
-                Join p In products On c Equals p.Category
-                Select New With {
-                .Category = c, p.ProductName
-                }
+        Dim q = From c In categories Join p In products On c Equals p.Category Select New With {
+            .Category = c, p.ProductName
+        }
 
         For Each v In q
             Console.WriteLine($""{v.ProductName}: {v.Category}"")
@@ -729,15 +718,11 @@ End Class");
     }
 }", @"Public Sub Linq103()
     Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
-
     Dim products = GetProductList
-
-    Dim q = From c In categories
-            Group Join p In products On c Equals p.Category Into ps = Group
-            Select New With {
-            .Category = c,
-            .Products = ps
-            }
+    Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {
+        .Category = c,
+        .Products = ps
+    }
 
     For Each v In q
         Console.WriteLine(v.Category & "":"")
