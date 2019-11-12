@@ -777,7 +777,7 @@ namespace ICSharpCode.CodeConverter.Util
         {
             if (!otherToken.HasValue || !otherToken.Value.HasTrailingTrivia) return node;
             var convertedTrivia = ConvertTrivia(otherToken.Value.TrailingTrivia);
-            return node.WithTrailingTrivia(node.ImportantTrailingTrivia().Concat(convertedTrivia));
+            return node.WithTrailingTrivia(node.TrailingTrivia.Concat(convertedTrivia.Where(n => !n.IsWhitespaceTrivia())));
         }
 
         public static IEnumerable<SyntaxTrivia> ImportantTrailingTrivia(this SyntaxToken node)
