@@ -330,7 +330,6 @@ static class TestClass
     }
 }", @"Imports System
 Imports System.Runtime.CompilerServices
-
 Friend Module TestClass
     <Extension()>
     Private Function TypeSwitch(ByVal obj As Object, ByVal matchFunc1 As Func(Of String, Object), ByVal matchFunc2 As Func(Of Integer, Object), ByVal defaultFunc As Func(Of Object, Object)) As Object

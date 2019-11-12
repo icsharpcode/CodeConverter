@@ -252,7 +252,8 @@ End Class");
     Private Sub TestMethod()
         Dim b = {
         {1, 2},
-        {3, 4}}
+        {3, 4}
+}
     End Sub
 End Class");
         }
@@ -273,7 +274,8 @@ End Class");
     Private Sub TestMethod()
         Dim b = New Integer(,) {
         {1, 2},
-        {3, 4}}
+        {3, 4}
+}
     End Sub
 End Class");
         }
@@ -294,7 +296,8 @@ End Class");
     Private Sub TestMethod()
         Dim b = New Integer(1, 1) {
         {1, 2},
-        {3, 4}}
+        {3, 4}
+}
     End Sub
 End Class");
         }
@@ -840,6 +843,7 @@ End Class");
         Next
 
         Console.Write(""Enter the number to search for: "")
+
         Dim myNumber = Console.ReadLine
 
         For i = 0 To x - 1
@@ -858,6 +862,7 @@ Found:
         Console.WriteLine(""The number {0} is found."", myNumber)
 Finish:
         Console.WriteLine(""End of search."")
+
         Console.WriteLine(""Press any key to exit."")
         Console.ReadKey
     End Sub
