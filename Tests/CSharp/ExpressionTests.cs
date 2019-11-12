@@ -2303,16 +2303,33 @@ End Class", @"public partial class Class1
         public async Task AliasedImportsWithTypePromotionIssue401()
         {
             await TestConversionVisualBasicToCSharp(
-                @"Imports VB = Microsoft.VisualBasic
+                @"Imports System.IO
+Imports SIO = System.IO
+Imports Microsoft.VisualBasic
+Imports VB = Microsoft.VisualBasic
 
 Public Class Test
     Private aliased As String = VB.Left(""SomeText"", 1)
+    Private aliased2 As System.Delegate = SIO.ErrorEventHandler
+
+    ' Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
+    Private ErrorEventHandler As String = NameOf(TextReader)
+    Private Strings As String = NameOf(VBCodeProvider)
 End Class",
-                @"using VB = Microsoft.VisualBasic;
+                @"using System;
+using System.IO;
+using SIO = System.IO;
+using Microsoft.VisualBasic;
+using VB = Microsoft.VisualBasic;
 
 public partial class Test
 {
     private string aliased = VB.Strings.Left(""SomeText"", 1);
+    private Delegate aliased2 = SIO.ErrorEventHandler;
+
+    // Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
+    private string ErrorEventHandler = nameof(TextReader);
+    private string Strings = nameof(VBCodeProvider);
 }");
         }
 
