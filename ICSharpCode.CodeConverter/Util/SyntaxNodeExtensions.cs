@@ -788,7 +788,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsWhitespaceTrivia(this SyntaxTrivia trivia)
         {
-            return trivia.IsKind(CSSyntaxKind.WhitespaceTrivia) || trivia.IsKind(CSSyntaxKind.EndOfLineTrivia) || trivia.IsKind(CSSyntaxKind.WhitespaceTrivia) || trivia.IsKind(CSSyntaxKind.EndOfLineTrivia);
+            return trivia.IsKind(CSSyntaxKind.WhitespaceTrivia) || trivia.IsKind(CSSyntaxKind.EndOfLineTrivia) || trivia.IsKind(VBSyntaxKind.WhitespaceTrivia) || trivia.IsKind(VBSyntaxKind.EndOfLineTrivia);
         }
 
         public static bool ParentHasSameTrailingTrivia(this SyntaxNode otherNode)
