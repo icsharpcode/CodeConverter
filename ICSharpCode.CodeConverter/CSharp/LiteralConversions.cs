@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using ICSharpCode.CodeConverter.Util;
+using Microsoft.CodeAnalysis.CSharp;
 using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
@@ -16,7 +18,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static ExpressionSyntax GetLiteralExpression(object value, string textForUser = null)
         {
             if (value is string valueTextForCompiler) {
-                textForUser = GetQuotedStringTextForUser(textForUser, valueTextForCompiler);
+                textForUser = textForUser == null
+                    ? SymbolDisplay.FormatLiteral(valueTextForCompiler, true)
+                    : GetQuotedStringTextForUser(textForUser, valueTextForCompiler);
                 return SyntaxFactory.LiteralExpression(CSSyntaxKind.StringLiteralExpression,
                     SyntaxFactory.Literal(textForUser, valueTextForCompiler));
             }

@@ -737,6 +737,26 @@ End Class");
         }
 
         [Fact]
+        public async Task ForWithBlockDecrement()
+        {
+            await TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    void TestMethod()
+    {
+        for (i = end; i > 0; i--) {
+            b[i] = s[i];
+        }
+    }
+}", @"Friend Class TestClass
+    Private Sub TestMethod()
+        For i = [end] To 0 + 1 Step -1
+            b(i) = s(i)
+        Next
+    End Sub
+End Class");
+        }
+
+        [Fact]
         public async Task ForTupleDeconstruction()
         {
             await TestConversionCSharpToVisualBasic(@"public class SolutionConverter

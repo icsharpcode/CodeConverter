@@ -1254,13 +1254,13 @@ namespace Microsoft.VisualBasic
     {
         public const string vbCrLf = Conversions.ToString(Strings.ChrW(13)) + Conversions.ToString(Strings.ChrW(10));
         public const string vbNewLine = Conversions.ToString(Strings.ChrW(13)) + Conversions.ToString(Strings.ChrW(10));
-        public const string vbCr = '\r';
-        public const string vbLf = '\n';
-        public const string vbBack = '\b';
-        public const string vbFormFeed = '\f';
-        public const string vbTab = '\t';
-        public const string vbVerticalTab = '\v';
-        public const string vbNullChar = '\0';
+        public const string vbCr = "\r";
+        public const string vbLf = "\n";
+        public const string vbBack = "\b";
+        public const string vbFormFeed = "\f";
+        public const string vbTab = "\t";
+        public const string vbVerticalTab = "\v";
+        public const string vbNullChar = "\0";
         public const string vbNullString = null;
     }
 }
