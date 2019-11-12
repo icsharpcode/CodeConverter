@@ -99,8 +99,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .SelectAsync(async c => (UsingDirectiveSyntax) await c.Accept(TriviaConvertingVisitor));
             var usingDirectiveSyntax = usings
                 .Concat(_extraUsingDirectives.Select(u => SyntaxFactory.UsingDirective(SyntaxFactory.ParseName(u))))
-                .GroupBy(u => u.Name.ToString())
-                .Select(g => g.OrderBy(v => !string.IsNullOrEmpty(v.Alias?.ToString()) ? 0 : 1).First());
+                .GroupBy(u => (Name: u.Name.ToString(), Alias: u.Alias))
+                .Select(g => g.First());
 
             return SyntaxFactory.CompilationUnit(
                 SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
