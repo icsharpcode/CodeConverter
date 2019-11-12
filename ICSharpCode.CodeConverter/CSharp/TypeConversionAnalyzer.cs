@@ -231,24 +231,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var vbOperation = _semanticModel.GetOperation(vbNode);
 
-            if (vbOperation.ConstantValue.HasValue && ConversionsTypeFullNames.TryGetValue(type.GetFullMetadataName(), out var method)) {
-                var result = method.Invoke(null, new[] { vbOperation.ConstantValue.Value });
-
-                if (type.SpecialType == SpecialType.System_SByte || type.SpecialType == SpecialType.System_Byte ||
-                    type.SpecialType == SpecialType.System_Int16 || type.SpecialType == SpecialType.System_UInt16 ||
-                    type.SpecialType == SpecialType.System_Int32 || type.SpecialType == SpecialType.System_UInt32 ||
-                    type.SpecialType == SpecialType.System_Int64 || type.SpecialType == SpecialType.System_UInt64 ||
-                    type.SpecialType == SpecialType.System_Decimal || type.SpecialType == SpecialType.System_Single ||
-                    type.SpecialType == SpecialType.System_Double) {
-                    return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((decimal)result));
-                } else if (type.SpecialType == SpecialType.System_Char) {
-                    return SyntaxFactory.LiteralExpression(SyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal((char)result));
-                } else if (type.SpecialType == SpecialType.System_Boolean) {
-                    return SyntaxFactory.LiteralExpression(Convert.ToBoolean(result) ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression);
-                } else if (type.SpecialType == SpecialType.System_String) {
-                    return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal((string)result));
-                }
-            } else if (TryCompileTimeEvaluate(vbOperation, out var result)) {
+            if (TryCompileTimeEvaluate(vbOperation, out var result) && ConversionsTypeFullNames.TryGetValue(type.GetFullMetadataName(), out var method)) {
+                result = method.Invoke(null, new[] { result });
                 return LiteralConversions.GetLiteralExpression(result);
             }
 
@@ -258,6 +242,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         private bool TryCompileTimeEvaluate(IOperation vbOperation, out object result)
         {
             result = null;
+            if (vbOperation.ConstantValue.HasValue) {
+                result = vbOperation.ConstantValue.Value;
+                return true;
+            }
             return TryCompileTimeEvaluateInvocation(vbOperation, out result) || TryCompileTimeEvaluateBinaryExpression(vbOperation, out result);
         }
 

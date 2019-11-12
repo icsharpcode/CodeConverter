@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using ICSharpCode.CodeConverter.Util;
 using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -69,13 +70,29 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         internal static string GetQuotedStringTextForUser(string textForUser, string valueTextForCompiler)
         {
-            var sourceUnquotedTextForUser = Unquote(textForUser);
+            var sourceUnquotedTextForUser = textForUser != null ? Unquote(textForUser) : GetUserText(valueTextForCompiler);
             var worthBeingAVerbatimString = IsWorthBeingAVerbatimString(valueTextForCompiler);
             var destQuotedTextForUser =
                 $"\"{EscapeQuotes(sourceUnquotedTextForUser, valueTextForCompiler, worthBeingAVerbatimString)}\"";
 
             return worthBeingAVerbatimString ? "@" + destQuotedTextForUser : destQuotedTextForUser;
 
+        }
+
+        private static string GetUserText(string valueTextForCompiler)
+        {
+            return new StringBuilder(valueTextForCompiler)
+                .Replace("\"", "\\\"")
+                .Replace("\\", "\\\\")
+                .Replace("\0", "\\0")
+                .Replace("\a", "\\a")
+                .Replace("\b", "\\b")
+                .Replace("\f", "\\f")
+                .Replace("\n", "\\n")
+                .Replace("\r", "\\r")
+                .Replace("\t", "\\t")
+                .Replace("\v", "\\v")
+                .ToString();
         }
 
         internal static string EscapeQuotes(string unquotedTextForUser, string valueTextForCompiler, bool isVerbatimString)
