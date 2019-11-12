@@ -20,6 +20,7 @@ All notable changes to the code converter will be documented here.
 
 ### C# -> VB
 * Convert property accessors with visiblity modifiers (#92)
+* For loop with decrement (i--) results in missing 'Step -1' (#411)
 
 # 7.2.0 13/10/2019
 * Parallelize multi-file conversion
