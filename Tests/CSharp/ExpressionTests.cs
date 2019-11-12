@@ -2299,5 +2299,23 @@ End Class", @"public partial class Class1
 }");
         }
 
+        [Fact]
+        public async Task AliasedImportsWithTypePromotionIssue401()
+        {
+            await TestConversionVisualBasicToCSharp(
+                @"Imports VB = Microsoft.VisualBasic
+
+Public Class Test
+    Private aliased As String = VB.Left(""SomeText"", 1)
+End Class",
+                @"using VB = Microsoft.VisualBasic;
+
+public partial class Test
+{
+    private string aliased = VB.Strings.Left(""SomeText"", 1);
+}");
+        }
+
+
     }
 }

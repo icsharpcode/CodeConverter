@@ -18,6 +18,7 @@ All notable changes to the code converter will be documented here.
 * Support for converting dot net standard VB projects (#398)
 * Avoid compilation error for duplicate cases (#374)
 * Correctly handle type promoted module symbols (#375)
+* Prefer renamed imports for name resolution (#401)
 
 ### C# -> VB
 * Convert property accessors with visiblity modifiers (#92)
