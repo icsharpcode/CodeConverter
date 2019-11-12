@@ -33,6 +33,7 @@ namespace CodeConverter.Tests.TestRunners
     /// 3. Run the SolutionAndProjectTests for both VB and CSharp.
     /// 4. Set _writeNewCharacterization to false
     /// 5. Commit the result
+    /// If you're testing something specific, try to make it clear with a well-named method/class/file or by adding comments in the source file.
     /// </summary>
     /// <remarks>
     /// Using [Collection(MSBuildFixture.Collection)] will allow this singleton to be injected via the test class constructor.
