@@ -281,10 +281,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
             if (left == null && nodeSymbol?.IsStatic == true) {
-                var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
+                var type = nodeSymbol.ContainingType;
                 var expressionSymbolInfo = _semanticModel.GetSymbolInfo(node.Expression);
-                if (typeInfo.Type != null && !expressionSymbolInfo.Symbol.IsType()) {
-                    left = CommonConversions.GetTypeSyntax(typeInfo.Type);
+                if (type != null && !expressionSymbolInfo.Symbol.IsType()) {
+                    left = CommonConversions.GetTypeSyntax(type);
                 }
             }
             if (left == null) {
@@ -296,9 +296,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                         : (ExpressionSyntax)SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
                 }
                 left = _withBlockLhs.Peek();
-            } else if (TryGetTypePromotedModuleSymbol(node, out var promotedModuleSymbol)) {
-                left = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left,
-                    SyntaxFactory.IdentifierName(promotedModuleSymbol.Name));
             }
 
             if (node.Expression.IsKind(VBasic.SyntaxKind.GlobalName)) {
@@ -990,23 +987,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             return convertedType != null && _convertMethodsLookupByReturnType.Value.TryGetValue(convertedType, out var convertMethodName)
                 ? SyntaxFactory.ParseExpression(convertMethodName) : null;
         }
-
-        /// <remarks>https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/declared-elements/type-promotion</remarks>
-        private bool TryGetTypePromotedModuleSymbol(VBasic.Syntax.MemberAccessExpressionSyntax node, out INamedTypeSymbol moduleSymbol)
-        {
-            if (_semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch() is INamespaceSymbol
-                    expressionSymbol &&
-                _semanticModel.GetSymbolInfo(node.Name).ExtractBestMatch()?.ContainingSymbol is INamedTypeSymbol
-                    nameContainingSymbol &&
-                nameContainingSymbol.ContainingSymbol.Equals(expressionSymbol)) {
-                moduleSymbol = nameContainingSymbol;
-                return true;
-            }
-
-            moduleSymbol = null;
-            return false;
-        }
-
         private static bool IsSubPartOfConditionalAccess(VBasic.Syntax.MemberAccessExpressionSyntax node)
         {
             var firstPossiblyConditionalAncestor = node.Parent;

@@ -2237,6 +2237,24 @@ End Class", @"public partial class Class1
         }
 
         [Fact]
+        public async Task GlobalNameIssue375()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Module Module1
+    Sub Main()
+        Dim x = Microsoft.VisualBasic.Timer
+    End Sub
+End Module", @"using Microsoft.VisualBasic;
+
+internal static partial class Module1
+{
+    public static void Main()
+    {
+        double x = DateAndTime.Timer;
+    }
+}");
+        }
+
+        [Fact]
         public async Task TernaryConversionIssue363()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(@"Module Module1
