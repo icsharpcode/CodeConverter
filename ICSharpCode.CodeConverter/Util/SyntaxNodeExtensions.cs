@@ -782,8 +782,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static IEnumerable<SyntaxTrivia> ImportantTrailingTrivia(this SyntaxToken node)
         {
-            return node.TrailingTrivia.Where(x => !IsWhitespaceTrivia(x)
-            );
+            return node.TrailingTrivia.Where(x => !IsWhitespaceTrivia(x));
         }
 
         public static bool IsWhitespaceTrivia(this SyntaxTrivia trivia)
