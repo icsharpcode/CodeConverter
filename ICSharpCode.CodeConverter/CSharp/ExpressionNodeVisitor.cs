@@ -922,8 +922,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (!node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName)) {
                 var symbol = GetSymbolInfoInDocument(node);
                 if (symbol?.ContainingSymbol != null) {
-                    var lhs = SyntaxFactory.ParseName(symbol.ContainingSymbol.ToString());
-                    return SyntaxFactory.QualifiedName(lhs, name);
+                    string lhs;
+                    if (symbol.ContainingSymbol.IsType()) {
+                        lhs = CommonConversions.GetTypeSyntax(symbol.ContainingSymbol.GetSymbolType()).ToString();
+                    } else {
+                        lhs = symbol.ContainingSymbol.ToString();
+                    }
+                    return SyntaxFactory.QualifiedName(SyntaxFactory.ParseName(lhs), name);
                 }
             }
 
