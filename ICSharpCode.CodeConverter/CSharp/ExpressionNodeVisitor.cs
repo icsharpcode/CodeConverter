@@ -868,7 +868,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var qualifiedIdentifier = !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer)
                                       || node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax maes && maes.Expression == node
-                                      || node.Parent is VBasic.Syntax.QualifiedNameSyntax qns && qns.Left == node
                 ? QualifyNode(node, identifier) : identifier;
 
             var withArgList = AddEmptyArgumentListIfImplicit(node, qualifiedIdentifier);
@@ -889,6 +888,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitQualifiedName(VBasic.Syntax.QualifiedNameSyntax node)
         {
+            var symbol = GetSymbolInfoInDocument(node);
+            if (symbol != null && symbol.IsType()) {
+                return CommonConversions.GetTypeSyntax(symbol.GetSymbolType());
+            }
             var lhsSyntax = (NameSyntax) await node.Left.AcceptAsync(TriviaConvertingVisitor);
             var rhsSyntax = (SimpleNameSyntax) await node.Right.AcceptAsync(TriviaConvertingVisitor);
 

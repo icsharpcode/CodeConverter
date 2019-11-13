@@ -2302,7 +2302,7 @@ End Class", @"public partial class Class1
         [Fact]
         public async Task AliasedImportsWithTypePromotionIssue401()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpWithoutComments(
                 @"Imports System.IO
 Imports SIO = System.IO
 Imports Microsoft.VisualBasic
@@ -2310,26 +2310,40 @@ Imports VB = Microsoft.VisualBasic
 
 Public Class Test
     Private aliased As String = VB.Left(""SomeText"", 1)
-    Private aliased2 As System.Delegate = SIO.ErrorEventHandler
+    Private aliased2 As System.Delegate = New SIO.ErrorEventHandler(AddressOf OnError)
 
     ' Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
-    Private ErrorEventHandler As String = NameOf(TextReader)
+    Private Tr As String = NameOf(TextReader)
     Private Strings As String = NameOf(VBCodeProvider)
+
+    Class ErrorEventHandler
+    End Class
+
+    Shared Sub OnError(s As Object, e As ErrorEventArgs)
+    End Sub
 End Class",
                 @"using System;
 using System.IO;
-using SIO = System.IO;
 using Microsoft.VisualBasic;
+using SIO = System.IO;
 using VB = Microsoft.VisualBasic;
 
 public partial class Test
 {
     private string aliased = VB.Strings.Left(""SomeText"", 1);
-    private Delegate aliased2 = SIO.ErrorEventHandler;
+    private Delegate aliased2 = new SIO.ErrorEventHandler(OnError);
 
     // Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
-    private string ErrorEventHandler = nameof(TextReader);
+    private string Tr = nameof(TextReader);
     private string Strings = nameof(VBCodeProvider);
+
+    public partial class ErrorEventHandler
+    {
+    }
+
+    public static void OnError(object s, ErrorEventArgs e)
+    {
+    }
 }");
         }
 
