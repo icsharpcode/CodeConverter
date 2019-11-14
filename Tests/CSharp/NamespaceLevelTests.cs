@@ -102,6 +102,60 @@ End Namespace", @"namespace Test.@class
         }
 
         [Fact]
+        public async Task TestMixedCaseNamespace()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace [Aaa]
+    Friend Class A
+    End Class
+End Namespace
+
+Namespace Global.aaa
+    Friend Class B
+    End Class
+End Namespace
+
+Friend Module C
+    Sub Main()
+        Dim x = New aaa.A
+        Dim y = New Aaa.B
+        Dim z = New Aaa.A
+        Dim a = New aaa.B
+        Dim b = New aaa.a
+        Dim c = New aaa.b
+        Dim d = New AAA.A
+        Dim e = New AAA.B
+    End Sub
+End Module", @"namespace Aaa
+{
+    internal partial class A
+    {
+    }
+}
+
+namespace aaa
+{
+    internal partial class B
+    {
+    }
+}
+
+internal static partial class C
+{
+    public static void Main()
+    {
+        var x = new Aaa.A();
+        var y = new aaa.B();
+        var z = new Aaa.A();
+        var a = new aaa.B();
+        var b = new Aaa.A();
+        var c = new aaa.B();
+        var d = new Aaa.A();
+        var e = new aaa.B();
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestInternalStaticClass()
         {
             await TestConversionVisualBasicToCSharp(@"Namespace Test.[class]

@@ -21,6 +21,7 @@ All notable changes to the code converter will be documented here.
 * Prefer renamed imports for name resolution (#401)
 * Correctly convert ambiguous names (#332)
 * Ensure correct visibility for constructors (#422)
+* Ensure casing is correct for namespaces (#421)
 
 ### C# -> VB
 * Convert property accessors with visiblity modifiers (#92)

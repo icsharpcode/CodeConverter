@@ -165,7 +165,17 @@ namespace ICSharpCode.CodeConverter.CSharp
         public TypeSyntax GetTypeSyntax(ITypeSymbol typeSymbol, bool useImplicitType = false)
         {
             if (useImplicitType || typeSymbol == null) return CreateVarTypeName();
-            return (TypeSyntax) CsSyntaxGenerator.TypeExpression(typeSymbol);
+            var vbType = SyntaxFactory.ParseTypeName(typeSymbol.ToDisplayString());
+            var originalNames = vbType.DescendantNodes().OfType<CSSyntax.IdentifierNameSyntax>().Select(i => i.ToString()).ToList();
+            var syntax = (TypeSyntax) CsSyntaxGenerator.TypeExpression(typeSymbol);
+
+            return syntax.ReplaceNodes(syntax.DescendantNodes().OfType<CSSyntax.IdentifierNameSyntax>(), (oldNode, n) => {
+                var originalName = originalNames.Where(on => string.Equals(on, oldNode.ToString(), StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                if (originalName != null) {
+                    return SyntaxFactory.IdentifierName(originalName);
+                }
+                return oldNode;
+            });
         }
 
         private static TypeSyntax CreateVarTypeName()
@@ -216,7 +226,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
                 var symbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol;
                 if (symbol != null && !String.IsNullOrWhiteSpace(symbol.Name)) {
-                    if (text.Equals(symbol.Name, StringComparison.OrdinalIgnoreCase)) {
+                    bool isDeclaration = symbol.Locations.Any(l => l.SourceSpan == id.Span);
+                    if (!isDeclaration && text.Equals(symbol.Name, StringComparison.OrdinalIgnoreCase)) {
                         text = symbol.Name;
                     }
 

@@ -145,7 +145,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitNamespaceBlock(VBSyntax.NamespaceBlockSyntax node)
         {
             var members = (await node.Members.SelectAsync(ConvertMember)).Where(m => m != null);
-            var namespaceToDeclare = _semanticModel.GetDeclaredSymbol(node)?.ToDisplayString() ?? node.NamespaceStatement.Name.ToString();
+            var sym = _semanticModel.GetDeclaredSymbol(node);
+            var sourceName = (await node.NamespaceStatement.Name.AcceptAsync(_triviaConvertingExpressionVisitor)).ToString();
+            var namespaceToDeclare = sym?.ToDisplayString() ?? sourceName;
+            int lastIndex = namespaceToDeclare.LastIndexOf(sourceName, StringComparison.OrdinalIgnoreCase);
+            if (lastIndex >= 0 && lastIndex + sourceName.Length == namespaceToDeclare.Length) {
+                // Prefer source casing
+                namespaceToDeclare = namespaceToDeclare.Substring(0, lastIndex) + sourceName;
+            }
             var parentNamespaceSyntax = node.GetAncestor<VBSyntax.NamespaceBlockSyntax>();
             var parentNamespaceDecl = parentNamespaceSyntax != null ? _semanticModel.GetDeclaredSymbol(parentNamespaceSyntax) : null;
             var parentNamespaceFullName = parentNamespaceDecl?.ToDisplayString() ?? _topAncestorNamespace;
