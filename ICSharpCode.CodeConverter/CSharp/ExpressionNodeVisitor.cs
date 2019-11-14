@@ -281,10 +281,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
             if (left == null && nodeSymbol?.IsStatic == true) {
-                var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
+                var type = nodeSymbol.ContainingType;
                 var expressionSymbolInfo = _semanticModel.GetSymbolInfo(node.Expression);
-                if (typeInfo.Type != null && !expressionSymbolInfo.Symbol.IsType()) {
-                    left = CommonConversions.GetTypeSyntax(typeInfo.Type);
+                if (type != null && !expressionSymbolInfo.Symbol.IsType()) {
+                    left = CommonConversions.GetTypeSyntax(type);
                 }
             }
             if (left == null) {
@@ -296,9 +296,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                         : (ExpressionSyntax)SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
                 }
                 left = _withBlockLhs.Peek();
-            } else if (TryGetTypePromotedModuleSymbol(node, out var promotedModuleSymbol)) {
-                left = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left,
-                    SyntaxFactory.IdentifierName(promotedModuleSymbol.Name));
             }
 
             if (node.Expression.IsKind(VBasic.SyntaxKind.GlobalName)) {
@@ -871,7 +868,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var qualifiedIdentifier = !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer)
                                       || node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax maes && maes.Expression == node
-                                      || node.Parent is VBasic.Syntax.QualifiedNameSyntax qns && qns.Left == node
                 ? QualifyNode(node, identifier) : identifier;
 
             var withArgList = AddEmptyArgumentListIfImplicit(node, qualifiedIdentifier);
@@ -892,6 +888,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitQualifiedName(VBasic.Syntax.QualifiedNameSyntax node)
         {
+            var symbol = GetSymbolInfoInDocument(node);
+            if (symbol != null && symbol.IsType()) {
+                return CommonConversions.GetTypeSyntax(symbol.GetSymbolType());
+            }
             var lhsSyntax = (NameSyntax) await node.Left.AcceptAsync(TriviaConvertingVisitor);
             var rhsSyntax = (SimpleNameSyntax) await node.Right.AcceptAsync(TriviaConvertingVisitor);
 
@@ -917,7 +917,24 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitGenericName(VBasic.Syntax.GenericNameSyntax node)
         {
-            return SyntaxFactory.GenericName(ConvertIdentifier(node.Identifier), (TypeArgumentListSyntax) await node.TypeArgumentList.AcceptAsync(TriviaConvertingVisitor));
+            var name = SyntaxFactory.GenericName(ConvertIdentifier(node.Identifier), (TypeArgumentListSyntax) await node.TypeArgumentList.AcceptAsync(TriviaConvertingVisitor));
+
+            if (!node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName)) {
+                var symbol = GetSymbolInfoInDocument(node);
+                if (symbol?.ContainingSymbol != null) {
+                    string lhs;
+                    if (symbol.ContainingSymbol.IsType()) {
+                        lhs = CommonConversions.GetTypeSyntax(symbol.ContainingSymbol.GetSymbolType()).ToString();
+                    } else if (symbol.ContainingSymbol.IsNamespace() && symbol.ContainingNamespace.IsGlobalNamespace) {
+                        return SyntaxFactory.AliasQualifiedName("global", name);
+                    } else {
+                        lhs = symbol.ContainingSymbol.ToString();
+                    }
+                    return SyntaxFactory.QualifiedName(SyntaxFactory.ParseName(lhs), name);
+                }
+            }
+
+            return name;
         }
 
         public override async Task<CSharpSyntaxNode> VisitTypeArgumentList(VBasic.Syntax.TypeArgumentListSyntax node)
@@ -990,23 +1007,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             return convertedType != null && _convertMethodsLookupByReturnType.Value.TryGetValue(convertedType, out var convertMethodName)
                 ? SyntaxFactory.ParseExpression(convertMethodName) : null;
         }
-
-        /// <remarks>https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/declared-elements/type-promotion</remarks>
-        private bool TryGetTypePromotedModuleSymbol(VBasic.Syntax.MemberAccessExpressionSyntax node, out INamedTypeSymbol moduleSymbol)
-        {
-            if (_semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch() is INamespaceSymbol
-                    expressionSymbol &&
-                _semanticModel.GetSymbolInfo(node.Name).ExtractBestMatch()?.ContainingSymbol is INamedTypeSymbol
-                    nameContainingSymbol &&
-                nameContainingSymbol.ContainingSymbol.Equals(expressionSymbol)) {
-                moduleSymbol = nameContainingSymbol;
-                return true;
-            }
-
-            moduleSymbol = null;
-            return false;
-        }
-
         private static bool IsSubPartOfConditionalAccess(VBasic.Syntax.MemberAccessExpressionSyntax node)
         {
             var firstPossiblyConditionalAncestor = node.Parent;

@@ -36,6 +36,23 @@ End Namespace", @"namespace Test
         }
 
         [Fact]
+        public async Task TestGenericInheritanceInGlobalNamespace()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class A(Of T)
+End Class
+Class B
+    Inherits A(Of String)
+End Class
+", @"internal partial class A<T>
+{
+}
+
+internal partial class B : global::A<string>
+{
+}");
+        }
+
+        [Fact]
         public async Task TestTopLevelAttribute()
         {
             await TestConversionVisualBasicToCSharp(
