@@ -925,6 +925,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     string lhs;
                     if (symbol.ContainingSymbol.IsType()) {
                         lhs = CommonConversions.GetTypeSyntax(symbol.ContainingSymbol.GetSymbolType()).ToString();
+                    } else if (symbol.ContainingSymbol.IsNamespace() && symbol.ContainingNamespace.IsGlobalNamespace) {
+                        return SyntaxFactory.AliasQualifiedName("global", name);
                     } else {
                         lhs = symbol.ContainingSymbol.ToString();
                     }
