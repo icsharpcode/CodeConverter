@@ -107,6 +107,23 @@ End Namespace", @"namespace Test.@class
             await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace [Aaa]
     Friend Class A
     End Class
+
+    Partial Class Z
+    End Class
+    Partial Class z
+    End Class
+
+    MustInherit Class Base
+        MustOverride Sub UPPER()
+        MustOverride Property FOO As Boolean
+    End Class
+    Class NotBase
+        Inherits Base
+
+        Public Overrides Sub upper()
+        End Sub
+        Public Overrides Property foo As Boolean
+    End Class
 End Namespace
 
 Namespace Global.aaa
@@ -124,11 +141,33 @@ Friend Module C
         Dim c = New aaa.b
         Dim d = New AAA.A
         Dim e = New AAA.B
+        Dim f = New Aaa.Z
+        Dim g = New Aaa.z
     End Sub
 End Module", @"namespace Aaa
 {
     internal partial class A
     {
+    }
+
+    internal partial class Z
+    {
+    }
+    internal partial class Z
+    {
+    }
+
+    internal abstract partial class Base
+    {
+        public abstract void UPPER();
+        public abstract bool FOO { get; set; }
+    }
+    internal partial class NotBase : Base
+    {
+        public override void UPPER()
+        {
+        }
+        public override bool FOO { get; set; }
     }
 }
 
@@ -151,6 +190,8 @@ internal static partial class C
         var c = new aaa.B();
         var d = new Aaa.A();
         var e = new aaa.B();
+        var f = new Aaa.Z();
+        var g = new Aaa.Z();
     }
 }");
         }

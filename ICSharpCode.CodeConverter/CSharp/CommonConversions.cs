@@ -224,10 +224,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             string text = id.ValueText;
 
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
-                var symbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol;
+                var symbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol ?? _semanticModel.GetDeclaredSymbol(id.Parent);
+                if (symbol.IsKind(SymbolKind.Method) || symbol.IsKind(SymbolKind.Property)) {
+                    while (symbol.OverriddenMember() != null) {
+                        symbol = symbol.OverriddenMember();
+                    }
+                }
                 if (symbol != null && !String.IsNullOrWhiteSpace(symbol.Name)) {
                     bool isDeclaration = symbol.Locations.Any(l => l.SourceSpan == id.Span);
-                    if (!isDeclaration && text.Equals(symbol.Name, StringComparison.OrdinalIgnoreCase)) {
+                    bool isPartial = symbol.IsPartialClassDefinition() || symbol.IsPartialMethodDefinition() || symbol.IsPartialMethodImplementation();
+                    if (isPartial || (!isDeclaration && text.Equals(symbol.Name, StringComparison.OrdinalIgnoreCase))) {
                         text = symbol.Name;
                     }
 
