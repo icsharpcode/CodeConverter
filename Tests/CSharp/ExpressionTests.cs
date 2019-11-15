@@ -977,7 +977,7 @@ public partial class Class1
     End Property
 End Class", @"public partial class Class1
 {
-    Class1()
+    public Class1()
     {
         var needsInitialization = default(int);
         int notUsed;

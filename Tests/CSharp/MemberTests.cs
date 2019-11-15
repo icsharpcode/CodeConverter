@@ -37,6 +37,20 @@ End Module", @"internal static partial class TestModule
         }
 
         [Fact]
+        public async Task TestConstructorVisibility()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class Class1
+    Sub New(x As Boolean)
+    End Sub
+End Class", @"internal partial class Class1
+{
+    public Class1(bool x)
+    {
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestModuleConstructor()
         {
             await TestConversionVisualBasicToCSharp(
@@ -779,7 +793,7 @@ End Class", @"internal partial class TestClass<T, T2, T3>
         {
             await TestConversionVisualBasicToCSharp(
 @"Sub New()
-End Sub", @"SurroundingClass()
+End Sub", @"public SurroundingClass()
 {
 }");
         }

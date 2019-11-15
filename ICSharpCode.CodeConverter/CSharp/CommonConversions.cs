@@ -265,7 +265,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var declaredAccessibility = declaredSymbol?.DeclaredAccessibility ?? Accessibility.NotApplicable;
 
             var contextsWithIdenticalDefaults = new[] { TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface };
-            bool isPartial = declaredSymbol.IsPartialClassDefinition() || declaredSymbol.IsPartialMethodDefinition() || declaredSymbol.IsPartialMethodImplementation();
+            bool isPartial = declaredSymbol.IsPartialClassDefinition() || declaredSymbol.IsPartialMethodDefinition() || declaredSymbol.IsPartialMethodImplementation() || declaredSymbol.IsConstructor();
             bool implicitVisibility = contextsWithIdenticalDefaults.Contains(context) || isVariableOrConst || isConstructor;
             if (implicitVisibility && !isPartial) declaredAccessibility = Accessibility.NotApplicable;
             var modifierSyntaxs = ConvertModifiersCore(declaredAccessibility, modifiers, context)
