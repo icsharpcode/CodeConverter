@@ -229,32 +229,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             string text = id.ValueText;
 
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
-                var symbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol ?? _semanticModel.GetDeclaredSymbol(id.Parent);
-                if (symbol.IsKind(SymbolKind.Method) || symbol.IsKind(SymbolKind.Property)) {
-                    while (symbol.OverriddenMember() != null) {
-                        symbol = symbol.OverriddenMember();
-                    }
-                }
-                if (symbol != null && !String.IsNullOrWhiteSpace(symbol.Name)) {
-                    bool isDeclaration = symbol.Locations.Any(l => l.SourceSpan == id.Span);
-                    bool isPartial = symbol.IsPartialClassDefinition() || symbol.IsPartialMethodDefinition() || symbol.IsPartialMethodImplementation();
-                    if (isPartial || (!isDeclaration && text.Equals(symbol.Name, StringComparison.OrdinalIgnoreCase))) {
-                        text = symbol.Name;
-                    }
+                var idSymbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol ?? _semanticModel.GetDeclaredSymbol(id.Parent);
+                var baseSymbol = idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property) ? idSymbol.FollowProperty(s => s.OverriddenMember()).Last() : idSymbol;
+                if (baseSymbol != null && !String.IsNullOrWhiteSpace(baseSymbol.Name)) {
+                    text = WithDeclarationCasing(id, baseSymbol, text);
 
-                    if (symbol.IsConstructor() && isAttribute) {
-                        text = symbol.ContainingType.Name;
+                    if (baseSymbol.IsConstructor() && isAttribute) {
+                        text = baseSymbol.ContainingType.Name;
                         if (text.EndsWith("Attribute", StringComparison.OrdinalIgnoreCase))
                             text = text.Remove(text.Length - "Attribute".Length);
-                    } else if (symbol.IsKind(SymbolKind.Parameter) && symbol.ContainingSymbol.IsAccessorPropertySet() && ((symbol.IsImplicitlyDeclared && symbol.Name == "Value") || symbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared) == symbol)) {
+                    } else if (baseSymbol.IsKind(SymbolKind.Parameter) && baseSymbol.ContainingSymbol.IsAccessorPropertySet() && ((baseSymbol.IsImplicitlyDeclared && baseSymbol.Name == "Value") || baseSymbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared).Equals(baseSymbol))) {
                         // The case above is basically that if the symbol is a parameter, and the corresponding definition is a property set definition
                         // AND the first explicitly declared parameter is this symbol, we need to replace it with value.
                         text = "value";
-                    } else if (text.StartsWith("_", StringComparison.OrdinalIgnoreCase) && symbol is IFieldSymbol propertyFieldSymbol && propertyFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
+                    } else if (text.StartsWith("_", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol propertyFieldSymbol && propertyFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
                         text = propertyFieldSymbol.AssociatedSymbol.Name;
-                    } else if (text.EndsWith("Event", StringComparison.OrdinalIgnoreCase) && symbol is IFieldSymbol eventFieldSymbol && eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
+                    } else if (text.EndsWith("Event", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol eventFieldSymbol && eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
                         text = eventFieldSymbol.AssociatedSymbol.Name;
-                    } else if (MustInlinePropertyWithEventsAccess(id.Parent, symbol)) {
+                    } else if (MustInlinePropertyWithEventsAccess(id.Parent, baseSymbol)) {
                         // For C# Winforms designer, we need to use direct field access (and inline any event handlers)
                         text = "_" + text;
                     }
@@ -262,6 +254,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return CsEscapedIdentifier(text);
+        }
+
+        private static string WithDeclarationCasing(SyntaxToken id, ISymbol symbol, string text)
+        {
+            bool isDeclaration = symbol.Locations.Any(l => l.SourceSpan == id.Span);
+            bool isPartial = symbol.IsPartialClassDefinition() || symbol.IsPartialMethodDefinition() ||
+                             symbol.IsPartialMethodImplementation();
+            if (isPartial || (!isDeclaration && text.Equals(symbol.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                text = symbol.Name;
+            }
+
+            return text;
         }
 
         public static bool MustInlinePropertyWithEventsAccess(SyntaxNode anyNodePossiblyWithinMethod, ISymbol potentialPropertySymbol)
