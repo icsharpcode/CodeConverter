@@ -259,14 +259,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public SyntaxTokenList ConvertModifiers(SyntaxNode node, IEnumerable<SyntaxToken> modifiers,
-            TokenContext context = TokenContext.Global, bool isVariableOrConst = false, bool isConstructor = false, params CSSyntaxKind[] extraCsModifierKinds)
+            TokenContext context = TokenContext.Global, bool isVariableOrConst = false, params CSSyntaxKind[] extraCsModifierKinds)
         {
             ISymbol declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
             var declaredAccessibility = declaredSymbol?.DeclaredAccessibility ?? Accessibility.NotApplicable;
 
             var contextsWithIdenticalDefaults = new[] { TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface };
             bool isPartial = declaredSymbol.IsPartialClassDefinition() || declaredSymbol.IsPartialMethodDefinition() || declaredSymbol.IsPartialMethodImplementation();
-            bool implicitVisibility = contextsWithIdenticalDefaults.Contains(context) || isVariableOrConst || isConstructor;
+            bool implicitVisibility = contextsWithIdenticalDefaults.Contains(context) || isVariableOrConst || declaredSymbol.IsStaticConstructor();
             if (implicitVisibility && !isPartial) declaredAccessibility = Accessibility.NotApplicable;
             var modifierSyntaxs = ConvertModifiersCore(declaredAccessibility, modifiers, context)
                 .Concat(extraCsModifierKinds.Select(SyntaxFactory.Token))

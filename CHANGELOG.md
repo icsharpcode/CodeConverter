@@ -20,6 +20,7 @@ All notable changes to the code converter will be documented here.
 * Correctly handle type promoted module symbols (#375)
 * Prefer renamed imports for name resolution (#401)
 * Correctly convert ambiguous names (#332)
+* Ensure correct visibility for constructors (#422)
 
 ### C# -> VB
 * Convert property accessors with visiblity modifiers (#92)
