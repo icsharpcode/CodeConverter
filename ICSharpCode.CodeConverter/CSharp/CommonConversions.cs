@@ -170,6 +170,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             return WithDeclarationCasing(syntax, typeSymbol);
         }
 
+        /// <summary>
+        /// Semantic model merges the symbols, but the compiled form retains multiple namespaces, which (when referenced from C#) need to keep the correct casing.
+        /// <seealso cref="DeclarationNodeVisitor.WithDeclarationCasing(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
+        /// <seealso cref="CommonConversions.WithDeclarationCasing(SyntaxToken, ISymbol, string)"/>
+        /// </summary>
         private static TypeSyntax WithDeclarationCasing(TypeSyntax syntax, ITypeSymbol typeSymbol)
         {
             var vbType = SyntaxFactory.ParseTypeName(typeSymbol.ToDisplayString());
@@ -256,6 +261,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             return CsEscapedIdentifier(text);
         }
 
+        /// <summary>
+        /// Semantic model merges the symbols, but the compiled form retains multiple namespaces, which (when referenced from C#) need to keep the correct casing.
+        /// <seealso cref="DeclarationNodeVisitor.WithDeclarationCasing(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
+        /// <seealso cref="CommonConversions.WithDeclarationCasing(TypeSyntax, ITypeSymbol)"/>
+        /// </summary>
         private static string WithDeclarationCasing(SyntaxToken id, ISymbol symbol, string text)
         {
             bool isDeclaration = symbol.Locations.Any(l => l.SourceSpan == id.Span);
