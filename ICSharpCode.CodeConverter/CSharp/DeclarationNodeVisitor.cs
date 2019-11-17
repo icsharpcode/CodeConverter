@@ -146,13 +146,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var members = (await node.Members.SelectAsync(ConvertMember)).Where(m => m != null);
             var sym = _semanticModel.GetDeclaredSymbol(node);
-            var sourceName = (await node.NamespaceStatement.Name.AcceptAsync(_triviaConvertingExpressionVisitor)).ToString();
-            var namespaceToDeclare = sym?.ToDisplayString() ?? sourceName;
-            int lastIndex = namespaceToDeclare.LastIndexOf(sourceName, StringComparison.OrdinalIgnoreCase);
-            if (lastIndex >= 0 && lastIndex + sourceName.Length == namespaceToDeclare.Length) {
-                // Prefer source casing
-                namespaceToDeclare = namespaceToDeclare.Substring(0, lastIndex) + sourceName;
-            }
+            string namespaceToDeclare = await WithDeclaredCasing(node, sym);
             var parentNamespaceSyntax = node.GetAncestor<VBSyntax.NamespaceBlockSyntax>();
             var parentNamespaceDecl = parentNamespaceSyntax != null ? _semanticModel.GetDeclaredSymbol(parentNamespaceSyntax) : null;
             var parentNamespaceFullName = parentNamespaceDecl?.ToDisplayString() ?? _topAncestorNamespace;
@@ -161,6 +155,19 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var cSharpSyntaxNode = (CSharpSyntaxNode) _csSyntaxGenerator.NamespaceDeclaration(namespaceToDeclare, SyntaxFactory.List(members));
             return cSharpSyntaxNode;
+        }
+
+        private async Task<string> WithDeclaredCasing(VBSyntax.NamespaceBlockSyntax node, ISymbol sym)
+        {
+            var sourceName = (await node.NamespaceStatement.Name.AcceptAsync(_triviaConvertingExpressionVisitor)).ToString();
+            var namespaceToDeclare = sym?.ToDisplayString() ?? sourceName;
+            int lastIndex = namespaceToDeclare.LastIndexOf(sourceName, StringComparison.OrdinalIgnoreCase);
+            if (lastIndex >= 0 && lastIndex + sourceName.Length == namespaceToDeclare.Length)
+            {
+                namespaceToDeclare = namespaceToDeclare.Substring(0, lastIndex) + sourceName;
+            }
+
+            return namespaceToDeclare;
         }
 
         #region Namespace Members
