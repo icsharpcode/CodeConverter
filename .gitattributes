@@ -3,3 +3,4 @@
 *.jpeg binary
 *.jpg binary
 *.gif binary
+CHANGELOG.md text merge=union
