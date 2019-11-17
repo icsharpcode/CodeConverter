@@ -246,7 +246,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         text = propertyFieldSymbol.AssociatedSymbol.Name;
                     } else if (text.EndsWith("Event", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol eventFieldSymbol && eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
                         text = eventFieldSymbol.AssociatedSymbol.Name;
-                    } else if (MustInlinePropertyWithEventsAccess(id.Parent, baseSymbol)) {
+                    } else if (MustInlinePropertyWithEventsAccess(id.Parent, idSymbol)) {
                         // For C# Winforms designer, we need to use direct field access (and inline any event handlers)
                         text = "_" + text;
                     }
