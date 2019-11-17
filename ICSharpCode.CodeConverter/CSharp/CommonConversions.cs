@@ -235,15 +235,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
                 var idSymbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol ?? _semanticModel.GetDeclaredSymbol(id.Parent);
-                var baseSymbol = idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property) ? idSymbol.FollowProperty(s => s.OverriddenMember()).Last() : idSymbol;
-                if (baseSymbol != null && !String.IsNullOrWhiteSpace(baseSymbol.Name)) {
-                    text = WithDeclarationCasing(id, baseSymbol, text);
+                if (idSymbol != null && !String.IsNullOrWhiteSpace(idSymbol.Name)) {
+                    text = WithDeclarationCasing(id, idSymbol, text);
 
-                    if (baseSymbol.IsConstructor() && isAttribute) {
-                        text = baseSymbol.ContainingType.Name;
+                    if (idSymbol.IsConstructor() && isAttribute) {
+                        text = idSymbol.ContainingType.Name;
                         if (text.EndsWith("Attribute", StringComparison.OrdinalIgnoreCase))
                             text = text.Remove(text.Length - "Attribute".Length);
-                    } else if (baseSymbol.IsKind(SymbolKind.Parameter) && baseSymbol.ContainingSymbol.IsAccessorPropertySet() && ((baseSymbol.IsImplicitlyDeclared && baseSymbol.Name == "Value") || baseSymbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared).Equals(baseSymbol))) {
+                    } else if (idSymbol.IsKind(SymbolKind.Parameter) && idSymbol.ContainingSymbol.IsAccessorPropertySet() && ((idSymbol.IsImplicitlyDeclared && idSymbol.Name == "Value") || idSymbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared).Equals(idSymbol))) {
                         // The case above is basically that if the symbol is a parameter, and the corresponding definition is a property set definition
                         // AND the first explicitly declared parameter is this symbol, we need to replace it with value.
                         text = "value";
@@ -266,14 +265,16 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <seealso cref="DeclarationNodeVisitor.WithDeclarationCasing(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
         /// <seealso cref="CommonConversions.WithDeclarationCasing(TypeSyntax, ITypeSymbol)"/>
         /// </summary>
-        private static string WithDeclarationCasing(SyntaxToken id, ISymbol symbol, string text)
+        private static string WithDeclarationCasing(SyntaxToken id, ISymbol idSymbol, string text)
         {
-            bool isDeclaration = symbol.Locations.Any(l => l.SourceSpan == id.Span);
-            bool isPartial = symbol.IsPartialClassDefinition() || symbol.IsPartialMethodDefinition() ||
-                             symbol.IsPartialMethodImplementation();
-            if (isPartial || (!isDeclaration && text.Equals(symbol.Name, StringComparison.OrdinalIgnoreCase)))
+            //TODO: Consider what happens when the names aren't equal for overridden members (I think in VB you can have X implements Y)
+            var baseSymbol = idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property) ? idSymbol.FollowProperty(s => s.OverriddenMember()).Last() : idSymbol;
+            bool isDeclaration = baseSymbol.Locations.Any(l => l.SourceSpan == id.Span);
+            bool isPartial = baseSymbol.IsPartialClassDefinition() || baseSymbol.IsPartialMethodDefinition() ||
+                             baseSymbol.IsPartialMethodImplementation();
+            if (isPartial || (!isDeclaration && text.Equals(baseSymbol.Name, StringComparison.OrdinalIgnoreCase)))
             {
-                text = symbol.Name;
+                text = baseSymbol.Name;
             }
 
             return text;
