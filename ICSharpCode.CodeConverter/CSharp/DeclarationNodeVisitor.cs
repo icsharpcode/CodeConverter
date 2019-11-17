@@ -575,14 +575,23 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool isInInterface = node.Ancestors().OfType<VBSyntax.InterfaceBlockSyntax>().FirstOrDefault() != null;
 
             var initializer = (EqualsValueClauseSyntax) await node.Initializer.AcceptAsync(_triviaConvertingExpressionVisitor);
-            var vbType = await node.AsClause?.TypeSwitch(
-                async (VBSyntax.SimpleAsClauseSyntax c) => c.Type, async (VBSyntax.AsNewClauseSyntax c) => {
-                    initializer = SyntaxFactory.EqualsValueClause((ExpressionSyntax) await c.NewExpression.AcceptAsync(_triviaConvertingExpressionVisitor));
-                    return VBasic.SyntaxExtensions.Type(c.NewExpression.WithoutTrivia()); // We'll end up visiting this twice so avoid trivia this time
-                },
-                _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
-            );
-            var rawType = (TypeSyntax) await vbType.AcceptAsync(_triviaConvertingExpressionVisitor) ?? VarType;
+            VBSyntax.TypeSyntax vbType;
+            switch (node.AsClause) {
+                case VBSyntax.SimpleAsClauseSyntax c:
+                    vbType = c.Type;
+                    break;
+                case VBSyntax.AsNewClauseSyntax c:
+                    initializer = SyntaxFactory.EqualsValueClause((ExpressionSyntax)await c.NewExpression.AcceptAsync(_triviaConvertingExpressionVisitor));
+                    vbType = VBasic.SyntaxExtensions.Type(c.NewExpression.WithoutTrivia()); // We'll end up visiting this twice so avoid trivia this time
+                    break;
+                case null:
+                    vbType = null;
+                    break;
+                default:
+                    throw new NotImplementedException($"{node.AsClause.GetType().FullName} not implemented!");
+            }
+
+            var rawType = (TypeSyntax) await vbType.AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword));
 
             AccessorListSyntax accessors = null;
             if (node.Parent is VBSyntax.PropertyBlockSyntax propertyBlock) {
@@ -1006,7 +1015,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.ParseTypeName("void"),
                     delegateName,
                     null,
-                    (ParameterListSyntax) await node.ParameterList.AcceptAsync(_triviaConvertingExpressionVisitor),
+                    (ParameterListSyntax) await node.ParameterList.AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList(),
                     SyntaxFactory.List<TypeParameterConstraintClauseSyntax>()
                 );
 

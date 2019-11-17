@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
@@ -758,6 +759,30 @@ public partial class ParameterizedPropertiesAndEnumTest
         }
 
         [Fact]
+        public async Task PropertyWithMissingTypeDeclaration()//TODO Check object is the inferred type
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(
+@"Class MissingPropertyType
+                ReadOnly Property Max
+                    Get
+                        Dim mx As Double = 0
+                        Return mx
+                    End Get
+                End Property
+End Class", @"internal partial class MissingPropertyType
+{
+    public object Max
+    {
+        get
+        {
+            double mx = 0;
+            return mx;
+        }
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestReadWriteOnlyInterfaceProperty()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(
@@ -834,6 +859,30 @@ End Class", @"using System;
 internal partial class TestClass
 {
     public event EventHandler MyEvent;
+}");
+        }
+
+        [Fact]
+        public async Task TestEventWithNoDeclaredTypeOrHandlers()
+        {
+            //Can't auto-test comments when extra lines (delegate) get added
+            await TestConversionVisualBasicToCSharpWithoutComments(
+@"Public Class TestEventWithNoType
+    Public Event OnCakeChange
+
+    Public Sub RaisingFlour()
+        RaiseEvent OnCakeChange
+    End Sub
+End Class", @"public partial class TestEventWithNoType
+{
+    public event OnCakeChangeEventHandler OnCakeChange;
+
+    public delegate void OnCakeChangeEventHandler();
+
+    public void RaisingFlour()
+    {
+        OnCakeChange?.Invoke();
+    }
 }");
         }
 
@@ -1828,6 +1877,54 @@ End Class", @"internal partial class TestClass
         {
             m_test3 = value;
         }
+    }
+}");
+        }
+
+        [Fact]
+        public async Task TestGenericMethodGroupGainsBrackets()
+        {
+            //BUG: Comment after New With is lost
+            await TestConversionVisualBasicToCSharpWithoutComments(
+@"Public Enum TheType
+    Tree
+End Enum
+
+Public Class MoreParsing
+    Sub DoGet()
+        Dim anon = New With {
+            .TheType = GetEnumValues(Of TheType)
+        }
+    End Sub
+
+    Private Function GetEnumValues(Of TEnum)() As IDictionary(Of Integer, String)
+        Return System.Enum.GetValues(GetType(TEnum)).Cast(Of TEnum).
+            ToDictionary(Function(enumValue) DirectCast(DirectCast(enumValue, Object), Integer),
+                         Function(enumValue) enumValue.ToString())
+    End Function
+End Class",
+@"using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public enum TheType
+{
+    Tree
+}
+
+public partial class MoreParsing
+{
+    public void DoGet()
+    {
+        var anon = new
+        {
+            TheType = MoreParsing.GetEnumValues<TheType>()
+        };
+    }
+
+    private IDictionary<int, string> GetEnumValues<TEnum>()
+    {
+        return Enum.GetValues(typeof(TEnum)).Cast<TEnum>().ToDictionary(enumValue => (int)(object)enumValue, enumValue => enumValue.ToString());
     }
 }");
         }

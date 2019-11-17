@@ -76,6 +76,7 @@
   <ItemGroup>
     <Compile Include="My Project\MyNamespace.Dynamic.Designer.cs" />
     <Compile Include="My Project\MyNamespace.Static.Designer.cs" />
+    <Compile Include="ReferencingFormThroughStatic.cs" />
     <Compile Include="WinformsDesignerTest.cs">
       <SubType>Form</SubType>
     </Compile>

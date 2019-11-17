@@ -917,7 +917,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitGenericName(VBasic.Syntax.GenericNameSyntax node)
         {
-            var name = SyntaxFactory.GenericName(ConvertIdentifier(node.Identifier), (TypeArgumentListSyntax) await node.TypeArgumentList.AcceptAsync(TriviaConvertingVisitor));
+            var genericNameSyntax = SyntaxFactory.GenericName(ConvertIdentifier(node.Identifier), (TypeArgumentListSyntax) await node.TypeArgumentList.AcceptAsync(TriviaConvertingVisitor));
+            ExpressionSyntax name = genericNameSyntax;
 
             if (!node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName)) {
                 var symbol = GetSymbolInfoInDocument(node);
@@ -926,15 +927,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                     if (symbol.ContainingSymbol.IsType()) {
                         lhs = CommonConversions.GetTypeSyntax(symbol.ContainingSymbol.GetSymbolType()).ToString();
                     } else if (symbol.ContainingSymbol.IsNamespace() && symbol.ContainingNamespace.IsGlobalNamespace) {
-                        return SyntaxFactory.AliasQualifiedName("global", name);
+                        return SyntaxFactory.AliasQualifiedName("global", genericNameSyntax);
                     } else {
                         lhs = symbol.ContainingSymbol.ToString();
                     }
-                    return SyntaxFactory.QualifiedName(SyntaxFactory.ParseName(lhs), name);
+                    name = SyntaxFactory.QualifiedName(SyntaxFactory.ParseName(lhs), genericNameSyntax);
                 }
             }
 
-            return name;
+            return AddEmptyArgumentListIfImplicit(node, name);
         }
 
         public override async Task<CSharpSyntaxNode> VisitTypeArgumentList(VBasic.Syntax.TypeArgumentListSyntax node)

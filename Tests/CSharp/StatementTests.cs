@@ -1961,6 +1961,7 @@ internal partial class TestClass
         For i As Integer = 0 To number - 1
             Yield i
         Next
+        Return
     End Function
 End Class", @"using System.Collections.Generic;
 
@@ -1972,6 +1973,7 @@ internal partial class TestClass
             yield break;
         for (int i = 0, loopTo = number - 1; i <= loopTo; i++)
             yield return i;
+        yield break;
     }
 }");
         }
