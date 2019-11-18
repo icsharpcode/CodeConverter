@@ -102,7 +102,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults)
         {
             var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults);
-            return (await project.RenameMergedMyNamespace(), docIds);
+            return (await project.RenameMergedNamespaces(), docIds);
         }
 
         public string TargetLanguage { get; } = LanguageNames.CSharp;

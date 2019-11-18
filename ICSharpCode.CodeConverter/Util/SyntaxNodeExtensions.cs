@@ -219,7 +219,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         /// <summary>
         /// create a new root node from the given root after adding annotations to the tokens
-        /// 
+        ///
         /// tokens should belong to the given root
         /// </summary>
         public static SyntaxNode AddAnnotations(this SyntaxNode root, IEnumerable<Tuple<SyntaxToken, SyntaxAnnotation>> pairs)
@@ -233,7 +233,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         /// <summary>
         /// create a new root node from the given root after adding annotations to the nodes
-        /// 
+        ///
         /// nodes should belong to the given root
         /// </summary>
         public static SyntaxNode AddAnnotations(this SyntaxNode root, IEnumerable<Tuple<SyntaxNode, SyntaxAnnotation>> pairs)
@@ -1516,7 +1516,13 @@ namespace ICSharpCode.CodeConverter.Util
         public static string DescribeConversionError(this SyntaxNode node, Exception e)
         {
             return $"Cannot convert {node.GetType().Name}, {e}{Environment.NewLine}{Environment.NewLine}" +
-                $"Input: {Environment.NewLine}{node.ToFullString()}{Environment.NewLine}";
+                $"Input:{Environment.NewLine}{node.ToFullString()}{Environment.NewLine}";
+        }
+
+        public static string DescribeConversionWarning(this SyntaxNode node, string addtlInfo)
+        {
+            return $"{addtlInfo}{Environment.NewLine}" +
+                $"{node.NormalizeWhitespace().ToFullString()}{Environment.NewLine}";
         }
 
         private static string Truncate(this string input, int maxLength = 30, string truncationIndicator = "...")
@@ -1540,15 +1546,33 @@ namespace ICSharpCode.CodeConverter.Util
                 .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, exception.ToString()));
         }
 
+        public static T WithCsTrailingWarningComment<T>(this T dummyDestNode, string warning, string addtlInfo,
+            CSharpSyntaxNode convertedNode
+            ) where T : CSharpSyntaxNode
+        {
+            var warningDirective = SyntaxFactory.ParseTrailingTrivia($"#warning {warning}{Environment.NewLine}");
+            var warningDescription = convertedNode.DescribeConversionWarning(addtlInfo);
+            var commentedText = "/* " + warningDescription + " */";
+            var trailingTrivia = SyntaxFactory.TriviaList(warningDirective.Concat(SyntaxFactory.Comment(commentedText)));
+
+            return dummyDestNode
+                .WithTrailingTrivia(trailingTrivia);
+        }
+
         public static T WithVbTrailingErrorComment<T>(
             this T dummyDestNode, CSharpSyntaxNode problematicSourceNode, Exception exception) where T : VisualBasicSyntaxNode
         {
             var errorDescription = problematicSourceNode.DescribeConversionError(exception);
             var commentedText = "''' " + errorDescription.Replace("\r\n", "\r\n''' ");
             return dummyDestNode
-                .WithTrailingTrivia(Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.CommentTrivia(commentedText))
+                .WithTrailingTrivia(VBSyntaxFactory.CommentTrivia(commentedText))
                 .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind,
                     exception.ToString()));
+        }
+
+        public static bool ContainsDeclaredVisibility(this SyntaxTokenList modifiers, bool isVariableOrConst = false, bool isConstructor = false)
+        {
+            return modifiers.Any(m => m.IsCsVisibility(isVariableOrConst, isConstructor));
         }
     }
 }

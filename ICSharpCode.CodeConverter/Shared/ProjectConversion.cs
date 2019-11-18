@@ -124,7 +124,7 @@ namespace ICSharpCode.CodeConverter.Shared
             ProjectConversion projectConversion, IProgress<ConversionProgress> progress)
         {
             var pathNodePairs = await projectConversion.Convert(progress);
-            var results = pathNodePairs.Select(pathNodePair => new ConversionResult(pathNodePair.Node.ToFullString())
+            var results = pathNodePairs.Select(pathNodePair => new ConversionResult(pathNodePair.Node?.ToFullString())
                 {SourcePathOrNull = pathNodePair.Path, Exceptions = pathNodePair.Errors.ToList() });
 
             var warnings = await projectConversion.GetProjectWarnings(projectConversion._project, pathNodePairs);

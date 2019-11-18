@@ -46,3 +46,6 @@ At the moment there's just a very small amount of first draft documentation. Con
  * https://en.wikipedia.org/wiki/Comparison_of_C_Sharp_and_Visual_Basic_.NET#Features_of_Visual_Basic_.NET_not_found_in_C#
  * https://anthonydgreen.net/2019/02/12/exhausting-list-of-differences-between-vb-net-c/
  * Roslyn source for [CSharp binder](http://source.roslyn.codeplex.com/#Microsoft.CodeAnalysis.CSharp/Binder/Binder_Expressions.cs,365) vs [VB binder](http://source.roslyn.codeplex.com/#Microsoft.CodeAnalysis.VisualBasic/Binding/Binder_Expressions.vb,43)
+
+## Codebase details
+* All parallelism is controlled by Env.MaxDop. When a debugger is attached to a debug build, it sets parallelism to 1. If you're seeing a transient issue when the debugger isn't attached but can't reproduce the issue with the debugger, set this to a large number instead.

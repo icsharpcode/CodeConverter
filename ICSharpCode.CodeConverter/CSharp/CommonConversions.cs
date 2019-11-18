@@ -112,13 +112,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csTypeSyntax = GetTypeSyntax(declaredSymbolType);
 
             bool isField = vbDeclarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
+            bool isConst = declaredSymbol is IFieldSymbol fieldSymbol && fieldSymbol.IsConst ||
+                           declaredSymbol is ILocalSymbol localSymbol && localSymbol.IsConst;
 
             EqualsValueClauseSyntax equalsValueClauseSyntax;
             if (await GetInitializerFromNameAndType(declaredSymbolType, vbName, initializerOrMethodDecl) is ExpressionSyntax
                 adjustedInitializerExpr)
             {
                 var convertedInitializer = vbInitValue != null
-                    ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr)
+                    ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr, isConst: isConst)
                     : adjustedInitializerExpr;
                 equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
             }
@@ -194,7 +196,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (rankSpecifiers.Count > 0)
             {
                 var rankSpecifiersWithSizes = await ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds);
-                if (!rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).OfType<OmittedArraySizeExpressionSyntax>().Any())
+                if (rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).Any(e => !e.IsKind(CSSyntaxKind.OmittedArraySizeExpression)))
                 {
                     var arrayTypeSyntax = (ArrayTypeSyntax) GetTypeSyntax(typeSymbol);
                     arrayTypeSyntax = arrayTypeSyntax.WithRankSpecifiers(rankSpecifiersWithSizes);
@@ -205,141 +207,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return initializer;
         }
 
-        public ExpressionSyntax Literal(object o, string textForUser = null) => GetLiteralExpression(o, textForUser);
-
-        internal ExpressionSyntax GetLiteralExpression(object value, string textForUser = null)
-        {
-            if (value is string valueTextForCompiler) {
-                textForUser = GetQuotedStringTextForUser(textForUser, valueTextForCompiler);
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.StringLiteralExpression,
-                    SyntaxFactory.Literal(textForUser, valueTextForCompiler));
-            }
-
-            if (value == null)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NullLiteralExpression);
-            if (value is bool)
-                return SyntaxFactory.LiteralExpression((bool)value ? CSSyntaxKind.TrueLiteralExpression : CSSyntaxKind.FalseLiteralExpression);
-
-            textForUser = textForUser != null ? ConvertNumericLiteralValueText(textForUser, value) : value.ToString();
-
-            if (value is byte)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (byte)value));
-            if (value is sbyte)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (sbyte)value));
-            if (value is short)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (short)value));
-            if (value is ushort)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (ushort)value));
-            if (value is int)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (int)value));
-            if (value is uint)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (uint)value));
-            if (value is long)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (long)value));
-            if (value is ulong)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (ulong)value));
-
-            if (value is float)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (float)value));
-            if (value is double) {
-                // Important to use value text, otherwise "10.0" gets coerced to and integer literal of 10 which can change semantics
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (double)value));
-            }
-            if (value is decimal) {
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (decimal)value));
-            }
-
-            if (value is char)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal((char)value));
-
-            if (value is DateTime dt) {
-                var valueToOutput = dt.Date.Equals(dt) ? dt.ToString("yyyy-MM-dd") : dt.ToString("yyyy-MM-dd HH:mm:ss");
-                return SyntaxFactory.ParseExpression("DateTime.Parse(\"" + valueToOutput + "\")");
-            }
-
-
-            throw new ArgumentOutOfRangeException(nameof(value), value, null);
-        }
-
-        internal string GetQuotedStringTextForUser(string textForUser, string valueTextForCompiler)
-        {
-            var sourceUnquotedTextForUser = Unquote(textForUser);
-            var worthBeingAVerbatimString = IsWorthBeingAVerbatimString(valueTextForCompiler);
-            var destQuotedTextForUser =
-                $"\"{EscapeQuotes(sourceUnquotedTextForUser, valueTextForCompiler, worthBeingAVerbatimString)}\"";
-
-            return worthBeingAVerbatimString ? "@" + destQuotedTextForUser : destQuotedTextForUser;
-
-        }
-
-        internal string EscapeQuotes(string unquotedTextForUser, string valueTextForCompiler, bool isVerbatimString)
-        {
-            if (isVerbatimString) {
-                return valueTextForCompiler.Replace("\"", "\"\"");
-            } else {
-                return unquotedTextForUser.Replace("\"\"", "\\\"");
-            }
-        }
-
-        private static string Unquote(string quotedText)
-        {
-            int firstQuoteIndex = quotedText.IndexOf("\"");
-            int lastQuoteIndex = quotedText.LastIndexOf("\"");
-            var unquoted = quotedText.Substring(firstQuoteIndex + 1, lastQuoteIndex - firstQuoteIndex - 1);
-            return unquoted;
-        }
-
-        public bool IsWorthBeingAVerbatimString(string s1)
-        {
-            return s1.IndexOfAny(new[] {'\r', '\n', '\\'}) > -1;
-        }
-
-        /// <summary>
-        ///  https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/data-types/type-characters
-        ///  https://stackoverflow.com/a/166762/1128762
-        /// </summary>
-        private string ConvertNumericLiteralValueText(string textForUser, object value)
-        {
-            var replacements = new Dictionary<string, string> {
-                {"C", ""},
-                {"I", ""},
-                {"%", ""},
-                {"UI", "U"},
-                {"S", ""},
-                {"US", ""},
-                {"UL", "UL"},
-                {"D", "M"},
-                {"@", "M"},
-                {"R", "D"},
-                {"#", "D"},
-                {"F", "F"}, // Normalizes casing
-                {"!", "F"},
-                {"L", "L"}, // Normalizes casing
-                {"&", "L"},
-            };
-            // Be careful not to replace only the "S" in "US" for example
-            var longestMatchingReplacement = replacements.Where(t => textForUser.EndsWith(t.Key, StringComparison.OrdinalIgnoreCase))
-                .GroupBy(t => t.Key.Length).OrderByDescending(g => g.Key).FirstOrDefault()?.SingleOrDefault();
-
-            if (longestMatchingReplacement != null) {
-                textForUser = textForUser.ReplaceEnd(longestMatchingReplacement.Value);
-            }
-
-            if (textForUser.Length <= 2 || !textForUser.StartsWith("&")) return textForUser;
-
-            if (textForUser.StartsWith("&H", StringComparison.OrdinalIgnoreCase))
-            {
-                return "0x" + textForUser.Substring(2).Replace("M", "D"); // Undo any accidental replacements that assumed this was a decimal
-            }
-
-            if (textForUser.StartsWith("&B", StringComparison.OrdinalIgnoreCase))
-            {
-                return "0b" + textForUser.Substring(2);
-            }
-
-            // Octal or something unknown that can't be represented with C# literals
-            return value.ToString();
-        }
+        public ExpressionSyntax Literal(object o, string textForUser = null) => LiteralConversions.GetLiteralExpression(o, textForUser);
 
         public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false)
         {
@@ -391,14 +259,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public SyntaxTokenList ConvertModifiers(SyntaxNode node, IEnumerable<SyntaxToken> modifiers,
-            TokenContext context = TokenContext.Global, bool isVariableOrConst = false, bool isConstructor = false, params CSSyntaxKind[] extraCsModifierKinds)
+            TokenContext context = TokenContext.Global, bool isVariableOrConst = false, params CSSyntaxKind[] extraCsModifierKinds)
         {
             ISymbol declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
             var declaredAccessibility = declaredSymbol?.DeclaredAccessibility ?? Accessibility.NotApplicable;
 
             var contextsWithIdenticalDefaults = new[] { TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface };
             bool isPartial = declaredSymbol.IsPartialClassDefinition() || declaredSymbol.IsPartialMethodDefinition() || declaredSymbol.IsPartialMethodImplementation();
-            bool implicitVisibility = contextsWithIdenticalDefaults.Contains(context) || isVariableOrConst || isConstructor;
+            bool implicitVisibility = contextsWithIdenticalDefaults.Contains(context) || isVariableOrConst || declaredSymbol.IsStaticConstructor();
             if (implicitVisibility && !isPartial) declaredAccessibility = Accessibility.NotApplicable;
             var modifierSyntaxs = ConvertModifiersCore(declaredAccessibility, modifiers, context)
                 .Concat(extraCsModifierKinds.Select(SyntaxFactory.Token))
@@ -520,13 +388,21 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<ExpressionSyntax> IncreaseArrayUpperBoundExpression(VBSyntax.ExpressionSyntax expr)
         {
-            var constant = _semanticModel.GetConstantValue(expr);
+            var op = _semanticModel.GetOperation(expr);
+            var constant = op.ConstantValue;
             if (constant.HasValue && constant.Value is int)
                 return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((int)constant.Value + 1));
 
+            var convertedExpression = (ExpressionSyntax)await expr.AcceptAsync(TriviaConvertingExpressionVisitor);
+
+            if (op is IBinaryOperation bOp && bOp.OperatorKind == BinaryOperatorKind.Subtract &&
+                bOp.RightOperand.ConstantValue.HasValue && bOp.RightOperand.ConstantValue.Value is int subtractedVal && subtractedVal == 1
+                && convertedExpression is CSSyntax.BinaryExpressionSyntax bExp && bExp.IsKind(CSSyntaxKind.SubtractExpression))
+                return bExp.Left;
+
             return SyntaxFactory.BinaryExpression(
                 CSSyntaxKind.SubtractExpression,
-                (ExpressionSyntax) await expr.AcceptAsync(TriviaConvertingExpressionVisitor), SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+                convertedExpression, SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
         }
 
         public static AttributeArgumentListSyntax CreateAttributeArgumentList(params AttributeArgumentSyntax[] attributeArgumentSyntaxs)

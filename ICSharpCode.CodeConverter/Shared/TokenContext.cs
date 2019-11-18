@@ -8,6 +8,7 @@
         MemberInModule,
         MemberInClass,
         MemberInStruct,
-        MemberInInterface
+        MemberInInterface,
+        MemberInProperty
     }
 }

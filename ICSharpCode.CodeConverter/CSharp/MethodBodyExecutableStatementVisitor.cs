@@ -206,7 +206,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds, node.SpanStart);
             if (!preserve) return SingleStatement(newArrayAssignment);
 
-            var oldTargetName = GetUniqueVariableNameInScope(node, "old" + csTargetArrayExpression.ToString().ToPascalCase());
+            var lastIdentifierText = node.Expression.DescendantNodesAndSelf().OfType<VBSyntax.IdentifierNameSyntax>().Last().Identifier.Text;
+            var oldTargetName = GetUniqueVariableNameInScope(node, "old" + lastIdentifierText.ToPascalCase());
             var oldArrayAssignment = CreateLocalVariableDeclarationAndAssignment(oldTargetName, csTargetArrayExpression);
 
             var oldTargetExpression = SyntaxFactory.IdentifierName(oldTargetName);
@@ -308,7 +309,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(convertedBounds));
             var convertedType = (IArrayTypeSymbol) _semanticModel.GetTypeInfo(vbArrayExpression).ConvertedType;
-            var typeSyntax = GetTypeSyntaxFromTypeSymbol(convertedType.ElementType, nodeSpanStart);
+            var typeSyntax = CommonConversions.GetTypeSyntax(convertedType.ElementType);
             var arrayCreation =
                 SyntaxFactory.ArrayCreationExpression(SyntaxFactory.ArrayType(typeSyntax,
                     SyntaxFactory.SingletonList(arrayRankSpecifierSyntax)));
@@ -316,13 +317,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, csArrayExpression, arrayCreation);
             var newArrayAssignment = SyntaxFactory.ExpressionStatement(assignmentExpressionSyntax);
             return newArrayAssignment;
-        }
-
-        private TypeSyntax GetTypeSyntaxFromTypeSymbol(ITypeSymbol convertedType, int nodeSpanStart)
-        {
-            var predefinedKeywordKind = convertedType.SpecialType.GetPredefinedKeywordKind();
-            if (predefinedKeywordKind != SyntaxKind.None) return SyntaxFactory.PredefinedType(SyntaxFactory.Token(predefinedKeywordKind));
-            return SyntaxFactory.ParseTypeName(convertedType.ToMinimalCSharpDisplayString(_semanticModel, nodeSpanStart));
         }
 
         public override async Task<SyntaxList<StatementSyntax>> VisitThrowStatement(VBSyntax.ThrowStatementSyntax node)
@@ -370,7 +364,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     else if (info.IsReferenceType)
                         expr = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
                     else if (info.CanBeReferencedByName)
-                        expr = SyntaxFactory.DefaultExpression(SyntaxFactory.ParseTypeName(info.ToMinimalCSharpDisplayString(_semanticModel, node.SpanStart)));
+                        expr = SyntaxFactory.DefaultExpression(CommonConversions.GetTypeSyntax(info));
                     else
                         throw new NotSupportedException();
                     return SingleStatement(SyntaxFactory.ReturnStatement(expr));
@@ -551,6 +545,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var expr = (ExpressionSyntax) await node.SelectStatement.Expression.AcceptAsync(_expressionVisitor);
             var exprWithoutTrivia = expr.WithoutTrivia().WithoutAnnotations();
+            var usedConstantValues = new HashSet<object>();
             var sections = new List<SwitchSectionSyntax>();
             foreach (var block in node.CaseBlocks) {
                 var labels = new List<SwitchLabelSyntax>();
@@ -561,11 +556,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                         var typeConversionKind = CommonConversions.TypeConversionAnalyzer.AnalyzeConversion(s.Value);
                         var expressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax, typeConversionKind, true);
                         SwitchLabelSyntax caseSwitchLabelSyntax = SyntaxFactory.CaseSwitchLabel(expressionSyntax);
-                        if (!_semanticModel.GetConstantValue(s.Value).HasValue || (typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.NonDestructiveCast && typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.Identity)) {
+                        var constantValue = _semanticModel.GetConstantValue(s.Value);
+                        var isRepeatedConstantValue = constantValue.HasValue && !usedConstantValues.Add(constantValue);
+                        if (!constantValue.HasValue || isRepeatedConstantValue ||
+                            (typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.NonDestructiveCast &&
+                             typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.Identity)) {
                             caseSwitchLabelSyntax =
                                 WrapInCasePatternSwitchLabelSyntax(node, expressionSyntax);
                         }
-
                         labels.Add(caseSwitchLabelSyntax);
                     } else if (c is VBSyntax.ElseCaseClauseSyntax) {
                         labels.Add(SyntaxFactory.DefaultSwitchLabel());
@@ -618,7 +616,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<SyntaxList<StatementSyntax>> VisitWithBlock(VBSyntax.WithBlockSyntax node)
         {
             var withExpression = (ExpressionSyntax) await node.WithStatement.Expression.AcceptAsync(_expressionVisitor);
-            var generateVariableName = !_semanticModel.GetTypeInfo(node.WithStatement.Expression).Type.IsValueType;
+            var generateVariableName = _semanticModel.GetTypeInfo(node.WithStatement.Expression).Type?.IsValueType != true;
 
             ExpressionSyntax lhsExpression;
             List<StatementSyntax> prefixDeclarations = new List<StatementSyntax>();

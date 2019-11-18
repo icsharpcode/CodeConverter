@@ -36,6 +36,23 @@ End Namespace", @"namespace Test
         }
 
         [Fact]
+        public async Task TestGenericInheritanceInGlobalNamespace()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class A(Of T)
+End Class
+Class B
+    Inherits A(Of String)
+End Class
+", @"internal partial class A<T>
+{
+}
+
+internal partial class B : global::A<string>
+{
+}");
+        }
+
+        [Fact]
         public async Task TestTopLevelAttribute()
         {
             await TestConversionVisualBasicToCSharp(
@@ -333,6 +350,51 @@ End Class",
 }");
         }
 
+        [Fact]
+        public async Task MultilineCommentRootOfFile()
+        {
+            await TestConversionVisualBasicToCSharp(@"''' <summary>
+''' Returns empty
+''' </summary>
+Public Class MyTestClass
+    Private Function MyFunc() As String
+        Return """"
+    End Function
+End Class",
+                @"/// <summary>
+/// Returns empty
+/// </summary>
+public partial class MyTestClass
+{
+    private string MyFunc()
+    {
+        return """";
+    }
+}");
+        }
+
+        [Fact (Skip ="This test currently fails.  The initial line is trimmed. Not sure of importance")]
+        public async Task MultilineCommentRootOfFileLeadingSpaces()
+        {
+            await TestConversionVisualBasicToCSharp(@"    ''' <summary>
+    ''' Returns empty
+    ''' </summary>
+Public Class MyTestClass
+    Private Function MyFunc() As String
+        Return """"
+    End Function
+End Class",
+                @"    /// <summary>
+    /// Returns empty
+    /// </summary>
+public partial class MyTestClass
+{
+    private string MyFunc()
+    {
+        return """";
+    }
+}");
+        }
         [Fact]
         public async Task EnumConversion()
         {

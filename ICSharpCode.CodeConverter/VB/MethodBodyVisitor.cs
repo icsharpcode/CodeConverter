@@ -330,7 +330,7 @@ namespace ICSharpCode.CodeConverter.VB
             if (stepExpression == null || !(stepExpression.Token.Value is int))
                 return false;
             int step = (int)stepExpression.Token.Value;
-            if (SyntaxTokenExtensions.IsKind(iterator.OperatorToken, SyntaxKind.MinusToken))
+            if (SyntaxTokenExtensions.IsKind(iterator.OperatorToken, SyntaxKind.MinusEqualsToken))
                 step = -step;
 
             var condition = node.Condition as CSS.BinaryExpressionSyntax;

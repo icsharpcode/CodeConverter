@@ -136,6 +136,33 @@ End Class", @"internal partial class TestClass
         }
 
         [Fact]
+        public async Task DictionaryIndexingIssue362()
+        {
+            await TestConversionVisualBasicToCSharp(@"Imports System
+Imports System.Collections.Generic
+Imports System.Linq
+
+Module Module1
+    Dim Dict As New Dictionary(Of Integer, String)
+
+    Sub Main()
+        Dim x = Dict.Values(0).Length
+    End Sub
+End Module", @"using System.Collections.Generic;
+using System.Linq;
+
+internal static partial class Module1
+{
+    private static Dictionary<int, string> Dict = new Dictionary<int, string>();
+
+    public static void Main()
+    {
+        int x = Dict.Values.ElementAtOrDefault(0).Length;
+    }
+}");
+        }
+
+        [Fact]
         public async Task DateLiterals()
         {
             await TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -545,7 +572,46 @@ End Class",
 }");
         }
 
+        [Fact]
+        public async Task DuplicateCaseDiscarded()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Imports System
+    Friend Module Module1
+    Sub Main()
+        Select Case 1
+            Case 1
+                Console.WriteLine(""a"")
 
+            Case 1
+                Console.WriteLine(""b"")
+
+        End Select
+
+    End Sub
+End Module",
+@"using System;
+
+internal static partial class Module1
+{
+    public static void Main()
+    {
+        switch (1)
+        {
+            case 1:
+                {
+                    Console.WriteLine(""a"");
+                    break;
+                }
+
+            case var @case when @case == 1:
+                {
+                    Console.WriteLine(""b"");
+                    break;
+                }
+        }
+    }
+}");
+        }
         [Fact]
         public async Task MethodCallWithoutParens()
         {
@@ -911,7 +977,7 @@ public partial class Class1
     End Property
 End Class", @"public partial class Class1
 {
-    Class1()
+    public Class1()
     {
         var needsInitialization = default(int);
         int notUsed;
@@ -1954,6 +2020,53 @@ public partial class test
         }
 
         [Fact]
+        public async Task ConstLiteralConversionIssue329()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(
+                @"Module Module1
+    Const a As Boolean = 1
+    Const b As Char = ChrW(1)
+    Const c As Single = 1
+    Const d As Double = 1
+    Const e As Decimal = 1
+    Const f As SByte = 1
+    Const g As Short = 1
+    Const h As Integer = 1
+    Const i As Long = 1
+    Const j As Byte = 1
+    Const k As UInteger = 1
+    Const l As UShort = 1
+    Const m As ULong = 1
+
+    Sub Main()
+        Const x As SByte = 4
+    End Sub
+End Module", @"internal static partial class Module1
+{
+    private const bool a = true;
+    private const char b = (char)1;
+    private const float c = 1;
+    private const double d = 1;
+    private const decimal e = 1;
+    private const sbyte f = 1;
+    private const short g = 1;
+    private const int h = 1;
+    private const long i = 1;
+    private const byte j = 1;
+    private const uint k = 1;
+    private const ushort l = 1;
+    private const ulong m = 1;
+
+    public static void Main()
+    {
+        const sbyte x = 4;
+    }
+}
+");
+        }
+
+
+        [Fact]
         public async Task StringInterpolationWithConditionalOperator()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(
@@ -1963,6 +2076,46 @@ End Function",
                 @"public string GetString(bool yourBoolean)
 {
     return $""You {(yourBoolean ? ""do"" : ""do not"")} have a true value"";
+}");
+        }
+
+        [Fact]
+        public async Task SelectCaseIssue361()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(
+                @"Module Module1
+    Enum E
+        A = 1
+    End Enum
+
+    Sub Main()
+        Dim x = 1
+        Select Case x
+            Case E.A
+                Console.WriteLine(""z"")
+        End Select
+    End Sub
+End Module", @"using System;
+
+internal static partial class Module1
+{
+    public enum E
+    {
+        A = 1
+    }
+
+    public static void Main()
+    {
+        int x = 1;
+        switch (x)
+        {
+            case (int)E.A:
+                {
+                    Console.WriteLine(""z"");
+                    break;
+                }
+        }
+    }
 }");
         }
 
@@ -2084,6 +2237,43 @@ End Class", @"public partial class Class1
         }
 
         [Fact]
+        public async Task GlobalNameIssue375()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Module Module1
+    Sub Main()
+        Dim x = Microsoft.VisualBasic.Timer
+    End Sub
+End Module", @"using Microsoft.VisualBasic;
+
+internal static partial class Module1
+{
+    public static void Main()
+    {
+        double x = DateAndTime.Timer;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task TernaryConversionIssue363()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Module Module1
+    Sub Main()
+        Dim x As Short = If(True, CShort(50), 100S)
+    End Sub
+End Module", @"using Microsoft.VisualBasic.CompilerServices;
+
+internal static partial class Module1
+{
+    public static void Main()
+    {
+        short x = true ? Conversions.ToShort(50) : Conversions.ToShort(100);
+    }
+}
+");
+        }
+
+        [Fact]
         public async Task MemberAccessCasing()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
@@ -2108,6 +2298,55 @@ End Class", @"public partial class Class1
     }
 }");
         }
+
+        [Fact]
+        public async Task AliasedImportsWithTypePromotionIssue401()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(
+                @"Imports System.IO
+Imports SIO = System.IO
+Imports Microsoft.VisualBasic
+Imports VB = Microsoft.VisualBasic
+
+Public Class Test
+    Private aliased As String = VB.Left(""SomeText"", 1)
+    Private aliased2 As System.Delegate = New SIO.ErrorEventHandler(AddressOf OnError)
+
+    ' Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
+    Private Tr As String = NameOf(TextReader)
+    Private Strings As String = NameOf(VBCodeProvider)
+
+    Class ErrorEventHandler
+    End Class
+
+    Shared Sub OnError(s As Object, e As ErrorEventArgs)
+    End Sub
+End Class",
+                @"using System;
+using System.IO;
+using Microsoft.VisualBasic;
+using SIO = System.IO;
+using VB = Microsoft.VisualBasic;
+
+public partial class Test
+{
+    private string aliased = VB.Strings.Left(""SomeText"", 1);
+    private Delegate aliased2 = new SIO.ErrorEventHandler(OnError);
+
+    // Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
+    private string Tr = nameof(TextReader);
+    private string Strings = nameof(VBCodeProvider);
+
+    public partial class ErrorEventHandler
+    {
+    }
+
+    public static void OnError(object s, ErrorEventArgs e)
+    {
+    }
+}");
+        }
+
 
     }
 }

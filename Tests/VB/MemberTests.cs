@@ -11,6 +11,27 @@ namespace CodeConverter.Tests.VB
     public class MemberTests : ConverterTestBase
     {
         [Fact]
+        public async Task TestPropertyWithModifier()
+        {
+            await TestConversionCSharpToVisualBasic(
+                @"class TestClass
+{
+    public string Text { get; private set; };
+}", @"Friend Class TestClass
+    Private _Text As String
+
+    Public Property Text As String
+        Get
+            Return _Text
+        End Get
+        Private Set(ByVal value As String)
+            _Text = value
+        End Set
+    End Property
+End Class");
+        }
+
+        [Fact]
         public async Task TestField()
         {
             await TestConversionCSharpToVisualBasic(

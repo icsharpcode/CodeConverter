@@ -92,6 +92,20 @@ namespace ICSharpCode.CodeConverter.VB
             return convertedStatements;
         }
 
+        public SyntaxList<StatementSyntax> InsertGeneratedClassMemberDeclarations(
+            SyntaxList<StatementSyntax> convertedStatements, CSharpSyntaxNode originaNode)
+        {
+            var descendantNodes = originaNode.DescendantNodes().ToList();
+            var propertyBlocks = descendantNodes.OfType<PropertyDeclarationSyntax>()
+                .Where(e => e.AccessorList != null && e.AccessorList.Accessors.Any(a => a.Body == null && a.ExpressionBody == null && a.Modifiers.ContainsDeclaredVisibility()))
+                .ToList();
+            if (propertyBlocks.Any()) {
+                convertedStatements = convertedStatements.Insert(0, ConvertToDeclarationStatement(propertyBlocks));
+            }
+
+            return convertedStatements;
+        }
+
         private StatementSyntax ConvertToDeclarationStatement(List<DeclarationExpressionSyntax> des,
             List<IsPatternExpressionSyntax> isPatternExpressions)
         {
@@ -100,10 +114,22 @@ namespace ICSharpCode.CodeConverter.VB
             return CreateLocalDeclarationStatement(variableDeclaratorSyntaxs.ToArray());
         }
 
+        private StatementSyntax ConvertToDeclarationStatement(List<PropertyDeclarationSyntax> propertyBlocks)
+        {
+            IEnumerable<VariableDeclaratorSyntax> variableDeclaratorSyntaxs = propertyBlocks.Select(ConvertToVariableDeclarator);
+            return CreateLocalDeclarationStatement(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PrivateKeyword)), variableDeclaratorSyntaxs.ToArray());
+        }
+
         public static StatementSyntax CreateLocalDeclarationStatement(params VariableDeclaratorSyntax[] variableDeclarators)
         {
             var syntaxTokenList = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.DimKeyword));
             var declarators = SyntaxFactory.SeparatedList(variableDeclarators);
+            return SyntaxFactory.LocalDeclarationStatement(syntaxTokenList, declarators);
+        }
+
+        public static StatementSyntax CreateLocalDeclarationStatement(SyntaxTokenList syntaxTokenList, params VariableDeclaratorSyntax[] DimVariableDeclarators)
+        {
+            var declarators = SyntaxFactory.SeparatedList(DimVariableDeclarators);
             return SyntaxFactory.LocalDeclarationStatement(syntaxTokenList, declarators);
         }
 
@@ -123,6 +149,7 @@ namespace ICSharpCode.CodeConverter.VB
             var equalsValueSyntax = SyntaxFactory.EqualsValue(SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression, SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
             return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
         }
+
         private VariableDeclaratorSyntax ConvertToVariableDeclarator(IsPatternExpressionSyntax node)
         {
             return node.Pattern.TypeSwitch(
@@ -136,6 +163,23 @@ namespace ICSharpCode.CodeConverter.VB
                     return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
                 },
                 p => throw new ArgumentOutOfRangeException(nameof(p), p, null));
+        }
+
+        private VariableDeclaratorSyntax ConvertToVariableDeclarator(PropertyDeclarationSyntax des)
+        {
+            var id = GetVbPropertyBackingFieldName(des);
+            var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
+            TypeSyntax typeSyntax;
+            if (des.Type.IsVar) {
+                var typeSymbol = (ITypeSymbol)ModelExtensions.GetSymbolInfo(_semanticModel, des.Type).ExtractBestMatch();
+                typeSyntax = typeSymbol?.ToVbSyntax(_semanticModel, des.Type);
+            } else {
+                typeSyntax = (TypeSyntax)des.Type.Accept(_nodesVisitor);
+            }
+
+            var simpleAsClauseSyntax = typeSyntax != null ? SyntaxFactory.SimpleAsClause(typeSyntax) : null; //Gracefully degrade when no type information available
+            EqualsValueSyntax equalsValueSyntax = null;
+            return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
         }
 
         private CSharpSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(MethodBodyVisitor methodBodyVisitor = null)
@@ -164,6 +208,8 @@ namespace ICSharpCode.CodeConverter.VB
                     blockKind = SyntaxKind.GetAccessorBlock;
                     stmt = SyntaxFactory.GetAccessorStatement(attributes, modifiers, null);
                     endStmt = SyntaxFactory.EndGetStatement();
+                    body = body.Count > 0 ? body :
+                        SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName(GetVbPropertyBackingFieldName(parent))));
                     break;
                 case CSSyntaxKind.SetAccessorDeclaration:
                     blockKind = SyntaxKind.SetAccessorBlock;
@@ -172,6 +218,8 @@ namespace ICSharpCode.CodeConverter.VB
                         .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword)));
                     stmt = SyntaxFactory.SetAccessorStatement(attributes, modifiers, SyntaxFactory.ParameterList(SyntaxFactory.SingletonSeparatedList(valueParam)));
                     endStmt = SyntaxFactory.EndSetStatement();
+                    body = body.Count > 0 ? body :
+                    SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.AssignmentStatement(SyntaxKind.SimpleAssignmentStatement, SyntaxFactory.IdentifierName(GetVbPropertyBackingFieldName(parent)), SyntaxFactory.Token( VBUtil.GetExpressionOperatorTokenKind( SyntaxKind.SimpleAssignmentStatement)), SyntaxFactory.IdentifierName("value")));
                     break;
                 case CSSyntaxKind.AddAccessorDeclaration:
                     blockKind = SyntaxKind.AddHandlerAccessorBlock;
@@ -193,6 +241,11 @@ namespace ICSharpCode.CodeConverter.VB
                     throw new NotSupportedException();
             }
             return SyntaxFactory.AccessorBlock(blockKind, stmt, body, endStmt);
+        }
+
+        private static SyntaxToken GetVbPropertyBackingFieldName(BasePropertyDeclarationSyntax parent)
+        {
+            return Identifier("_" + ((PropertyDeclarationSyntax)parent).Identifier.Text);
         }
 
         public ExpressionSyntax ReduceArrayUpperBoundExpression(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax expr)
@@ -335,7 +388,7 @@ namespace ICSharpCode.CodeConverter.VB
         private static IEnumerable<SyntaxToken> ConvertModifiersCore(IReadOnlyCollection<SyntaxToken> modifiers,
             TokenContext context, bool isConstructor)
         {
-            if (context != TokenContext.Local && context != TokenContext.MemberInInterface) {
+            if (context != TokenContext.Local && context != TokenContext.MemberInInterface && context != TokenContext.MemberInProperty) {
                 bool visibility = false;
                 foreach (var token in modifiers) {
                     if (token.IsCsVisibility(true, isConstructor)) { //TODO Don't always treat as variable or const, pass in more context to detect this
@@ -371,6 +424,7 @@ namespace ICSharpCode.CodeConverter.VB
                 case TokenContext.Local:
                 case TokenContext.MemberInClass:
                 case TokenContext.MemberInModule:
+                case TokenContext.MemberInProperty:
                 case TokenContext.MemberInStruct:
                     return SyntaxFactory.Token(SyntaxKind.PrivateKeyword);
                 case TokenContext.MemberInInterface:
