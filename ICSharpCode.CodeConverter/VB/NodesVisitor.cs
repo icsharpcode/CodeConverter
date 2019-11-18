@@ -455,7 +455,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             var containingType = memberInfo.ContainingType;
             var baseClassesAndInterfaces = containingType.GetAllBaseClassesAndInterfaces(true);
-            var implementor = baseClassesAndInterfaces.Except(new[] {containingType}).SelectMany(t => t.GetMembers().Where(m => m.Name.Equals(memberInfo.Name)))
+            var implementor = baseClassesAndInterfaces.Except(new[] { containingType }).SelectMany(t => t.GetMembers().Where(m => memberInfo.Name.EndsWith(m.Name)))
                 .FirstOrDefault(m => containingType.FindImplementationForInterfaceMember(m)?.Equals(memberInfo) == true);
 
             return implementor == null ? null
