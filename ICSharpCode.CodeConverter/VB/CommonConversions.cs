@@ -465,7 +465,7 @@ namespace ICSharpCode.CodeConverter.VB
         public static SyntaxToken Identifier(string idText, bool keywordRequiresEscaping = false)
         {
             if (idText.All(c => c == '_')) idText += "_";
-            return keywordRequiresEscaping ? SyntaxFactory.Identifier($"[{idText}]") : SyntaxFactory.Identifier(idText);
+            return keywordRequiresEscaping ? SyntaxFactory.BracketedIdentifier(idText) : SyntaxFactory.Identifier(idText);
         }
 
         private static bool KeywordRequiresEscaping(SyntaxToken id)
@@ -473,7 +473,8 @@ namespace ICSharpCode.CodeConverter.VB
             var keywordKind = SyntaxFacts.GetKeywordKind(id.ValueText);
 
             if (keywordKind == SyntaxKind.None) return false;
-            if (!SyntaxFacts.IsPredefinedType(keywordKind)) return true;
+            if (SyntaxFacts.IsPredefinedType(keywordKind) || SyntaxFacts.IsReservedKeyword(keywordKind))
+                return true;
 
             // List of the kinds that end in declaration and can have names attached
             return id.IsKind(CSSyntaxKind.CatchDeclaration,

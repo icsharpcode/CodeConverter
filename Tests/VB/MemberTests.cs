@@ -709,8 +709,17 @@ End Class");
     End Property
 End Class");
         }
-
-
+        [Fact]
+        public async Task NameMatchesWithTypeDate() {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass
+{
+    private DateTime date;
+}",
+@"Friend Class TestClass
+    Private [date] As Date
+End Class");
+        }
 
         [Fact]// The stack trace displayed will change from time to time. Feel free to update this characterization test appropriately.
         public async Task InvalidOperatorOverloadsShowErrorInlineCharacterization()
