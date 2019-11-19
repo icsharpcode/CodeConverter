@@ -145,7 +145,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitNamespaceBlock(VBSyntax.NamespaceBlockSyntax node)
         {
             var members = (await node.Members.SelectAsync(ConvertMember)).Where(m => m != null);
-            var namespaceToDeclare = _semanticModel.GetDeclaredSymbol(node)?.ToDisplayString() ?? node.NamespaceStatement.Name.ToString();
+            var sym = _semanticModel.GetDeclaredSymbol(node);
+            string namespaceToDeclare = await WithDeclarationCasing(node, sym);
             var parentNamespaceSyntax = node.GetAncestor<VBSyntax.NamespaceBlockSyntax>();
             var parentNamespaceDecl = parentNamespaceSyntax != null ? _semanticModel.GetDeclaredSymbol(parentNamespaceSyntax) : null;
             var parentNamespaceFullName = parentNamespaceDecl?.ToDisplayString() ?? _topAncestorNamespace;
@@ -154,6 +155,24 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var cSharpSyntaxNode = (CSharpSyntaxNode) _csSyntaxGenerator.NamespaceDeclaration(namespaceToDeclare, SyntaxFactory.List(members));
             return cSharpSyntaxNode;
+        }
+
+        /// <summary>
+        /// Semantic model merges the symbols, but the compiled form retains multiple namespaces, which (when referenced from C#) need to keep the correct casing.
+        /// <seealso cref="CommonConversions.WithDeclarationCasing(TypeSyntax, ITypeSymbol)"/>
+        /// <seealso cref="CommonConversions.WithDeclarationCasing(SyntaxToken, ISymbol, string)"/>
+        /// </summary>
+        private async Task<string> WithDeclarationCasing(VBSyntax.NamespaceBlockSyntax node, ISymbol sym)
+        {
+            var sourceName = (await node.NamespaceStatement.Name.AcceptAsync(_triviaConvertingExpressionVisitor)).ToString();
+            var namespaceToDeclare = sym?.ToDisplayString() ?? sourceName;
+            int lastIndex = namespaceToDeclare.LastIndexOf(sourceName, StringComparison.OrdinalIgnoreCase);
+            if (lastIndex >= 0 && lastIndex + sourceName.Length == namespaceToDeclare.Length)
+            {
+                namespaceToDeclare = namespaceToDeclare.Substring(0, lastIndex) + sourceName;
+            }
+
+            return namespaceToDeclare;
         }
 
         #region Namespace Members

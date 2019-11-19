@@ -283,7 +283,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (left == null && nodeSymbol?.IsStatic == true) {
                 var type = nodeSymbol.ContainingType;
                 var expressionSymbolInfo = _semanticModel.GetSymbolInfo(node.Expression);
-                if (type != null && !expressionSymbolInfo.Symbol.IsType()) {
+                if (type != null) {
                     left = CommonConversions.GetTypeSyntax(type);
                 }
             }
