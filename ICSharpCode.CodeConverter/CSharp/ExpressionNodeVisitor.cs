@@ -155,13 +155,19 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitCTypeExpression(VBasic.Syntax.CTypeExpressionSyntax node)
         {
-            var convertMethodForKeywordOrNull = GetConvertMethodForKeywordOrNull(node.Type);
-            return await ConvertCastExpression(node, convertMethodForKeywordOrNull);
+            var nodeForType = node;
+            var convertMethodForKeyword = GetConvertMethodForKeywordOrNull(nodeForType);
+            if (_semanticModel.GetTypeInfo(nodeForType).Type is INamedTypeSymbol typeSymbol && typeSymbol.IsEnumType()) {
+                convertMethodForKeyword = GetConvertMethodForKeywordOrNull(typeSymbol.EnumUnderlyingType);
+            } else if (convertMethodForKeyword != null) {
+                nodeForType = null;
+            }
+            return await ConvertCastExpression(node, convertMethodForKeyword, nodeForType?.Type);
         }
 
         public override async Task<CSharpSyntaxNode> VisitDirectCastExpression(VBasic.Syntax.DirectCastExpressionSyntax node)
         {
-            return await ConvertCastExpression(node);
+            return await ConvertCastExpression(node, castToOrNull: node.Type);
         }
 
         public override async Task<CSharpSyntaxNode> VisitPredefinedCastExpression(VBasic.Syntax.PredefinedCastExpressionSyntax node)
@@ -981,33 +987,55 @@ namespace ICSharpCode.CodeConverter.CSharp
             return methodBodyVisitor.CommentConvertingVisitor;
         }
 
-        private async Task<CSharpSyntaxNode> ConvertCastExpression(VBasic.Syntax.CastExpressionSyntax node, ExpressionSyntax convertMethodOrNull = null)
+        private async Task<CSharpSyntaxNode> ConvertCastExpression(VBSyntax.CastExpressionSyntax node,
+            ExpressionSyntax convertMethodOrNull = null, VBSyntax.TypeSyntax castToOrNull = null)
         {
             var expressionSyntax = (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor);
 
             if (convertMethodOrNull != null) {
-                return
-                    SyntaxFactory.InvocationExpression(convertMethodOrNull,
-                        SyntaxFactory.ArgumentList(
-                            SyntaxFactory.SingletonSeparatedList(
-                                SyntaxFactory.Argument(expressionSyntax)))
-                    );
+                expressionSyntax = Invoke(convertMethodOrNull, expressionSyntax);
             }
 
-            var castExpr = ValidSyntaxFactory.CastExpression((TypeSyntax) await node.Type.AcceptAsync(TriviaConvertingVisitor), expressionSyntax);
-            if (node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax) {
-                return SyntaxFactory.ParenthesizedExpression(castExpr);
+            if (castToOrNull != null) {
+                expressionSyntax = await Cast(expressionSyntax, castToOrNull);
+                if (node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax) {
+                    expressionSyntax = SyntaxFactory.ParenthesizedExpression(expressionSyntax);
+                }
             }
-            return castExpr;
+
+            return expressionSyntax;
+        }
+
+        private async Task<CastExpressionSyntax> Cast(ExpressionSyntax expressionSyntax, VBSyntax.TypeSyntax typeSyntax)
+        {
+            return ValidSyntaxFactory.CastExpression((TypeSyntax) await typeSyntax.AcceptAsync(TriviaConvertingVisitor), expressionSyntax);
+        }
+
+        private static InvocationExpressionSyntax Invoke(ExpressionSyntax toInvoke, ExpressionSyntax argExpression)
+        {
+            return
+                SyntaxFactory.InvocationExpression(toInvoke,
+                    SyntaxFactory.ArgumentList(
+                        SyntaxFactory.SingletonSeparatedList(
+                            SyntaxFactory.Argument(argExpression)))
+                );
         }
 
         private ExpressionSyntax GetConvertMethodForKeywordOrNull(SyntaxNode type)
         {
-            var convertedType = _semanticModel.GetTypeInfo(type).Type;
-            _extraUsingDirectives.Add(ConvertType.Namespace);
-            return convertedType != null && _convertMethodsLookupByReturnType.Value.TryGetValue(convertedType, out var convertMethodName)
-                ? SyntaxFactory.ParseExpression(convertMethodName) : null;
+            var targetType = _semanticModel.GetTypeInfo(type).Type;
+            return GetConvertMethodForKeywordOrNull(targetType);
         }
+
+        private ExpressionSyntax GetConvertMethodForKeywordOrNull(ITypeSymbol targetType)
+        {
+            _extraUsingDirectives.Add(ConvertType.Namespace);
+            return targetType != null &&
+                   _convertMethodsLookupByReturnType.Value.TryGetValue(targetType, out var convertMethodName)
+                ? SyntaxFactory.ParseExpression(convertMethodName)
+                : null;
+        }
+
         private static bool IsSubPartOfConditionalAccess(VBasic.Syntax.MemberAccessExpressionSyntax node)
         {
             var firstPossiblyConditionalAncestor = node.Parent;
