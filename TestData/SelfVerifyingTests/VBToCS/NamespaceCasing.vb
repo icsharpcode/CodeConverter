@@ -2,6 +2,8 @@ Imports Xunit
 
 Namespace [Aaa]
     Friend Class A
+        Shared Sub Foo()
+        End Sub
     End Class
 
     Partial Class Z
@@ -24,6 +26,8 @@ End Namespace
 
 Namespace Global.aaa
     Friend Class B
+        Shared Sub Bar()
+        End Sub
     End Class
 End Namespace
 
@@ -42,5 +46,9 @@ Friend Module NamespaceCasing
         Dim e = New AAA.B
         Dim f = New Aaa.Z
         Dim g = New Aaa.z
+        aaa.a.foo()
+        Aaa.A.Foo()
+        aaa.b.bar()
+        Aaa.B.Bar()
     End Sub
 End Module

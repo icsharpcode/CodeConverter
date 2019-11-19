@@ -106,6 +106,8 @@ End Namespace", @"namespace Test.@class
         {
             await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace [Aaa]
     Friend Class A
+        Shared Sub Foo()
+        End Sub
     End Class
 
     Partial Class Z
@@ -128,6 +130,8 @@ End Namespace
 
 Namespace Global.aaa
     Friend Class B
+        Shared Sub Bar()
+        End Sub
     End Class
 End Namespace
 
@@ -143,11 +147,18 @@ Friend Module C
         Dim e = New AAA.B
         Dim f = New Aaa.Z
         Dim g = New Aaa.z
+        aaa.a.foo()
+        Aaa.A.Foo()
+        aaa.b.bar()
+        Aaa.B.Bar()
     End Sub
 End Module", @"namespace Aaa
 {
     internal partial class A
     {
+        public static void Foo()
+        {
+        }
     }
 
     internal partial class Z
@@ -175,6 +186,9 @@ namespace aaa
 {
     internal partial class B
     {
+        public static void Bar()
+        {
+        }
     }
 }
 
@@ -192,6 +206,10 @@ internal static partial class C
         var e = new aaa.B();
         var f = new Aaa.Z();
         var g = new Aaa.Z();
+        Aaa.A.Foo();
+        Aaa.A.Foo();
+        aaa.B.Bar();
+        aaa.B.Bar();
     }
 }");
         }
