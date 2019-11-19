@@ -166,7 +166,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var sourceName = (await node.NamespaceStatement.Name.AcceptAsync(_triviaConvertingExpressionVisitor)).ToString();
             var namespaceToDeclare = sym?.ToDisplayString() ?? sourceName;
-            // TODO Check what happenes with namespaces such as Y.XY.Y
             int lastIndex = namespaceToDeclare.LastIndexOf(sourceName, StringComparison.OrdinalIgnoreCase);
             if (lastIndex >= 0 && lastIndex + sourceName.Length == namespaceToDeclare.Length)
             {

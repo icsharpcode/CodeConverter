@@ -66,6 +66,33 @@ End Namespace",
         }
 
         [Fact]
+        public async Task RootNamespaceIsAddedToExistingNamespaceWithDeclarationCasing()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace AAA.AAaB.AaA
+    Public Class Class1
+    End Class
+End Namespace
+
+Namespace Aaa.aAAb.aAa
+    Public Class Class2
+    End Class
+End Namespace",
+                @"namespace TheRootNamespace.AAA.AAaB.AaA
+{
+    public partial class Class1
+    {
+    }
+}
+
+namespace TheRootNamespace.Aaa.aAAb.aAa
+{
+    public partial class Class2
+    {
+    }
+}");
+        }
+
+        [Fact]
         public async Task NestedNamespacesRemainRelative()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace A.B
