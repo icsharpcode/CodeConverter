@@ -242,7 +242,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         text = idSymbol.ContainingType.Name;
                         if (text.EndsWith("Attribute", StringComparison.OrdinalIgnoreCase))
                             text = text.Remove(text.Length - "Attribute".Length);
-                    } else if (idSymbol.IsKind(SymbolKind.Parameter) && idSymbol.ContainingSymbol.IsAccessorPropertySet() && ((idSymbol.IsImplicitlyDeclared && idSymbol.Name == "Value") || idSymbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared).Equals(idSymbol))) {
+                    } else if (idSymbol.IsKind(SymbolKind.Parameter) && idSymbol.ContainingSymbol.IsAccessorPropertySet() && ((idSymbol.IsImplicitlyDeclared && idSymbol.Name == "Value") || idSymbol.Equals(idSymbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared)))) {
                         // The case above is basically that if the symbol is a parameter, and the corresponding definition is a property set definition
                         // AND the first explicitly declared parameter is this symbol, we need to replace it with value.
                         text = "value";
