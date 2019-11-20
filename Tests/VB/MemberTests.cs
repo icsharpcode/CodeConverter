@@ -731,6 +731,63 @@ End Class");
 End Class");
         }
         [Fact]
+        public async Task Interface_Indexer()
+        {
+            await TestConversionCSharpToVisualBasic(
+@"public interface iDisplay {
+    object this[int i] { get; set; }
+}",
+@"Public Interface iDisplay
+    Default Property Item(ByVal i As Integer) As Object
+End Interface");
+        }
+        [Fact]
+        public async Task Indexer_EmptySetter()
+        {
+            await TestConversionCSharpToVisualBasic(
+@"using System.Collections
+
+class TestClass : IList {
+
+    public object this[int index] {
+        get { return index; }
+        set { }
+    }
+}",
+@"Imports System.Collections
+
+Friend Class TestClass
+    Implements IList
+
+    Default Public Property Item(ByVal index As Integer) As Object Implements IList.Item
+        Get
+            Return index
+        End Get
+        Set(ByVal value As Object)
+        End Set
+    End Property
+End Class");
+        }
+        [Fact]
+        public async Task Indexer_BadCase()
+        {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    public object this[int index] {
+        get { }
+        set { }
+    }
+}",
+@"Friend Class TestClass
+    Default Public Property Item(ByVal index As Integer) As Object
+        Get
+        End Get
+        Set(ByVal value As Object)
+        End Set
+    End Property
+End Class");
+        }
+        [Fact]
         public async Task NameMatchesWithTypeDate() {
             await TestConversionCSharpToVisualBasic(
 @"class TestClass

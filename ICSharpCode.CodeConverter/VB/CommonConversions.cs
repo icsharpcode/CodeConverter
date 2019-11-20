@@ -188,7 +188,7 @@ namespace ICSharpCode.CodeConverter.VB
             return visitor.CommentConvertingVisitor;
         }
 
-        public AccessorBlockSyntax ConvertAccessor(AccessorDeclarationSyntax node, out bool isIterator)
+        public AccessorBlockSyntax ConvertAccessor(AccessorDeclarationSyntax node, out bool isIterator, bool isAutoImplementedProperty = false)
         {
             SyntaxKind blockKind;
             AccessorStatementSyntax stmt;
@@ -208,8 +208,10 @@ namespace ICSharpCode.CodeConverter.VB
                     blockKind = SyntaxKind.GetAccessorBlock;
                     stmt = SyntaxFactory.GetAccessorStatement(attributes, modifiers, null);
                     endStmt = SyntaxFactory.EndGetStatement();
-                    body = body.Count > 0 ? body :
+                    if (isAutoImplementedProperty) {
+                        body = body.Count > 0 ? body :
                         SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName(GetVbPropertyBackingFieldName(parent))));
+                    }
                     break;
                 case CSSyntaxKind.SetAccessorDeclaration:
                     blockKind = SyntaxKind.SetAccessorBlock;
@@ -218,8 +220,10 @@ namespace ICSharpCode.CodeConverter.VB
                         .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword)));
                     stmt = SyntaxFactory.SetAccessorStatement(attributes, modifiers, SyntaxFactory.ParameterList(SyntaxFactory.SingletonSeparatedList(valueParam)));
                     endStmt = SyntaxFactory.EndSetStatement();
-                    body = body.Count > 0 ? body :
-                    SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.AssignmentStatement(SyntaxKind.SimpleAssignmentStatement, SyntaxFactory.IdentifierName(GetVbPropertyBackingFieldName(parent)), SyntaxFactory.Token( VBUtil.GetExpressionOperatorTokenKind( SyntaxKind.SimpleAssignmentStatement)), SyntaxFactory.IdentifierName("value")));
+                    if (isAutoImplementedProperty) {
+                        body = body.Count > 0 ? body :
+                        SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.AssignmentStatement(SyntaxKind.SimpleAssignmentStatement, SyntaxFactory.IdentifierName(GetVbPropertyBackingFieldName(parent)), SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(SyntaxKind.SimpleAssignmentStatement)), SyntaxFactory.IdentifierName("value")));
+                    }
                     break;
                 case CSSyntaxKind.AddAccessorDeclaration:
                     blockKind = SyntaxKind.AddHandlerAccessorBlock;
@@ -493,6 +497,9 @@ namespace ICSharpCode.CodeConverter.VB
             switch (CSharpExtensions.Kind(id)) {
                 case CSSyntaxKind.GlobalKeyword:
                     idText = "Global";
+                    break;
+                case CSSyntaxKind.ThisKeyword:
+                    idText = "Item";
                     break;
             }
             return Identifier(idText, keywordRequiresEscaping);

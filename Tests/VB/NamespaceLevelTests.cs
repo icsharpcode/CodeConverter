@@ -315,6 +315,36 @@ Public Interface iDisplay
 End Interface");
         }
         [Fact]
+        public async Task ClassExplicitlyImplementsInterface_Indexer()
+        {
+            await TestConversionCSharpToVisualBasic(
+@"public class ToBeDisplayed : iDisplay {
+    object iDisplay.this[int i] {
+        get { throw new System.NotImplementedException(); }
+        set { throw new System.NotImplementedException(); }
+    }
+}
+public interface iDisplay {
+    object this[int i] { get; set; }
+}",
+@"Public Class ToBeDisplayed
+    Implements iDisplay
+
+    Private Property Item(ByVal i As Integer) As Object Implements iDisplay.Item
+        Get
+            Throw New NotImplementedException
+        End Get
+        Set(ByVal value As Object)
+            Throw New NotImplementedException
+        End Set
+    End Property
+End Class
+
+Public Interface iDisplay
+    Default Property Item(ByVal i As Integer) As Object
+End Interface");
+        }
+        [Fact]
         public async Task ClassImplementsInterface2()
         {
             await TestConversionCSharpToVisualBasic("class test : System.IComparable { }",
