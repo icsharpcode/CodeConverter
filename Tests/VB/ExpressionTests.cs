@@ -507,7 +507,7 @@ static class Program
 
 Friend Module Program
     Private Sub Main(ByVal args As String())
-        Dim x = (Sub(__) Environment.[Exit](0))
+        Dim x = (Sub(__) Environment.Exit(0))
     End Sub
 End Module");
         }

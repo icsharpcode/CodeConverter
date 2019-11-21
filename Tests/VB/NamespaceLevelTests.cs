@@ -55,7 +55,7 @@ End Class");
     class TestClass<T>
     {
     }
-}", @"Namespace Test.[class]
+}", @"Namespace Test.class
     Friend Class TestClass(Of T)
     End Class
 End Namespace");
@@ -71,7 +71,7 @@ End Namespace");
         public static void Test() {}
         static void Test2() {}
     }
-}", @"Namespace Test.[class]
+}", @"Namespace Test.class
     Friend Module TestClass
         Sub Test()
         End Sub
@@ -85,13 +85,28 @@ End Namespace");
         [Fact]
         public async Task TestAbstractClass()
         {
-            await TestConversionCSharpToVisualBasic(@"namespace Test.@class
+            await TestConversionCSharpToVisualBasic(
+@"namespace Test.@class
 {
-    abstract class TestClass
+    public abstract class TestClass
     {
     }
-}", @"Namespace Test.[class]
-    Friend MustInherit Class TestClass
+}
+namespace Test
+{
+    public class Test1 : @class.TestClass
+    {
+    }
+}
+",
+@"Namespace Test.class
+    Public MustInherit Class TestClass
+    End Class
+End Namespace
+
+Namespace Test
+    Public Class Test1
+        Inherits [class].TestClass
     End Class
 End Namespace");
         }
@@ -104,7 +119,7 @@ End Namespace");
     sealed class TestClass
     {
     }
-}", @"Namespace Test.[class]
+}", @"Namespace Test.class
     Friend NotInheritable Class TestClass
     End Class
 End Namespace");
@@ -268,7 +283,67 @@ Public Interface iDisplay
     Sub DisplayName()
 End Interface");
         }
+        [Fact]
+        public async Task ClassExplicitlyImplementsInterface()
+        {
+            await TestConversionCSharpToVisualBasic(
+@"public class ToBeDisplayed : iDisplay
+{
+    string iDisplay.Name { get; set; }
 
+    private void iDisplay.DisplayName()
+    {
+    }
+}
+public interface iDisplay
+{
+    string Name { get; set; }
+    void DisplayName();
+}",
+@"Public Class ToBeDisplayed
+    Implements iDisplay
+
+    Private Property Name As String Implements iDisplay.Name
+
+    Private Sub DisplayName() Implements iDisplay.DisplayName
+    End Sub
+End Class
+
+Public Interface iDisplay
+    Property Name As String
+    Sub DisplayName()
+End Interface");
+        }
+        [Fact]
+        public async Task ClassExplicitlyImplementsInterface_Indexer()
+        {
+            await TestConversionCSharpToVisualBasic(
+@"public class ToBeDisplayed : iDisplay {
+    object iDisplay.this[int i] {
+        get { throw new System.NotImplementedException(); }
+        set { throw new System.NotImplementedException(); }
+    }
+}
+public interface iDisplay {
+    object this[int i] { get; set; }
+}",
+@"Public Class ToBeDisplayed
+    Implements iDisplay
+
+    Private Property Item(ByVal i As Integer) As Object Implements iDisplay.Item
+        Get
+            Throw New NotImplementedException
+        End Get
+        Set(ByVal value As Object)
+            Throw New NotImplementedException
+        End Set
+    End Property
+End Class
+
+Public Interface iDisplay
+    Default Property Item(ByVal i As Integer) As Object
+End Interface");
+        }
         [Fact]
         public async Task ClassImplementsInterface2()
         {

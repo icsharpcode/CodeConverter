@@ -188,7 +188,7 @@ namespace ICSharpCode.CodeConverter.VB
             return visitor.CommentConvertingVisitor;
         }
 
-        public AccessorBlockSyntax ConvertAccessor(AccessorDeclarationSyntax node, out bool isIterator)
+        public AccessorBlockSyntax ConvertAccessor(AccessorDeclarationSyntax node, out bool isIterator, bool isAutoImplementedProperty = false)
         {
             SyntaxKind blockKind;
             AccessorStatementSyntax stmt;
@@ -208,8 +208,10 @@ namespace ICSharpCode.CodeConverter.VB
                     blockKind = SyntaxKind.GetAccessorBlock;
                     stmt = SyntaxFactory.GetAccessorStatement(attributes, modifiers, null);
                     endStmt = SyntaxFactory.EndGetStatement();
-                    body = body.Count > 0 ? body :
+                    if (isAutoImplementedProperty) {
+                        body = body.Count > 0 ? body :
                         SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName(GetVbPropertyBackingFieldName(parent))));
+                    }
                     break;
                 case CSSyntaxKind.SetAccessorDeclaration:
                     blockKind = SyntaxKind.SetAccessorBlock;
@@ -218,8 +220,10 @@ namespace ICSharpCode.CodeConverter.VB
                         .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword)));
                     stmt = SyntaxFactory.SetAccessorStatement(attributes, modifiers, SyntaxFactory.ParameterList(SyntaxFactory.SingletonSeparatedList(valueParam)));
                     endStmt = SyntaxFactory.EndSetStatement();
-                    body = body.Count > 0 ? body :
-                    SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.AssignmentStatement(SyntaxKind.SimpleAssignmentStatement, SyntaxFactory.IdentifierName(GetVbPropertyBackingFieldName(parent)), SyntaxFactory.Token( VBUtil.GetExpressionOperatorTokenKind( SyntaxKind.SimpleAssignmentStatement)), SyntaxFactory.IdentifierName("value")));
+                    if (isAutoImplementedProperty) {
+                        body = body.Count > 0 ? body :
+                        SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.AssignmentStatement(SyntaxKind.SimpleAssignmentStatement, SyntaxFactory.IdentifierName(GetVbPropertyBackingFieldName(parent)), SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(SyntaxKind.SimpleAssignmentStatement)), SyntaxFactory.IdentifierName("value")));
+                    }
                     break;
                 case CSSyntaxKind.AddAccessorDeclaration:
                     blockKind = SyntaxKind.AddHandlerAccessorBlock;
@@ -494,6 +498,9 @@ namespace ICSharpCode.CodeConverter.VB
                 case CSSyntaxKind.GlobalKeyword:
                     idText = "Global";
                     break;
+                case CSSyntaxKind.ThisKeyword:
+                    idText = "Item";
+                    break;
             }
             return Identifier(idText, keywordRequiresEscaping);
         }
@@ -519,7 +526,7 @@ namespace ICSharpCode.CodeConverter.VB
         public static SyntaxToken Identifier(string idText, bool keywordRequiresEscaping = false)
         {
             if (idText.All(c => c == '_')) idText += "_";
-            return keywordRequiresEscaping ? SyntaxFactory.Identifier($"[{idText}]") : SyntaxFactory.Identifier(idText);
+            return keywordRequiresEscaping ? SyntaxFactory.BracketedIdentifier(idText) : SyntaxFactory.Identifier(idText);
         }
 
         private static bool KeywordRequiresEscaping(SyntaxToken id)
@@ -527,7 +534,8 @@ namespace ICSharpCode.CodeConverter.VB
             var keywordKind = SyntaxFacts.GetKeywordKind(id.ValueText);
 
             if (keywordKind == SyntaxKind.None) return false;
-            if (!SyntaxFacts.IsPredefinedType(keywordKind)) return true;
+            if (SyntaxFacts.IsPredefinedType(keywordKind) || SyntaxFacts.IsReservedKeyword(keywordKind))
+                return true;
 
             // List of the kinds that end in declaration and can have names attached
             return id.IsKind(CSSyntaxKind.CatchDeclaration,

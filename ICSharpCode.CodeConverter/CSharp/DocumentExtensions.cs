@@ -21,7 +21,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var root = syntaxRoot  ?? await doc.GetSyntaxRootAsync();
             var withSyntaxRoot = doc.WithSyntaxRoot(root.WithAdditionalAnnotations(Simplifier.Annotation));
-            return await Simplifier.ReduceAsync(withSyntaxRoot);
+            try {
+                return await Simplifier.ReduceAsync(withSyntaxRoot);
+            } catch {
+                return doc;
+            }
         }
 
         public static async Task<Document> SimplifyStatements<TUsingDirectiveSyntax, TExpressionSyntax>(this Document convertedDocument, string unresolvedTypeDiagnosticId)
