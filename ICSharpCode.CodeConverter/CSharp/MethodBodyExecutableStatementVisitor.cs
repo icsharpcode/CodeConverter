@@ -350,17 +350,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBasic.SyntaxKind.FunctionKeyword:
                     VBasic.VisualBasicSyntaxNode typeContainer = (VBasic.VisualBasicSyntaxNode)node.Ancestors().OfType<VBSyntax.LambdaExpressionSyntax>().FirstOrDefault()
                                                                  ?? node.Ancestors().OfType<VBSyntax.MethodBlockSyntax>().FirstOrDefault();
-                    var info = await typeContainer.TypeSwitch(
-                        async (VBSyntax.LambdaExpressionSyntax e) => _semanticModel.GetTypeInfo(e).Type.GetReturnType(), async (VBSyntax.MethodBlockSyntax e) => {
-                            var type = (TypeSyntax) await (e.SubOrFunctionStatement.AsClause?.Type).AcceptAsync(_expressionVisitor) ?? SyntaxFactory.ParseTypeName("object");
-                            return _semanticModel.GetSymbolInfo(type).Symbol?.GetReturnType();
-                        }
-                    );
+                    var enclosingMethodInfo = await typeContainer.TypeSwitch(
+                        async (VBSyntax.LambdaExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).Symbol,
+                        async (VBSyntax.MethodBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e));
+                    var info = enclosingMethodInfo?.GetReturnType();
                     ExpressionSyntax expr;
                     if (HasReturnVariable)
                         expr = ReturnVariable;
                     else if (info == null)
                         expr = null;
+                    else if (IsIterator)
+                        return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
                     else if (info.IsReferenceType)
                         expr = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
                     else if (info.CanBeReferencedByName)
@@ -786,10 +786,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                            TryUnpackSingleExpressionFromStatement(nestedStmt, out singleExpression);
                 case ExpressionStatementSyntax expressionStatementSyntax:
                     singleExpression = expressionStatementSyntax.Expression;
-                    return true;
+                    return singleExpression != null;
                 case ReturnStatementSyntax returnStatementSyntax:
                     singleExpression = returnStatementSyntax.Expression;
-                    return true;
+                    return singleExpression != null;
                 default:
                     singleExpression = null;
                     return false;

@@ -33,11 +33,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             BlockSyntax block = null;
             ExpressionSyntax expressionBody = null;
             ArrowExpressionClauseSyntax arrow = null;
-            if (!convertedStatements.TryUnpackSingleStatement(out StatementSyntax singleStatement) ||
-                !singleStatement.TryUnpackSingleExpressionFromStatement(out expressionBody)) {
-                block = SyntaxFactory.Block(convertedStatements);
-            } else {
+            if (convertedStatements.TryUnpackSingleStatement(out StatementSyntax singleStatement) &&
+                singleStatement.TryUnpackSingleExpressionFromStatement(out expressionBody)) {
                 arrow = SyntaxFactory.ArrowExpressionClause(expressionBody);
+            } else {
+                block = SyntaxFactory.Block(convertedStatements);
             }
 
             var functionStatement = await ConvertToFunctionDeclarationOrNull(vbNode, param, block, arrow);
