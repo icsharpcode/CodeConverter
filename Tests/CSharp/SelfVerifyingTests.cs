@@ -4,6 +4,7 @@ using ICSharpCode.CodeConverter.CSharp;
 using Xunit;
 using CodeConverter.Tests.Compilation;
 using System.IO;
+using System.Threading.Tasks;
 using CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.Util;
 
@@ -16,9 +17,9 @@ namespace CodeConverter.Tests.CSharp
     public class SelfVerifyingTests
     {
         [Theory, MemberData(nameof(GetVisualBasicToCSharpTestData))]
-        public void VisualBasicToCSharp(NamedFact verifyConvertedTestPasses)
+        public async Task VisualBasicToCSharp(NamedFact verifyConvertedTestPasses)
         {
-            verifyConvertedTestPasses.Execute();
+            await verifyConvertedTestPasses.Execute();
         }
 
         /// <summary>
