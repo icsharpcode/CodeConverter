@@ -464,15 +464,18 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitNamedFieldInitializer(VBasic.Syntax.NamedFieldInitializerSyntax node)
         {
+            var csExpressionSyntax = (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor);
+            csExpressionSyntax =
+                CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, csExpressionSyntax);
             if (node?.Parent?.Parent is VBasic.Syntax.AnonymousObjectCreationExpressionSyntax) {
                 return SyntaxFactory.AnonymousObjectMemberDeclarator(
                     SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(ConvertIdentifier(node.Name.Identifier))),
-                    (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor));
+                    csExpressionSyntax);
             }
 
             return SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
                 (ExpressionSyntax) await node.Name.AcceptAsync(TriviaConvertingVisitor),
-                (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor)
+                csExpressionSyntax
             );
         }
 
