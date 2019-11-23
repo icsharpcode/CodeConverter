@@ -1992,5 +1992,52 @@ End Class", @"internal partial class TestClass
     }
 }");
         }
+
+        [Fact]
+        public async Task TestAsyncMethods()
+        {
+            //Bug: Whitespace wrapping is wrong when comments present
+            await TestConversionVisualBasicToCSharpWithoutComments(
+@"    Class AsyncCode
+        Public Sub NotAsync()
+            Dim a1 = Async Function() 3
+            Dim a2 = Async Function()
+                         Return Await Task (Of Integer).FromResult(3)
+                     End Function
+            Dim a3 = Async Sub() Await Task.CompletedTask
+            Dim a4 = Async Sub()
+                        Await Task.CompletedTask
+                    End Sub
+        End Sub
+
+        Public Async Function AsyncFunc() As Task(Of Integer)
+            Return Await Task (Of Integer).FromResult(3)
+        End Function
+        Public Async Sub AsyncSub()
+            Await Task.CompletedTask
+        End Sub
+    End Class", @"using System.Threading.Tasks;
+
+internal partial class AsyncCode
+{
+    public void NotAsync()
+    {
+        async Task<int> a1() => 3;
+        async Task<int> a2() => await Task.FromResult(3);
+        async void a3() => await Task.CompletedTask;
+        async void a4() => await Task.CompletedTask;
+    }
+
+    public async Task<int> AsyncFunc()
+    {
+        return await Task.FromResult(3);
+    }
+    public async void AsyncSub()
+    {
+        await Task.CompletedTask;
+    }
+}
+");
+        }
     }
 }
