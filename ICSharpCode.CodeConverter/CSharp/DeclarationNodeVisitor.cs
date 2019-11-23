@@ -441,8 +441,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             foreach (var decl in splitDeclarations.Variables)
             {
-                if (isWithEvents)
-                {
+                if (isWithEvents) {
+                    _extraUsingDirectives.Add("System.Runtime.CompilerServices");
                     var initializers = decl.Variables
                         .Where(a => a.Initializer != null)
                         .ToDictionary(v => v.Identifier.Text, v => v.Initializer);
