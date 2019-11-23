@@ -875,8 +875,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var identifier = SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier, node.GetAncestor<VBasic.Syntax.AttributeSyntax>() != null));
 
-            var qualifiedIdentifier = !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer)
-                                      || node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax maes && maes.Expression == node
+            var qualifiedIdentifier = !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer) ||
+                                      node.Parent is VBSyntax.NamedFieldInitializerSyntax nfs && nfs.Expression == node ||
+                                      node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax maes && maes.Expression == node
                 ? QualifyNode(node, identifier) : identifier;
 
             var withArgList = AddEmptyArgumentListIfImplicit(node, qualifiedIdentifier);
