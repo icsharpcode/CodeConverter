@@ -31,7 +31,7 @@ Namespace Global.aaa
     End Class
 End Namespace
 
-Friend Module NamespaceCasing
+Public Class NamespaceCasing
     <Fact>
     Sub TestThisCompiles()
         ' Visual Studio likes to fix casing automatically,
@@ -51,4 +51,4 @@ Friend Module NamespaceCasing
         aaa.b.bar()
         Aaa.B.Bar()
     End Sub
-End Module
+End Class

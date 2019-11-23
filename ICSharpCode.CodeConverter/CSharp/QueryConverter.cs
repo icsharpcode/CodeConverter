@@ -29,11 +29,51 @@ namespace ICSharpCode.CodeConverter.CSharp
         public async Task<CSharpSyntaxNode> ConvertClauses(SyntaxList<VBSyntax.QueryClauseSyntax> clauses)
         {
             var vbBodyClauses = new Queue<VBSyntax.QueryClauseSyntax>(clauses);
-            var vbFromClause = (VBSyntax.FromClauseSyntax) vbBodyClauses.Dequeue();
+            var vbStartClause = vbBodyClauses.Dequeue();
+            var agg = vbStartClause as VBSyntax.AggregateClauseSyntax;
+            if (agg != null) {
+                foreach (var queryOperators in agg.AdditionalQueryOperators) {
+                    vbBodyClauses.Enqueue(queryOperators);
+                }
+            }
+            var fromClauseSyntax = vbStartClause is VBSyntax.FromClauseSyntax fcs ? await ConvertFromClauseSyntax(fcs) : await ConvertAggregateToFromClauseSyntax((VBSyntax.AggregateClauseSyntax) vbStartClause);
+            CSharpSyntaxNode rootExpression;
+            if (vbBodyClauses.Any()) {
+                var querySegments = await GetQuerySegments(vbBodyClauses);
+                rootExpression = await ConvertQuerySegments(querySegments, fromClauseSyntax);
+            } else {
+                rootExpression = fromClauseSyntax.Expression;
+            }
 
-            var fromClauseSyntax = await ConvertFromClauseSyntax(vbFromClause);
-            var querySegments = await GetQuerySegments(vbBodyClauses);
-            return await ConvertQuerySegments(querySegments, fromClauseSyntax);
+            if (agg != null) {
+                if (agg.AggregationVariables.Count == 1 &&
+                    agg.AggregationVariables.Single().Aggregation is VBSyntax.FunctionAggregationSyntax fas) {
+                    if (rootExpression is CSSyntax.QueryExpressionSyntax qes)
+                        rootExpression = SyntaxFactory.ParenthesizedExpression(qes);
+                    var collectionRangeVariableSyntax = agg.Variables.Single();
+                    var toAggregate = await fas.Argument.AcceptAsync(_triviaConvertingVisitor);
+                    var methodTocall =
+                        SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(fas.FunctionName)); //TODO
+                    var rootWithMethodCall =
+                        SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            (CSSyntax.ExpressionSyntax)rootExpression, methodTocall);
+                    var parameterSyntax = SyntaxFactory.Parameter(
+                        CommonConversions.ConvertIdentifier(collectionRangeVariableSyntax.Identifier.Identifier));
+                    var argumentSyntaxes = toAggregate != null
+                        ? new[] {
+                            SyntaxFactory.Argument(SyntaxFactory.SimpleLambdaExpression(
+                                parameterSyntax, toAggregate))
+                        }
+                        : new CSSyntax.ArgumentSyntax[0];
+                    var args = SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(argumentSyntaxes));
+                    var variable = SyntaxFactory.InvocationExpression(rootWithMethodCall, args);
+                    return variable;
+                } else {
+                    throw new NotImplementedException("Aggregate clause type not implemented");
+                }
+            }
+
+            return rootExpression;
         }
 
         /// <summary>
@@ -193,6 +233,15 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<CSSyntax.FromClauseSyntax> ConvertFromClauseSyntax(VBSyntax.FromClauseSyntax vbFromClause)
         {
             var collectionRangeVariableSyntax = vbFromClause.Variables.Single();
+            var fromClauseSyntax = SyntaxFactory.FromClause(
+                CommonConversions.ConvertIdentifier(collectionRangeVariableSyntax.Identifier.Identifier),
+                (CSSyntax.ExpressionSyntax) await collectionRangeVariableSyntax.Expression.AcceptAsync(_triviaConvertingVisitor));
+            return fromClauseSyntax;
+        }
+
+        private async Task<CSSyntax.FromClauseSyntax> ConvertAggregateToFromClauseSyntax(VBSyntax.AggregateClauseSyntax vbAggClause)
+        {
+            var collectionRangeVariableSyntax = vbAggClause.Variables.Single();
             var fromClauseSyntax = SyntaxFactory.FromClause(
                 CommonConversions.ConvertIdentifier(collectionRangeVariableSyntax.Identifier.Identifier),
                 (CSSyntax.ExpressionSyntax) await collectionRangeVariableSyntax.Expression.AcceptAsync(_triviaConvertingVisitor));

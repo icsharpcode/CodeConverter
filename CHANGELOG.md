@@ -3,6 +3,8 @@ All notable changes to the code converter will be documented here.
 
 # 7.3.0 TBC
 
+* Fixes for nullrefs
+
 ### Vsix
 * Load extension only when menu item clicked (multi-project conversion menu not present until project loaded)
 
@@ -26,6 +28,10 @@ All notable changes to the code converter will be documented here.
 ### C# -> VB
 * Convert property accessors with visiblity modifiers (#92)
 * For loop with decrement (i--) results in missing 'Step -1' (#411)
+* Improve escaping for variables of predefined types
+* Add Implements keyword for explicitly implemented members
+* Property/indexer conversion improvements
+* Convert private default members
 
 # 7.2.0 13/10/2019
 * Parallelize multi-file conversion
