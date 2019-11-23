@@ -41,6 +41,9 @@ All notable changes to the code converter will be documented here.
 * Ensure casing is correct for namespaces (#421)
 * Convert CType from a non numeric type to an enum
 * Convert Exit Function
+* Convert object initializers requiring type casts
+* Convert async keyword on lambdas
+* Convert nullable if statement conditions
 
 ### C# -> VB
 * Convert property accessors with visiblity modifiers ([#92](https://github.com/icsharpcode/CodeConverter/pull/92))
