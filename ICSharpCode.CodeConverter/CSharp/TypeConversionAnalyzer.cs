@@ -64,18 +64,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             _visualBasicEqualityComparison = visualBasicEqualityComparison;
         }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool alwaysExplicit = false, bool isConst = false)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool alwaysExplicit = false, bool isConst = false, ITypeSymbol forceTargetType = null)
         {
-            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit, isConst);
+            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit, isConst, forceTargetType);
             csNode = addParenthesisIfNeeded && (conversionKind == TypeConversionKind.DestructiveCast || conversionKind == TypeConversionKind.NonDestructiveCast)
                 ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;
-            return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded);
+            return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded, forceTargetType: forceTargetType);
         }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false, ITypeSymbol forceTargetType = null)
         {
-            var vbConvertedType = ModelExtensions.GetTypeInfo(_semanticModel, vbNode).ConvertedType;
+            var vbConvertedType = forceTargetType ?? ModelExtensions.GetTypeInfo(_semanticModel, vbNode).ConvertedType;
             switch (conversionKind)
             {
                 case TypeConversionKind.Unknown:
@@ -103,11 +103,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             return ValidSyntaxFactory.CastExpression(typeName, csNode);
         }
 
-        public TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool isConst = false)
+        public TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool isConst = false, ITypeSymbol forceTargetType = null)
         {
             var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, vbNode);
             var vbType = typeInfo.Type;
-            var vbConvertedType = typeInfo.ConvertedType;
+            var vbConvertedType = forceTargetType ?? typeInfo.ConvertedType;
             if (vbType is null || vbConvertedType is null)
             {
                 return TypeConversionKind.Unknown;
@@ -147,6 +147,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return _csCompilation.GetSpecialType(SpecialType.System_Int32);
             }
 
+            //TODO Get similar type from compilation first, if null do this. GetFullMetadataName handles generics badly (e.g. Nullable<T>)
             var csType = _csCompilation.GetTypeByMetadataName(vbType.GetFullMetadataName());
 
             return csType;

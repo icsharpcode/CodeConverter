@@ -31,6 +31,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly HashSet<string> _extraUsingDirectives;
         private readonly MethodsWithHandles _methodsWithHandles;
         private readonly HashSet<string> _generatedNames = new HashSet<string>();
+        private INamedTypeSymbol _vbBooleanTypeSymbol;
 
         public bool IsIterator { get; set; }
         public IdentifierNameSyntax ReturnVariable { get; set; }
@@ -54,6 +55,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _methodsWithHandles = methodsWithHandles;
             var byRefParameterVisitor = new ByRefParameterVisitor(this, additionalLocals, semanticModel, _generatedNames);
             CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor, triviaConverter);
+            _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
         }
 
         public override async Task<SyntaxList<StatementSyntax>> DefaultVisit(SyntaxNode node)
@@ -397,6 +399,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<SyntaxList<StatementSyntax>> VisitSingleLineIfStatement(VBSyntax.SingleLineIfStatementSyntax node)
         {
             var condition = (ExpressionSyntax) await node.Condition.AcceptAsync(_expressionVisitor);
+            condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Condition, condition, forceTargetType: _vbBooleanTypeSymbol);
             var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
             ElseClauseSyntax elseClause = null;
 
@@ -410,6 +413,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<SyntaxList<StatementSyntax>> VisitMultiLineIfBlock(VBSyntax.MultiLineIfBlockSyntax node)
         {
             var condition = (ExpressionSyntax) await node.IfStatement.Condition.AcceptAsync(_expressionVisitor);
+            condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.IfStatement.Condition, condition, forceTargetType: _vbBooleanTypeSymbol);
             var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
             ElseClauseSyntax elseClause = null;
 
@@ -420,7 +424,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             foreach (var elseIf in node.ElseIfBlocks.Reverse()) {
                 var elseBlock = SyntaxFactory.Block(await ConvertStatements(elseIf.Statements));
-                var ifStmt = SyntaxFactory.IfStatement((ExpressionSyntax) await elseIf.ElseIfStatement.Condition.AcceptAsync(_expressionVisitor), elseBlock.UnpackNonNestedBlock(), elseClause);
+                var elseIfCondition = (ExpressionSyntax) await elseIf.ElseIfStatement.Condition.AcceptAsync(_expressionVisitor);
+                elseIfCondition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(elseIf.ElseIfStatement.Condition, elseIfCondition, forceTargetType: _vbBooleanTypeSymbol);
+                var ifStmt = SyntaxFactory.IfStatement(elseIfCondition, elseBlock.UnpackNonNestedBlock(), elseClause);
                 elseClause = SyntaxFactory.ElseClause(ifStmt);
             }
 

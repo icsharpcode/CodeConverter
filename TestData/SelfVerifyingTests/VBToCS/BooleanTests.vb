@@ -2,24 +2,21 @@
 Imports System.Linq
 Imports Xunit
 
+
+''' <summary>
+''' An if statement calls GetValueOrDefault on Nullables
+''' The Not operator propagates nulls and only inverts true/false values
+''' </summary>
 Public Class BooleanTests
+
     <Fact>
     Public Sub NullableBoolsOnNothing()
         Dim x As Object = Nothing
         Dim res = 1
 
-        If (Not x?.Equals(4))
-            res *= 2
-        Else
-            res *= 3
-        End If
+        If Not x?.Equals(4) Then res *= 2 Else res *= 3
 
-
-        If (x?.Equals(4))
-            res *= 5
-        Else
-            res *= 7
-        End If
+        res *= If(x?.Equals(4), 5, 7)
 
         Assert.Equal(21, res)
     End Sub

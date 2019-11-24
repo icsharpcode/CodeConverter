@@ -39,6 +39,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly Lazy<IDictionary<ITypeSymbol, string>> _convertMethodsLookupByReturnType;
         private readonly Compilation _csCompilation;
         private readonly LambdaConverter _lambdaConverter;
+        private INamedTypeSymbol _vbBooleanTypeSymbol;
 
         public ExpressionNodeVisitor(SemanticModel semanticModel, VisualBasicEqualityComparison visualBasicEqualityComparison, AdditionalLocals additionalLocals, Compilation csCompilation, MethodsWithHandles methodsWithHandles, CommonConversions commonConversions, TriviaConverter triviaConverter, HashSet<string> extraUsingDirectives)
         {
@@ -55,6 +56,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             // If this isn't needed, the assembly with Conversions may not be referenced, so this must be done lazily
             _convertMethodsLookupByReturnType = new Lazy<IDictionary<ITypeSymbol, string>>(() => CreateConvertMethodsLookupByReturnType(semanticModel));
+            _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
         }
 
         private static Dictionary<ITypeSymbol, string> CreateConvertMethodsLookupByReturnType(SemanticModel semanticModel)
@@ -496,6 +498,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitTernaryConditionalExpression(VBasic.Syntax.TernaryConditionalExpressionSyntax node)
         {
             var condition = (ExpressionSyntax)await node.Condition.AcceptAsync(TriviaConvertingVisitor);
+            condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Condition, condition, forceTargetType: _vbBooleanTypeSymbol);
 
             var whenTrue = (ExpressionSyntax)await node.WhenTrue.AcceptAsync(TriviaConvertingVisitor);
             whenTrue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.WhenTrue, whenTrue);
@@ -529,6 +532,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return expr;
             var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
             SyntaxKind csTokenKind = CSharpUtil.GetExpressionOperatorTokenKind(kind);
+            if (csTokenKind == SyntaxKind.LogicalNotExpression) {
+                expr = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Operand, expr, forceTargetType: _vbBooleanTypeSymbol);
+            }
             return SyntaxFactory.PrefixUnaryExpression(
                 kind,
                 SyntaxFactory.Token(csTokenKind),
