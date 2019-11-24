@@ -9,25 +9,25 @@ All notable changes to the code converter will be documented here.
 * Load extension only when menu item clicked (multi-project conversion menu not present until project loaded)
 
 ### VB -> C#
-* Convert implicit object->string cast correctly (#365)
-* Convert trivia (e.g. comments) at start of file (#333)
-* Improvements to redim conversion (#403, #393)
-* Convert array of arrays initializer (#364)
-* Improvements to implicit enum -> int conversion (#361)
-* Convert expressions in constants (#329)
-* Convert implicit `ElementAtOrDefault` (#362)
-* Convert types in ternary expressions (#363)
-* Support for converting dot net standard VB projects (#398)
-* Avoid compilation error for duplicate cases (#374)
-* Correctly handle type promoted module symbols (#375)
-* Prefer renamed imports for name resolution (#401)
-* Correctly convert ambiguous names (#332)
-* Ensure correct visibility for constructors (#422)
-* Ensure casing is correct for namespaces (#421)
+* Convert implicit object->string cast correctly ([#365](https://github.com/icsharpcode/CodeConverter/pull/365))
+* Convert trivia (e.g. comments) at start of file ([#333](https://github.com/icsharpcode/CodeConverter/pull/333))
+* Improvements to redim conversion ([#403](https://github.com/icsharpcode/CodeConverter/pull/403), [#393](https://github.com/icsharpcode/CodeConverter/pull/393))
+* Convert array of arrays initializer ([#364](https://github.com/icsharpcode/CodeConverter/pull/364))
+* Improvements to implicit enum -> int conversion ([#361](https://github.com/icsharpcode/CodeConverter/pull/361))
+* Convert expressions in constants ([#329](https://github.com/icsharpcode/CodeConverter/pull/329))
+* Convert implicit `ElementAtOrDefault` ([#362](https://github.com/icsharpcode/CodeConverter/pull/362))
+* Convert types in ternary expressions ([#363](https://github.com/icsharpcode/CodeConverter/pull/363))
+* Support for converting dot net standard VB projects ([#398](https://github.com/icsharpcode/CodeConverter/pull/398))
+* Avoid compilation error for duplicate cases ([#374](https://github.com/icsharpcode/CodeConverter/pull/374))
+* Correctly handle type promoted module symbols ([#375](https://github.com/icsharpcode/CodeConverter/pull/375))
+* Prefer renamed imports for name resolution ([#401](https://github.com/icsharpcode/CodeConverter/pull/401))
+* Correctly convert ambiguous names ([#332](https://github.com/icsharpcode/CodeConverter/pull/332))
+* Ensure correct visibility for constructors ([#422](https://github.com/icsharpcode/CodeConverter/pull/422))
+* Ensure casing is correct for namespaces ([#421](https://github.com/icsharpcode/CodeConverter/pull/421))
 
 ### C# -> VB
-* Convert property accessors with visiblity modifiers (#92)
-* For loop with decrement (i--) results in missing 'Step -1' (#411)
+* Convert property accessors with visiblity modifiers ([#92](https://github.com/icsharpcode/CodeConverter/pull/92))
+* For loop with decrement (i--) results in missing 'Step -1' ([#411](https://github.com/icsharpcode/CodeConverter/pull/411))
 * Improve escaping for variables of predefined types
 * Add Implements keyword for explicitly implemented members
 * Property/indexer conversion improvements
@@ -35,20 +35,20 @@ All notable changes to the code converter will be documented here.
 
 # 7.2.0 13/10/2019
 * Parallelize multi-file conversion
-* Make snippet conversion (ConvertText method) make classes partial by default since context isn't known (#379)
+* Make snippet conversion (ConvertText method) make classes partial by default since context isn't known ([#379](https://github.com/icsharpcode/CodeConverter/pull/379))
 * Web converter requires .NET Core 3.0
-* Visual Studio built-in simplification applied post-conversion (#386)
+* Visual Studio built-in simplification applied post-conversion ([#386](https://github.com/icsharpcode/CodeConverter/pull/386))
 
 ### Vsix
 * Improve UI responsiveness and output window details while converting
 
 ### VB -> C#
-* Implicitly typed local multi-variable declarations type converted correctly (#373)
-* "My" namespace - first attempt at conversion (#169)
+* Implicitly typed local multi-variable declarations type converted correctly ([#373](https://github.com/icsharpcode/CodeConverter/pull/373))
+* "My" namespace - first attempt at conversion ([#169](https://github.com/icsharpcode/CodeConverter/pull/169))
 
 ### C# -> VB
-* Converts extern functions correctly (#352)
-* Converts invoke on non-events correctly (#377)
+* Converts extern functions correctly ([#352](https://github.com/icsharpcode/CodeConverter/pull/352))
+* Converts invoke on non-events correctly ([#377](https://github.com/icsharpcode/CodeConverter/pull/377))
 
 # 7.1.0 12/09/2019
 
@@ -147,7 +147,7 @@ See the implementation of the deprecated method for help in migrating.
 * Improve conversion of interpolated strings (format, alignment, escaping)
 
 # 6.5.0 03/03/2019
-* Avoid fatal error converting a project in a solution containing a website project (#243)
+* Avoid fatal error converting a project in a solution containing a website project ([#243](https://github.com/icsharpcode/CodeConverter/pull/243))
 * Improve best-effort conversion in the presence of errors
 * Improved nuget package and web converter's snippet detection
 * Exclude conversion-source-language files from converted project
