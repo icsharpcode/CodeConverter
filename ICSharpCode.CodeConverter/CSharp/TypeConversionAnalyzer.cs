@@ -88,6 +88,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return AddExplicitConvertTo(vbNode, csNode, vbConvertedType);
                 case TypeConversionKind.ConstConversion:
                     return ConstantFold(vbNode, vbConvertedType);
+                case TypeConversionKind.NullableBool:
+                    return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, csNode,
+                        LiteralConversions.GetLiteralExpression(true));
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -203,6 +206,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             } else if (isConvertToString && vbType.SpecialType ==  SpecialType.System_Object) {
                 typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
+                return true;
+            } else if (csConversion.IsNullable && csConvertedType.SpecialType == SpecialType.System_Boolean) {
+                typeConversionKind = TypeConversionKind.NullableBool;
                 return true;
             }
 
@@ -372,6 +378,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             NonDestructiveCast,
             Conversion,
             ConstConversion,
+            NullableBool
         }
 
         public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax node, ITypeSymbol convertedType,
