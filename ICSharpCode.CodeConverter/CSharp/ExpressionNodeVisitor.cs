@@ -534,6 +534,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxKind csTokenKind = CSharpUtil.GetExpressionOperatorTokenKind(kind);
             if (csTokenKind == SyntaxKind.LogicalNotExpression) {
                 expr = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Operand, expr, forceTargetType: _vbBooleanTypeSymbol);
+                if (expr is BinaryExpressionSyntax bes && bes.OperatorToken.IsKind(SyntaxKind.EqualsToken)) {
+                    return bes.WithOperatorToken(SyntaxFactory.Token(SyntaxKind.ExclamationEqualsToken));
+                }
             }
             return SyntaxFactory.PrefixUnaryExpression(
                 kind,
