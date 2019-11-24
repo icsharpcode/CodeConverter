@@ -127,8 +127,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var vbCompilation = (VisualBasicCompilation) _semanticModel.Compilation;
             var vbConversion = vbCompilation.ClassifyConversion(vbType, vbConvertedType);
-            var csType = GetCSType(vbNode, vbType);
-            var csConvertedType = _csCompilation.GetTypeByMetadataName(vbConvertedType.GetFullMetadataName());
+            var csType = GetCSType(vbType, vbNode);
+            var csConvertedType = GetCSType(vbConvertedType);
 
             if (csType != null && csConvertedType != null &&
                 TryAnalyzeCsConversion(vbNode, csType, csConvertedType, vbConversion, vbConvertedType, vbType, vbCompilation, isConst, out TypeConversionKind analyzeConversion)) {
@@ -138,7 +138,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return AnalyzeVbConversion(alwaysExplicit, vbType, vbConvertedType, vbConversion);
         }
 
-        private INamedTypeSymbol GetCSType(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbType)
+        private ITypeSymbol GetCSType(ITypeSymbol vbType, VBSyntax.ExpressionSyntax vbNode = null)
         {
             // C# does not have literals for short/ushort, so the actual type here is integer
             if (vbNode is VBSyntax.LiteralExpressionSyntax literal &&
@@ -147,14 +147,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return _csCompilation.GetSpecialType(SpecialType.System_Int32);
             }
 
-            //TODO Get similar type from compilation first, if null do this. GetFullMetadataName handles generics badly (e.g. Nullable<T>)
-            var csType = _csCompilation.GetTypeByMetadataName(vbType.GetFullMetadataName());
+            var csType = SymbolFinder.FindSimilarSymbols(vbType, _csCompilation).FirstOrDefault() ?? _csCompilation.GetTypeByMetadataName(vbType.GetFullMetadataName());
 
             return csType;
         }
 
-        private bool TryAnalyzeCsConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, INamedTypeSymbol csType,
-            INamedTypeSymbol csConvertedType, Conversion vbConversion, ITypeSymbol vbConvertedType, ITypeSymbol vbType,
+        private bool TryAnalyzeCsConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ITypeSymbol csType,
+            ITypeSymbol csConvertedType, Conversion vbConversion, ITypeSymbol vbConvertedType, ITypeSymbol vbType,
             VisualBasicCompilation vbCompilation, bool isConst, out TypeConversionKind typeConversionKind)
         {
             var csConversion = _csCompilation.ClassifyConversion(csType, csConvertedType);
