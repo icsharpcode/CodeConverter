@@ -14,9 +14,9 @@ Public Class BooleanTests
         Dim x As Object = Nothing
         Dim res = 1
 
-        If Not x?.Equals(4) Then res *= 2 Else res *= 3
+        If Not x?.Equals(4) Then res *= 2 Else res *= 3  '3 branch taken
 
-        res *= If(x?.Equals(4), 5, 7)
+        res *= If(x?.Equals(4), 5, 7) '7 branch taken
 
         Assert.Equal(21, res)
     End Sub
@@ -26,17 +26,17 @@ Public Class BooleanTests
         Dim x As Object = 5
         Dim res = 1
 
-        If (Not x?.Equals(4))
-            res *= 2
+        If (Not x?.Equals(4))' x != 4
+            res *= 2 'Branch taken
         Else
             res *= 3
         End If
 
 
-        If (x?.Equals(4))
+        If (x?.Equals(4))' x == 4
             res *= 5
         Else
-            res *= 7
+            res *= 7 'Branch taken
         End If
 
         Assert.Equal(14, res)
@@ -47,15 +47,15 @@ Public Class BooleanTests
         Dim x As Object = 4
         Dim res = 1
 
-        If (Not x?.Equals(4))
+        If (Not x?.Equals(4))' x != 4
             res *= 2
         Else
-            res *= 3
+            res *= 3 'Branch taken
         End If
 
 
-        If (x?.Equals(4))
-            res *= 5
+        If (x?.Equals(4))' x == 4
+            res *= 5 'Branch taken
         Else
             res *= 7
         End If
