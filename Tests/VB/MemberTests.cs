@@ -646,15 +646,18 @@ class TestClass
 }", @"Imports System
 
 Friend Class TestClass
-    Private backingField As EventHandler
+    Private Event backingField As EventHandler
 
-    Public Event MyEvent As EventHandler
+    Public Custom Event MyEvent As EventHandler
         AddHandler(ByVal value As EventHandler)
             AddHandler backingField, value
         End AddHandler
         RemoveHandler(ByVal value As EventHandler)
             RemoveHandler backingField, value
         End RemoveHandler
+        RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
+            RaiseEvent backingField(sender, e)
+        End RaiseEvent
     End Event
 End Class");
         }
