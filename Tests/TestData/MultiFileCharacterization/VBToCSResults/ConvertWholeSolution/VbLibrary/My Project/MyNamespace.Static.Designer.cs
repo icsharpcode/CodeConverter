@@ -21,7 +21,7 @@ namespace Microsoft.VisualBasic
     }
 }
 
-namespace EmptyVb
+namespace VbLibrary
 {
 
     /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */

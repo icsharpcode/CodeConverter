@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Microsoft.VisualBasic.CompilerServices;
 
-namespace EmptyVb
+namespace VbLibrary
 {
     static class Module1
     {
