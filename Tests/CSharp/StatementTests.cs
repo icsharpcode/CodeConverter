@@ -299,7 +299,7 @@ End Class", @"internal partial class TestClass
     private void TestMethod()
     {
         string b;
-        b = new string(""test"");
+        b = new string(""test"".ToCharArray());
     }
 }");
         }
@@ -331,7 +331,7 @@ End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
-        string b = new string(""test"");
+        string b = new string(""test"".ToCharArray());
     }
 }");
         }
@@ -347,7 +347,7 @@ End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
-        string b = new string(""test"");
+        string b = new string(""test"".ToCharArray());
     }
 }");
         }

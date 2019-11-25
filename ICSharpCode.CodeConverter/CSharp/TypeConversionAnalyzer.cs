@@ -91,6 +91,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case TypeConversionKind.NullableBool:
                     return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, csNode,
                         LiteralConversions.GetLiteralExpression(true));
+                case TypeConversionKind.StringToCharArray:
+                    var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, csNode, SyntaxFactory.IdentifierName(nameof(string.ToCharArray)));
+                    return SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax,
+                        SyntaxFactory.ArgumentList());
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -170,7 +174,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IntegerDivideExpression);
             if (!csConversion.Exists || csConversion.IsUnboxing) {
                 if (ConvertStringToCharLiteral(vbNode as VBSyntax.LiteralExpressionSyntax, vbConvertedType, out _)) {
-                    typeConversionKind = TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
+                    typeConversionKind =
+                        TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
+                    return true;
+                }
+
+                if (vbType.SpecialType == SpecialType.System_String && vbConvertedType.IsArrayOf(SpecialType.System_Char)) {
+                    typeConversionKind = TypeConversionKind.StringToCharArray;
                     return true;
                 }
                 if (isConvertToString || vbConversion.IsNarrowing) {
@@ -378,7 +388,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             NonDestructiveCast,
             Conversion,
             ConstConversion,
-            NullableBool
+            NullableBool,
+            StringToCharArray
         }
 
         public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax node, ITypeSymbol convertedType,
