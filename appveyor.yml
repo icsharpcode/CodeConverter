@@ -1,5 +1,5 @@
 ﻿platform: Any CPU
-version: 7.2.{build}
+version: 7.3.{build}
 configuration: Debug
 image: Visual Studio 2019
 
