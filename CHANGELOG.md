@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to the code converter will be documented here.
 
-# 7.3.0 TBC
+# 7.3.0 25/11/2019
 
 * Fixes for nullrefs
 
