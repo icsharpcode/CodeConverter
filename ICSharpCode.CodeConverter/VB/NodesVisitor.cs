@@ -320,6 +320,14 @@ namespace ICSharpCode.CodeConverter.VB
             var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node));
             if (modifiers.Count == 0)
                 modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
+
+            Func<bool> isEventBackingField = () => {
+                return modifiers.Any(x => x.Kind() == SyntaxKind.PrivateKeyword) && _semanticModel.GetTypeInfo(node.Declaration.Type).Type.IsDelegateType();
+            };
+
+            if (isEventBackingField()) {
+                modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.EventKeyword));
+            }
             return SyntaxFactory.FieldDeclaration(
                 SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))),
                 modifiers, _commonConversions.RemodelVariableDeclaration(node.Declaration)
@@ -584,14 +592,47 @@ namespace ICSharpCode.CodeConverter.VB
             ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
             var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
             var id = _commonConversions.ConvertIdentifier(node.Identifier);
+            var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node))
+                .Add(SyntaxFactory.Token(SyntaxKind.CustomKeyword));
             var stmt = SyntaxFactory.EventStatement(
-                attributes, CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)), id, null,
+                attributes, modifiers, id, null,
                 SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)),
                 declaredSymbol == null ? null : CreateImplementsClauseSyntaxOrNull(declaredSymbol, id)
             );
             if (!RequiresAccessorBody(node.AccessorList))
                 return stmt;
-            var accessors = node.AccessorList?.Accessors.Select(a => _commonConversions.ConvertAccessor(a, out bool unused)).ToArray();
+            var accessors = node.AccessorList?.Accessors.Select(a => _commonConversions.ConvertAccessor(a, out bool unused)).ToList();
+
+            var eventHandlerSymbol = _semanticModel.GetTypeInfo(node.Type).Type.GetDelegateInvokeMethod();
+            var raiseEventParameters = eventHandlerSymbol.Parameters.Select(x =>
+                SyntaxFactory.Parameter(SyntaxFactory.ModifiedIdentifier(x.Name))
+                    .WithAsClause(SyntaxFactory.SimpleAsClause(GetTypeSyntax(x.Type)))
+                    .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword)))
+            );
+            var eventFieldIdentifier = (IdentifierNameSyntax)node.AccessorList?.Accessors
+                .SelectMany(x => x.Body.Statements)
+                .OfType<CSS.ExpressionStatementSyntax>()
+                .Where(x => x.Expression != null)
+                .Select(x => x.Expression)
+                .OfType<CSS.AssignmentExpressionSyntax>()
+                .SelectMany(x => x.Left.DescendantNodes().OfType<CSS.IdentifierNameSyntax>())
+                .FirstOrDefault()?.Accept(TriviaConvertingVisitor);
+
+            var riseEventAccessor = SyntaxFactory.RaiseEventAccessorBlock(
+                SyntaxFactory.RaiseEventAccessorStatement(
+                    attributes,
+                    SyntaxFactory.TokenList(),
+                    SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(raiseEventParameters))
+            ));
+            if (eventFieldIdentifier != null) {
+                riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList(
+                    (StatementSyntax)SyntaxFactory.RaiseEventStatement(eventFieldIdentifier,
+                        SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(raiseEventParameters.Select(x => SyntaxFactory.SimpleArgument(SyntaxFactory.IdentifierName(x.Identifier.Identifier))).Cast<ArgumentSyntax>())))
+                    )
+                );
+            }
+            
+            accessors.Add(riseEventAccessor);
             return SyntaxFactory.EventBlock(stmt, SyntaxFactory.List(accessors));
         }
 
@@ -601,6 +642,10 @@ namespace ICSharpCode.CodeConverter.VB
             var id = SyntaxFactory.Identifier(decl.Identifier.ValueText, SyntaxFacts.IsKeywordKind(decl.Identifier.Kind()), decl.Identifier.GetIdentifierText(), TypeCharacter.None);
             ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
             return SyntaxFactory.EventStatement(attributes, CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)), id, null, SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Declaration.Type.Accept(TriviaConvertingVisitor)), null);
+        }
+        TypeSyntax GetTypeSyntax(ITypeSymbol typeInfo) {
+            var csType = CS.SyntaxFactory.ParseTypeName(typeInfo.GetFullMetadataName());
+            return (TypeSyntax)csType.Accept(TriviaConvertingVisitor);
         }
 
         private void ConvertAndSplitAttributes(SyntaxList<CSS.AttributeListSyntax> attributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes)
