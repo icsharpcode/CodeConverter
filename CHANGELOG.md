@@ -52,6 +52,9 @@ All notable changes to the code converter will be documented here.
 * Add Implements keyword for explicitly implemented members
 * Property/indexer conversion improvements
 * Convert private default members
+* Convert property accessors with visiblity modifiers (#92)
+* For loop with decrement (i--) results in missing 'Step -1' (#411)
+* Improve custom event conversion ([#442](https://github.com/icsharpcode/CodeConverter/pull/442))
 
 # 7.2.0 13/10/2019
 * Parallelize multi-file conversion
