@@ -631,7 +631,7 @@ namespace ICSharpCode.CodeConverter.VB
                     )
                 );
             }
-            
+
             accessors.Add(riseEventAccessor);
             return SyntaxFactory.EventBlock(stmt, SyntaxFactory.List(accessors));
         }
