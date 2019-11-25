@@ -28,9 +28,10 @@ namespace CodeConverter.Tests.CSharp
         /// </summary>
         public static IEnumerable<object[]> GetVisualBasicToCSharpTestData()
         {
-            var testFiles = Directory.GetFiles("../../../TestData/SelfVerifyingTests/VBToCS", "*.vb");
+            var testFiles = Directory.GetFiles(Path.Combine(TestConstants.GetTestDataDirectory(), "SelfVerifyingTests/VBToCS"), "*.vb");
             return testFiles.SelectMany(SelfVerifyingTestFactory.GetSelfVerifyingFacts<VisualBasicCompiler, CSharpCompiler, VBToCSConversion>)
-                .Select(et => new object[] {et});
+                .Select(et => new object[] {et})
+                .ToArray();
         }
     }
 }
