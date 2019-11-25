@@ -23,7 +23,17 @@ If that function is on a public API, we could make internal callers use a differ
 See [Tests/Readme.md](https://github.com/icsharpcode/CodeConverter/blob/master/Tests/Readme.md)
 
 ## How to get started changing code
-At its heart, there is a visitor pattern with a method for each syntax type. If you don't know what a Syntax Tree is, that's definitely worth [looking up](https://github.com/dotnet/roslyn/wiki/Roslyn-Overview). There are lots of tests, set a breakpoint somewhere like `VisitCompilationUnit`, then run them in debug mode. If you step through the code, you'll see how it walks down the syntax tree converting piece by piece. If you want to find the name of the syntax for some specific code, use [Roslyn Quoter](https://roslynquoter.azurewebsites.net/)
+In ProjectConversion, you'll see there's a separate entry point for the online snippet converter which:
+* Attempts to create a valid syntax tree to convert
+* Adds a bunch of default references and imports
+
+The majority of the work happens in the heart of the converter which is based around a visitor pattern with a method for each syntax type. If you don't know what a Syntax Tree is, that's definitely worth [looking up](https://github.com/dotnet/roslyn/wiki/Roslyn-Overview). There are lots of tests, set a breakpoint somewhere like `VisitCompilationUnit`, then run them in debug mode. If you step through the code, you'll see how it walks down the syntax tree converting piece by piece. If you want to find the name of the syntax for some specific code, use [Roslyn Quoter](https://roslynquoter.azurewebsites.net/). See the main 3 visitors:
+* https://github.com/icsharpcode/CodeConverter/blob/master/ICSharpCode.CodeConverter/CSharp/DeclarationNodeVisitor.cs
+* https://github.com/icsharpcode/CodeConverter/blob/master/ICSharpCode.CodeConverter/CSharp/MethodBodyExecutableStatementVisitor.cs
+* https://github.com/icsharpcode/CodeConverter/blob/master/ICSharpCode.CodeConverter/CSharp/ExpressionNodeVisitor.cs
+
+There are some surrounding visitors which keep cross-cutting details out of the way of the main body of code.
+After conversion, the roslyn simplifier runs to tidy up the code, removing redundant qualification etc.
 
 ## For documentation, prefer:
 * Anything process/project related to be visible on GitHub (e.g. these bullet points)
@@ -37,6 +47,7 @@ At the moment there's just a very small amount of first draft documentation. Con
 * Always try to convert directly between the VB and C# model, avoid converting then post-processing the converted result. This prevents the code getting tangled interdependencies, and means you have the full semantic model available to make an accurate conversion.
 * Aim to use symbols rather than syntax wherever possible. Remember, lots of the problems you need to solve have already been solved by the compiler - finding it is the hard part. http://source.roslyn.io helps a bit
 * Avoid using the `SyntaxFactory.Parse*` methods in general - it leads to getting mixed up between which language a string is from, and means you don't learn how the syntax trees are formed. You can use https://roslynquoter.azurewebsites.net/ to help find the correct methods to use.
+* Conversion errors should generally be made to result in a compile error. Simply throwing an exception anywhere will achieve this.
 
 ## Moving away from legacy patterns in the code
 * Just do: The code currently cares about both a correct conversion, **and** creating readable output in many places. But since we've introduced [`ReduceAsync`](https://docs.microsoft.com/en-us/dotnet/api/microsoft.codeanalysis.simplification.simplifier?view=roslyn-dotnet), it's generally best to fully qualify and parenthesize things and allow it to be auto-simplified later.

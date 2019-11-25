@@ -44,7 +44,7 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
         public SyntaxList<StatementSyntax> ConvertBody(BlockSyntax body,
-            ArrowExpressionClauseSyntax expressionBody, MethodBodyVisitor iteratorState = null)
+            ArrowExpressionClauseSyntax expressionBody, MethodBodyExecutableStatementVisitor iteratorState = null)
         {
             if (body != null) {
                 return ConvertStatements(body.Statements, iteratorState);
@@ -63,7 +63,7 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
         private SyntaxList<StatementSyntax> ConvertStatements(SyntaxList<Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax> statements,
-            MethodBodyVisitor iteratorState = null)
+            MethodBodyExecutableStatementVisitor iteratorState = null)
         {
             var methodBodyVisitor = CreateMethodBodyVisitor(iteratorState);
             return SyntaxFactory.List(statements.SelectMany(s => ConvertStatement(s, methodBodyVisitor)));
@@ -182,9 +182,9 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
         }
 
-        private CSharpSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(MethodBodyVisitor methodBodyVisitor = null)
+        private CSharpSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(MethodBodyExecutableStatementVisitor methodBodyExecutableStatementVisitor = null)
         {
-            var visitor = methodBodyVisitor ?? new MethodBodyVisitor(_semanticModel, _nodesVisitor, _triviaConverter, this);
+            var visitor = methodBodyExecutableStatementVisitor ?? new MethodBodyExecutableStatementVisitor(_semanticModel, _nodesVisitor, _triviaConverter, this);
             return visitor.CommentConvertingVisitor;
         }
 
@@ -195,7 +195,7 @@ namespace ICSharpCode.CodeConverter.VB
             EndBlockStatementSyntax endStmt;
             SyntaxList<StatementSyntax> body;
             isIterator = false;
-            var isIteratorState = new MethodBodyVisitor(_semanticModel, _nodesVisitor, _triviaConverter, this);
+            var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, _nodesVisitor, _triviaConverter, this);
             body = ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
             isIterator = isIteratorState.IsIterator;
             var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(_nodesVisitor)));

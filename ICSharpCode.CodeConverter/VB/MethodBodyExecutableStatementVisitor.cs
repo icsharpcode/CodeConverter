@@ -26,7 +26,7 @@ using static ICSharpCode.CodeConverter.VB.SyntaxKindExtensions;
 
 namespace ICSharpCode.CodeConverter.VB
 {
-    class MethodBodyVisitor : CS.CSharpSyntaxVisitor<SyntaxList<StatementSyntax>>
+    internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<SyntaxList<StatementSyntax>>
     {
         SemanticModel _semanticModel;
         readonly CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode> _nodesVisitor;
@@ -41,7 +41,7 @@ namespace ICSharpCode.CodeConverter.VB
         }
         public CommentConvertingMethodBodyVisitor CommentConvertingVisitor { get; }
 
-        public MethodBodyVisitor(SemanticModel semanticModel,
+        public MethodBodyExecutableStatementVisitor(SemanticModel semanticModel,
             CSharpSyntaxVisitor<VisualBasicSyntaxNode> nodesVisitor, TriviaConverter triviaConverter,
             CommonConversions commonConversions)
         {

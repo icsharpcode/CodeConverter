@@ -19,10 +19,10 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 namespace ICSharpCode.CodeConverter.CSharp
 {
     /// <summary>
+    /// These could be nested within something like a field declaration, an arrow bodied member, or a statement within a method body
     /// To understand the difference between how expressions are expressed, compare:
     /// http://source.roslyn.codeplex.com/#Microsoft.CodeAnalysis.CSharp/Binder/Binder_Expressions.cs,365
     /// http://source.roslyn.codeplex.com/#Microsoft.CodeAnalysis.VisualBasic/Binding/Binder_Expressions.vb,43
-    ///
     /// </summary>
     internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
     {

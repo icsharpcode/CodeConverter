@@ -41,6 +41,9 @@ using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions
 
 namespace ICSharpCode.CodeConverter.VB
 {
+    /// <summary>
+    /// TODO: Split into DeclarationNodeVisitor and ExpressionNodeVisitor to match VB -> C# architecture
+    /// </summary>
     internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     {
         private readonly Document _document;
@@ -91,7 +94,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private Func<SyntaxNode, SyntaxNode> DelegateConversion(Func<SyntaxNode, SyntaxList<StatementSyntax>> convert)
         {
-            return node => MethodBodyVisitor.CreateBlock(convert(node));
+            return node => MethodBodyExecutableStatementVisitor.CreateBlock(convert(node));
         }
 
         public override VisualBasicSyntaxNode VisitCompilationUnit(CSS.CompilationUnitSyntax node)
@@ -413,7 +416,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitMethodDeclaration(CSS.MethodDeclarationSyntax node)
         {
-            var isIteratorState = new MethodBodyVisitor(_semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter, _commonConversions);
+            var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter, _commonConversions);
             bool requiresBody = node.Body != null || node.ExpressionBody != null || node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword));
             var block = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
             var id = _commonConversions.ConvertIdentifier(node.Identifier);
