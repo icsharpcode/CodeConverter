@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Microsoft.VisualBasic.CompilerServices;
 
@@ -16,6 +17,7 @@ namespace VbLibrary
 
         public static void Main()
         {
+            Console.Write((int)AClass.NestedEnum.First);
         }
     }
 }

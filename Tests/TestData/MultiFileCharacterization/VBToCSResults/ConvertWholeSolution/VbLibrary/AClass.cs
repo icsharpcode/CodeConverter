@@ -6,6 +6,11 @@ namespace VbLibrary
 {
     internal partial class AClass
     {
+        public enum NestedEnum
+        {
+            First
+        }
+
         private Dictionary<int, int> dict = new Dictionary<int, int>();
 
         private void UseOutParameterInClass()

@@ -1,4 +1,8 @@
 ﻿Friend Class AClass
+    Enum NestedEnum
+        First
+    End Enum
+
     Private dict As New Dictionary(Of Integer, Integer)
 
     Private Sub UseOutParameterInClass()

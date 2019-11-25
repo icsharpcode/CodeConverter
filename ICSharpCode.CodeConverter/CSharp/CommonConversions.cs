@@ -304,13 +304,23 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var contextsWithIdenticalDefaults = new[] { TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface };
             bool isPartial = declaredSymbol.IsPartialClassDefinition() || declaredSymbol.IsPartialMethodDefinition() || declaredSymbol.IsPartialMethodImplementation();
-            bool implicitVisibility = contextsWithIdenticalDefaults.Contains(context) || isVariableOrConst || declaredSymbol.IsStaticConstructor();
+            bool implicitVisibility = ContextHasIdenticalDefaults(context, contextsWithIdenticalDefaults, declaredSymbol)
+                                      || isVariableOrConst || declaredSymbol.IsStaticConstructor();
             if (implicitVisibility && !isPartial) declaredAccessibility = Accessibility.NotApplicable;
             var modifierSyntaxs = ConvertModifiersCore(declaredAccessibility, modifiers, context)
                 .Concat(extraCsModifierKinds.Select(SyntaxFactory.Token))
                 .Where(t => CSharpExtensions.Kind(t) != CSSyntaxKind.None)
                 .OrderBy(m => SyntaxTokenExtensions.IsKind(m, CSSyntaxKind.PartialKeyword));
             return SyntaxFactory.TokenList(modifierSyntaxs);
+        }
+
+        private static bool ContextHasIdenticalDefaults(TokenContext context, TokenContext[] contextsWithIdenticalDefaults, ISymbol declaredSymbol)
+        {
+            if (!contextsWithIdenticalDefaults.Contains(context)) {
+                return false;
+            }
+
+            return declaredSymbol == null || !declaredSymbol.IsType() || declaredSymbol.ContainingType == null;
         }
 
         private SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)

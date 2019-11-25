@@ -1,4 +1,6 @@
-﻿Module Module1
+﻿Imports System
+
+Module Module1
     Private dict As New Dictionary(Of Integer, Integer)
 
     Private Sub UseOutParameterInModule()
@@ -7,7 +9,7 @@
     End Sub
 
     Sub Main()
-        'Empty
+        Console.Write(AClass.NestedEnum.First)
     End Sub
 
 End Module
