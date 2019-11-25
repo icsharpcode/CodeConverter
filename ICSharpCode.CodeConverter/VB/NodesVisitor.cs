@@ -321,11 +321,9 @@ namespace ICSharpCode.CodeConverter.VB
             if (modifiers.Count == 0)
                 modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
 
-            Func<bool> isEventBackingField = () => {
-                return modifiers.Any(x => x.Kind() == SyntaxKind.PrivateKeyword) && _semanticModel.GetTypeInfo(node.Declaration.Type).Type.IsDelegateType();
-            };
+            var isEventBackingField = modifiers.Any(x => x.Kind() == SyntaxKind.PrivateKeyword) && _semanticModel.GetTypeInfo(node.Declaration.Type).Type.IsDelegateType();
 
-            if (isEventBackingField()) {
+            if (isEventBackingField) {
                 modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.EventKeyword));
             }
             return SyntaxFactory.FieldDeclaration(
