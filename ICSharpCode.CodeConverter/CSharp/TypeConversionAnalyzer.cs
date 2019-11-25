@@ -64,18 +64,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             _visualBasicEqualityComparison = visualBasicEqualityComparison;
         }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool alwaysExplicit = false, bool isConst = false)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool alwaysExplicit = false, bool isConst = false, ITypeSymbol forceTargetType = null)
         {
-            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit, isConst);
+            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit, isConst, forceTargetType);
             csNode = addParenthesisIfNeeded && (conversionKind == TypeConversionKind.DestructiveCast || conversionKind == TypeConversionKind.NonDestructiveCast)
                 ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;
-            return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded);
+            return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded, forceTargetType: forceTargetType);
         }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false, ITypeSymbol forceTargetType = null)
         {
-            var vbConvertedType = ModelExtensions.GetTypeInfo(_semanticModel, vbNode).ConvertedType;
+            var vbConvertedType = forceTargetType ?? ModelExtensions.GetTypeInfo(_semanticModel, vbNode).ConvertedType;
             switch (conversionKind)
             {
                 case TypeConversionKind.Unknown:
@@ -88,6 +88,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return AddExplicitConvertTo(vbNode, csNode, vbConvertedType);
                 case TypeConversionKind.ConstConversion:
                     return ConstantFold(vbNode, vbConvertedType);
+                case TypeConversionKind.NullableBool:
+                    return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, csNode,
+                        LiteralConversions.GetLiteralExpression(true));
+                case TypeConversionKind.StringToCharArray:
+                    var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, csNode, SyntaxFactory.IdentifierName(nameof(string.ToCharArray)));
+                    return SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax,
+                        SyntaxFactory.ArgumentList());
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -103,11 +110,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             return ValidSyntaxFactory.CastExpression(typeName, csNode);
         }
 
-        public TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool isConst = false)
+        public TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool isConst = false, ITypeSymbol forceTargetType = null)
         {
             var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, vbNode);
             var vbType = typeInfo.Type;
-            var vbConvertedType = typeInfo.ConvertedType;
+            var vbConvertedType = forceTargetType ?? typeInfo.ConvertedType;
             if (vbType is null || vbConvertedType is null)
             {
                 return TypeConversionKind.Unknown;
@@ -127,8 +134,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var vbCompilation = (VisualBasicCompilation) _semanticModel.Compilation;
             var vbConversion = vbCompilation.ClassifyConversion(vbType, vbConvertedType);
-            var csType = GetCSType(vbNode, vbType);
-            var csConvertedType = _csCompilation.GetTypeByMetadataName(vbConvertedType.GetFullMetadataName());
+            var csType = GetCSType(vbType, vbNode);
+            var csConvertedType = GetCSType(vbConvertedType);
 
             if (csType != null && csConvertedType != null &&
                 TryAnalyzeCsConversion(vbNode, csType, csConvertedType, vbConversion, vbConvertedType, vbType, vbCompilation, isConst, out TypeConversionKind analyzeConversion)) {
@@ -138,7 +145,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return AnalyzeVbConversion(alwaysExplicit, vbType, vbConvertedType, vbConversion);
         }
 
-        private INamedTypeSymbol GetCSType(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbType)
+        private ITypeSymbol GetCSType(ITypeSymbol vbType, VBSyntax.ExpressionSyntax vbNode = null)
         {
             // C# does not have literals for short/ushort, so the actual type here is integer
             if (vbNode is VBSyntax.LiteralExpressionSyntax literal &&
@@ -147,13 +154,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return _csCompilation.GetSpecialType(SpecialType.System_Int32);
             }
 
-            var csType = _csCompilation.GetTypeByMetadataName(vbType.GetFullMetadataName());
+            var csType = SymbolFinder.FindSimilarSymbols(vbType, _csCompilation).FirstOrDefault() ?? _csCompilation.GetTypeByMetadataName(vbType.GetFullMetadataName());
 
             return csType;
         }
 
-        private bool TryAnalyzeCsConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, INamedTypeSymbol csType,
-            INamedTypeSymbol csConvertedType, Conversion vbConversion, ITypeSymbol vbConvertedType, ITypeSymbol vbType,
+        private bool TryAnalyzeCsConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ITypeSymbol csType,
+            ITypeSymbol csConvertedType, Conversion vbConversion, ITypeSymbol vbConvertedType, ITypeSymbol vbType,
             VisualBasicCompilation vbCompilation, bool isConst, out TypeConversionKind typeConversionKind)
         {
             var csConversion = _csCompilation.ClassifyConversion(csType, csConvertedType);
@@ -167,7 +174,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IntegerDivideExpression);
             if (!csConversion.Exists || csConversion.IsUnboxing) {
                 if (ConvertStringToCharLiteral(vbNode as VBSyntax.LiteralExpressionSyntax, vbConvertedType, out _)) {
-                    typeConversionKind = TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
+                    typeConversionKind =
+                        TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
+                    return true;
+                }
+
+                if (vbType.SpecialType == SpecialType.System_String && vbConvertedType.IsArrayOf(SpecialType.System_Char)) {
+                    typeConversionKind = TypeConversionKind.StringToCharArray;
                     return true;
                 }
                 if (isConvertToString || vbConversion.IsNarrowing) {
@@ -203,6 +216,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             } else if (isConvertToString && vbType.SpecialType ==  SpecialType.System_Object) {
                 typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
+                return true;
+            } else if (csConversion.IsNullable && csConvertedType.SpecialType == SpecialType.System_Boolean) {
+                typeConversionKind = TypeConversionKind.NullableBool;
                 return true;
             }
 
@@ -372,6 +388,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             NonDestructiveCast,
             Conversion,
             ConstConversion,
+            NullableBool,
+            StringToCharArray
         }
 
         public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax node, ITypeSymbol convertedType,

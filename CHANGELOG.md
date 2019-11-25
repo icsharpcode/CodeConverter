@@ -24,6 +24,26 @@ All notable changes to the code converter will be documented here.
 * Correctly convert ambiguous names ([#332](https://github.com/icsharpcode/CodeConverter/pull/332))
 * Ensure correct visibility for constructors ([#422](https://github.com/icsharpcode/CodeConverter/pull/422))
 * Ensure casing is correct for namespaces ([#421](https://github.com/icsharpcode/CodeConverter/pull/421))
+* Convert implicit object->string cast correctly (#365)
+* Convert trivia (e.g. comments) at start of file (#333)
+* Improvements to redim conversion (#403, #393)
+* Convert array of arrays initializer (#364)
+* Improvements to implicit enum -> int conversion (#361)
+* Convert expressions in constants (#329)
+* Convert implicit `ElementAtOrDefault` (#362)
+* Convert types in ternary expressions (#363)
+* Support for converting dot net standard VB projects (#398)
+* Avoid compilation error for duplicate cases (#374)
+* Correctly handle type promoted module symbols (#375)
+* Prefer renamed imports for name resolution (#401)
+* Correctly convert ambiguous names (#332)
+* Ensure correct visibility for constructors (#422)
+* Ensure casing is correct for namespaces (#421)
+* Convert CType from a non numeric type to an enum
+* Convert Exit Function
+* Convert object initializers requiring type casts
+* Convert async keyword on lambdas
+* Convert nullable if statement conditions
 
 ### C# -> VB
 * Convert property accessors with visiblity modifiers ([#92](https://github.com/icsharpcode/CodeConverter/pull/92))
