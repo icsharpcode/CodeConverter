@@ -574,12 +574,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            var lhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, (ExpressionSyntax) await node.Left.AcceptAsync(TriviaConvertingVisitor));
-            var rhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, (ExpressionSyntax) await node.Right.AcceptAsync(TriviaConvertingVisitor));
-
             var stringType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
             var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
             var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
+
+
+            var lhs = (ExpressionSyntax)await node.Left.AcceptAsync(TriviaConvertingVisitor);
+            var rhs = (ExpressionSyntax)await node.Right.AcceptAsync(TriviaConvertingVisitor);
+
 
             if (node.IsKind(VBasic.SyntaxKind.ConcatenateExpression)) {
                 if (lhsTypeInfo.Type.SpecialType != SpecialType.System_String &&
@@ -603,6 +605,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VisualBasicEqualityComparison.RequiredType.Object:
                     return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(node, lhs, rhs);
             }
+
+            lhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs);
+            rhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+
 
             if (node.IsKind(VBasic.SyntaxKind.ExponentiateExpression,
                 VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
