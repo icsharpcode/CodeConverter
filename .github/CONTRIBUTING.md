@@ -19,6 +19,9 @@ If that function isn't on a public API, we could choose a more specific type if 
 
 If that function is on a public API, we could make internal callers use a different method with a specific type, and have the public method just call through to that method. We may want to flag such cases with an attribute, comment or #warning pragma encouraging refactoring to remove the "Object" overload if it's not required by public API consumers.
 
+## Test types
+See [Tests/Readme.md](https://github.com/icsharpcode/CodeConverter/blob/master/Tests/Readme.md)
+
 ## How to get started changing code
 At its heart, there is a visitor pattern with a method for each syntax type. If you don't know what a Syntax Tree is, that's definitely worth [looking up](https://github.com/dotnet/roslyn/wiki/Roslyn-Overview). There are lots of tests, set a breakpoint somewhere like `VisitCompilationUnit`, then run them in debug mode. If you step through the code, you'll see how it walks down the syntax tree converting piece by piece. If you want to find the name of the syntax for some specific code, use [Roslyn Quoter](https://roslynquoter.azurewebsites.net/)
 
