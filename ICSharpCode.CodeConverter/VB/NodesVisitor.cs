@@ -644,8 +644,7 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.EventStatement(attributes, CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)), id, null, SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Declaration.Type.Accept(TriviaConvertingVisitor)), null);
         }
         TypeSyntax GetTypeSyntax(ITypeSymbol typeInfo) {
-            var csType = CS.SyntaxFactory.ParseTypeName(typeInfo.GetFullMetadataName());
-            return (TypeSyntax)csType.Accept(TriviaConvertingVisitor);
+            return (TypeSyntax) _vbSyntaxGenerator.TypeExpression(typeInfo);
         }
 
         private void ConvertAndSplitAttributes(SyntaxList<CSS.AttributeListSyntax> attributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes)
