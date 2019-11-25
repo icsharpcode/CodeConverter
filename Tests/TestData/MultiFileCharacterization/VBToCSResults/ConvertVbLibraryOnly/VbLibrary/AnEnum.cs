@@ -1,4 +1,4 @@
-namespace EmptyVb
+namespace VbLibrary
 {
     internal enum AnEnum
     {

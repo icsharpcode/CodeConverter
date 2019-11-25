@@ -11,7 +11,7 @@
 using Microsoft.VisualBasic;
 using System.Diagnostics;
 
-namespace EmptyVb.My
+namespace VbLibrary.My
 {
     [System.Runtime.CompilerServices.CompilerGenerated()]
     [System.CodeDom.Compiler.GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "11.0.0.0")]
@@ -33,7 +33,7 @@ namespace EmptyVb.My
     }
 }
 
-namespace EmptyVb.My
+namespace VbLibrary.My
 {
     [HideModuleName()]
     [DebuggerNonUserCode()]
