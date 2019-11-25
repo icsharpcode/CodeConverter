@@ -14,10 +14,7 @@ namespace CodeConverter.Tests.TestRunners
 {
     public class ConverterTestBase
     {
-        /// <summary>
-        /// Leave this set to false when committing, and check any changes very carefully when using.
-        /// </summary>
-        private static readonly bool WriteNewCharacterization = false;
+        private static readonly bool RecharacterizeByWritingExpectedOverActual = TestConstants.RecharacterizeByWritingExpectedOverActual;
 
         private bool _testCstoVBCommentsByDefault = false;
         private readonly string _rootNamespace;
@@ -103,10 +100,10 @@ End Sub";
                 sb.AppendLine();
                 sb.AppendLine("source:");
                 sb.AppendLine(originalSource);
-                if (WriteNewCharacterization) TestFileRewriter.UpdateFiles(expectedConversion, actualConversion);
+                if (RecharacterizeByWritingExpectedOverActual) TestFileRewriter.UpdateFiles(expectedConversion, actualConversion);
                 return sb.ToString();
             });
-            Assert.False(WriteNewCharacterization, $"Test setup issue: Set {nameof(WriteNewCharacterization)} to false after using it");
+            Assert.False(RecharacterizeByWritingExpectedOverActual, $"Test setup issue: Set {nameof(RecharacterizeByWritingExpectedOverActual)} to false after using it");
         }
 
         private static string AddLineNumberComments(string code, string singleLineCommentStart, bool isTarget)

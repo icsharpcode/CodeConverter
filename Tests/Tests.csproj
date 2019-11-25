@@ -26,7 +26,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\ICSharpCode.CodeConverter\Shared\DefaultReferences.cs" Link="DefaultReferences.cs" />
-    <None Include="TestData\**\*.*"/>
+    <Compile Remove="TestData\**\*.*" />
+    <None Include="TestData\**\*.*" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Web" />
