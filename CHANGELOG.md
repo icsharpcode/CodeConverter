@@ -2,6 +2,15 @@
 All notable changes to the code converter will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [Unreleased]
+
+### Vsix
+
+### VB -> C#
+
+### C# -> VB
+
+
 ## [7.3.0] - 2019-11-25
 
 * Fixes for nullrefs
@@ -337,7 +346,7 @@ Fix initialization bug in VS2017
 * VB -> C#: VB projects referencing other VB projects no longer error
 * VB -> C#: XmlDoc comments now are correctly newline terminated
 
-## [5.6] - 2018-03-05
+## [5.6.0] - 2018-03-05
 
 ### Visual studio extension
 * New commands added to convert whole solution/project at once
@@ -355,7 +364,7 @@ Fix initialization bug in VS2017
 * Names now fully qualified where necessary
 * Out parameters correctly converted
 
-## [5.5] - 2017-29-12
+## [5.5.0] - 2017-12-29
 
 * Move from Refactoring Essentials to a repository of its own
 * Separate NuGet
