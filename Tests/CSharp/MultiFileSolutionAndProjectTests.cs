@@ -33,7 +33,7 @@ namespace CodeConverter.Tests.CSharp
         [Fact]
         public async Task ConvertVbLibraryOnly()
         {
-            await _multiFileTestFixture.ConvertProjectsWhere<VBToCSConversion>(p => p.Name == "Vblibrary");
+            await _multiFileTestFixture.ConvertProjectsWhere<VBToCSConversion>(p => p.Name == "VbLibrary");
         }
     }
 }
