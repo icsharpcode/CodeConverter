@@ -24,7 +24,7 @@ Let us know what needs improving. If you want to get involved in writing the cod
 Currently, the VB -> C# conversion quality is higher than the C# -> VB conversion quality. This is due to demand of people raising issues and supply of developers willing to fix them. But we're very happy to support developers who want to contribute to either conversion direction.
 
 ## Other ways to use the converter
-* Extension "nightly" developer builds (potentially less stable and more effort to update): https://ci.appveyor.com/project/icsharpcode/codeconverter/branch/master
+* Artifact vsix from latest "nightly" developer builds (potentially less stable and must be uninstalled to update): https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_build/latest?definitionId=2&branchName=master&status=succeeded
 
 * Online snippet converter: [https://codeconverter.icsharpcode.net/](https://codeconverter.icsharpcode.net/) (less accurate due to lack of project context)
 
