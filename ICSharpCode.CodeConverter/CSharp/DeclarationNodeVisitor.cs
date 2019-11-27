@@ -809,7 +809,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var methodBlock = (BaseMethodDeclarationSyntax) await node.SubOrFunctionStatement.Accept(TriviaConvertingVisitor);
 
-            if (_semanticModel.GetDeclaredSymbol(node).IsPartialMethodDefinition()) {
+            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
+            if (!declaredSymbol.CanHaveMethodBody()) {
                 return methodBlock;
             }
 
@@ -900,8 +901,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return decl.WithSemicolonToken(SemicolonToken);
             } else {
                 var tokenContext = GetMemberContext(node);
-                var convertedModifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext);
                 var declaredSymbol = _semanticModel.GetDeclaredSymbol(node) as IMethodSymbol;
+                var extraCsModifierKinds = declaredSymbol?.IsExtern == true ? new[] {SyntaxKind.ExternKeyword} : new SyntaxKind[0];
+                var convertedModifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext, extraCsModifierKinds: extraCsModifierKinds);
+
                 bool accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, declaredSymbol);
 
                 var isPartialDefinition = declaredSymbol.IsPartialMethodDefinition();
@@ -958,8 +961,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     null,
                     null
                 );
-                if (hasBody && !isPartialDefinition) return decl;
-                return decl.WithSemicolonToken(SemicolonToken);
+                return hasBody && declaredSymbol.CanHaveMethodBody() ? decl : decl.WithSemicolonToken(SemicolonToken);
             }
         }
 

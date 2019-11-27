@@ -219,6 +219,11 @@ namespace ICSharpCode.CodeConverter.Util
             return declaredSymbol is IMethodSymbol ms && ms.PartialDefinitionPart != null;
         }
 
+        public static bool CanHaveMethodBody(this ISymbol declaredSymbol)
+        {
+            return !(declaredSymbol is IMethodSymbol ms) || ms.PartialImplementationPart == null && !ms.IsExtern;
+        }
+
         public static bool IsPartialMethodDefinition(this ISymbol declaredSymbol)
         {
             return declaredSymbol is IMethodSymbol ms && ms.PartialImplementationPart != null;
