@@ -1159,7 +1159,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         private static bool ProbablyNotAMethodCall(VBasic.Syntax.InvocationExpressionSyntax node, ISymbol symbol, ITypeSymbol symbolReturnType)
         {
-            return !(symbol is IMethodSymbol) && symbolReturnType.IsErrorType() && node.Expression is VBasic.Syntax.IdentifierNameSyntax && node.ArgumentList.Arguments.Any();
+            return !(symbol is IMethodSymbol) && symbolReturnType.IsErrorType() && node.Expression is VBasic.Syntax.IdentifierNameSyntax && node.ArgumentList?.Arguments.Any() == true;
         }
 
         private async Task<ArgumentListSyntax> ConvertArgumentListOrEmpty(VBasic.Syntax.ArgumentListSyntax argumentListSyntax)

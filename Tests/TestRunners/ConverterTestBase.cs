@@ -57,7 +57,10 @@ End Sub";
             await AssertConvertedCodeResultEquals<CSToVBConversion>(csharpCode, expectedVisualBasicCode);
         }
 
-        public async Task TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool expectSurroundingBlock = false)
+        /// <summary>
+        /// <paramref name="missingSemanticInfo"/> is currently unused but acts as documentation, and in future will be used to decide whether to check if the input/output compiles
+        /// </summary>
+        public async Task TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool expectSurroundingBlock = false, bool missingSemanticInfo = false)
         {
             if (expectSurroundingBlock) expectedCsharpCode = SurroundWithBlock(expectedCsharpCode);
             await TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode);

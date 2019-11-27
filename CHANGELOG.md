@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### VB -> C#
 * Add modifier for nested types
 * Remove body for converted extern methods
+* Convert Call with missing argument list and semantic information
 
 ### C# -> VB
 
