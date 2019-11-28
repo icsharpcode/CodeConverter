@@ -80,9 +80,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static bool ShouldExpandVbNode(SyntaxNode node)
         {
-            return node is VBSyntax.ExpressionSyntax || node is VBSyntax.StatementSyntax ||
-                   node is VBSyntax.AttributeSyntax || node is VBSyntax.SimpleArgumentSyntax ||
-                   node is VBSyntax.CrefReferenceSyntax || node is VBSyntax.TypeConstraintSyntax;
+            return node is VBSyntax.NameSyntax;
         }
 
         private static bool ShouldExpandCsNode(SyntaxNode node)
