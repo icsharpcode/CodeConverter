@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
+using Microsoft.CodeAnalysis.Simplification;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
@@ -13,13 +15,16 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static async Task<SyntaxNode> ConvertCompilationTree(Document document,
             CSharpCompilation csharpViewOfVbSymbols, Project csharpReferenceProject)
         {
-            var compilation = await document.Project.GetCompilationAsync();
-            var tree = await document.GetSyntaxTreeAsync();
-            var semanticModel = compilation.GetSemanticModel(tree, true);
+            document = await document.WithExpandedRootAsync();
             var root = await document.GetSyntaxRootAsync() as VBasic.VisualBasicSyntaxNode ??
                        throw new InvalidOperationException(NullRootError(document));
 
+            var compilation = await document.Project.GetCompilationAsync();
+            var tree = await document.GetSyntaxTreeAsync();
+
+
             var csSyntaxGenerator = SyntaxGenerator.GetGenerator(csharpReferenceProject);
+            var semanticModel = compilation.GetSemanticModel(tree, true);
             var visualBasicSyntaxVisitor = new
                 DeclarationNodeVisitor(document, compilation, semanticModel, csharpViewOfVbSymbols, csSyntaxGenerator);
             return await root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);

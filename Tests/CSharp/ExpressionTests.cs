@@ -2324,7 +2324,6 @@ Public Class Test
 End Class",
                 @"using System;
 using System.IO;
-using Microsoft.VisualBasic;
 using SIO = System.IO;
 using VB = Microsoft.VisualBasic;
 
@@ -2334,8 +2333,8 @@ public partial class Test
     private Delegate aliased2 = new SIO.ErrorEventHandler(OnError);
 
     // Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
-    private string Tr = nameof(TextReader);
-    private string Strings = nameof(VBCodeProvider);
+    private string Tr = nameof(SIO.TextReader);
+    private string Strings = nameof(VB.VBCodeProvider);
 
     public partial class ErrorEventHandler
     {

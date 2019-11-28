@@ -17,7 +17,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class DocumentExtensions
     {
-        public static async Task<Document> WithSimplifiedSyntaxRootAsync(this Document doc, SyntaxNode syntaxRoot = null)
+        public static async Task<Document> WithSimplifiedRootAsync(this Document doc, SyntaxNode syntaxRoot = null)
         {
             var root = syntaxRoot  ?? await doc.GetSyntaxRootAsync();
             var withSyntaxRoot = doc.WithSyntaxRoot(root.WithAdditionalAnnotations(Simplifier.Annotation));
@@ -37,12 +37,57 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Select(d => root.FindNode(d.Location.SourceSpan).GetAncestor<TUsingDirectiveSyntax>())
                 .ToLookup(d => (SyntaxNode) d);
 
-            root = root.ReplaceNodes(
-                root.DescendantNodes(n => !(n is TExpressionSyntax) && !nodesWithUnresolvedTypes.Contains(n)),
-                (orig, rewritten) => !nodesWithUnresolvedTypes.Contains(rewritten) ? rewritten.WithAdditionalAnnotations(Simplifier.Annotation) : rewritten);
+            var toSimplify = root
+                .DescendantNodes(n => !(n is TExpressionSyntax) && !nodesWithUnresolvedTypes.Contains(n))
+                .Where(n => !nodesWithUnresolvedTypes.Contains(n));
+            root = root.ReplaceNodes(toSimplify, (orig, rewritten) =>
+                rewritten.WithAdditionalAnnotations(Simplifier.Annotation)
+                );
 
-            var document = await convertedDocument.WithSimplifiedSyntaxRootAsync(root);
+            var document = await convertedDocument.WithSimplifiedRootAsync(root);
             return document;
+        }
+
+        public static async Task<Document> WithExpandedRootAsync(this Document document)
+        {
+            var shouldExpand = document.Project.Language == LanguageNames.VisualBasic
+                ? (Func<SyntaxNode, bool>)ShouldExpandVbNode
+                : ShouldExpandCsNode;
+            var originalRoot = (VBasic.VisualBasicSyntaxNode) await document.GetSyntaxRootAsync();
+            originalRoot = await ExpandVbAsync(document, originalRoot, ShouldExpandVbNode);
+            return document.WithSyntaxRoot(originalRoot);
+        }
+
+        private static async Task<VBasic.VisualBasicSyntaxNode> ExpandVbAsync(Document document,
+            VBasic.VisualBasicSyntaxNode root, Func<SyntaxNode, bool> shouldExpand)
+        {
+            var semanticModel = await document.GetSemanticModelAsync();
+            var workspace = document.Project.Solution.Workspace;
+
+            return root.ReplaceNodes(root.DescendantNodes(n => !shouldExpand(n)).Where(shouldExpand),
+                (node, rewrittenNode) => TryExpandNode(node, semanticModel, workspace)
+            );
+        }
+
+        private static SyntaxNode TryExpandNode(SyntaxNode node, SemanticModel semanticModel, Workspace workspace)
+        {
+            try {
+                return Simplifier.Expand(node, semanticModel, workspace);
+            } catch (Exception) {
+                return node;
+            }
+        }
+
+        private static bool ShouldExpandVbNode(SyntaxNode node)
+        {
+            return node is VBSyntax.ExpressionSyntax || node is VBSyntax.StatementSyntax ||
+                   node is VBSyntax.AttributeSyntax || node is VBSyntax.SimpleArgumentSyntax ||
+                   node is VBSyntax.CrefReferenceSyntax || node is VBSyntax.TypeConstraintSyntax;
+        }
+
+        private static bool ShouldExpandCsNode(SyntaxNode node)
+        {
+            return false;
         }
     }
 }
