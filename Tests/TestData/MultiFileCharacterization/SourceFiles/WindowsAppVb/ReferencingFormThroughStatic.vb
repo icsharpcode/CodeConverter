@@ -1,5 +1,8 @@
 ﻿Public Module ReferencingFormThroughStatic
     Public Function GetFormTitle() As String
-        Return WinformsDesignerTest.Text
+        If WinformsDesignerTest IsNot Nothing AndAlso WinformsDesignerTest.Text IsNot Nothing Then
+            Return WinformsDesignerTest.Text
+        End If
+        Return ""
     End Function
 End Module

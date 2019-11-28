@@ -650,9 +650,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return await ConvertMyGroupCollectionPropertyGetWithUnderlyingField(co.Operand.Syntax);
                 case IPropertyReferenceOperation pro when pro.Property.IsMyGroupCollectionProperty():
                     var associatedField = pro.Property.GetAssociatedField();
-                    var propertyAccessExpression = (VBSyntax.MemberAccessExpressionSyntax)pro.Syntax;
-                    var qualification = await propertyAccessExpression.Expression.AcceptAsync(TriviaConvertingVisitor);
-                    return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, (ExpressionSyntax) qualification, SyntaxFactory.IdentifierName(associatedField.Name));
+                    var propertyReferenceOperation = ((IPropertyReferenceOperation) pro.Instance);
+                    var qualification = SyntaxFactory.ParseExpression(propertyReferenceOperation.Syntax.ToString());
+                    return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, qualification, SyntaxFactory.IdentifierName(associatedField.Name));
                 default:
                     return null;
             }

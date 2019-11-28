@@ -4,7 +4,9 @@ namespace WindowsAppVb
     {
         public static string GetFormTitle()
         {
-            return My.MyProject.MyForms.WinformsDesignerTest.Text;
+            if (My.MyProject.Forms.m_WinformsDesignerTest != null && My.MyProject.Forms.WinformsDesignerTest.Text != null)
+                return My.MyProject.Forms.WinformsDesignerTest.Text;
+            return "";
         }
     }
 }
