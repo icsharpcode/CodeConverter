@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
 using IOperation = Microsoft.CodeAnalysis.IOperation;
+using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
@@ -942,12 +943,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitGenericName(VBasic.Syntax.GenericNameSyntax node)
         {
-            var genericNameSyntax = SyntaxFactory.GenericName(ConvertIdentifier(node.Identifier), (TypeArgumentListSyntax) await node.TypeArgumentList.AcceptAsync(TriviaConvertingVisitor));
+            var symbol = GetSymbolInfoInDocument(node);
+            var genericNameSyntax = await GenericNameAccountingForReducedParameters(node, symbol);
             ExpressionSyntax name = genericNameSyntax;
 
-            if (!node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName)) {
-                var symbol = GetSymbolInfoInDocument(node);
-                if (symbol?.ContainingSymbol != null) {
+
+            if (symbol?.ContainingSymbol != null) {
+
+                if (!node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName)) {
+
                     string lhs;
                     if (symbol.ContainingSymbol.IsType()) {
                         lhs = CommonConversions.GetTypeSyntax(symbol.ContainingSymbol.GetSymbolType()).ToString();
@@ -961,6 +965,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return AddEmptyArgumentListIfImplicit(node, name);
+        }
+
+        /// <summary>
+        /// Adjusts for Visual Basic's omission of type arguments that can be inferred in reduced generic method invocations
+        /// The upfront WithExpandedRootAsync pass should ensure this only happens on broken syntax trees.
+        /// In those cases, just comment the errant information. It would only cause a compiling change in behaviour if it can be inferred, was not set to the inferred value, and was reflected upon within the method body
+        /// </summary>
+        private async Task<SimpleNameSyntax> GenericNameAccountingForReducedParameters(VBSyntax.GenericNameSyntax node, ISymbol symbol)
+        {
+            SyntaxToken convertedIdentifier = ConvertIdentifier(node.Identifier);
+            var typeArgumentListSyntax = (TypeArgumentListSyntax)await node.TypeArgumentList.AcceptAsync(TriviaConvertingVisitor);
+            if (symbol.IsReducedTypeParameterMethod()) {
+                var commentedText = "/* " + typeArgumentListSyntax.ToFullString() + " */";
+                var trailingTrivia = SyntaxFactory.Comment(commentedText);
+                return SyntaxFactory.IdentifierName(convertedIdentifier).WithTrailingTrivia(trailingTrivia);
+            }
+
+            return SyntaxFactory.GenericName(convertedIdentifier, typeArgumentListSyntax);
         }
 
         public override async Task<CSharpSyntaxNode> VisitTypeArgumentList(VBasic.Syntax.TypeArgumentListSyntax node)

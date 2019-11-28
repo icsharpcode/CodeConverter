@@ -880,6 +880,26 @@ public partial class Class1
         }
 
         [Fact]
+        public async Task ReducedTypeParametersCommented()
+        {
+            await TestConversionVisualBasicToCSharp(@"Imports System.Linq
+
+Public Class Class1
+    Sub Foo()
+        Dim y = """".Split("",""c).Select(Of String)(Function(x) x)
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class Class1
+{
+    public void Foo()
+    {
+        var y = """".Split(',').Select/* <string> */(x => x);
+    }
+}");
+        }
+
+        [Fact]
         public async Task ElementAtOrDefaultInvocationIsNotDuplicated()
         {
             await TestConversionVisualBasicToCSharp(@"Imports System.Linq
