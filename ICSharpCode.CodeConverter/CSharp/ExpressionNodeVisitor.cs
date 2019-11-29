@@ -285,7 +285,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var isDefaultProperty = nodeSymbol is IPropertySymbol p && VBasic.VisualBasicExtensions.IsDefault(p);
             ExpressionSyntax left = null;
             if (node.Expression is VBasic.Syntax.MyClassExpressionSyntax) {
-                if (nodeSymbol.IsStatic) {
+                if (nodeSymbol?.IsStatic != false) {
                     var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
                     left = CommonConversions.GetTypeSyntax(typeInfo.Type);
                 } else {
