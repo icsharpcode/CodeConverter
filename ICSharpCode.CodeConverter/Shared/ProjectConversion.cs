@@ -36,17 +36,19 @@ namespace ICSharpCode.CodeConverter.Shared
             _returnSelectedNode = returnSelectedNode;
         }
 
-        public static async Task<ConversionResult> ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null) where TLanguageConversion : ILanguageConversion, new()
+        public static async Task<ConversionResult> ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null, TLanguageConversion languageConversion = default) where TLanguageConversion : ILanguageConversion, new()
         {
             await new SynchronizationContextRemover();
 
-            var languageConversion = new TLanguageConversion {
-                RootNamespace = rootNamespace
-            };
+            if (languageConversion == null) {
+                languageConversion = new TLanguageConversion {
+                    RootNamespace = rootNamespace
+                };
+            }
             var syntaxTree = languageConversion.MakeFullCompilationUnit(text, out var textSpan);
             using (var workspace = new AdhocWorkspace()) {
                 var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, references);
-                return await ConvertSingle(document, textSpan ?? new TextSpan(0,0), languageConversion);
+                return await ConvertSingle(document, textSpan ?? new TextSpan(0, 0), languageConversion);
             }
         }
 
@@ -84,14 +86,23 @@ namespace ICSharpCode.CodeConverter.Shared
                     .Select(p => PathConverter.TogglePathExtension(Path.GetFullPath(p)).Replace(projectPath +"\\", ""))
                     .OrderBy(x => x).ToArray();
 
-            var addFilesRegexSpec = AddCompiledItemsRegexFromRelativePaths(relativeFilePathsToAdd);
-            var replacementSpecs = replacements.Concat(new[] {addFilesRegexSpec}).ToArray();
+            var replacementSpecs = replacements.Concat(new[] {
+                AddCompiledItemsRegexFromRelativePaths(relativeFilePathsToAdd),
+                ChangeRootNamespaceRegex(languageConversion.RootNamespace),
+                ChangeLanguageVersionRegex(languageConversion.LanguageVersion)
+            }).ToArray();
 
             return convertProjectContents.Concat(new[]
                 {ConvertProjectFile(project, languageConversion, replacementSpecs)}
             );
         }
 
+        static (string Find, string Replace, bool FirstOnly) ChangeLanguageVersionRegex(string languageVersion) {
+            return (Find: new Regex(@"<\s*LangVersion>(\d|\D)*</LangVersion\s*>").ToString(), Replace: $"<LangVersion>{languageVersion}</LangVersion>", FirstOnly: true);
+        }
+        static (string Find, string Replace, bool FirstOnly) ChangeRootNamespaceRegex(string rootNamespace) {
+            return (Find: new Regex(@"<\s*RootNamespace>(\d|\D)*</RootNamespace\s*>").ToString(), Replace: $"<RootNamespace>{rootNamespace}</RootNamespace>", FirstOnly: true);
+        }
         private static (string Find, string Replace, bool FirstOnly) AddCompiledItemsRegexFromRelativePaths(
             string[] relativeFilePathsToAdd)
         {

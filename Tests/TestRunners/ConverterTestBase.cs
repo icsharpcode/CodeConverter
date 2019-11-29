@@ -27,19 +27,19 @@ namespace CodeConverter.Tests.TestRunners
             _rootNamespace = rootNamespace;
         }
 
-        protected static async Task<string> GetConvertedCodeOrErrorString<TLanguageConversion>(string toConvert) where TLanguageConversion : ILanguageConversion, new()
+        protected static async Task<string> GetConvertedCodeOrErrorString<TLanguageConversion>(string toConvert, TLanguageConversion languageConversion = default) where TLanguageConversion : ILanguageConversion, new()
         {
-            var conversionResult = await ProjectConversion.ConvertText<TLanguageConversion>(toConvert, DefaultReferences.NetStandard2);
+            var conversionResult = await ProjectConversion.ConvertText(toConvert, DefaultReferences.NetStandard2, null, languageConversion);
             var convertedCode = conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString();
             return convertedCode;
         }
 
-        public async Task TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, bool expectCompilationErrors = false)
+        public async Task TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, bool expectCompilationErrors = false, CSToVBConversion conversion = null)
         {
             expectedVisualBasicCode = AddSurroundingMethodBlock(expectedVisualBasicCode, expectSurroundingMethodBlock);
 
-            await TestConversionCSharpToVisualBasicWithoutComments(csharpCode, expectedVisualBasicCode);
-            if (_testCstoVBCommentsByDefault) await TestConversionCSharpToVisualBasicWithoutComments(AddLineNumberComments(csharpCode, "// ", false), AddLineNumberComments(expectedVisualBasicCode, "' ", true));
+            await TestConversionCSharpToVisualBasicWithoutComments(csharpCode, expectedVisualBasicCode, conversion);
+            if (_testCstoVBCommentsByDefault) await TestConversionCSharpToVisualBasicWithoutComments(AddLineNumberComments(csharpCode, "// ", false), AddLineNumberComments(expectedVisualBasicCode, "' ", true), conversion);
         }
 
         private static string AddSurroundingMethodBlock(string expectedVisualBasicCode, bool expectSurroundingBlock)
@@ -55,9 +55,9 @@ End Sub";
             return expectedVisualBasicCode;
         }
 
-        private async Task TestConversionCSharpToVisualBasicWithoutComments(string csharpCode, string expectedVisualBasicCode)
+        private async Task TestConversionCSharpToVisualBasicWithoutComments(string csharpCode, string expectedVisualBasicCode, CSToVBConversion conversion = null)
         {
-            await AssertConvertedCodeResultEquals<CSToVBConversion>(csharpCode, expectedVisualBasicCode);
+            await AssertConvertedCodeResultEquals(csharpCode, expectedVisualBasicCode, conversion);
         }
 
         public async Task TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool expectSurroundingBlock = false)
@@ -78,10 +78,9 @@ End Sub";
             await AssertConvertedCodeResultEquals<VBToCSConversion>(visualBasicCode, expectedCsharpCode);
         }
 
-        private async Task AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode) where TLanguageConversion : ILanguageConversion, new()
+        private async Task AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode, TLanguageConversion languageConversion = default) where TLanguageConversion : ILanguageConversion, new()
         {
-            var outputNode =
-                ProjectConversion.ConvertText<TLanguageConversion>(inputCode, DefaultReferences.NetStandard2, _rootNamespace);
+            var outputNode = ProjectConversion.ConvertText(inputCode, DefaultReferences.NetStandard2, _rootNamespace, languageConversion);
             AssertConvertedCodeResultEquals(await outputNode, expectedConvertedCode, inputCode);
         }
 

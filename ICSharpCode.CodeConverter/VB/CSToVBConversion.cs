@@ -25,15 +25,24 @@ namespace ICSharpCode.CodeConverter.VB
         private VisualBasicCompilation _vbViewOfCsSymbols;
         private VisualBasicParseOptions _visualBasicParseOptions;
         private Project _vbReferenceProject;
+
         public string RootNamespace { get; set; }
+        public VisualBasicCompilationOptions VBCompilationOptions { get; set; }
+        public VisualBasicParseOptions VBParceOptions {
+            get { return _visualBasicParseOptions ?? (_visualBasicParseOptions = VisualBasicParseOptions.Default); }
+            set {
+                if (_visualBasicParseOptions == value)
+                    return;
+                _visualBasicParseOptions = value;
+            }
+        }
 
         public async Task<Project> InitializeSource(Project project)
         {
             _sourceCsProject = project;
-            var cSharpCompilationOptions = VisualBasicCompiler.CreateCompilationOptions(RootNamespace);
-            _visualBasicParseOptions = VisualBasicParseOptions.Default;
-            _convertedVbProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, _visualBasicParseOptions);
-            _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptionsAsync(cSharpCompilationOptions);
+            var _convertedCompilationOptions = VBCompilationOptions?.WithRootNamespace(RootNamespace) ?? VisualBasicCompiler.CreateCompilationOptions(RootNamespace);
+            _convertedVbProject = project.ToProjectFromAnyOptions(_convertedCompilationOptions, VBParceOptions);
+            _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptionsAsync(_convertedCompilationOptions);
             _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync();
             return project;
         }
@@ -173,5 +182,6 @@ namespace ICSharpCode.CodeConverter.VB
         {
             return CSharpCompiler.CreateCompilationOptions().CreateProjectDocumentFromTree(workspace, tree, references, CSharpParseOptions.Default);
         }
+        string ILanguageConversion.LanguageVersion { get { return VBParceOptions.LanguageVersion.ToDisplayString(); } }
     }
 }
