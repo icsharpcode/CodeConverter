@@ -18,7 +18,7 @@ namespace VbLibrary.My
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
     internal sealed partial class MySettings : System.Configuration.ApplicationSettingsBase
     {
-        private static MySettings defaultInstance = (MySettings)Synchronized(new MySettings());
+        private static MySettings defaultInstance = Synchronized(new MySettings());
 
         /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
         public static MySettings Default
