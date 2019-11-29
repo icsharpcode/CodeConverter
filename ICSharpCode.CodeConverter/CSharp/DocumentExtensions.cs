@@ -48,10 +48,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             var semanticModel = await document.GetSemanticModelAsync();
             var workspace = document.Project.Solution.Workspace;
 
-            var visualBasicSyntaxNode = root.ReplaceNodes(root.DescendantNodes(n => !shouldExpand(n)).Where(shouldExpand),
-                (node, rewrittenNode) => TryExpandNode(node, semanticModel, workspace)
-            );
-            return visualBasicSyntaxNode;
+            try {
+                return root.ReplaceNodes(root.DescendantNodes(n => !shouldExpand(n)).Where(shouldExpand),
+                    (node, rewrittenNode) => TryExpandNode(node, semanticModel, workspace)
+                );
+            } catch (Exception e) {
+                return root;
+            }
         }
         private static async Task<Document> UndoBadVbExpansionsAsync(Document document,
             VBasic.VisualBasicSyntaxNode root)
