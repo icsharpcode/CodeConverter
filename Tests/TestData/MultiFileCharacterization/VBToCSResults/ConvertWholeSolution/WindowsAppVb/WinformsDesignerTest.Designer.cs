@@ -2,11 +2,10 @@ using System.Drawing;
 using System.Diagnostics;
 using System.Windows.Forms;
 using System.Runtime.CompilerServices;
-using Microsoft.VisualBasic.CompilerServices;
 
 namespace WindowsAppVb
 {
-    [DesignerGenerated()]
+    [Microsoft.VisualBasic.CompilerServices.DesignerGenerated()]
     public partial class WinformsDesignerTest : Form
     {
 
