@@ -160,7 +160,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var nodeForType = node;
             var convertMethodForKeyword = GetConvertMethodForKeywordOrNull(nodeForType);
-            if (_semanticModel.GetTypeInfo(nodeForType).Type is INamedTypeSymbol typeSymbol && typeSymbol.IsEnumType()) {
+            var typeInfo = _semanticModel.GetTypeInfo(nodeForType);
+            if (typeInfo.Type is INamedTypeSymbol typeSymbol && typeSymbol.IsEnumType()) {
                 convertMethodForKeyword = GetConvertMethodForKeywordOrNull(typeSymbol.EnumUnderlyingType);
             } else if (convertMethodForKeyword != null) {
                 nodeForType = null;
@@ -184,6 +185,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.Argument(expressionSyntax))));
             }
 
+            var typeInfo = _semanticModel.GetTypeInfo(node);
+            if (typeInfo.Type != null && typeInfo.Type.Equals(typeInfo.ConvertedType)) {
+                return expressionSyntax;
+            }
+
             var convertMethodForKeywordOrNull = GetConvertMethodForKeywordOrNull(node);
 
             return convertMethodForKeywordOrNull != null ? (ExpressionSyntax)
@@ -192,7 +198,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.SingletonSeparatedList(
                             SyntaxFactory.Argument(expressionSyntax)))
                 ) // Hopefully will be a compile error if it's wrong
-                : ValidSyntaxFactory.CastExpression(SyntaxFactory.PredefinedType(node.Keyword.ConvertToken()), (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor));
+                : ValidSyntaxFactory.CastExpression(SyntaxFactory.PredefinedType(node.Keyword.ConvertToken()), expressionSyntax);
         }
 
         public override async Task<CSharpSyntaxNode> VisitTryCastExpression(VBasic.Syntax.TryCastExpressionSyntax node)
@@ -1032,6 +1038,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             ExpressionSyntax convertMethodOrNull = null, VBSyntax.TypeSyntax castToOrNull = null)
         {
             var expressionSyntax = (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor);
+
+            var typeInfo = _semanticModel.GetTypeInfo(node);
+            if (typeInfo.Type != null && typeInfo.Type.Equals(typeInfo.ConvertedType)) {
+                return expressionSyntax;
+            }
 
             if (convertMethodOrNull != null) {
                 expressionSyntax = Invoke(convertMethodOrNull, expressionSyntax);
