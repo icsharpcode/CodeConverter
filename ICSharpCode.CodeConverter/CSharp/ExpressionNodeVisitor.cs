@@ -160,8 +160,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var nodeForType = node;
             var convertMethodForKeyword = GetConvertMethodForKeywordOrNull(nodeForType);
-            var typeInfo = _semanticModel.GetTypeInfo(nodeForType);
-            if (typeInfo.Type is INamedTypeSymbol typeSymbol && typeSymbol.IsEnumType()) {
+            if (_semanticModel.GetTypeInfo(nodeForType).Type is INamedTypeSymbol typeSymbol && typeSymbol.IsEnumType()) {
                 convertMethodForKeyword = GetConvertMethodForKeywordOrNull(typeSymbol.EnumUnderlyingType);
             } else if (convertMethodForKeyword != null) {
                 nodeForType = null;
@@ -183,11 +182,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Conversions.ToDate"), SyntaxFactory.ArgumentList(
                     SyntaxFactory.SingletonSeparatedList(
                         SyntaxFactory.Argument(expressionSyntax))));
-            }
-
-            var typeInfo = _semanticModel.GetTypeInfo(node);
-            if (typeInfo.Type != null && typeInfo.Type.Equals(typeInfo.ConvertedType)) {
-                return expressionSyntax;
             }
 
             var convertMethodForKeywordOrNull = GetConvertMethodForKeywordOrNull(node);
@@ -1038,11 +1032,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             ExpressionSyntax convertMethodOrNull = null, VBSyntax.TypeSyntax castToOrNull = null)
         {
             var expressionSyntax = (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor);
-
-            var typeInfo = _semanticModel.GetTypeInfo(node);
-            if (typeInfo.Type != null && typeInfo.Type.Equals(typeInfo.ConvertedType)) {
-                return expressionSyntax;
-            }
 
             if (convertMethodOrNull != null) {
                 expressionSyntax = Invoke(convertMethodOrNull, expressionSyntax);
