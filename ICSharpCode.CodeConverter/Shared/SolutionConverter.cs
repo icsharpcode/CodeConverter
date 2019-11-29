@@ -19,12 +19,13 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly ILanguageConversion _languageConversion;
 
         public static SolutionConverter CreateFor<TLanguageConversion>(IReadOnlyCollection<Project> projectsToConvert,
-            IProgress<ConversionProgress> progress = null) where TLanguageConversion : ILanguageConversion, new()
+            IProgress<ConversionProgress> progress = null, TLanguageConversion languageConversion = default) where TLanguageConversion : ILanguageConversion, new()
         {
+            var conversion = languageConversion != null ? languageConversion : new TLanguageConversion();
             var solutionFilePath = projectsToConvert.First().Solution.FilePath;
             var sourceSolutionContents = File.ReadAllText(solutionFilePath);
             var projectReferenceReplacements = GetProjectReferenceReplacements(projectsToConvert, sourceSolutionContents);
-            return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, progress ?? new Progress<ConversionProgress>(), new TLanguageConversion());
+            return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, progress ?? new Progress<ConversionProgress>(), conversion);
         }
 
         private SolutionConverter(string solutionFilePath,

@@ -186,5 +186,6 @@ End Class";
                 .CreateProjectDocumentFromTree(workspace, tree, references, VisualBasicParseOptions.Default,
                     ISymbolExtensions.ForcePartialTypesAssemblyName);
         }
+        string ILanguageConversion.LanguageVersion { get { return LanguageVersion.Default.ToDisplayString(); } }
     }
 }
