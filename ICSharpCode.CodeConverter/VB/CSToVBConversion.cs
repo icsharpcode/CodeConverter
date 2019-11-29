@@ -28,7 +28,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public string RootNamespace { get; set; }
         public VisualBasicCompilationOptions VBCompilationOptions { get; set; }
-        public VisualBasicParseOptions VBParceOptions {
+        public VisualBasicParseOptions VBParseOptions {
             get { return _visualBasicParseOptions ?? (_visualBasicParseOptions = VisualBasicParseOptions.Default); }
             set {
                 if (_visualBasicParseOptions == value)
@@ -41,7 +41,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             _sourceCsProject = project;
             var _convertedCompilationOptions = VBCompilationOptions?.WithRootNamespace(RootNamespace) ?? VisualBasicCompiler.CreateCompilationOptions(RootNamespace);
-            _convertedVbProject = project.ToProjectFromAnyOptions(_convertedCompilationOptions, VBParceOptions);
+            _convertedVbProject = project.ToProjectFromAnyOptions(_convertedCompilationOptions, VBParseOptions);
             _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptionsAsync(_convertedCompilationOptions);
             _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync();
             return project;
@@ -182,6 +182,6 @@ namespace ICSharpCode.CodeConverter.VB
         {
             return CSharpCompiler.CreateCompilationOptions().CreateProjectDocumentFromTree(workspace, tree, references, CSharpParseOptions.Default);
         }
-        string ILanguageConversion.LanguageVersion { get { return VBParceOptions.LanguageVersion.ToDisplayString(); } }
+        string ILanguageConversion.LanguageVersion { get { return VBParseOptions.LanguageVersion.ToDisplayString(); } }
     }
 }

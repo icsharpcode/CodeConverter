@@ -105,10 +105,10 @@ namespace ICSharpCode.CodeConverter.VB
             var members = SyntaxFactory.List(node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor)));
 
             //TODO Add Usings from compilationoptions
-            var importsStatementSyntaxs = SyntaxFactory.List(TidyImportsList(_allImports));
+            var importsStatementSyntaxes = SyntaxFactory.List(TidyImportsList(_allImports));
             return SyntaxFactory.CompilationUnit(
                 SyntaxFactory.List<OptionStatementSyntax>(),
-                importsStatementSyntaxs,
+                importsStatementSyntaxes,
                 attributes,
                 members
             );
