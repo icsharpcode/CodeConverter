@@ -80,24 +80,27 @@ End Namespace";
             var containerType = myProject?.GetMembers(propertyContainerClassName).OfType<ITypeSymbol>().FirstOrDefault();
             var propertiesToReplicate = containerType?.GetMembers().Where(m => m.IsKind(SymbolKind.Property)).ToArray();
             if (propertiesToReplicate?.Any() != true) return "";
-            var vbTextForProperties = propertiesToReplicate.Select(s => $@"
+            var vbTextForProperties = propertiesToReplicate.Select(s => {
+                var fieldName = $"{Constants.MergedMyMemberPrefix}m_{s.Name}";
+                return $@"
             <EditorBrowsable(EditorBrowsableState.Never)>
-            Public m_{s.Name} As {s.Name}
+            Public {fieldName} As {s.Name}
 
-            Public Property {s.Name} As {s.Name}
+            Public Property {Constants.MergedMyMemberPrefix}{s.Name} As {s.Name}
                 <DebuggerHidden>
                 Get
-                    m_{s.Name} = Create__Instance__(Of {s.Name})(m_{s.Name})
-                    Return m_{s.Name}
+                    {fieldName} = Create__Instance__(Of {s.Name})({fieldName})
+                    Return {fieldName}
                 End Get
                 <DebuggerHidden>
                 Set(ByVal value As {s.Name})
-                    If value Is m_{s.Name} Then Return
+                    If value Is {fieldName} Then Return
                     If value IsNot Nothing Then Throw New ArgumentException(""Property can only be set to Nothing"")
-                    Me.Dispose__Instance__(Of {s.Name})(m_{s.Name})
+                    Me.Dispose__Instance__(Of {s.Name})({fieldName})
                 End Set
             End Property
-");
+";
+            });
             string propertiesWithoutContainer = string.Join(Environment.NewLine, vbTextForProperties);
             return $@"        Friend Partial Class {propertyContainerClassName}
 {propertiesWithoutContainer}
@@ -113,25 +116,26 @@ End Namespace";
 
         public static async Task<Project> RenameMergedNamespaces(this Project project)
         {
-            project = await RenameNamespace(project, Constants.MergedMyNamespace, "My");
-            project = await RenameNamespace(project, Constants.MergedMsVbNamespace, "VisualBasic");
+            project = await RenamePrefix(project, Constants.MergedMyNamespace, "My", SymbolFilter.Namespace);
+            project = await RenamePrefix(project, Constants.MergedMsVbNamespace, "VisualBasic", SymbolFilter.Namespace);
+            project = await RenamePrefix(project, Constants.MergedMyMemberPrefix, "", SymbolFilter.Member);
             return project;
         }
 
-        private static async Task<Project> RenameNamespace(Project project, string oldName, string newName)
+        private static async Task<Project> RenamePrefix(Project project, string oldNamePrefix, string newNamePrefix, SymbolFilter symbolFilter)
         {
-            for (var symbolToRename = await GetFirstSymbolWithName(project, oldName); symbolToRename != null; symbolToRename = await GetFirstSymbolWithName(project, oldName))
+            for (var symbolToRename = await GetFirstSymbolStartingWith(project, oldNamePrefix, symbolFilter); symbolToRename != null; symbolToRename = await GetFirstSymbolStartingWith(project, oldNamePrefix, symbolFilter))
             {
-                var renamedSolution = await Renamer.RenameSymbolAsync(project.Solution, symbolToRename, newName, default(OptionSet));
+                var renamedSolution = await Renamer.RenameSymbolAsync(project.Solution, symbolToRename, symbolToRename.Name.Replace(oldNamePrefix, newNamePrefix), default(OptionSet));
                 project = renamedSolution.GetProject(project.Id);
             }
             return project;
         }
 
-        private static async Task<ISymbol> GetFirstSymbolWithName(Project project, string mergedMyNamespace)
+        private static async Task<ISymbol> GetFirstSymbolStartingWith(Project project, string symbolPrefix, SymbolFilter symbolFilter)
         {
             var compilation = await project.GetCompilationAsync();
-            return compilation.GetSymbolsWithName(s => s == mergedMyNamespace, SymbolFilter.Namespace).FirstOrDefault();
+            return compilation.GetSymbolsWithName(s => s.StartsWith(symbolPrefix), symbolFilter).FirstOrDefault();
         }
     }
 }
