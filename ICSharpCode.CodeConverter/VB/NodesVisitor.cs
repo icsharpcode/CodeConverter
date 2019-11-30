@@ -349,18 +349,22 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitIsPatternExpression(CSS.IsPatternExpressionSyntax node)
         {
-            return node.Pattern.TypeSwitch(
-                (CSS.DeclarationPatternSyntax d) => {
-                    var left = (ExpressionSyntax) d.Designation.Accept(TriviaConvertingVisitor);
+            ExpressionSyntax lhs = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
+            switch (node.Pattern) {
+                case CSS.DeclarationPatternSyntax d: {
+                    var left = (ExpressionSyntax)d.Designation.Accept(TriviaConvertingVisitor);
                     ExpressionSyntax right = SyntaxFactory.TryCastExpression(
-                        (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
+                        lhs,
                         (TypeSyntax)d.Type.Accept(TriviaConvertingVisitor));
 
                     var tryCast = CreateInlineAssignmentExpression(left, right);
-                    var nothingExpression = SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression, SyntaxFactory.Token(SyntaxKind.NothingKeyword));
+                    var nothingExpression = SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression,
+                        SyntaxFactory.Token(SyntaxKind.NothingKeyword));
                     return SyntaxFactory.IsNotExpression(tryCast, nothingExpression);
-                },
-                p => throw new ArgumentOutOfRangeException(nameof(p), p, null));
+                }
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(node.Pattern), node.Pattern, null);
+            }
         }
 
         public override VisualBasicSyntaxNode VisitDeclarationExpression(CSS.DeclarationExpressionSyntax node)

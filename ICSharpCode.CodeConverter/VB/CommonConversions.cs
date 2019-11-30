@@ -152,17 +152,21 @@ namespace ICSharpCode.CodeConverter.VB
 
         private VariableDeclaratorSyntax ConvertToVariableDeclarator(IsPatternExpressionSyntax node)
         {
-            return node.Pattern.TypeSwitch(
-                (DeclarationPatternSyntax d) => {
+            switch (node.Pattern) {
+                case DeclarationPatternSyntax d: {
                     var id = ((IdentifierNameSyntax)d.Designation.Accept(_nodesVisitor)).Identifier;
                     var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
                     TypeSyntax right = (TypeSyntax)d.Type.Accept(_nodesVisitor);
 
                     var simpleAsClauseSyntax = SyntaxFactory.SimpleAsClause(right);
-                    var equalsValueSyntax = SyntaxFactory.EqualsValue(SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression, SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
+                    var equalsValueSyntax = SyntaxFactory.EqualsValue(
+                        SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression,
+                            SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
                     return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
-                },
-                p => throw new ArgumentOutOfRangeException(nameof(p), p, null));
+                }
+             default:
+                 throw new ArgumentOutOfRangeException(nameof(node.Pattern), node.Pattern, null);
+            }
         }
 
         private VariableDeclaratorSyntax ConvertToVariableDeclarator(PropertyDeclarationSyntax des)
