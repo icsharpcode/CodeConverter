@@ -35,7 +35,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static async Task<Document> WithExpandedRootAsync(this Document document)
         {
             var shouldExpand = document.Project.Language == LanguageNames.VisualBasic
-                ? (Func<SyntaxNode, bool>)ShouldExpandVbNode
+                ? (Func<SemanticModel, SyntaxNode, bool>)ShouldExpandVbNode
                 : ShouldExpandCsNode;
             var root = (VBasic.VisualBasicSyntaxNode) await document.GetSyntaxRootAsync();
             root = await ExpandVbAsync(document, root, shouldExpand);
@@ -43,16 +43,16 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         private static async Task<VBasic.VisualBasicSyntaxNode> ExpandVbAsync(Document document,
-            VBasic.VisualBasicSyntaxNode root, Func<SyntaxNode, bool> shouldExpand)
+            VBasic.VisualBasicSyntaxNode root, Func<SemanticModel, SyntaxNode, bool> shouldExpand)
         {
             var semanticModel = await document.GetSemanticModelAsync();
             var workspace = document.Project.Solution.Workspace;
 
             try {
-                return root.ReplaceNodes(root.DescendantNodes(n => !shouldExpand(n)).Where(shouldExpand),
+                return root.ReplaceNodes(root.DescendantNodes(n => !shouldExpand(semanticModel, n)).Where(n => shouldExpand(semanticModel, n)),
                     (node, rewrittenNode) => TryExpandNode(node, semanticModel, workspace)
                 );
-            } catch (Exception e) {
+            } catch (Exception) {
                 return root;
             }
         }
@@ -87,12 +87,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        private static bool ShouldExpandVbNode(SyntaxNode node)
+        private static bool ShouldExpandVbNode(SemanticModel semanticModel, SyntaxNode node)
         {
-            return node is VBSyntax.NameSyntax || node is VBSyntax.InvocationExpressionSyntax;
+            return node is VBSyntax.NameSyntax || node is VBSyntax.InvocationExpressionSyntax && !semanticModel.GetSymbolInfo(node).Symbol.IsReducedTypeParameterMethod();
         }
 
-        private static bool ShouldExpandCsNode(SyntaxNode node)
+        private static bool ShouldExpandCsNode(SemanticModel semanticModel, SyntaxNode node)
         {
             return false;
         }
