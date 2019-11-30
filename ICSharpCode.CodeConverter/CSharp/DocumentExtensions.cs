@@ -60,7 +60,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             VBasic.VisualBasicSyntaxNode root)
         {
             var toSimplify = root.DescendantNodes()
-                .Where(n => n.IsKind(VBasic.SyntaxKind.PredefinedCastExpression, VBasic.SyntaxKind.CTypeExpression, VBasic.SyntaxKind.DirectCastExpression));
+                .Where(n => n.IsKind(VBasic.SyntaxKind.PredefinedCastExpression, VBasic.SyntaxKind.CTypeExpression, VBasic.SyntaxKind.DirectCastExpression))
+                .Where(n => n.HasAnnotation(Simplifier.Annotation));
             root = root.ReplaceNodes(toSimplify, (orig, rewritten) =>
                 rewritten.WithAdditionalAnnotations(Simplifier.Annotation)
             );
