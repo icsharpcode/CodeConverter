@@ -362,6 +362,9 @@ namespace ICSharpCode.CodeConverter.VB
                         SyntaxFactory.Token(SyntaxKind.NothingKeyword));
                     return SyntaxFactory.IsNotExpression(tryCast, nothingExpression);
                 }
+                case CSS.ConstantPatternSyntax cps:
+                    return SyntaxFactory.IsExpression(lhs,
+                        (ExpressionSyntax)cps.Expression.Accept(TriviaConvertingVisitor));
                 default:
                     throw new ArgumentOutOfRangeException(nameof(node.Pattern), node.Pattern, null);
             }

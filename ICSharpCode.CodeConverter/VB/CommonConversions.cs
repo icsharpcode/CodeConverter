@@ -86,7 +86,7 @@ namespace ICSharpCode.CodeConverter.VB
                 .ToList();
             var isPatternExpressions = descendantNodes.OfType<IsPatternExpressionSyntax>().ToList();
             if (declarationExpressions.Any() || isPatternExpressions.Any()) {
-                convertedStatements = convertedStatements.Insert(0, ConvertToDeclarationStatement(declarationExpressions, isPatternExpressions));
+                convertedStatements = convertedStatements.InsertRange(0, ConvertToDeclarationStatement(declarationExpressions, isPatternExpressions));
             }
 
             return convertedStatements;
@@ -106,12 +106,13 @@ namespace ICSharpCode.CodeConverter.VB
             return convertedStatements;
         }
 
-        private StatementSyntax ConvertToDeclarationStatement(List<DeclarationExpressionSyntax> des,
+        private IEnumerable<StatementSyntax> ConvertToDeclarationStatement(List<DeclarationExpressionSyntax> des,
             List<IsPatternExpressionSyntax> isPatternExpressions)
         {
             IEnumerable<VariableDeclaratorSyntax> variableDeclaratorSyntaxs = des.Select(ConvertToVariableDeclarator)
-                .Concat(isPatternExpressions.Select(ConvertToVariableDeclarator));
-            return CreateLocalDeclarationStatement(variableDeclaratorSyntaxs.ToArray());
+                .Concat(isPatternExpressions.Select(ConvertToVariableDeclaratorOrNull).Where(x => x != null));
+            var variableDeclaratorSyntaxes = variableDeclaratorSyntaxs.ToArray();
+            return variableDeclaratorSyntaxes.Any() ? new StatementSyntax[]{CreateLocalDeclarationStatement(variableDeclaratorSyntaxes)} : Enumerable.Empty<StatementSyntax>();
         }
 
         private StatementSyntax ConvertToDeclarationStatement(List<PropertyDeclarationSyntax> propertyBlocks)
@@ -150,7 +151,7 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
         }
 
-        private VariableDeclaratorSyntax ConvertToVariableDeclarator(IsPatternExpressionSyntax node)
+        private VariableDeclaratorSyntax ConvertToVariableDeclaratorOrNull(IsPatternExpressionSyntax node)
         {
             switch (node.Pattern) {
                 case DeclarationPatternSyntax d: {
@@ -164,7 +165,9 @@ namespace ICSharpCode.CodeConverter.VB
                             SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
                     return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
                 }
-             default:
+                case ConstantPatternSyntax _:
+                    return null;
+                default:
                  throw new ArgumentOutOfRangeException(nameof(node.Pattern), node.Pattern, null);
             }
         }

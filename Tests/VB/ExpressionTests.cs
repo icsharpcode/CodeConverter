@@ -79,6 +79,30 @@ End Class");
         }
 
         [Fact]
+        public async Task IsNullExpression()
+        {
+            await TestConversionCSharpToVisualBasic(@"public class Test {
+
+    public bool Foo {
+        get {
+	    return (Bar is null); //Crashes conversion to VB
+        }
+    }
+
+    public string Bar;
+
+}", @"Public Class Test
+    Public ReadOnly Property Foo As Boolean
+        Get
+            Return Bar Is Nothing
+        End Get
+    End Property
+
+    Public Bar As String
+End Class");
+        }
+
+        [Fact]
         public async Task IfIsPatternExpression()
         {
             await TestConversionCSharpToVisualBasic(@"class TestClass
