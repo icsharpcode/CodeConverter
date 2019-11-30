@@ -665,7 +665,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var expressionSymbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
             var expressionReturnType = expressionSymbol?.GetReturnType() ?? _semanticModel.GetTypeInfo(node.Expression).Type;
             var operation = _semanticModel.GetOperation(node);
-            if (expressionSymbol?.ContainingNamespace.MetadataName == "VisualBasic" && await SubstituteVisualBasicMethodOrNull(node) is CSharpSyntaxNode csEquivalent) {
+            if (expressionSymbol?.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic) && await SubstituteVisualBasicMethodOrNull(node) is CSharpSyntaxNode csEquivalent) {
                 return csEquivalent;
             }
 
