@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -975,14 +976,27 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<SimpleNameSyntax> GenericNameAccountingForReducedParameters(VBSyntax.GenericNameSyntax node, ISymbol symbol)
         {
             SyntaxToken convertedIdentifier = ConvertIdentifier(node.Identifier);
-            var typeArgumentListSyntax = (TypeArgumentListSyntax)await node.TypeArgumentList.AcceptAsync(TriviaConvertingVisitor);
             if (symbol.IsReducedTypeParameterMethod()) {
-                var commentedText = "/* " + typeArgumentListSyntax.ToFullString() + " */";
-                var trailingTrivia = SyntaxFactory.Comment(commentedText);
-                return SyntaxFactory.IdentifierName(convertedIdentifier).WithTrailingTrivia(trailingTrivia);
+                if (symbol is IMethodSymbol vbMethod && CommonConversions.GetCsOriginalSymbolOrNull(symbol) is IMethodSymbol csSymbolWithInferredTypeParametersSet) {
+                    var argSubstitutions = vbMethod.TypeParameters
+                        .Zip(vbMethod.TypeArguments, (parameter, arg) => (parameter, arg))
+                        .ToDictionary(x => x.parameter.Name, x => x.arg);
+                    var allTypeArgs = csSymbolWithInferredTypeParametersSet.GetTypeArguments()
+                        .Select(a => a.Kind == SymbolKind.TypeParameter && argSubstitutions.TryGetValue(a.Name, out var t) ? t : a).ToArray();
+                    return (SimpleNameSyntax)CommonConversions.CsSyntaxGenerator.GenericName(convertedIdentifier.Text, allTypeArgs);
+                }
+                var commentedText = "/* " + (await ConvertTypeArgumentList(node)).ToFullString() + " */";
+                var error = SyntaxFactory.ParseLeadingTrivia($"#error Conversion error: Could not convert all type parameters, so they've been commented out. Inferred type may be different{Environment.NewLine}");
+                var partialConversion = SyntaxFactory.Comment(commentedText);
+                return SyntaxFactory.IdentifierName(convertedIdentifier).WithPrependedLeadingTrivia(error).WithTrailingTrivia(partialConversion);
             }
 
-            return SyntaxFactory.GenericName(convertedIdentifier, typeArgumentListSyntax);
+            return SyntaxFactory.GenericName(convertedIdentifier, await ConvertTypeArgumentList(node));
+        }
+
+        private async Task<TypeArgumentListSyntax> ConvertTypeArgumentList(VBSyntax.GenericNameSyntax node)
+        {
+            return (TypeArgumentListSyntax)await node.TypeArgumentList.AcceptAsync(TriviaConvertingVisitor);
         }
 
         public override async Task<CSharpSyntaxNode> VisitTypeArgumentList(VBasic.Syntax.TypeArgumentListSyntax node)
