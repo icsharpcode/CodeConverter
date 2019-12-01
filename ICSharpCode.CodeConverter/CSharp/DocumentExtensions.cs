@@ -42,7 +42,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : ShouldExpandCsNode;
             document = await WorkaroundBugsInExpandVbAsync(document, shouldExpand);
             document = await ExpandVbAsync(document, shouldExpand);
-            return await UndoBadVbExpansionsAsync(document);
+            return await UndoVbExpansionsHardToReverseInCSharpSemanticModel(document);
         }
 
         private static async Task<Document> WorkaroundBugsInExpandVbAsync(Document document, Func<SemanticModel, SyntaxNode, bool> shouldExpand)
@@ -122,7 +122,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return document.WithSyntaxRoot(root);
             }
         }
-        private static async Task<Document> UndoBadVbExpansionsAsync(Document document)
+        private static async Task<Document> UndoVbExpansionsHardToReverseInCSharpSemanticModel(Document document)
         {
             var root = (VBasic.VisualBasicSyntaxNode)await document.GetSyntaxRootAsync();
             var toSimplify = root.DescendantNodes()
