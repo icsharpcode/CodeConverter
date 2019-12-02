@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <RootNamespace>ConsoleApp4</RootNamespace>
+    <RootNamespace></RootNamespace>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <DefaultItemExcludes>$(DefaultItemExcludes);$(ProjectDir)**\*.vb</DefaultItemExcludes>
   </PropertyGroup>

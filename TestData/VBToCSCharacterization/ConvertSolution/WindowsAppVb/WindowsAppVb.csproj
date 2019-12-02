@@ -7,7 +7,7 @@
     <ProjectGuid>{63AE39F6-D4CF-0888-2B6F-3EF803778218}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <StartupObject>WindowsAppVb.My.MyApplication</StartupObject>
-    <RootNamespace>WindowsAppVb</RootNamespace>
+    <RootNamespace></RootNamespace>
     <AssemblyName>WindowsAppVb</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>WindowsForms</MyType>

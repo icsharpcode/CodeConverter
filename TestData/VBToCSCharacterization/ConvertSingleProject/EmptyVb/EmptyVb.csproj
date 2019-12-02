@@ -7,7 +7,7 @@
     <ProjectGuid>{913DD733-37BF-05CF-35C5-5BD4A0431C47}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <StartupObject>EmptyVb.Module1</StartupObject>
-    <RootNamespace>EmptyVb</RootNamespace>
+    <RootNamespace></RootNamespace>
     <AssemblyName>EmptyVb</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>Console</MyType>
