@@ -44,7 +44,7 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
         public SyntaxList<StatementSyntax> ConvertBody(BlockSyntax body,
-            ArrowExpressionClauseSyntax expressionBody, MethodBodyVisitor iteratorState = null)
+            ArrowExpressionClauseSyntax expressionBody, MethodBodyExecutableStatementVisitor iteratorState = null)
         {
             if (body != null) {
                 return ConvertStatements(body.Statements, iteratorState);
@@ -63,7 +63,7 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
         private SyntaxList<StatementSyntax> ConvertStatements(SyntaxList<Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax> statements,
-            MethodBodyVisitor iteratorState = null)
+            MethodBodyExecutableStatementVisitor iteratorState = null)
         {
             var methodBodyVisitor = CreateMethodBodyVisitor(iteratorState);
             return SyntaxFactory.List(statements.SelectMany(s => ConvertStatement(s, methodBodyVisitor)));
@@ -86,7 +86,7 @@ namespace ICSharpCode.CodeConverter.VB
                 .ToList();
             var isPatternExpressions = descendantNodes.OfType<IsPatternExpressionSyntax>().ToList();
             if (declarationExpressions.Any() || isPatternExpressions.Any()) {
-                convertedStatements = convertedStatements.Insert(0, ConvertToDeclarationStatement(declarationExpressions, isPatternExpressions));
+                convertedStatements = convertedStatements.InsertRange(0, ConvertToDeclarationStatement(declarationExpressions, isPatternExpressions));
             }
 
             return convertedStatements;
@@ -106,12 +106,13 @@ namespace ICSharpCode.CodeConverter.VB
             return convertedStatements;
         }
 
-        private StatementSyntax ConvertToDeclarationStatement(List<DeclarationExpressionSyntax> des,
+        private IEnumerable<StatementSyntax> ConvertToDeclarationStatement(List<DeclarationExpressionSyntax> des,
             List<IsPatternExpressionSyntax> isPatternExpressions)
         {
             IEnumerable<VariableDeclaratorSyntax> variableDeclaratorSyntaxs = des.Select(ConvertToVariableDeclarator)
-                .Concat(isPatternExpressions.Select(ConvertToVariableDeclarator));
-            return CreateLocalDeclarationStatement(variableDeclaratorSyntaxs.ToArray());
+                .Concat(isPatternExpressions.Select(ConvertToVariableDeclaratorOrNull).Where(x => x != null));
+            var variableDeclaratorSyntaxes = variableDeclaratorSyntaxs.ToArray();
+            return variableDeclaratorSyntaxes.Any() ? new StatementSyntax[]{CreateLocalDeclarationStatement(variableDeclaratorSyntaxes)} : Enumerable.Empty<StatementSyntax>();
         }
 
         private StatementSyntax ConvertToDeclarationStatement(List<PropertyDeclarationSyntax> propertyBlocks)
@@ -150,19 +151,25 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
         }
 
-        private VariableDeclaratorSyntax ConvertToVariableDeclarator(IsPatternExpressionSyntax node)
+        private VariableDeclaratorSyntax ConvertToVariableDeclaratorOrNull(IsPatternExpressionSyntax node)
         {
-            return node.Pattern.TypeSwitch(
-                (DeclarationPatternSyntax d) => {
+            switch (node.Pattern) {
+                case DeclarationPatternSyntax d: {
                     var id = ((IdentifierNameSyntax)d.Designation.Accept(_nodesVisitor)).Identifier;
                     var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
                     TypeSyntax right = (TypeSyntax)d.Type.Accept(_nodesVisitor);
 
                     var simpleAsClauseSyntax = SyntaxFactory.SimpleAsClause(right);
-                    var equalsValueSyntax = SyntaxFactory.EqualsValue(SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression, SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
+                    var equalsValueSyntax = SyntaxFactory.EqualsValue(
+                        SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression,
+                            SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
                     return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
-                },
-                p => throw new ArgumentOutOfRangeException(nameof(p), p, null));
+                }
+                case ConstantPatternSyntax _:
+                    return null;
+                default:
+                 throw new ArgumentOutOfRangeException(nameof(node.Pattern), node.Pattern, null);
+            }
         }
 
         private VariableDeclaratorSyntax ConvertToVariableDeclarator(PropertyDeclarationSyntax des)
@@ -182,9 +189,9 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
         }
 
-        private CSharpSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(MethodBodyVisitor methodBodyVisitor = null)
+        private CSharpSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(MethodBodyExecutableStatementVisitor methodBodyExecutableStatementVisitor = null)
         {
-            var visitor = methodBodyVisitor ?? new MethodBodyVisitor(_semanticModel, _nodesVisitor, _triviaConverter, this);
+            var visitor = methodBodyExecutableStatementVisitor ?? new MethodBodyExecutableStatementVisitor(_semanticModel, _nodesVisitor, _triviaConverter, this);
             return visitor.CommentConvertingVisitor;
         }
 
@@ -195,7 +202,7 @@ namespace ICSharpCode.CodeConverter.VB
             EndBlockStatementSyntax endStmt;
             SyntaxList<StatementSyntax> body;
             isIterator = false;
-            var isIteratorState = new MethodBodyVisitor(_semanticModel, _nodesVisitor, _triviaConverter, this);
+            var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, _nodesVisitor, _triviaConverter, this);
             body = ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
             isIterator = isIteratorState.IsIterator;
             var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(_nodesVisitor)));

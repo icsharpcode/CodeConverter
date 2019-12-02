@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
@@ -758,6 +759,30 @@ public partial class ParameterizedPropertiesAndEnumTest
         }
 
         [Fact]
+        public async Task PropertyWithMissingTypeDeclaration()//TODO Check object is the inferred type
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(
+@"Class MissingPropertyType
+                ReadOnly Property Max
+                    Get
+                        Dim mx As Double = 0
+                        Return mx
+                    End Get
+                End Property
+End Class", @"internal partial class MissingPropertyType
+{
+    public object Max
+    {
+        get
+        {
+            double mx = 0;
+            return mx;
+        }
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestReadWriteOnlyInterfaceProperty()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(
@@ -834,6 +859,30 @@ End Class", @"using System;
 internal partial class TestClass
 {
     public event EventHandler MyEvent;
+}");
+        }
+
+        [Fact]
+        public async Task TestEventWithNoDeclaredTypeOrHandlers()
+        {
+            //Can't auto-test comments when extra lines (delegate) get added
+            await TestConversionVisualBasicToCSharpWithoutComments(
+@"Public Class TestEventWithNoType
+    Public Event OnCakeChange
+
+    Public Sub RaisingFlour()
+        RaiseEvent OnCakeChange
+    End Sub
+End Class", @"public partial class TestEventWithNoType
+{
+    public event OnCakeChangeEventHandler OnCakeChange;
+
+    public delegate void OnCakeChangeEventHandler();
+
+    public void RaisingFlour()
+    {
+        OnCakeChange?.Invoke();
+    }
 }");
         }
 
@@ -1833,6 +1882,54 @@ End Class", @"internal partial class TestClass
         }
 
         [Fact]
+        public async Task TestGenericMethodGroupGainsBrackets()
+        {
+            //BUG: Comment after New With is lost
+            await TestConversionVisualBasicToCSharpWithoutComments(
+@"Public Enum TheType
+    Tree
+End Enum
+
+Public Class MoreParsing
+    Sub DoGet()
+        Dim anon = New With {
+            .TheType = GetEnumValues(Of TheType)
+        }
+    End Sub
+
+    Private Function GetEnumValues(Of TEnum)() As IDictionary(Of Integer, String)
+        Return System.Enum.GetValues(GetType(TEnum)).Cast(Of TEnum).
+            ToDictionary(Function(enumValue) DirectCast(DirectCast(enumValue, Object), Integer),
+                         Function(enumValue) enumValue.ToString())
+    End Function
+End Class",
+@"using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public enum TheType
+{
+    Tree
+}
+
+public partial class MoreParsing
+{
+    public void DoGet()
+    {
+        var anon = new
+        {
+            TheType = MoreParsing.GetEnumValues<TheType>()
+        };
+    }
+
+    private IDictionary<int, string> GetEnumValues<TEnum>()
+    {
+        return Enum.GetValues(typeof(TEnum)).Cast<TEnum>().ToDictionary(enumValue => (int)(object)enumValue, enumValue => enumValue.ToString());
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestWriteOnlyProperties()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(
@@ -1894,6 +1991,63 @@ End Class", @"internal partial class TestClass
         }
     }
 }");
+        }
+
+        [Fact]
+        public async Task TestAsyncMethods()
+        {
+            //Bug: Whitespace wrapping is wrong when comments present
+            await TestConversionVisualBasicToCSharpWithoutComments(
+@"    Class AsyncCode
+        Public Sub NotAsync()
+            Dim a1 = Async Function() 3
+            Dim a2 = Async Function()
+                         Return Await Task (Of Integer).FromResult(3)
+                     End Function
+            Dim a3 = Async Sub() Await Task.CompletedTask
+            Dim a4 = Async Sub()
+                        Await Task.CompletedTask
+                    End Sub
+        End Sub
+
+        Public Async Function AsyncFunc() As Task(Of Integer)
+            Return Await Task (Of Integer).FromResult(3)
+        End Function
+        Public Async Sub AsyncSub()
+            Await Task.CompletedTask
+        End Sub
+    End Class", @"using System.Threading.Tasks;
+
+internal partial class AsyncCode
+{
+    public void NotAsync()
+    {
+        async Task<int> a1() => 3;
+        async Task<int> a2() => await Task.FromResult(3);
+        async void a3() => await Task.CompletedTask;
+        async void a4() => await Task.CompletedTask;
+    }
+
+    public async Task<int> AsyncFunc()
+    {
+        return await Task.FromResult(3);
+    }
+    public async void AsyncSub()
+    {
+        await Task.CompletedTask;
+    }
+}
+");
+        }
+
+        [Fact]
+        public async Task TestExternDllImport()
+        {
+            await TestConversionVisualBasicToCSharp(
+                @"<DllImport(""kernel32.dll"", SetLastError:=True)>
+Private Shared Function OpenProcess(ByVal dwDesiredAccess As AccessMask, ByVal bInheritHandle As Boolean, ByVal dwProcessId As UInteger) As IntPtr
+End Function", @"[DllImport(""kernel32.dll"", SetLastError = true)]
+private static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);");
         }
     }
 }

@@ -41,6 +41,9 @@ using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions
 
 namespace ICSharpCode.CodeConverter.VB
 {
+    /// <summary>
+    /// TODO: Split into DeclarationNodeVisitor and ExpressionNodeVisitor to match VB -> C# architecture
+    /// </summary>
     internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     {
         private readonly Document _document;
@@ -92,7 +95,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private Func<SyntaxNode, SyntaxNode> DelegateConversion(Func<SyntaxNode, SyntaxList<StatementSyntax>> convert)
         {
-            return node => MethodBodyVisitor.CreateBlock(convert(node));
+            return node => MethodBodyExecutableStatementVisitor.CreateBlock(convert(node));
         }
 
         public override VisualBasicSyntaxNode VisitCompilationUnit(CSS.CompilationUnitSyntax node)
@@ -347,18 +350,25 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitIsPatternExpression(CSS.IsPatternExpressionSyntax node)
         {
-            return node.Pattern.TypeSwitch(
-                (CSS.DeclarationPatternSyntax d) => {
-                    var left = (ExpressionSyntax) d.Designation.Accept(TriviaConvertingVisitor);
+            ExpressionSyntax lhs = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
+            switch (node.Pattern) {
+                case CSS.DeclarationPatternSyntax d: {
+                    var left = (ExpressionSyntax)d.Designation.Accept(TriviaConvertingVisitor);
                     ExpressionSyntax right = SyntaxFactory.TryCastExpression(
-                        (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
+                        lhs,
                         (TypeSyntax)d.Type.Accept(TriviaConvertingVisitor));
 
                     var tryCast = CreateInlineAssignmentExpression(left, right);
-                    var nothingExpression = SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression, SyntaxFactory.Token(SyntaxKind.NothingKeyword));
+                    var nothingExpression = SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression,
+                        SyntaxFactory.Token(SyntaxKind.NothingKeyword));
                     return SyntaxFactory.IsNotExpression(tryCast, nothingExpression);
-                },
-                p => throw new ArgumentOutOfRangeException(nameof(p), p, null));
+                }
+                case CSS.ConstantPatternSyntax cps:
+                    return SyntaxFactory.IsExpression(lhs,
+                        (ExpressionSyntax)cps.Expression.Accept(TriviaConvertingVisitor));
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(node.Pattern), node.Pattern, null);
+            }
         }
 
         public override VisualBasicSyntaxNode VisitDeclarationExpression(CSS.DeclarationExpressionSyntax node)
@@ -414,7 +424,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitMethodDeclaration(CSS.MethodDeclarationSyntax node)
         {
-            var isIteratorState = new MethodBodyVisitor(_semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter, _commonConversions);
+            var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter, _commonConversions);
             bool requiresBody = node.Body != null || node.ExpressionBody != null || node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword));
             var block = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
             var id = _commonConversions.ConvertIdentifier(node.Identifier);

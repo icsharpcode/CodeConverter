@@ -165,7 +165,27 @@ namespace ICSharpCode.CodeConverter.CSharp
         public TypeSyntax GetTypeSyntax(ITypeSymbol typeSymbol, bool useImplicitType = false)
         {
             if (useImplicitType || typeSymbol == null) return CreateVarTypeName();
-            return (TypeSyntax) CsSyntaxGenerator.TypeExpression(typeSymbol);
+            var syntax = (TypeSyntax)CsSyntaxGenerator.TypeExpression(typeSymbol);
+
+            return WithDeclarationCasing(syntax, typeSymbol);
+        }
+
+        /// <summary>
+        /// Semantic model merges the symbols, but the compiled form retains multiple namespaces, which (when referenced from C#) need to keep the correct casing.
+        /// <seealso cref="DeclarationNodeVisitor.WithDeclarationCasing(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
+        /// <seealso cref="CommonConversions.WithDeclarationCasing(SyntaxToken, ISymbol, string)"/>
+        /// </summary>
+        private static TypeSyntax WithDeclarationCasing(TypeSyntax syntax, ITypeSymbol typeSymbol)
+        {
+            var vbType = SyntaxFactory.ParseTypeName(typeSymbol.ToDisplayString());
+            var originalNames = vbType.DescendantNodes().OfType<CSSyntax.IdentifierNameSyntax>()
+                .Select(i => i.ToString()).ToList();
+
+            return syntax.ReplaceNodes(syntax.DescendantNodes().OfType<CSSyntax.IdentifierNameSyntax>(), (oldNode, n) =>
+            {
+                var originalName = originalNames.FirstOrDefault(on => string.Equals(@on, oldNode.ToString(), StringComparison.OrdinalIgnoreCase));
+                return originalName != null ? SyntaxFactory.IdentifierName(originalName) : oldNode;
+            });
         }
 
         private static TypeSyntax CreateVarTypeName()
@@ -214,25 +234,23 @@ namespace ICSharpCode.CodeConverter.CSharp
             string text = id.ValueText;
 
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
-                var symbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol;
-                if (symbol != null && !String.IsNullOrWhiteSpace(symbol.Name)) {
-                    if (text.Equals(symbol.Name, StringComparison.OrdinalIgnoreCase)) {
-                        text = symbol.Name;
-                    }
+                var idSymbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol ?? _semanticModel.GetDeclaredSymbol(id.Parent);
+                if (idSymbol != null && !String.IsNullOrWhiteSpace(idSymbol.Name)) {
+                    text = WithDeclarationCasing(id, idSymbol, text);
 
-                    if (symbol.IsConstructor() && isAttribute) {
-                        text = symbol.ContainingType.Name;
+                    if (idSymbol.IsConstructor() && isAttribute) {
+                        text = idSymbol.ContainingType.Name;
                         if (text.EndsWith("Attribute", StringComparison.OrdinalIgnoreCase))
                             text = text.Remove(text.Length - "Attribute".Length);
-                    } else if (symbol.IsKind(SymbolKind.Parameter) && symbol.ContainingSymbol.IsAccessorPropertySet() && ((symbol.IsImplicitlyDeclared && symbol.Name == "Value") || symbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared) == symbol)) {
+                    } else if (idSymbol.IsKind(SymbolKind.Parameter) && idSymbol.ContainingSymbol.IsAccessorPropertySet() && ((idSymbol.IsImplicitlyDeclared && idSymbol.Name == "Value") || idSymbol.Equals(idSymbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared)))) {
                         // The case above is basically that if the symbol is a parameter, and the corresponding definition is a property set definition
                         // AND the first explicitly declared parameter is this symbol, we need to replace it with value.
                         text = "value";
-                    } else if (text.StartsWith("_", StringComparison.OrdinalIgnoreCase) && symbol is IFieldSymbol propertyFieldSymbol && propertyFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
+                    } else if (text.StartsWith("_", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol propertyFieldSymbol && propertyFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
                         text = propertyFieldSymbol.AssociatedSymbol.Name;
-                    } else if (text.EndsWith("Event", StringComparison.OrdinalIgnoreCase) && symbol is IFieldSymbol eventFieldSymbol && eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
+                    } else if (text.EndsWith("Event", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol eventFieldSymbol && eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
                         text = eventFieldSymbol.AssociatedSymbol.Name;
-                    } else if (MustInlinePropertyWithEventsAccess(id.Parent, symbol)) {
+                    } else if (MustInlinePropertyWithEventsAccess(id.Parent, idSymbol)) {
                         // For C# Winforms designer, we need to use direct field access (and inline any event handlers)
                         text = "_" + text;
                     }
@@ -240,6 +258,26 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return CsEscapedIdentifier(text);
+        }
+
+        /// <summary>
+        /// Semantic model merges the symbols, but the compiled form retains multiple namespaces, which (when referenced from C#) need to keep the correct casing.
+        /// <seealso cref="DeclarationNodeVisitor.WithDeclarationCasing(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
+        /// <seealso cref="CommonConversions.WithDeclarationCasing(TypeSyntax, ITypeSymbol)"/>
+        /// </summary>
+        private static string WithDeclarationCasing(SyntaxToken id, ISymbol idSymbol, string text)
+        {
+            //TODO: Consider what happens when the names aren't equal for overridden members (I think in VB you can have X implements Y)
+            var baseSymbol = idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property) ? idSymbol.FollowProperty(s => s.OverriddenMember()).Last() : idSymbol;
+            bool isDeclaration = baseSymbol.Locations.Any(l => l.SourceSpan == id.Span);
+            bool isPartial = baseSymbol.IsPartialClassDefinition() || baseSymbol.IsPartialMethodDefinition() ||
+                             baseSymbol.IsPartialMethodImplementation();
+            if (isPartial || (!isDeclaration && text.Equals(baseSymbol.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                text = baseSymbol.Name;
+            }
+
+            return text;
         }
 
         public static bool MustInlinePropertyWithEventsAccess(SyntaxNode anyNodePossiblyWithinMethod, ISymbol potentialPropertySymbol)
@@ -266,13 +304,23 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var contextsWithIdenticalDefaults = new[] { TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface };
             bool isPartial = declaredSymbol.IsPartialClassDefinition() || declaredSymbol.IsPartialMethodDefinition() || declaredSymbol.IsPartialMethodImplementation();
-            bool implicitVisibility = contextsWithIdenticalDefaults.Contains(context) || isVariableOrConst || declaredSymbol.IsStaticConstructor();
+            bool implicitVisibility = ContextHasIdenticalDefaults(context, contextsWithIdenticalDefaults, declaredSymbol)
+                                      || isVariableOrConst || declaredSymbol.IsStaticConstructor();
             if (implicitVisibility && !isPartial) declaredAccessibility = Accessibility.NotApplicable;
             var modifierSyntaxs = ConvertModifiersCore(declaredAccessibility, modifiers, context)
                 .Concat(extraCsModifierKinds.Select(SyntaxFactory.Token))
                 .Where(t => CSharpExtensions.Kind(t) != CSSyntaxKind.None)
                 .OrderBy(m => SyntaxTokenExtensions.IsKind(m, CSSyntaxKind.PartialKeyword));
             return SyntaxFactory.TokenList(modifierSyntaxs);
+        }
+
+        private static bool ContextHasIdenticalDefaults(TokenContext context, TokenContext[] contextsWithIdenticalDefaults, ISymbol declaredSymbol)
+        {
+            if (!contextsWithIdenticalDefaults.Contains(context)) {
+                return false;
+            }
+
+            return declaredSymbol == null || !declaredSymbol.IsType() || declaredSymbol.ContainingType == null;
         }
 
         private SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)

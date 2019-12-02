@@ -33,11 +33,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             BlockSyntax block = null;
             ExpressionSyntax expressionBody = null;
             ArrowExpressionClauseSyntax arrow = null;
-            if (!convertedStatements.TryUnpackSingleStatement(out StatementSyntax singleStatement) ||
-                !singleStatement.TryUnpackSingleExpressionFromStatement(out expressionBody)) {
-                block = SyntaxFactory.Block(convertedStatements);
-            } else {
+            if (convertedStatements.TryUnpackSingleStatement(out StatementSyntax singleStatement) &&
+                singleStatement.TryUnpackSingleExpressionFromStatement(out expressionBody)) {
                 arrow = SyntaxFactory.ArrowExpressionClause(expressionBody);
+            } else {
+                block = SyntaxFactory.Block(convertedStatements);
             }
 
             var functionStatement = await ConvertToFunctionDeclarationOrNull(vbNode, param, block, arrow);
@@ -46,11 +46,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             var body = (CSharpSyntaxNode)block ?? expressionBody;
+
+            LambdaExpressionSyntax lambda;
             if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null) {
-                return SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
+                lambda = SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
+            } else {
+                lambda = SyntaxFactory.ParenthesizedLambdaExpression(param, body);
             }
 
-            return SyntaxFactory.ParenthesizedLambdaExpression(param, body);
+            return lambda;
         }
 
         private async Task<CSharpSyntaxNode> ConvertToFunctionDeclarationOrNull(VBSyntax.LambdaExpressionSyntax vbNode,
@@ -95,14 +99,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             IFieldSymbol fieldSymbol,
             BlockSyntax block, ArrowExpressionClauseSyntax arrow)
         {
-            MethodDeclarationSyntax methodDeclaration =
-                (MethodDeclarationSyntax)CommonConversions.CsSyntaxGenerator.MethodDeclaration(operation.Symbol);
-            MethodDeclarationSyntax methodDecl = methodDeclaration
+            MethodDeclarationSyntax methodDecl =
+                ((MethodDeclarationSyntax)CommonConversions.CsSyntaxGenerator.MethodDeclaration(operation.Symbol))
                 .WithIdentifier(SyntaxFactory.Identifier(fieldSymbol.Name))
                 .WithBody(block).WithExpressionBody(arrow);
-            return arrow == null
-                ? methodDecl
-                : methodDecl.WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken));
+
+            if (operation.Symbol.IsAsync) methodDecl = methodDecl.AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword));
+
+            if (arrow != null) methodDecl = methodDecl.WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken));
+
+            return methodDecl;
         }
 
         private LocalFunctionStatementSyntax CreateLocalFunction(IAnonymousFunctionOperation operation,
@@ -111,13 +117,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             ArrowExpressionClauseSyntax arrow)
         {
             string symbolName = variableDeclaratorOperation.Symbol.Name;
-            LocalFunctionStatementSyntax localFunctionStatementSyntax = SyntaxFactory.LocalFunctionStatement(
+            LocalFunctionStatementSyntax localFunc = SyntaxFactory.LocalFunctionStatement(
                 SyntaxFactory.TokenList(),
                 CommonConversions.GetTypeSyntax(operation.Symbol.ReturnType),
                 SyntaxFactory.Identifier(symbolName), null, param,
                 SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), block, arrow,
                 SyntaxFactory.Token(SyntaxKind.SemicolonToken));
-            return localFunctionStatementSyntax;
+
+
+            if (operation.Symbol.IsAsync) localFunc = localFunc.AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword));
+
+            return localFunc;
         }
     }
 }

@@ -299,7 +299,7 @@ End Class", @"internal partial class TestClass
     private void TestMethod()
     {
         string b;
-        b = new string(""test"");
+        b = new string(""test"".ToCharArray());
     }
 }");
         }
@@ -331,7 +331,7 @@ End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
-        string b = new string(""test"");
+        string b = new string(""test"".ToCharArray());
     }
 }");
         }
@@ -347,7 +347,7 @@ End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
-        string b = new string(""test"");
+        string b = new string(""test"".ToCharArray());
     }
 }");
         }
@@ -544,6 +544,59 @@ internal partial class TestClass
     private void TestMethod()
     {
         Debugger.Break();
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ExitStatements()
+        {
+            // Can't autotest comments due to changing number of lines in lambdas
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+    Private Function FuncReturningNull() As Object
+        Dim zeroLambda = Function(y) As Integer
+                            Exit Function
+                         End Function
+        Exit Function
+    End Function
+
+    Private Function FuncReturningZero() As Integer
+        Dim nullLambda = Function(y) As Object
+                            Exit Function
+                         End Function
+        Exit Function
+    End Function
+
+    Private Function FuncReturningAssignedValue() As Integer
+        Dim aSub = Sub(y)
+                            Exit Sub
+                         End Sub
+        FuncReturningAssignedValue = 3
+        Exit Function
+    End Function
+End Class", @"internal partial class TestClass
+{
+    private object FuncReturningNull()
+    {
+        int zeroLambda(object y) => default(int);
+        return null;
+    }
+
+    private int FuncReturningZero()
+    {
+        object nullLambda(object y) => null;
+        return default(int);
+    }
+
+    private int FuncReturningAssignedValue()
+    {
+        int FuncReturningAssignedValueRet = default(int);
+        void aSub(object y)
+        {
+            return;
+        };
+        FuncReturningAssignedValueRet = 3;
+        return FuncReturningAssignedValueRet;
     }
 }");
         }
@@ -1958,9 +2011,11 @@ internal partial class TestClass
             await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
     Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
         If number < 0 Then Return
+        If number < 1 Then Exit Function
         For i As Integer = 0 To number - 1
             Yield i
         Next
+        Return
     End Function
 End Class", @"using System.Collections.Generic;
 
@@ -1970,8 +2025,11 @@ internal partial class TestClass
     {
         if (number < 0)
             yield break;
+        if (number < 1)
+            yield break;
         for (int i = 0, loopTo = number - 1; i <= loopTo; i++)
             yield return i;
+        yield break;
     }
 }");
         }

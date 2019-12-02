@@ -31,6 +31,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly HashSet<string> _extraUsingDirectives;
         private readonly MethodsWithHandles _methodsWithHandles;
         private readonly HashSet<string> _generatedNames = new HashSet<string>();
+        private INamedTypeSymbol _vbBooleanTypeSymbol;
 
         public bool IsIterator { get; set; }
         public IdentifierNameSyntax ReturnVariable { get; set; }
@@ -54,6 +55,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _methodsWithHandles = methodsWithHandles;
             var byRefParameterVisitor = new ByRefParameterVisitor(this, additionalLocals, semanticModel, _generatedNames);
             CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor, triviaConverter);
+            _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
         }
 
         public override async Task<SyntaxList<StatementSyntax>> DefaultVisit(SyntaxNode node)
@@ -350,17 +352,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBasic.SyntaxKind.FunctionKeyword:
                     VBasic.VisualBasicSyntaxNode typeContainer = (VBasic.VisualBasicSyntaxNode)node.Ancestors().OfType<VBSyntax.LambdaExpressionSyntax>().FirstOrDefault()
                                                                  ?? node.Ancestors().OfType<VBSyntax.MethodBlockSyntax>().FirstOrDefault();
-                    var info = await typeContainer.TypeSwitch(
-                        async (VBSyntax.LambdaExpressionSyntax e) => _semanticModel.GetTypeInfo(e).Type.GetReturnType(), async (VBSyntax.MethodBlockSyntax e) => {
-                            var type = (TypeSyntax) await (e.SubOrFunctionStatement.AsClause?.Type).AcceptAsync(_expressionVisitor) ?? SyntaxFactory.ParseTypeName("object");
-                            return _semanticModel.GetSymbolInfo(type).Symbol?.GetReturnType();
-                        }
-                    );
+                    var enclosingMethodInfo = await typeContainer.TypeSwitch(
+                        async (VBSyntax.LambdaExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).Symbol,
+                        async (VBSyntax.MethodBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e));
+                    var info = enclosingMethodInfo?.GetReturnType();
                     ExpressionSyntax expr;
                     if (HasReturnVariable)
                         expr = ReturnVariable;
                     else if (info == null)
                         expr = null;
+                    else if (IsIterator)
+                        return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
                     else if (info.IsReferenceType)
                         expr = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
                     else if (info.CanBeReferencedByName)
@@ -375,7 +377,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<SyntaxList<StatementSyntax>> VisitRaiseEventStatement(VBSyntax.RaiseEventStatementSyntax node)
         {
-            var argumentListSyntax = (ArgumentListSyntax) await node.ArgumentList.AcceptAsync(_expressionVisitor);
+            var argumentListSyntax = (ArgumentListSyntax) await node.ArgumentList.AcceptAsync(_expressionVisitor) ?? SyntaxFactory.ArgumentList();
 
             var symbolInfo = _semanticModel.GetSymbolInfo(node.Name).ExtractBestMatch() as IEventSymbol;
             if (symbolInfo?.RaiseMethod != null) {
@@ -397,6 +399,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<SyntaxList<StatementSyntax>> VisitSingleLineIfStatement(VBSyntax.SingleLineIfStatementSyntax node)
         {
             var condition = (ExpressionSyntax) await node.Condition.AcceptAsync(_expressionVisitor);
+            condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Condition, condition, forceTargetType: _vbBooleanTypeSymbol);
             var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
             ElseClauseSyntax elseClause = null;
 
@@ -410,6 +413,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<SyntaxList<StatementSyntax>> VisitMultiLineIfBlock(VBSyntax.MultiLineIfBlockSyntax node)
         {
             var condition = (ExpressionSyntax) await node.IfStatement.Condition.AcceptAsync(_expressionVisitor);
+            condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.IfStatement.Condition, condition, forceTargetType: _vbBooleanTypeSymbol);
             var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
             ElseClauseSyntax elseClause = null;
 
@@ -420,7 +424,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             foreach (var elseIf in node.ElseIfBlocks.Reverse()) {
                 var elseBlock = SyntaxFactory.Block(await ConvertStatements(elseIf.Statements));
-                var ifStmt = SyntaxFactory.IfStatement((ExpressionSyntax) await elseIf.ElseIfStatement.Condition.AcceptAsync(_expressionVisitor), elseBlock.UnpackNonNestedBlock(), elseClause);
+                var elseIfCondition = (ExpressionSyntax) await elseIf.ElseIfStatement.Condition.AcceptAsync(_expressionVisitor);
+                elseIfCondition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(elseIf.ElseIfStatement.Condition, elseIfCondition, forceTargetType: _vbBooleanTypeSymbol);
+                var ifStmt = SyntaxFactory.IfStatement(elseIfCondition, elseBlock.UnpackNonNestedBlock(), elseClause);
                 elseClause = SyntaxFactory.ElseClause(ifStmt);
             }
 
@@ -786,10 +792,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                            TryUnpackSingleExpressionFromStatement(nestedStmt, out singleExpression);
                 case ExpressionStatementSyntax expressionStatementSyntax:
                     singleExpression = expressionStatementSyntax.Expression;
-                    return true;
+                    return singleExpression != null;
                 case ReturnStatementSyntax returnStatementSyntax:
                     singleExpression = returnStatementSyntax.Expression;
-                    return true;
+                    return singleExpression != null;
                 default:
                     singleExpression = null;
                     return false;

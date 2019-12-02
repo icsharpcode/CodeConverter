@@ -18,6 +18,15 @@ expectSurroundingBlock: true);
         }
 
         [Fact]
+        public async Task Call()
+        {
+            await TestConversionVisualBasicToCSharp(
+@"Call mySuperFunction",
+@"mySuperFunction();",
+expectSurroundingBlock: true, missingSemanticInfo: true);
+        }
+
+        [Fact]
         public async Task ObjectMemberInitializerSyntax()
         {
             await TestConversionVisualBasicToCSharp(

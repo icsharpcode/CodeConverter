@@ -1,49 +1,77 @@
-# Change Log
-All notable changes to the code converter will be documented here.
+# Changelog
+All notable changes to the code converter will be documented in this file.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
-# 7.3.0 TBC
+## [Unreleased]
+
+### Vsix
+
+### VB -> C#
+* Add modifier for nested types
+* Remove body for converted extern methods
+* Convert Call with missing argument list and semantic information
+
+### C# -> VB
+* Convert "is" expression ([#427](https://github.com/icsharpcode/CodeConverter/pull/427))
+
+## [7.3.0] - 2019-11-25
+
+* Fixes for nullrefs
 
 ### Vsix
 * Load extension only when menu item clicked (multi-project conversion menu not present until project loaded)
 
 ### VB -> C#
-* Convert implicit object->string cast correctly (#365)
-* Convert trivia (e.g. comments) at start of file (#333)
-* Improvements to redim conversion (#403, #393)
-* Convert array of arrays initializer (#364)
-* Improvements to implicit enum -> int conversion (#361)
-* Convert expressions in constants (#329)
-* Convert implicit `ElementAtOrDefault` (#362)
-* Convert types in ternary expressions (#363)
-* Support for converting dot net standard VB projects (#398)
-* Avoid compilation error for duplicate cases (#374)
-* Correctly handle type promoted module symbols (#375)
-* Prefer renamed imports for name resolution (#401)
-* Correctly convert ambiguous names (#332)
-* Ensure correct visibility for constructors (#422)
+* Convert implicit object->string cast correctly ([#365](https://github.com/icsharpcode/CodeConverter/pull/365))
+* Convert trivia (e.g. comments) at start of file ([#333](https://github.com/icsharpcode/CodeConverter/pull/333))
+* Improvements to redim conversion ([#403](https://github.com/icsharpcode/CodeConverter/pull/403), [#393](https://github.com/icsharpcode/CodeConverter/pull/393))
+* Convert array of arrays initializer ([#364](https://github.com/icsharpcode/CodeConverter/pull/364))
+* Improvements to implicit enum -> int conversion ([#361](https://github.com/icsharpcode/CodeConverter/pull/361))
+* Convert expressions in constants ([#329](https://github.com/icsharpcode/CodeConverter/pull/329))
+* Convert implicit `ElementAtOrDefault` ([#362](https://github.com/icsharpcode/CodeConverter/pull/362))
+* Convert types in ternary expressions ([#363](https://github.com/icsharpcode/CodeConverter/pull/363))
+* Support for converting dot net standard VB projects ([#398](https://github.com/icsharpcode/CodeConverter/pull/398))
+* Avoid compilation error for duplicate cases ([#374](https://github.com/icsharpcode/CodeConverter/pull/374))
+* Correctly handle type promoted module symbols ([#375](https://github.com/icsharpcode/CodeConverter/pull/375))
+* Prefer renamed imports for name resolution ([#401](https://github.com/icsharpcode/CodeConverter/pull/401))
+* Correctly convert ambiguous names ([#332](https://github.com/icsharpcode/CodeConverter/pull/332))
+* Ensure correct visibility for constructors ([#422](https://github.com/icsharpcode/CodeConverter/pull/422))
+* Ensure casing is correct for namespaces ([#421](https://github.com/icsharpcode/CodeConverter/pull/421))
+* Convert CType from a non numeric type to an enum
+* Convert Exit Function
+* Convert object initializers requiring type casts
+* Convert async keyword on lambdas
+* Convert nullable if statement conditions
 
 ### C# -> VB
+* Convert property accessors with visiblity modifiers ([#92](https://github.com/icsharpcode/CodeConverter/pull/92))
+* For loop with decrement (i--) results in missing 'Step -1' ([#411](https://github.com/icsharpcode/CodeConverter/pull/411))
+* Improve escaping for variables of predefined types
+* Add Implements keyword for explicitly implemented members
+* Property/indexer conversion improvements
+* Convert private default members
 * Convert property accessors with visiblity modifiers (#92)
 * For loop with decrement (i--) results in missing 'Step -1' (#411)
+* Improve custom event conversion ([#442](https://github.com/icsharpcode/CodeConverter/pull/442))
 
-# 7.2.0 13/10/2019
+## [7.2.0] - 2019-10-13
 * Parallelize multi-file conversion
-* Make snippet conversion (ConvertText method) make classes partial by default since context isn't known (#379)
+* Make snippet conversion (ConvertText method) make classes partial by default since context isn't known ([#379](https://github.com/icsharpcode/CodeConverter/pull/379))
 * Web converter requires .NET Core 3.0
-* Visual Studio built-in simplification applied post-conversion (#386)
+* Visual Studio built-in simplification applied post-conversion ([#386](https://github.com/icsharpcode/CodeConverter/pull/386))
 
 ### Vsix
 * Improve UI responsiveness and output window details while converting
 
 ### VB -> C#
-* Implicitly typed local multi-variable declarations type converted correctly (#373)
-* "My" namespace - first attempt at conversion (#169)
+* Implicitly typed local multi-variable declarations type converted correctly ([#373](https://github.com/icsharpcode/CodeConverter/pull/373))
+* "My" namespace - first attempt at conversion ([#169](https://github.com/icsharpcode/CodeConverter/pull/169))
 
 ### C# -> VB
-* Converts extern functions correctly (#352)
-* Converts invoke on non-events correctly (#377)
+* Converts extern functions correctly ([#352](https://github.com/icsharpcode/CodeConverter/pull/352))
+* Converts invoke on non-events correctly ([#377](https://github.com/icsharpcode/CodeConverter/pull/377))
 
-# 7.1.0 12/09/2019
+## [7.1.0] - 2019-09-12
 
 No longer restricts converted files to solution directory
 
@@ -78,7 +106,7 @@ Deprecated overload of `ProjectConversion.ConvertSingle` in favour of one requir
 Please instead use `ConvertSingle(Document document, TextSpan selected, ILanguageConversion languageConversion)`
 See the implementation of the deprecated method for help in migrating.
 
-# 7.0.0 01/08/2019
+## [7.0.0] - 2019-08-01
 * Compatible with Visual Studio ~15.5+
 
 ### VB -> C#
@@ -90,7 +118,7 @@ See the implementation of the deprecated method for help in migrating.
 ### C# -> VB
 * Convert more binary operators
 
-# 6.9.0 09/06/2019
+## [6.9.0] - 2019-06-09
 
 ### VB -> C#
 * String comparison conversion now often avoids referencing VB library in output (when TextCompare is set to Binary)
@@ -104,7 +132,7 @@ See the implementation of the deprecated method for help in migrating.
 * Enable OptionInfer on converted projects
 * Convert global namespace correctly
 
-# 6.8.0 13/05/2019
+## [6.8.0] - 2019-05-13
 
 ### VB -> C#
 * Assignment return now converted
@@ -120,7 +148,7 @@ See the implementation of the deprecated method for help in migrating.
 * Select Case with non-constant strings now converted correctly
 * Interface readonly properties now converted correctly
 
-# 6.7.0 09/04/2019
+## [6.7.0] - 2019-04-09
 
 * Downgrade Roslyn requirement in attempt to work with VS2017 15.3+
 
@@ -129,7 +157,7 @@ See the implementation of the deprecated method for help in migrating.
 * Do not convert MyBase.Finalize, it's implicit
 * Standardize case of identifiers
 
-# 6.6.0 29/03/2019
+## [6.6.0] - 2019-03-29
 
 * Ask people to upgrade VS if missing languageservices
 
@@ -139,8 +167,8 @@ See the implementation of the deprecated method for help in migrating.
 ### VB -> C#
 * Improve conversion of interpolated strings (format, alignment, escaping)
 
-# 6.5.0 03/03/2019
-* Avoid fatal error converting a project in a solution containing a website project (#243)
+## [6.5.0] - 2019-03-03
+* Avoid fatal error converting a project in a solution containing a website project ([#243](https://github.com/icsharpcode/CodeConverter/pull/243))
 * Improve best-effort conversion in the presence of errors
 * Improved nuget package and web converter's snippet detection
 * Exclude conversion-source-language files from converted project
@@ -150,14 +178,14 @@ See the implementation of the deprecated method for help in migrating.
 ### C# -> VB
 * Fix for interpolated strings and switch statements in VS2019 Preview
 
-# 6.4.0 07/02/2019
+## [6.4.0] - 2019-02-07
 Fix initialization bug in VS2017
 
 ### C# -> VB
 * Tuples now converted
 * All known operator overloads now converted
 
-# 6.3.0 05/02/2019
+## [6.3.0] - 2019-02-05
 * VS 2019 support
 * Breaking API change: Most library API names and return types are now async
 * Improve VS startup time by making package load async
@@ -175,7 +203,7 @@ Fix initialization bug in VS2017
 ### C# -> VB
 * GoTo Case with dot in name converted correctly
 
-# 6.2.0 19/11/2018
+## [6.2.0] - 2018-11-19
 
 ### VB -> C#
 
@@ -195,7 +223,7 @@ Fix initialization bug in VS2017
 
 * Convert enums with explicit base type
 
-# 6.1.0 - 12/10/2018
+## [6.1.0] - 2018-10-12
 
 ### VB -> C#
 * Parenthesize "as" cast if necessary
@@ -205,7 +233,7 @@ Fix initialization bug in VS2017
 * Fix Nullref in SyntaxFactory.MethodDeclaration
 
 
-# 6.0.0 - 21/08/2018
+## [6.0.0] - 2018-08-21
 * Performance improvement for large solutions
 * Fix solution/project level context menu item not appearing when projects are within folders
 
@@ -213,7 +241,7 @@ Fix initialization bug in VS2017
 * Fix solution level conversion issues for projects other than the first one
 * Improve query syntax support (some forms of group now supported)
 
-# 5.9.0 - 01/08/2018
+## [5.9.0] - 2018-08-01
 
 * Note: This release downgrades the library to net standard 1.3 for compatibility reasons - this should fix "could not load file or assembly netstandard, Culture=neutral'" error
 
@@ -227,7 +255,7 @@ Fix initialization bug in VS2017
 * Single-line lambda with statement body not implemented
 * Array literals not always converted to implicit C# array
 
-# 5.8.0 - 26/06/2018
+## [5.8.0] - 2018-06-26
 * Move options lower down in the context menus so they aren't in the way 
 
 ### VB -> C#
@@ -243,7 +271,7 @@ Fix initialization bug in VS2017
 * Fixed .Name bug with anonymous object creation
 * Use Is and IsNot for reference type comparison
 
-# 5.7.0 - 08/05/2018
+## [5.7.0] - 2018-05-08
 * Update to .NET Standard 2.0
 * Convert solution and project files
 * Added convert and copy to clipboard into options
@@ -264,7 +292,7 @@ Fix initialization bug in VS2017
 * Fix error converting ObjectCollectionInitializerSyntax within object initializer
 * Escape predefined if they are used for the name of declaration
 
-# 5.6.3 - 09/04/2018
+## [5.6.3] - 2018-04-09
 
 * Improve support for sub-class snippets through the website
 * Best effort conversion with errors as comments inline
@@ -300,7 +328,7 @@ Fix initialization bug in VS2017
 * Fix to avoid single line if-else statement's conversion causing compilation error
 * Fix to avoid delegate with no parameters throwing NullReferenceException
 
-## 5.6.2 - 16/03/2018
+## [5.6.2] - 2018-03-16
 
 ### VB -> C#
 * Fix for change in logic when converting nested one-line if blocks
@@ -316,12 +344,12 @@ Fix initialization bug in VS2017
 * Newline now appears before each attribute list
 * Fix for `new` converting to `Shadows` - it now maps to `Overloads`
 
-## 5.6.1 - 06/03/2018
+## [5.6.1] - 2018-03-06
 * VSIX: Gets conversion off the UI thread to avoid it freezing
 * VB -> C#: VB projects referencing other VB projects no longer error
 * VB -> C#: XmlDoc comments now are correctly newline terminated
 
-## 5.6 - 05/03/2018
+## [5.6.0] - 2018-03-05
 
 ### Visual studio extension
 * New commands added to convert whole solution/project at once
@@ -339,7 +367,7 @@ Fix initialization bug in VS2017
 * Names now fully qualified where necessary
 * Out parameters correctly converted
 
-## 5.5 - 12/29/2017
+## [5.5.0] - 2017-12-29
 
 * Move from Refactoring Essentials to a repository of its own
 * Separate NuGet

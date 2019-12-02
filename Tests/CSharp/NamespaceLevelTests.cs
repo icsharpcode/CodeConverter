@@ -102,6 +102,119 @@ End Namespace", @"namespace Test.@class
         }
 
         [Fact]
+        public async Task TestMixedCaseNamespace()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace [Aaa]
+    Friend Class A
+        Shared Sub Foo()
+        End Sub
+    End Class
+
+    Partial Class Z
+    End Class
+    Partial Class z
+    End Class
+
+    MustInherit Class Base
+        MustOverride Sub UPPER()
+        MustOverride Property FOO As Boolean
+    End Class
+    Class NotBase
+        Inherits Base
+
+        Public Overrides Sub upper()
+        End Sub
+        Public Overrides Property foo As Boolean
+    End Class
+End Namespace
+
+Namespace Global.aaa
+    Friend Class B
+        Shared Sub Bar()
+        End Sub
+    End Class
+End Namespace
+
+Friend Module C
+    Sub Main()
+        Dim x = New aaa.A
+        Dim y = New Aaa.B
+        Dim z = New Aaa.A
+        Dim a = New aaa.B
+        Dim b = New aaa.a
+        Dim c = New aaa.b
+        Dim d = New AAA.A
+        Dim e = New AAA.B
+        Dim f = New Aaa.Z
+        Dim g = New Aaa.z
+        aaa.a.foo()
+        Aaa.A.Foo()
+        aaa.b.bar()
+        Aaa.B.Bar()
+    End Sub
+End Module", @"namespace Aaa
+{
+    internal partial class A
+    {
+        public static void Foo()
+        {
+        }
+    }
+
+    internal partial class Z
+    {
+    }
+    internal partial class Z
+    {
+    }
+
+    internal abstract partial class Base
+    {
+        public abstract void UPPER();
+        public abstract bool FOO { get; set; }
+    }
+    internal partial class NotBase : Base
+    {
+        public override void UPPER()
+        {
+        }
+        public override bool FOO { get; set; }
+    }
+}
+
+namespace aaa
+{
+    internal partial class B
+    {
+        public static void Bar()
+        {
+        }
+    }
+}
+
+internal static partial class C
+{
+    public static void Main()
+    {
+        var x = new Aaa.A();
+        var y = new aaa.B();
+        var z = new Aaa.A();
+        var a = new aaa.B();
+        var b = new Aaa.A();
+        var c = new aaa.B();
+        var d = new Aaa.A();
+        var e = new aaa.B();
+        var f = new Aaa.Z();
+        var g = new Aaa.Z();
+        Aaa.A.Foo();
+        Aaa.A.Foo();
+        aaa.B.Bar();
+        aaa.B.Bar();
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestInternalStaticClass()
         {
             await TestConversionVisualBasicToCSharp(@"Namespace Test.[class]

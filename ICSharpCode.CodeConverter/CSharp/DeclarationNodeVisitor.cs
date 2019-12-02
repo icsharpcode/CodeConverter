@@ -145,7 +145,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitNamespaceBlock(VBSyntax.NamespaceBlockSyntax node)
         {
             var members = (await node.Members.SelectAsync(ConvertMember)).Where(m => m != null);
-            var namespaceToDeclare = _semanticModel.GetDeclaredSymbol(node)?.ToDisplayString() ?? node.NamespaceStatement.Name.ToString();
+            var sym = _semanticModel.GetDeclaredSymbol(node);
+            string namespaceToDeclare = await WithDeclarationCasing(node, sym);
             var parentNamespaceSyntax = node.GetAncestor<VBSyntax.NamespaceBlockSyntax>();
             var parentNamespaceDecl = parentNamespaceSyntax != null ? _semanticModel.GetDeclaredSymbol(parentNamespaceSyntax) : null;
             var parentNamespaceFullName = parentNamespaceDecl?.ToDisplayString() ?? _topAncestorNamespace;
@@ -154,6 +155,24 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var cSharpSyntaxNode = (CSharpSyntaxNode) _csSyntaxGenerator.NamespaceDeclaration(namespaceToDeclare, SyntaxFactory.List(members));
             return cSharpSyntaxNode;
+        }
+
+        /// <summary>
+        /// Semantic model merges the symbols, but the compiled form retains multiple namespaces, which (when referenced from C#) need to keep the correct casing.
+        /// <seealso cref="CommonConversions.WithDeclarationCasing(TypeSyntax, ITypeSymbol)"/>
+        /// <seealso cref="CommonConversions.WithDeclarationCasing(SyntaxToken, ISymbol, string)"/>
+        /// </summary>
+        private async Task<string> WithDeclarationCasing(VBSyntax.NamespaceBlockSyntax node, ISymbol sym)
+        {
+            var sourceName = (await node.NamespaceStatement.Name.AcceptAsync(_triviaConvertingExpressionVisitor)).ToString();
+            var namespaceToDeclare = sym?.ToDisplayString() ?? sourceName;
+            int lastIndex = namespaceToDeclare.LastIndexOf(sourceName, StringComparison.OrdinalIgnoreCase);
+            if (lastIndex >= 0 && lastIndex + sourceName.Length == namespaceToDeclare.Length)
+            {
+                namespaceToDeclare = namespaceToDeclare.Substring(0, lastIndex) + sourceName;
+            }
+
+            return namespaceToDeclare;
         }
 
         #region Namespace Members
@@ -422,8 +441,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             foreach (var decl in splitDeclarations.Variables)
             {
-                if (isWithEvents)
-                {
+                if (isWithEvents) {
+                    _extraUsingDirectives.Add("System.Runtime.CompilerServices");
                     var initializers = decl.Variables
                         .Where(a => a.Initializer != null)
                         .ToDictionary(v => v.Identifier.Text, v => v.Initializer);
@@ -556,14 +575,23 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool isInInterface = node.Ancestors().OfType<VBSyntax.InterfaceBlockSyntax>().FirstOrDefault() != null;
 
             var initializer = (EqualsValueClauseSyntax) await node.Initializer.AcceptAsync(_triviaConvertingExpressionVisitor);
-            var vbType = await node.AsClause?.TypeSwitch(
-                async (VBSyntax.SimpleAsClauseSyntax c) => c.Type, async (VBSyntax.AsNewClauseSyntax c) => {
-                    initializer = SyntaxFactory.EqualsValueClause((ExpressionSyntax) await c.NewExpression.AcceptAsync(_triviaConvertingExpressionVisitor));
-                    return VBasic.SyntaxExtensions.Type(c.NewExpression.WithoutTrivia()); // We'll end up visiting this twice so avoid trivia this time
-                },
-                _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
-            );
-            var rawType = (TypeSyntax) await vbType.AcceptAsync(_triviaConvertingExpressionVisitor) ?? VarType;
+            VBSyntax.TypeSyntax vbType;
+            switch (node.AsClause) {
+                case VBSyntax.SimpleAsClauseSyntax c:
+                    vbType = c.Type;
+                    break;
+                case VBSyntax.AsNewClauseSyntax c:
+                    initializer = SyntaxFactory.EqualsValueClause((ExpressionSyntax)await c.NewExpression.AcceptAsync(_triviaConvertingExpressionVisitor));
+                    vbType = VBasic.SyntaxExtensions.Type(c.NewExpression.WithoutTrivia()); // We'll end up visiting this twice so avoid trivia this time
+                    break;
+                case null:
+                    vbType = null;
+                    break;
+                default:
+                    throw new NotImplementedException($"{node.AsClause.GetType().FullName} not implemented!");
+            }
+
+            var rawType = (TypeSyntax) await vbType.AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword));
 
             AccessorListSyntax accessors = null;
             if (node.Parent is VBSyntax.PropertyBlockSyntax propertyBlock) {
@@ -781,7 +809,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var methodBlock = (BaseMethodDeclarationSyntax) await node.SubOrFunctionStatement.Accept(TriviaConvertingVisitor);
 
-            if (_semanticModel.GetDeclaredSymbol(node).IsPartialMethodDefinition()) {
+            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
+            if (!declaredSymbol.CanHaveMethodBody()) {
                 return methodBlock;
             }
 
@@ -872,8 +901,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return decl.WithSemicolonToken(SemicolonToken);
             } else {
                 var tokenContext = GetMemberContext(node);
-                var convertedModifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext);
                 var declaredSymbol = _semanticModel.GetDeclaredSymbol(node) as IMethodSymbol;
+                var extraCsModifierKinds = declaredSymbol?.IsExtern == true ? new[] {SyntaxKind.ExternKeyword} : new SyntaxKind[0];
+                var convertedModifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext, extraCsModifierKinds: extraCsModifierKinds);
+
                 bool accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, declaredSymbol);
 
                 var isPartialDefinition = declaredSymbol.IsPartialMethodDefinition();
@@ -930,8 +961,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     null,
                     null
                 );
-                if (hasBody && !isPartialDefinition) return decl;
-                return decl.WithSemicolonToken(SemicolonToken);
+                return hasBody && declaredSymbol.CanHaveMethodBody() ? decl : decl.WithSemicolonToken(SemicolonToken);
             }
         }
 
@@ -987,7 +1017,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.ParseTypeName("void"),
                     delegateName,
                     null,
-                    (ParameterListSyntax) await node.ParameterList.AcceptAsync(_triviaConvertingExpressionVisitor),
+                    (ParameterListSyntax) await node.ParameterList.AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList(),
                     SyntaxFactory.List<TypeParameterConstraintClauseSyntax>()
                 );
 
