@@ -254,6 +254,24 @@ End Class");
     End Sub
 End Class");
         }
+        [Fact]
+        public async Task CompoundAssignmentTest() {
+            await TestConversionCSharpToVisualBasic(
+@"public class TestClass {
+    void TestMethod() {
+        int x = 10;
+        x *= 3;
+        x /= 3;
+    }
+}",
+@"Public Class TestClass
+    Private Sub TestMethod()
+        Dim x = 10
+        x *= 3
+        x /= 3
+    End Sub
+End Class");
+        }
 
         [Fact]
         public async Task ElvisOperatorExpression()
