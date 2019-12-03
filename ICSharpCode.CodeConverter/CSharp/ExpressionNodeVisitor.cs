@@ -1047,14 +1047,16 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var expressionSyntax = (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor);
 
-            if (convertMethodOrNull != null) {
-                expressionSyntax = Invoke(convertMethodOrNull, expressionSyntax);
-            }
+            if (!(_semanticModel.GetOperation(node) is IConversionOperation co) || !co.Conversion.IsIdentity) {
+                if (convertMethodOrNull != null) {
+                    expressionSyntax = Invoke(convertMethodOrNull, expressionSyntax);
+                }
 
-            if (castToOrNull != null) {
-                expressionSyntax = await Cast(expressionSyntax, castToOrNull);
-                if (node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax) {
-                    expressionSyntax = SyntaxFactory.ParenthesizedExpression(expressionSyntax);
+                if (castToOrNull != null) {
+                    expressionSyntax = await Cast(expressionSyntax, castToOrNull);
+                    if (node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax) {
+                        expressionSyntax = SyntaxFactory.ParenthesizedExpression(expressionSyntax);
+                    }
                 }
             }
 
