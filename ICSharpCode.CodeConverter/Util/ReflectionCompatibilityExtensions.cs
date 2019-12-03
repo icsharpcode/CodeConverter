@@ -69,7 +69,7 @@ namespace ICSharpCode.CodeConverter.Util
             return type.GetTypeInfo().DeclaredFields.FirstOrDefault(f => (f.Name == name) && IsConformWithBindingFlags(f, bindingFlags));
         }
 
-        public static PropertyInfo GetProperty(this Type type, string name)
+        public static PropertyInfo GetProperty(this Type type, string name, BindingFlags bindingFlags)
         {
             return type.GetTypeInfo().DeclaredProperties.FirstOrDefault(p => p.Name == name);
         }
