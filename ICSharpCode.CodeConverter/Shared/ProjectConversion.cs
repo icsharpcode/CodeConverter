@@ -41,10 +41,13 @@ namespace ICSharpCode.CodeConverter.Shared
             await new SynchronizationContextRemover();
 
             if (languageConversion == null) {
-                languageConversion = new TLanguageConversion {
-                    RootNamespace = rootNamespace
-                };
+                languageConversion = new TLanguageConversion();
             }
+
+            if (rootNamespace != null) {
+                languageConversion.RootNamespace = rootNamespace;
+            }
+
             var syntaxTree = languageConversion.MakeFullCompilationUnit(text, out var textSpan);
             using (var workspace = new AdhocWorkspace()) {
                 var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, references);
