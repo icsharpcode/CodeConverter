@@ -26,7 +26,7 @@ namespace CodeConverter.Tests.TestRunners
 
         protected static async Task<string> GetConvertedCodeOrErrorString<TLanguageConversion>(string toConvert, TLanguageConversion languageConversion = default) where TLanguageConversion : ILanguageConversion, new()
         {
-            var conversionResult = await ProjectConversion.ConvertText(toConvert, DefaultReferences.NetStandard2, null, languageConversion);
+            var conversionResult = await ProjectConversion.ConvertText(toConvert, DefaultReferences.NetStandard2, languageConversion: languageConversion);
             var convertedCode = conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString();
             return convertedCode;
         }
