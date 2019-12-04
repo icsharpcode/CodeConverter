@@ -14,6 +14,9 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Simplification;
+using Microsoft.CodeAnalysis.VisualBasic;
+using Conversion = Microsoft.CodeAnalysis.CSharp.Conversion;
+using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using LanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 
 namespace ICSharpCode.CodeConverter.CSharp
@@ -25,35 +28,15 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private const string UnresolvedNamespaceDiagnosticId = "CS0246";
 
-        private string _overriddenRootNamespace;
         private VBToCSProjectContentsConverter _vbToCsProjectContentsConverter;
+        public ConversionOptions ConversionOptions { get; set; }
 
-        public async Task<Project> InitializeSource(Project project)
+
+        public async Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project)
         {
-            _vbToCsProjectContentsConverter = new VBToCSProjectContentsConverter(_overriddenRootNamespace);
-            return await _vbToCsProjectContentsConverter.InitializeSource(project);
-        }
-
-        public Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
-            IEnumerable<MetadataReference> references)
-        {
-            return _vbToCsProjectContentsConverter.CreateProjectDocumentFromTree(workspace, tree, references);
-        }
-
-        public async Task<SyntaxNode> SingleFirstPass(Document document)
-        {
-            return await _vbToCsProjectContentsConverter.SingleFirstPass(document);
-        }
-
-        public async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
-            GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults)
-        {
-            return await _vbToCsProjectContentsConverter.GetConvertedProject(firstPassResults);
-        }
-
-        public string RootNamespace {
-            get => _vbToCsProjectContentsConverter.RootNamespace;
-            set => _overriddenRootNamespace = value;
+            _vbToCsProjectContentsConverter = new VBToCSProjectContentsConverter(ConversionOptions);
+            await _vbToCsProjectContentsConverter.InitializeSourceAsync(project);
+            return _vbToCsProjectContentsConverter;
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
@@ -170,8 +153,15 @@ End Class";
 
         private VisualBasicCompiler CreateCompiler()
         {
-            return new VisualBasicCompiler(RootNamespace);
+            return new VisualBasicCompiler(ConversionOptions.RootNamespaceOverride);
         }
-        string ILanguageConversion.LanguageVersion { get { return LanguageVersion.Default.ToDisplayString(); } }
+
+        public Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
+            IEnumerable<MetadataReference> references)
+        {
+            return VisualBasicCompiler.CreateCompilationOptions(ConversionOptions.RootNamespaceOverride)
+                .CreateProjectDocumentFromTree(workspace, tree, references, VisualBasicParseOptions.Default,
+                    ISymbolExtensions.ForcePartialTypesAssemblyName);
+        }
     }
 }

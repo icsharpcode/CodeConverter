@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
+using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
@@ -13,10 +14,9 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// <remarks>
     /// Can be stateful, need a new one for each project
     /// </remarks>
-    internal class VBToCSProjectContentsConverter
+    internal class VBToCSProjectContentsConverter : IProjectContentsConverter
     {
-        private readonly string _overrideRootNamespace;
-        private Project _sourceVbProject;
+        private readonly ConversionOptions _conversionOptions;
         private CSharpCompilation _csharpViewOfVbSymbols;
         private Project _convertedCsProject;
 
@@ -30,24 +30,25 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private Project _csharpReferenceProject;
 
-        public VBToCSProjectContentsConverter(string overrideRootNamespace)
+        public VBToCSProjectContentsConverter(ConversionOptions conversionOptions)
         {
-            _overrideRootNamespace = overrideRootNamespace;
+            _conversionOptions = conversionOptions;
         }
 
-        public string RootNamespace => _overrideRootNamespace;
+        public string RootNamespace => _conversionOptions.RootNamespaceOverride;
 
-        public async Task<Project> InitializeSource(Project project)
+        public async Task InitializeSourceAsync(Project project)
         {
             var cSharpCompilationOptions = CSharpCompiler.CreateCompilationOptions();
             _convertedCsProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, DoNotAllowImplicitDefault);
             _csharpReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(cSharpCompilationOptions);
             _csharpViewOfVbSymbols = (CSharpCompilation) await _csharpReferenceProject.GetCompilationAsync();
-
-            project = await project.WithRenamedMergedMyNamespace();
-            _sourceVbProject = project;
-            return project;
+            Project = await project.WithRenamedMergedMyNamespace();
         }
+
+        string IProjectContentsConverter.LanguageVersion { get { return LanguageVersion.Default.ToDisplayString(); } }
+
+        public Project Project { get; private set; }
 
         public async Task<SyntaxNode> SingleFirstPass(Document document)
         {
@@ -59,14 +60,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults);
             return (await project.RenameMergedNamespaces(), docIds);
-        }
-
-        public Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
-            IEnumerable<MetadataReference> references)
-        {
-            return VisualBasicCompiler.CreateCompilationOptions(_overrideRootNamespace)
-                .CreateProjectDocumentFromTree(workspace, tree, references, VisualBasicParseOptions.Default,
-                    ISymbolExtensions.ForcePartialTypesAssemblyName);
         }
     }
 }

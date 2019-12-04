@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.VB
@@ -10,7 +12,7 @@ namespace ICSharpCode.CodeConverter.VB
     /// <remarks>
     /// Can be stateful, need a new one for each project
     /// </remarks>
-    internal class CSToVBProjectContentsConverter
+    internal class CSToVBProjectContentsConverter : IProjectContentsConverter
     {
         private readonly VisualBasicCompilationOptions _vbCompilationOptions;
         private readonly VisualBasicParseOptions _vbParseOptions;
@@ -19,22 +21,34 @@ namespace ICSharpCode.CodeConverter.VB
         private VisualBasicCompilation _vbViewOfCsSymbols;
         private Project _vbReferenceProject;
 
-        public CSToVBProjectContentsConverter(string rootNamespace, VisualBasicCompilationOptions vbCompilationOptions, VisualBasicParseOptions vbParseOptions)
+        public CSToVBProjectContentsConverter(ConversionOptions conversionOptions)
         {
-            _vbCompilationOptions = vbCompilationOptions?.WithRootNamespace(rootNamespace) ?? VisualBasicCompiler.CreateCompilationOptions(rootNamespace);
-            _vbParseOptions = vbParseOptions ?? VisualBasicParseOptions.Default;
+            var vbCompilationOptions =
+                (VisualBasicCompilationOptions)conversionOptions.TargetCompilationOptionsOverride ??
+                VisualBasicCompiler.CreateCompilationOptions(conversionOptions.RootNamespaceOverride);
+
+            if (conversionOptions.RootNamespaceOverride != null) {
+                vbCompilationOptions = vbCompilationOptions.WithRootNamespace(conversionOptions.RootNamespaceOverride);
+            }
+
+            _vbCompilationOptions = vbCompilationOptions;
+            _vbParseOptions = VisualBasicParseOptions.Default;
+            RootNamespace = conversionOptions.RootNamespaceOverride;
         }
+
+        public string RootNamespace { get; }
+        public Project Project { get; private set; }
 
         public string LanguageVersion { get { return _vbParseOptions.LanguageVersion.ToDisplayString(); } }
 
 
-        public async Task<Project> InitializeSourceAsync(Project project)
+        public async Task InitializeSourceAsync(Project project)
         {
             _sourceCsProject = project;
             _convertedVbProject = project.ToProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
             _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(_vbCompilationOptions);
             _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync();
-            return project;
+            Project = project;
         }
 
         public async Task<SyntaxNode> SingleFirstPass(Document document)

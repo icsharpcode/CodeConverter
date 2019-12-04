@@ -12,10 +12,10 @@ namespace CodeConverter.Tests.VB
 {
     public class MemberTests : ConverterTestBase
     {
-        CSToVBConversion CSToVBConversion { get; set; }
+        TextConversionOptions EmptyNamespaceOptionStrictOff { get; set; }
 
         public MemberTests() {
-            CSToVBConversion = new CSToVBConversion { RootNamespace = string.Empty, VBCompilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+            EmptyNamespaceOptionStrictOff = new TextConversionOptions(DefaultReferences.NetStandard2) { RootNamespaceOverride = string.Empty, TargetCompilationOptionsOverride = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithOptionExplicit(true)
                 .WithOptionCompareText(false)
                 .WithOptionStrict(OptionStrict.Off)
@@ -173,7 +173,7 @@ Friend Class TestSubclass
         TestMethod(3)
         System.Console.WriteLine(""Shadowed implementation"")
     End Sub
-End Class", conversion: CSToVBConversion);
+End Class", conversion: EmptyNamespaceOptionStrictOff);
         }
 
 
@@ -370,7 +370,7 @@ Friend Module TestClass
     <Extension()>
     Sub TestMethod2Parameters(ByVal str As String, ByVal __ As Action(Of String))
     End Sub
-End Module", conversion: CSToVBConversion);
+End Module", conversion: EmptyNamespaceOptionStrictOff);
         }
 
         [Fact]
@@ -829,7 +829,7 @@ End Class");
     Public Function TestMethod(ByVal param1 As System.Type, ByVal param2 As System.Globalization.CultureInfo) As Object
         Return Nothing
     End Function
-End Class", conversion: CSToVBConversion);
+End Class", conversion: EmptyNamespaceOptionStrictOff);
     }
 
         [Fact]// The stack trace displayed will change from time to time. Feel free to update this characterization test appropriately.
