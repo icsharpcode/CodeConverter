@@ -129,9 +129,8 @@ namespace CodeConverter.Tests.TestRunners
 
         private static MSBuildWorkspace CreateWorkspaceUnhandled()
         {
-            var appropriateVSVersion = new Version(16, 0);
             var instances = MSBuildLocator.QueryVisualStudioInstances();
-            MSBuildLocator.RegisterInstance(instances.First(x => appropriateVSVersion <= x.Version));
+            MSBuildLocator.RegisterInstance(instances.OrderByDescending(x => x.Version).First(x => x.Version.Major >= 16));
             return MSBuildWorkspace.Create(new Dictionary<string, string>()
             {
                 {"Configuration", "Debug"},
