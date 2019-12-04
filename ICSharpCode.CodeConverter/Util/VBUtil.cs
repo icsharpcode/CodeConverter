@@ -143,6 +143,8 @@ namespace ICSharpCode.CodeConverter.Util
                     return SyntaxKind.GreaterThanGreaterThanEqualsToken;
                 case SyntaxKind.ConcatenateAssignmentStatement:
                     return SyntaxKind.AmpersandEqualsToken;
+                case SyntaxKind.MultiplyAssignmentStatement:
+                    return SyntaxKind.AsteriskEqualsToken;
                 case SyntaxKind.DivideAssignmentStatement:
                     return SyntaxKind.SlashEqualsToken;
                 case SyntaxKind.ExponentiateAssignmentStatement:
