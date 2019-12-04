@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### C# -> VB
 * Convert "is" expression ([#427](https://github.com/icsharpcode/CodeConverter/pull/427))
+* Convert "*=" operator
 
 ## [7.3.0] - 2019-11-25
 
