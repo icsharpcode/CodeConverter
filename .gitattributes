@@ -3,4 +3,10 @@
 *.jpeg binary
 *.jpg binary
 *.gif binary
+*.ttf binary
+*.exe binary
+*.eot binary
+*.woff binary
+*.woff2 binary
+
 CHANGELOG.md text merge=union
