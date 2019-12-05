@@ -372,5 +372,37 @@ End Class");
     Inherits InvalidDataException
 End Class");
         }
+        [Fact]
+        public async Task StaticGenericClass() {
+            await TestConversionCSharpToVisualBasic(
+@"using System.Threading.Tasks;
+
+public abstract class Class1 {
+}
+
+public static class TestClass<T> where T : Class1, new() {
+        static Task task;
+        static TestClass() {
+        }
+        public static Task Method() {
+            return task;
+        }
+    }",
+@"Imports System.Threading.Tasks
+
+Public MustInherit Class Class1
+End Class
+
+Public NotInheritable Class TestClass(Of T As {Class1, New})
+    Private Shared task As Task
+
+    Shared Sub New()
+    End Sub
+
+    Public Shared Function Method() As Task
+        Return task
+    End Function
+End Class");
+        }
     }
 }
