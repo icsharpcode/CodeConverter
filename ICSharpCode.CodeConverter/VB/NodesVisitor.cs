@@ -483,9 +483,15 @@ namespace ICSharpCode.CodeConverter.VB
             return !implementors.Any() ? null: CreateImplementsClauseSyntax(implementors, id);
         }
         ImplementsClauseSyntax CreateImplementsClauseSyntax(IEnumerable<ISymbol> implementors, SyntaxToken id) {
-            return SyntaxFactory.ImplementsClause(implementors.Select(x =>
-                    SyntaxFactory.QualifiedName(SyntaxFactory.IdentifierName(x.ContainingSymbol.Name), SyntaxFactory.IdentifierName(id))
-                ).ToArray()
+            return SyntaxFactory.ImplementsClause(implementors.Select(x => {
+                    var namedTypeSymbol = x.ContainingSymbol as INamedTypeSymbol;
+                    NameSyntax nameSyntax = null; 
+                    if(namedTypeSymbol == null || !namedTypeSymbol.IsGenericType)
+                        nameSyntax = SyntaxFactory.IdentifierName(x.ContainingSymbol.Name);
+                    else
+                        nameSyntax = SyntaxFactory.GenericName(x.ContainingSymbol.Name, SyntaxFactory.TypeArgumentList(namedTypeSymbol.TypeArguments.Select(y => GetTypeSyntax(y)).ToArray()));
+                    return SyntaxFactory.QualifiedName(nameSyntax, SyntaxFactory.IdentifierName(id));
+                }).ToArray()
             );
         }
 
@@ -1566,6 +1572,7 @@ namespace ICSharpCode.CodeConverter.VB
                 (CSS.MethodDeclarationSyntax m) => m.ConstraintClauses,
                 (CSS.ClassDeclarationSyntax c) => c.ConstraintClauses,
                 (CSS.DelegateDeclarationSyntax d) => d.ConstraintClauses,
+                (CSS.InterfaceDeclarationSyntax i) => i.ConstraintClauses,
                 _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
             );
             return clauses.FirstOrDefault(c => c.Name.ToString() == node.ToString());
