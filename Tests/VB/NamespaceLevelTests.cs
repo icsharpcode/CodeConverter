@@ -404,5 +404,27 @@ Public NotInheritable Class TestClass(Of T As {Class1, New})
     End Function
 End Class");
         }
+        [Fact]
+        public async Task ImplementsGenericInterface()
+        {
+            await TestConversionCSharpToVisualBasic(
+@"public interface ITestInterface<T> {
+    void Method(List<T> list);
+}
+public class TestClass : ITestInterface<string> {
+    public void Method(List<string> list) {
+    }
+",
+@"Public Interface ITestInterface(Of T)
+    Sub Method(ByVal list As List(Of T))
+End Interface
+
+Public Class TestClass
+    Implements ITestInterface(Of String)
+
+    Public Sub Method(ByVal list As List(Of String)) Implements ITestInterface(Of String).Method
+    End Sub
+End Class");
+        }
     }
 }
