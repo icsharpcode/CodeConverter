@@ -19,12 +19,14 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly ILanguageConversion _languageConversion;
 
         public static SolutionConverter CreateFor<TLanguageConversion>(IReadOnlyCollection<Project> projectsToConvert,
+            ConversionOptions conversionOptions = default,
             IProgress<ConversionProgress> progress = null) where TLanguageConversion : ILanguageConversion, new()
         {
+            var conversion = new TLanguageConversion {ConversionOptions = conversionOptions ?? new ConversionOptions() };
             var solutionFilePath = projectsToConvert.First().Solution.FilePath;
             var sourceSolutionContents = File.ReadAllText(solutionFilePath);
             var projectReferenceReplacements = GetProjectReferenceReplacements(projectsToConvert, sourceSolutionContents);
-            return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, progress ?? new Progress<ConversionProgress>(), new TLanguageConversion());
+            return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, progress ?? new Progress<ConversionProgress>(), conversion);
         }
 
         private SolutionConverter(string solutionFilePath,
@@ -122,15 +124,6 @@ namespace ICSharpCode.CodeConverter.Shared
             var deterministicNewBytes = codeConverterStaticGuid.ToByteArray().Zip(guidToConvert.ToByteArray(),
                 (fromFirst, fromSecond) => (byte)(fromFirst ^ fromSecond));
             return new Guid(deterministicNewBytes.ToArray());
-        }
-
-
-        [Obsolete("Please use the overload with a IProgress<ConversionProgress> type")]
-        public static SolutionConverter CreateFor<TLanguageConversion>(IReadOnlyCollection<Project> projectsToConvert,
-            IProgress<string> progress) where TLanguageConversion : ILanguageConversion, new()
-        {
-            var showProgressMessage = new Progress<ConversionProgress>(p => progress?.Report(p.Message));
-            return CreateFor<TLanguageConversion>(projectsToConvert, showProgressMessage);
         }
     }
 }

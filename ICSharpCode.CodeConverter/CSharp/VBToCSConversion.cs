@@ -6,7 +6,6 @@ using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.VisualBasic;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
@@ -15,44 +14,29 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Simplification;
+using Microsoft.CodeAnalysis.VisualBasic;
+using Conversion = Microsoft.CodeAnalysis.CSharp.Conversion;
 using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using LanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
+    /// <remarks>
+    /// Can be used for multiple projects - does not persist state from one InitializeSource to the next
+    /// </remarks>
     public class VBToCSConversion : ILanguageConversion
     {
         private const string UnresolvedNamespaceDiagnosticId = "CS0246";
-        private Project _sourceVbProject;
-        private CSharpCompilation _csharpViewOfVbSymbols;
-        private Project _convertedCsProject;
-        /// <summary>
-        /// It's really hard to change simplifier options since everything is done on the Object hashcode of internal fields.
-        /// I wanted to avoid saying "default" instead of "default(string)" because I don't want to force a later language version on people in such a common case.
-        /// This will have that effect, but also has the possibility of failing to interpret code output by this converter.
-        /// If this has such unintended effects in future, investigate the code that loads options from an editorconfig file
-        /// </summary>
-        private static readonly CSharpParseOptions DoNotAllowImplicitDefault = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp7);
 
-        private Project _csharpReferenceProject;
+        private VBToCSProjectContentsConverter _vbToCsProjectContentsConverter;
+        public ConversionOptions ConversionOptions { get; set; }
 
-        public string RootNamespace { get; set; }
 
-        public async Task<Project> InitializeSource(Project project)
+        public async Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project)
         {
-            var cSharpCompilationOptions = CSharpCompiler.CreateCompilationOptions();
-            _convertedCsProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, DoNotAllowImplicitDefault);
-            _csharpReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptionsAsync(cSharpCompilationOptions);
-            _csharpViewOfVbSymbols = (CSharpCompilation) await _csharpReferenceProject.GetCompilationAsync();
-
-            project = await project.WithRenamedMergedMyNamespace();
-            _sourceVbProject = project;
-            return project;
-        }
-
-        public async Task<SyntaxNode> SingleFirstPass(Document document)
-        {
-            return await VisualBasicConverter.ConvertCompilationTree(document, _csharpViewOfVbSymbols, _csharpReferenceProject);
+            _vbToCsProjectContentsConverter = new VBToCSProjectContentsConverter(ConversionOptions);
+            await _vbToCsProjectContentsConverter.InitializeSourceAsync(project);
+            return _vbToCsProjectContentsConverter;
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
@@ -96,13 +80,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             return xml.Substring(0, defineConstantsStart) +
                    xml.Substring(defineConstantsStart, defineConstantsEnd - defineConstantsStart).Replace(",", ";") +
                    xml.Substring(defineConstantsEnd);
-        }
-
-        public async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
-            GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults)
-        {
-            var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults);
-            return (await project.RenameMergedNamespaces(), docIds);
         }
 
         public string TargetLanguage { get; } = LanguageNames.CSharp;
@@ -176,13 +153,13 @@ End Class";
 
         private VisualBasicCompiler CreateCompiler()
         {
-            return new VisualBasicCompiler(RootNamespace);
+            return new VisualBasicCompiler(ConversionOptions.RootNamespaceOverride);
         }
 
         public Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
             IEnumerable<MetadataReference> references)
         {
-            return VisualBasicCompiler.CreateCompilationOptions(RootNamespace)
+            return VisualBasicCompiler.CreateCompilationOptions(ConversionOptions.RootNamespaceOverride)
                 .CreateProjectDocumentFromTree(workspace, tree, references, VisualBasicParseOptions.Default,
                     ISymbolExtensions.ForcePartialTypesAssemblyName);
         }

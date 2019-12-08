@@ -1,17 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 
-namespace ICSharpCode.CodeConverter.CSharp
+namespace ICSharpCode.CodeConverter
 {
     public interface ILanguageConversion
     {
-        Task<SyntaxNode> SingleFirstPass(Document document);
         Task<Document> SingleSecondPass(Document doc);
         SyntaxTree CreateTree(string text);
-        Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
-            IEnumerable<MetadataReference> references);
         List<SyntaxNode> FindSingleImportantChild(SyntaxNode annotatedNode);
         bool CanBeContainedByMethod(SyntaxNode node);
         bool MustBeContainedByClass(SyntaxNode node);
@@ -23,10 +20,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         IReadOnlyCollection<(string, string)> GetProjectTypeGuidMappings();
         IEnumerable<(string, string)> GetProjectFileReplacementRegexes();
         string TargetLanguage { get; }
-        string RootNamespace { get; set; }
-        Task<Project> InitializeSource(Project project);
+        ConversionOptions ConversionOptions { get; set; }
+
+        Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project);
         string PostTransformProjectFile(string xml);
-        Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
-            GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults);
+
+        Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
+            IEnumerable<MetadataReference> references);
     }
 }

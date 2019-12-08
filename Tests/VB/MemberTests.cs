@@ -4,12 +4,24 @@ using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.VisualBasic;
 using Xunit;
 
 namespace CodeConverter.Tests.VB
 {
     public class MemberTests : ConverterTestBase
     {
+        TextConversionOptions EmptyNamespaceOptionStrictOff { get; set; }
+
+        public MemberTests() {
+            EmptyNamespaceOptionStrictOff = new TextConversionOptions(DefaultReferences.NetStandard2) { RootNamespaceOverride = string.Empty, TargetCompilationOptionsOverride = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithOptionExplicit(true)
+                .WithOptionCompareText(false)
+                .WithOptionStrict(OptionStrict.Off)
+                .WithOptionInfer(true)
+            };
+        }
         [Fact]
         public async Task TestPropertyWithModifier()
         {
@@ -159,9 +171,9 @@ Friend Class TestSubclass
 
     Public Overloads Sub TestMethod()
         TestMethod(3)
-        Console.WriteLine(""Shadowed implementation"")
+        System.Console.WriteLine(""Shadowed implementation"")
     End Sub
-End Class");
+End Class", conversion: EmptyNamespaceOptionStrictOff);
         }
 
 
@@ -337,7 +349,8 @@ End Class");
         public async Task TestExtensionMethod()
         {
             await TestConversionCSharpToVisualBasic(
-                @"static class TestClass
+@"using System;
+static class TestClass
 {
     public static void TestMethod(this String str)
     {
@@ -346,7 +359,8 @@ End Class");
     public static void TestMethod2Parameters(this String str, Action<string> _)
     {
     }
-}", @"Imports System.Runtime.CompilerServices
+}", @"Imports System
+Imports System.Runtime.CompilerServices
 
 Friend Module TestClass
     <Extension()>
@@ -356,14 +370,15 @@ Friend Module TestClass
     <Extension()>
     Sub TestMethod2Parameters(ByVal str As String, ByVal __ As Action(Of String))
     End Sub
-End Module");
+End Module", conversion: EmptyNamespaceOptionStrictOff);
         }
 
         [Fact]
         public async Task TestExtensionMethodWithExistingImport()
         {
             await TestConversionCSharpToVisualBasic(
-                @"using System.Runtime.CompilerServices;
+@"using System;
+using System.Runtime.CompilerServices;
 
 static class TestClass
 {
@@ -793,14 +808,29 @@ End Class");
         [Fact]
         public async Task NameMatchesWithTypeDate() {
             await TestConversionCSharpToVisualBasic(
-@"class TestClass
-{
+@"using System;
+
+class TestClass {
     private DateTime date;
 }",
 @"Friend Class TestClass
     Private [date] As Date
 End Class");
         }
+        [Fact]
+        public async Task ParameterWithNamespaceTest() {
+            await TestConversionCSharpToVisualBasic(
+@"public class TestClass {
+    public object TestMethod(System.Type param1, System.Globalization.CultureInfo param2) {
+        return null;
+    }
+}",
+@"Public Class TestClass
+    Public Function TestMethod(ByVal param1 As System.Type, ByVal param2 As System.Globalization.CultureInfo) As Object
+        Return Nothing
+    End Function
+End Class", conversion: EmptyNamespaceOptionStrictOff);
+    }
 
         [Fact]// The stack trace displayed will change from time to time. Feel free to update this characterization test appropriately.
         public async Task InvalidOperatorOverloadsShowErrorInlineCharacterization()

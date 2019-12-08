@@ -17,30 +17,25 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.VB
 {
+    /// <remarks>
+    /// Can be used for multiple projects - InitializeSource resets state
+    /// </remarks>
     public class CSToVBConversion : ILanguageConversion
     {
         private const string UnresolvedNamespaceDiagnosticId = "BC40056";
-        private Project _sourceCsProject;
-        private Project _convertedVbProject;
-        private VisualBasicCompilation _vbViewOfCsSymbols;
-        private VisualBasicParseOptions _visualBasicParseOptions;
-        private Project _vbReferenceProject;
-        public string RootNamespace { get; set; }
 
-        public async Task<Project> InitializeSource(Project project)
+        private CSToVBProjectContentsConverter _csToVbProjectContentsConverter;
+        public ConversionOptions ConversionOptions { get; set; }
+
+        public async Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project)
         {
-            _sourceCsProject = project;
-            var cSharpCompilationOptions = VisualBasicCompiler.CreateCompilationOptions(RootNamespace);
-            _visualBasicParseOptions = VisualBasicParseOptions.Default;
-            _convertedVbProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, _visualBasicParseOptions);
-            _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptionsAsync(cSharpCompilationOptions);
-            _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync();
-            return project;
+            _csToVbProjectContentsConverter = new CSToVBProjectContentsConverter(ConversionOptions);
+            await _csToVbProjectContentsConverter.InitializeSourceAsync(project);
+            return _csToVbProjectContentsConverter;
         }
-
-        public async Task<SyntaxNode> SingleFirstPass(Document document)
+        public async Task<Document> SingleSecondPass(Document doc)
         {
-            return await CSharpConverter.ConvertCompilationTree(document, _vbViewOfCsSymbols, _vbReferenceProject);
+            return await doc.SimplifyStatements<VBSyntax.ImportsStatementSyntax, VBSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId);
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
@@ -70,12 +65,6 @@ namespace ICSharpCode.CodeConverter.VB
             xml = TweakDefineConstantsSeparator(xml);
             xml = AddInfer(xml);
             return xml;
-        }
-
-        public async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
-            GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults)
-        {
-            return _convertedVbProject.WithDocuments(firstPassResults);
         }
 
         private string AddInfer(string xml)
@@ -158,16 +147,10 @@ namespace ICSharpCode.CodeConverter.VB
             return children;
         }
 
-        public async Task<Document> SingleSecondPass(Document doc)
-        {
-            return await doc.SimplifyStatements<VBSyntax.ImportsStatementSyntax, VBSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId);
-        }
-
         public SyntaxTree CreateTree(string text)
         {
             return new CSharpCompiler().CreateTree(text);
         }
-
         public Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
             IEnumerable<MetadataReference> references)
         {

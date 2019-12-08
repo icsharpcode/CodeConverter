@@ -9,7 +9,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class ProjectExtensions
     {
-        public static Project CreateReferenceOnlyProjectFromAnyOptionsAsync(this Project project, CompilationOptions baseOptions)
+        public static Project CreateReferenceOnlyProjectFromAnyOptions(this Project project, CompilationOptions baseOptions)
         {
             var options = baseOptions.WithMetadataImportOptionsAll();
             var viewerId = ProjectId.CreateNewId();

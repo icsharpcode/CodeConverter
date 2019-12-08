@@ -24,19 +24,19 @@ namespace CodeConverter.Tests.TestRunners
             _rootNamespace = rootNamespace;
         }
 
-        protected static async Task<string> GetConvertedCodeOrErrorString<TLanguageConversion>(string toConvert) where TLanguageConversion : ILanguageConversion, new()
+        protected static async Task<string> GetConvertedCodeOrErrorString<TLanguageConversion>(string toConvert, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
         {
-            var conversionResult = await ProjectConversion.ConvertText<TLanguageConversion>(toConvert, DefaultReferences.NetStandard2);
+            var conversionResult = await ProjectConversion.ConvertText<TLanguageConversion>(toConvert, conversionOptions ?? new TextConversionOptions(DefaultReferences.NetStandard2));
             var convertedCode = conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString();
             return convertedCode;
         }
 
-        public async Task TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, bool expectCompilationErrors = false)
+        public async Task TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, bool expectCompilationErrors = false, TextConversionOptions conversion = null)
         {
             expectedVisualBasicCode = AddSurroundingMethodBlock(expectedVisualBasicCode, expectSurroundingMethodBlock);
 
-            await TestConversionCSharpToVisualBasicWithoutComments(csharpCode, expectedVisualBasicCode);
-            if (_testCstoVBCommentsByDefault) await TestConversionCSharpToVisualBasicWithoutComments(AddLineNumberComments(csharpCode, "// ", false), AddLineNumberComments(expectedVisualBasicCode, "' ", true));
+            await TestConversionCSharpToVisualBasicWithoutComments(csharpCode, expectedVisualBasicCode, conversion);
+            if (_testCstoVBCommentsByDefault) await TestConversionCSharpToVisualBasicWithoutComments(AddLineNumberComments(csharpCode, "// ", false), AddLineNumberComments(expectedVisualBasicCode, "' ", true), conversion);
         }
 
         private static string AddSurroundingMethodBlock(string expectedVisualBasicCode, bool expectSurroundingBlock)
@@ -52,9 +52,9 @@ End Sub";
             return expectedVisualBasicCode;
         }
 
-        private async Task TestConversionCSharpToVisualBasicWithoutComments(string csharpCode, string expectedVisualBasicCode)
+        private async Task TestConversionCSharpToVisualBasicWithoutComments(string csharpCode, string expectedVisualBasicCode, TextConversionOptions conversionOptions = null)
         {
-            await AssertConvertedCodeResultEquals<CSToVBConversion>(csharpCode, expectedVisualBasicCode);
+            await AssertConvertedCodeResultEquals<CSToVBConversion>(csharpCode, expectedVisualBasicCode, conversionOptions);
         }
 
         /// <summary>
@@ -78,10 +78,10 @@ End Sub";
             await AssertConvertedCodeResultEquals<VBToCSConversion>(visualBasicCode, expectedCsharpCode);
         }
 
-        private async Task AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode) where TLanguageConversion : ILanguageConversion, new()
+        private async Task AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
         {
-            var outputNode =
-                ProjectConversion.ConvertText<TLanguageConversion>(inputCode, DefaultReferences.NetStandard2, _rootNamespace);
+            var textConversionOptions = conversionOptions ?? new TextConversionOptions(DefaultReferences.NetStandard2){ RootNamespaceOverride = _rootNamespace };
+            var outputNode = ProjectConversion.ConvertText<TLanguageConversion>(inputCode, textConversionOptions);
             AssertConvertedCodeResultEquals(await outputNode, expectedConvertedCode, inputCode);
         }
 
@@ -181,5 +181,9 @@ End Sub";
         }
 
         public static void Fail(string message) => throw new XunitException(message);
+    }
+
+    public class ConversionOptions
+    {
     }
 }

@@ -21,13 +21,13 @@ namespace ICSharpCode.CodeConverter
                 case "C#":
                     switch (code.ToLanguage) {
                         case "Visual Basic":
-                            return await ProjectConversion.ConvertText<CSToVBConversion>(code.Text, code.References);
+                            return await ProjectConversion.ConvertText<CSToVBConversion>(code.Text, new TextConversionOptions(code.References));
                     }
                     break;
                 case "Visual Basic":
                     switch (code.ToLanguage) {
                         case "C#":
-                            return await ProjectConversion.ConvertText<VBToCSConversion>(code.Text, code.References);
+                            return await ProjectConversion.ConvertText<VBToCSConversion>(code.Text, new TextConversionOptions(code.References));
                     }
                     break;
 

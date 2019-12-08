@@ -67,10 +67,11 @@ namespace ICSharpCode.CodeConverter.VB
 
         IEnumerable<ImportsStatementSyntax> TidyImportsList(IEnumerable<ImportsStatementSyntax> allImports)
         {
-            foreach (var import in allImports.GroupBy(c => c.ToString()).Select(g => g.First()))
-                foreach (var clause in import.ImportsClauses) {
-                        yield return SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList(clause));
-                }
+            return allImports
+                .SelectMany(x => x.ImportsClauses)
+                .GroupBy(x => x.ToString())
+                .Select(g => g.First())
+                .Select(x => SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList(x)));
         }
 
         public NodesVisitor(Document document, CS.CSharpCompilation compilation, SemanticModel semanticModel,
@@ -107,10 +108,10 @@ namespace ICSharpCode.CodeConverter.VB
             var members = SyntaxFactory.List(node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor)));
 
             //TODO Add Usings from compilationoptions
-            var importsStatementSyntaxs = SyntaxFactory.List(TidyImportsList(_allImports));
+            var importsStatementSyntaxes = SyntaxFactory.List(TidyImportsList(_allImports));
             return SyntaxFactory.CompilationUnit(
                 SyntaxFactory.List<OptionStatementSyntax>(),
-                importsStatementSyntaxs,
+                importsStatementSyntaxes,
                 attributes,
                 members
             );
