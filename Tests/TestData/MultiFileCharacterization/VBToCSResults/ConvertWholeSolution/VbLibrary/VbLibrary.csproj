@@ -7,7 +7,7 @@
     <ProjectGuid>{913DD733-37BF-05CF-35C5-5BD4A0431C47}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <StartupObject>VbLibrary.Module1</StartupObject>
-    <RootNamespace></RootNamespace>
+    <RootNamespace>VbLibrary</RootNamespace>
     <AssemblyName>VbLibrary</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>Console</MyType>

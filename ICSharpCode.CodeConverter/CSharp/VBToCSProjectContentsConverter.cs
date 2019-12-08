@@ -35,7 +35,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             _conversionOptions = conversionOptions;
         }
 
-        public string RootNamespace => _conversionOptions.RootNamespaceOverride;
+        public string RootNamespace => _conversionOptions.RootNamespaceOverride ??
+                                       ((VisualBasicCompilationOptions)Project.CompilationOptions).RootNamespace;
 
         public async Task InitializeSourceAsync(Project project)
         {
