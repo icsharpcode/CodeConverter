@@ -17,39 +17,25 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.VB
 {
+    /// <remarks>
+    /// Can be used for multiple projects - InitializeSource resets state
+    /// </remarks>
     public class CSToVBConversion : ILanguageConversion
     {
         private const string UnresolvedNamespaceDiagnosticId = "BC40056";
-        private Project _sourceCsProject;
-        private Project _convertedVbProject;
-        private VisualBasicCompilation _vbViewOfCsSymbols;
-        private VisualBasicParseOptions _visualBasicParseOptions;
-        private Project _vbReferenceProject;
 
-        public string RootNamespace { get; set; }
-        public VisualBasicCompilationOptions VBCompilationOptions { get; set; }
-        public VisualBasicParseOptions VBParseOptions {
-            get { return _visualBasicParseOptions ?? (_visualBasicParseOptions = VisualBasicParseOptions.Default); }
-            set {
-                if (_visualBasicParseOptions == value)
-                    return;
-                _visualBasicParseOptions = value;
-            }
-        }
+        private CSToVBProjectContentsConverter _csToVbProjectContentsConverter;
+        public ConversionOptions ConversionOptions { get; set; }
 
-        public async Task<Project> InitializeSource(Project project)
+        public async Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project)
         {
-            _sourceCsProject = project;
-            var _convertedCompilationOptions = VBCompilationOptions?.WithRootNamespace(RootNamespace) ?? VisualBasicCompiler.CreateCompilationOptions(RootNamespace);
-            _convertedVbProject = project.ToProjectFromAnyOptions(_convertedCompilationOptions, VBParseOptions);
-            _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptionsAsync(_convertedCompilationOptions);
-            _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync();
-            return project;
+            _csToVbProjectContentsConverter = new CSToVBProjectContentsConverter(ConversionOptions);
+            await _csToVbProjectContentsConverter.InitializeSourceAsync(project);
+            return _csToVbProjectContentsConverter;
         }
-
-        public async Task<SyntaxNode> SingleFirstPass(Document document)
+        public async Task<Document> SingleSecondPass(Document doc)
         {
-            return await CSharpConverter.ConvertCompilationTree(document, _vbViewOfCsSymbols, _vbReferenceProject);
+            return await doc.SimplifyStatements<VBSyntax.ImportsStatementSyntax, VBSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId);
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
@@ -79,12 +65,6 @@ namespace ICSharpCode.CodeConverter.VB
             xml = TweakDefineConstantsSeparator(xml);
             xml = AddInfer(xml);
             return xml;
-        }
-
-        public async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
-            GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults)
-        {
-            return _convertedVbProject.WithDocuments(firstPassResults);
         }
 
         private string AddInfer(string xml)
@@ -167,21 +147,14 @@ namespace ICSharpCode.CodeConverter.VB
             return children;
         }
 
-        public async Task<Document> SingleSecondPass(Document doc)
-        {
-            return await doc.SimplifyStatements<VBSyntax.ImportsStatementSyntax, VBSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId);
-        }
-
         public SyntaxTree CreateTree(string text)
         {
             return new CSharpCompiler().CreateTree(text);
         }
-
         public Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
             IEnumerable<MetadataReference> references)
         {
             return CSharpCompiler.CreateCompilationOptions().CreateProjectDocumentFromTree(workspace, tree, references, CSharpParseOptions.Default);
         }
-        string ILanguageConversion.LanguageVersion { get { return VBParseOptions.LanguageVersion.ToDisplayString(); } }
     }
 }

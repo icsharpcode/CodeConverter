@@ -16,7 +16,6 @@ namespace ICSharpCode.CodeConverter.Shared
     public class ProjectConversion
     {
         private readonly IReadOnlyCollection<Document> _documentsToConvert;
-        private readonly Project _project;
         private readonly ILanguageConversion _languageConversion;
         private readonly bool _showCompilationErrors =
 #if DEBUG && ShowCompilationErrors
@@ -26,45 +25,46 @@ namespace ICSharpCode.CodeConverter.Shared
 #endif
         private readonly bool _returnSelectedNode;
         private static readonly string[] BannedPaths = new[] { ".AssemblyAttributes.", "\\bin\\", "\\obj\\"};
+        private readonly IProjectContentsConverter _projectContentsConverter;
 
-        private ProjectConversion(Project project, IEnumerable<Document> documentsToConvert,
+        private ProjectConversion(IProjectContentsConverter projectContentsConverter, IEnumerable<Document> documentsToConvert,
             ILanguageConversion languageConversion, bool returnSelectedNode = false)
         {
-            _project = project;
+            _projectContentsConverter = projectContentsConverter;
             _languageConversion = languageConversion;
             _documentsToConvert = documentsToConvert.ToList();
             _returnSelectedNode = returnSelectedNode;
         }
 
-        public static async Task<ConversionResult> ConvertText<TLanguageConversion>(string text, IReadOnlyCollection<PortableExecutableReference> references, string rootNamespace = null, TLanguageConversion languageConversion = default) where TLanguageConversion : ILanguageConversion, new()
+        public static async Task<ConversionResult> ConvertText<TLanguageConversion>(string text, TextConversionOptions conversionOptions) where TLanguageConversion : ILanguageConversion, new()
         {
             await new SynchronizationContextRemover();
 
-            if (languageConversion == null) {
-                languageConversion = new TLanguageConversion {
-                    RootNamespace = rootNamespace
-                };
-            }
+            var languageConversion = new TLanguageConversion {ConversionOptions = conversionOptions};
             var syntaxTree = languageConversion.MakeFullCompilationUnit(text, out var textSpan);
+            if (textSpan.HasValue) conversionOptions.SelectedTextSpan = textSpan.Value;
             using (var workspace = new AdhocWorkspace()) {
-                var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, references);
-                return await ConvertSingle(document, textSpan ?? new TextSpan(0, 0), languageConversion);
+                var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, conversionOptions.References);
+                return await ConvertSingle<TLanguageConversion>(document, conversionOptions);
             }
         }
 
-        public static async Task<ConversionResult> ConvertSingle(Document document, TextSpan selected, ILanguageConversion languageConversion)
+        public static async Task<ConversionResult> ConvertSingle<TLanguageConversion>(Document document, SingleConversionOptions conversionOptions) where TLanguageConversion : ILanguageConversion, new()
         {
             await new SynchronizationContextRemover();
 
-            bool returnSelectedNode = selected.Length > 0;
+            var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
+
+            bool returnSelectedNode = conversionOptions.SelectedTextSpan.Length > 0;
             if (returnSelectedNode) {
-                document = await WithAnnotatedSelection(document, selected);
+                document = await WithAnnotatedSelection(document, conversionOptions.SelectedTextSpan);
             }
 
-            var project = await languageConversion.InitializeSource(document.Project);
-            document = project.GetDocument(document.Id);
+            var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(document.Project);
 
-            var conversion = new ProjectConversion(project, new[] { document }, languageConversion, returnSelectedNode);
+            document = projectContentsConverter.Project.GetDocument(document.Id);
+
+            var conversion = new ProjectConversion(projectContentsConverter, new[] { document }, languageConversion, returnSelectedNode);
             var conversionResults = (await ConvertProjectContents(conversion, new Progress<ConversionProgress>())).ToList();
             var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
                              ?? conversionResults.First();
@@ -78,8 +78,10 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             await new SynchronizationContextRemover();
 
-            var convertProjectContents = (await ConvertProjectContents(project, progress, languageConversion)).ToArray();
             var sourceFilePathsWithoutExtension = project.Documents.Select(f => f.FilePath).ToImmutableHashSet();
+            var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(project);
+            project = projectContentsConverter.Project;
+            var convertProjectContents = (await ConvertProjectContents(projectContentsConverter, languageConversion, progress)).ToArray();
             var projectPath = Path.GetFullPath(project.GetDirectoryPath());
             string[] relativeFilePathsToAdd =
                 convertProjectContents.Select(r => r.SourcePathOrNull).Where(p => !sourceFilePathsWithoutExtension.Contains(p))
@@ -88,8 +90,8 @@ namespace ICSharpCode.CodeConverter.Shared
 
             var replacementSpecs = replacements.Concat(new[] {
                 AddCompiledItemsRegexFromRelativePaths(relativeFilePathsToAdd),
-                ChangeRootNamespaceRegex(languageConversion.RootNamespace),
-                ChangeLanguageVersionRegex(languageConversion.LanguageVersion)
+                ChangeRootNamespaceRegex(projectContentsConverter.RootNamespace),
+                ChangeLanguageVersionRegex(projectContentsConverter.LanguageVersion)
             }).ToArray();
 
             return convertProjectContents.Concat(new[]
@@ -114,11 +116,12 @@ namespace ICSharpCode.CodeConverter.Shared
         }
 
 
-        private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(Project project, IProgress<ConversionProgress> progress, ILanguageConversion languageConversion)
+        private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(
+            IProjectContentsConverter projectContentsConverter, ILanguageConversion languageConversion,
+            IProgress<ConversionProgress> progress)
         {
-            project = await languageConversion.InitializeSource(project);
-            var documentsToConvert = project.Documents.Where(d => !BannedPaths.Any(d.FilePath.Contains));
-            var projectConversion = new ProjectConversion(project, documentsToConvert, languageConversion);
+            var documentsToConvert = projectContentsConverter.Project.Documents.Where(d => !BannedPaths.Any(d.FilePath.Contains));
+            var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, languageConversion);
 
             return await ConvertProjectContents(projectConversion, progress);
         }
@@ -138,9 +141,10 @@ namespace ICSharpCode.CodeConverter.Shared
             var results = pathNodePairs.Select(pathNodePair => new ConversionResult(pathNodePair.Node?.ToFullString())
                 {SourcePathOrNull = pathNodePair.Path, Exceptions = pathNodePair.Errors.ToList() });
 
-            var warnings = await projectConversion.GetProjectWarnings(projectConversion._project, pathNodePairs);
+            var warnings = await projectConversion.GetProjectWarnings(projectConversion._projectContentsConverter.Project, pathNodePairs);
             if (warnings != null) {
-                string projectDir = projectConversion._project.GetDirectoryPath() ?? projectConversion._project.AssemblyName;
+                string projectDir = projectConversion._projectContentsConverter.Project.GetDirectoryPath()
+                                    ?? projectConversion._projectContentsConverter.Project.AssemblyName;
                 var warningPath = Path.Combine(projectDir, "ConversionWarnings.txt");
                 results = results.Concat(new[]{new ConversionResult { SourcePathOrNull = warningPath, Exceptions = new[] { warnings } }});
             }
@@ -152,7 +156,7 @@ namespace ICSharpCode.CodeConverter.Shared
             IProgress<ConversionProgress> progress)
         {
             var firstPassResults = await ExecutePhase(_documentsToConvert, FirstPass, progress, "Phase 1 of 2:");
-            var (proj1, docs1) = await _languageConversion.GetConvertedProject(firstPassResults);
+            var (proj1, docs1) = await _projectContentsConverter.GetConvertedProject(firstPassResults);
             return await ExecutePhase(proj1.GetDocuments(docs1), SecondPass, progress, "Phase 2 of 2:");
         }
 
@@ -162,7 +166,6 @@ namespace ICSharpCode.CodeConverter.Shared
             progress.Report(new ConversionProgress(phaseTitle));
             var strProgress = new Progress<string>(m => progress.Report(new ConversionProgress(m, 1)));
             return await parameters.ParallelSelectAsync(d => executePass(d, strProgress), Env.MaxDop);
-            ;
         }
 
         private async Task<(string Path, SyntaxNode Node, string[] Errors)> SecondPass((string Path, Document document, string[] Errors) firstPassResult, IProgress<string> progress)
@@ -203,7 +206,7 @@ namespace ICSharpCode.CodeConverter.Shared
             if (!_showCompilationErrors) return null;
 
             var sourceCompilation = await source.GetCompilationAsync();
-            var convertedCompilation = await (await _languageConversion.GetConvertedProject(converted)).project.GetCompilationAsync();
+            var convertedCompilation = await (await _projectContentsConverter.GetConvertedProject(converted)).project.GetCompilationAsync();
             return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(convertedCompilation, "target");
         }
 
@@ -212,7 +215,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var treeFilePath = document.FilePath ?? "";
             progress.Report(treeFilePath);
             try {
-                var convertedNode = await _languageConversion.SingleFirstPass(document);
+                var convertedNode = await _projectContentsConverter.SingleFirstPass(document);
                 var errorAnnotations = convertedNode.GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
                 string[] errors = errorAnnotations.Select(a => a.Data).ToArray();
 
@@ -250,37 +253,5 @@ namespace ICSharpCode.CodeConverter.Shared
 
             return selectedNode ?? resultNode;
         }
-
-        #region ObsoletePublicApi
-
-        [Obsolete("Please use the overload which passes an IProgress")]
-        public static async Task<IEnumerable<ConversionResult>> ConvertProject(Project project, ILanguageConversion languageConversion,
-            params (string, string)[] replacements)
-        {
-            return await ConvertProject(project, languageConversion, new Progress<ConversionProgress>(),
-                replacements.Select(r => (r.Item1, r.Item2, false)).ToArray());
-        }
-
-        [Obsolete("Please use the overload which passes an IProgress")]
-        public static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(Project project,
-            ILanguageConversion languageConversion)
-        {
-            return await ConvertProjectContents(project, new Progress<ConversionProgress>(), languageConversion);
-        }
-
-        [Obsolete("Use an alternate overload of ConvertSingle or ConvertText")]
-        public static async Task<ConversionResult> ConvertSingle(Compilation compilation, SyntaxTree syntaxTree, TextSpan selected,
-            ILanguageConversion languageConversion, Project containingProject = null)
-        {
-            if (containingProject != null) {
-                return await ConvertSingle(containingProject.GetDocument(syntaxTree), selected, languageConversion);
-            }
-            using (var workspace = new AdhocWorkspace()) {
-                var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, compilation.References);
-                return await ConvertSingle(document, new TextSpan(0, 0), languageConversion);
-            }
-        }
-
-        #endregion
     }
 }
