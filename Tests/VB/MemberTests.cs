@@ -12,16 +12,6 @@ namespace CodeConverter.Tests.VB
 {
     public class MemberTests : ConverterTestBase
     {
-        CSToVBConversion CSToVBConversion { get; set; }
-
-        public MemberTests() {
-            CSToVBConversion = new CSToVBConversion { RootNamespace = string.Empty, VBCompilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                .WithOptionExplicit(true)
-                .WithOptionCompareText(false)
-                .WithOptionStrict(OptionStrict.Off)
-                .WithOptionInfer(true)
-            };
-        }
         [Fact]
         public async Task TestPropertyWithModifier()
         {

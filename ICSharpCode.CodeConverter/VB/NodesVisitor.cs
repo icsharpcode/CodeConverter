@@ -185,6 +185,17 @@ namespace ICSharpCode.CodeConverter.VB
                 var id = _commonConversions.ConvertIdentifier(name.Identifier);
                 alias = SyntaxFactory.ImportAliasClause(id);
             }
+            var identifierName = node.Name as CSS.IdentifierNameSyntax;
+            var parentSymbol = _semanticModel.GetDeclaredSymbol(node.Parent) as INamespaceSymbol;
+            INamespaceSymbol fullNamespace = null;
+            if (identifierName != null && parentSymbol != null) {
+                fullNamespace = _semanticModel.LookupNamespacesAndTypes(node.SpanStart, null, identifierName.Identifier.ValueText)
+                    .OfType<INamespaceSymbol>().FirstOrDefault();
+            }
+            if (fullNamespace != null) {
+                _allImports.Add((ImportsStatementSyntax)_vbSyntaxGenerator.NamespaceImportDeclaration(fullNamespace.ToDisplayString()));
+                return null;
+            }
             ImportsClauseSyntax clause = SyntaxFactory.SimpleImportsClause(alias, (NameSyntax)node.Name.Accept(TriviaConvertingVisitor));
             var import = SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList(clause));
             _allImports.Add(import);
