@@ -666,6 +666,37 @@ Friend Class TestClass
     End Event
 End Class");
         }
+        [Fact]
+        public async Task TestCustomEvent_TrivialExpression()
+        {
+            await TestConversionCSharpToVisualBasic(
+@"using System;
+class TestClass {
+    EventHandler _backingField;
+
+    public event EventHandler MyEvent {
+        add { _backingField += value; }
+        remove { _backingField -= value; }
+    }
+}",
+@"Imports System
+
+Friend Class TestClass
+    Private Event _backingField As EventHandler
+
+    Public Custom Event MyEvent As EventHandler
+        AddHandler(ByVal value As EventHandler)
+            AddHandler _backingField, value
+        End AddHandler
+        RemoveHandler(ByVal value As EventHandler)
+            RemoveHandler _backingField, value
+        End RemoveHandler
+        RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
+            RaiseEvent _backingField(sender, e)
+        End RaiseEvent
+    End Event
+End Class");
+        }
 
         [Fact]
         public async Task TestIndexer()
