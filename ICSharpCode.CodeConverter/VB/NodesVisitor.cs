@@ -641,7 +641,7 @@ namespace ICSharpCode.CodeConverter.VB
                 .Where(x => x.Expression != null)
                 .Select(x => x.Expression)
                 .OfType<CSS.AssignmentExpressionSyntax>()
-                .SelectMany(x => x.Left.DescendantNodes().OfType<CSS.IdentifierNameSyntax>())
+                .SelectMany(x => x.Left.DescendantNodesAndSelf().OfType<CSS.IdentifierNameSyntax>())
                 .FirstOrDefault()?.Accept(TriviaConvertingVisitor);
 
             var riseEventAccessor = SyntaxFactory.RaiseEventAccessorBlock(
