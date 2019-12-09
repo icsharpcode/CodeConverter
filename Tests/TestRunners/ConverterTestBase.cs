@@ -16,18 +16,18 @@ namespace CodeConverter.Tests.TestRunners
 {
     public class ConverterTestBase
     {
-        protected CSToVBConversion CSToVBConversion { get; set; }
-
         private static readonly bool RecharacterizeByWritingExpectedOverActual = TestConstants.RecharacterizeByWritingExpectedOverActual;
 
         private bool _testCstoVBCommentsByDefault = false;
         private readonly string _rootNamespace;
 
+        protected TextConversionOptions EmptyNamespaceOptionStrictOff { get; set; }
+
         public ConverterTestBase(string rootNamespace = null)
         {
             _rootNamespace = rootNamespace;
-            CSToVBConversion = new CSToVBConversion {
-                RootNamespace = string.Empty, VBCompilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+            EmptyNamespaceOptionStrictOff = new TextConversionOptions(DefaultReferences.NetStandard2) {
+                RootNamespaceOverride = string.Empty, TargetCompilationOptionsOverride = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithOptionExplicit(true)
                 .WithOptionCompareText(false)
                 .WithOptionStrict(OptionStrict.Off)

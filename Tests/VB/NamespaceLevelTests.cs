@@ -267,7 +267,7 @@ Namespace System
     Public Class TestClass
         Public Property [Property] As Hashtable
     End Class
-End Namespace", conversion: CSToVBConversion);
+End Namespace", conversion: EmptyNamespaceOptionStrictOff);
         }
         [Fact]
         public async Task ClassImplementsInterface()
