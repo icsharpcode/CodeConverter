@@ -251,7 +251,24 @@ End Structure");
 Namespace test
 End Namespace");
         }
+        [Fact]
+        public async Task InnerNamespace_MoveImportsStatement()
+        {
+            await TestConversionCSharpToVisualBasic(
+@"namespace System {
+    using Collections;
+    public class TestClass {
+        public Hashtable Property { get; set; }
+    }
+}",
+@"Imports System.Collections
 
+Namespace System
+    Public Class TestClass
+        Public Property [Property] As Hashtable
+    End Class
+End Namespace", conversion: EmptyNamespaceOptionStrictOff);
+        }
         [Fact]
         public async Task ClassImplementsInterface()
         {

@@ -12,16 +12,6 @@ namespace CodeConverter.Tests.VB
 {
     public class MemberTests : ConverterTestBase
     {
-        TextConversionOptions EmptyNamespaceOptionStrictOff { get; set; }
-
-        public MemberTests() {
-            EmptyNamespaceOptionStrictOff = new TextConversionOptions(DefaultReferences.NetStandard2) { RootNamespaceOverride = string.Empty, TargetCompilationOptionsOverride = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                .WithOptionExplicit(true)
-                .WithOptionCompareText(false)
-                .WithOptionStrict(OptionStrict.Off)
-                .WithOptionInfer(true)
-            };
-        }
         [Fact]
         public async Task TestPropertyWithModifier()
         {
