@@ -185,6 +185,17 @@ namespace ICSharpCode.CodeConverter.VB
                 var id = _commonConversions.ConvertIdentifier(name.Identifier);
                 alias = SyntaxFactory.ImportAliasClause(id);
             }
+            var identifierName = node.Name as CSS.IdentifierNameSyntax;
+            var parentSymbol = _semanticModel.GetDeclaredSymbol(node.Parent) as INamespaceSymbol;
+            INamespaceSymbol fullNamespace = null;
+            if (identifierName != null && parentSymbol != null) {
+                fullNamespace = _semanticModel.LookupNamespacesAndTypes(node.SpanStart, null, identifierName.Identifier.ValueText)
+                    .OfType<INamespaceSymbol>().FirstOrDefault();
+            }
+            if (fullNamespace != null) {
+                _allImports.Add((ImportsStatementSyntax)_vbSyntaxGenerator.NamespaceImportDeclaration(fullNamespace.ToDisplayString()));
+                return null;
+            }
             ImportsClauseSyntax clause = SyntaxFactory.SimpleImportsClause(alias, (NameSyntax)node.Name.Accept(TriviaConvertingVisitor));
             var import = SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList(clause));
             _allImports.Add(import);
@@ -202,7 +213,7 @@ namespace ICSharpCode.CodeConverter.VB
             List<ImplementsStatementSyntax> implements = new List<ImplementsStatementSyntax>();
             _commonConversions.ConvertBaseList(node, inherits, implements);
             members.AddRange(_cSharpHelperMethodDefinition.GetExtraMembers());
-            if (node.Modifiers.Any(CS.SyntaxKind.StaticKeyword)) {
+            if (IsNonGenericStatic(node)) {
                 return SyntaxFactory.ModuleBlock(
                     SyntaxFactory.ModuleStatement(
                         SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.InterfaceOrModule),
@@ -262,7 +273,7 @@ namespace ICSharpCode.CodeConverter.VB
 
             return SyntaxFactory.InterfaceBlock(
                 SyntaxFactory.InterfaceStatement(
-                    SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.InterfaceOrModule), _commonConversions.ConvertIdentifier(node.Identifier),
+                    SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Global), _commonConversions.ConvertIdentifier(node.Identifier),
                     (TypeParameterListSyntax)node.TypeParameterList?.Accept(TriviaConvertingVisitor)
                 ),
                 SyntaxFactory.List(inherits),
@@ -440,9 +451,6 @@ namespace ICSharpCode.CodeConverter.VB
                 if (!((CS.CSharpSyntaxTree)node.SyntaxTree).HasUsingDirective("System.Runtime.CompilerServices"))
                     _allImports.Add(SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(SyntaxFactory.SimpleImportsClause(SyntaxFactory.ParseName("System.Runtime.CompilerServices")))));
             }
-            if (containingType?.IsStatic == true) {
-                modifiers = SyntaxFactory.TokenList(modifiers.Where(t => !(t.IsKind(SyntaxKind.SharedKeyword, SyntaxKind.PublicKeyword))));
-            }
 
             var implementsClause = methodInfo == null ? null : CreateImplementsClauseSyntaxOrNull(methodInfo, id);
             if (methodInfo?.GetReturnType()?.SpecialType == SpecialType.System_Void) {
@@ -486,9 +494,15 @@ namespace ICSharpCode.CodeConverter.VB
             return !implementors.Any() ? null: CreateImplementsClauseSyntax(implementors, id);
         }
         ImplementsClauseSyntax CreateImplementsClauseSyntax(IEnumerable<ISymbol> implementors, SyntaxToken id) {
-            return SyntaxFactory.ImplementsClause(implementors.Select(x =>
-                    SyntaxFactory.QualifiedName(SyntaxFactory.IdentifierName(x.ContainingSymbol.Name), SyntaxFactory.IdentifierName(id))
-                ).ToArray()
+            return SyntaxFactory.ImplementsClause(implementors.Select(x => {
+                    var namedTypeSymbol = x.ContainingSymbol as INamedTypeSymbol;
+                    NameSyntax nameSyntax = null; 
+                    if(namedTypeSymbol == null || !namedTypeSymbol.IsGenericType)
+                        nameSyntax = SyntaxFactory.IdentifierName(x.ContainingSymbol.Name);
+                    else
+                        nameSyntax = SyntaxFactory.GenericName(x.ContainingSymbol.Name, SyntaxFactory.TypeArgumentList(namedTypeSymbol.TypeArguments.Select(y => GetTypeSyntax(y)).ToArray()));
+                    return SyntaxFactory.QualifiedName(nameSyntax, SyntaxFactory.IdentifierName(id));
+                }).ToArray()
             );
         }
 
@@ -582,11 +596,11 @@ namespace ICSharpCode.CodeConverter.VB
 
         private TokenContext GetMemberContext(CSS.MemberDeclarationSyntax member)
         {
-            var parentType = member.GetAncestorOrThis<CSS.BaseTypeDeclarationSyntax>();
+            var parentType = member.GetAncestorOrThis<CSS.TypeDeclarationSyntax>();
             var parentTypeKind = parentType?.Kind();
             switch (parentTypeKind) {
                 case CS.SyntaxKind.ClassDeclaration:
-                    return parentType.GetModifiers().Any(CS.SyntaxKind.StaticKeyword) ? TokenContext.MemberInModule : TokenContext.MemberInClass;
+                    return IsNonGenericStatic(parentType) ? TokenContext.MemberInModule : TokenContext.MemberInClass;
                 case CS.SyntaxKind.InterfaceDeclaration:
                     return TokenContext.MemberInInterface;
                 case CS.SyntaxKind.StructDeclaration:
@@ -594,6 +608,9 @@ namespace ICSharpCode.CodeConverter.VB
                 default:
                     throw new ArgumentOutOfRangeException(nameof(member), parentTypeKind, null);
             }
+        }
+        bool IsNonGenericStatic(CSS.TypeDeclarationSyntax type) {
+            return type.Modifiers.Any(CS.SyntaxKind.StaticKeyword) && type.TypeParameterList == null;
         }
 
         public override VisualBasicSyntaxNode VisitEventDeclaration(CSS.EventDeclarationSyntax node)
@@ -1566,6 +1583,7 @@ namespace ICSharpCode.CodeConverter.VB
                 (CSS.MethodDeclarationSyntax m) => m.ConstraintClauses,
                 (CSS.ClassDeclarationSyntax c) => c.ConstraintClauses,
                 (CSS.DelegateDeclarationSyntax d) => d.ConstraintClauses,
+                (CSS.InterfaceDeclarationSyntax i) => i.ConstraintClauses,
                 _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
             );
             return clauses.FirstOrDefault(c => c.Name.ToString() == node.ToString());

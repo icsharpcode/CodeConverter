@@ -251,7 +251,24 @@ End Structure");
 Namespace test
 End Namespace");
         }
+        [Fact]
+        public async Task InnerNamespace_MoveImportsStatement()
+        {
+            await TestConversionCSharpToVisualBasic(
+@"namespace System {
+    using Collections;
+    public class TestClass {
+        public Hashtable Property { get; set; }
+    }
+}",
+@"Imports System.Collections
 
+Namespace System
+    Public Class TestClass
+        Public Property [Property] As Hashtable
+    End Class
+End Namespace", conversion: CSToVBConversion);
+        }
         [Fact]
         public async Task ClassImplementsInterface()
         {
@@ -370,6 +387,60 @@ End Class");
             await TestConversionCSharpToVisualBasic("class test : System.IO.InvalidDataException { }",
 @"Friend Class test
     Inherits InvalidDataException
+End Class");
+        }
+        [Fact]
+        public async Task StaticGenericClass() {
+            await TestConversionCSharpToVisualBasic(
+@"using System.Threading.Tasks;
+
+public abstract class Class1 {
+}
+
+public static class TestClass<T> where T : Class1, new() {
+        static Task task;
+        static TestClass() {
+        }
+        public static Task Method() {
+            return task;
+        }
+    }",
+@"Imports System.Threading.Tasks
+
+Public MustInherit Class Class1
+End Class
+
+Public NotInheritable Class TestClass(Of T As {Class1, New})
+    Private Shared task As Task
+
+    Shared Sub New()
+    End Sub
+
+    Public Shared Function Method() As Task
+        Return task
+    End Function
+End Class");
+        }
+        [Fact]
+        public async Task ImplementsGenericInterface()
+        {
+            await TestConversionCSharpToVisualBasic(
+@"public interface ITestInterface<T> {
+    void Method(List<T> list);
+}
+public class TestClass : ITestInterface<string> {
+    public void Method(List<string> list) {
+    }
+",
+@"Public Interface ITestInterface(Of T)
+    Sub Method(ByVal list As List(Of T))
+End Interface
+
+Public Class TestClass
+    Implements ITestInterface(Of String)
+
+    Public Sub Method(ByVal list As List(Of String)) Implements ITestInterface(Of String).Method
+    End Sub
 End Class");
         }
     }

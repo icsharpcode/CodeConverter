@@ -7,6 +7,8 @@ using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.VisualBasic;
 using Xunit;
 using Xunit.Sdk;
 
@@ -14,6 +16,8 @@ namespace CodeConverter.Tests.TestRunners
 {
     public class ConverterTestBase
     {
+        protected CSToVBConversion CSToVBConversion { get; set; }
+
         private static readonly bool RecharacterizeByWritingExpectedOverActual = TestConstants.RecharacterizeByWritingExpectedOverActual;
 
         private bool _testCstoVBCommentsByDefault = false;
@@ -22,6 +26,13 @@ namespace CodeConverter.Tests.TestRunners
         public ConverterTestBase(string rootNamespace = null)
         {
             _rootNamespace = rootNamespace;
+            CSToVBConversion = new CSToVBConversion {
+                RootNamespace = string.Empty, VBCompilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithOptionExplicit(true)
+                .WithOptionCompareText(false)
+                .WithOptionStrict(OptionStrict.Off)
+                .WithOptionInfer(true)
+            };
         }
 
         protected static async Task<string> GetConvertedCodeOrErrorString<TLanguageConversion>(string toConvert, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
