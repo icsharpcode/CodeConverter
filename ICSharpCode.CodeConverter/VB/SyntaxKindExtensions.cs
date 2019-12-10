@@ -67,7 +67,7 @@ namespace ICSharpCode.CodeConverter.VB
                 case Microsoft.CodeAnalysis.CSharp.SyntaxKind.ProtectedKeyword:
                     return SyntaxKind.ProtectedKeyword;
                 case Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword:
-                    return SyntaxKind.SharedKeyword;
+                    return context == TokenContext.Global ? SyntaxKind.NotInheritableKeyword : SyntaxKind.SharedKeyword;
                 case Microsoft.CodeAnalysis.CSharp.SyntaxKind.ReadOnlyKeyword:
                     return SyntaxKind.ReadOnlyKeyword;
                 case Microsoft.CodeAnalysis.CSharp.SyntaxKind.SealedKeyword:

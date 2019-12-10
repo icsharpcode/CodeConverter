@@ -7,6 +7,8 @@ using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.VisualBasic;
 using Xunit;
 using Xunit.Sdk;
 
@@ -19,9 +21,18 @@ namespace CodeConverter.Tests.TestRunners
         private bool _testCstoVBCommentsByDefault = false;
         private readonly string _rootNamespace;
 
+        protected TextConversionOptions EmptyNamespaceOptionStrictOff { get; set; }
+
         public ConverterTestBase(string rootNamespace = null)
         {
             _rootNamespace = rootNamespace;
+            EmptyNamespaceOptionStrictOff = new TextConversionOptions(DefaultReferences.NetStandard2) {
+                RootNamespaceOverride = string.Empty, TargetCompilationOptionsOverride = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithOptionExplicit(true)
+                .WithOptionCompareText(false)
+                .WithOptionStrict(OptionStrict.Off)
+                .WithOptionInfer(true)
+            };
         }
 
         protected static async Task<string> GetConvertedCodeOrErrorString<TLanguageConversion>(string toConvert, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
