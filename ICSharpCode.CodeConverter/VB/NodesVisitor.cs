@@ -878,7 +878,20 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitParenthesizedExpression(CSS.ParenthesizedExpressionSyntax node)
         {
-            return SyntaxFactory.ParenthesizedExpression((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
+            return node.Expression.Accept(TriviaConvertingVisitor).TypeSwitch<VisualBasicSyntaxNode, AssignmentStatementSyntax, ExpressionSyntax, VisualBasicSyntaxNode>(
+                (AssignmentStatementSyntax statement) => SyntaxFactory.MultiLineFunctionLambdaExpression(
+                       SyntaxFactory.LambdaHeader(
+                               SyntaxKind.FunctionLambdaHeader,
+                               SyntaxFactory.Token(SyntaxKind.FunctionKeyword)
+                       ),
+                       new SyntaxList<StatementSyntax>(new StatementSyntax[] {
+                            statement,
+                            SyntaxFactory.ReturnStatement(statement.Left)
+                       }),
+                       SyntaxFactory.EndFunctionStatement()
+                   ),
+                (ExpressionSyntax expression) => SyntaxFactory.ParenthesizedExpression(expression)
+            );
         }
 
         public override VisualBasicSyntaxNode VisitPrefixUnaryExpression(CSS.PrefixUnaryExpressionSyntax node)
@@ -925,6 +938,9 @@ namespace ICSharpCode.CodeConverter.VB
                 return MakeAssignmentStatement(node);
             }
             if (node.Parent is CSS.ForStatementSyntax) {
+                return MakeAssignmentStatement(node);
+            }
+            if (node.Parent.IsParentKind(CS.SyntaxKind.CoalesceExpression)) {
                 return MakeAssignmentStatement(node);
             }
             if (node.Parent is CSS.InitializerExpressionSyntax) {
