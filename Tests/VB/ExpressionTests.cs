@@ -241,7 +241,7 @@ End Class");
             Return If(prop, Function()
                                 prop2 = CreateProperty
                                 Return prop2
-                            End Function)
+                            End Function())
         End Get
     End Property
 
