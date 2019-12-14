@@ -9,38 +9,37 @@
 
 <div class="row">
     <div class="col-md-8">
-        <div ng-app="ccApp" ng-controller="ccController" ng-cloak>
-
+        <div id="app">
             <div class="form-group">
-                <label>Input code ({{inputCodeLanguage()}})</label>
-                <textarea id="inputTextArea" class="form-control" ng-model="inputCode" rows="10" style="min-width: 100%"></textarea>
+                <label>Input code ({{inputCodeLanguage}})</label>
+                <textarea id="inputTextArea" v-model="inputCode" class="form-control" rows="10" style="min-width: 100%"></textarea>
             </div>
             <div class="form-group">
-                <button id="convert-button" class="btn btn-default" ng-click="convert()">Convert Code</button>
+                <button id="convert-button" class="btn btn-default" v-on:click="convert()">Convert Code</button>
                 &nbsp;
                 <label class="horizontal-spaced">
-                    <input type="radio" ng-model="requestedConversion" value="vbnet2cs" ng-click="setDefaultInput()">
+                    <input type="radio" v-model="requestedConversion" value="vbnet2cs">
                     VB.NET to C#
                 </label>
                 &nbsp;
                 <label class="horizontal-spaced">
-                    <input type="radio" ng-model="requestedConversion" value="cs2vbnet" ng-click="setDefaultInput()">
+                    <input type="radio" v-model="requestedConversion" value="cs2vbnet">
                     C# to VB.NET
                 </label>
                 &nbsp;
-                <div class="spinner horizontal-spaced" ng-show="converterCallInflight"></div>
+                <div class="spinner horizontal-spaced" v-if="converterCallInflight"></div>
             </div>
             <div class="form-group">
-                <label>Converted code ({{outputCodeLanguage()}})</label>
-                <textarea id="outputTextArea" class="form-control" ng-model="convertedCode" rows="10" style="min-width: 100%"></textarea>
+                <label>Converted code ({{outputCodeLanguage}})</label>
+                <textarea id="outputTextArea" v-model="convertedCode" class="form-control" rows="10" style="min-width: 100%"></textarea>
             </div>
 
-            <p ng-show="showErrors" style="white-space: pre-wrap">Error message:<br />{{errorMessageOnResponse}}</p>
+            <p v-if="showErrors" style="white-space: pre-wrap">Error message:<br />{{errorMessageOnResponse}}</p>
 
             <p>Get a more accurate conversion by using our free <a href="https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter">Code Converter extension for Visual Studio</a>.</p>
         </div>
     </div>
 </div>
 
-<script src="~/js/angular.min.js"></script>
+<script src="~/js/vue-2.6.10.min.js"></script>
 <script src="~/js/index.js"></script>
