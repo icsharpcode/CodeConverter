@@ -879,17 +879,21 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitParenthesizedExpression(CSS.ParenthesizedExpressionSyntax node)
         {
             return node.Expression.Accept(TriviaConvertingVisitor).TypeSwitch<VisualBasicSyntaxNode, AssignmentStatementSyntax, ExpressionSyntax, VisualBasicSyntaxNode>(
-                (AssignmentStatementSyntax statement) => SyntaxFactory.MultiLineFunctionLambdaExpression(
-                       SyntaxFactory.LambdaHeader(
-                               SyntaxKind.FunctionLambdaHeader,
-                               SyntaxFactory.Token(SyntaxKind.FunctionKeyword)
-                       ).WithParameterList(SyntaxFactory.ParameterList()),
-                       new SyntaxList<StatementSyntax>(new StatementSyntax[] {
+                (AssignmentStatementSyntax statement) => {
+                    var subOrFunctionHeader = SyntaxFactory.LambdaHeader(
+                        SyntaxKind.FunctionLambdaHeader,
+                        SyntaxFactory.Token(SyntaxKind.FunctionKeyword)
+                    ).WithParameterList(SyntaxFactory.ParameterList());
+                    var multiLineFunctionLambdaExpression = SyntaxFactory.MultiLineFunctionLambdaExpression(
+                        subOrFunctionHeader,
+                        new SyntaxList<StatementSyntax>(new StatementSyntax[] {
                             statement,
                             SyntaxFactory.ReturnStatement(statement.Left)
-                       }),
-                       SyntaxFactory.EndFunctionStatement()
-                   ),
+                        }),
+                        SyntaxFactory.EndFunctionStatement()
+                    );
+                    return multiLineFunctionLambdaExpression;
+                },
                 (ExpressionSyntax expression) => SyntaxFactory.ParenthesizedExpression(expression)
             );
         }
