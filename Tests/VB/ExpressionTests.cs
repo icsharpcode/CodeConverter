@@ -238,7 +238,7 @@ End Class");
 
     Private ReadOnly Property [Property] As String
         Get
-            Return If(prop, Function
+            Return If(prop, Function()
                                 prop2 = CreateProperty
                                 Return prop2
                             End Function)

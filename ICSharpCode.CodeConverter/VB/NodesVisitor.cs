@@ -496,7 +496,7 @@ namespace ICSharpCode.CodeConverter.VB
         ImplementsClauseSyntax CreateImplementsClauseSyntax(IEnumerable<ISymbol> implementors, SyntaxToken id) {
             return SyntaxFactory.ImplementsClause(implementors.Select(x => {
                     var namedTypeSymbol = x.ContainingSymbol as INamedTypeSymbol;
-                    NameSyntax nameSyntax = null; 
+                    NameSyntax nameSyntax = null;
                     if(namedTypeSymbol == null || !namedTypeSymbol.IsGenericType)
                         nameSyntax = SyntaxFactory.IdentifierName(x.ContainingSymbol.Name);
                     else
@@ -883,7 +883,7 @@ namespace ICSharpCode.CodeConverter.VB
                        SyntaxFactory.LambdaHeader(
                                SyntaxKind.FunctionLambdaHeader,
                                SyntaxFactory.Token(SyntaxKind.FunctionKeyword)
-                       ),
+                       ).WithParameterList(SyntaxFactory.ParameterList()),
                        new SyntaxList<StatementSyntax>(new StatementSyntax[] {
                             statement,
                             SyntaxFactory.ReturnStatement(statement.Left)
