@@ -64,8 +64,8 @@ namespace WindowsAppVb
             AutoScaleDimensions = new SizeF(6F, 13F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(292, 273);
-            Controls.Add(this._CheckBox1);
-            Controls.Add(this._Button1);
+            Controls.Add(_CheckBox1);
+            Controls.Add(_Button1);
             Name = "WinformsDesignerTest";
             Text = "Form1";
             base.Load += WinformsDesignerTest_EnsureSelfEventsWork;

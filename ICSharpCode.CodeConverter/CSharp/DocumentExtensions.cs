@@ -41,8 +41,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 ? (Func<SemanticModel, SyntaxNode, bool>)ShouldExpandVbNode
                 : ShouldExpandCsNode;
             document = await WorkaroundBugsInExpandVbAsync(document, shouldExpand);
+
+#if SimplifierBugsAreFixed  //See https://github.com/icsharpcode/CodeConverter/pull/449 and https://github.com/icsharpcode/CodeConverter/pull/464
             document = await ExpandVbAsync(document, shouldExpand);
-            return await UndoVbExpansionsHardToReverseInCSharpSemanticModel(document);
+            document = await UndoVbExpansionsHardToReverseInCSharpSemanticModel(document);
+#endif
+            return document;
         }
 
         private static async Task<Document> WorkaroundBugsInExpandVbAsync(Document document, Func<SemanticModel, SyntaxNode, bool> shouldExpand)
