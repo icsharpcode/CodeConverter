@@ -81,12 +81,12 @@ var app = new Vue({
     beforeMount() {
         this.setDefaultInput();
 
-            // Ctrl-enter converts
-            document.body.addEventListener('keydown', function (e) {
-                if ((e.ctrlKey || e.metaKey) && (e.keyCode === 13 || e.keyCode === 10)) {
-                    document.getElementById("convert-button").click();
-                    e.preventDefault();
-                }
-            });
+        // Ctrl-enter converts
+        document.body.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && (e.keyCode === 13 || e.keyCode === 10)) {
+                document.getElementById("convert-button").click();
+                e.preventDefault();
+            }
+        });
     }
 });
