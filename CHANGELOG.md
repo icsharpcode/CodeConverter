@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Vsix
 
+* Fixed error caused when converting with "Copy to clipboard" option enabled
+
 ### VB -> C#
 * Add modifier for nested types
 * Remove body for converted extern methods

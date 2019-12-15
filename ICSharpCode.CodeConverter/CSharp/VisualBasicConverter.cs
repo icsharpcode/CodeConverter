@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
@@ -15,11 +16,21 @@ namespace ICSharpCode.CodeConverter.CSharp
             var compilation = await document.Project.GetCompilationAsync();
             var tree = await document.GetSyntaxTreeAsync();
             var semanticModel = compilation.GetSemanticModel(tree, true);
-            var root = (VBasic.VisualBasicSyntaxNode)await document.GetSyntaxRootAsync();
+            var root = await document.GetSyntaxRootAsync() as VBasic.VisualBasicSyntaxNode ??
+                       throw new InvalidOperationException(NullRootError(document));
+
             var csSyntaxGenerator = SyntaxGenerator.GetGenerator(csharpReferenceProject);
             var visualBasicSyntaxVisitor = new
                 DeclarationNodeVisitor(document, compilation, semanticModel, csharpViewOfVbSymbols, csSyntaxGenerator);
             return await root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
+        }
+
+        private static string NullRootError(Document document)
+        {
+            string initial = document.Project.Language != LanguageNames.VisualBasic
+                ? "Document cannot be converted because it's not within a VB project."
+                : "Could not find valid VB within document.";
+            return initial + " For best results, convert a VB document from within a VB project which compiles successfully.";
         }
     }
 }
