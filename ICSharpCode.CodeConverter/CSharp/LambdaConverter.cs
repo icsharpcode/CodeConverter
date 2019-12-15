@@ -57,38 +57,44 @@ namespace ICSharpCode.CodeConverter.CSharp
             return lambda;
         }
 
+
         private async Task<CSharpSyntaxNode> ConvertToFunctionDeclarationOrNull(VBSyntax.LambdaExpressionSyntax vbNode,
             ParameterListSyntax param, BlockSyntax block,
             ArrowExpressionClauseSyntax arrow)
         {
-            if (!(_semanticModel.GetOperation(vbNode) is IAnonymousFunctionOperation operation)) {
+            if (!(_semanticModel.GetOperation(vbNode) is IAnonymousFunctionOperation anonFuncOp)) {
                 return null;
             }
 
+            var potentialAncestorDeclarationOperation = anonFuncOp.GetParentIgnoringConversions();
             // Could do: See if we can improve upon returning "object" for pretty much everything (which is what the symbols say)
             // I believe that in general, special VB functions such as MultiplyObject are designed to work the same as integer when given two integers for example.
             // If all callers currently pass an integer, perhaps it'd be more idiomatic in C# to specify "int", than to have Operators
-            var paramsWithTypes = operation.Symbol.Parameters.Select(p => CommonConversions.CsSyntaxGenerator.ParameterDeclaration(p));
+            var paramsWithTypes = anonFuncOp.Symbol.Parameters.Select(p => CommonConversions.CsSyntaxGenerator.ParameterDeclaration(p));
 
             var paramListWithTypes = param.WithParameters(SyntaxFactory.SeparatedList(paramsWithTypes));
-            var potentialAncestorDeclarationOperation = operation?.Parent?.Parent?.Parent;
             if (potentialAncestorDeclarationOperation is IFieldInitializerOperation fieldInit) {
                 var fieldSymbol = fieldInit.InitializedFields.Single();
                 if (fieldSymbol.GetResultantVisibility() != SymbolVisibility.Public && !fieldSymbol.Type.IsDelegateReferencableByName() && await _solution.HasWriteUsagesAsync(fieldSymbol) == false) {
-                    return CreateMethodDeclaration(operation, fieldSymbol, block, arrow);
+                    return CreateMethodDeclaration(anonFuncOp, fieldSymbol, block, arrow);
                 }
             }
 
-            var potentialDeclarationOperation = potentialAncestorDeclarationOperation?.Parent;
-            if (potentialDeclarationOperation is IVariableDeclarationGroupOperation go) {
-                potentialDeclarationOperation = go.Declarations.Single();
-            }
+            if (potentialAncestorDeclarationOperation is IVariableInitializerOperation vio) {
+                if (vio.GetParentIgnoringConversions() is IVariableDeclarationGroupOperation go) {
+                    potentialAncestorDeclarationOperation = go.Declarations.First(d => d.Syntax.FullSpan.Contains(vbNode.FullSpan));
+                } else {
+                    potentialAncestorDeclarationOperation = vio.Parent;
+                }
 
-            if (potentialDeclarationOperation is IVariableDeclarationOperation variableDeclaration) {
-                var variableDeclaratorOperation = variableDeclaration.Declarators.Single();
-                if (!variableDeclaratorOperation.Symbol.Type.IsDelegateReferencableByName() && await _solution.HasWriteUsagesAsync(variableDeclaratorOperation.Symbol) == false) {
-                    //Should do: Check no (other) write usages exist: SymbolFinder.FindReferencesAsync + checking if they're an assignment LHS or out parameter
-                    return CreateLocalFunction(operation, variableDeclaratorOperation, paramListWithTypes, block, arrow);
+                if (potentialAncestorDeclarationOperation is IVariableDeclarationOperation variableDeclaration) {
+                    var variableDeclaratorOperation = variableDeclaration.Declarators.Single();
+                    if (!variableDeclaratorOperation.Symbol.Type.IsDelegateReferencableByName() &&
+                        await _solution.HasWriteUsagesAsync(variableDeclaratorOperation.Symbol) == false) {
+                        //Should do: Check no (other) write usages exist: SymbolFinder.FindReferencesAsync + checking if they're an assignment LHS or out parameter
+                        return CreateLocalFunction(anonFuncOp, variableDeclaratorOperation, paramListWithTypes, block,
+                            arrow);
+                    }
                 }
             }
 

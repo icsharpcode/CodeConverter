@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
 using IOperation = Microsoft.CodeAnalysis.IOperation;
+using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
@@ -191,7 +193,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.SingletonSeparatedList(
                             SyntaxFactory.Argument(expressionSyntax)))
                 ) // Hopefully will be a compile error if it's wrong
-                : ValidSyntaxFactory.CastExpression(SyntaxFactory.PredefinedType(node.Keyword.ConvertToken()), (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor));
+                : ValidSyntaxFactory.CastExpression(SyntaxFactory.PredefinedType(node.Keyword.ConvertToken()), expressionSyntax);
         }
 
         public override async Task<CSharpSyntaxNode> VisitTryCastExpression(VBasic.Syntax.TryCastExpressionSyntax node)
@@ -278,7 +280,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var isDefaultProperty = nodeSymbol is IPropertySymbol p && VBasic.VisualBasicExtensions.IsDefault(p);
             ExpressionSyntax left = null;
             if (node.Expression is VBasic.Syntax.MyClassExpressionSyntax) {
-                if (nodeSymbol.IsStatic) {
+                if (nodeSymbol?.IsStatic != false) {
                     var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
                     left = CommonConversions.GetTypeSyntax(typeInfo.Type);
                 } else {
@@ -650,9 +652,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return await ConvertMyGroupCollectionPropertyGetWithUnderlyingField(co.Operand.Syntax);
                 case IPropertyReferenceOperation pro when pro.Property.IsMyGroupCollectionProperty():
                     var associatedField = pro.Property.GetAssociatedField();
-                    var propertyAccessExpression = (VBSyntax.MemberAccessExpressionSyntax)pro.Syntax;
-                    var qualification = await propertyAccessExpression.Expression.AcceptAsync(TriviaConvertingVisitor);
-                    return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, (ExpressionSyntax) qualification, SyntaxFactory.IdentifierName(associatedField.Name));
+                    var propertyReferenceOperation = ((IPropertyReferenceOperation) pro.Instance);
+                    var qualification = SyntaxFactory.ParseExpression(propertyReferenceOperation.Syntax.ToString());
+                    return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, qualification, SyntaxFactory.IdentifierName(associatedField.Name));
                 default:
                     return null;
             }
@@ -664,7 +666,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var expressionSymbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
             var expressionReturnType = expressionSymbol?.GetReturnType() ?? _semanticModel.GetTypeInfo(node.Expression).Type;
             var operation = _semanticModel.GetOperation(node);
-            if (expressionSymbol?.ContainingNamespace.MetadataName == "VisualBasic" && await SubstituteVisualBasicMethodOrNull(node) is CSharpSyntaxNode csEquivalent) {
+            if (expressionSymbol?.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic) && await SubstituteVisualBasicMethodOrNull(node) is CSharpSyntaxNode csEquivalent) {
                 return csEquivalent;
             }
 
@@ -942,12 +944,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitGenericName(VBasic.Syntax.GenericNameSyntax node)
         {
-            var genericNameSyntax = SyntaxFactory.GenericName(ConvertIdentifier(node.Identifier), (TypeArgumentListSyntax) await node.TypeArgumentList.AcceptAsync(TriviaConvertingVisitor));
+            var symbol = GetSymbolInfoInDocument(node);
+            var genericNameSyntax = await GenericNameAccountingForReducedParameters(node, symbol);
             ExpressionSyntax name = genericNameSyntax;
 
-            if (!node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName)) {
-                var symbol = GetSymbolInfoInDocument(node);
-                if (symbol?.ContainingSymbol != null) {
+
+            if (symbol?.ContainingSymbol != null) {
+
+                if (!node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName)) {
+
                     string lhs;
                     if (symbol.ContainingSymbol.IsType()) {
                         lhs = CommonConversions.GetTypeSyntax(symbol.ContainingSymbol.GetSymbolType()).ToString();
@@ -961,6 +966,37 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return AddEmptyArgumentListIfImplicit(node, name);
+        }
+
+        /// <summary>
+        /// Adjusts for Visual Basic's omission of type arguments that can be inferred in reduced generic method invocations
+        /// The upfront WithExpandedRootAsync pass should ensure this only happens on broken syntax trees.
+        /// In those cases, just comment the errant information. It would only cause a compiling change in behaviour if it can be inferred, was not set to the inferred value, and was reflected upon within the method body
+        /// </summary>
+        private async Task<SimpleNameSyntax> GenericNameAccountingForReducedParameters(VBSyntax.GenericNameSyntax node, ISymbol symbol)
+        {
+            SyntaxToken convertedIdentifier = ConvertIdentifier(node.Identifier);
+            if (symbol.IsReducedTypeParameterMethod()) {
+                if (symbol is IMethodSymbol vbMethod && CommonConversions.GetCsOriginalSymbolOrNull(symbol) is IMethodSymbol csSymbolWithInferredTypeParametersSet) {
+                    var argSubstitutions = vbMethod.TypeParameters
+                        .Zip(vbMethod.TypeArguments, (parameter, arg) => (parameter, arg))
+                        .ToDictionary(x => x.parameter.Name, x => x.arg);
+                    var allTypeArgs = csSymbolWithInferredTypeParametersSet.GetTypeArguments()
+                        .Select(a => a.Kind == SymbolKind.TypeParameter && argSubstitutions.TryGetValue(a.Name, out var t) ? t : a).ToArray();
+                    return (SimpleNameSyntax)CommonConversions.CsSyntaxGenerator.GenericName(convertedIdentifier.Text, allTypeArgs);
+                }
+                var commentedText = "/* " + (await ConvertTypeArgumentList(node)).ToFullString() + " */";
+                var error = SyntaxFactory.ParseLeadingTrivia($"#error Conversion error: Could not convert all type parameters, so they've been commented out. Inferred type may be different{Environment.NewLine}");
+                var partialConversion = SyntaxFactory.Comment(commentedText);
+                return SyntaxFactory.IdentifierName(convertedIdentifier).WithPrependedLeadingTrivia(error).WithTrailingTrivia(partialConversion);
+            }
+
+            return SyntaxFactory.GenericName(convertedIdentifier, await ConvertTypeArgumentList(node));
+        }
+
+        private async Task<TypeArgumentListSyntax> ConvertTypeArgumentList(VBSyntax.GenericNameSyntax node)
+        {
+            return (TypeArgumentListSyntax)await node.TypeArgumentList.AcceptAsync(TriviaConvertingVisitor);
         }
 
         public override async Task<CSharpSyntaxNode> VisitTypeArgumentList(VBasic.Syntax.TypeArgumentListSyntax node)
@@ -1011,14 +1047,16 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var expressionSyntax = (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor);
 
-            if (convertMethodOrNull != null) {
-                expressionSyntax = Invoke(convertMethodOrNull, expressionSyntax);
-            }
+            if (!(_semanticModel.GetOperation(node) is IConversionOperation co) || !co.Conversion.IsIdentity) {
+                if (convertMethodOrNull != null) {
+                    expressionSyntax = Invoke(convertMethodOrNull, expressionSyntax);
+                }
 
-            if (castToOrNull != null) {
-                expressionSyntax = await Cast(expressionSyntax, castToOrNull);
-                if (node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax) {
-                    expressionSyntax = SyntaxFactory.ParenthesizedExpression(expressionSyntax);
+                if (castToOrNull != null) {
+                    expressionSyntax = await Cast(expressionSyntax, castToOrNull);
+                    if (node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax) {
+                        expressionSyntax = SyntaxFactory.ParenthesizedExpression(expressionSyntax);
+                    }
                 }
             }
 

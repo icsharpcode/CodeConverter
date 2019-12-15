@@ -234,6 +234,11 @@ namespace ICSharpCode.CodeConverter.Util
             return declaredSymbol is ITypeSymbol ts && (ts.DeclaringSyntaxReferences.Length > 1
                 || ts.ContainingAssembly.Name == ForcePartialTypesAssemblyName);
         }
+
+        public static bool IsReducedTypeParameterMethod(this ISymbol symbol)
+        {
+            return symbol is IMethodSymbol ms && ms.ReducedFrom?.TypeParameters.Count() > ms.TypeParameters.Count();
+        }
     }
 }
 

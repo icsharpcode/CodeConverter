@@ -63,7 +63,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static MethodInfo ReflectedPropertyGetter<TInstance>(this TInstance instance,
             string propertyToAccess)
         {
-            var propertyInfo = instance.GetType().GetProperty(propertyToAccess);
+            var propertyInfo = instance.GetType().GetProperty(propertyToAccess, BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
             return propertyInfo?.GetMethod.GetRuntimeBaseDefinition();
         }
     }
