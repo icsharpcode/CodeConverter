@@ -892,7 +892,8 @@ namespace ICSharpCode.CodeConverter.VB
                         }),
                         SyntaxFactory.EndFunctionStatement()
                     );
-                    return SyntaxFactory.InvocationExpression(multiLineFunctionLambdaExpression, SyntaxFactory.ArgumentList());
+                    return SyntaxFactory.InvocationExpression(multiLineFunctionLambdaExpression, SyntaxFactory.ArgumentList())
+                        .WithAdditionalAnnotations(new SyntaxAnnotation(DocumentExtensions.DoNotSimplifyAnnotation));
                 },
                 (ExpressionSyntax expression) => SyntaxFactory.ParenthesizedExpression(expression)
             );
