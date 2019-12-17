@@ -420,6 +420,114 @@ End Module");
     End Property
 End Class");
         }
+        [Fact]
+        public async Task Property_SameName() {
+            await TestConversionCSharpToVisualBasic(
+@"public class TestClass {
+    int test;
+    public int Test {
+        get { return test; }
+        set { test = value}
+    }
+    public int Method() {
+        int test = Test;
+        return test;
+    }
+}",
+@"Public Class TestClass
+    Private _test As Integer
+
+    Public Property Test As Integer
+        Get
+            Return _test
+        End Get
+        Set(ByVal value As Integer)
+            _test = value
+        End Set
+    End Property
+
+    Public Function Method() As Integer
+        Dim _test = Test
+        Return _test
+    End Function
+End Class");
+        }
+        [Fact]
+        public async Task TwoClasses_SameName() {
+            await TestConversionCSharpToVisualBasic(
+@"public class TestClass {
+    int test;
+    public int Test {
+        get { return test; }
+        set { test = value}
+    }
+}
+public class TestClass1 {
+    int test;
+    public int Test1 {
+        get { return test; }
+        set { test = value}
+    }
+}
+",
+@"Public Class TestClass
+    Private _test As Integer
+
+    Public Property Test As Integer
+        Get
+            Return _test
+        End Get
+        Set(ByVal value As Integer)
+            _test = value
+        End Set
+    End Property
+End Class
+
+Public Class TestClass1
+    Private test As Integer
+
+    Public Property Test1 As Integer
+        Get
+            Return test
+        End Get
+        Set(ByVal value As Integer)
+            test = value
+        End Set
+    End Property
+End Class");
+        }
+        [Fact]
+        public async Task Argument_SameName() {
+            await TestConversionCSharpToVisualBasic(
+@"public class TestClass {
+    int test;
+    public int Test {
+        get { return test; }
+        set { test = value}
+    }
+    public int Method(int test) {
+        this.test = test;
+        return test;
+    }
+}",
+@"Public Class TestClass
+    Private _test As Integer
+
+    Public Property Test As Integer
+        Get
+            Return _test
+        End Get
+        Set(ByVal value As Integer)
+            _test = value
+        End Set
+    End Property
+
+    Public Function Method(ByVal test As Integer) As Integer
+        _test = test
+        Return test
+    End Function
+End Class");
+        }
 
         [Fact]
         public async Task TestPropertyWithExpressionBody()

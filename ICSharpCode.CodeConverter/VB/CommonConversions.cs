@@ -18,6 +18,7 @@ using IdentifierNameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.Identifie
 using LambdaExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.LambdaExpressionSyntax;
 using ParameterListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterListSyntax;
 using ParameterSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ParameterSyntax;
+using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 using ReturnStatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ReturnStatementSyntax;
 using StatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSyntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
@@ -34,6 +35,7 @@ namespace ICSharpCode.CodeConverter.VB
         private readonly CSharpSyntaxVisitor<VisualBasicSyntaxNode> _nodesVisitor;
         private readonly TriviaConverter _triviaConverter;
         private readonly SemanticModel _semanticModel;
+        readonly Dictionary<string, HashSet<string>> _renameInfo = new Dictionary<string, HashSet<string>>();
 
         public CommonConversions(SemanticModel semanticModel, CSharpSyntaxVisitor<VisualBasicSyntaxNode> nodesVisitor,
             TriviaConverter triviaConverter)
@@ -464,6 +466,7 @@ namespace ICSharpCode.CodeConverter.VB
             var declarators = new List<VariableDeclaratorSyntax>();
 
             foreach (var v in declaration.Variables) {
+                AddRenameInfoIfNeed(v);
                 if (v.Initializer == null) {
                     declaratorsWithoutInitializers.Add(v);
                 } else {
@@ -483,6 +486,22 @@ namespace ICSharpCode.CodeConverter.VB
 
             return SyntaxFactory.SeparatedList(declarators);
         }
+        
+        void AddRenameInfoIfNeed(CSS.VariableDeclaratorSyntax variable) {
+            var containingType = _semanticModel.GetDeclaredSymbol(variable).ContainingType;
+            bool shouldRename = containingType.GetMembers()
+                .Where(x => x.MatchesKind(SymbolKind.Property))
+                .Select(x => x.Name.ToLower())
+                .Any(x => x == variable.Identifier.Text.ToLower());
+            if (shouldRename) {
+                HashSet<string> toRename;
+                if (!_renameInfo.TryGetValue(containingType.Name, out toRename)) {
+                    toRename = new HashSet<string>();
+                    _renameInfo.Add(containingType.Name, toRename);
+                }
+                toRename.Add(variable.Identifier.Text);
+            }
+        }
 
         public VisualBasicSyntaxNode ConvertTopLevelExpression(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax topLevelExpression)
         {
@@ -498,6 +517,11 @@ namespace ICSharpCode.CodeConverter.VB
         {
             CSharpSyntaxNode parent = (CSharpSyntaxNode) id.Parent;
             var idText = AdjustIfEventIdentifier(id, parent);
+            var symbol = GetSymbol(parent) ?? GetDeclaredSymbol(parent);
+            string typeName = symbol.MatchesKind(SymbolKind.Field, SymbolKind.Local) ? symbol.ContainingType?.Name : null;
+            HashSet<string> idToRename;
+            if (typeName != null && _renameInfo.TryGetValue(typeName, out idToRename) && idToRename.Contains(idText))
+                return Identifier("_" + idText, false);
             // Underscore is a special character in VB lexer which continues lines - not sure where to find the whole set of other similar tokens if any
             // Rather than a complicated contextual rename, just add an extra dash to all identifiers and hope this method is consistently used
             bool keywordRequiresEscaping = id.IsKind(CSSyntaxKind.IdentifierToken) && KeywordRequiresEscaping(id);
@@ -672,6 +696,11 @@ namespace ICSharpCode.CodeConverter.VB
         {
             return syntax.SyntaxTree == _semanticModel.SyntaxTree
                 ? _semanticModel.GetSymbolInfo(syntax).Symbol
+                : null;
+        }
+        private ISymbol GetDeclaredSymbol(CSharpSyntaxNode syntax) {
+            return syntax.SyntaxTree == _semanticModel.SyntaxTree
+                ? _semanticModel.GetDeclaredSymbol(syntax)
                 : null;
         }
 
