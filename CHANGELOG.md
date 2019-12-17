@@ -4,6 +4,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+
+### Vsix
+
+
+### VB -> C#
+
+
+### C# -> VB
+
+
+## [7.4.0] - 2019-12-17
+
 * Several C# API tweaks wrapping conversion options into a type
 
 ### Vsix
