@@ -17,10 +17,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class DocumentExtensions
     {
+        public const string DoNotSimplifyAnnotation = "DoNotSimplify";
         public static async Task<Document> WithSimplifiedSyntaxRootAsync(this Document doc, SyntaxNode syntaxRoot = null)
         {
             var root = syntaxRoot  ?? await doc.GetSyntaxRootAsync();
-            var withSyntaxRoot = doc.WithSyntaxRoot(root.WithAdditionalAnnotations(Simplifier.Annotation));
+            var withSyntaxRoot = doc.WithSyntaxRoot(root);
             try {
                 return await Simplifier.ReduceAsync(withSyntaxRoot);
             } catch {
@@ -31,17 +32,23 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static async Task<Document> SimplifyStatements<TUsingDirectiveSyntax, TExpressionSyntax>(this Document convertedDocument, string unresolvedTypeDiagnosticId)
         where TUsingDirectiveSyntax : SyntaxNode where TExpressionSyntax : SyntaxNode
         {
-            var root = await convertedDocument.GetSyntaxRootAsync();
+            var originalRoot = await convertedDocument.GetSyntaxRootAsync();
             var nodesWithUnresolvedTypes = (await convertedDocument.GetSemanticModelAsync()).GetDiagnostics()
                 .Where(d => d.Id == unresolvedTypeDiagnosticId && d.Location.IsInSource)
-                .Select(d => root.FindNode(d.Location.SourceSpan).GetAncestor<TUsingDirectiveSyntax>())
-                .ToLookup(d => (SyntaxNode) d);
+                .Select(d => originalRoot.FindNode(d.Location.SourceSpan).GetAncestor<TUsingDirectiveSyntax>())
+                .ToLookup(d => (SyntaxNode)d);
+            var annotatedNodesAndParents = originalRoot.GetAnnotatedNodes(DoNotSimplifyAnnotation)
+                .SelectMany(x => x.AncestorsAndSelf())
+                .Distinct()
+                .ToLookup(x => x);
+            var toSimplify = originalRoot
+                .DescendantNodes(n => !(n is TExpressionSyntax) && !nodesWithUnresolvedTypes.Contains(n))
+                .Where(n => !nodesWithUnresolvedTypes.Contains(n) && !annotatedNodesAndParents.Contains(n));
+            var newRoot = originalRoot.ReplaceNodes(toSimplify, (orig, rewritten) =>
+                rewritten.WithAdditionalAnnotations(Simplifier.Annotation)
+                );
 
-            root = root.ReplaceNodes(
-                root.DescendantNodes(n => !(n is TExpressionSyntax) && !nodesWithUnresolvedTypes.Contains(n)),
-                (orig, rewritten) => !nodesWithUnresolvedTypes.Contains(rewritten) ? rewritten.WithAdditionalAnnotations(Simplifier.Annotation) : rewritten);
-
-            var document = await convertedDocument.WithSimplifiedSyntaxRootAsync(root);
+            var document = await convertedDocument.WithSimplifiedSyntaxRootAsync(newRoot);
             return document;
         }
     }
