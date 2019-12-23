@@ -420,49 +420,18 @@ End Module");
     End Property
 End Class");
         }
-        [Fact]
-        public async Task Property_SameName() {
-            await TestConversionCSharpToVisualBasic(
-@"public class TestClass {
-    int test;
-    public int Test {
-        get { return test; }
-        set { test = value}
-    }
-    public int Method() {
-        int test = Test;
-        return test;
-    }
-}",
-@"Public Class TestClass
-    Private _test As Integer
 
-    Public Property Test As Integer
-        Get
-            Return _test
-        End Get
-        Set(ByVal value As Integer)
-            _test = value
-        End Set
-    End Property
-
-    Public Function Method() As Integer
-        Dim _test = Test
-        Return _test
-    End Function
-End Class");
-        }
         [Fact]
-        public async Task TwoClasses_SameName() {
+        public async Task CaseConflict_PropertyAndField_EnsureOtherClassNotAffected() {
             await TestConversionCSharpToVisualBasic(
-@"public class TestClass {
+@"public class HasConflictingPropertyAndField {
     int test;
     public int Test {
         get { return test; }
         set { test = value}
     }
 }
-public class TestClass1 {
+public class ShouldNotChange {
     int test;
     public int Test1 {
         get { return test; }
@@ -470,7 +439,7 @@ public class TestClass1 {
     }
 }
 ",
-@"Public Class TestClass
+@"Public Class HasConflictingPropertyAndField
     Private _test As Integer
 
     Public Property Test As Integer
@@ -483,7 +452,7 @@ public class TestClass1 {
     End Property
 End Class
 
-Public Class TestClass1
+Public Class ShouldNotChange
     Private test As Integer
 
     Public Property Test1 As Integer
@@ -496,21 +465,22 @@ Public Class TestClass1
     End Property
 End Class");
         }
+
         [Fact]
-        public async Task Argument_SameName() {
+        public async Task CaseConflict_ArgumentFieldAndProperty() {
             await TestConversionCSharpToVisualBasic(
-@"public class TestClass {
+@"public class HasConflictingPropertyAndField {
     int test;
     public int Test {
         get { return test; }
         set { test = value}
     }
-    public int Method(int test) {
+    public int HasConflictingParam(int test) {
         this.test = test;
         return test;
     }
 }",
-@"Public Class TestClass
+@"Public Class HasConflictingPropertyAndField
     Private _test As Integer
 
     Public Property Test As Integer
@@ -522,7 +492,7 @@ End Class");
         End Set
     End Property
 
-    Public Function Method(ByVal test As Integer) As Integer
+    Public Function HasConflictingParam(ByVal test As Integer) As Integer
         _test = test
         Return test
     End Function
