@@ -422,6 +422,212 @@ End Class");
         }
 
         [Fact]
+        public async Task CaseConflict_PropertyAndField_EnsureOtherClassNotAffected() {
+            await TestConversionCSharpToVisualBasic(
+@"public class HasConflictingPropertyAndField {
+    int test;
+    public int Test {
+        get { return test; }
+        set { test = value}
+    }
+}
+public class ShouldNotChange {
+    int test;
+    public int Test1 {
+        get { return test; }
+        set { test = value}
+    }
+}
+",
+@"Public Class HasConflictingPropertyAndField
+    Private f_Test As Integer
+
+    Public Property Test As Integer
+        Get
+            Return f_Test
+        End Get
+        Set(ByVal value As Integer)
+            f_Test = value
+        End Set
+    End Property
+End Class
+
+Public Class ShouldNotChange
+    Private test As Integer
+
+    Public Property Test1 As Integer
+        Get
+            Return test
+        End Get
+        Set(ByVal value As Integer)
+            test = value
+        End Set
+    End Property
+End Class");
+        }
+
+        [Fact]
+        public async Task CaseConflict_ArgumentFieldAndMethodWithOverloads() {
+            await TestConversionCSharpToVisualBasic(
+                @"public class HasConflictingMethodAndField {
+
+    public int HasConflictingParam(int test) {
+        this.teSt = test;
+        return test;
+    }
+
+    int teSt;
+
+    private int test() {
+        return 1;
+    }
+
+    public int Test() {
+        return test();
+    }
+
+    private int test(int arg) {
+        return arg;
+    }
+
+    public int Test(int arg) {
+        return test(arg);
+    }
+}",
+                @"Public Class HasConflictingMethodAndField
+    Public Function HasConflictingParam(ByVal test As Integer) As Integer
+        f_TeSt = test
+        Return test
+    End Function
+
+    Private f_TeSt As Integer
+
+    Private Function m_Test() As Integer
+        Return 1
+    End Function
+
+    Public Function Test() As Integer
+        Return m_Test()
+    End Function
+
+    Private Function m_Test(ByVal arg As Integer) As Integer
+        Return arg
+    End Function
+
+    Public Function Test(ByVal arg As Integer) As Integer
+        Return m_Test(arg)
+    End Function
+End Class");
+        }
+
+        [Fact]
+        public async Task CaseConflict_ArgumentFieldAndProperty() {
+            await TestConversionCSharpToVisualBasic(
+@"public class HasConflictingPropertyAndField {
+
+    public int HasConflictingParam(int test) {
+        this.test = test;
+        return test;
+    }
+
+    int test;
+
+    public int Test {
+        get { return test; }
+        set { test = value}
+    }
+}",
+@"Public Class HasConflictingPropertyAndField
+    Public Function HasConflictingParam(ByVal test As Integer) As Integer
+        f_Test = test
+        Return test
+    End Function
+
+    Private f_Test As Integer
+
+    Public Property Test As Integer
+        Get
+            Return f_Test
+        End Get
+        Set(ByVal value As Integer)
+            f_Test = value
+        End Set
+    End Property
+End Class");
+        }
+
+        [Fact(Skip = "Enable this once Expand phases is introduced which should disambiguate")]
+        public async Task CaseConflict_ArgumentPropertyAndField() {
+            await TestConversionCSharpToVisualBasic(
+@"public class HasConflictingPropertyAndField {
+    int test;
+    public int Test {
+        get { return test; }
+        set { test = value}
+    }
+    public int HasConflictingParam(int test) {
+        Test = test;
+        return test;
+    }
+}",
+@"Public Class HasConflictingPropertyAndField
+    Private f_Test As Integer
+
+    Public Property Test As Integer
+        Get
+            Return f_Test
+        End Get
+        Set(ByVal value As Integer)
+            f_Test = value
+        End Set
+    End Property
+
+    Public Function HasConflictingParam(ByVal test As Integer) As Integer
+        Me.Test = test
+        Return test
+    End Function
+End Class");
+        }
+
+        [Fact]
+        public async Task CaseConflict_PartialClass_ArgumentFieldAndProeprty() {
+            await TestConversionCSharpToVisualBasic(
+@"public partial class HasConflictingPropertyAndField {
+    public int HasConflictingParam(int test) {
+        this.test = test;
+        return test;
+    }
+}
+
+public partial class HasConflictingPropertyAndField {
+    int test;
+    public int Test {
+        get { return test; }
+        set { test = value}
+    }
+}",
+@"Public Partial Class HasConflictingPropertyAndField
+    Public Function HasConflictingParam(ByVal test As Integer) As Integer
+        f_Test = test
+        Return test
+    End Function
+End Class
+
+Public Partial Class HasConflictingPropertyAndField
+    Private f_Test As Integer
+
+    Public Property Test As Integer
+        Get
+            Return f_Test
+        End Get
+        Set(ByVal value As Integer)
+            f_Test = value
+        End Set
+    End Property
+End Class");
+        }
+
+        [Fact]
         public async Task TestPropertyWithExpressionBody()
         {
             await TestConversionCSharpToVisualBasic(

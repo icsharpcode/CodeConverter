@@ -1,7 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Editing;
+using Microsoft.CodeAnalysis.FindSymbols;
+using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.VisualBasic;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -20,7 +26,7 @@ namespace ICSharpCode.CodeConverter.VB
                        throw new InvalidOperationException(NullRootError(document));
 
             var vbSyntaxGenerator = SyntaxGenerator.GetGenerator(vbReferenceProject);
-            var visualBasicSyntaxVisitor = new NodesVisitor(document, (CS.CSharpCompilation) compilation, semanticModel, vbViewOfCsSymbols, vbSyntaxGenerator);
+            var visualBasicSyntaxVisitor = new NodesVisitor(document, (CS.CSharpCompilation)compilation, semanticModel, vbViewOfCsSymbols, vbSyntaxGenerator);
             return root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
         }
 
@@ -31,5 +37,6 @@ namespace ICSharpCode.CodeConverter.VB
                 : "Could not find valid C# within document.";
             return initial + " For best results, convert a c# document from within a C# project which compiles successfully.";
         }
+
     }
 }

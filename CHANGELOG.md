@@ -9,7 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
-
+* Simplify compound assignment conversion
+* Avoid some case conflicts
 
 ### C# -> VB
 

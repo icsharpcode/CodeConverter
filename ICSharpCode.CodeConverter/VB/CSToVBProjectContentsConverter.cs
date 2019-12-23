@@ -44,6 +44,8 @@ namespace ICSharpCode.CodeConverter.VB
 
         public async Task InitializeSourceAsync(Project project)
         {
+            // TODO: Don't throw away solution-wide effects - write them to referencing files, and use in conversion of any other projects being converted at the same time.
+            project = await CaseConflictResolver.RenameClashingSymbols(project);
             _sourceCsProject = project;
             _convertedVbProject = project.ToProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
             _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(_vbCompilationOptions);

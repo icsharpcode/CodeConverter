@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -257,10 +258,27 @@ namespace ICSharpCode.CodeConverter.Util
                 .WithTrailingTrivia(typeSyntax.GetTrailingTrivia().ConvertTrivia());
         }
 
-        public static IEnumerable<T> FollowProperty<T>(this T start, Func<T, T> getProperty) where T : class
+        public static IEnumerable<TOut> FollowProperty<TIn, TOut>(this TIn start, Func<TOut, TOut> getProperty) where TOut : class where TIn: TOut
         {
-            for (var current = start; current != null; current = getProperty(current)) {
+            for (TOut current = start; current != null; current = getProperty(current)) {
                 yield return current;
+            }
+        }
+
+        public static IEnumerable<TOut> FollowProperty<TIn, TOut>(this TIn start, Func<TOut, IEnumerable<TOut>> getProperty) where TOut : class where TIn : TOut
+        {
+            var queue = new Queue<TOut>(new TOut[]{start});
+            while (queue.Any()) {
+                var current = queue.Dequeue();
+                yield return current;
+                EnqueueNonNull(queue, getProperty(current));
+            }
+        }
+
+        private static void EnqueueNonNull<T>(Queue<T> queue, IEnumerable<T> range) where T : class
+        {
+            foreach (T r in range.Where(r => r != null)) {
+                queue.Enqueue(r);
             }
         }
     }
