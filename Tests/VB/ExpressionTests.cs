@@ -225,6 +225,7 @@ End Class");
     string prop2;
     string Property {
         get {
+            var z = (() => 3)();
             return this.prop ?? (this.prop2 = CreateProperty());
         }
     }
@@ -238,6 +239,7 @@ End Class");
 
     Private ReadOnly Property [Property] As String
         Get
+            Dim z = (Function() 3)()
             Return If(Me.prop, Function()
                                    Me.prop2 = CreateProperty()
                                    Return Me.prop2
