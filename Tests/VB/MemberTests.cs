@@ -470,17 +470,26 @@ End Class");
         public async Task CaseConflict_ArgumentFieldAndProperty() {
             await TestConversionCSharpToVisualBasic(
 @"public class HasConflictingPropertyAndField {
-    int test;
-    public int Test {
-        get { return test; }
-        set { test = value}
-    }
+
     public int HasConflictingParam(int test) {
         this.test = test;
         return test;
     }
+
+    int test;
+
+    public int Test {
+        get { return test; }
+        set { test = value}
+    }
 }",
 @"Public Class HasConflictingPropertyAndField
+
+    Public Function HasConflictingParam(ByVal test As Integer) As Integer
+        _test = test
+        Return test
+    End Function
+
     Private _test As Integer
 
     Public Property Test As Integer
@@ -491,11 +500,6 @@ End Class");
             _test = value
         End Set
     End Property
-
-    Public Function HasConflictingParam(ByVal test As Integer) As Integer
-        _test = test
-        Return test
-    End Function
 End Class");
         }
 
@@ -509,7 +513,7 @@ End Class");
         set { test = value}
     }
     public int HasConflictingParam(int test) {
-        this.Test = test;
+        Test = test;
         return test;
     }
 }",
