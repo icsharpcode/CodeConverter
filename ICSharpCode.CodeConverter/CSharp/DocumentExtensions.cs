@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,16 +25,28 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Where(d => d.Id == unresolvedTypeDiagnosticId && d.Location.IsInSource)
                 .Select(d => originalRoot.FindNode(d.Location.SourceSpan).GetAncestor<TUsingDirectiveSyntax>())
                 .ToLookup(d => (SyntaxNode) d);
-
-            var toSimplify = originalRoot
-                .DescendantNodes(n => !(n is TExpressionSyntax) && !nodesWithUnresolvedTypes.Contains(n))
-                .Where(n => !nodesWithUnresolvedTypes.Contains(n));
+            var nodesToConsider = originalRoot
+                .DescendantNodes(n =>
+                    !(n is TExpressionSyntax) && !nodesWithUnresolvedTypes.Contains(n) &&
+                    !WouldBeSimplifiedIncorrectly(n))
+                .ToArray();
+            var doNotSimplify = nodesToConsider
+                .Where(n => nodesWithUnresolvedTypes.Contains(n) || WouldBeSimplifiedIncorrectly(n))
+                .SelectMany(n => n.AncestorsAndSelf())
+                .ToImmutableHashSet();
+            var toSimplify = nodesToConsider.Where(n => !doNotSimplify.Contains(n));
             var newRoot = originalRoot.ReplaceNodes(toSimplify, (orig, rewritten) =>
                 rewritten.WithAdditionalAnnotations(Simplifier.Annotation)
-                );
+            );
 
-            var document = await convertedDocument.WithReducedRootAsync(newRoot.WithAdditionalAnnotations(Simplifier.Annotation));
+            var document = await convertedDocument.WithReducedRootAsync(newRoot);
             return document;
+        }
+
+        private static bool WouldBeSimplifiedIncorrectly(SyntaxNode n)
+        {
+            //Sometimes when empty argument list gets removed it changes the behaviour: https://github.com/dotnet/roslyn/issues/40442
+            return n is VBSyntax.InvocationExpressionSyntax ies && !ies.ArgumentList.Arguments.Any();
         }
 
         public static async Task<Document> WithExpandedRootAsync(this Document document)
@@ -162,7 +176,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             return node is VBSyntax.NameSyntax || node is VBSyntax.InvocationExpressionSyntax && !semanticModel.GetSymbolInfo(node).Symbol.IsReducedTypeParameterMethod();
         }
-
         private static bool ShouldExpandCsNode(SemanticModel semanticModel, SyntaxNode node)
         {
             return false;

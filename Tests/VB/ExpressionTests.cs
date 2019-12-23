@@ -216,6 +216,42 @@ End Class");
     End Sub
 End Class");
         }
+        [Fact]
+        public async Task CoalescingExpression_Assignment()
+        {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    string prop;
+    string prop2;
+    string Property {
+        get {
+            var z = (() => 3)();
+            return this.prop ?? (this.prop2 = CreateProperty());
+        }
+    }
+    string CreateProperty() {
+        return """";
+    }
+}",
+@"Friend Class TestClass
+    Private prop As String
+    Private prop2 As String
+
+    Private ReadOnly Property [Property] As String
+        Get
+            Dim z = (Function() 3)()
+            Return If(Me.prop, Function()
+                                   Me.prop2 = CreateProperty()
+                                   Return Me.prop2
+                               End Function())
+        End Get
+    End Property
+
+    Private Function CreateProperty() As String
+        Return """"
+    End Function
+End Class");
+        }
 
         [Fact]
         public async Task MemberAccessAndInvocationExpression()
