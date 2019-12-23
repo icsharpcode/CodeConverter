@@ -66,11 +66,18 @@ namespace CodeConverter.VsExtension
             });
 
             if ((await GetOptions()).CopyResultToClipboardForSingleDocument) {
-                Clipboard.SetText(conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString());
+                await SetClipboardTextOnUiThreadAsync(conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString());
                 await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + "Conversion result copied to clipboard.");
                 await VisualStudioInteraction.ShowMessageBoxAsync(_serviceProvider, "Conversion result copied to clipboard.", conversionResult.GetExceptionsAsString(), false);
             }
 
+        }
+
+        private static async Task SetClipboardTextOnUiThreadAsync(string conversionResultConvertedCode)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            Clipboard.SetText(conversionResultConvertedCode);
+            await TaskScheduler.Default;
         }
 
         private async Task WriteConvertedFilesAndShowSummaryAsync(IEnumerable<ConversionResult> convertedFiles)
