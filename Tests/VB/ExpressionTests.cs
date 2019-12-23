@@ -270,7 +270,7 @@ End Class");
         Dim length As Integer
         length = str.Length
         Console.WriteLine(""Test"" & length)
-        Console.ReadKey
+        Console.ReadKey()
     End Sub
 End Class");
         }
@@ -349,7 +349,7 @@ End Class");
     Private Sub TestMethod(ByVal str As String)
         Dim length = If(str?.Length, -1)
         Console.WriteLine(length)
-        Console.ReadKey
+        Console.ReadKey()
         Dim redirectUri As String = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri
     End Sub
 End Class");
@@ -750,7 +750,7 @@ End Class
 Friend Class Test
     Public Sub Linq102()
         Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
-        Dim products As Product() = GetProductList
+        Dim products As Product() = GetProductList()
         Dim q = From c In categories Join p In products On c Equals p.Category Select New With {
             .Category = c, p.ProductName
         }
@@ -794,7 +794,7 @@ End Class");
     }
 }", @"Public Sub Linq103()
     Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
-    Dim products = GetProductList
+    Dim products = GetProductList()
     Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {
         .Category = c,
         .Products = ps

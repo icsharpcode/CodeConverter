@@ -232,7 +232,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        If FullImage IsNot Nothing Then DrawImage
+        If FullImage IsNot Nothing Then DrawImage()
     End Sub
 End Class", expectCompilationErrors: true);
             // regression test:

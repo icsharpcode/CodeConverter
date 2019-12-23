@@ -835,12 +835,12 @@ End Class");
         For i = 0 To x - 1
 
             For j = 0 To y - 1
-                array(i, j) = Threading.Interlocked.Increment(count).ToString
+                array(i, j) = (System.Threading.Interlocked.Increment(count)).ToString()
             Next
         Next
 
         Console.Write(""Enter the number to search for: "")
-        Dim myNumber = Console.ReadLine
+        Dim myNumber As String = Console.ReadLine()
 
         For i = 0 To x - 1
 
@@ -859,7 +859,7 @@ Found:
 Finish:
         Console.WriteLine(""End of search."")
         Console.WriteLine(""Press any key to exit."")
-        Console.ReadKey
+        Console.ReadKey()
     End Sub
 End Class");
         }
