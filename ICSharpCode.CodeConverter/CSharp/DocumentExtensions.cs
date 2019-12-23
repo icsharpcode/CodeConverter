@@ -51,15 +51,25 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public static async Task<Document> WithExpandedRootAsync(this Document document)
         {
+            return await (document.Project.Language == LanguageNames.VisualBasic
+                ? WithVbExpandedRootAsync(document)
+                : WithCsExpandedRootAsync(document));
+        }
+
+        private static async Task<Document> WithVbExpandedRootAsync(this Document document)
+        {
             var shouldExpand = document.Project.Language == LanguageNames.VisualBasic
                 ? (Func<SemanticModel, SyntaxNode, bool>)ShouldExpandVbNode
                 : ShouldExpandCsNode;
-            document = await WorkaroundBugsInExpandVbAsync(document, shouldExpand);
-
-#if SimplifierBugsAreFixed  //See https://github.com/icsharpcode/CodeConverter/pull/449 and https://github.com/icsharpcode/CodeConverter/pull/464
-            document = await ExpandVbAsync(document, shouldExpand);
+            document = await WorkaroundBugsInExpandVbAsync(document, ShouldExpandVbNode);
+            document = await ExpandAsync(document, shouldExpand);
             document = await UndoVbExpansionsHardToReverseInCSharpSemanticModel(document);
-#endif
+            return document;
+        }
+
+        private static async Task<Document> WithCsExpandedRootAsync(this Document document)
+        {
+            document = await ExpandAsync(document, ShouldExpandCsNode);
             return document;
         }
 
@@ -126,7 +136,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return null;
         }
 
-        private static async Task<Document> ExpandVbAsync(Document document, Func<SemanticModel, SyntaxNode, bool> shouldExpand)
+        private static async Task<Document> ExpandAsync(Document document, Func<SemanticModel, SyntaxNode, bool> shouldExpand)
         {
             var semanticModel = await document.GetSemanticModelAsync();
             var workspace = document.Project.Solution.Workspace;
@@ -178,7 +188,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
         private static bool ShouldExpandCsNode(SemanticModel semanticModel, SyntaxNode node)
         {
-            return false;
+            return node is CSSyntax.IdentifierNameSyntax;
         }
     }
 }
