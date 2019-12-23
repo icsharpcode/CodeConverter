@@ -364,5 +364,22 @@ End Module");
     Public CR = &H0D * &B1
 End Class");
         }
+
+
+    [Fact(Skip = "Not yet implemented")]
+    public async Task CaseConflict_LocalWithLocal()
+    {
+        await TestConversionCSharpToVisualBasic(
+        @"void Test()
+{
+    object test = 5;
+    int tesT = (int) o;
+}
+", @"Private Sub Test()
+    Dim lTest As Object = 5
+    Dim lTesT = CInt(o)
+End Sub
+");
+        }
     }
 }

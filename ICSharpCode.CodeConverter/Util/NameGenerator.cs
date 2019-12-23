@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
@@ -127,7 +129,7 @@ namespace ICSharpCode.CodeConverter.Util
             return GenerateUniqueName(baseName, string.Empty, canUse);
         }
 
-        public static string GenerateUniqueName(string baseName, ISet<string> names, StringComparer comparer)
+        public static string GenerateUniqueName(string baseName, HashSet<string> names, StringComparer comparer)
         {
             return GenerateUniqueName(baseName, x => !names.Contains(x, comparer));
         }
@@ -169,15 +171,42 @@ namespace ICSharpCode.CodeConverter.Util
         public static string GetUniqueVariableNameInScope(SemanticModel semanticModel, HashSet<string> generatedNames, VBasic.VisualBasicSyntaxNode node, string variableNameBase)
         {
             // Need to check not just the symbols this node has access to, but whether there are any nested blocks which have access to this node and contain a conflicting name
-            var scopeStarts = node.GetAncestorOrThis<VBSyntax.StatementSyntax>().DescendantNodesAndSelf()
-                        .OfType<VBSyntax.StatementSyntax>().Select(n => n.SpanStart).ToList();
+            var scopeStarts = GetScopeStarts(node);
+            return GenerateUniqueVariableNameInScope(semanticModel, generatedNames, variableNameBase, scopeStarts);
+        }
+
+        public static string GetUniqueVariableNameInScope(SemanticModel semanticModel, HashSet<string> generatedNames, CSharpSyntaxNode node, string variableNameBase)
+        {
+            // Need to check not just the symbols this node has access to, but whether there are any nested blocks which have access to this node and contain a conflicting name
+            var scopeStarts = GetScopeStarts(node);
+            return GenerateUniqueVariableNameInScope(semanticModel, generatedNames, variableNameBase, scopeStarts);
+        }
+
+        private static string GenerateUniqueVariableNameInScope(SemanticModel semanticModel, HashSet<string> generatedNames,
+            string variableNameBase, List<int> scopeStarts)
+        {
             string uniqueName = NameGenerator.GenerateUniqueName(variableNameBase, string.Empty,
-                n => {
-                    var matchingSymbols = scopeStarts.SelectMany(scopeStart => semanticModel.LookupSymbols(scopeStart, name: n));
+                n =>
+                {
+                    var matchingSymbols =
+                        scopeStarts.SelectMany(scopeStart => semanticModel.LookupSymbols(scopeStart, name: n));
                     return !generatedNames.Contains(n) && !matchingSymbols.Any();
                 });
             generatedNames.Add(uniqueName);
             return uniqueName;
+        }
+
+        private static List<int> GetScopeStarts(VBasic.VisualBasicSyntaxNode node)
+        {
+            return node.GetAncestorOrThis<VBSyntax.StatementSyntax>().DescendantNodesAndSelf()
+                .OfType<VBSyntax.StatementSyntax>().Select(n => n.SpanStart).ToList();
+        }
+
+        private static List<int> GetScopeStarts(CSharpSyntaxNode node)
+        {
+            return node.GetAncestorOrThis<StatementSyntax>()?.DescendantNodesAndSelf()
+                .OfType<StatementSyntax>().Select(n => n.SpanStart).ToList()
+                ?? new List<int>{node.SpanStart};
         }
     }
 }

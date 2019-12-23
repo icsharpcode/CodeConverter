@@ -268,7 +268,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static string WithDeclarationCasing(SyntaxToken id, ISymbol idSymbol, string text)
         {
             //TODO: Consider what happens when the names aren't equal for overridden members (I think in VB you can have X implements Y)
-            var baseSymbol = idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property) ? idSymbol.FollowProperty(s => s.OverriddenMember()).Last() : idSymbol;
+            var baseSymbol = idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property) ? idSymbol.FollowProperty((ISymbol s) => s.OverriddenMember()).Last() : idSymbol;
             bool isDeclaration = baseSymbol.Locations.Any(l => l.SourceSpan == id.Span);
             bool isPartial = baseSymbol.IsPartialClassDefinition() || baseSymbol.IsPartialMethodDefinition() ||
                              baseSymbol.IsPartialMethodImplementation();
