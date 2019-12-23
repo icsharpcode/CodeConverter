@@ -537,6 +537,44 @@ End Class");
         }
 
         [Fact]
+        public async Task CaseConflict_PartialClass_ArgumentFieldAndProeprty() {
+            await TestConversionCSharpToVisualBasic(
+@"public partial class HasConflictingPropertyAndField {
+    public int HasConflictingParam(int test) {
+        this.test = test;
+        return test;
+    }
+}
+
+public partial class HasConflictingPropertyAndField {
+    int test;
+    public int Test {
+        get { return test; }
+        set { test = value}
+    }
+}",
+@"Public Partial Class HasConflictingPropertyAndField
+    Public Function HasConflictingParam(ByVal test As Integer) As Integer
+        Me._test = test
+        Return test
+    End Function
+End Class
+
+Public Partial Class HasConflictingPropertyAndField
+    Private _test As Integer
+
+    Public Property Test As Integer
+        Get
+            Return _test
+        End Get
+        Set(ByVal value As Integer)
+            _test = value
+        End Set
+    End Property
+End Class");
+        }
+
+        [Fact]
         public async Task TestPropertyWithExpressionBody()
         {
             await TestConversionCSharpToVisualBasic(
