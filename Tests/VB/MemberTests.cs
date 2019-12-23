@@ -500,6 +500,39 @@ End Class");
         }
 
         [Fact]
+        public async Task CaseConflict_ArgumentPropertyAndField() {
+            await TestConversionCSharpToVisualBasic(
+@"public class HasConflictingPropertyAndField {
+    int test;
+    public int Test {
+        get { return test; }
+        set { test = value}
+    }
+    public int HasConflictingParam(int test) {
+        this.Test = test;
+        return test;
+    }
+}",
+@"Public Class HasConflictingPropertyAndField
+    Private _test As Integer
+
+    Public Property Test As Integer
+        Get
+            Return _test
+        End Get
+        Set(ByVal value As Integer)
+            _test = value
+        End Set
+    End Property
+
+    Public Function HasConflictingParam(ByVal test As Integer) As Integer
+        Me.Test = test
+        Return test
+    End Function
+End Class");
+        }
+
+        [Fact]
         public async Task TestPropertyWithExpressionBody()
         {
             await TestConversionCSharpToVisualBasic(
