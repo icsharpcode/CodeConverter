@@ -1770,17 +1770,17 @@ internal partial class TestClass : BaseTestClass
         [Fact]
         public async Task UnqualifiedBaseMemberAccessExpression()
         {
-            await TestConversionVisualBasicToCSharp(@"    Public Class BaseController
-        Protected Request As HttpRequest
-    End Class
+            await TestConversionVisualBasicToCSharp(@"Public Class BaseController
+    Protected Request As HttpRequest
+End Class
 
-    Public Class ActualController
-        Inherits BaseController
+Public Class ActualController
+    Inherits BaseController
 
-        Public Sub Do()
-            Request.StatusCode = 200
-        End Sub
-    End Class", @"public partial class BaseController
+    Public Sub Do()
+        Request.StatusCode = 200
+    End Sub
+End Class", @"public partial class BaseController
 {
     protected HttpRequest Request;
 }
@@ -1791,8 +1791,7 @@ public partial class ActualController : BaseController
     {
         Request.StatusCode = 200;
     }
-}
-");
+}");
         }
 
         [Fact]
