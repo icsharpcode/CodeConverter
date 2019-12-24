@@ -669,9 +669,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<CSharpSyntaxNode> WithRemovedRedundantConversionOrNull(VBSyntax.ExpressionSyntax conversionNode, VBSyntax.ExpressionSyntax conversionArg)
         {
-            return IsConversionRedundant(conversionNode, conversionArg)
-                ? await conversionArg.AcceptAsync(TriviaConvertingVisitor)
-                : null;
+            if (!(conversionNode is VBSyntax.InvocationExpressionSyntax ies) || ies.ArgumentList.Arguments.Count != 1) return null;
+            var csharpArg = (ExpressionSyntax)await conversionArg.AcceptAsync(TriviaConvertingVisitor);
+            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(conversionArg, csharpArg,
+                forceTargetType: _semanticModel.GetTypeInfo(conversionNode).Type);
         }
 
 
@@ -684,7 +685,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 expressionSymbol?.GetReturnType() ?? _semanticModel.GetTypeInfo(node.Expression).Type;
             var operation = _semanticModel.GetOperation(node);
             if (expressionSymbol?.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic) &&
-                (await SubstituteVisualBasicMethodOrNull(node) ?? await WithRemovedRedundantConversionOrNull(node, node.Expression)) is
+                (await SubstituteVisualBasicMethodOrNull(node) ?? await WithRemovedRedundantConversionOrNull(node, node.ArgumentList.Arguments.FirstOrDefault()?.GetExpression())) is
                 CSharpSyntaxNode csEquivalent) {
                 return csEquivalent;
             }
