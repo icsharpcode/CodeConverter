@@ -976,13 +976,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<SimpleNameSyntax> GenericNameAccountingForReducedParameters(VBSyntax.GenericNameSyntax node, ISymbol symbol)
         {
             SyntaxToken convertedIdentifier = ConvertIdentifier(node.Identifier);
-            if (symbol.IsReducedTypeParameterMethod()) {
-                if (symbol is IMethodSymbol vbMethod && CommonConversions.GetCsOriginalSymbolOrNull(symbol) is IMethodSymbol csSymbolWithInferredTypeParametersSet) {
-                    var argSubstitutions = vbMethod.TypeParameters
-                        .Zip(vbMethod.TypeArguments, (parameter, arg) => (parameter, arg))
-                        .ToDictionary(x => x.parameter.Name, x => x.arg);
-                    var allTypeArgs = csSymbolWithInferredTypeParametersSet.GetTypeArguments()
-                        .Select(a => a.Kind == SymbolKind.TypeParameter && argSubstitutions.TryGetValue(a.Name, out var t) ? t : a).ToArray();
+            if (symbol is IMethodSymbol vbMethod && vbMethod.IsReducedTypeParameterMethod()) {
+                var allTypeArgs = GetOrNullAllTypeArgsIncludingInferred(vbMethod);
+                if (allTypeArgs != null) {
                     return (SimpleNameSyntax)CommonConversions.CsSyntaxGenerator.GenericName(convertedIdentifier.Text, allTypeArgs);
                 }
                 var commentedText = "/* " + (await ConvertTypeArgumentList(node)).ToFullString() + " */";
@@ -992,6 +988,20 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return SyntaxFactory.GenericName(convertedIdentifier, await ConvertTypeArgumentList(node));
+        }
+
+        /// <remarks>TODO: Would be more robust to use <seealso cref="IMethodSymbol.GetTypeInferredDuringReduction"/></remarks>
+        private ITypeSymbol[] GetOrNullAllTypeArgsIncludingInferred(IMethodSymbol vbMethod)
+        {
+            if (!(CommonConversions.GetCsOriginalSymbolOrNull(vbMethod) is IMethodSymbol
+                csSymbolWithInferredTypeParametersSet)) return null;
+            var argSubstitutions = vbMethod.TypeParameters
+                .Zip(vbMethod.TypeArguments, (parameter, arg) => (parameter, arg))
+                .ToDictionary(x => x.parameter.Name, x => x.arg);
+            var allTypeArgs = csSymbolWithInferredTypeParametersSet.GetTypeArguments()
+                .Select(a => a.Kind == SymbolKind.TypeParameter && argSubstitutions.TryGetValue(a.Name, out var t) ? t : a)
+                .ToArray();
+            return allTypeArgs;
         }
 
         private async Task<TypeArgumentListSyntax> ConvertTypeArgumentList(VBSyntax.GenericNameSyntax node)
