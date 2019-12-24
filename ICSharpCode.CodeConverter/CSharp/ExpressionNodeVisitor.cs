@@ -176,6 +176,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitPredefinedCastExpression(VBasic.Syntax.PredefinedCastExpressionSyntax node)
         {
+            var simplifiedOrNull = await WithRemovedRedundantConversionOrNull(node, node.Expression);
+            if (simplifiedOrNull != null) return simplifiedOrNull;
+
             var expressionSyntax = (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor);
             if (SyntaxTokenExtensions.IsKind(node.Keyword, VBasic.SyntaxKind.CDateKeyword)) {
 
@@ -184,8 +187,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.SingletonSeparatedList(
                         SyntaxFactory.Argument(expressionSyntax))));
             }
-
-            if (IsConversionRedundant(node, node.Expression)) return expressionSyntax;
 
             var convertMethodForKeywordOrNull = GetConvertMethodForKeywordOrNull(node);
 
@@ -196,11 +197,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                             SyntaxFactory.Argument(expressionSyntax)))
                 ) // Hopefully will be a compile error if it's wrong
                 : ValidSyntaxFactory.CastExpression(SyntaxFactory.PredefinedType(node.Keyword.ConvertToken()), expressionSyntax);
-        }
-
-        private bool IsConversionRedundant(VBSyntax.ExpressionSyntax conversionNode, VBSyntax.ExpressionSyntax convertedArg)
-        {
-            return _semanticModel.GetTypeInfo(convertedArg).Type?.Equals(_semanticModel.GetTypeInfo(conversionNode).Type) == true;
         }
 
         public override async Task<CSharpSyntaxNode> VisitTryCastExpression(VBasic.Syntax.TryCastExpressionSyntax node)
@@ -669,10 +665,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<CSharpSyntaxNode> WithRemovedRedundantConversionOrNull(VBSyntax.ExpressionSyntax conversionNode, VBSyntax.ExpressionSyntax conversionArg)
         {
-            if (!(conversionNode is VBSyntax.InvocationExpressionSyntax ies) || ies.ArgumentList.Arguments.Count != 1) return null;
+            if (conversionNode is VBSyntax.InvocationExpressionSyntax ies && ies.ArgumentList.Arguments.Count != 1) return null;
             var csharpArg = (ExpressionSyntax)await conversionArg.AcceptAsync(TriviaConvertingVisitor);
             return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(conversionArg, csharpArg,
-                forceTargetType: _semanticModel.GetTypeInfo(conversionNode).Type);
+                forceTargetType: _semanticModel.GetTypeInfo(conversionNode).ConvertedType);
         }
 
 
@@ -1084,8 +1080,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<CSharpSyntaxNode> ConvertCastExpression(VBSyntax.CastExpressionSyntax node,
             ExpressionSyntax convertMethodOrNull = null, VBSyntax.TypeSyntax castToOrNull = null)
         {
+            var simplifiedOrNull = await WithRemovedRedundantConversionOrNull(node, node.Expression);
+            if (simplifiedOrNull != null) return simplifiedOrNull;
             var expressionSyntax = (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor);
-            if (IsConversionRedundant(node, node.Expression)) return expressionSyntax;
             if (!(_semanticModel.GetOperation(node) is IConversionOperation co) || !co.Conversion.IsIdentity) {
                 if (convertMethodOrNull != null) {
                     expressionSyntax = Invoke(convertMethodOrNull, expressionSyntax);
