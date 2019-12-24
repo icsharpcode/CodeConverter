@@ -63,7 +63,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : ShouldExpandCsNode;
             document = await WorkaroundBugsInExpandVbAsync(document, ShouldExpandVbNode);
             document = await ExpandAsync(document, shouldExpand);
-            document = await UndoVbExpansionsHardToReverseInCSharpSemanticModel(document);
             return document;
         }
 
@@ -143,24 +142,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             var root = (VBasic.VisualBasicSyntaxNode) await document.GetSyntaxRootAsync();
             try {
                 var newRoot = root.ReplaceNodes(root.DescendantNodes(n => !shouldExpand(semanticModel, n)).Where(n => shouldExpand(semanticModel, n)),
-                    (node, rewrittenNode) => TryExpandNode(node, semanticModel, workspace)
+                    (node, rewrittenNode) => TryExpandVbNode(node, semanticModel, workspace)
                 );
                 return document.WithSyntaxRoot(newRoot);
             } catch (Exception) {
                 return document.WithSyntaxRoot(root);
             }
         }
-        private static async Task<Document> UndoVbExpansionsHardToReverseInCSharpSemanticModel(Document document)
-        {
-            var root = (VBasic.VisualBasicSyntaxNode)await document.GetSyntaxRootAsync();
-            var toSimplify = root.DescendantNodes()
-                .Where(n => n.IsKind(VBasic.SyntaxKind.PredefinedCastExpression, VBasic.SyntaxKind.CTypeExpression, VBasic.SyntaxKind.DirectCastExpression))
-                .Where(n => n.HasAnnotation(Simplifier.Annotation));
-            root = root.ReplaceNodes(toSimplify, (orig, rewritten) =>
-                rewritten.WithAdditionalAnnotations(Simplifier.Annotation)
-            );
-            return await document.WithReducedRootAsync(root);
-        }
+
         private static async Task<Document> WithReducedRootAsync(this Document doc, SyntaxNode syntaxRoot = null)
         {
             var root = syntaxRoot ?? await doc.GetSyntaxRootAsync();
@@ -173,6 +162,36 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
 
+        private static SyntaxNode TryExpandVbNode(SyntaxNode node, SemanticModel semanticModel, Workspace workspace)
+        {
+            var expandedNode = TryExpandNode(node, semanticModel, workspace);
+
+            //See https://github.com/icsharpcode/CodeConverter/pull/449#issuecomment-561678148
+            return IsRedundantConversion(node, semanticModel, expandedNode) ? node : expandedNode;
+        }
+
+        private static bool IsRedundantConversion(SyntaxNode node, SemanticModel semanticModel, SyntaxNode expandedNode)
+        {
+            return IsRedundantConversionToMethod(node, semanticModel, expandedNode) || IsRedundantCastMethod(node, semanticModel, expandedNode);
+        }
+
+        private static bool IsRedundantConversionToMethod(SyntaxNode node, SemanticModel semanticModel, SyntaxNode expandedNode)
+        {
+            if (!(expandedNode is VBSyntax.InvocationExpressionSyntax ies)) return false;
+            if (!ies.Expression.ToString().StartsWith("Conversions.To")) return false;
+            if (node is VBSyntax.InvocationExpressionSyntax oies && oies.ToString().StartsWith("Conversions.To")) return false;
+            var originalTypeInfo = semanticModel.GetTypeInfo(node);
+            return originalTypeInfo.Type.Equals(originalTypeInfo.ConvertedType);
+        }
+
+        private static bool IsRedundantCastMethod(SyntaxNode node, SemanticModel semanticModel, SyntaxNode expandedNode)
+        {
+            if (!(expandedNode.IsKind(VBasic.SyntaxKind.PredefinedCastExpression, VBasic.SyntaxKind.CTypeExpression, VBasic.SyntaxKind.DirectCastExpression))) return false;
+            if (node.Kind() == expandedNode.Kind()) return false;
+            var originalTypeInfo = semanticModel.GetTypeInfo(node);
+            return originalTypeInfo.Type.Equals(originalTypeInfo.ConvertedType);
+        }
+
         private static SyntaxNode TryExpandNode(SyntaxNode node, SemanticModel semanticModel, Workspace workspace)
         {
             try {
@@ -184,7 +203,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static bool ShouldExpandVbNode(SemanticModel semanticModel, SyntaxNode node)
         {
-            return node is VBSyntax.NameSyntax || node is VBSyntax.InvocationExpressionSyntax && !semanticModel.GetSymbolInfo(node).Symbol.IsReducedTypeParameterMethod();
+            if (!(node is VBSyntax.NameSyntax || node is VBSyntax.InvocationExpressionSyntax)) return false;
+
+            var symbol = semanticModel.GetSymbolInfo(node).Symbol;
+            if (symbol is IMethodSymbol ms && (ms.IsGenericMethod || ms.IsReducedTypeParameterMethod())) return false;
+
+            return true;
         }
         private static bool ShouldExpandCsNode(SemanticModel semanticModel, SyntaxNode node)
         {

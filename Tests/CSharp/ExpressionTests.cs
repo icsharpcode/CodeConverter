@@ -2406,7 +2406,6 @@ public partial class MoreParsing
     End Function
 End Class",
                 @"using System.Linq;
-using Microsoft.VisualBasic.CompilerServices;
 
 public partial class MoreParsing
 {
@@ -2416,8 +2415,8 @@ public partial class MoreParsing
         {
             ANumber = 5
         };
-        var sameAnon = this.Identity(anon);
-        var repeated = Enumerable.Repeat(anon, Conversions.ToInteger(5)).ToList();
+        var sameAnon = Identity(anon);
+        var repeated = Enumerable.Repeat(anon, 5).ToList();
     }
 
     private TType Identity<TType>(TType tInstance)
