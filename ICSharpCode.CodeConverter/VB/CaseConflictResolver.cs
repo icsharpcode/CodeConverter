@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.FindSymbols;
@@ -13,7 +14,14 @@ namespace ICSharpCode.CodeConverter.VB
 {
     public class CaseConflictResolver
     {
-
+        /// <summary>
+        /// Renames symbols in a CSharp project so that they don't clash on case within the same named scope, attempting to rename the least public ones first.
+        /// This is because C# is case sensitive but VB is case insensitive.
+        /// </summary>
+        /// <remarks>
+        /// Cases in different named scopes should be dealt with by <seealso cref="DocumentExtensions.ExpandVbAsync"/>.
+        /// For names scoped within a type member, see <seealso cref="GetCsLocalSymbolDeclarations"/>.
+        /// </remarks>
         public static async Task<Project> RenameClashingSymbols(Project project)
         {
             var compilation = await project.GetCompilationAsync();
@@ -93,6 +101,9 @@ namespace ICSharpCode.CodeConverter.VB
             return solution.GetProject(project.Id);
         }
 
+        /// <remarks>
+        /// In VB there's a special extra local defined with the same name as the method name, so the method symbol should be included in any conflict analysis
+        /// </remarks>
         private static IEnumerable<ISymbol> GetCsLocalSymbolDeclarations(SemanticModel semanticModel, ISymbol x)
         {
             switch (x)
