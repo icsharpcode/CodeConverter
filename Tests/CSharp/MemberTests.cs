@@ -1882,54 +1882,6 @@ End Class", @"internal partial class TestClass
         }
 
         [Fact]
-        public async Task TestGenericMethodGroupGainsBrackets()
-        {
-            //BUG: Comment after New With is lost
-            await TestConversionVisualBasicToCSharpWithoutComments(
-@"Public Enum TheType
-    Tree
-End Enum
-
-Public Class MoreParsing
-    Sub DoGet()
-        Dim anon = New With {
-            .TheType = GetEnumValues(Of TheType)
-        }
-    End Sub
-
-    Private Function GetEnumValues(Of TEnum)() As IDictionary(Of Integer, String)
-        Return System.Enum.GetValues(GetType(TEnum)).Cast(Of TEnum).
-            ToDictionary(Function(enumValue) DirectCast(DirectCast(enumValue, Object), Integer),
-                         Function(enumValue) enumValue.ToString())
-    End Function
-End Class",
-@"using System;
-using System.Collections.Generic;
-using System.Linq;
-
-public enum TheType
-{
-    Tree
-}
-
-public partial class MoreParsing
-{
-    public void DoGet()
-    {
-        var anon = new
-        {
-            TheType = MoreParsing.GetEnumValues<TheType>()
-        };
-    }
-
-    private IDictionary<int, string> GetEnumValues<TEnum>()
-    {
-        return Enum.GetValues(typeof(TEnum)).Cast<TEnum>().ToDictionary(enumValue => (int)(object)enumValue, enumValue => enumValue.ToString());
-    }
-}");
-        }
-
-        [Fact]
         public async Task TestWriteOnlyProperties()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(
