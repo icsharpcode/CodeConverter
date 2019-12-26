@@ -316,22 +316,19 @@ namespace ICSharpCode.CodeConverter.VB
             SyntaxKind multiLineExpressionKind,
             LambdaHeaderSyntax header, SyntaxList<StatementSyntax> statements, EndBlockStatementSyntax endBlock)
         {
-            if (statements.Count == 1  && TryGetNodeForeSingleLineLambdaExpression(singleLineKind, statements, out VisualBasicSyntaxNode singleNode)) {
+            if (statements.Count == 1  && TryGetNodeForeSingleLineLambdaExpression(singleLineKind, statements[0], out VisualBasicSyntaxNode singleNode)) {
                 return SyntaxFactory.SingleLineLambdaExpression(singleLineKind, header, singleNode);
             }
 
             return SyntaxFactory.MultiLineLambdaExpression(multiLineExpressionKind, header, statements, endBlock);
         }
 
-        private static bool TryGetNodeForeSingleLineLambdaExpression(SyntaxKind kind,
-            SyntaxList<StatementSyntax> statements, out VisualBasicSyntaxNode singleNode)
-        {
-            switch (kind)
-            {
-                case SyntaxKind.SingleLineSubLambdaExpression:
-                    singleNode = statements[0];
+        private static bool TryGetNodeForeSingleLineLambdaExpression(SyntaxKind kind, StatementSyntax statement, out VisualBasicSyntaxNode singleNode) {
+            switch (kind) {
+                case SyntaxKind.SingleLineSubLambdaExpression when !(statement is MultiLineIfBlockSyntax):
+                    singleNode = statement;
                     return true;
-                case SyntaxKind.SingleLineFunctionLambdaExpression when UnpackExpressionFromStatement(statements[0], out var expression):
+                case SyntaxKind.SingleLineFunctionLambdaExpression when UnpackExpressionFromStatement(statement, out var expression):
                     singleNode = expression;
                     return true;
                 default:
