@@ -809,5 +809,64 @@ End Class");
     Next
 End Sub");
         }
+        [Fact]
+        public async Task MultilineSubExpressionWithSingleStatement() {
+            
+            await TestConversionCSharpToVisualBasic(
+@"public class TestClass : System.Collections.ObjectModel.ObservableCollection<string> {
+    public TestClass() {
+        PropertyChanged += (o, e) => {
+            if (e.PropertyName == ""AnyProperty"") {
+                Add(""changed"");
+            } else
+                RemoveAt(0);
+        };
+    }
+}",
+@"Public Class TestClass
+    Inherits ObjectModel.ObservableCollection(Of String)
+
+    Public Sub New()
+        AddHandler PropertyChanged, Sub(o, e)
+                                        If e.PropertyName Is ""AnyProperty"" Then
+                                            Add(""changed"")
+                                        Else
+                                            RemoveAt(0)
+                                        End If
+                                    End Sub
+    End Sub
+End Class");
+        }
+        [Fact]
+        public async Task MultilineFunctionExpressionWithSingleStatement() {
+            await TestConversionCSharpToVisualBasic(
+@"using System;
+public class TestClass {
+    Func<object, string> create = o => {
+        if(o is TestClass)
+            return ""first"";
+        else
+            return ""second"";
+    };
+    public TestClass() {
+        string str = create(this);
+    }
+}",
+@"Imports System
+
+Public Class TestClass
+    Private Event create As Func(Of Object, String) = Function(o)
+                                                          If TypeOf o Is TestClass Then
+                                                              Return ""first""
+                                                          Else
+                                                              Return ""second""
+                                                          End If
+                                                      End Function
+
+    Public Sub New()
+        Dim str = create(Me)
+    End Sub
+End Class");
+        }
     }
 }

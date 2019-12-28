@@ -878,24 +878,26 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitParenthesizedExpression(CSS.ParenthesizedExpressionSyntax node)
         {
-            return node.Expression.Accept(TriviaConvertingVisitor).TypeSwitch<VisualBasicSyntaxNode, AssignmentStatementSyntax, ExpressionSyntax, VisualBasicSyntaxNode>(
-                (AssignmentStatementSyntax statement) => {
-                    var subOrFunctionHeader = SyntaxFactory.LambdaHeader(
-                        SyntaxKind.FunctionLambdaHeader,
-                        SyntaxFactory.Token(SyntaxKind.FunctionKeyword)
-                    ).WithParameterList(SyntaxFactory.ParameterList());
-                    var multiLineFunctionLambdaExpression = SyntaxFactory.MultiLineFunctionLambdaExpression(
-                        subOrFunctionHeader,
-                        new SyntaxList<StatementSyntax>(new StatementSyntax[] {
-                            statement,
-                            SyntaxFactory.ReturnStatement(statement.Left)
-                        }),
-                        SyntaxFactory.EndFunctionStatement()
-                    );
-                    return SyntaxFactory.InvocationExpression(multiLineFunctionLambdaExpression, SyntaxFactory.ArgumentList());
-                },
-                (ExpressionSyntax expression) => SyntaxFactory.ParenthesizedExpression(expression)
-            );
+            return node.Expression.Accept(TriviaConvertingVisitor)
+                .TypeSwitch<VisualBasicSyntaxNode, AssignmentStatementSyntax, CTypeExpressionSyntax, ExpressionSyntax, VisualBasicSyntaxNode>(
+                    (AssignmentStatementSyntax statement) => {
+                        var subOrFunctionHeader = SyntaxFactory.LambdaHeader(
+                            SyntaxKind.FunctionLambdaHeader,
+                            SyntaxFactory.Token(SyntaxKind.FunctionKeyword)
+                        ).WithParameterList(SyntaxFactory.ParameterList());
+                        var multiLineFunctionLambdaExpression = SyntaxFactory.MultiLineFunctionLambdaExpression(
+                            subOrFunctionHeader,
+                            new SyntaxList<StatementSyntax>(new StatementSyntax[] {
+                                statement,
+                                SyntaxFactory.ReturnStatement(statement.Left)
+                            }),
+                            SyntaxFactory.EndFunctionStatement()
+                        );
+                        return SyntaxFactory.InvocationExpression(multiLineFunctionLambdaExpression, SyntaxFactory.ArgumentList());
+                    },
+                    (CTypeExpressionSyntax cTypeExpression) => cTypeExpression,
+                    (ExpressionSyntax expression) => SyntaxFactory.ParenthesizedExpression(expression)
+                );
         }
 
         public override VisualBasicSyntaxNode VisitPrefixUnaryExpression(CSS.PrefixUnaryExpressionSyntax node)

@@ -141,5 +141,27 @@ End Sub
 End Sub
 ");
         }
+        [Fact]
+        public async Task MethodInvocation() {
+            await TestConversionCSharpToVisualBasic(
+@"public class Test {
+    public void TestMethod() { }
+}
+public class Test2 {
+    public void TestMethod(object o) {
+        ((Test)o).TestMethod();
+    }
+}",
+@"Public Class Test
+    Public Sub TestMethod()
+    End Sub
+End Class
+
+Public Class Test2
+    Public Sub TestMethod(ByVal o As Object)
+        CType(o, Test).TestMethod()
+    End Sub
+End Class");
+        }
     }
 }
