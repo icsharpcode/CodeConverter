@@ -78,7 +78,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var root = (VBasic.VisualBasicSyntaxNode)await document.GetSyntaxRootAsync();
 
             try {
-                var newRoot = root.ReplaceNodes(root.DescendantNodes(n => !ShouldExpandWithinVbNode(semanticModel, n)).Where(n => ShouldExpandVbNode(semanticModel, n)),
+                var newRoot = root.ReplaceNodes(root.DescendantNodes(n => ShouldExpandWithinVbNode(semanticModel, n)).Where(n => ShouldExpandVbNode(semanticModel, n)),
                     (node, rewrittenNode) => {
                         var symbol = semanticModel.GetSymbolInfo(node).Symbol;
                         if (rewrittenNode is VBSyntax.SimpleNameSyntax sns && IsMyBaseBug(semanticModel, root, node, symbol) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro) {
@@ -139,7 +139,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var workspace = document.Project.Solution.Workspace;
             var root = (VBasic.VisualBasicSyntaxNode) await document.GetSyntaxRootAsync();
             try {
-                var newRoot = root.ReplaceNodes(root.DescendantNodes(n => !ShouldExpandWithinVbNode(semanticModel, n)).Where(n => ShouldExpandVbNode(semanticModel, n)),
+                var newRoot = root.ReplaceNodes(root.DescendantNodes(n => ShouldExpandWithinVbNode(semanticModel, n)).Where(n => ShouldExpandVbNode(semanticModel, n)),
                     (node, rewrittenNode) => TryExpandVbNode(node, semanticModel, workspace)
                 );
                 return document.WithSyntaxRoot(newRoot);
@@ -201,13 +201,21 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static bool ShouldExpandWithinVbNode(SemanticModel semanticModel, SyntaxNode node)
         {
-            return !(node is VBSyntax.InstanceExpressionSyntax) && //Roslyn bug - accidentally expands "New" into an identifier causing compile error
+            return !IsRoslynInstanceExpressionBug(node) &&
                    !ShouldExpandVbNode(semanticModel, node);
+        }
+
+        /// <summary>
+        /// Roslyn bug - accidentally expands "New" into an identifier causing compile error
+        /// </summary>
+        private static bool IsRoslynInstanceExpressionBug(SyntaxNode node)
+        {
+            return node is VBSyntax.InvocationExpressionSyntax ies && ies.Expression is VBSyntax.MemberAccessExpressionSyntax maes && maes.Expression is VBSyntax.InstanceExpressionSyntax;
         }
 
         private static bool ShouldExpandVbNode(SemanticModel semanticModel, SyntaxNode node)
         {
-            if (!(node is VBSyntax.NameSyntax || node is VBSyntax.InvocationExpressionSyntax)) return false;
+            if (!(node is VBSyntax.NameSyntax || node is VBSyntax.InvocationExpressionSyntax) || IsRoslynInstanceExpressionBug(node)) return false;
 
             var symbol = semanticModel.GetSymbolInfo(node).Symbol;
             if (symbol is IMethodSymbol ms && (ms.IsGenericMethod || ms.IsReducedTypeParameterMethod())) return false;

@@ -75,7 +75,8 @@ End Class", @"public partial class Class1
         [Fact]
         public async Task OutParameterNonCompilingType()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class OutParameterWithMissingType
+            // Can't autotest comments due to dummy "anInstance" variable added
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class OutParameterWithMissingType
     Private Shared Sub AddToDict(ByVal pDict As Dictionary(Of Integer, MissingType), ByVal pKey As Integer)
         Dim anInstance As MissingType = Nothing
         If Not pDict.TryGetValue(pKey, anInstance) Then
@@ -100,7 +101,8 @@ public partial class OutParameterWithMissingType
     private static void AddToDict(Dictionary<int, MissingType> pDict, int pKey)
     {
         MissingType anInstance = null;
-        if (!pDict.TryGetValue(pKey, out anInstance))
+        var argvalue = anInstance;
+        if (!pDict.TryGetValue(pKey, out argvalue))
         {
             anInstance = new MissingType();
             pDict.Add(pKey, anInstance);
@@ -113,7 +115,8 @@ public partial class OutParameterWithNonCompilingType
     private static void AddToDict(Dictionary<OutParameterWithMissingType, MissingType> pDict, OutParameterWithMissingType pKey)
     {
         MissingType anInstance = null;
-        if (!pDict.TryGetValue(pKey, out anInstance))
+        var argvalue = anInstance;
+        if (!pDict.TryGetValue(pKey, out argvalue))
         {
             anInstance = new MissingType();
             pDict.Add(pKey, anInstance);

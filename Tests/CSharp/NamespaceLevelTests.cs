@@ -47,7 +47,7 @@ End Class
 {
 }
 
-internal partial class B : global::A<string>
+internal partial class B : A<string>
 {
 }");
         }
