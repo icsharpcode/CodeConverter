@@ -64,9 +64,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             _visualBasicEqualityComparison = visualBasicEqualityComparison;
         }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool alwaysExplicit = false, bool isConst = false, ITypeSymbol forceTargetType = null)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceTargetType = null)
         {
-            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit, isConst, forceTargetType);
+            var conversionKind = AnalyzeConversion(vbNode, defaultToCast, isConst, forceTargetType);
             csNode = addParenthesisIfNeeded && (conversionKind == TypeConversionKind.DestructiveCast || conversionKind == TypeConversionKind.NonDestructiveCast)
                 ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;

@@ -371,7 +371,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         throw new ArgumentOutOfRangeException();
                 }
             }
-            var expression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor), alwaysExplicit: refKind != RefKind.None);
+            var expression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor), defaultToCast: refKind != RefKind.None);
             AdditionalLocal local = null;
             if (refKind != RefKind.None && NeedsVariableForArgument(node)) {
                 var expressionTypeInfo= _semanticModel.GetTypeInfo(node.Expression);
@@ -687,7 +687,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var writtenByUser = !conversionNode.HasAnnotation(Simplifier.Annotation);
             var forceTargetType = writtenByUser ? typeInfo.Type : typeInfo.ConvertedType;
             return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(conversionArg, csharpArg,
-                forceTargetType: forceTargetType);
+                forceTargetType: forceTargetType, defaultToCast: true);
 
         }
 
