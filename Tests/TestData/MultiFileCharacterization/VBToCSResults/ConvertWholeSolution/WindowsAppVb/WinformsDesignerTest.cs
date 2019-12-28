@@ -11,9 +11,9 @@ namespace WindowsAppVb
         private void CheckedChangedOrButtonClicked(object sender, EventArgs e)
         {
             string formConstructedText = "Form constructed";
-            if (!(My.Forms.m_WinformsDesignerTest == null) && (My.MyProject.Forms.WinformsDesignerTest.Text ?? "") != (formConstructedText ?? ""))
+            if (!(Global.WindowsAppVb.My.Forms.m_WinformsDesignerTest == null) && (My.MyProject.Forms.WinformsDesignerTest.Text ?? "") != (formConstructedText ?? ""))
                 My.MyProject.Forms.WinformsDesignerTest.Text = formConstructedText;
-            else if (My.Forms.m_WinformsDesignerTest != null && My.Forms.m_WinformsDesignerTest != null
+            else if (Global.WindowsAppVb.My.Forms.m_WinformsDesignerTest != null && Global.WindowsAppVb.My.Forms.m_WinformsDesignerTest != null
              )
                 My.MyProject.Forms.WinformsDesignerTest = null;
         }

@@ -198,8 +198,8 @@ End Class", @"public partial class VisualBasicClass
 {
     public void UseStuff()
     {
-        string[] argstrs = null;
-        Stuff(ref argstrs);
+        var argstrs = null;
+        this.Stuff(ref argstrs);
     }
 
     public void Stuff(ref string[] strs)
@@ -236,7 +236,7 @@ End Class", @"public partial class Class1
 
     public void Foo()
     {
-        object argclass1 = new Class1();
+        var argclass1 = (object)new Class1();
         Bar(ref argclass1);
         object argclass11 = C1;
         Bar(ref argclass11);
@@ -351,8 +351,8 @@ public partial class Class1
 
     public void Foo5()
     {
-        bool argb = default(bool);
-        Bar(ref argb);
+        var argb = null;
+        this.Bar(ref argb);
     }
 
     public void Bar(ref bool b)
@@ -416,13 +416,13 @@ public partial class Class1
     End Function
 End Class", @"public partial class Class1
 {
-    static Class1 Foo__p1()
+    static Class1 global__p1()
     {
         var argc1 = new Class1();
         return Foo(ref argc1);
     }
 
-    private Class1 _p1 = Foo__p1();
+    private Class1 _p1 = global__p1();
 
     public static Class1 Foo(ref Class1 c1)
     {

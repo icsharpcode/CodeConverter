@@ -313,11 +313,13 @@ End Sub
     Private Function QuoteSplit(ByVal text As String) As String()
         Return text.Split("""""""")
     End Function
-End Class", @"internal partial class CharTestClass
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+internal partial class CharTestClass
 {
     private string[] QuoteSplit(string text)
     {
-        return text.Split('""');
+        return text.Split(Conversions.ToChar(""\""""));
     }
 }");
         }
