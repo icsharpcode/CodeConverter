@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
+using Microsoft.VisualBasic.CompilerServices;
 
 namespace Microsoft.VisualBasic
 {
@@ -58,7 +59,7 @@ namespace ConsoleApp4
             public static string get_AttributeValue(IEnumerable<XElement> source, XName name)
             {
                 foreach (XElement item in source)
-                    return item.Attribute(name);
+                    return Conversions.ToString(item.Attribute(name));
                 return null;
             }
 
@@ -72,7 +73,7 @@ namespace ConsoleApp4
             }
             public static string get_AttributeValue(XElement source, XName name)
             {
-                return source.Attribute(name);
+                return Conversions.ToString(source.Attribute(name));
             }
 
             public static void set_AttributeValue(XElement source, XName name, string value)

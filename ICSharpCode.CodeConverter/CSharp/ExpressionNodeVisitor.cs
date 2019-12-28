@@ -685,10 +685,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             // If written by the user (i.e. not generated during expand phase), maintain intended semantics which could throw sometimes e.g. object o = (int) (object) long.MaxValue;
             var writtenByUser = !conversionNode.HasAnnotation(Simplifier.Annotation);
-            var forceTargetType = writtenByUser ? typeInfo.Type : typeInfo.ConvertedType;
-            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(conversionArg, csharpArg,
+            var forceTargetType = typeInfo.ConvertedType;
+            // TypeConversionAnalyzer can't figure out which type is required for operator/method overloads, inferred func returns or inferred variable declarations
+            //      (currently overapproximates for numeric and gets it wrong in non-numeric cases).
+            // Future: Avoid more redundant conversions by still calling AddExplicitConversion when writtenByUser avoiding the above and forcing typeInfo.Type
+            return writtenByUser ? null : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(conversionArg, csharpArg,
                 forceTargetType: forceTargetType, defaultToCast: true);
-
         }
 
 
