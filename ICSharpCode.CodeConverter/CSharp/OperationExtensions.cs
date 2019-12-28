@@ -14,6 +14,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return parent;
         }
+
+        public static IOperation GetIgnoringParentheses(this IOperation operation)
+        {
+            while (operation is IParenthesizedOperation) {
+                operation = operation?.Parent;
+            }
+
+            return operation;
+        }
+
         public static IOperation GetNonConversionOperation(this IOperation operation)
         {
             while (true) {

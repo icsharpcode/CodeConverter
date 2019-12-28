@@ -308,43 +308,43 @@ public partial class Class1
     public void Foo()
     {
         bool x = true;
-        var argb = x == true;
+        bool argb = x == true;
         Bar(ref argb);
     }
 
     public void Foo2()
     {
-        var argb = true == false;
+        bool argb = true == false;
         return Bar(ref argb);
     }
 
     public void Foo3()
     {
-        var argb1 = true == false;
+        bool argb1 = true == false;
         if (Bar(ref argb1))
         {
-            var argb = true == false;
+            bool argb = true == false;
             Bar(ref argb);
         }
     }
 
     public void Foo4()
     {
-        var argb3 = true == false;
-        var argb4 = true == false;
+        bool argb3 = true == false;
+        bool argb4 = true == false;
         if (Bar(ref argb3))
         {
-            var argb = true == false;
+            bool argb = true == false;
             Bar(ref argb);
         }
         else if (Bar(ref argb4))
         {
-            var argb2 = true == false;
+            bool argb2 = true == false;
             Bar(ref argb2);
         }
         else
         {
-            var argb1 = true == false;
+            bool argb1 = true == false;
             Bar(ref argb1);
         }
     }

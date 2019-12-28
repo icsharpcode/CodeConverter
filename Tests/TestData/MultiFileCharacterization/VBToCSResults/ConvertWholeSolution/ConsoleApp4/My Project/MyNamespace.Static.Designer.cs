@@ -99,12 +99,12 @@ namespace ConsoleApp4
             {
                 if (obj != null)
                 {
-                    var elem = obj as XElement;
+                    XElement elem = obj as XElement;
                     if (!(elem == null))
                         return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elem);
                     else
                     {
-                        var elems = obj as IEnumerable;
+                        IEnumerable elems = obj as IEnumerable;
                         if (elems != null)
                             return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elems);
                     }
@@ -116,7 +116,7 @@ namespace ConsoleApp4
             {
                 if (obj != null)
                 {
-                    var elems = obj as IEnumerable<XElement>;
+                    IEnumerable<XElement> elems = obj as IEnumerable<XElement>;
                     if (elems != null)
                         return elems.Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessXElement);
                     else
@@ -147,7 +147,7 @@ namespace ConsoleApp4
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 internal object ProcessObject(object obj)
                 {
-                    var elem = obj as XElement;
+                    XElement elem = obj as XElement;
                     if (elem != null)
                         return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
                     else

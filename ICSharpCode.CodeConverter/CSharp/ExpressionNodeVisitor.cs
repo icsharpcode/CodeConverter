@@ -212,7 +212,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitLiteralExpression(VBasic.Syntax.LiteralExpressionSyntax node)
         {
-            var convertedType = _semanticModel.GetTypeInfo(node).ConvertedType;
+            var op = _semanticModel.GetOperation(node).Parent.GetIgnoringParentheses();
+            var convertedType = op.Type;
             if (node.Token.Value == null) {
                 if (convertedType == null) {
                     return CommonConversions.Literal(null); //In future, we'll be able to just say "default" instead of guessing at "null" in this case
@@ -375,7 +376,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             AdditionalLocal local = null;
             if (refKind != RefKind.None && NeedsVariableForArgument(node)) {
                 var expressionTypeInfo = _semanticModel.GetTypeInfo(node.Expression);
-                bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType) == true && CommonConversions.ShouldPreferExplicitType(node.Expression, expressionTypeInfo.ConvertedType, out var _);
+                bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType) == true && !CommonConversions.ShouldPreferExplicitType(node.Expression, expressionTypeInfo.ConvertedType, out var _);
                 var typeSyntax = CommonConversions.GetTypeSyntax(expressionTypeInfo.ConvertedType, useVar);
                 string prefix = $"arg{argName}";
                 local = _additionalLocals.AddAdditionalLocal(new AdditionalLocal(prefix, expression, typeSyntax));

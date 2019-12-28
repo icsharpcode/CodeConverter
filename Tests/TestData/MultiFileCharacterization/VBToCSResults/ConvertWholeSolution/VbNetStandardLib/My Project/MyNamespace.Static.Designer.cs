@@ -854,7 +854,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value == null)
                     return "".ToCharArray();
-                var ArrayValue = Value as char[];
+                char[] ArrayValue = Value as char[];
                 if (ArrayValue != null && ArrayValue.Rank == 1)
                     return ArrayValue;
                 else if (Value is string)
@@ -947,7 +947,7 @@ namespace Microsoft.VisualBasic
                     return ToString((DateTime)Value);
                 else
                 {
-                    var CharArray = Value as char[];
+                    char[] CharArray = Value as char[];
                     if (CharArray != null)
                         return new string(CharArray);
                 }
@@ -1341,12 +1341,12 @@ namespace VbNetStandardLib
             {
                 if (obj != null)
                 {
-                    var elem = obj as XElement;
+                    XElement elem = obj as XElement;
                     if (!(elem == null))
                         return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elem);
                     else
                     {
-                        var elems = obj as IEnumerable;
+                        IEnumerable elems = obj as IEnumerable;
                         if (elems != null)
                             return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elems);
                     }
@@ -1358,7 +1358,7 @@ namespace VbNetStandardLib
             {
                 if (obj != null)
                 {
-                    var elems = obj as IEnumerable<XElement>;
+                    IEnumerable<XElement> elems = obj as IEnumerable<XElement>;
                     if (elems != null)
                         return elems.Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessXElement);
                     else
@@ -1389,7 +1389,7 @@ namespace VbNetStandardLib
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 internal object ProcessObject(object obj)
                 {
-                    var elem = obj as XElement;
+                    XElement elem = obj as XElement;
                     if (elem != null)
                         return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
                     else

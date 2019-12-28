@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
@@ -20,6 +21,26 @@ namespace ICSharpCode.CodeConverter.CSharp
             var methodBlockBaseSyntax = syntaxForSymbol.GetAncestor<MethodBlockBaseSyntax>();
             var methodFlow = semanticModel.AnalyzeDataFlow(methodBlockBaseSyntax.Statements.First(), methodBlockBaseSyntax.Statements.Last());
             return DefiniteAssignmentAnalyzer.IsDefinitelyAssignedBeforeRead(locallyDeclaredSymbol, methodFlow);
+        }
+
+        public static IOperation GetExpressionOperation(this SemanticModel semanticModel, Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax expressionSyntax)
+        {
+            var op = semanticModel.GetOperation(expressionSyntax);
+            while (true) {
+                switch (op) {
+                    case IArgumentOperation argumentOperation:
+                        op = argumentOperation.Value;
+                        continue;
+                    case IConversionOperation conversionOperation:
+                        op = conversionOperation.Operand;
+                        continue;
+                    case IParenthesizedOperation parenthesizedOperation:
+                        op = parenthesizedOperation.Operand;
+                        continue;
+                    default:
+                        return op;
+                }
+            }
         }
     }
 }

@@ -174,7 +174,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DivideExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IntegerDivideExpression);
             if (!csConversion.Exists || csConversion.IsUnboxing) {
-                if (ConvertStringToCharLiteral(vbNode as VBSyntax.LiteralExpressionSyntax, vbConvertedType, out _)) {
+                if (ConvertStringToCharLiteral(vbNode as VBSyntax.LiteralExpressionSyntax, vbConvertedType, out _)
+                || vbNode is VBSyntax.ParenthesizedExpressionSyntax pes && ConvertStringToCharLiteral(pes.Expression as VBSyntax.LiteralExpressionSyntax, vbConvertedType, out _)) {
                     typeConversionKind =
                         TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
                     return true;
