@@ -258,11 +258,22 @@ namespace ICSharpCode.CodeConverter.Util
                 .WithTrailingTrivia(typeSyntax.GetTrailingTrivia().ConvertTrivia());
         }
 
+        public static IEnumerable<TOut> FollowProperty<TOut>(this TOut start, Func<TOut, TOut> getProperty) where TOut : class
+        {
+            return FollowProperty<TOut, TOut>(start, getProperty);
+        }
+
         public static IEnumerable<TOut> FollowProperty<TIn, TOut>(this TIn start, Func<TOut, TOut> getProperty) where TOut : class where TIn: TOut
         {
             for (TOut current = start; current != null; current = getProperty(current)) {
                 yield return current;
             }
+        }
+
+        public static IEnumerable<TOut> FollowProperty<TOut>(this TOut start,
+            Func<TOut, IEnumerable<TOut>> getProperty) where TOut : class
+        {
+            return FollowProperty<TOut, TOut>(start, getProperty);
         }
 
         public static IEnumerable<TOut> FollowProperty<TIn, TOut>(this TIn start, Func<TOut, IEnumerable<TOut>> getProperty) where TOut : class where TIn : TOut

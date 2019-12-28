@@ -104,7 +104,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                               SymbolKind.Field || symbol.Kind == SymbolKind.Property))
             {
                 INamedTypeSymbol nodeEnclosingNamedType = GetEnclosingNamedType(semanticModel, root, node.SpanStart);
-                return !nodeEnclosingNamedType.FollowProperty((ITypeSymbol t) => t.BaseType).Contains(symbol.ContainingType);
+                return !nodeEnclosingNamedType.FollowProperty(t => t.BaseType).Contains(symbol.ContainingType);
             }
 
             return false;

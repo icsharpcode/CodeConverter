@@ -1306,7 +1306,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             ISymbol typeContext = syntaxNodeContext.GetEnclosingDeclaredTypeSymbol(_semanticModel);
             var implicitCsQualifications = ((ITypeSymbol)typeContext).GetBaseTypesAndThis()
-                .Concat(typeContext.FollowProperty((ISymbol n) => n.ContainingSymbol))
+                .Concat(typeContext.FollowProperty(n => n.ContainingSymbol))
                 .ToList();
 
             return implicitCsQualifications.Contains(symbolToCheck);
