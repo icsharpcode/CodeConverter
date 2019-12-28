@@ -78,21 +78,21 @@ namespace Microsoft.VisualBasic
             {
                 var underlyingType = Enum.GetUnderlyingType(Value.GetType());
                 if (underlyingType.Equals(typeof(sbyte)))
-                    return (sbyte)Value;
+                    return ToSByte(Value);
                 else if (underlyingType.Equals(typeof(byte)))
-                    return (byte)Value;
+                    return ToByte(Value);
                 else if (underlyingType.Equals(typeof(short)))
-                    return (short)Value;
+                    return ToShort(Value);
                 else if (underlyingType.Equals(typeof(ushort)))
-                    return (ushort)Value;
+                    return ToUShort(Value);
                 else if (underlyingType.Equals(typeof(int)))
-                    return (int)Value;
+                    return ToInteger(Value);
                 else if (underlyingType.Equals(typeof(uint)))
-                    return (uint)Value;
+                    return ToUInteger(Value);
                 else if (underlyingType.Equals(typeof(long)))
-                    return (long)Value;
+                    return ToLong(Value);
                 else if (underlyingType.Equals(typeof(ulong)))
-                    return (ulong)Value;
+                    return ToULong(Value);
                 else
                     throw new InvalidCastException();
             }
@@ -124,31 +124,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return ToBoolean((bool)Value);
+                    return ToBoolean(Value);
                 else if (Value is sbyte)
-                    return ToBoolean((sbyte)Value);
+                    return ToBoolean(ToSByte(Value));
                 else if (Value is byte)
-                    return ToBoolean((byte)Value);
+                    return ToBoolean(ToByte(Value));
                 else if (Value is short)
-                    return ToBoolean((short)Value);
+                    return ToBoolean(ToShort(Value));
                 else if (Value is ushort)
-                    return ToBoolean((ushort)Value);
+                    return ToBoolean(ToUShort(Value));
                 else if (Value is int)
-                    return ToBoolean((int)Value);
+                    return ToBoolean(ToInteger(Value));
                 else if (Value is uint)
-                    return ToBoolean((uint)Value);
+                    return ToBoolean(ToUInteger(Value));
                 else if (Value is long)
-                    return ToBoolean((long)Value);
+                    return ToBoolean(ToLong(Value));
                 else if (Value is ulong)
-                    return ToBoolean((ulong)Value);
+                    return ToBoolean(ToULong(Value));
                 else if (Value is decimal)
-                    return ToBoolean((decimal)Value);
+                    return ToBoolean(ToDecimal(Value));
                 else if (Value is float)
-                    return ToBoolean((float)Value);
+                    return ToBoolean(ToSingle(Value));
                 else if (Value is double)
-                    return ToBoolean((double)Value);
+                    return ToBoolean(ToDouble(Value));
                 else if (Value is string)
-                    return ToBoolean((string)Value);
+                    return ToBoolean(ToString(Value));
                 throw new InvalidCastException();
             }
             public static byte ToByte(string Value)
@@ -174,31 +174,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return ToByte((bool)Value);
+                    return ToByte(ToBoolean(Value));
                 else if (Value is sbyte)
-                    return ToByte((sbyte)Value);
+                    return ToByte(ToSByte(Value));
                 else if (Value is byte)
-                    return ToByte((byte)Value);
+                    return ToByte(Value);
                 else if (Value is short)
-                    return ToByte((short)Value);
+                    return ToByte(ToShort(Value));
                 else if (Value is ushort)
-                    return ToByte((ushort)Value);
+                    return ToByte(ToUShort(Value));
                 else if (Value is int)
-                    return ToByte((int)Value);
+                    return ToByte(ToInteger(Value));
                 else if (Value is uint)
-                    return ToByte((uint)Value);
+                    return ToByte(ToUInteger(Value));
                 else if (Value is long)
-                    return ToByte((long)Value);
+                    return ToByte(ToLong(Value));
                 else if (Value is ulong)
-                    return ToByte((ulong)Value);
+                    return ToByte(ToULong(Value));
                 else if (Value is decimal)
-                    return ToByte((decimal)Value);
+                    return ToByte(ToDecimal(Value));
                 else if (Value is float)
-                    return ToByte((float)Value);
+                    return ToByte(ToSingle(Value));
                 else if (Value is double)
-                    return ToByte((double)Value);
+                    return ToByte(ToDouble(Value));
                 else if (Value is string)
-                    return ToByte((string)Value);
+                    return ToByte(ToString(Value));
                 throw new InvalidCastException();
             }
             [CLSCompliant(false)]
@@ -226,31 +226,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return ToSByte((bool)Value);
+                    return ToSByte(ToBoolean(Value));
                 else if (Value is sbyte)
-                    return ToSByte((sbyte)Value);
+                    return ToSByte(Value);
                 else if (Value is byte)
-                    return ToSByte((byte)Value);
+                    return ToSByte(ToByte(Value));
                 else if (Value is short)
-                    return ToSByte((short)Value);
+                    return ToSByte(ToShort(Value));
                 else if (Value is ushort)
-                    return ToSByte((ushort)Value);
+                    return ToSByte(ToUShort(Value));
                 else if (Value is int)
-                    return ToSByte((int)Value);
+                    return ToSByte(ToInteger(Value));
                 else if (Value is uint)
-                    return ToSByte((uint)Value);
+                    return ToSByte(ToUInteger(Value));
                 else if (Value is long)
-                    return ToSByte((long)Value);
+                    return ToSByte(ToLong(Value));
                 else if (Value is ulong)
-                    return ToSByte((ulong)Value);
+                    return ToSByte(ToULong(Value));
                 else if (Value is decimal)
-                    return ToSByte((decimal)Value);
+                    return ToSByte(ToDecimal(Value));
                 else if (Value is float)
-                    return ToSByte((float)Value);
+                    return ToSByte(ToSingle(Value));
                 else if (Value is double)
-                    return ToSByte((double)Value);
+                    return ToSByte(ToDouble(Value));
                 else if (Value is string)
-                    return ToSByte((string)Value);
+                    return ToSByte(ToString(Value));
                 throw new InvalidCastException();
             }
             public static short ToShort(string Value)
@@ -276,31 +276,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return ToShort((bool)Value);
+                    return ToShort(ToBoolean(Value));
                 else if (Value is sbyte)
-                    return ToShort((sbyte)Value);
+                    return ToSByte(Value);
                 else if (Value is byte)
-                    return ToShort((byte)Value);
+                    return ToByte(Value);
                 else if (Value is short)
-                    return ToShort((short)Value);
+                    return ToShort(Value);
                 else if (Value is ushort)
-                    return ToShort((ushort)Value);
+                    return ToShort(ToUShort(Value));
                 else if (Value is int)
-                    return ToShort((int)Value);
+                    return ToShort(ToInteger(Value));
                 else if (Value is uint)
-                    return ToShort((uint)Value);
+                    return ToShort(ToUInteger(Value));
                 else if (Value is long)
-                    return ToShort((long)Value);
+                    return ToShort(ToLong(Value));
                 else if (Value is ulong)
-                    return ToShort((ulong)Value);
+                    return ToShort(ToULong(Value));
                 else if (Value is decimal)
-                    return ToShort((decimal)Value);
+                    return ToShort(ToDecimal(Value));
                 else if (Value is float)
-                    return ToShort((float)Value);
+                    return ToShort(ToSingle(Value));
                 else if (Value is double)
-                    return ToShort((double)Value);
+                    return ToShort(ToDouble(Value));
                 else if (Value is string)
-                    return ToShort((string)Value);
+                    return ToShort(ToString(Value));
                 throw new InvalidCastException();
             }
             [CLSCompliant(false)]
@@ -328,31 +328,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return ToUShort((bool)Value);
+                    return ToUShort(ToBoolean(Value));
                 else if (Value is sbyte)
-                    return ToUShort((sbyte)Value);
+                    return ToUShort(ToSByte(Value));
                 else if (Value is byte)
-                    return ToUShort((byte)Value);
+                    return ToByte(Value);
                 else if (Value is short)
-                    return ToUShort((short)Value);
+                    return ToUShort(ToShort(Value));
                 else if (Value is ushort)
-                    return ToUShort((ushort)Value);
+                    return ToUShort(Value);
                 else if (Value is int)
-                    return ToUShort((int)Value);
+                    return ToUShort(ToInteger(Value));
                 else if (Value is uint)
-                    return ToUShort((uint)Value);
+                    return ToUShort(ToUInteger(Value));
                 else if (Value is long)
-                    return ToUShort((long)Value);
+                    return ToUShort(ToLong(Value));
                 else if (Value is ulong)
-                    return ToUShort((ulong)Value);
+                    return ToUShort(ToULong(Value));
                 else if (Value is decimal)
-                    return ToUShort((decimal)Value);
+                    return ToUShort(ToDecimal(Value));
                 else if (Value is float)
-                    return ToUShort((float)Value);
+                    return ToUShort(ToSingle(Value));
                 else if (Value is double)
-                    return ToUShort((double)Value);
+                    return ToUShort(ToDouble(Value));
                 else if (Value is string)
-                    return ToUShort((string)Value);
+                    return ToUShort(ToString(Value));
                 throw new InvalidCastException();
             }
             public static int ToInteger(string Value)
@@ -378,31 +378,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return ToInteger((bool)Value);
+                    return ToInteger(ToBoolean(Value));
                 else if (Value is sbyte)
-                    return ToInteger((sbyte)Value);
+                    return ToSByte(Value);
                 else if (Value is byte)
-                    return ToInteger((byte)Value);
+                    return ToByte(Value);
                 else if (Value is short)
-                    return ToInteger((short)Value);
+                    return ToShort(Value);
                 else if (Value is ushort)
-                    return ToInteger((ushort)Value);
+                    return ToUShort(Value);
                 else if (Value is int)
-                    return ToInteger((int)Value);
+                    return ToInteger(Value);
                 else if (Value is uint)
-                    return ToInteger((uint)Value);
+                    return ToInteger(ToUInteger(Value));
                 else if (Value is long)
-                    return ToInteger((long)Value);
+                    return ToInteger(ToLong(Value));
                 else if (Value is ulong)
-                    return ToInteger((ulong)Value);
+                    return ToInteger(ToULong(Value));
                 else if (Value is decimal)
-                    return ToInteger((decimal)Value);
+                    return ToInteger(ToDecimal(Value));
                 else if (Value is float)
-                    return ToInteger((float)Value);
+                    return ToInteger(ToSingle(Value));
                 else if (Value is double)
-                    return ToInteger((double)Value);
+                    return ToInteger(ToDouble(Value));
                 else if (Value is string)
-                    return ToInteger((string)Value);
+                    return ToInteger(ToString(Value));
                 throw new InvalidCastException();
             }
             [CLSCompliant(false)]
@@ -430,31 +430,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return ToUInteger((bool)Value);
+                    return ToUInteger(ToBoolean(Value));
                 else if (Value is sbyte)
-                    return ToUInteger((sbyte)Value);
+                    return ToUInteger(ToSByte(Value));
                 else if (Value is byte)
-                    return ToUInteger((byte)Value);
+                    return ToByte(Value);
                 else if (Value is short)
-                    return ToUInteger((short)Value);
+                    return ToUInteger(ToShort(Value));
                 else if (Value is ushort)
-                    return ToUInteger((ushort)Value);
+                    return ToUShort(Value);
                 else if (Value is int)
-                    return ToUInteger((int)Value);
+                    return ToUInteger(ToInteger(Value));
                 else if (Value is uint)
-                    return ToUInteger((uint)Value);
+                    return ToUInteger(Value);
                 else if (Value is long)
-                    return ToUInteger((long)Value);
+                    return ToUInteger(ToLong(Value));
                 else if (Value is ulong)
-                    return ToUInteger((ulong)Value);
+                    return ToUInteger(ToULong(Value));
                 else if (Value is decimal)
-                    return ToUInteger((decimal)Value);
+                    return ToUInteger(ToDecimal(Value));
                 else if (Value is float)
-                    return ToUInteger((float)Value);
+                    return ToUInteger(ToSingle(Value));
                 else if (Value is double)
-                    return ToUInteger((double)Value);
+                    return ToUInteger(ToDouble(Value));
                 else if (Value is string)
-                    return ToUInteger((string)Value);
+                    return ToUInteger(ToString(Value));
                 throw new InvalidCastException();
             }
             public static long ToLong(string Value)
@@ -465,7 +465,7 @@ namespace Microsoft.VisualBasic
                 {
                     var i64Value = default(long);
                     if (IsHexOrOctValue(Value, ref i64Value))
-                        return ToLong(i64Value);
+                        return i64Value;
                     return ToLong(ParseDecimal(Value, null));
                 }
                 catch (FormatException e)
@@ -480,31 +480,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return ToLong((bool)Value);
+                    return ToLong(ToBoolean(Value));
                 else if (Value is sbyte)
-                    return ToLong((sbyte)Value);
+                    return ToSByte(Value);
                 else if (Value is byte)
-                    return ToLong((byte)Value);
+                    return ToByte(Value);
                 else if (Value is short)
-                    return ToLong((short)Value);
+                    return ToShort(Value);
                 else if (Value is ushort)
-                    return ToLong((ushort)Value);
+                    return ToUShort(Value);
                 else if (Value is int)
-                    return ToLong((int)Value);
+                    return ToInteger(Value);
                 else if (Value is uint)
-                    return ToLong((uint)Value);
+                    return ToUInteger(Value);
                 else if (Value is long)
-                    return ToLong((long)Value);
+                    return ToLong(Value);
                 else if (Value is ulong)
-                    return ToLong((ulong)Value);
+                    return ToLong(ToULong(Value));
                 else if (Value is decimal)
-                    return ToLong((decimal)Value);
+                    return ToLong(ToDecimal(Value));
                 else if (Value is float)
-                    return ToLong((float)Value);
+                    return ToLong(ToSingle(Value));
                 else if (Value is double)
-                    return ToLong((double)Value);
+                    return ToLong(ToDouble(Value));
                 else if (Value is string)
-                    return ToLong((string)Value);
+                    return ToLong(ToString(Value));
                 throw new InvalidCastException();
             }
             [CLSCompliant(false)]
@@ -516,7 +516,7 @@ namespace Microsoft.VisualBasic
                 {
                     var ui64Value = default(ulong);
                     if (IsHexOrOctValue(Value, ref ui64Value))
-                        return ToULong(ui64Value);
+                        return ui64Value;
                     return ToULong(ParseDecimal(Value, null));
                 }
                 catch (FormatException e)
@@ -532,31 +532,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return ToULong((bool)Value);
+                    return ToULong(ToBoolean(Value));
                 else if (Value is sbyte)
-                    return ToULong((sbyte)Value);
+                    return ToULong(ToSByte(Value));
                 else if (Value is byte)
-                    return ToULong((byte)Value);
+                    return ToByte(Value);
                 else if (Value is short)
-                    return ToULong((short)Value);
+                    return ToULong(ToShort(Value));
                 else if (Value is ushort)
-                    return ToULong((ushort)Value);
+                    return ToUShort(Value);
                 else if (Value is int)
-                    return ToULong((int)Value);
+                    return ToULong(ToInteger(Value));
                 else if (Value is uint)
-                    return ToULong((uint)Value);
+                    return ToUInteger(Value);
                 else if (Value is long)
-                    return ToULong((long)Value);
+                    return ToULong(ToLong(Value));
                 else if (Value is ulong)
-                    return ToULong((ulong)Value);
+                    return ToULong(Value);
                 else if (Value is decimal)
-                    return ToULong((decimal)Value);
+                    return ToULong(ToDecimal(Value));
                 else if (Value is float)
-                    return ToULong((float)Value);
+                    return ToULong(ToSingle(Value));
                 else if (Value is double)
-                    return ToULong((double)Value);
+                    return ToULong(ToDouble(Value));
                 else if (Value is string)
-                    return ToULong((string)Value);
+                    return ToULong(ToString(Value));
                 throw new InvalidCastException();
             }
             public static decimal ToDecimal(bool Value)
@@ -574,7 +574,7 @@ namespace Microsoft.VisualBasic
                 {
                     var i64Value = default(long);
                     if (IsHexOrOctValue(Value, ref i64Value))
-                        return ToDecimal(i64Value);
+                        return i64Value;
                     return ParseDecimal(Value, null);
                 }
                 catch (OverflowException e1)
@@ -593,31 +593,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return ToDecimal((bool)Value);
+                    return ToDecimal(ToBoolean(Value));
                 else if (Value is sbyte)
-                    return ToDecimal((sbyte)Value);
+                    return ToSByte(Value);
                 else if (Value is byte)
-                    return ToDecimal((byte)Value);
+                    return ToByte(Value);
                 else if (Value is short)
-                    return ToDecimal((short)Value);
+                    return ToShort(Value);
                 else if (Value is ushort)
-                    return ToDecimal((ushort)Value);
+                    return ToUShort(Value);
                 else if (Value is int)
-                    return ToDecimal((int)Value);
+                    return ToInteger(Value);
                 else if (Value is uint)
-                    return ToDecimal((uint)Value);
+                    return ToUInteger(Value);
                 else if (Value is long)
-                    return ToDecimal((long)Value);
+                    return ToLong(Value);
                 else if (Value is ulong)
-                    return ToDecimal((ulong)Value);
+                    return ToULong(Value);
                 else if (Value is decimal)
-                    return ToDecimal((decimal)Value);
+                    return ToDecimal(Value);
                 else if (Value is float)
-                    return ToDecimal((float)Value);
+                    return ToDecimal(ToSingle(Value));
                 else if (Value is double)
-                    return ToDecimal((double)Value);
+                    return ToDecimal(ToDouble(Value));
                 else if (Value is string)
-                    return ToDecimal((string)Value);
+                    return ToDecimal(ToString(Value));
                 throw new InvalidCastException();
             }
             private static decimal ParseDecimal(string Value, System.Globalization.NumberFormatInfo NumberFormat)
@@ -674,7 +674,7 @@ namespace Microsoft.VisualBasic
 
             MisMatch:
                 ;
-                OutNumberFormat = (System.Globalization.NumberFormatInfo)InNumberFormat.Clone();
+                OutNumberFormat = InNumberFormat.Clone();
                 {
                     var withBlock2 = OutNumberFormat;
                     withBlock2.CurrencyDecimalSeparator = withBlock2.NumberDecimalSeparator;
@@ -691,7 +691,7 @@ namespace Microsoft.VisualBasic
                 {
                     var i64Value = default(long);
                     if (IsHexOrOctValue(Value, ref i64Value))
-                        return ToSingle(i64Value);
+                        return i64Value;
                     double Result = ParseDouble(Value);
                     if ((Result < float.MinValue || Result > float.MaxValue) && !double.IsInfinity(Result))
                         throw new OverflowException();
@@ -709,31 +709,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return ToSingle((bool)Value);
+                    return ToSingle(ToBoolean(Value));
                 else if (Value is sbyte)
-                    return ToSingle((sbyte)Value);
+                    return ToSByte(Value);
                 else if (Value is byte)
-                    return ToSingle((byte)Value);
+                    return ToByte(Value);
                 else if (Value is short)
-                    return ToSingle((short)Value);
+                    return ToShort(Value);
                 else if (Value is ushort)
-                    return ToSingle((ushort)Value);
+                    return ToUShort(Value);
                 else if (Value is int)
-                    return ToSingle((int)Value);
+                    return ToInteger(Value);
                 else if (Value is uint)
-                    return ToSingle((uint)Value);
+                    return ToUInteger(Value);
                 else if (Value is long)
-                    return ToSingle((long)Value);
+                    return ToLong(Value);
                 else if (Value is ulong)
-                    return ToSingle((ulong)Value);
+                    return ToULong(Value);
                 else if (Value is decimal)
-                    return ToSingle((decimal)Value);
+                    return ToSingle(ToDecimal(Value));
                 else if (Value is float)
-                    return ToSingle((float)Value);
+                    return ToSingle(Value);
                 else if (Value is double)
-                    return ToSingle((double)Value);
+                    return ToSingle(ToDouble(Value));
                 else if (Value is string)
-                    return ToSingle((string)Value);
+                    return ToSingle(ToString(Value));
                 throw new InvalidCastException();
             }
             public static double ToDouble(string Value)
@@ -744,7 +744,7 @@ namespace Microsoft.VisualBasic
                 {
                     var i64Value = default(long);
                     if (IsHexOrOctValue(Value, ref i64Value))
-                        return ToDouble(i64Value);
+                        return i64Value;
                     return ParseDouble(Value);
                 }
                 catch (FormatException e)
@@ -759,31 +759,31 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return ToDouble((bool)Value);
+                    return ToDouble(ToBoolean(Value));
                 else if (Value is sbyte)
-                    return ToDouble((sbyte)Value);
+                    return ToSByte(Value);
                 else if (Value is byte)
-                    return ToDouble((byte)Value);
+                    return ToByte(Value);
                 else if (Value is short)
-                    return ToDouble((short)Value);
+                    return ToShort(Value);
                 else if (Value is ushort)
-                    return ToDouble((ushort)Value);
+                    return ToUShort(Value);
                 else if (Value is int)
-                    return ToDouble((int)Value);
+                    return ToInteger(Value);
                 else if (Value is uint)
-                    return ToDouble((uint)Value);
+                    return ToUInteger(Value);
                 else if (Value is long)
-                    return ToDouble((long)Value);
+                    return ToLong(Value);
                 else if (Value is ulong)
-                    return ToDouble((ulong)Value);
+                    return ToULong(Value);
                 else if (Value is decimal)
-                    return ToDouble((decimal)Value);
+                    return ToDouble(ToDecimal(Value));
                 else if (Value is float)
-                    return ToDouble((float)Value);
+                    return ToSingle(Value);
                 else if (Value is double)
-                    return ToDouble((double)Value);
+                    return ToDouble(Value);
                 else if (Value is string)
-                    return ToDouble((string)Value);
+                    return ToDouble(ToString(Value));
                 throw new InvalidCastException();
             }
             private static double ParseDouble(string Value)
@@ -823,9 +823,9 @@ namespace Microsoft.VisualBasic
                 if (Value == null)
                     return default(DateTime);
                 if (Value is DateTime)
-                    return ToDate((DateTime)Value);
+                    return ToDate(Value);
                 else if (Value is string)
-                    return ToDate((string)Value);
+                    return ToDate(ToString(Value));
                 throw new InvalidCastException();
             }
             public static char ToChar(string Value)
@@ -839,9 +839,9 @@ namespace Microsoft.VisualBasic
                 if (Value == null)
                     return Convert.ToChar(0 & 0xFFFF);
                 if (Value is char)
-                    return ToChar((char)Value);
+                    return ToChar(Value);
                 else if (Value is string)
-                    return ToChar((string)Value);
+                    return ToChar(ToString(Value));
                 throw new InvalidCastException();
             }
             public static char[] ToCharArrayRankOne(string Value)
@@ -858,7 +858,7 @@ namespace Microsoft.VisualBasic
                 if (ArrayValue != null && ArrayValue.Rank == 1)
                     return ArrayValue;
                 else if (Value is string)
-                    return ((string)Value).ToCharArray();
+                    return ToString(Value).ToCharArray();
                 throw new InvalidCastException();
             }
             public static new string ToString(short Value)
@@ -918,33 +918,33 @@ namespace Microsoft.VisualBasic
                 if (Value is Enum)
                     Value = GetEnumValue(Value);
                 if (Value is bool)
-                    return ToString((bool)Value);
+                    return ToString(ToBoolean(Value));
                 else if (Value is sbyte)
-                    return ToString((sbyte)Value);
+                    return ToString(ToSByte(Value));
                 else if (Value is byte)
-                    return ToString((byte)Value);
+                    return ToString(ToByte(Value));
                 else if (Value is short)
-                    return ToString((short)Value);
+                    return ToString(ToShort(Value));
                 else if (Value is ushort)
-                    return ToString((ushort)Value);
+                    return ToString(ToUShort(Value));
                 else if (Value is int)
-                    return ToString((int)Value);
+                    return ToString(ToInteger(Value));
                 else if (Value is uint)
-                    return ToString((uint)Value);
+                    return ToString(ToUInteger(Value));
                 else if (Value is long)
-                    return ToString((long)Value);
+                    return ToString(ToLong(Value));
                 else if (Value is ulong)
-                    return ToString((ulong)Value);
+                    return ToString(ToULong(Value));
                 else if (Value is decimal)
-                    return ToString((decimal)Value);
+                    return ToString(ToDecimal(Value));
                 else if (Value is float)
-                    return ToString((float)Value);
+                    return ToString(ToSingle(Value));
                 else if (Value is double)
-                    return ToString((double)Value);
+                    return ToString(ToDouble(Value));
                 else if (Value is char)
-                    return ToString((char)Value);
+                    return ToString(ToChar(Value));
                 else if (Value is DateTime)
-                    return ToString((DateTime)Value);
+                    return ToString(ToDate(Value));
                 else
                 {
                     var CharArray = Value as char[];
@@ -1040,37 +1040,37 @@ namespace Microsoft.VisualBasic
                     return default(T);
                 var reflectedType = typeof(T);
                 if (Equals(reflectedType, typeof(bool)))
-                    return (T)(object)ToBoolean(Value);
+                    return ToBoolean(Value);
                 else if (Equals(reflectedType, typeof(sbyte)))
-                    return (T)(object)ToSByte(Value);
+                    return ToSByte(Value);
                 else if (Equals(reflectedType, typeof(byte)))
-                    return (T)(object)ToByte(Value);
+                    return ToByte(Value);
                 else if (Equals(reflectedType, typeof(short)))
-                    return (T)(object)ToShort(Value);
+                    return ToShort(Value);
                 else if (Equals(reflectedType, typeof(ushort)))
-                    return (T)(object)ToUShort(Value);
+                    return ToUShort(Value);
                 else if (Equals(reflectedType, typeof(int)))
-                    return (T)(object)ToInteger(Value);
+                    return ToInteger(Value);
                 else if (Equals(reflectedType, typeof(uint)))
-                    return (T)(object)ToUInteger(Value);
+                    return ToUInteger(Value);
                 else if (Equals(reflectedType, typeof(long)))
-                    return (T)(object)ToLong(Value);
+                    return ToLong(Value);
                 else if (Equals(reflectedType, typeof(ulong)))
-                    return (T)(object)ToULong(Value);
+                    return ToULong(Value);
                 else if (Equals(reflectedType, typeof(decimal)))
-                    return (T)(object)ToDecimal(Value);
+                    return ToDecimal(Value);
                 else if (Equals(reflectedType, typeof(float)))
-                    return (T)(object)ToSingle(Value);
+                    return ToSingle(Value);
                 else if (Equals(reflectedType, typeof(double)))
-                    return (T)(object)ToDouble(Value);
+                    return ToDouble(Value);
                 else if (Equals(reflectedType, typeof(DateTime)))
-                    return (T)(object)ToDate(Value);
+                    return ToDate(Value);
                 else if (Equals(reflectedType, typeof(char)))
-                    return (T)(object)ToChar(Value);
+                    return ToChar(Value);
                 else if (Equals(reflectedType, typeof(string)))
-                    return (T)(object)ToString(Value);
+                    return ToString(Value);
                 else
-                    return (T)Value;
+                    return Value;
             }
         }
         [Embedded()]
@@ -1301,7 +1301,7 @@ namespace VbNetStandardLib
             public static string get_AttributeValue(IEnumerable<XElement> source, XName name)
             {
                 foreach (XElement item in source)
-                    return Conversions.ToString(item.Attribute(name));
+                    return item.Attribute(name);
                 return null;
             }
 
@@ -1315,7 +1315,7 @@ namespace VbNetStandardLib
             }
             public static string get_AttributeValue(XElement source, XName name)
             {
-                return Conversions.ToString(source.Attribute(name));
+                return source.Attribute(name);
             }
 
             public static void set_AttributeValue(XElement source, XName name, string value)

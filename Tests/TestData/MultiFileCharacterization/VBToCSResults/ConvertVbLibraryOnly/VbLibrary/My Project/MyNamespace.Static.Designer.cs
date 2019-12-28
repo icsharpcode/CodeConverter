@@ -8,7 +8,6 @@ using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
-using Microsoft.VisualBasic.CompilerServices;
 
 namespace Microsoft.VisualBasic
 {
@@ -224,7 +223,7 @@ namespace VbLibrary
             public static string get_AttributeValue(IEnumerable<XElement> source, XName name)
             {
                 foreach (XElement item in source)
-                    return Conversions.ToString(item.Attribute(name));
+                    return item.Attribute(name);
                 return null;
             }
 
@@ -238,7 +237,7 @@ namespace VbLibrary
             }
             public static string get_AttributeValue(XElement source, XName name)
             {
-                return Conversions.ToString(source.Attribute(name));
+                return source.Attribute(name);
             }
 
             public static void set_AttributeValue(XElement source, XName name, string value)
