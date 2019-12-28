@@ -374,8 +374,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var expression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingVisitor), defaultToCast: refKind != RefKind.None);
             AdditionalLocal local = null;
             if (refKind != RefKind.None && NeedsVariableForArgument(node)) {
-                var expressionTypeInfo= _semanticModel.GetTypeInfo(node.Expression);
-                bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType) == true;
+                var expressionTypeInfo = _semanticModel.GetTypeInfo(node.Expression);
+                bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType) == true && CommonConversions.ShouldPreferExplicitType(node.Expression, expressionTypeInfo.ConvertedType, out var _);
                 var typeSyntax = CommonConversions.GetTypeSyntax(expressionTypeInfo.ConvertedType, useVar);
                 string prefix = $"arg{argName}";
                 local = _additionalLocals.AddAdditionalLocal(new AdditionalLocal(prefix, expression, typeSyntax));

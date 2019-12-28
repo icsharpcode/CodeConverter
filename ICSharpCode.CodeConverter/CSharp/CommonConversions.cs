@@ -66,9 +66,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool requireExplicitTypeForAll = declarator.Names.Count > 1;
             IMethodSymbol initSymbol = null;
             if (vbInitValue != null) {
-                var vbInitConstantValue = _semanticModel.GetConstantValue(vbInitValue);
-                var vbInitIsNothingLiteral = vbInitConstantValue.HasValue && vbInitConstantValue.Value == null;
-                preferExplicitType |= vbInitializerType != null && vbInitializerType.HasCsKeyword();
+                preferExplicitType |= ShouldPreferExplicitType(vbInitValue, vbInitializerType, out bool vbInitIsNothingLiteral);
                 initSymbol = _semanticModel.GetSymbolInfo(vbInitValue).Symbol as IMethodSymbol;
                 bool isAnonymousFunction = initSymbol?.IsAnonymousFunction() == true;
                 requireExplicitTypeForAll |= vbInitIsNothingLiteral || isAnonymousFunction;
@@ -101,6 +99,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return (csVars.Values, csMethods);
+        }
+
+        public bool ShouldPreferExplicitType(VBSyntax.ExpressionSyntax vbInitValue, ITypeSymbol vbInitializerType,
+            out bool isNothingLiteral)
+        {
+            var vbInitConstantValue = _semanticModel.GetConstantValue(vbInitValue);
+            isNothingLiteral = vbInitConstantValue.HasValue && vbInitConstantValue.Value == null;
+            bool shouldPreferExplicitType = vbInitializerType != null && vbInitializerType.HasCsKeyword();
+            return shouldPreferExplicitType;
         }
 
         private async Task<EqualsValueClauseSyntax> ConvertEqualsValueClauseSyntax(
