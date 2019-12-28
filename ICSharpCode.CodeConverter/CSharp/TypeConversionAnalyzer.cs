@@ -25,6 +25,7 @@ using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
+    /// <remarks>See https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/conversions </remarks>
     internal class TypeConversionAnalyzer
     {
         private readonly CSharpCompilation _csCompilation;
