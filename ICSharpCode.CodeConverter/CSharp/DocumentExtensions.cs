@@ -61,24 +61,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             var shouldExpand = document.Project.Language == LanguageNames.VisualBasic
                 ? (Func<SemanticModel, SyntaxNode, bool>)ShouldExpandVbNode
                 : ShouldExpandCsNode;
-            document = await WorkaroundBugsInExpandVbAsync(document, ShouldExpandVbNode);
-            document = await ExpandAsync(document, shouldExpand);
+            document = await WorkaroundBugsInExpandVbAsync(document);
+            document = await ExpandAsync(document);
             return document;
         }
 
         private static async Task<Document> WithCsExpandedRootAsync(this Document document)
         {
-            document = await ExpandAsync(document, ShouldExpandCsNode);
+            document = await ExpandAsync(document);
             return document;
         }
 
-        private static async Task<Document> WorkaroundBugsInExpandVbAsync(Document document, Func<SemanticModel, SyntaxNode, bool> shouldExpand)
+        private static async Task<Document> WorkaroundBugsInExpandVbAsync(Document document)
         {
             var semanticModel = await document.GetSemanticModelAsync();
             var root = (VBasic.VisualBasicSyntaxNode)await document.GetSyntaxRootAsync();
 
             try {
-                var newRoot = root.ReplaceNodes(root.DescendantNodes(n => !shouldExpand(semanticModel, n)).Where(n => shouldExpand(semanticModel, n)),
+                var newRoot = root.ReplaceNodes(root.DescendantNodes(n => !ShouldExpandWithinVbNode(semanticModel, n)).Where(n => ShouldExpandVbNode(semanticModel, n)),
                     (node, rewrittenNode) => {
                         var symbol = semanticModel.GetSymbolInfo(node).Symbol;
                         if (rewrittenNode is VBSyntax.SimpleNameSyntax sns && IsMyBaseBug(semanticModel, root, node, symbol) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro) {
@@ -133,13 +133,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             return null;
         }
 
-        private static async Task<Document> ExpandAsync(Document document, Func<SemanticModel, SyntaxNode, bool> shouldExpand)
+        private static async Task<Document> ExpandAsync(Document document)
         {
             var semanticModel = await document.GetSemanticModelAsync();
             var workspace = document.Project.Solution.Workspace;
             var root = (VBasic.VisualBasicSyntaxNode) await document.GetSyntaxRootAsync();
             try {
-                var newRoot = root.ReplaceNodes(root.DescendantNodes(n => !shouldExpand(semanticModel, n)).Where(n => shouldExpand(semanticModel, n)),
+                var newRoot = root.ReplaceNodes(root.DescendantNodes(n => !ShouldExpandWithinVbNode(semanticModel, n)).Where(n => ShouldExpandVbNode(semanticModel, n)),
                     (node, rewrittenNode) => TryExpandVbNode(node, semanticModel, workspace)
                 );
                 return document.WithSyntaxRoot(newRoot);
@@ -197,6 +197,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             } catch (Exception) {
                 return node;
             }
+        }
+
+        private static bool ShouldExpandWithinVbNode(SemanticModel semanticModel, SyntaxNode node)
+        {
+            return !(node is VBSyntax.InstanceExpressionSyntax) && //Roslyn bug - accidentally expands "New" into an identifier causing compile error
+                   !ShouldExpandVbNode(semanticModel, node);
         }
 
         private static bool ShouldExpandVbNode(SemanticModel semanticModel, SyntaxNode node)

@@ -11,6 +11,8 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.Simplification;
+using Microsoft.VisualBasic.CompilerServices;
 using IOperation = Microsoft.CodeAnalysis.IOperation;
 using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -663,12 +665,30 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
+        private async Task<CSharpSyntaxNode> WithRemovedRedundantConversionOrNull(VBSyntax.InvocationExpressionSyntax conversionNode, ISymbol invocationSymbol)
+        {
+            if (invocationSymbol.ContainingType.Name != nameof(Conversions) ||
+                !invocationSymbol.Name.StartsWith("To") ||
+                conversionNode.ArgumentList.Arguments.Count != 1) {
+                return null;
+            }
+
+            var conversionArg = conversionNode.ArgumentList.Arguments.First().GetExpression();
+            VBSyntax.ExpressionSyntax coercedConversionNode = conversionNode;
+            return await WithRemovedRedundantConversionOrNull(coercedConversionNode, conversionArg);
+        }
+
         private async Task<CSharpSyntaxNode> WithRemovedRedundantConversionOrNull(VBSyntax.ExpressionSyntax conversionNode, VBSyntax.ExpressionSyntax conversionArg)
         {
-            if (conversionNode is VBSyntax.InvocationExpressionSyntax ies && ies.ArgumentList.Arguments.Count != 1) return null;
             var csharpArg = (ExpressionSyntax)await conversionArg.AcceptAsync(TriviaConvertingVisitor);
+            var typeInfo = _semanticModel.GetTypeInfo(conversionNode);
+
+            // If written by the user (i.e. not generated during expand phase), maintain intended semantics which could throw sometimes e.g. object o = (int) (object) long.MaxValue;
+            var writtenByUser = !conversionNode.HasAnnotation(Simplifier.Annotation);
+            var forceTargetType = writtenByUser ? typeInfo.Type : typeInfo.ConvertedType;
             return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(conversionArg, csharpArg,
-                forceTargetType: _semanticModel.GetTypeInfo(conversionNode).ConvertedType);
+                forceTargetType: forceTargetType);
+
         }
 
 
@@ -681,7 +701,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 expressionSymbol?.GetReturnType() ?? _semanticModel.GetTypeInfo(node.Expression).Type;
             var operation = _semanticModel.GetOperation(node);
             if (expressionSymbol?.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic) &&
-                (await SubstituteVisualBasicMethodOrNull(node) ?? await WithRemovedRedundantConversionOrNull(node, node.ArgumentList.Arguments.FirstOrDefault()?.GetExpression())) is
+                (await SubstituteVisualBasicMethodOrNull(node) ?? await WithRemovedRedundantConversionOrNull(node, expressionSymbol)) is
                 CSharpSyntaxNode csEquivalent) {
                 return csEquivalent;
             }
