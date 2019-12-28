@@ -833,6 +833,7 @@ End Sub");
                                         Else
                                             RemoveAt(0)
                                         End If
+                                    End Sub
     End Sub
 End Class");
         }
@@ -854,7 +855,7 @@ public class TestClass {
 @"Imports System
 
 Public Class TestClass
-    Private create As Func(Of Object, String) = Function(o)
+    Private Event create As Func(Of Object, String) = Function(o)
                                                           If TypeOf o Is TestClass Then
                                                               Return ""first""
                                                           Else
