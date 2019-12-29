@@ -37,6 +37,27 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
+        public bool ShouldExpandWithinNode(SemanticModel semanticModel, SyntaxNode node)
+        {
+            return !IsRoslynInstanceExpressionBug(node) &&
+                   !ShouldExpandNode(semanticModel, node);
+        }
+
+        public bool ShouldExpandNode(SemanticModel semanticModel, SyntaxNode node)
+        {
+            return (node is Microsoft.CodeAnalysis.VisualBasic.Syntax.NameSyntax ||
+                    node is Microsoft.CodeAnalysis.VisualBasic.Syntax.InvocationExpressionSyntax) &&
+                   !IsRoslynInstanceExpressionBug(node) && !IsOriginalSymbolGenericMethod(semanticModel, node);
+        }
+
+        public SyntaxNode TryExpandNode(SyntaxNode node, SemanticModel semanticModel, Workspace workspace)
+        {
+            var expandedNode = Expander.TryExpandNode(node, semanticModel, workspace);
+
+            //See https://github.com/icsharpcode/CodeConverter/pull/449#issuecomment-561678148
+            return IsRedundantConversion(node, semanticModel, expandedNode) ? node : expandedNode;
+        }
+
         /// <returns>True iff calling Expand would qualify with MyBase when the symbol isn't in the base type
         /// See https://github.com/dotnet/roslyn/blob/97123b393c3a5a91cc798b329db0d7fc38634784/src/Workspaces/VisualBasic/Portable/Simplification/VisualBasicSimplificationService.Expander.vb#L657</returns>
         private static bool IsMyBaseBug(SemanticModel semanticModel, Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxNode root, SyntaxNode node,
@@ -75,14 +96,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             return null;
         }
 
-        public SyntaxNode TryExpandNode(SyntaxNode node, SemanticModel semanticModel, Workspace workspace)
-        {
-            var expandedNode = Expander.TryExpandNode(node, semanticModel, workspace);
-
-            //See https://github.com/icsharpcode/CodeConverter/pull/449#issuecomment-561678148
-            return IsRedundantConversion(node, semanticModel, expandedNode) ? node : expandedNode;
-        }
-
         private static bool IsRedundantConversion(SyntaxNode node, SemanticModel semanticModel, SyntaxNode expandedNode)
         {
             return IsRedundantConversionToMethod(node, semanticModel, expandedNode) || IsRedundantCastMethod(node, semanticModel, expandedNode);
@@ -105,12 +118,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             return originalTypeInfo.Type.Equals(originalTypeInfo.ConvertedType);
         }
 
-        public bool ShouldExpandWithinNode(SemanticModel semanticModel, SyntaxNode node)
-        {
-            return !IsRoslynInstanceExpressionBug(node) &&
-                   !ShouldExpandNode(semanticModel, node);
-        }
-
         /// <summary>
         /// Roslyn bug - accidentally expands "New" into an identifier causing compile error
         /// </summary>
@@ -119,14 +126,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             return node is Microsoft.CodeAnalysis.VisualBasic.Syntax.InvocationExpressionSyntax ies && ies.Expression is Microsoft.CodeAnalysis.VisualBasic.Syntax.MemberAccessExpressionSyntax maes && maes.Expression is Microsoft.CodeAnalysis.VisualBasic.Syntax.InstanceExpressionSyntax;
         }
 
-        public bool ShouldExpandNode(SemanticModel semanticModel, SyntaxNode node)
+        /// <summary>
+        /// Roslyn bug - accidentally expands anonymous types to just "Global."
+        /// Since the C# reducer also doesn't seem to reduce generic extension methods, it's best to avoid those too, so let's just avoid all generic methods
+        /// </summary>
+        private static bool IsOriginalSymbolGenericMethod(SemanticModel semanticModel, SyntaxNode node)
         {
-            if (!(node is Microsoft.CodeAnalysis.VisualBasic.Syntax.NameSyntax || node is Microsoft.CodeAnalysis.VisualBasic.Syntax.InvocationExpressionSyntax) || IsRoslynInstanceExpressionBug(node)) return false;
-
             var symbol = semanticModel.GetSymbolInfo(node).Symbol;
-            if (symbol is IMethodSymbol ms && (ms.IsGenericMethod || ms.IsReducedTypeParameterMethod())) return false;
-
-            return true;
+            return symbol is IMethodSymbol ms && (ms.IsGenericMethod || ms.IsReducedTypeParameterMethod());
         }
     }
 }
