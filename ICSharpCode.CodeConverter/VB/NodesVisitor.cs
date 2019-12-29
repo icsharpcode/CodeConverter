@@ -83,7 +83,7 @@ namespace ICSharpCode.CodeConverter.VB
             _vbViewOfCsSymbols = vbViewOfCsSymbols;
             _vbSyntaxGenerator = vbSyntaxGenerator;
             TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
-            _commonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
+            _commonConversions = new CommonConversions(semanticModel, vbSyntaxGenerator, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
             _cSharpHelperMethodDefinition = new CSharpHelperMethodDefinition();
         }
 
@@ -179,26 +179,22 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitUsingDirective(CSS.UsingDirectiveSyntax node)
         {
-            ImportAliasClauseSyntax alias = null;
+            var nameToImport = _semanticModel.GetSymbolInfo(node.Name).Symbol is INamespaceOrTypeSymbol toImport
+                ? _commonConversions.GetFullyQualifiedNameSyntax(toImport)
+                : (NameSyntax)node.Name.Accept(TriviaConvertingVisitor);
+            SimpleImportsClauseSyntax clause = SyntaxFactory.SimpleImportsClause(nameToImport);
+
             if (node.Alias != null) {
                 var name = node.Alias.Name;
                 var id = _commonConversions.ConvertIdentifier(name.Identifier);
-                alias = SyntaxFactory.ImportAliasClause(id);
+                var alias = SyntaxFactory.ImportAliasClause(id);
+                clause = clause.WithAlias(alias);
             }
-            var identifierName = node.Name as CSS.IdentifierNameSyntax;
-            var parentSymbol = _semanticModel.GetDeclaredSymbol(node.Parent) as INamespaceSymbol;
-            INamespaceSymbol fullNamespace = null;
-            if (identifierName != null && parentSymbol != null) {
-                fullNamespace = _semanticModel.LookupNamespacesAndTypes(node.SpanStart, null, identifierName.Identifier.ValueText)
-                    .OfType<INamespaceSymbol>().FirstOrDefault();
-            }
-            if (fullNamespace != null) {
-                _allImports.Add((ImportsStatementSyntax)_vbSyntaxGenerator.NamespaceImportDeclaration(fullNamespace.ToDisplayString()));
-                return null;
-            }
-            ImportsClauseSyntax clause = SyntaxFactory.SimpleImportsClause(alias, (NameSyntax)node.Name.Accept(TriviaConvertingVisitor));
-            var import = SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList(clause));
+
+            var import = SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(clause));
+
             _allImports.Add(import);
+
             return null;
         }
 

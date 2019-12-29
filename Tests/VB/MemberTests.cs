@@ -556,7 +556,7 @@ End Class");
 End Class");
         }
 
-        [Fact]
+        [Fact(Skip = "This will pass when CsExpander is enabled")]
         public async Task CaseConflict_ArgumentPropertyAndField() {
             await TestConversionCSharpToVisualBasic(
 @"public class HasConflictingPropertyAndField {

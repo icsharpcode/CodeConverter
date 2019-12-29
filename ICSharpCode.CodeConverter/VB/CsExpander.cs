@@ -21,7 +21,10 @@ namespace ICSharpCode.CodeConverter.VB
 
         public bool ShouldExpandWithinNode(SemanticModel semanticModel, SyntaxNode node)
         {
+#if ReductionCodeIsFixed // Currently everything gets globally qualified by this, but the reducer can't reverse that
             return !ShouldExpandNode(semanticModel, node);
+#endif
+            return false;
         }
 
         public bool ShouldExpandNode(SemanticModel semanticModel, SyntaxNode node)

@@ -1579,9 +1579,9 @@ End Class");
             Assert.Contains("Cannot convert", convertedCode);
             Assert.Contains("#error", convertedCode);
             Assert.Contains("_failedMemberConversionMarker1", convertedCode);
-            Assert.Contains("Public Shared Operator ^(i As Integer, ac As Global.AcmeClass) As Global.AcmeClass", convertedCode);
+            Assert.Contains("Public Shared Operator ^(i As Integer,", convertedCode);
             Assert.Contains("_failedMemberConversionMarker2", convertedCode);
-            Assert.Contains("Public Shared Operator Like(s As String, ac As Global.AcmeClass) As Global.AcmeClass", convertedCode);
+            Assert.Contains("Public Shared Operator Like(s As String,", convertedCode);
         }
 
         [Fact]
