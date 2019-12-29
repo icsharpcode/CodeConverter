@@ -14,7 +14,8 @@ namespace ICSharpCode.CodeConverter.VB
             return document;
         }
 
-        public SyntaxNode TryExpandNode(SyntaxNode node, SemanticModel semanticModel, Workspace workspace)
+        public SyntaxNode TryExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel,
+            Workspace workspace)
         {
             return Expander.TryExpandNode(node, semanticModel, workspace);
         }

@@ -16,25 +16,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public async Task<Document> WorkaroundBugsInExpandAsync(Document document)
         {
-            var semanticModel = await document.GetSemanticModelAsync();
-            var root = (Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxNode)await document.GetSyntaxRootAsync();
-
-            try {
-                var newRoot = root.ReplaceNodes(root.DescendantNodes(n => ShouldExpandWithinNode(semanticModel, n)).Where(n => ShouldExpandNode(semanticModel, n)),
-                    (node, rewrittenNode) => {
-                        var symbol = semanticModel.GetSymbolInfo(node).Symbol;
-                        if (rewrittenNode is Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleNameSyntax sns && IsMyBaseBug(semanticModel, root, node, symbol) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro) {
-                            return Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.MemberAccessExpression(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.SimpleMemberAccessExpression,
-                                (Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax) mro.Instance.Syntax,
-                                Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.Token(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DotToken),
-                                sns);
-                        };
-                        return rewrittenNode;
-                    });
-                return document.WithSyntaxRoot(newRoot);
-            } catch (Exception) {
-                return document.WithSyntaxRoot(root);
-            }
+            return document;
         }
 
         public bool ShouldExpandWithinNode(SemanticModel semanticModel, SyntaxNode node)
@@ -50,8 +32,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                    !IsRoslynInstanceExpressionBug(node) && !IsOriginalSymbolGenericMethod(semanticModel, node);
         }
 
-        public SyntaxNode TryExpandNode(SyntaxNode node, SemanticModel semanticModel, Workspace workspace)
+        public SyntaxNode TryExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel,
+            Workspace workspace)
         {
+            var symbol = semanticModel.GetSymbolInfo(node).Symbol;
+            if (node is Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleNameSyntax sns && IsMyBaseBug(semanticModel, root, node, symbol) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro) {
+                return Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.MemberAccessExpression(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.SimpleMemberAccessExpression,
+                    (Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax)mro.Instance.Syntax,
+                    Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.Token(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DotToken),
+                    sns);
+            };
             var expandedNode = Expander.TryExpandNode(node, semanticModel, workspace);
 
             //See https://github.com/icsharpcode/CodeConverter/pull/449#issuecomment-561678148
@@ -60,7 +50,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         /// <returns>True iff calling Expand would qualify with MyBase when the symbol isn't in the base type
         /// See https://github.com/dotnet/roslyn/blob/97123b393c3a5a91cc798b329db0d7fc38634784/src/Workspaces/VisualBasic/Portable/Simplification/VisualBasicSimplificationService.Expander.vb#L657</returns>
-        private static bool IsMyBaseBug(SemanticModel semanticModel, Microsoft.CodeAnalysis.VisualBasic.VisualBasicSyntaxNode root, SyntaxNode node,
+        private static bool IsMyBaseBug(SemanticModel semanticModel, SyntaxNode root, SyntaxNode node,
             ISymbol symbol)
         {
             if (symbol?.IsStatic == false && (symbol.Kind == SymbolKind.Method || symbol.Kind ==

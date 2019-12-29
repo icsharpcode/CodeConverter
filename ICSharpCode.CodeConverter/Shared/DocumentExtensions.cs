@@ -61,7 +61,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var root = await document.GetSyntaxRootAsync();
             try {
                 var newRoot = root.ReplaceNodes(root.DescendantNodes(n => expander.ShouldExpandWithinNode(semanticModel, n)).Where(n => expander.ShouldExpandNode(semanticModel, n)),
-                    (node, rewrittenNode) => expander.TryExpandNode(node, semanticModel, workspace)
+                    (node, rewrittenNode) => expander.TryExpandNode(node, root, semanticModel, workspace)
                 );
                 return document.WithSyntaxRoot(newRoot);
             } catch (Exception) {
