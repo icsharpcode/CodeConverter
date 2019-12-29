@@ -7,11 +7,13 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
     internal class VbExpander : ISyntaxExpander
     {
+        private static readonly SyntaxToken _dotToken = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.Token(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DotToken);
         public static ISyntaxExpander Instance { get; } = new VbExpander();
 
         public async Task<Document> WorkaroundBugsInExpandAsync(Document document)
@@ -27,8 +29,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public bool ShouldExpandNode(SemanticModel semanticModel, SyntaxNode node)
         {
-            return (node is Microsoft.CodeAnalysis.VisualBasic.Syntax.NameSyntax ||
-                    node is Microsoft.CodeAnalysis.VisualBasic.Syntax.InvocationExpressionSyntax) &&
+            return (node is NameSyntax ||
+                    node is MemberAccessExpressionSyntax ||
+                    node is InvocationExpressionSyntax) &&
                    !IsRoslynInstanceExpressionBug(node) && !IsOriginalSymbolGenericMethod(semanticModel, node);
         }
 
@@ -36,16 +39,23 @@ namespace ICSharpCode.CodeConverter.CSharp
             Workspace workspace)
         {
             var symbol = semanticModel.GetSymbolInfo(node).Symbol;
-            if (node is Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleNameSyntax sns && IsMyBaseBug(semanticModel, root, node, symbol) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro) {
-                return Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.MemberAccessExpression(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.SimpleMemberAccessExpression,
-                    (Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax)mro.Instance.Syntax,
-                    Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.Token(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DotToken),
-                    sns);
+            //TODO: Look for the right operation that's an interesting MemberReferenceOperation. Not just ".Text"
+            if (GetSimpleNameSyntaxOrNull(node) is SimpleNameSyntax sns && IsMyBaseBug(semanticModel, root, node, symbol) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro) {
+                var expressionSyntax = (ExpressionSyntax)mro.Instance.Syntax;
+                return MemberAccess(expressionSyntax, sns);
             };
             var expandedNode = Expander.TryExpandNode(node, semanticModel, workspace);
 
             //See https://github.com/icsharpcode/CodeConverter/pull/449#issuecomment-561678148
             return IsRedundantConversion(node, semanticModel, expandedNode) ? node : expandedNode;
+        }
+
+        private static SimpleNameSyntax GetSimpleNameSyntaxOrNull(SyntaxNode node)
+        {
+            while (true) {
+                if (node is MemberAccessExpressionSyntax maes) node = maes.Name;
+                else return node as SimpleNameSyntax;
+            }
         }
 
         /// <returns>True iff calling Expand would qualify with MyBase when the symbol isn't in the base type
@@ -61,6 +71,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return false;
+        }
+
+        private static MemberAccessExpressionSyntax MemberAccess(ExpressionSyntax expressionSyntax, SimpleNameSyntax sns)
+        {
+            return Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.MemberAccessExpression(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.SimpleMemberAccessExpression,
+                expressionSyntax,
+                _dotToken,
+                sns);
         }
 
         /// <summary>
@@ -93,9 +111,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static bool IsRedundantConversionToMethod(SyntaxNode node, SemanticModel semanticModel, SyntaxNode expandedNode)
         {
-            if (!(expandedNode is Microsoft.CodeAnalysis.VisualBasic.Syntax.InvocationExpressionSyntax ies)) return false;
+            if (!(expandedNode is InvocationExpressionSyntax ies)) return false;
             if (!ies.Expression.ToString().StartsWith("Conversions.To")) return false;
-            if (node is Microsoft.CodeAnalysis.VisualBasic.Syntax.InvocationExpressionSyntax oies && oies.ToString().StartsWith("Conversions.To")) return false;
+            if (node is InvocationExpressionSyntax oies && oies.ToString().StartsWith("Conversions.To")) return false;
             var originalTypeInfo = semanticModel.GetTypeInfo(node);
             return originalTypeInfo.Type.Equals(originalTypeInfo.ConvertedType);
         }
@@ -113,7 +131,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         private static bool IsRoslynInstanceExpressionBug(SyntaxNode node)
         {
-            return node is Microsoft.CodeAnalysis.VisualBasic.Syntax.InvocationExpressionSyntax ies && ies.Expression is Microsoft.CodeAnalysis.VisualBasic.Syntax.MemberAccessExpressionSyntax maes && maes.Expression is Microsoft.CodeAnalysis.VisualBasic.Syntax.InstanceExpressionSyntax;
+            return node is InvocationExpressionSyntax ies && ies.Expression is MemberAccessExpressionSyntax maes && maes.Expression is InstanceExpressionSyntax;
         }
 
         /// <summary>
