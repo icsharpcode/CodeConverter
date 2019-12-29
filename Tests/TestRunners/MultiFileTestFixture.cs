@@ -96,7 +96,8 @@ namespace CodeConverter.Tests.TestRunners
 
             try {
                 if (!expectedResultDirectory.Exists) expectedResultDirectory.Create();
-                var expectedFiles = expectedResultDirectory.GetFiles("*", SearchOption.AllDirectories);
+                var expectedFiles = expectedResultDirectory.GetFiles("*", SearchOption.AllDirectories)
+                    .Where(f => !f.FullName.Contains(@"\obj\") && !f.FullName.Contains(@"\bin\")).ToArray();
                 AssertAllExpectedFilesAreEqual(expectedFiles, conversionResults, expectedResultDirectory, OriginalSolutionDir);
                 AssertAllConvertedFilesWereExpected(expectedFiles, conversionResults, expectedResultDirectory, OriginalSolutionDir);
                 AssertNoConversionErrors(conversionResults);
@@ -158,8 +159,7 @@ namespace CodeConverter.Tests.TestRunners
             Dictionary<string, ConversionResult> conversionResults, DirectoryInfo expectedResultDirectory,
             string originalSolutionDir)
         {
-            AssertSubset(expectedFiles.Select(f => f.FullName.Replace(expectedResultDirectory.FullName, "")), conversionResults.Select(r => r.Key.Replace(originalSolutionDir, ""))
-                    .Where(x => !x.Contains(@"\obj\")),
+            AssertSubset(expectedFiles.Select(f => f.FullName.Replace(expectedResultDirectory.FullName, "")), conversionResults.Select(r => r.Key.Replace(originalSolutionDir, "")),
                 "Extra unexpected files were converted");
         }
 
