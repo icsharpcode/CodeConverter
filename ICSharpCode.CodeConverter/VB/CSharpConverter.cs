@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Editing;
@@ -19,6 +21,7 @@ namespace ICSharpCode.CodeConverter.VB
         public static async Task<SyntaxNode> ConvertCompilationTree(Document document,
             VisualBasicCompilation vbViewOfCsSymbols, Project vbReferenceProject)
         {
+            document = await document.WithExpandedRootAsync();
             var compilation = await document.Project.GetCompilationAsync();
             var tree = await document.GetSyntaxTreeAsync();
             var semanticModel = compilation.GetSemanticModel(tree, true);
