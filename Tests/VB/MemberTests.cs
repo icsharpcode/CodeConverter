@@ -583,7 +583,7 @@ End Class");
     End Property
 
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
-        Test = test
+        Me.Test = test
         Return test
     End Function
 End Class");
