@@ -212,8 +212,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitLiteralExpression(VBasic.Syntax.LiteralExpressionSyntax node)
         {
-            var op = _semanticModel.GetOperation(node).Parent.GetIgnoringParentheses();
-            var convertedType = op.Type;
+            var op = _semanticModel.GetOperation(node)?.Parent.GetIgnoringParentheses();
+            var convertedType = op?.Type ?? _semanticModel.GetTypeInfo(node).ConvertedType;
             if (node.Token.Value == null) {
                 if (convertedType == null) {
                     return CommonConversions.Literal(null); //In future, we'll be able to just say "default" instead of guessing at "null" in this case

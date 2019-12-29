@@ -133,8 +133,8 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = XElement.Parse(""<someXmlTag></someXmlTag>"");
-        var c = XElement.Parse(""<someXmlTag><bla anAttribute=\""itsValue\"">tata</bla><someContent>tata</someContent></someXmlTag>"");
+        XElement b = XElement.Parse(""<someXmlTag></someXmlTag>"");
+        XElement c = XElement.Parse(""<someXmlTag><bla anAttribute=\""itsValue\"">tata</bla><someContent>tata</someContent></someXmlTag>"");
     }
 }");
         }

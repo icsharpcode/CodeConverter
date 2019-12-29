@@ -658,7 +658,7 @@ End Class", @"internal partial class TestClass
     private void TestMethod()
     {
         string rslt = true.ToString();
-        var rslt2 = (object)true;
+        object rslt2 = true;
     }
 }");
         }
