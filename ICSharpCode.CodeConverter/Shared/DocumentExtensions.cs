@@ -48,9 +48,13 @@ namespace ICSharpCode.CodeConverter.Shared
 
         public static async Task<Document> WithExpandedRootAsync(this Document document)
         {
-            var expander = document.Project.Language == LanguageNames.VisualBasic ? VbExpander.Instance : CsExpander.Instance;
-            document = await expander.WorkaroundBugsInExpandAsync(document);
-            document = await ExpandAsync(document, expander);
+            if (document.Project.Language == LanguageNames.VisualBasic) {
+                document = await ExpandAsync(document, VbNameExpander.Instance);
+                //document = await ExpandAsync(document, VbInvocationExpander.Instance);
+            } else {
+                document = await ExpandAsync(document, CsExpander.Instance);
+            }
+
             return document;
         }
 

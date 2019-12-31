@@ -1,61 +1,45 @@
 ﻿using System;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    internal class VbExpander : ISyntaxExpander
+    internal class VbNameExpander : ISyntaxExpander
     {
         private static readonly SyntaxToken _dotToken = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.Token(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DotToken);
-        public static ISyntaxExpander Instance { get; } = new VbExpander();
-
-        public async Task<Document> WorkaroundBugsInExpandAsync(Document document)
-        {
-            return document;
-        }
+        public static ISyntaxExpander Instance { get; } = new VbNameExpander();
 
         public bool ShouldExpandWithinNode(SemanticModel semanticModel, SyntaxNode node)
         {
-            return !IsRoslynInstanceExpressionBug(node) &&
-                   !ShouldExpandNode(semanticModel, node);
+            return !ShouldExpandNode(semanticModel, node) &&
+                   !VbInvocationExpander.IsRoslynInstanceExpressionBug(node as MemberAccessExpressionSyntax); ;
         }
 
         public bool ShouldExpandNode(SemanticModel semanticModel, SyntaxNode node)
         {
-            return (node is NameSyntax ||
-                    node is MemberAccessExpressionSyntax ||
-                    node is InvocationExpressionSyntax) &&
-                   !IsRoslynInstanceExpressionBug(node) && !IsOriginalSymbolGenericMethod(semanticModel, node);
+            return node is NameSyntax || node is MemberAccessExpressionSyntax maes && IsMyBaseBug(semanticModel, node.SyntaxTree.GetRoot(), node, semanticModel.GetSymbolInfo(node).Symbol) &&
+                   !VbInvocationExpander.IsRoslynInstanceExpressionBug(maes);
         }
 
         public SyntaxNode TryExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel,
             Workspace workspace)
         {
             var symbol = semanticModel.GetSymbolInfo(node).Symbol;
-            //TODO: Look for the right operation that's an interesting MemberReferenceOperation. Not just ".Text"
-            if (GetSimpleNameSyntaxOrNull(node) is SimpleNameSyntax sns && IsMyBaseBug(semanticModel, root, node, symbol) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro) {
+            if (node is SimpleNameSyntax sns && IsMyBaseBug(semanticModel, root, node, symbol) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro) {
                 var expressionSyntax = (ExpressionSyntax)mro.Instance.Syntax;
                 return MemberAccess(expressionSyntax, sns);
             };
-            var expandedNode = Expander.TryExpandNode(node, semanticModel, workspace);
-
-            //See https://github.com/icsharpcode/CodeConverter/pull/449#issuecomment-561678148
-            return IsRedundantConversion(node, semanticModel, expandedNode) ? node : expandedNode;
-        }
-
-        private static SimpleNameSyntax GetSimpleNameSyntaxOrNull(SyntaxNode node)
-        {
-            while (true) {
-                if (node is MemberAccessExpressionSyntax maes) node = maes.Name;
-                else return node as SimpleNameSyntax;
-            }
+            if (node is MemberAccessExpressionSyntax maes && IsMyBaseBug(semanticModel, root, node, symbol) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro2) {
+                var expressionSyntax = (ExpressionSyntax)mro2.Instance.Syntax;
+                return MemberAccess(expressionSyntax, SyntaxFactory.IdentifierName(mro2.Member.Name));
+            };
+            return Expander.TryExpandNode(node, semanticModel, workspace);
         }
 
         /// <returns>True iff calling Expand would qualify with MyBase when the symbol isn't in the base type
@@ -88,7 +72,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// the type you're current on if you're on the header of a class/interface.
         /// </summary>
         private static INamedTypeSymbol GetEnclosingNamedType(
-            SemanticModel semanticModel, SyntaxNode root, int start, CancellationToken cancellationToken = default(CancellationToken))
+            SemanticModel semanticModel, SyntaxNode root, int start,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             var token = root.FindToken(start);
             if (token == ((ICompilationUnitSyntax)root).EndOfFileToken) {
@@ -102,6 +87,31 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return null;
+        }
+    }
+    internal class VbInvocationExpander : ISyntaxExpander
+    {
+        public static ISyntaxExpander Instance { get; } = new VbInvocationExpander();
+
+        public bool ShouldExpandWithinNode(SemanticModel semanticModel, SyntaxNode node)
+        {
+            return !IsRoslynInstanceExpressionBug(node) &&
+                   !ShouldExpandNode(semanticModel, node);
+        }
+
+        public bool ShouldExpandNode(SemanticModel semanticModel, SyntaxNode node)
+        {
+            return (node is InvocationExpressionSyntax) &&
+                   !IsRoslynInstanceExpressionBug(node) && !IsOriginalSymbolGenericMethod(semanticModel, node);
+        }
+
+        public SyntaxNode TryExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel,
+            Workspace workspace)
+        {
+            var expandedNode = Expander.TryExpandNode(node, semanticModel, workspace);
+
+            //See https://github.com/icsharpcode/CodeConverter/pull/449#issuecomment-561678148
+            return IsRedundantConversion(node, semanticModel, expandedNode) ? node : expandedNode;
         }
 
         private static bool IsRedundantConversion(SyntaxNode node, SemanticModel semanticModel, SyntaxNode expandedNode)
@@ -129,9 +139,17 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <summary>
         /// Roslyn bug - accidentally expands "New" into an identifier causing compile error
         /// </summary>
-        private static bool IsRoslynInstanceExpressionBug(SyntaxNode node)
+        public static bool IsRoslynInstanceExpressionBug(SyntaxNode node)
         {
-            return node is InvocationExpressionSyntax ies && ies.Expression is MemberAccessExpressionSyntax maes && maes.Expression is InstanceExpressionSyntax;
+            return node is InvocationExpressionSyntax ies && IsRoslynInstanceExpressionBug(ies.Expression as MemberAccessExpressionSyntax);
+        }
+
+        /// <summary>
+        /// Roslyn bug - accidentally expands "New" into an identifier causing compile error
+        /// </summary>
+        public static bool IsRoslynInstanceExpressionBug(MemberAccessExpressionSyntax node)
+        {
+            return node?.Expression is InstanceExpressionSyntax;
         }
 
         /// <summary>
