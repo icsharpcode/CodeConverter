@@ -27,15 +27,25 @@ namespace ICSharpCode.CodeConverter.VB
         {
             var compilation = await project.GetCompilationAsync();
             var memberRenames = compilation.GlobalNamespace.FollowProperty((INamespaceOrTypeSymbol n) => n.GetMembers().OfType<INamespaceOrTypeSymbol>().Where(s => s.IsDefinedInSource()))
-                .SelectMany(GetSymbolsWithNewNames);
+                .SelectMany(x => GetSymbolsWithNewNames(x, compilation)).Flatten();
             return await PerformRenames(project, memberRenames.ToList());
         }
 
-        private static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(INamespaceOrTypeSymbol containerSymbol)
+        private static IEnumerable<IEnumerable<(ISymbol Original, string NewName)>> GetSymbolsWithNewNames(INamespaceOrTypeSymbol containerSymbol, Compilation compilation)
         {
             var members = containerSymbol.GetMembers();
-            //TODO If container is a type, call GetCsLocalSymbolDeclarations and rename those too - see test called CaseConflict_LocalWithLocal
-            var membersByCaseInsensitiveName = members.ToLookup(m => m.Name, m => m, StringComparer.OrdinalIgnoreCase);
+            if (containerSymbol is ITypeSymbol) {
+                var semanticModel = compilation.GetSemanticModel(containerSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.SyntaxTree, true);
+                var locals = members
+                    .SelectMany(x => GetCsLocalSymbolDeclarations(semanticModel, x).Select(y => y.Union(new ISymbol[] { x })));
+                foreach (var local in locals) {
+                     yield return ProcessSymbols(local);
+                }
+            }
+            yield return ProcessSymbols(members);
+        }
+        static IEnumerable<(ISymbol Original, string NewName)> ProcessSymbols(IEnumerable<ISymbol> symbols) {
+            var membersByCaseInsensitiveName = symbols.ToLookup(m => m.Name, m => m, StringComparer.OrdinalIgnoreCase);
             var names = new HashSet<string>(membersByCaseInsensitiveName.Select(ms => ms.Key),
                 StringComparer.OrdinalIgnoreCase);
             var symbolsWithNewNames = membersByCaseInsensitiveName.Where(ms => ms.Count() > 1)
@@ -105,37 +115,36 @@ namespace ICSharpCode.CodeConverter.VB
         /// <remarks>
         /// In VB there's a special extra local defined with the same name as the method name, so the method symbol should be included in any conflict analysis
         /// </remarks>
-        private static IEnumerable<ISymbol> GetCsLocalSymbolDeclarations(SemanticModel semanticModel, ISymbol x)
+        private static IEnumerable<IEnumerable<ISymbol>> GetCsLocalSymbolDeclarations(SemanticModel semanticModel, ISymbol x)
         {
             switch (x)
             {
                 case IMethodSymbol methodSymbol:
-                    return GetCsSymbolsDeclaredByMethod(semanticModel, methodSymbol);
+                    return GetCsSymbolsDeclaredByMethod(semanticModel, methodSymbol, (CSS.BaseMethodDeclarationSyntax n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body);
                 case IPropertySymbol propertySymbol:
                     return GetCsSymbolsDeclaredByProperty(semanticModel, propertySymbol);
                 case IEventSymbol eventSymbol:
                     return GetCsSymbolsDeclaredByEvent(semanticModel, eventSymbol);
                 case IFieldSymbol fieldSymbol:
-                    return GetCsSymbolsDeclaredByField(semanticModel, fieldSymbol);
+                    return GetCsSymbolsDeclaredByField(semanticModel, fieldSymbol).Yield();
                 default:
-                    return new ISymbol[0];
+                    return new ISymbol[0].Yield();
             }
         }
 
-        public static IEnumerable<ISymbol> GetCsSymbolsDeclaredByMethod(SemanticModel semanticModel, IMethodSymbol methodSymbol)
+        public static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsDeclaredByMethod<TNode>(SemanticModel semanticModel, IMethodSymbol methodSymbol, Func<TNode, CS.CSharpSyntaxNode> selectWhereNotNull)
         {
-            if (methodSymbol == null) return new ISymbol[0];
-            var symbols =
-                methodSymbol.TypeParameters
-                    .Concat<ISymbol>(methodSymbol.Parameters);
-            var bodies = DeclarationWhereNotNull(methodSymbol, (CSS.BaseMethodDeclarationSyntax b) => (CS.CSharpSyntaxNode)b.ExpressionBody ?? b.Body);
-            foreach (var body in bodies) {
-                symbols = symbols.Concat(semanticModel.LookupSymbols(body.SpanStart, methodSymbol.ContainingType));
-                var descendantNodes = body.DescendantNodes().OfType<CSS.BlockSyntax>();
-                symbols = symbols.Concat(descendantNodes.SelectMany(d => semanticModel.LookupSymbols(d.SpanStart, methodSymbol.ContainingType)));
+            if (methodSymbol == null) {
+                yield return new ISymbol[0];
+                yield break;
             }
-
-            return symbols;
+            var bodies = DeclarationWhereNotNull(methodSymbol, selectWhereNotNull).Where(x => x.SyntaxTree == semanticModel.SyntaxTree);
+            foreach (var body in bodies) {
+                var descendantNodes = body.DescendantNodesAndSelf().OfType<CSS.BlockSyntax>().Where(x => x.DescendantNodes().OfType<CSS.BlockSyntax>().IsEmpty());
+                foreach (var descendant in descendantNodes) {
+                    yield return semanticModel.LookupSymbols(descendant.SpanStart).Where(x => x.MatchesKind(SymbolKind.Local, SymbolKind.Parameter, SymbolKind.TypeParameter));
+                }
+            }
         }
 
         private static IEnumerable<TResult> DeclarationWhereNotNull<TNode, TResult>(ISymbol symbol, Func<TNode, TResult> selectWhereNotNull)
@@ -148,10 +157,11 @@ namespace ICSharpCode.CodeConverter.VB
             return symbol.DeclaringSyntaxReferences.Select(d => d.GetSyntax()).OfType<TNode>().SelectMany(selectManyWhereNotNull).Where(x => x != null);
         }
 
-        public static IEnumerable<ISymbol> GetCsSymbolsDeclaredByProperty(SemanticModel semanticModel, IPropertySymbol propertySymbol)
+        public static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsDeclaredByProperty(SemanticModel semanticModel, IPropertySymbol propertySymbol)
         {
-            return GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.GetMethod)
-                .Concat(GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.SetMethod));
+            Func<CSS.AccessorDeclarationSyntax, CS.CSharpSyntaxNode> getAccessorBody = (CSS.AccessorDeclarationSyntax n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body;
+            return GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.GetMethod, getAccessorBody)
+                .Concat(GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.SetMethod, getAccessorBody));
         }
 
         public static IEnumerable<ISymbol> GetCsSymbolsDeclaredByField(SemanticModel semanticModel, IFieldSymbol fieldSymbol)
@@ -161,10 +171,11 @@ namespace ICSharpCode.CodeConverter.VB
                 .SelectMany(i => semanticModel.LookupSymbols(i.SpanStart, fieldSymbol.ContainingType));
         }
 
-        public static IEnumerable<ISymbol> GetCsSymbolsDeclaredByEvent(SemanticModel semanticModel, IEventSymbol propertySymbol)
+        public static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsDeclaredByEvent(SemanticModel semanticModel, IEventSymbol propertySymbol)
         {
-            return GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.AddMethod)
-                .Concat(GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.RemoveMethod));
+            Func<CSS.AccessorDeclarationSyntax, CS.CSharpSyntaxNode> getAccessorBody = (CSS.AccessorDeclarationSyntax n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body;
+            return GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.AddMethod, getAccessorBody)
+                .Concat(GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.RemoveMethod, getAccessorBody));
         }
 
         private static async Task<string> GenerateUniqueCaseInsensitiveName(SemanticModel model, ISymbol declaration)
