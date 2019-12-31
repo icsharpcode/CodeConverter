@@ -58,6 +58,7 @@ namespace ICSharpCode.CodeConverter.VB
         private int _placeholder = 1;
         private readonly CSharpHelperMethodDefinition _cSharpHelperMethodDefinition;
         private readonly CommonConversions _commonConversions;
+        readonly HashSet<CSS.IdentifierNameSyntax> _eventBackingFields = new HashSet<CSS.IdentifierNameSyntax>();
         public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
 
         private string GeneratePlaceholder(string v)
@@ -203,6 +204,7 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitClassDeclaration(CSS.ClassDeclarationSyntax node)
         {
             var members = ConvertMembers(node).ToList();
+            members = ProcessEventFields(members, node);
             var id = _commonConversions.ConvertIdentifier(node.Identifier);
 
             List<InheritsStatementSyntax> inherits = new List<InheritsStatementSyntax>();
@@ -230,6 +232,20 @@ namespace ICSharpCode.CodeConverter.VB
                     SyntaxFactory.List(members)
                 );
             }
+        }
+        List<StatementSyntax> ProcessEventFields(List<StatementSyntax> members, CSS.ClassDeclarationSyntax node) {
+            var classSymbol = _semanticModel.GetDeclaredSymbol(node);
+            var eventBackingFieldLookUp = _eventBackingFields
+                .Where(x => _semanticModel.GetSymbolInfo(x).Symbol.ContainingType == classSymbol)
+                .ToLookup(x => x.Identifier.ValueText);
+            for (int i = 0; i < members.Count; i++) {
+                var field = members[i] as FieldDeclarationSyntax;
+                if (field != null) {
+                    if (eventBackingFieldLookUp.Contains(field.Declarators.FirstOrDefault()?.Names.FirstOrDefault()?.Identifier.ValueText))
+                        members[i] = field.AddModifiers(SyntaxFactory.Token(SyntaxKind.EventKeyword));
+                }
+            }
+            return members;
         }
 
         private IEnumerable<StatementSyntax> ConvertMembers(CSS.TypeDeclarationSyntax node)
@@ -332,11 +348,6 @@ namespace ICSharpCode.CodeConverter.VB
             if (modifiers.Count == 0)
                 modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
 
-            var isEventBackingField = modifiers.Any(x => x.Kind() == SyntaxKind.PrivateKeyword) && _semanticModel.GetTypeInfo(node.Declaration.Type).Type.IsDelegateType();
-
-            if (isEventBackingField) {
-                modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.EventKeyword));
-            }
             return SyntaxFactory.FieldDeclaration(
                 SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))),
                 modifiers, _commonConversions.RemodelVariableDeclaration(node.Declaration)
@@ -608,7 +619,6 @@ namespace ICSharpCode.CodeConverter.VB
         private bool IsNonGenericStatic(CSS.TypeDeclarationSyntax type) {
             return type.Modifiers.Any(CS.SyntaxKind.StaticKeyword) && type.TypeParameterList == null;
         }
-
         public override VisualBasicSyntaxNode VisitEventDeclaration(CSS.EventDeclarationSyntax node)
         {
             ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
@@ -631,14 +641,6 @@ namespace ICSharpCode.CodeConverter.VB
                     .WithAsClause(SyntaxFactory.SimpleAsClause(GetTypeSyntax(x.Type)))
                     .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword)))
             );
-            var eventFieldIdentifier = (IdentifierNameSyntax)node.AccessorList?.Accessors
-                .SelectMany(x => x.Body.Statements)
-                .OfType<CSS.ExpressionStatementSyntax>()
-                .Where(x => x.Expression != null)
-                .Select(x => x.Expression)
-                .OfType<CSS.AssignmentExpressionSyntax>()
-                .SelectMany(x => x.Left.DescendantNodesAndSelf().OfType<CSS.IdentifierNameSyntax>())
-                .FirstOrDefault()?.Accept(TriviaConvertingVisitor);
 
             var riseEventAccessor = SyntaxFactory.RaiseEventAccessorBlock(
                 SyntaxFactory.RaiseEventAccessorStatement(
@@ -646,9 +648,19 @@ namespace ICSharpCode.CodeConverter.VB
                     SyntaxFactory.TokenList(),
                     SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(raiseEventParameters))
             ));
-            if (eventFieldIdentifier != null) {
+            var eventFieldIdentifier = node.AccessorList?.Accessors
+                .SelectMany(x => x.Body.Statements)
+                .OfType<CSS.ExpressionStatementSyntax>()
+                .Where(x => x.Expression != null)
+                .Select(x => x.Expression)
+                .OfType<CSS.AssignmentExpressionSyntax>()
+                .SelectMany(x => x.Left.DescendantNodesAndSelf().OfType<CSS.IdentifierNameSyntax>())
+                .FirstOrDefault();
+            var vbEventFieldIdentifier = (IdentifierNameSyntax)eventFieldIdentifier?.Accept(TriviaConvertingVisitor);
+            if (vbEventFieldIdentifier != null) {
+                _eventBackingFields.Add(eventFieldIdentifier);
                 riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList(
-                    (StatementSyntax)SyntaxFactory.RaiseEventStatement(eventFieldIdentifier,
+                    (StatementSyntax)SyntaxFactory.RaiseEventStatement(vbEventFieldIdentifier,
                         SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(raiseEventParameters.Select(x => SyntaxFactory.SimpleArgument(SyntaxFactory.IdentifierName(x.Identifier.Identifier))).Cast<ArgumentSyntax>())))
                     )
                 );
