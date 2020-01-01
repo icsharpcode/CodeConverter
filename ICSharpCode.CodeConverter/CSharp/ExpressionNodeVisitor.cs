@@ -936,16 +936,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(Enumerable.Repeat<ExpressionSyntax>(SyntaxFactory.OmittedArraySizeExpression(), node.Rank)));
         }
 
+        /// <remarks>PERF: This is a hot code path, try to avoid using things like GetOperation except where needed.</remarks>
         public override async Task<CSharpSyntaxNode> VisitIdentifierName(VBasic.Syntax.IdentifierNameSyntax node)
         {
             var identifier = SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier, node.GetAncestor<VBasic.Syntax.AttributeSyntax>() != null));
 
-            var qualifiedIdentifier = !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer) ||
-                                      node.Parent is VBSyntax.NamedFieldInitializerSyntax nfs && nfs.Expression == node ||
-                                      node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax maes && maes.Expression == node
+            bool requiresQualification = !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer) ||
+                     node.Parent is VBSyntax.NamedFieldInitializerSyntax nfs && nfs.Expression == node ||
+                     node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax maes && maes.Expression == node;
+            var qualifiedIdentifier = requiresQualification
                 ? QualifyNode(node, identifier) : identifier;
 
-            var withArgList = AddEmptyArgumentListIfImplicit(node, qualifiedIdentifier);
             var sym = GetSymbolInfoInDocument(node);
             if (sym != null && sym.Kind == SymbolKind.Local) {
                 var vbMethodBlock = node.Ancestors().OfType<VBasic.Syntax.MethodBlockBaseSyntax>().FirstOrDefault();
@@ -958,7 +959,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
             }
-            return withArgList;
+
+            //PERF: AddEmptyArgumentListIfImplicit calls GetOperation, which is expensive, avoid it when it's easy to do so
+            var couldBeMethodCall = node.Parent is VBSyntax.QualifiedNameSyntax name && name.Right == node;
+            return couldBeMethodCall ? AddEmptyArgumentListIfImplicit(node, qualifiedIdentifier) : qualifiedIdentifier;
         }
 
         public override async Task<CSharpSyntaxNode> VisitQualifiedName(VBasic.Syntax.QualifiedNameSyntax node)
