@@ -67,8 +67,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             return false;
         }
 
-        /// <returns>True iff calling Expand would qualify with MyBase when the symbol isn't in the base type
-        /// See https://github.com/dotnet/roslyn/blob/97123b393c3a5a91cc798b329db0d7fc38634784/src/Workspaces/VisualBasic/Portable/Simplification/VisualBasicSimplificationService.Expander.vb#L657</returns>
         private static bool IsTypePromotion(SyntaxNode node, ISymbol symbol, SyntaxNode root, SemanticModel semanticModel)
         {
             if (IsInstanceReference(symbol) && node is MemberAccessExpressionSyntax maes) {
