@@ -101,8 +101,7 @@ public partial class OutParameterWithMissingType
     private static void AddToDict(Dictionary<int, MissingType> pDict, int pKey)
     {
         MissingType anInstance = null;
-        var argvalue = anInstance;
-        if (!pDict.TryGetValue(pKey, out argvalue))
+        if (!pDict.TryGetValue(pKey, out anInstance))
         {
             anInstance = new MissingType();
             pDict.Add(pKey, anInstance);
@@ -115,8 +114,7 @@ public partial class OutParameterWithNonCompilingType
     private static void AddToDict(Dictionary<OutParameterWithMissingType, MissingType> pDict, OutParameterWithMissingType pKey)
     {
         MissingType anInstance = null;
-        var argvalue = anInstance;
-        if (!pDict.TryGetValue(pKey, out argvalue))
+        if (!pDict.TryGetValue(pKey, out anInstance))
         {
             anInstance = new MissingType();
             pDict.Add(pKey, anInstance);
