@@ -39,7 +39,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var expressionSyntax = (ExpressionSyntax)mro2.Instance.Syntax;
                 return MemberAccess(expressionSyntax, SyntaxFactory.IdentifierName(mro2.Member.Name));
             }
-            return Expander.TryExpandNode(node, semanticModel, workspace);
+            return IsOriginalSymbolGenericMethod(semanticModel, node) ? node : Expander.TryExpandNode(node, semanticModel, workspace);
         }
 
         /// <summary>
@@ -85,6 +85,16 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static bool IsRoslynInstanceExpressionBug(MemberAccessExpressionSyntax node)
         {
             return node?.Expression is InstanceExpressionSyntax;
+        }
+
+        /// <summary>
+        /// Roslyn bug - accidentally expands anonymous types to just "Global."
+        /// Since the C# reducer also doesn't seem to reduce generic extension methods, it's best to avoid those too, so let's just avoid all generic methods
+        /// </summary>
+        private static bool IsOriginalSymbolGenericMethod(SemanticModel semanticModel, SyntaxNode node)
+        {
+            var symbol = semanticModel.GetSymbolInfo(node).Symbol;
+            return symbol is IMethodSymbol ms && (ms.IsGenericMethod || ms.IsReducedTypeParameterMethod());
         }
 
         private static bool IsInstanceReference(ISymbol symbol)
