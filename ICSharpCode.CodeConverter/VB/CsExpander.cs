@@ -34,11 +34,6 @@ namespace ICSharpCode.CodeConverter.VB
             return expandedNode;
         }
 
-        private static AliasQualifiedNameSyntax[] GetGlobalAliasNodes(SyntaxNode expandedNode)
-        {
-            return expandedNode.DescendantNodes().OfType<AliasQualifiedNameSyntax>().Where(n => n.Alias.IsGlobalId()).ToArray();
-        }
-
         public bool ShouldExpandWithinNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel)
         {
             return !ShouldExpandNode(node, root, semanticModel);

@@ -23,7 +23,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public bool ShouldExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel)
         {
-            return node is NameSyntax || node is MemberAccessExpressionSyntax maes && !IsRoslynInstanceExpressionBug(maes) &&
+            return node is NameSyntax && CanBeExpanded(node) || node is MemberAccessExpressionSyntax maes && !IsRoslynInstanceExpressionBug(maes) &&
                    ShouldBeQualified(node, semanticModel.GetSymbolInfo(node).Symbol, semanticModel, root);
         }
 
@@ -31,11 +31,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             Workspace workspace)
         {
             var symbol = semanticModel.GetSymbolInfo(node).Symbol;
-            if (node is SimpleNameSyntax sns && IsMyBaseBug(node, symbol, root, semanticModel) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro) {
+            if (node is SimpleNameSyntax sns && IsMyBaseBug(node, symbol, root, semanticModel) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro && mro.Instance != null) {
                 var expressionSyntax = (ExpressionSyntax)mro.Instance.Syntax;
                 return MemberAccess(expressionSyntax, sns);
             }
-            if (node is MemberAccessExpressionSyntax maes && IsTypePromotion(node, symbol, root, semanticModel) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro2) {
+            if (node is MemberAccessExpressionSyntax maes && IsTypePromotion(node, symbol, root, semanticModel) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro2 && mro2.Instance != null) {
                 var expressionSyntax = (ExpressionSyntax)mro2.Instance.Syntax;
                 return MemberAccess(expressionSyntax, SyntaxFactory.IdentifierName(mro2.Member.Name));
             }
@@ -51,7 +51,16 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static bool ShouldBeQualified(SyntaxNode node,
             ISymbol symbol, SemanticModel semanticModel, SyntaxNode root)
         {
+
             return symbol?.IsStatic == true || IsMyBaseBug(node, symbol, root, semanticModel) || IsTypePromotion(node, symbol, root, semanticModel);
+        }
+
+        /// <summary>
+        /// Workaround roslyn bug where it will try to expand something even when the parent node cannot contain the type of the expanded node
+        /// </summary>
+        private static bool CanBeExpanded(SyntaxNode node)
+        {
+            return !(node.Parent is NameColonEqualsSyntax);
         }
 
         /// <returns>True iff calling Expand would qualify with MyBase when the symbol isn't in the base type
