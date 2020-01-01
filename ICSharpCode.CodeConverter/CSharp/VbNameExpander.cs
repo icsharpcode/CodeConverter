@@ -18,12 +18,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         public bool ShouldExpandWithinNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel)
         {
             return !ShouldExpandNode(node, root, semanticModel) &&
-                   !VbInvocationExpander.IsRoslynInstanceExpressionBug(node as MemberAccessExpressionSyntax); ;
+                   !IsRoslynInstanceExpressionBug(node as MemberAccessExpressionSyntax); ;
         }
 
         public bool ShouldExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel)
         {
-            return node is NameSyntax || node is MemberAccessExpressionSyntax maes && !VbInvocationExpander.IsRoslynInstanceExpressionBug(maes) &&
+            return node is NameSyntax || node is MemberAccessExpressionSyntax maes && !IsRoslynInstanceExpressionBug(maes) &&
                    ShouldBeQualified(node, semanticModel.GetSymbolInfo(node).Symbol, semanticModel, root);
         }
 
@@ -77,6 +77,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Roslyn bug - accidentally expands "New" into an identifier causing compile error
+        /// </summary>
+        public static bool IsRoslynInstanceExpressionBug(MemberAccessExpressionSyntax node)
+        {
+            return node?.Expression is InstanceExpressionSyntax;
         }
 
         private static bool IsInstanceReference(ISymbol symbol)
