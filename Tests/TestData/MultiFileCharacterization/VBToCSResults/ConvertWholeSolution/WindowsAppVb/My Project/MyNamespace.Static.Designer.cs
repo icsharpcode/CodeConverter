@@ -46,7 +46,7 @@ namespace WindowsAppVb
             {
                 try
                 {
-                    Application.SetCompatibleTextRenderingDefault(UseCompatibleTextRendering);
+                    Application.SetCompatibleTextRenderingDefault(Microsoft.VisualBasic.ApplicationServices.WindowsFormsApplicationBase.UseCompatibleTextRendering);
                 }
                 finally
                 {

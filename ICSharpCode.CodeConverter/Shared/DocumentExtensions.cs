@@ -50,7 +50,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             if (document.Project.Language == LanguageNames.VisualBasic) {
                 document = await ExpandAsync(document, VbNameExpander.Instance);
-                //document = await ExpandAsync(document, VbInvocationExpander.Instance);
+                document = await ExpandAsync(document, VbInvocationExpander.Instance);
             } else {
                 document = await ExpandAsync(document, CsExpander.Instance);
             }
