@@ -91,8 +91,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         private static bool IsOriginalSymbolGenericMethod(SemanticModel semanticModel, SyntaxNode node)
         {
-            var symbol = semanticModel.GetSymbolInfo(node).Symbol;
-            return symbol is IMethodSymbol ms && (ms.IsGenericMethod || ms.IsReducedTypeParameterMethod());
+            return semanticModel.GetSymbolInfo(node).Symbol.IsGenericMethod();
         }
 
         private static bool IsInstanceReference(ISymbol symbol)
