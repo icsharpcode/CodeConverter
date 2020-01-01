@@ -14,7 +14,7 @@ namespace ICSharpCode.CodeConverter.VB
             return Expander.TryExpandNode(node, semanticModel, workspace);
         }
 
-        public bool ShouldExpandWithinNode(SemanticModel semanticModel, SyntaxNode node)
+        public bool ShouldExpandWithinNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel)
         {
 #if ReductionCodeIsFixed // Currently everything gets globally qualified by this, but the reducer can't reverse that
             return !ShouldExpandNode(semanticModel, node);
@@ -22,7 +22,7 @@ namespace ICSharpCode.CodeConverter.VB
             return false;
         }
 
-        public bool ShouldExpandNode(SemanticModel semanticModel, SyntaxNode node)
+        public bool ShouldExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel)
         {
             return node is Microsoft.CodeAnalysis.CSharp.Syntax.IdentifierNameSyntax;
         }

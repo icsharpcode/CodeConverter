@@ -398,6 +398,11 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return t.CanBeReferencedByName && t.IsDelegateType();
         }
+
+        public static bool ContainsMember(this ITypeSymbol potentialContainer, ISymbol potentialMember)
+        {
+            return potentialContainer.FollowProperty(t => t.BaseType).Contains(potentialMember.ContainingType);
+        }
     }
 }
 
