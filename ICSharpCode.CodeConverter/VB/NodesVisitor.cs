@@ -1533,6 +1533,45 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.InvocationExpression(throwEx, argList);
         }
 
+        public override VisualBasicSyntaxNode VisitCasePatternSwitchLabel(CSS.CasePatternSwitchLabelSyntax node)
+        {
+            var condition = node.WhenClause.Condition.SkipParens();
+            switch (condition) {
+                case CSS.BinaryExpressionSyntax bes when node.Pattern.ToString().StartsWith("var"): //VarPatternSyntax (not available in current library version)
+                    var basicSyntaxNode = (ExpressionSyntax)bes.Right.Accept(TriviaConvertingVisitor);
+                    SyntaxKind expressionKind = bes.Kind().ConvertToken();
+                    return SyntaxFactory.RelationalCaseClause(GetCaseClauseFromOperatorKind(expressionKind),
+                        SyntaxFactory.Token(expressionKind.GetExpressionOperatorTokenKind()), basicSyntaxNode);
+                default:
+                    throw new NotSupportedException(condition.GetType() + " in switch case");
+            }
+        }
+
+        private static SyntaxKind GetCaseClauseFromOperatorKind(SyntaxKind syntaxKind)
+        {
+            switch (syntaxKind) {
+                case SyntaxKind.EqualsExpression:
+                    return SyntaxKind.CaseEqualsClause;
+                case SyntaxKind.NotEqualsExpression:
+                    return SyntaxKind.CaseNotEqualsClause;
+                case SyntaxKind.LessThanOrEqualExpression:
+                    return SyntaxKind.CaseLessThanOrEqualClause;
+                case SyntaxKind.LessThanExpression:
+                    return SyntaxKind.CaseLessThanClause;
+                case SyntaxKind.GreaterThanOrEqualExpression:
+                    return SyntaxKind.CaseGreaterThanOrEqualClause;
+                case SyntaxKind.GreaterThanExpression:
+                    return SyntaxKind.CaseGreaterThanClause;
+            }
+            throw new NotImplementedException(syntaxKind.ToString() + " in case clause");
+        }
+
+
+        public override VisualBasicSyntaxNode VisitCaseSwitchLabel(CSS.CaseSwitchLabelSyntax node)
+        {
+            return SyntaxFactory.SimpleCaseClause((ExpressionSyntax)node.Value.Accept(TriviaConvertingVisitor));
+        }
+
         #endregion
 
         #region Types / Modifiers

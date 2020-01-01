@@ -89,7 +89,7 @@ namespace ICSharpCode.CodeConverter.Util
                 AddParensForUnaryExpressionIfRequired(condition));
         }
 
-        public static SyntaxKind GetExpressionOperatorTokenKind(SyntaxKind op)
+        public static SyntaxKind GetExpressionOperatorTokenKind(this SyntaxKind op)
         {
             switch (op) {
                 case SyntaxKind.EqualsExpression:
