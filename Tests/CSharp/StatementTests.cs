@@ -1882,7 +1882,7 @@ public partial class TestClass2
     {
         switch (true)
         {
-            case object _ when (int)DateAndTime.Today.DayOfWeek == (int)DayOfWeek.Saturday | DateAndTime.Today.DayOfWeek == (int)DayOfWeek.Sunday:
+            case object _ when DateAndTime.Today.DayOfWeek == DayOfWeek.Saturday | DateAndTime.Today.DayOfWeek == DayOfWeek.Sunday:
                 {
                     // we do not work on weekends
                     return false;

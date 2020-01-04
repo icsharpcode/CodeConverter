@@ -11,6 +11,36 @@ namespace CodeConverter.Tests.CSharp
     public class ExpressionTests : ConverterTestBase
     {
         [Fact]
+        public async Task OmitsConversionForEnumBinaryExpression()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Friend Enum RankEnum As SByte
+    First = 1
+    Second = 2
+End Enum
+
+Public Class TestClass
+    Sub TestMethod()
+        Dim eEnum = RankEnum.Second
+        Dim enumEnumEquality As Boolean = eEnum = RankEnum.First
+    End Sub
+End Class", @"internal enum RankEnum : sbyte
+{
+    First = 1,
+    Second = 2
+}
+
+public partial class TestClass
+{
+    public void TestMethod()
+    {
+        var eEnum = RankEnum.Second;
+        bool enumEnumEquality = eEnum == RankEnum.First;
+    }
+}");
+
+        }
+
+        [Fact]
         public async Task MyClassExpr()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass

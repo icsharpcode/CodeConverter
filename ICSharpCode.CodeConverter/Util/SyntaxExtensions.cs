@@ -5,9 +5,6 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
-using ParenthesizedExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ParenthesizedExpressionSyntax;
-using SkippedTokensTriviaSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.SkippedTokensTriviaSyntax;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -31,12 +28,22 @@ namespace ICSharpCode.CodeConverter.Util
                 .SelectMany(t => ((SkippedTokensTriviaSyntax)t.GetStructure()).Tokens);
         }
 
-        public static ExpressionSyntax SkipParens(this ExpressionSyntax expression)
+        public static Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax SkipParens(this Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax expression)
         {
             if (expression == null)
                 return null;
-            while (expression != null && expression.IsKind(SyntaxKind.ParenthesizedExpression)) {
-                expression = ((ParenthesizedExpressionSyntax)expression).Expression;
+            while (expression is Microsoft.CodeAnalysis.CSharp.Syntax.ParenthesizedExpressionSyntax pes) {
+                expression = pes.Expression;
+            }
+            return expression;
+        }
+
+        public static Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax SkipParens(this Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax expression)
+        {
+            if (expression == null)
+                return null;
+            while (expression is Microsoft.CodeAnalysis.VisualBasic.Syntax.ParenthesizedExpressionSyntax pes) {
+                expression = pes.Expression;
             }
             return expression;
         }

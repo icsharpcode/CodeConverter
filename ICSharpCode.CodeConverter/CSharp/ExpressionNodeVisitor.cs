@@ -556,7 +556,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax node)
         {
-            if (node.IsKind(VBasic.SyntaxKind.IsExpression)) {
+            if (node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.EqualsExpression)) {
                 ExpressionSyntax otherArgument = null;
                 if (node.Left.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
                     otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Right);
@@ -570,7 +570,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            if (node.IsKind(VBasic.SyntaxKind.IsNotExpression)) {
+            if (node.IsKind(VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression)) {
                 ExpressionSyntax otherArgument = null;
                 if (node.Left.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
                     otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Right);
@@ -614,8 +614,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(node, lhs, rhs);
             }
 
-            lhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs);
-            rhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+            var omitConversion = lhsTypeInfo.Type != null && rhsTypeInfo.Type != null &&
+                                 lhsTypeInfo.Type.IsEnumType() && Equals(lhsTypeInfo.Type, rhsTypeInfo.Type);
+            lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs);
+            rhs = omitConversion ? rhs: CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
 
 
             if (node.IsKind(VBasic.SyntaxKind.ExponentiateExpression,
