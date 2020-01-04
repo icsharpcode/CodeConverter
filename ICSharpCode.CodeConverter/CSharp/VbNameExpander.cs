@@ -5,6 +5,7 @@ using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
@@ -27,7 +28,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                    ShouldBeQualified(node, semanticModel.GetSymbolInfo(node).Symbol, semanticModel, root);
         }
 
-        public SyntaxNode TryExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel,
+        public SyntaxNode ExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel,
             Workspace workspace)
         {
             var symbol = semanticModel.GetSymbolInfo(node).Symbol;
@@ -39,7 +40,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var expressionSyntax = (ExpressionSyntax)mro2.Instance.Syntax;
                 return MemberAccess(expressionSyntax, SyntaxFactory.IdentifierName(mro2.Member.Name));
             }
-            return IsOriginalSymbolGenericMethod(semanticModel, node) ? node : Expander.TryExpandNode(node, semanticModel, workspace);
+            return IsOriginalSymbolGenericMethod(semanticModel, node) ? node : Simplifier.Expand(node, semanticModel, workspace);
         }
 
         /// <summary>
@@ -78,7 +79,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static bool IsTypePromotion(SyntaxNode node, ISymbol symbol, SyntaxNode root, SemanticModel semanticModel)
         {
-            if (IsInstanceReference(symbol) && node is MemberAccessExpressionSyntax maes) {
+            if (IsInstanceReference(symbol) && node is MemberAccessExpressionSyntax maes && maes.Expression != null) {
                 var qualifyingType = semanticModel.GetTypeInfo(maes.Expression).Type;
                 return qualifyingType == null || !qualifyingType.ContainsMember(symbol);
             }

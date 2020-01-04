@@ -6,6 +6,6 @@ namespace ICSharpCode.CodeConverter.Shared
     {
         bool ShouldExpandWithinNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel);
         bool ShouldExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel);
-        SyntaxNode TryExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel, Workspace workspace);
+        SyntaxNode ExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel, Workspace workspace);
     }
 }

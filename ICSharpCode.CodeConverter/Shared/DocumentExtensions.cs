@@ -6,6 +6,7 @@ using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Simplification;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -64,11 +65,22 @@ namespace ICSharpCode.CodeConverter.Shared
             var root = await document.GetSyntaxRootAsync();
             try {
                 var newRoot = root.ReplaceNodes(root.DescendantNodes(n => expander.ShouldExpandWithinNode(n, root, semanticModel)).Where(n => expander.ShouldExpandNode(n, root, semanticModel)),
-                    (node, rewrittenNode) => expander.TryExpandNode(node, root, semanticModel, workspace)
+                    (node, rewrittenNode) => TryExpandNode(expander, node, root, semanticModel, workspace)
                 );
                 return document.WithSyntaxRoot(newRoot);
-            } catch (Exception) {
-                return document.WithSyntaxRoot(root);
+            } catch (Exception ex) {
+                var warningText = "Conversion warning: Qualified name reduction failed for this file. " + ex;
+                return document.WithSyntaxRoot(WithWarningAnnotation(root, warningText));
+            }
+        }
+
+        private static SyntaxNode TryExpandNode(ISyntaxExpander expander, SyntaxNode node, SyntaxNode root, SemanticModel semanticModel, Workspace workspace)
+        {
+            try {
+                return expander.ExpandNode(node, root, semanticModel, workspace);
+            } catch (Exception ex) {
+                var warningText = new ExceptionWithNodeInformation(ex, node, "Conversion warning").ToString();
+                return WithWarningAnnotation(node, warningText);
             }
         }
 
@@ -78,9 +90,15 @@ namespace ICSharpCode.CodeConverter.Shared
             var withSyntaxRoot = doc.WithSyntaxRoot(root);
             try {
                 return await Simplifier.ReduceAsync(withSyntaxRoot);
-            } catch {
-                return doc;
+            } catch (Exception ex) {
+                var warningText = "Conversion warning: Qualified name reduction failed for this file. " + ex;
+                return doc.WithSyntaxRoot(WithWarningAnnotation(root, warningText));
             }
+        }
+
+        private static SyntaxNode WithWarningAnnotation(SyntaxNode node, string warningText)
+        {
+            return node.WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, warningText));
         }
     }
 }

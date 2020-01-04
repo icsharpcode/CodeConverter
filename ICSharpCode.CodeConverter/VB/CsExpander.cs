@@ -14,10 +14,10 @@ namespace ICSharpCode.CodeConverter.VB
     {
         public static ISyntaxExpander Instance { get; } = new CsExpander();
 
-        public SyntaxNode TryExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel,
+        public SyntaxNode ExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel,
             Workspace workspace)
         {
-            SyntaxNode expandedNode = Expander.TryExpandNode(node, semanticModel, workspace);
+            SyntaxNode expandedNode = Simplifier.Expand(node, semanticModel, workspace);
             return WithoutGlobalOverqualification(node, expandedNode);
         }
 

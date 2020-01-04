@@ -282,23 +282,24 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var simpleNameSyntax = (SimpleNameSyntax) await node.Name.AcceptAsync(TriviaConvertingVisitor);
 
-            var nodeSymbol = _semanticModel.GetSymbolInfo(node.Name).Symbol;
+            var nodeSymbol = GetSymbolInfoInDocument(node.Name);
             var isDefaultProperty = nodeSymbol is IPropertySymbol p && VBasic.VisualBasicExtensions.IsDefault(p);
             ExpressionSyntax left = null;
-            if (node.Expression is VBasic.Syntax.MyClassExpressionSyntax) {
-                if (nodeSymbol?.IsStatic != false) {
+            if (node.Expression is VBasic.Syntax.MyClassExpressionSyntax && nodeSymbol != null) {
+                if (nodeSymbol.IsStatic) {
                     var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
                     left = CommonConversions.GetTypeSyntax(typeInfo.Type);
                 } else {
                     left = SyntaxFactory.ThisExpression();
                     if (nodeSymbol.IsVirtual && !nodeSymbol.IsAbstract) {
-                        simpleNameSyntax = SyntaxFactory.IdentifierName($"MyClass{ConvertIdentifier(node.Name.Identifier).ValueText}");
+                        simpleNameSyntax =
+                            SyntaxFactory.IdentifierName(
+                                $"MyClass{ConvertIdentifier(node.Name.Identifier).ValueText}");
                     }
                 }
             }
             if (left == null && nodeSymbol?.IsStatic == true) {
                 var type = nodeSymbol.ContainingType;
-                var expressionSymbolInfo = _semanticModel.GetSymbolInfo(node.Expression);
                 if (type != null) {
                     left = CommonConversions.GetTypeSyntax(type);
                 }
@@ -1347,6 +1348,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         /// <returns>The ISymbol if available in this document, otherwise null</returns>
+        /// <remarks>It's possible to use _semanticModel.GetSpeculativeSymbolInfo(...) if you know (or can approximate) the position where the symbol would have been in the original document.</remarks>
         private ISymbol GetSymbolInfoInDocument(SyntaxNode node)
         {
             return _semanticModel.SyntaxTree == node.SyntaxTree ? _semanticModel.GetSymbolInfo(node).Symbol : null;
