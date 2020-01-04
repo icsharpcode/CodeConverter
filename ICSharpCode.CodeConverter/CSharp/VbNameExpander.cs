@@ -24,8 +24,19 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public bool ShouldExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel)
         {
-            return node is NameSyntax && CanBeExpanded(node) || node is MemberAccessExpressionSyntax maes && !IsRoslynInstanceExpressionBug(maes) &&
+            return ShouldExpandName(node) ||
+                   ShouldExpandMemberAccess(node, root, semanticModel);
+        }
+
+        private static bool ShouldExpandMemberAccess(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel)
+        {
+            return node is MemberAccessExpressionSyntax maes && !IsRoslynInstanceExpressionBug(maes) &&
                    ShouldBeQualified(node, semanticModel.GetSymbolInfo(node).Symbol, semanticModel, root);
+        }
+
+        private static bool ShouldExpandName(SyntaxNode node)
+        {
+            return node is NameSyntax && NameCanBeExpanded(node);
         }
 
         public SyntaxNode ExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel,
@@ -59,7 +70,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <summary>
         /// Workaround roslyn bug where it will try to expand something even when the parent node cannot contain the type of the expanded node
         /// </summary>
-        private static bool CanBeExpanded(SyntaxNode node)
+        private static bool NameCanBeExpanded(SyntaxNode node)
         {
             return !(node.Parent is NameColonEqualsSyntax || node.Parent is NamedFieldInitializerSyntax);
         }

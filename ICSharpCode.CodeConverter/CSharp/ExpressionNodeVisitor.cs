@@ -583,10 +583,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            var stringType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
             var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
             var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
-
 
             var lhs = (ExpressionSyntax)await node.Left.AcceptAsync(TriviaConvertingVisitor);
             var rhs = (ExpressionSyntax)await node.Right.AcceptAsync(TriviaConvertingVisitor);
@@ -597,6 +595,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     lhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String &&
                     rhsTypeInfo.Type.SpecialType != SpecialType.System_String &&
                     rhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String) {
+                    var stringType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
                     lhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConvertTo(node.Left, lhs, stringType);
                 }
             }
