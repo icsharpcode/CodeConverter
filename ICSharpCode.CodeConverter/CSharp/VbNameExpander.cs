@@ -61,7 +61,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         private static bool CanBeExpanded(SyntaxNode node)
         {
-            return !(node.Parent is NameColonEqualsSyntax);
+            return !(node.Parent is NameColonEqualsSyntax || node.Parent is NamedFieldInitializerSyntax);
         }
 
         /// <returns>True iff calling Expand would qualify with MyBase when the symbol isn't in the base type
