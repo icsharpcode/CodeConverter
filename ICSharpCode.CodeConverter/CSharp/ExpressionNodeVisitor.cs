@@ -212,15 +212,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitLiteralExpression(VBasic.Syntax.LiteralExpressionSyntax node)
         {
-            var op = _semanticModel.GetOperation(node)?.Parent.GetIgnoringParentheses();
-            var convertedType = op?.Type ?? _semanticModel.GetTypeInfo(node).ConvertedType;
+            var convertedType = _semanticModel.GetTypeInfo(node).ConvertedType;
             if (node.Token.Value == null) {
                 if (convertedType == null) {
                     return CommonConversions.Literal(null); //In future, we'll be able to just say "default" instead of guessing at "null" in this case
                 }
 
                 return !convertedType.IsReferenceType ? SyntaxFactory.DefaultExpression(CommonConversions.GetTypeSyntax(convertedType)) : CommonConversions.Literal(null);
-            } else if (TypeConversionAnalyzer.ConvertStringToCharLiteral(node, convertedType, out char chr)) {
+            }
+
+            if (TypeConversionAnalyzer.ConvertStringToCharLiteral(node, convertedType, out char chr)) {
                 return CommonConversions.Literal(chr);
             }
             return CommonConversions.Literal(node.Token.Value, node.Token.Text);

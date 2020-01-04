@@ -174,8 +174,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DivideExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IntegerDivideExpression);
             if (!csConversion.Exists || csConversion.IsUnboxing) {
-                if (ConvertStringToCharLiteral(vbNode as VBSyntax.LiteralExpressionSyntax, vbConvertedType, out _)
-                || vbNode is VBSyntax.ParenthesizedExpressionSyntax pes && ConvertStringToCharLiteral(pes.Expression as VBSyntax.LiteralExpressionSyntax, vbConvertedType, out _)) {
+                if (ConvertStringToCharLiteral(vbNode, vbConvertedType,  out _)) {
                     typeConversionKind =
                         TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
                     return true;
@@ -394,11 +393,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             StringToCharArray
         }
 
-        public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax node, ITypeSymbol convertedType,
+        public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax node,
+            ITypeSymbol convertedType,
             out char chr)
         {
-            if (convertedType?.SpecialType == SpecialType.System_Char &&
-                node?.Token.Value is string str &&
+
+            var preferChar = node.Parent is VBSyntax.PredefinedCastExpressionSyntax pces &&
+                               pces.Keyword.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.CCharKeyword)
+                || convertedType?.SpecialType == SpecialType.System_Char;
+            if (preferChar && node.SkipParens() is VBSyntax.LiteralExpressionSyntax les &&
+                les.Token.Value is string str &&
                 str.Length == 1) {
                 chr = str.Single();
                 return true;
