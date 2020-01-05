@@ -83,7 +83,7 @@ namespace ICSharpCode.CodeConverter.VB
             _vbViewOfCsSymbols = vbViewOfCsSymbols;
             _vbSyntaxGenerator = vbSyntaxGenerator;
             TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
-            _commonConversions = new CommonConversions(semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
+            _commonConversions = new CommonConversions(semanticModel, vbSyntaxGenerator, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
             _cSharpHelperMethodDefinition = new CSharpHelperMethodDefinition();
         }
 
@@ -179,26 +179,22 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitUsingDirective(CSS.UsingDirectiveSyntax node)
         {
-            ImportAliasClauseSyntax alias = null;
+            var nameToImport = _semanticModel.GetSymbolInfo(node.Name).Symbol is INamespaceOrTypeSymbol toImport
+                ? _commonConversions.GetFullyQualifiedNameSyntax(toImport)
+                : (NameSyntax)node.Name.Accept(TriviaConvertingVisitor);
+            SimpleImportsClauseSyntax clause = SyntaxFactory.SimpleImportsClause(nameToImport);
+
             if (node.Alias != null) {
                 var name = node.Alias.Name;
                 var id = _commonConversions.ConvertIdentifier(name.Identifier);
-                alias = SyntaxFactory.ImportAliasClause(id);
+                var alias = SyntaxFactory.ImportAliasClause(id);
+                clause = clause.WithAlias(alias);
             }
-            var identifierName = node.Name as CSS.IdentifierNameSyntax;
-            var parentSymbol = _semanticModel.GetDeclaredSymbol(node.Parent) as INamespaceSymbol;
-            INamespaceSymbol fullNamespace = null;
-            if (identifierName != null && parentSymbol != null) {
-                fullNamespace = _semanticModel.LookupNamespacesAndTypes(node.SpanStart, null, identifierName.Identifier.ValueText)
-                    .OfType<INamespaceSymbol>().FirstOrDefault();
-            }
-            if (fullNamespace != null) {
-                _allImports.Add((ImportsStatementSyntax)_vbSyntaxGenerator.NamespaceImportDeclaration(fullNamespace.ToDisplayString()));
-                return null;
-            }
-            ImportsClauseSyntax clause = SyntaxFactory.SimpleImportsClause(alias, (NameSyntax)node.Name.Accept(TriviaConvertingVisitor));
-            var import = SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList(clause));
+
+            var import = SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(clause));
+
             _allImports.Add(import);
+
             return null;
         }
 
@@ -1535,6 +1531,45 @@ namespace ICSharpCode.CodeConverter.VB
             var throwEx = SyntaxFactory.GenericName(CSharpHelperMethodDefinition.QualifiedThrowMethodName, SyntaxFactory.TypeArgumentList(typeName));
             var argList = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList<ArgumentSyntax>(SyntaxFactory.SimpleArgument(convertedExceptionExpression)));
             return SyntaxFactory.InvocationExpression(throwEx, argList);
+        }
+
+        public override VisualBasicSyntaxNode VisitCasePatternSwitchLabel(CSS.CasePatternSwitchLabelSyntax node)
+        {
+            var condition = node.WhenClause.Condition.SkipParens();
+            switch (condition) {
+                case CSS.BinaryExpressionSyntax bes when node.Pattern.ToString().StartsWith("var"): //VarPatternSyntax (not available in current library version)
+                    var basicSyntaxNode = (ExpressionSyntax)bes.Right.Accept(TriviaConvertingVisitor);
+                    SyntaxKind expressionKind = bes.Kind().ConvertToken();
+                    return SyntaxFactory.RelationalCaseClause(GetCaseClauseFromOperatorKind(expressionKind),
+                        SyntaxFactory.Token(expressionKind.GetExpressionOperatorTokenKind()), basicSyntaxNode);
+                default:
+                    throw new NotSupportedException(condition.GetType() + " in switch case");
+            }
+        }
+
+        private static SyntaxKind GetCaseClauseFromOperatorKind(SyntaxKind syntaxKind)
+        {
+            switch (syntaxKind) {
+                case SyntaxKind.EqualsExpression:
+                    return SyntaxKind.CaseEqualsClause;
+                case SyntaxKind.NotEqualsExpression:
+                    return SyntaxKind.CaseNotEqualsClause;
+                case SyntaxKind.LessThanOrEqualExpression:
+                    return SyntaxKind.CaseLessThanOrEqualClause;
+                case SyntaxKind.LessThanExpression:
+                    return SyntaxKind.CaseLessThanClause;
+                case SyntaxKind.GreaterThanOrEqualExpression:
+                    return SyntaxKind.CaseGreaterThanOrEqualClause;
+                case SyntaxKind.GreaterThanExpression:
+                    return SyntaxKind.CaseGreaterThanClause;
+            }
+            throw new NotImplementedException(syntaxKind.ToString() + " in case clause");
+        }
+
+
+        public override VisualBasicSyntaxNode VisitCaseSwitchLabel(CSS.CaseSwitchLabelSyntax node)
+        {
+            return SyntaxFactory.SimpleCaseClause((ExpressionSyntax)node.Value.Accept(TriviaConvertingVisitor));
         }
 
         #endregion

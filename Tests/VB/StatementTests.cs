@@ -1006,6 +1006,34 @@ End Class");
         }
 
         [Fact]
+        public async Task SelectCase_WithVarWhenClause()
+        {
+            await TestConversionCSharpToVisualBasic(@"class TestClass
+{
+    public bool IsFive(int aNum)
+    {
+        switch (aNum)
+        {
+            case var case2 when case2 == 5:
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+}", @"Friend Class TestClass
+    Public Function IsFive(ByVal aNum As Integer) As Boolean
+        Select Case aNum
+            Case = 5
+                Return True
+        End Select
+
+        Return False
+    End Function
+End Class");
+        }
+
+        [Fact]
         public async Task TryCatch()
         {
             await TestConversionCSharpToVisualBasic(@"class TestClass

@@ -23,7 +23,7 @@ namespace ICSharpCode.CodeConverter.Shared
             typeof(Microsoft.VisualBasic.Constants)
         };
 
-        public static IReadOnlyCollection<PortableExecutableReference> NetStandard2 => GetRefs(TypesToLoadAssembliesFor).ToArray();
+        public static IReadOnlyCollection<PortableExecutableReference> NetStandard2 { get; } = GetRefs(TypesToLoadAssembliesFor).ToArray();
 
         private static IEnumerable<PortableExecutableReference> GetRefs(IReadOnlyCollection<Type> types)
         {

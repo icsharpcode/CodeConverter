@@ -472,15 +472,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                         }
 
                         var v = decl.Variables.First();
-                        if (v.Initializer.Value.DescendantNodes().OfType<InvocationExpressionSyntax>().Count() > 1)
+                        var invocations = v.Initializer.Value.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>().ToArray();
+                        if (invocations.Length > 1)
                         {
                             throw new NotImplementedException(
                                 "Field initializers with nested method calls not currently supported");
                         }
 
-                        var calledMethodName = v.Initializer.Value.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()
-                            .First().DescendantNodes().OfType<IdentifierNameSyntax>().First();
-                        var newMethodName = $"{calledMethodName.Identifier.ValueText}_{v.Identifier.ValueText}";
+                        var invocationExpressionSyntax = invocations.First();
+                        var methodName = invocationExpressionSyntax.Expression
+                            .ChildNodes().OfType<SimpleNameSyntax>().Last();
+                        var newMethodName = $"{methodName.Identifier.ValueText}_{v.Identifier.ValueText}";
                         var localVars = _additionalLocals.Select(l => l.Value)
                             .Select(al =>
                                 SyntaxFactory.LocalDeclarationStatement(

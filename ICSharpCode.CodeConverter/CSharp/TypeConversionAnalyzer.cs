@@ -25,6 +25,7 @@ using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
+    /// <remarks>See https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/conversions </remarks>
     internal class TypeConversionAnalyzer
     {
         private readonly CSharpCompilation _csCompilation;
@@ -64,9 +65,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             _visualBasicEqualityComparison = visualBasicEqualityComparison;
         }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool alwaysExplicit = false, bool isConst = false, ITypeSymbol forceTargetType = null)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceTargetType = null)
         {
-            var conversionKind = AnalyzeConversion(vbNode, alwaysExplicit, isConst, forceTargetType);
+            var conversionKind = AnalyzeConversion(vbNode, defaultToCast, isConst, forceTargetType);
             csNode = addParenthesisIfNeeded && (conversionKind == TypeConversionKind.DestructiveCast || conversionKind == TypeConversionKind.NonDestructiveCast)
                 ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;
@@ -173,7 +174,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DivideExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IntegerDivideExpression);
             if (!csConversion.Exists || csConversion.IsUnboxing) {
-                if (ConvertStringToCharLiteral(vbNode as VBSyntax.LiteralExpressionSyntax, vbConvertedType, out _)) {
+                if (ConvertStringToCharLiteral(vbNode, vbConvertedType,  out _)) {
                     typeConversionKind =
                         TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
                     return true;
@@ -392,11 +393,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             StringToCharArray
         }
 
-        public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax node, ITypeSymbol convertedType,
+        public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax node,
+            ITypeSymbol convertedType,
             out char chr)
         {
-            if (convertedType?.SpecialType == SpecialType.System_Char &&
-                node?.Token.Value is string str &&
+
+            var preferChar = node.Parent is VBSyntax.PredefinedCastExpressionSyntax pces &&
+                               pces.Keyword.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.CCharKeyword)
+                || convertedType?.SpecialType == SpecialType.System_Char;
+            if (preferChar && node.SkipParens() is VBSyntax.LiteralExpressionSyntax les &&
+                les.Token.Value is string str &&
                 str.Length == 1) {
                 chr = str.Single();
                 return true;

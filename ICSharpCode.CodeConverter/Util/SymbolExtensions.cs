@@ -617,6 +617,11 @@ namespace ICSharpCode.CodeConverter.Util
 
             return symbol as ITypeSymbol;
         }
+
+        public static bool IsGenericMethod(this ISymbol symbol)
+        {
+            return symbol is IMethodSymbol ms && (ms.IsGenericMethod || ms.IsReducedTypeParameterMethod());
+        }
     }
 
     public enum SymbolVisibility

@@ -158,7 +158,7 @@ namespace ICSharpCode.CodeConverter.Shared
             _trailingTriviaConversionsBySource[lastSourceToken] = identifier;
 
             destination = destination.WithAdditionalAnnotations(new SyntaxAnnotation(TrailingTriviaConversionKind, identifier));
-            _annotationData.Add(identifier, lastSourceToken);
+            _annotationData[identifier] = lastSourceToken;
             return destination;
         }
 

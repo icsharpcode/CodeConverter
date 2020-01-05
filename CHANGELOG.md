@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+* Improve ambiguous name resolution
 
 ### Vsix
 
@@ -13,7 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Avoid some case conflicts
 
 ### C# -> VB
+
 * Remove extra parentheses around CType expression
+* Convert var declaration patterns with binary operators in switch statements (part of #222)
 
 ## [7.4.0] - 2019-12-17
 

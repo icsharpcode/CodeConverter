@@ -139,6 +139,7 @@ namespace ICSharpCode.CodeConverter.Util
         }
 
         /// <summary>
+        /// TODO: Eradicate this in favour of CommonConversions.GetFullyQualifiedNameSyntax
         /// Gets the full name of the metadata.
         /// In case symbol is not INamedTypeSymbol it returns raw MetadataName
         /// Example: Generic type returns T1, T2...
@@ -153,6 +154,7 @@ namespace ICSharpCode.CodeConverter.Util
         }
 
         /// <summary>
+        /// TODO: Eradicate this in favour of CommonConversions.GetFullyQualifiedNameSyntax
         /// Gets the full MetadataName(ReflectionName in NR5).
         /// Example: Namespace1.Namespace2.Classs1+NestedClassWithTwoGenericTypes`2+NestedClassWithoutGenerics
         /// </summary>
@@ -167,13 +169,19 @@ namespace ICSharpCode.CodeConverter.Util
                 fullName.Insert(0, parentType.MetadataName);
                 parentType = parentType.ContainingType;
             }
-            var ns = symbol.ContainingNamespace;
+            return GetFullMetadataName(symbol.ContainingNamespace, fullName);
+        }
+
+        public static string GetFullMetadataName(this INamespaceSymbol ns, StringBuilder sb = null)
+        {
+            sb = sb ?? new StringBuilder();
             while (ns != null && !ns.IsGlobalNamespace) {
-                fullName.Insert(0, '.');
-                fullName.Insert(0, ns.MetadataName);
+                if (sb.Length > 0) sb.Insert(0, '.');
+                sb.Insert(0, ns.MetadataName);
                 ns = ns.ContainingNamespace;
             }
-            return fullName.ToString();
+
+            return sb.ToString();
         }
     }
 }

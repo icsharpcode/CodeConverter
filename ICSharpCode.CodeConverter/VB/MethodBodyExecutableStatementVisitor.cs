@@ -213,7 +213,7 @@ namespace ICSharpCode.CodeConverter.VB
             foreach (var block in blocks) {
                 var modifiedBlock = block;
                 foreach (var caseClause in block.CaseStatement.Cases) {
-                    var expression = caseClause is ElseCaseClauseSyntax ? (VisualBasicSyntaxNode)caseClause : ((SimpleCaseClauseSyntax)caseClause).Value;
+                    var expression = caseClause is ElseCaseClauseSyntax ? (VisualBasicSyntaxNode)caseClause : caseClause is SimpleCaseClauseSyntax sccs ? sccs.Value : ((RelationalCaseClauseSyntax) caseClause)?.Value;
                     if (gotoLabels.Any(label => label.IsEquivalentTo(expression)))
                         modifiedBlock = modifiedBlock.WithStatements(block.Statements.Insert(0, SyntaxFactory.LabelStatement(MakeGotoSwitchLabel(expression))));
                 }
@@ -225,7 +225,9 @@ namespace ICSharpCode.CodeConverter.VB
         {
             if (IsDefaultSwitchStatement(section))
                 return SyntaxFactory.CaseElseBlock(SyntaxFactory.CaseElseStatement(SyntaxFactory.ElseCaseClause()), ConvertSwitchSectionBlock(section));
-            return SyntaxFactory.CaseBlock(SyntaxFactory.CaseStatement(SyntaxFactory.SeparatedList(section.Labels.OfType<CSS.CaseSwitchLabelSyntax>().Select(ConvertSwitchLabel))), ConvertSwitchSectionBlock(section));
+            var caseClauseSyntaxes = section.Labels.Select(l => l.Accept(_nodesVisitor));
+            var caseStatementSyntax = SyntaxFactory.CaseStatement(SyntaxFactory.SeparatedList(caseClauseSyntaxes.Cast<CaseClauseSyntax>()));
+            return SyntaxFactory.CaseBlock(caseStatementSyntax, ConvertSwitchSectionBlock(section));
         }
 
         private static bool IsDefaultSwitchStatement(CSS.SwitchSectionSyntax c)
@@ -243,11 +245,6 @@ namespace ICSharpCode.CodeConverter.VB
                 statements.AddRange(ConvertBlock(s));
             }
             return SyntaxFactory.List(statements);
-        }
-
-        CaseClauseSyntax ConvertSwitchLabel(CSS.CaseSwitchLabelSyntax label)
-        {
-            return SyntaxFactory.SimpleCaseClause((ExpressionSyntax)label.Value.Accept(_nodesVisitor));
         }
 
         public override SyntaxList<StatementSyntax> VisitDoStatement(CSS.DoStatementSyntax node)

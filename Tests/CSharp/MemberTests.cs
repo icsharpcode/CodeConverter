@@ -265,7 +265,7 @@ public partial class Class1
     protected override string Foo()
     {
         string FooRet = default(string);
-        MyEvent += Foo;
+        MyEvent += this.Foo;
         FooRet = FooRet + """";
         FooRet += nameof(Foo);
         return FooRet;
@@ -1579,9 +1579,9 @@ End Class");
             Assert.Contains("Cannot convert", convertedCode);
             Assert.Contains("#error", convertedCode);
             Assert.Contains("_failedMemberConversionMarker1", convertedCode);
-            Assert.Contains("Public Shared Operator ^(i As Integer, ac As AcmeClass) As AcmeClass", convertedCode);
+            Assert.Contains("Public Shared Operator ^(i As Integer,", convertedCode);
             Assert.Contains("_failedMemberConversionMarker2", convertedCode);
-            Assert.Contains("Public Shared Operator Like(s As String, ac As AcmeClass) As AcmeClass", convertedCode);
+            Assert.Contains("Public Shared Operator Like(s As String,", convertedCode);
         }
 
         [Fact]
@@ -1877,54 +1877,6 @@ End Class", @"internal partial class TestClass
         {
             m_test3 = value;
         }
-    }
-}");
-        }
-
-        [Fact]
-        public async Task TestGenericMethodGroupGainsBrackets()
-        {
-            //BUG: Comment after New With is lost
-            await TestConversionVisualBasicToCSharpWithoutComments(
-@"Public Enum TheType
-    Tree
-End Enum
-
-Public Class MoreParsing
-    Sub DoGet()
-        Dim anon = New With {
-            .TheType = GetEnumValues(Of TheType)
-        }
-    End Sub
-
-    Private Function GetEnumValues(Of TEnum)() As IDictionary(Of Integer, String)
-        Return System.Enum.GetValues(GetType(TEnum)).Cast(Of TEnum).
-            ToDictionary(Function(enumValue) DirectCast(DirectCast(enumValue, Object), Integer),
-                         Function(enumValue) enumValue.ToString())
-    End Function
-End Class",
-@"using System;
-using System.Collections.Generic;
-using System.Linq;
-
-public enum TheType
-{
-    Tree
-}
-
-public partial class MoreParsing
-{
-    public void DoGet()
-    {
-        var anon = new
-        {
-            TheType = MoreParsing.GetEnumValues<TheType>()
-        };
-    }
-
-    private IDictionary<int, string> GetEnumValues<TEnum>()
-    {
-        return Enum.GetValues(typeof(TEnum)).Cast<TEnum>().ToDictionary(enumValue => (int)(object)enumValue, enumValue => enumValue.ToString());
     }
 }");
         }

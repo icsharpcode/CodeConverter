@@ -6,6 +6,7 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -16,6 +17,7 @@ using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using ExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax;
 using IdentifierNameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.IdentifierNameSyntax;
 using LambdaExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.LambdaExpressionSyntax;
+using NameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.NameSyntax;
 using ParameterListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterListSyntax;
 using ParameterSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ParameterSyntax;
 using ReturnStatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ReturnStatementSyntax;
@@ -31,13 +33,16 @@ namespace ICSharpCode.CodeConverter.VB
 {
     internal class CommonConversions
     {
+        public SyntaxGenerator VbSyntaxGenerator { get; }
         private readonly CSharpSyntaxVisitor<VisualBasicSyntaxNode> _nodesVisitor;
         private readonly TriviaConverter _triviaConverter;
         private readonly SemanticModel _semanticModel;
 
-        public CommonConversions(SemanticModel semanticModel, CSharpSyntaxVisitor<VisualBasicSyntaxNode> nodesVisitor,
+        public CommonConversions(SemanticModel semanticModel, SyntaxGenerator vbSyntaxGenerator,
+            CSharpSyntaxVisitor<VisualBasicSyntaxNode> nodesVisitor,
             TriviaConverter triviaConverter)
         {
+            VbSyntaxGenerator = vbSyntaxGenerator;
             _semanticModel = semanticModel;
             _nodesVisitor = nodesVisitor;
             _triviaConverter = triviaConverter;
@@ -677,6 +682,24 @@ namespace ICSharpCode.CodeConverter.VB
             return syntax.SyntaxTree == _semanticModel.SyntaxTree
                 ? _semanticModel.GetTypeInfo(syntax).Type
                 : null;
+        }
+
+        public string GetFullyQualifiedName(INamespaceOrTypeSymbol symbol)
+        {
+            return GetFullyQualifiedNameSyntax(symbol).ToString();
+        }
+
+        public NameSyntax GetFullyQualifiedNameSyntax(INamespaceOrTypeSymbol symbol)
+        {
+            switch (symbol)
+            {
+                case ITypeSymbol ts:
+                    return (NameSyntax) VbSyntaxGenerator.TypeExpression(ts);
+                case INamespaceSymbol ns:
+                    return SyntaxFactory.ParseName(ns.GetFullMetadataName());
+                default:
+                    throw new NotImplementedException($"Fully qualified name for {symbol.GetType().FullName} not implemented");
+            }
         }
     }
 }

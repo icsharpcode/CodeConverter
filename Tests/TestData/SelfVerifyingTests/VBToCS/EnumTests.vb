@@ -26,10 +26,24 @@ Public Class EnumTests
         Dim stringToEnum As RankEnum = CType(sEnum, RankEnum)
         Dim intToEnum As RankEnum = CType(iEnum, RankEnum)
 
-        Assert.Equal(enumToString, sEnum)
-        Assert.Equal(enumToInt, iEnum)
-        Assert.Equal(stringToEnum, eEnum)
-        Assert.Equal(intToEnum, eEnum)
+        Assert.Equal(sEnum, enumToString)
+        Assert.Equal(iEnum, enumToInt)
+        Assert.Equal(eEnum, stringToEnum)
+        Assert.Equal(eEnum, intToEnum)
+    End Sub
+
+    <Fact>
+    Sub TestEnumEquality()
+        Dim eEnum = RankEnum.Second
+        Dim enumEnumEquality As Boolean = eEnum = RankEnum.First
+        Dim enumIntEquality As Boolean = eEnum = 2
+        Dim enumNothingEquality As Boolean = eEnum = Nothing
+        Dim enumNotEqualNothingEquality As Boolean = eEnum <> Nothing
+
+        Assert.Equal(False, enumEnumEquality)
+        Assert.Equal(True, enumIntEquality)
+        Assert.Equal(False, enumNothingEquality)
+        Assert.Equal(True, enumNotEqualNothingEquality)
     End Sub
 
     <Fact>

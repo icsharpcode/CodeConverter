@@ -556,7 +556,7 @@ End Class");
 End Class");
         }
 
-        [Fact(Skip = "Enable this once Expand phases is introduced which should disambiguate")]
+        [Fact]
         public async Task CaseConflict_ArgumentPropertyAndField() {
             await TestConversionCSharpToVisualBasic(
 @"public class HasConflictingPropertyAndField {

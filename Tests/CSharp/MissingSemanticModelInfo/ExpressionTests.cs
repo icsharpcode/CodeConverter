@@ -75,7 +75,8 @@ End Class", @"public partial class Class1
         [Fact]
         public async Task OutParameterNonCompilingType()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class OutParameterWithMissingType
+            // Can't autotest comments due to dummy "anInstance" variable added
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class OutParameterWithMissingType
     Private Shared Sub AddToDict(ByVal pDict As Dictionary(Of Integer, MissingType), ByVal pKey As Integer)
         Dim anInstance As MissingType = Nothing
         If Not pDict.TryGetValue(pKey, anInstance) Then

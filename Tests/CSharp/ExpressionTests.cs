@@ -11,6 +11,36 @@ namespace CodeConverter.Tests.CSharp
     public class ExpressionTests : ConverterTestBase
     {
         [Fact]
+        public async Task OmitsConversionForEnumBinaryExpression()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Friend Enum RankEnum As SByte
+    First = 1
+    Second = 2
+End Enum
+
+Public Class TestClass
+    Sub TestMethod()
+        Dim eEnum = RankEnum.Second
+        Dim enumEnumEquality As Boolean = eEnum = RankEnum.First
+    End Sub
+End Class", @"internal enum RankEnum : sbyte
+{
+    First = 1,
+    Second = 2
+}
+
+public partial class TestClass
+{
+    public void TestMethod()
+    {
+        var eEnum = RankEnum.Second;
+        bool enumEnumEquality = eEnum == RankEnum.First;
+    }
+}");
+
+        }
+
+        [Fact]
         public async Task MyClassExpr()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass
@@ -308,43 +338,43 @@ public partial class Class1
     public void Foo()
     {
         bool x = true;
-        var argb = x == true;
+        bool argb = x == true;
         Bar(ref argb);
     }
 
     public void Foo2()
     {
-        var argb = true == false;
+        bool argb = true == false;
         return Bar(ref argb);
     }
 
     public void Foo3()
     {
-        var argb1 = true == false;
+        bool argb1 = true == false;
         if (Bar(ref argb1))
         {
-            var argb = true == false;
+            bool argb = true == false;
             Bar(ref argb);
         }
     }
 
     public void Foo4()
     {
-        var argb3 = true == false;
-        var argb4 = true == false;
+        bool argb3 = true == false;
+        bool argb4 = true == false;
         if (Bar(ref argb3))
         {
-            var argb = true == false;
+            bool argb = true == false;
             Bar(ref argb);
         }
         else if (Bar(ref argb4))
         {
-            var argb2 = true == false;
+            bool argb2 = true == false;
             Bar(ref argb2);
         }
         else
         {
-            var argb1 = true == false;
+            bool argb1 = true == false;
             Bar(ref argb1);
         }
     }
@@ -658,7 +688,7 @@ End Class", @"internal partial class TestClass
     private void TestMethod()
     {
         string rslt = true.ToString();
-        var rslt2 = (object)true;
+        object rslt2 = true;
     }
 }");
         }
@@ -1768,6 +1798,33 @@ internal partial class TestClass : BaseTestClass
         }
 
         [Fact]
+        public async Task UnqualifiedBaseMemberAccessExpression()
+        {
+            await TestConversionVisualBasicToCSharp(@"Public Class BaseController
+    Protected Request As HttpRequest
+End Class
+
+Public Class ActualController
+    Inherits BaseController
+
+    Public Sub Do()
+        Request.StatusCode = 200
+    End Sub
+End Class", @"public partial class BaseController
+{
+    protected HttpRequest Request;
+}
+
+public partial class ActualController : BaseController
+{
+    public void Do()
+    {
+        Request.StatusCode = 200;
+    }
+}");
+        }
+
+        [Fact]
         public async Task DelegateExpression()
         {
             await TestConversionVisualBasicToCSharp(@"Class TestClass
@@ -2340,6 +2397,93 @@ End Class", @"public partial class Class1
         }
 
         [Fact]
+        public async Task TestGenericMethodGroupGainsBrackets()
+        {
+            //BUG: Comment after New With is lost
+            await TestConversionVisualBasicToCSharpWithoutComments(
+                @"Public Enum TheType
+    Tree
+End Enum
+
+Public Class MoreParsing
+    Sub DoGet()
+        Dim anon = New With {
+            .TheType = GetEnumValues(Of TheType)
+        }
+    End Sub
+
+    Private Function GetEnumValues(Of TEnum)() As IDictionary(Of Integer, String)
+        Return System.Enum.GetValues(GetType(TEnum)).Cast(Of TEnum).
+            ToDictionary(Function(enumValue) DirectCast(DirectCast(enumValue, Object), Integer),
+                         Function(enumValue) enumValue.ToString())
+    End Function
+End Class",
+                @"using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public enum TheType
+{
+    Tree
+}
+
+public partial class MoreParsing
+{
+    public void DoGet()
+    {
+        var anon = new
+        {
+            TheType = MoreParsing.GetEnumValues<TheType>()
+        };
+    }
+
+    private IDictionary<int, string> GetEnumValues<TEnum>()
+    {
+        return Enum.GetValues(typeof(TEnum)).Cast<TEnum>().ToDictionary(enumValue => (int)(object)enumValue, enumValue => enumValue.ToString());
+    }
+}");
+        }
+
+        [Fact]
+        public async Task GenericMethodCalledWithAnonymousType()
+        {
+            //BUG: Comment after New With is lost
+            await TestConversionVisualBasicToCSharpWithoutComments(
+                @"Public Class MoreParsing
+    Sub DoGet()
+        Dim anon = New With {
+            .ANumber = 5
+        }
+        Dim sameAnon = Identity(anon)
+        Dim repeated = Enumerable.Repeat(anon, 5).ToList()
+    End Sub
+
+    Private Function Identity(Of TType)(tInstance As TType) As TType
+        Return tInstance
+    End Function
+End Class",
+                @"using System.Linq;
+
+public partial class MoreParsing
+{
+    public void DoGet()
+    {
+        var anon = new
+        {
+            ANumber = 5
+        };
+        var sameAnon = Identity(anon);
+        var repeated = Enumerable.Repeat(anon, 5).ToList();
+    }
+
+    private TType Identity<TType>(TType tInstance)
+    {
+        return tInstance;
+    }
+}");
+        }
+
+        [Fact]
         public async Task AliasedImportsWithTypePromotionIssue401()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(
@@ -2364,7 +2508,6 @@ Public Class Test
 End Class",
                 @"using System;
 using System.IO;
-using Microsoft.VisualBasic;
 using SIO = System.IO;
 using VB = Microsoft.VisualBasic;
 
@@ -2374,8 +2517,8 @@ public partial class Test
     private Delegate aliased2 = new SIO.ErrorEventHandler(OnError);
 
     // Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
-    private string Tr = nameof(TextReader);
-    private string Strings = nameof(VBCodeProvider);
+    private string Tr = nameof(SIO.TextReader);
+    private string Strings = nameof(VB.VBCodeProvider);
 
     public partial class ErrorEventHandler
     {

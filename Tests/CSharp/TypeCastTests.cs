@@ -35,13 +35,14 @@ internal partial class Class1
 @"Public Class Class1
     Sub Foo()
         Dim x = CDate(""2019-09-04"")
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices;
 
 public partial class Class1
 {
     public void Foo()
     {
-        var x = Conversions.ToDate(""2019-09-04"");
+        DateTime x = Conversions.ToDate(""2019-09-04"");
     }
 }");
         }
@@ -173,7 +174,7 @@ internal partial class Class1
     private void Test()
     {
         object o = new List<int>();
-        var l = (List<int>)o;
+        List<int> l = (List<int>)o;
     }
 }");
         }
@@ -219,7 +220,7 @@ internal partial class Class1
     private void Test()
     {
         object o = new List<int>();
-        var l = o as List<int>;
+        List<int> l = o as List<int>;
     }
 }");
         }
