@@ -14,13 +14,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### C# -> VB
 
 
+## [7.6.0] - 2020-01-11
+
+
+### Vsix
+
+* Fix Visual Studio crash when converting some structures
+
+### VB -> C#
+
+
+### C# -> VB
+
+
 ## [7.5.0] - 2020-01-11
 
 * Improve ambiguous name resolution
 
 ### Vsix
 
-* Fix Visual Studio crash when converting some structures
 
 ### VB -> C#
 * Simplify compound assignment conversion
