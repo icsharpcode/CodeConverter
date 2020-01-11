@@ -7,6 +7,7 @@ using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Simplification;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -18,6 +19,10 @@ namespace ICSharpCode.CodeConverter.Shared
         public static async Task<Document> SimplifyStatements<TUsingDirectiveSyntax, TExpressionSyntax>(this Document convertedDocument, string unresolvedTypeDiagnosticId)
         where TUsingDirectiveSyntax : SyntaxNode where TExpressionSyntax : SyntaxNode
         {
+            Func<SyntaxNode, bool> wouldBeSimplifiedIncorrectly =
+                convertedDocument.Project.Language == LanguageNames.VisualBasic
+                    ? (Func<SyntaxNode, bool>) VbWouldBeSimplifiedIncorrectly
+                    : CsWouldBeSimplifiedIncorrectly;
             var originalRoot = await convertedDocument.GetSyntaxRootAsync();
             var nodesWithUnresolvedTypes = (await convertedDocument.GetSemanticModelAsync()).GetDiagnostics()
                 .Where(d => d.Id == unresolvedTypeDiagnosticId && d.Location.IsInSource)
@@ -26,10 +31,10 @@ namespace ICSharpCode.CodeConverter.Shared
             var nodesToConsider = originalRoot
                 .DescendantNodes(n =>
                     !(n is TExpressionSyntax) && !nodesWithUnresolvedTypes.Contains(n) &&
-                    !WouldBeSimplifiedIncorrectly(n))
+                    !wouldBeSimplifiedIncorrectly(n))
                 .ToArray();
             var doNotSimplify = nodesToConsider
-                .Where(n => nodesWithUnresolvedTypes.Contains(n) || WouldBeSimplifiedIncorrectly(n))
+                .Where(n => nodesWithUnresolvedTypes.Contains(n) || wouldBeSimplifiedIncorrectly(n))
                 .SelectMany(n => n.AncestorsAndSelf())
                 .ToImmutableHashSet();
             var toSimplify = nodesToConsider.Where(n => !doNotSimplify.Contains(n));
@@ -41,10 +46,17 @@ namespace ICSharpCode.CodeConverter.Shared
             return document;
         }
 
-        private static bool WouldBeSimplifiedIncorrectly(SyntaxNode n)
+        private static bool VbWouldBeSimplifiedIncorrectly(SyntaxNode n)
         {
-            //Sometimes when empty argument list gets removed it changes the behaviour: https://github.com/dotnet/roslyn/issues/40442
-            return n is VBSyntax.InvocationExpressionSyntax ies && !ies.ArgumentList.Arguments.Any();
+            //Roslyn bug: empty argument list gets removed and changes behaviour: https://github.com/dotnet/roslyn/issues/40442
+            return n is VBSyntax.InvocationExpressionSyntax ies && !ies.ArgumentList.Arguments.Any()
+                   // Roslyn bug: Tries to simplify to "InferredFieldInitializerSyntax" which cannot be placed within an ObjectCreationExpression https://github.com/icsharpcode/CodeConverter/issues/484
+                   || n is VBSyntax.ObjectCreationExpressionSyntax;
+        }
+
+        private static bool CsWouldBeSimplifiedIncorrectly(SyntaxNode n)
+        {
+            return false;
         }
 
         public static async Task<Document> WithExpandedRootAsync(this Document document)
