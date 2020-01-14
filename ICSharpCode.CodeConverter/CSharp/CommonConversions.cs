@@ -304,7 +304,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return anyNodePossiblyWithinMethod.GetAncestor<MethodBlockSyntax>()?.SubOrFunctionStatement.Identifier.Text == "InitializeComponent";
         }
 
-        private static SyntaxToken CsEscapedIdentifier(string text)
+        public static SyntaxToken CsEscapedIdentifier(string text)
         {
             if (SyntaxFacts.GetKeywordKind(text) != CSSyntaxKind.None) text = "@" + text;
             return SyntaxFactory.Identifier(text);
