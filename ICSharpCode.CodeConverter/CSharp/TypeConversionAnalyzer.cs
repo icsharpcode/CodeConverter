@@ -174,7 +174,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DivideExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IntegerDivideExpression);
             if (!csConversion.Exists || csConversion.IsUnboxing) {
-                if (ConvertStringToCharLiteral(vbNode, vbConvertedType,  out _)) {
+                if (ConvertStringToCharLiteral(vbNode, vbConvertedType, out _)) {
                     typeConversionKind =
                         TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
                     return true;
@@ -215,11 +215,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                     typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
                     return true;
                 }
-            } else if (isConvertToString && vbType.SpecialType ==  SpecialType.System_Object) {
+            } else if (isConvertToString && vbType.SpecialType == SpecialType.System_Object) {
                 typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
                 return true;
             } else if (csConversion.IsNullable && csConvertedType.SpecialType == SpecialType.System_Boolean) {
                 typeConversionKind = TypeConversionKind.NullableBool;
+                return true;
+            } else if (csConversion.IsExplicit) {
+                typeConversionKind = TypeConversionKind.DestructiveCast;
                 return true;
             }
 
@@ -237,8 +240,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (vbConversion.IsNumeric && (vbType.IsEnumType() || vbConvertedType.IsEnumType())) {
                 return TypeConversionKind.NonDestructiveCast;
             }
+            if (vbConversion.IsNarrowing) {
+                return TypeConversionKind.DestructiveCast;
+            }
             if (alwaysExplicit) {
-                return vbConversion.IsNarrowing ? TypeConversionKind.NonDestructiveCast : TypeConversionKind.DestructiveCast;
+                return TypeConversionKind.NonDestructiveCast;
             }
 
             return TypeConversionKind.Unknown;

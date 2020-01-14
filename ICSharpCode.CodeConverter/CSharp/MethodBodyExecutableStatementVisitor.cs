@@ -514,13 +514,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var stmt = node.ForEachStatement;
 
-            TypeSyntax type = null;
+            TypeSyntax type;
             SyntaxToken id;
-            if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
-                var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
-                var declaration = (await CommonConversions.SplitVariableDeclarations(v)).Variables.Single();
+            if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax vds) {
+                var declaration = (await CommonConversions.SplitVariableDeclarations(vds)).Variables.Single();
                 type = declaration.Type;
-                id = declaration.Variables[0].Identifier;
+                id = declaration.Variables.Single().Identifier;
             } else {
                 var v = (IdentifierNameSyntax) await stmt.ControlVariable.AcceptAsync(_expressionVisitor);
                 id = v.Identifier;
@@ -528,10 +527,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
+            ExpressionSyntax csExpression = (ExpressionSyntax)await stmt.Expression.AcceptAsync(_expressionVisitor);
             return SingleStatement(SyntaxFactory.ForEachStatement(
                 type,
                 id,
-                (ExpressionSyntax) await stmt.Expression.AcceptAsync(_expressionVisitor),
+                CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.Expression, csExpression),
                 block.UnpackNonNestedBlock()
             ));
         }
