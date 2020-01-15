@@ -422,24 +422,31 @@ namespace ICSharpCode.CodeConverter.CSharp
             var bounds = SyntaxFactory.List(await arrayRankSpecifierSyntaxs.SelectAsync(async r => (ArrayRankSpecifierSyntax) await r.AcceptAsync(TriviaConvertingExpressionVisitor)));
 
             if (nodeArrayBounds != null) {
-                var sizesSpecified = nodeArrayBounds.Arguments.Any(a => !a.IsOmitted);
-                var rank = nodeArrayBounds.Arguments.Count;
-                if (!sizesSpecified) rank += 1;
-
-                var convertedArrayBounds = withSizes && sizesSpecified ? await ConvertArrayBounds(nodeArrayBounds)
-                    : Enumerable.Repeat(SyntaxFactory.OmittedArraySizeExpression(), rank);
-                var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(
-                    SyntaxFactory.SeparatedList(
-                        convertedArrayBounds));
+                ArrayRankSpecifierSyntax arrayRankSpecifierSyntax = await ConvertArrayBounds(nodeArrayBounds, withSizes);
                 bounds = bounds.Insert(0, arrayRankSpecifierSyntax);
             }
 
             return bounds;
         }
 
-        public async Task<IEnumerable<ExpressionSyntax>> ConvertArrayBounds(ArgumentListSyntax argumentListSyntax)
+        public async Task<ArrayRankSpecifierSyntax> ConvertArrayBounds(ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
         {
-            return await argumentListSyntax.Arguments.SelectAsync(a => {
+            SeparatedSyntaxList<VBSyntax.ArgumentSyntax> arguments = nodeArrayBounds.Arguments;
+            var sizesSpecified = arguments.Any(a => !a.IsOmitted);
+            var rank = arguments.Count;
+            if (!sizesSpecified) rank += 1;
+
+            var convertedArrayBounds = withSizes && sizesSpecified ? await ConvertArrayBounds(arguments)
+                : Enumerable.Repeat(SyntaxFactory.OmittedArraySizeExpression(), rank);
+            var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(
+                SyntaxFactory.SeparatedList(
+                    convertedArrayBounds));
+            return arrayRankSpecifierSyntax;
+        }
+
+        private async Task<IEnumerable<ExpressionSyntax>> ConvertArrayBounds(SeparatedSyntaxList<VBSyntax.ArgumentSyntax> arguments)
+        {
+            return await arguments.SelectAsync(a => {
                 VBSyntax.ExpressionSyntax upperBoundExpression = a is SimpleArgumentSyntax sas ? sas.Expression
                     : a is RangeArgumentSyntax ras ? ras.UpperBound
                     : throw new ArgumentOutOfRangeException(nameof(a), a, null);

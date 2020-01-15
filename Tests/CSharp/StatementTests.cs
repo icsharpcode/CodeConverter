@@ -483,6 +483,26 @@ public partial class TestClass
         }
 
         [Fact]
+        public async Task Redim2dArray()
+        {
+            // One statement turns into two, so can't auto-test comments
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Friend Class Program
+    Private My2darray As Integer()()
+    Public Shared Sub Main(ByVal args As String())
+        ReDim Me.My2darray(6)
+    End Sub
+End Class", @"internal partial class Program
+{
+    private int[][] My2darray;
+    public static void Main(string[] args)
+    {
+        My2darray = new int[7][];
+    }
+}
+");
+        }
+
+        [Fact]
         public async Task RedimArrayOfGenerics()
         {
             // One statement turns into two, so can't auto-test comments

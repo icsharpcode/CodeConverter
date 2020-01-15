@@ -203,7 +203,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool preserve = node.Parent is VBSyntax.ReDimStatementSyntax rdss && rdss.PreserveKeyword.IsKind(VBasic.SyntaxKind.PreserveKeyword);
 
             var csTargetArrayExpression = (ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor);
-            var convertedBounds = (await CommonConversions.ConvertArrayBounds(node.ArrayBounds)).ToList();
+            var convertedBounds = (await CommonConversions.ConvertArrayBounds(node.ArrayBounds)).Sizes.ToList();
 
             var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds, node.SpanStart);
             if (!preserve) return SingleStatement(newArrayAssignment);
@@ -309,12 +309,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             ExpressionSyntax csArrayExpression, List<ExpressionSyntax> convertedBounds,
             int nodeSpanStart)
         {
-            var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(convertedBounds));
             var convertedType = (IArrayTypeSymbol) _semanticModel.GetTypeInfo(vbArrayExpression).ConvertedType;
+            var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(convertedBounds));
+            var rankSpecifiers = SyntaxFactory.SingletonList(arrayRankSpecifierSyntax);
+            while (convertedType.ElementType is IArrayTypeSymbol ats) {
+                convertedType = ats;
+                rankSpecifiers = rankSpecifiers.Add(SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(SyntaxFactory.OmittedArraySizeExpression())));
+            };
             var typeSyntax = CommonConversions.GetTypeSyntax(convertedType.ElementType);
             var arrayCreation =
-                SyntaxFactory.ArrayCreationExpression(SyntaxFactory.ArrayType(typeSyntax,
-                    SyntaxFactory.SingletonList(arrayRankSpecifierSyntax)));
+                SyntaxFactory.ArrayCreationExpression(SyntaxFactory.ArrayType(typeSyntax, rankSpecifiers));
             var assignmentExpressionSyntax =
                 SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, csArrayExpression, arrayCreation);
             var newArrayAssignment = SyntaxFactory.ExpressionStatement(assignmentExpressionSyntax);
