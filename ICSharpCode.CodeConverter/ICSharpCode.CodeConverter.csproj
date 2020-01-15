@@ -4,24 +4,17 @@
     <AssemblyName>ICSharpCode.CodeConverter</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter</RootNamespace>
     <PackageTargetFallback>portable-net45+win8</PackageTargetFallback>
-    <Company>ICSharpCode</Company>
-    <Description>Convert VB.NET to/from C#
-
-	* Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
-	* Actively developed: User feedback helps us continuously strive for a more accurate conversion.
-	* Completely free and open source: Check out [GitHub](https://github.com/icsharpcode/CodeConverter#code-converter-).</Description>
-    <Product>Code Converter for C# to/from VB.NET</Product>
-    <Copyright>Copyright (c) 2017-2020 AlphaSierraPapa for the CodeConverter team</Copyright>
     <AssemblyVersion>7.6.0.0</AssemblyVersion>
     <FileVersion>7.6.0.0</FileVersion>
     <Version>7.6.0</Version>
-    <PackageId>ICSharpCode.CodeConverter</PackageId>
+    <!-- We build against an older version to allow maximum compatibility for consumers producting a vsix for old versions, but if people target netstandard2, they might as well use the earliest version with support for that -->
+    <CodeAnalysisVersionBuiltAgainst>2.6.1</CodeAnalysisVersionBuiltAgainst>
+    <CodeAnalysisVersionForNetStandard2>3.0.0</CodeAnalysisVersionForNetStandard2>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/icsharpcode/CodeConverter/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/icsharpcode/CodeConverter/</RepositoryUrl>
-    <PackageTags>Convert Converter Conversion C# CSharp CS VB VB.NET Visual Basic Code Free Roslyn Tool</PackageTags>
-    <PackageReleaseNotes>See https://github.com/icsharpcode/CodeConverter/blob/master/CHANGELOG.md </PackageReleaseNotes>
+    <NuspecFile>$(MSBuildThisFileDirectory)$(MSBuildProjectName).nuspec</NuspecFile>
+    <NuspecProperties>$(NuspecProperties);id=$(AssemblyName);config=$(Configuration);version=$(Version);codeAnalysisVersionForNetStandard2=$(CodeAnalysisVersionForNetStandard2);codeAnalysisVersionBuiltAgainst=$(CodeAnalysisVersionBuiltAgainst)</NuspecProperties>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
     <LangVersion>7.3</LangVersion>
     <NoWarn>$(NoWarn);1998</NoWarn>
@@ -49,4 +42,10 @@
   <ItemGroup Condition="'$(SignAssembly)'=='True'">
     <Compile Remove="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <Target Name="SetNuspecProperties" BeforeTargets="GenerateNuspec">
+    <PropertyGroup>
+        <NuspecProperties>$(NuspecProperties);commit=$(RepositoryCommit)</NuspecProperties>
+    </PropertyGroup>
+    <Message Importance="normal" Text="NuspecProperties: $(NuspecProperties)" />
+  </Target>
 </Project>

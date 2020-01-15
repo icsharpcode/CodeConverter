@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <authors>ICSharpCode</authors>
+    <owners>ICSharpCode</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <projectUrl>https://github.com/icsharpcode/CodeConverter/</projectUrl>
+    <description>Convert VB.NET to/from C#
+
+	* Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
+	* Actively developed: User feedback helps us continuously strive for a more accurate conversion.
+	* Completely free and open source: Check out [GitHub](https://github.com/icsharpcode/CodeConverter#code-converter-).</description>
+    <releaseNotes>See https://github.com/icsharpcode/CodeConverter/blob/master/CHANGELOG.md</releaseNotes>
+    <copyright>Copyright (c) 2017-2020 AlphaSierraPapa for the CodeConverter team</copyright>
+    <tags>Convert Converter Conversion C# CSharp CS VB VB.NET Visual Basic Code Free Roslyn Tool</tags>
+    <repository type="git" url="https://github.com/icsharpcode/CodeConverter/" commit="$commit$" />
+    <dependencies>
+      <group targetFramework="netstandard1.3">
+        <dependency id="Microsoft.CodeAnalysis.CSharp" version="$codeAnalysisVersionBuiltAgainst$" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.CodeAnalysis.CSharp.Workspaces" version="$codeAnalysisVersionBuiltAgainst$" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.CodeAnalysis.Common" version="$codeAnalysisVersionBuiltAgainst$" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.CodeAnalysis.VisualBasic" version="$codeAnalysisVersionBuiltAgainst$" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.CodeAnalysis.VisualBasic.Workspaces" version="$codeAnalysisVersionBuiltAgainst$" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.CodeAnalysis.Workspaces.Common" version="$codeAnalysisVersionBuiltAgainst$" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.VisualBasic" version="10.3.0" exclude="Build,Analyzers" />
+        <dependency id="NETStandard.Library" version="1.6.1" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="netstandard2.0">
+        <dependency id="Microsoft.CodeAnalysis.CSharp" version="$codeAnalysisVersionForNetStandard2$" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.CodeAnalysis.CSharp.Workspaces" version="$codeAnalysisVersionForNetStandard2$" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.CodeAnalysis.Common" version="$codeAnalysisVersionForNetStandard2$" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.CodeAnalysis.VisualBasic" version="$codeAnalysisVersionForNetStandard2$" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.CodeAnalysis.VisualBasic.Workspaces" version="$codeAnalysisVersionForNetStandard2$" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.CodeAnalysis.Workspaces.Common" version="$codeAnalysisVersionForNetStandard2$" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.VisualBasic" version="10.3.0" exclude="Build,Analyzers" />
+        <dependency id="NETStandard.Library" version="1.6.1" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="bin\$config$\netstandard1.3\$id$.*" target="lib\netstandard1.3" />
+  </files>
+</package>
