@@ -352,13 +352,17 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             switch (VBasic.VisualBasicExtensions.Kind(node.BlockKeyword)) {
                 case VBasic.SyntaxKind.SubKeyword:
+                case VBasic.SyntaxKind.PropertyKeyword when node.GetAncestor<VBSyntax.AccessorBlockSyntax>()?.IsKind(VBasic.SyntaxKind.GetAccessorBlock) != true:
                     return SingleStatement(SyntaxFactory.ReturnStatement());
                 case VBasic.SyntaxKind.FunctionKeyword:
-                    VBasic.VisualBasicSyntaxNode typeContainer = (VBasic.VisualBasicSyntaxNode)node.Ancestors().OfType<VBSyntax.LambdaExpressionSyntax>().FirstOrDefault()
-                                                                 ?? node.Ancestors().OfType<VBSyntax.MethodBlockSyntax>().FirstOrDefault();
+                case VBasic.SyntaxKind.PropertyKeyword when node.GetAncestor<VBSyntax.AccessorBlockSyntax>()?.IsKind(VBasic.SyntaxKind.GetAccessorBlock) == true:
+                    VBasic.VisualBasicSyntaxNode typeContainer = node.GetAncestor<VBSyntax.LambdaExpressionSyntax>()
+                                                                 ?? (VBasic.VisualBasicSyntaxNode)node.GetAncestor<VBSyntax.MethodBlockSyntax>()
+                                                                 ?? node.GetAncestor<VBSyntax.AccessorBlockSyntax>();
                     var enclosingMethodInfo = await typeContainer.TypeSwitch(
                         async (VBSyntax.LambdaExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).Symbol,
-                        async (VBSyntax.MethodBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e));
+                        async (VBSyntax.MethodBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e),
+                        async (VBSyntax.AccessorBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e));
                     var info = enclosingMethodInfo?.GetReturnType();
                     ExpressionSyntax expr;
                     if (HasReturnVariable)

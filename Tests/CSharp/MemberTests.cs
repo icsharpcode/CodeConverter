@@ -596,9 +596,11 @@ internal static partial class TestClass
 
     Public Property Test3 As Integer
         Get
+            If 7 = Integer.Parse(""7"") Then Exit Property
             Return Me.m_test3
         End Get
         Set(ByVal value As Integer)
+            If 7 = Integer.Parse(""7"") Then Exit Property
             Me.m_test3 = value
         End Set
     End Property
@@ -620,10 +622,14 @@ End Class", @"internal partial class TestClass
     {
         get
         {
+            if (7 == int.Parse(""7""))
+                return default(int);
             return m_test3;
         }
         set
         {
+            if (7 == int.Parse(""7""))
+                return;
             m_test3 = value;
         }
     }
