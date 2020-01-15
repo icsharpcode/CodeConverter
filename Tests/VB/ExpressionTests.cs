@@ -560,8 +560,8 @@ End Namespace");
         test(3);
     }
 }", @"Friend Class TestClass
-    Private Shared m_Event1 As Action(Of Integer) = Function()
-                                                    End Function
+    Private Shared m_Event1 As Action(Of Integer) = Sub()
+                                                    End Sub
 
     Private Sub TestMethod()
         Dim test = Function(ByVal a As Integer) a * 2
