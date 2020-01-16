@@ -45,7 +45,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly LambdaConverter _lambdaConverter;
         private INamedTypeSymbol _vbBooleanTypeSymbol;
 
-        public ExpressionNodeVisitor(SemanticModel semanticModel, VisualBasicEqualityComparison visualBasicEqualityComparison, AdditionalLocals additionalLocals, Compilation csCompilation, MethodsWithHandles methodsWithHandles, CommonConversions commonConversions, TriviaConverter triviaConverter, HashSet<string> extraUsingDirectives)
+        public ExpressionNodeVisitor(SemanticModel semanticModel,
+            VisualBasicEqualityComparison visualBasicEqualityComparison, AdditionalLocals additionalLocals,
+            Compilation csCompilation, MethodsWithHandles methodsWithHandles, CommonConversions commonConversions,
+            TriviaConverter triviaConverter, HashSet<string> extraUsingDirectives)
         {
             CommonConversions = commonConversions;
             _semanticModel = semanticModel;
@@ -59,22 +62,25 @@ namespace ICSharpCode.CodeConverter.CSharp
             _extraUsingDirectives = extraUsingDirectives;
 
             // If this isn't needed, the assembly with Conversions may not be referenced, so this must be done lazily
-            _convertMethodsLookupByReturnType = new Lazy<IDictionary<ITypeSymbol, string>>(() => CreateConvertMethodsLookupByReturnType(semanticModel));
+            _convertMethodsLookupByReturnType =
+                new Lazy<IDictionary<ITypeSymbol, string>>(() => CreateConvertMethodsLookupByReturnType(semanticModel));
             _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
         }
 
-        private static Dictionary<ITypeSymbol, string> CreateConvertMethodsLookupByReturnType(SemanticModel semanticModel)
+        private static Dictionary<ITypeSymbol, string> CreateConvertMethodsLookupByReturnType(
+            SemanticModel semanticModel)
         {
             // In some projects there's a source declaration as well as the referenced one, which causes the first of these methods to fail
-             var convertType =
+            var convertType =
                 semanticModel.Compilation.GetTypeByMetadataName(ConvertType.FullName) ??
                 (ITypeSymbol)semanticModel.Compilation
-                    .GetSymbolsWithName(n => n.Equals(ConvertType.Name), SymbolFilter.Type).First(s => s.ContainingNamespace.ToDisplayString().Equals(ConvertType.Namespace));
+                    .GetSymbolsWithName(n => n.Equals(ConvertType.Name), SymbolFilter.Type).First(s =>
+                        s.ContainingNamespace.ToDisplayString().Equals(ConvertType.Namespace));
 
             var convertMethods = convertType.GetMembers().Where(m =>
                 m.Name.StartsWith("To", StringComparison.Ordinal) && m.GetParameters().Length == 1);
             var methodsByType = convertMethods
-                .GroupBy(m => new { ReturnType = m.GetReturnType(), Name = $"{ConvertType.FullName}.{m.Name}" })
+                .GroupBy(m => new {ReturnType = m.GetReturnType(), Name = $"{ConvertType.FullName}.{m.Name}"})
                 .ToDictionary(m => m.Key.ReturnType, m => m.Key.Name);
             return methodsByType;
         }
@@ -83,7 +89,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> DefaultVisit(SyntaxNode node)
         {
-            throw new NotImplementedException($"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
+            throw new NotImplementedException(
+                    $"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
                 .WithNodeInformation(node);
         }
 
@@ -98,10 +105,54 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.IdentifierName("XElement"),
                         SyntaxFactory.IdentifierName("Parse")))
                 .WithArgumentList(
-                    SyntaxFactory.ArgumentList(
-                        SyntaxFactory.SingletonSeparatedList<ArgumentSyntax>(
-                            SyntaxFactory.Argument(
-                                SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(xmlAsString))))));
+                    ExpressionSyntaxExtensions.CreateArgList(
+                        SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
+                            SyntaxFactory.Literal(xmlAsString))
+                    )
+                );
+        }
+
+        /// <summary>
+        /// https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/xml/accessing-xml
+        /// </summary>
+        public override async Task<CSharpSyntaxNode> VisitXmlMemberAccessExpression(
+            VBasic.Syntax.XmlMemberAccessExpressionSyntax node)
+        {
+            _extraUsingDirectives.Add("System.Xml.Linq");
+
+            var xElementMethodName = GetXElementMethodName(node);
+
+            MemberAccessExpressionSyntax elements = SyntaxFactory.MemberAccessExpression(
+                SyntaxKind.SimpleMemberAccessExpression,
+                (ExpressionSyntax)await node.Base.AcceptAsync(TriviaConvertingVisitor),
+                SyntaxFactory.IdentifierName(xElementMethodName)
+            );
+            return SyntaxFactory.InvocationExpression(elements,
+                ExpressionSyntaxExtensions.CreateArgList(
+                    (ExpressionSyntax)await node.Name.AcceptAsync(TriviaConvertingVisitor))
+            );
+        }
+
+        private static string GetXElementMethodName(VBSyntax.XmlMemberAccessExpressionSyntax node)
+        {
+            if (node.Token2 == default(SyntaxToken)) {
+                return "Elements";
+            } else if (node.Token2.Text == "@") {
+                return "Attributes";
+            } else if (node.Token2.Text == ".") {
+                return "Descendants";
+            }
+            throw new NotImplementedException($"Xml member access operator: '{node.Token1}{node.Token2}{node.Token3}'");
+        }
+
+        public override Task<CSharpSyntaxNode> VisitXmlBracketedName(VBSyntax.XmlBracketedNameSyntax node)
+        {
+            return node.Name.AcceptAsync(TriviaConvertingVisitor);
+        }
+
+        public override async Task<CSharpSyntaxNode> VisitXmlName(VBSyntax.XmlNameSyntax node)
+        {
+            return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,SyntaxFactory.Literal(node.LocalName.Text));
         }
 
         public override async Task<CSharpSyntaxNode> VisitGetTypeExpression(VBasic.Syntax.GetTypeExpressionSyntax node)

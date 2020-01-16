@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Cast foreach collection to IEnumerable if needed or unknown
 * Fix ordering bug converting redim bounds without preserve for 2d arrays
 * Exit Property should become return [#497](https://github.com/icsharpcode/CodeConverter/issues/497)
+* First effort converting some Xml Member Access
 
 ### C# -> VB
 

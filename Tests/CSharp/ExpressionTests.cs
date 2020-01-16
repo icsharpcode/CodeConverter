@@ -2397,6 +2397,27 @@ End Class", @"public partial class Class1
         }
 
         [Fact]
+        public async Task XmlMemberAccess()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Private Sub LoadValues(ByVal strPlainKey As String)
+        Dim xmlFile As XDocument = XDocument.Parse(strPlainKey)
+        Dim objActivationInfo As XElement = xmlFile.<ActivationKey>.First
+    End Sub
+End Class", @"using System.Linq;
+using System.Xml.Linq;
+
+public partial class Class1
+{
+    private void LoadValues(string strPlainKey)
+    {
+        var xmlFile = XDocument.Parse(strPlainKey);
+        var objActivationInfo = xmlFile.Elements(""ActivationKey"").First();
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestGenericMethodGroupGainsBrackets()
         {
             //BUG: Comment after New With is lost
