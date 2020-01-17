@@ -1082,10 +1082,10 @@ namespace Microsoft.VisualBasic
             private ProjectData()
             {
             }
-            public new static void SetProjectError(Exception ex)
+            public static void SetProjectError(Exception ex)
             {
             }
-            public new static void SetProjectError(Exception ex, int lErl)
+            public static void SetProjectError(Exception ex, int lErl)
             {
             }
             public static void ClearProjectError()

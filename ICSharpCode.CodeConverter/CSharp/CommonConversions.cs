@@ -310,12 +310,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.Identifier(text);
         }
 
-        public SyntaxTokenList ConvertModifiers(SyntaxNode node, IEnumerable<SyntaxToken> modifiers,
+        public SyntaxTokenList ConvertModifiers(SyntaxNode node, IReadOnlyCollection<SyntaxToken> modifiers,
             TokenContext context = TokenContext.Global, bool isVariableOrConst = false, params CSSyntaxKind[] extraCsModifierKinds)
         {
             ISymbol declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
             var declaredAccessibility = declaredSymbol?.DeclaredAccessibility ?? Accessibility.NotApplicable;
-
+            modifiers = modifiers.Where(m =>
+                !m.IsKind(SyntaxKind.OverloadsKeyword) || RequiresNewKeyword(declaredSymbol) != false).ToList();
             var contextsWithIdenticalDefaults = new[] { TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface };
             bool isPartial = declaredSymbol.IsPartialClassDefinition() || declaredSymbol.IsPartialMethodDefinition() || declaredSymbol.IsPartialMethodImplementation();
             bool implicitVisibility = ContextHasIdenticalDefaults(context, contextsWithIdenticalDefaults, declaredSymbol)
@@ -326,6 +327,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Where(t => CSharpExtensions.Kind(t) != CSSyntaxKind.None)
                 .OrderBy(m => SyntaxTokenExtensions.IsKind(m, CSSyntaxKind.PartialKeyword));
             return SyntaxFactory.TokenList(modifierSyntaxs);
+        }
+
+        private static bool? RequiresNewKeyword(ISymbol declaredSymbol)
+        {
+            if (!(declaredSymbol is IMethodSymbol methodSymbol)) return null;
+            if (declaredSymbol.IsOverride ) return false;
+            var parameterSignature = methodSymbol.GetParameterSignature();
+            return declaredSymbol.ContainingType.FollowProperty(s => s.BaseType).Skip(1).Any(t => t.GetMembers()
+                .Any(s => s.Name == declaredSymbol.Name && s is IMethodSymbol m && m.GetParameterSignature() == parameterSignature));
         }
 
         private static bool ContextHasIdenticalDefaults(TokenContext context, TokenContext[] contextsWithIdenticalDefaults, ISymbol declaredSymbol)

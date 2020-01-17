@@ -1349,7 +1349,10 @@ internal partial class TestClass
     Public Shared Sub CreateStatic()
     End Sub
 
-    Public Sub CreateInstance()
+    Public Overloads Sub CreateInstance()
+    End Sub
+
+    Public Overloads Sub CreateInstance(o As Object)
     End Sub
 
     Public MustOverride Sub CreateAbstractInstance()
@@ -1368,8 +1371,8 @@ Friend Class TestClass2
 
     Public Overrides Sub CreateAbstractInstance()
     End Sub
-
-    Public Overrides Sub CreateVirtualInstance()
+    
+    Public Overloads Sub CreateVirtualInstance(o As Object)
     End Sub
 End Class",
 @"internal abstract partial class TestClass1
@@ -1379,6 +1382,10 @@ End Class",
     }
 
     public void CreateInstance()
+    {
+    }
+
+    public void CreateInstance(object o)
     {
     }
 
@@ -1403,7 +1410,7 @@ internal partial class TestClass2 : TestClass1
     {
     }
 
-    public override void CreateVirtualInstance()
+    public void CreateVirtualInstance(object o)
     {
     }
 }");

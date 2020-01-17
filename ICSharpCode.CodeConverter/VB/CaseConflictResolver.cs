@@ -59,7 +59,7 @@ namespace ICSharpCode.CodeConverter.VB
             bool specialSymbolUsingName)
         {
             var methodsByCaseInsensitiveSignature = methodSymbols
-                .ToLookup(m => (m.Name.ToLowerInvariant(), string.Join(" ", m.Parameters.Select(p => p.Type))))
+                .ToLookup(m => (m.Name.ToLowerInvariant(), m.GetParameterSignature()))
                 .Where(g => g.Count() > 1)
                 .SelectMany(clashingMethodGroup =>
                 {
