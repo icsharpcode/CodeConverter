@@ -183,14 +183,6 @@ namespace ICSharpCode.CodeConverter.VB
                 .Concat(GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.RemoveMethod, getAccessorBody));
         }
 
-        private static async Task<string> GenerateUniqueCaseInsensitiveName(SemanticModel model, ISymbol declaration)
-        {
-            string baseName = GetBaseName(declaration);
-            HashSet<string> generatedNames = new HashSet<string>();
-            //TODO Make looking for clashes case insensitive as above
-            return NameGenerator.GetUniqueVariableNameInScope(model, generatedNames, (CS.CSharpSyntaxNode)await declaration.DeclaringSyntaxReferences.First().GetSyntaxAsync(), baseName);
-        }
-
         private static string GetBaseName(ISymbol declaration)
         {
             string prefix = declaration.Kind.ToString().ToLowerInvariant()[0] + "_";
