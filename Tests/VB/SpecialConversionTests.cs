@@ -364,22 +364,120 @@ End Module");
     Public CR = &H0D * &B1
 End Class");
         }
-
-
-    [Fact(Skip = "Not yet implemented")]
-    public async Task CaseConflict_LocalWithLocal()
-    {
-        await TestConversionCSharpToVisualBasic(
-        @"void Test()
-{
+        [Fact]
+        public async Task CaseConflict_LocalWithLocal() {
+            await TestConversionCSharpToVisualBasic(
+@"void Test() {
+    object aB = 5;
+    int Ab = (int) o;
+}",
+@"Private Sub Test()
+    Dim l_AB As Object = 5
+    Dim Ab = CInt(o)
+End Sub");
+        }
+        [Fact]
+        public async Task CaseConflict_LocalWithLocalInMethod() {
+            await TestConversionCSharpToVisualBasic(
+@"void Test() {
     object test = 5;
     int tesT = (int) o;
-}
-", @"Private Sub Test()
-    Dim lTest As Object = 5
-    Dim lTesT = CInt(o)
-End Sub
-");
+}",
+@"Private Sub Test()
+    Dim l_Test1 As Object = 5
+    Dim l_TesT = CInt(o)
+End Sub");
+        }
+        [Fact]
+        public async Task CaseConflict_LocalWithLocalInProperty() {
+            await TestConversionCSharpToVisualBasic(
+@"public int Test {
+    get {
+        object test = 5;
+        int tesT = (int) o;
+        return test;
+    }
+}",
+@"Public ReadOnly Property Test As Integer
+    Get
+        Dim l_Test1 As Object = 5
+        Dim l_TesT = CInt(o)
+        Return l_Test1
+    End Get
+End Property");
+        }
+
+        [Fact]
+        public async Task CaseConflict_LocalWithLocalInEvent() {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    System.EventHandler test;
+
+    public event System.EventHandler Test {
+        add {
+            object teSt = 5;
+            int tesT = (int)o;
+            test += value;
+        }
+        remove {
+            object teSt = 5;
+            int tesT = (int)o;
+            test -= value;
+        }
+    }
+}",
+@"Friend Class TestClass
+    Private Event f_Test As EventHandler
+
+    Public Custom Event Test As EventHandler
+        AddHandler(ByVal value As EventHandler)
+            Dim l_TeSt1 As Object = 5
+            Dim l_TesT = CInt(o)
+            AddHandler f_Test, value
+        End AddHandler
+        RemoveHandler(ByVal value As EventHandler)
+            Dim l_TeSt1 As Object = 5
+            Dim l_TesT = CInt(o)
+            RemoveHandler f_Test, value
+        End RemoveHandler
+        RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
+            RaiseEvent f_Test(sender, e)
+        End RaiseEvent
+    End Event
+End Class");
+        }
+        [Fact]
+        public async Task CaseConflict_LocalWithArgumentMethod() {
+            await TestConversionCSharpToVisualBasic(
+@"int Method(object test) {
+    int tesT = (int)test;
+    return tesT;
+}",
+@"Private Function Method(ByVal test As Object) As Integer
+    Dim l_TesT As Integer = test
+    Return l_TesT
+End Function");
+        }
+        [Fact]
+        public async Task CaseConflict_ForeignNamespace() {
+            await TestConversionCSharpToVisualBasic(
+@"namespace System {
+    public class TestClass {
+        int test;
+        public int Test { get { return test; } }
+    }
+}",
+@"Namespace System
+    Public Class TestClass
+        Private f_Test As Integer
+
+        Public ReadOnly Property Test As Integer
+            Get
+                Return f_Test
+            End Get
+        End Property
+    End Class
+End Namespace");
         }
     }
 }

@@ -241,6 +241,11 @@ namespace ICSharpCode.CodeConverter.Util
             return sequence.SelectMany(s => s);
         }
 
+        public static IEnumerable<T> Yield<T>(this T singleElement)
+        {
+            yield return singleElement;
+        }
+
         public static IEnumerable<T> OrderBy<T>(this IEnumerable<T> source, IComparer<T> comparer)
         {
             return source.OrderBy(t => t, comparer);

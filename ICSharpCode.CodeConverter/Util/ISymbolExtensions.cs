@@ -121,7 +121,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsDefinedInSource(this ISymbol symbol)
         {
-            return symbol.Locations.All(loc => loc.IsInSource);
+            return symbol.Locations.Any(loc => loc.IsInSource);
         }
 
         public static IEnumerable<SyntaxReference> GetDeclarations(this ISymbol symbol)

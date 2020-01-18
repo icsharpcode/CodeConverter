@@ -174,7 +174,7 @@ namespace CodeConverter.Tests.TestRunners
         private static void AssertNoConversionErrors(Dictionary<string, ConversionResult> conversionResults)
         {
             var errors = conversionResults
-                .SelectMany(r => (r.Value.Exceptions ?? new string[0]).Select(e => new { Path = r.Key, Exception = e }))
+                .SelectMany(r => (r.Value.Exceptions ?? Array.Empty<string>()).Select(e => new { Path = r.Key, Exception = e }))
                 .ToList();
             Assert.Empty(errors);
         }

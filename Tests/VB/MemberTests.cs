@@ -590,11 +590,12 @@ End Class");
         }
 
         [Fact]
-        public async Task CaseConflict_PartialClass_ArgumentFieldAndProeprty() {
+        public async Task CaseConflict_PartialClass_ArgumentFieldPropertyAndLocalInBothParts() {
             await TestConversionCSharpToVisualBasic(
 @"public partial class HasConflictingPropertyAndField {
     public int HasConflictingParam(int test) {
-        this.test = test;
+        int TEST = 0;
+        this.test = test + TEST;
         return test;
     }
 }
@@ -602,13 +603,18 @@ End Class");
 public partial class HasConflictingPropertyAndField {
     int test;
     public int Test {
-        get { return test; }
+        get 
+        {
+            int TEST = 0;
+            return test + TEST;
+        }
         set { test = value}
     }
 }",
 @"Public Partial Class HasConflictingPropertyAndField
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
-        f_Test = test
+        Dim l_TEST = 0
+        f_Test = test + l_TEST
         Return test
     End Function
 End Class
@@ -618,7 +624,8 @@ Public Partial Class HasConflictingPropertyAndField
 
     Public Property Test As Integer
         Get
-            Return f_Test
+            Dim l_TEST = 0
+            Return f_Test + l_TEST
         End Get
         Set(ByVal value As Integer)
             f_Test = value

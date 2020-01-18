@@ -577,7 +577,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static SyntaxToken[] GetAccessLimitationTokens(SyntaxList<CSS.AccessorDeclarationSyntax> csAccessors)
         {
-            if (csAccessors.Count != 1) return new SyntaxToken[0];
+            if (csAccessors.Count != 1) return Array.Empty<SyntaxToken>();
 
             var accessLimitation = csAccessors.Single().IsKind(CS.SyntaxKind.SetAccessorDeclaration)
                 ? SyntaxKind.WriteOnlyKeyword
@@ -795,7 +795,7 @@ namespace ICSharpCode.CodeConverter.VB
             var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Local);
             if ((modifiers.Count == 0 && returnType != null) || node.Modifiers.Any(CS.SyntaxKind.ThisKeyword)) {
                 modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword));
-                newAttributes = new AttributeListSyntax[0];
+                newAttributes = Array.Empty<AttributeListSyntax>();
             } else if (node.Modifiers.Any(CS.SyntaxKind.OutKeyword)) {
                 newAttributes = new[] {
                         SyntaxFactory.AttributeList(
@@ -806,7 +806,7 @@ namespace ICSharpCode.CodeConverter.VB
                     };
                 _allImports.Add(SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(SyntaxFactory.SimpleImportsClause(SyntaxFactory.ParseName("System.Runtime.InteropServices")))));
             } else {
-                newAttributes = new AttributeListSyntax[0];
+                newAttributes = Array.Empty<AttributeListSyntax>();
             }
             if (@default != null) {
                 modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.OptionalKeyword));
