@@ -13,7 +13,7 @@ using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.VB
 {
-    public class CaseConflictResolver
+    internal static class CaseConflictResolver
     {
         /// <summary>
         /// Renames symbols in a CSharp project so that they don't clash on case within the same named scope, attempting to rename the least public ones first.
