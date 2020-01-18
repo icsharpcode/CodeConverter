@@ -240,6 +240,7 @@ namespace ICSharpCode.CodeConverter.Util
 
             return sequence.SelectMany(s => s);
         }
+
         public static IEnumerable<T> Yield<T>(this T singleElement)
         {
             yield return singleElement;
