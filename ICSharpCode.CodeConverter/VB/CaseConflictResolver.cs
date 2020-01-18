@@ -46,7 +46,12 @@ namespace ICSharpCode.CodeConverter.VB
             if (!(containerSymbol is ITypeSymbol)) return Enumerable.Empty<IEnumerable<ISymbol>>();
 
             var semanticModel = compilation.GetSemanticModel(containerSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.SyntaxTree, true);
-            return members.SelectMany(x => GetCsLocalSymbolsPerScope(semanticModel, x).Select(y => y.Union(x.Yield())));
+            return members.SelectMany(x => GetCsSymbolsPerScope(x, semanticModel));
+        }
+
+        private static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsPerScope(ISymbol x, SemanticModel semanticModel)
+        {
+            return GetCsLocalSymbolsPerScope(semanticModel, x).Select(y => y.Union(x.Yield()));
         }
 
         private static IEnumerable<(ISymbol Original, string NewName)> GetUniqueNamesForSymbolSet(IEnumerable<ISymbol> symbols) {
@@ -145,11 +150,16 @@ namespace ICSharpCode.CodeConverter.VB
             }
             var bodies = DeclarationWhereNotNull(methodSymbol, selectWhereNotNull).Where(x => x.SyntaxTree == semanticModel.SyntaxTree);
             foreach (var body in bodies) {
-                var descendantNodes = body.DescendantNodesAndSelf().OfType<CSS.BlockSyntax>().Where(x => x.DescendantNodes().OfType<CSS.BlockSyntax>().IsEmpty());
+                var descendantNodes = GetDeepestBlocks(body);
                 foreach (var descendant in descendantNodes) {
                     yield return semanticModel.LookupSymbols(descendant.SpanStart).Where(x => x.MatchesKind(SymbolKind.Local, SymbolKind.Parameter, SymbolKind.TypeParameter));
                 }
             }
+        }
+
+        private static IEnumerable<CSS.BlockSyntax> GetDeepestBlocks(CS.CSharpSyntaxNode body)
+        {
+            return body.DescendantNodesAndSelf().OfType<CSS.BlockSyntax>().Where(x => x.DescendantNodes().OfType<CSS.BlockSyntax>().IsEmpty());
         }
 
         private static IEnumerable<TResult> DeclarationWhereNotNull<TNode, TResult>(ISymbol symbol, Func<TNode, TResult> selectWhereNotNull)
