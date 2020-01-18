@@ -21,7 +21,7 @@ namespace ICSharpCode.CodeConverter.VB
         /// </summary>
         /// <remarks>
         /// Cases in different named scopes should be dealt with by <seealso cref="DocumentExtensions.ExpandVbAsync"/>.
-        /// For names scoped within a type member, see <seealso cref="GetCsLocalSymbolDeclarations"/>.
+        /// For names scoped within a type member, see <seealso cref="GetCsLocalSymbolsPerScope"/>.
         /// </remarks>
         public static async Task<Project> RenameClashingSymbols(Project project)
         {
@@ -34,17 +34,22 @@ namespace ICSharpCode.CodeConverter.VB
         private static IEnumerable<IEnumerable<(ISymbol Original, string NewName)>> GetSymbolsWithNewNames(INamespaceOrTypeSymbol containerSymbol, Compilation compilation)
         {
             var members = containerSymbol.GetMembers();
-            if (containerSymbol is ITypeSymbol) {
-                var semanticModel = compilation.GetSemanticModel(containerSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.SyntaxTree, true);
-                var locals = members
-                    .SelectMany(x => GetCsLocalSymbolDeclarations(semanticModel, x).Select(y => y.Union(new ISymbol[] { x })));
-                foreach (var local in locals) {
-                     yield return ProcessSymbols(local);
-                }
+            var localScopeSymbolSets = GetUniqueNamesForScopeSymbols(containerSymbol, compilation, members);
+            foreach (var scopeSymbolSet in localScopeSymbolSets) {
+                yield return GetUniqueNamesForSymbolSet(scopeSymbolSet);
             }
-            yield return ProcessSymbols(members);
+            yield return GetUniqueNamesForSymbolSet(members);
         }
-        private static IEnumerable<(ISymbol Original, string NewName)> ProcessSymbols(IEnumerable<ISymbol> symbols) {
+
+        private static IEnumerable<IEnumerable<ISymbol>> GetUniqueNamesForScopeSymbols(INamespaceOrTypeSymbol containerSymbol, Compilation compilation, System.Collections.Immutable.ImmutableArray<ISymbol> members)
+        {
+            if (!(containerSymbol is ITypeSymbol)) return Enumerable.Empty<IEnumerable<ISymbol>>();
+
+            var semanticModel = compilation.GetSemanticModel(containerSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.SyntaxTree, true);
+            return members.SelectMany(x => GetCsLocalSymbolsPerScope(semanticModel, x).Select(y => y.Union(new ISymbol[] { x })));
+        }
+
+        private static IEnumerable<(ISymbol Original, string NewName)> GetUniqueNamesForSymbolSet(IEnumerable<ISymbol> symbols) {
             var membersByCaseInsensitiveName = symbols.ToLookup(m => m.Name, m => m, StringComparer.OrdinalIgnoreCase);
             var names = new HashSet<string>(membersByCaseInsensitiveName.Select(ms => ms.Key),
                 StringComparer.OrdinalIgnoreCase);
@@ -115,7 +120,7 @@ namespace ICSharpCode.CodeConverter.VB
         /// <remarks>
         /// In VB there's a special extra local defined with the same name as the method name, so the method symbol should be included in any conflict analysis
         /// </remarks>
-        private static IEnumerable<IEnumerable<ISymbol>> GetCsLocalSymbolDeclarations(SemanticModel semanticModel, ISymbol x)
+        private static IEnumerable<IEnumerable<ISymbol>> GetCsLocalSymbolsPerScope(SemanticModel semanticModel, ISymbol x)
         {
             switch (x)
             {
