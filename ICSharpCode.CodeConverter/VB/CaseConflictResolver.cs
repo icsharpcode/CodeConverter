@@ -186,8 +186,7 @@ namespace ICSharpCode.CodeConverter.VB
         private static string GetBaseName(ISymbol declaration)
         {
             string prefix = declaration.Kind.ToString().ToLowerInvariant()[0] + "_";
-            string baseName = prefix + declaration.Name.Substring(0, 1).ToUpperInvariant() + declaration.Name.Substring(1);
-            return baseName;
+            return prefix + declaration.Name.Substring(0, 1).ToUpperInvariant() + declaration.Name.Substring(1);
         }
     }
 }
