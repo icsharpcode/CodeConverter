@@ -453,9 +453,9 @@ End Class");
     int tesT = (int)test;
     return tesT;
 }",
-@"Private Function Method(ByVal p_Test As Object) As Integer
-    Dim tesT As Integer = p_Test
-    Return tesT
+@"Private Function Method(ByVal test As Object) As Integer
+    Dim l_TesT As Integer = test
+    Return l_TesT
 End Function");
         }
         [Fact]

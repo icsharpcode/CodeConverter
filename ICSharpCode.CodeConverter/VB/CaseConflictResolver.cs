@@ -91,7 +91,7 @@ namespace ICSharpCode.CodeConverter.VB
         private static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(
             IEnumerable<ISymbol> toRename, Func<string, bool> canUse, bool canKeepOne)
         {
-            var symbolsWithNewNames = toRename.OrderByDescending(x => x.DeclaredAccessibility).Skip(canKeepOne ? 1 :0).Select(tr =>
+            var symbolsWithNewNames = toRename.OrderByDescending(x => x.DeclaredAccessibility).ThenByDescending(x => x.Kind == SymbolKind.Parameter).Skip(canKeepOne ? 1 :0).Select(tr =>
             {
                 string newName = NameGenerator.GenerateUniqueName(GetBaseName(tr), canUse);
                 return (Original: tr, NewName: newName);
