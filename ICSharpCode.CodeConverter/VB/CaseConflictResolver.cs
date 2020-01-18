@@ -34,21 +34,21 @@ namespace ICSharpCode.CodeConverter.VB
         private static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(INamespaceOrTypeSymbol containerSymbol, Compilation compilation)
         {
             var members = containerSymbol.GetMembers();
-            var symbolSets = GetUniqueNamesForScopeSymbols(containerSymbol, compilation, members).Concat(members.AsEnumerable().Yield());
+            var symbolSets = GetLocalSymbolSets(containerSymbol, compilation, members).Concat(members.AsEnumerable().Yield());
             return symbolSets.SelectMany(GetUniqueNamesForSymbolSet);
         }
 
-        private static IEnumerable<IEnumerable<ISymbol>> GetUniqueNamesForScopeSymbols(INamespaceOrTypeSymbol containerSymbol, Compilation compilation, System.Collections.Immutable.ImmutableArray<ISymbol> members)
+        private static IEnumerable<IEnumerable<ISymbol>> GetLocalSymbolSets(INamespaceOrTypeSymbol containerSymbol, Compilation compilation, System.Collections.Immutable.ImmutableArray<ISymbol> members)
         {
             if (!(containerSymbol is ITypeSymbol)) return Enumerable.Empty<IEnumerable<ISymbol>>();
 
-            var semanticModel = compilation.GetSemanticModel(containerSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.SyntaxTree, true);
-            return members.SelectMany(x => GetCsSymbolsPerScope(x, semanticModel));
+            var semanticModels = containerSymbol.Locations.Select(loc => compilation.GetSemanticModel(loc.SourceTree, true));
+            return semanticModels.SelectMany(semanticModel => members.SelectMany(x => GetCsSymbolsPerScope(semanticModel, x)));
         }
 
-        private static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsPerScope(ISymbol x, SemanticModel semanticModel)
+        private static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsPerScope(SemanticModel semanticModel, ISymbol symbol)
         {
-            return GetCsLocalSymbolsPerScope(semanticModel, x).Select(y => y.Union(x.Yield()));
+            return GetCsLocalSymbolsPerScope(semanticModel, symbol).Select(y => y.Union(symbol.Yield()));
         }
 
         private static IEnumerable<(ISymbol Original, string NewName)> GetUniqueNamesForSymbolSet(IEnumerable<ISymbol> symbols) {
@@ -112,7 +112,9 @@ namespace ICSharpCode.CodeConverter.VB
             foreach (var (originalSymbol, newName) in symbolsWithNewNames) {
                 project = solution.GetProject(project.Id);
                 var compilation = await project.GetCompilationAsync();
-                ISymbol currentDeclaration = SymbolFinder.FindSimilarSymbols(originalSymbol, compilation).First();
+                ISymbol currentDeclaration = SymbolFinder.FindSimilarSymbols(originalSymbol, compilation).FirstOrDefault();
+                if (currentDeclaration == null) break; //Must have already renamed this symbol for a different reason
+
                 solution = await Renamer.RenameSymbolAsync(solution, currentDeclaration, newName, solution.Workspace.Options);
             }
 
@@ -122,9 +124,9 @@ namespace ICSharpCode.CodeConverter.VB
         /// <remarks>
         /// In VB there's a special extra local defined with the same name as the method name, so the method symbol should be included in any conflict analysis
         /// </remarks>
-        private static IEnumerable<IEnumerable<ISymbol>> GetCsLocalSymbolsPerScope(SemanticModel semanticModel, ISymbol x)
+        private static IEnumerable<IEnumerable<ISymbol>> GetCsLocalSymbolsPerScope(SemanticModel semanticModel, ISymbol symbol)
         {
-            switch (x)
+            switch (symbol)
             {
                 case IMethodSymbol methodSymbol:
                     return GetCsSymbolsDeclaredByMethod(semanticModel, methodSymbol, (CSS.BaseMethodDeclarationSyntax n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body);
