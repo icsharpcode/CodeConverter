@@ -1961,6 +1961,55 @@ public partial class TestClass2
         }
 
         [Fact]
+        public async Task SelectCaseWithNonDeterministicExpression()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass2
+    Sub DoesNotThrow()
+        Dim rand As New Random
+        Select Case rand.Next(8)
+            Case Is < 4
+            Case 4
+            Case Is > 4
+            Case Else
+                Throw New Exception
+        End Select
+    End Sub
+End Class", @"using System;
+
+public partial class TestClass2
+{
+    public void DoesNotThrow()
+    {
+        var rand = new Random();
+        var switchExpr = rand.Next(8);
+        switch (switchExpr)
+        {
+            case object _ when switchExpr < 4:
+                {
+                    break;
+                }
+
+            case 4:
+                {
+                    break;
+                }
+
+            case object _ when switchExpr > 4:
+                {
+                    break;
+                }
+
+            default:
+                {
+                    throw new Exception();
+                    break;
+                }
+        }
+    }
+}");
+        }
+
+        [Fact]
         public async Task TryCatch()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
