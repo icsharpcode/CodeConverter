@@ -128,3 +128,6 @@ dotnet_diagnostic.RCS1124.severity = none
 
 # RCS1077: Optimize LINQ method call.
 dotnet_diagnostic.RCS1077.severity = none
+
+# IDE0040: Add accessibility modifiers
+dotnet_style_require_accessibility_modifiers = always:warning

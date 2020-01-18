@@ -44,7 +44,7 @@ namespace ICSharpCode.CodeConverter.VB
             }
             yield return ProcessSymbols(members);
         }
-        static IEnumerable<(ISymbol Original, string NewName)> ProcessSymbols(IEnumerable<ISymbol> symbols) {
+        private static IEnumerable<(ISymbol Original, string NewName)> ProcessSymbols(IEnumerable<ISymbol> symbols) {
             var membersByCaseInsensitiveName = symbols.ToLookup(m => m.Name, m => m, StringComparer.OrdinalIgnoreCase);
             var names = new HashSet<string>(membersByCaseInsensitiveName.Select(ms => ms.Key),
                 StringComparer.OrdinalIgnoreCase);
