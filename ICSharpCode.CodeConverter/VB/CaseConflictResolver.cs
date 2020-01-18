@@ -46,7 +46,7 @@ namespace ICSharpCode.CodeConverter.VB
             if (!(containerSymbol is ITypeSymbol)) return Enumerable.Empty<IEnumerable<ISymbol>>();
 
             var semanticModel = compilation.GetSemanticModel(containerSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.SyntaxTree, true);
-            return members.SelectMany(x => GetCsLocalSymbolsPerScope(semanticModel, x).Select(y => y.Union(new ISymbol[] { x })));
+            return members.SelectMany(x => GetCsLocalSymbolsPerScope(semanticModel, x).Select(y => y.Union(x.Yield())));
         }
 
         private static IEnumerable<(ISymbol Original, string NewName)> GetUniqueNamesForSymbolSet(IEnumerable<ISymbol> symbols) {
