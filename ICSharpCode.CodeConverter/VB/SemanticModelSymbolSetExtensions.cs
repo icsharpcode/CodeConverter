@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace ICSharpCode.CodeConverter.CSharp
+namespace ICSharpCode.CodeConverter.VB
 {
     internal static class SemanticModelSymbolSetExtensions
     {
@@ -66,7 +66,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsDeclaredByProperty(SemanticModel semanticModel, IPropertySymbol propertySymbol)
         {
-            Func<CSS.AccessorDeclarationSyntax, CS.CSharpSyntaxNode> getAccessorBody = (CSS.AccessorDeclarationSyntax n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body;
+            Func<CSS.AccessorDeclarationSyntax, CS.CSharpSyntaxNode> getAccessorBody = (n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body;
             return GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.GetMethod, getAccessorBody)
                 .Concat(GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.SetMethod, getAccessorBody));
         }
@@ -80,7 +80,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsDeclaredByEvent(SemanticModel semanticModel, IEventSymbol propertySymbol)
         {
-            Func<CSS.AccessorDeclarationSyntax, CS.CSharpSyntaxNode> getAccessorBody = (CSS.AccessorDeclarationSyntax n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body;
+            Func<CSS.AccessorDeclarationSyntax, CS.CSharpSyntaxNode> getAccessorBody = (n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body;
             return GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.AddMethod, getAccessorBody)
                 .Concat(GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.RemoveMethod, getAccessorBody));
         }
