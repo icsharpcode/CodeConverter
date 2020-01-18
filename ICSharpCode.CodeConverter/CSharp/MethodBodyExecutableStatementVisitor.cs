@@ -557,15 +557,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<SyntaxList<StatementSyntax>> VisitSelectBlock(VBSyntax.SelectBlockSyntax node)
         {
-            var expr = (ExpressionSyntax) await node.SelectStatement.Expression.AcceptAsync(_expressionVisitor);
-            var exprWithoutTrivia = expr.WithoutTrivia().WithoutAnnotations();
+            var vbExpr = node.SelectStatement.Expression;
+            var (reusableExpr, stmts) = await GetReusableExpression(node, vbExpr);
+
             var usedConstantValues = new HashSet<object>();
             var sections = new List<SwitchSectionSyntax>();
             foreach (var block in node.CaseBlocks) {
                 var labels = new List<SwitchLabelSyntax>();
                 foreach (var c in block.CaseStatement.Cases) {
                     if (c is VBSyntax.SimpleCaseClauseSyntax s) {
-                        var originalExpressionSyntax = (ExpressionSyntax) await s.Value.AcceptAsync(_expressionVisitor);
+                        var originalExpressionSyntax = (ExpressionSyntax)await s.Value.AcceptAsync(_expressionVisitor);
                         // CSharp requires an explicit cast from the base type (e.g. int) in most cases switching on an enum
                         var typeConversionKind = CommonConversions.TypeConversionAnalyzer.AnalyzeConversion(s.Value);
                         var expressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax, typeConversionKind, true);
@@ -583,11 +584,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                         labels.Add(SyntaxFactory.DefaultSwitchLabel());
                     } else if (c is VBSyntax.RelationalCaseClauseSyntax relational) {
                         var operatorKind = VBasic.VisualBasicExtensions.Kind(relational);
-                        var cSharpSyntaxNode = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(TokenContext.Local), exprWithoutTrivia, (ExpressionSyntax) await relational.Value.AcceptAsync(_expressionVisitor));
+                        var cSharpSyntaxNode = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(TokenContext.Local), reusableExpr, (ExpressionSyntax)await relational.Value.AcceptAsync(_expressionVisitor));
                         labels.Add(WrapInCasePatternSwitchLabelSyntax(node, cSharpSyntaxNode, treatAsBoolean: true));
                     } else if (c is VBSyntax.RangeCaseClauseSyntax range) {
-                        var lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, (ExpressionSyntax) await range.LowerBound.AcceptAsync(_expressionVisitor), exprWithoutTrivia);
-                        var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, exprWithoutTrivia, (ExpressionSyntax) await range.UpperBound.AcceptAsync(_expressionVisitor));
+                        var lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, (ExpressionSyntax)await range.LowerBound.AcceptAsync(_expressionVisitor), reusableExpr);
+                        var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, reusableExpr, (ExpressionSyntax)await range.UpperBound.AcceptAsync(_expressionVisitor));
                         var withinBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LogicalAndExpression, lowerBoundCheck, upperBoundCheck);
                         labels.Add(WrapInCasePatternSwitchLabelSyntax(node, withinBounds, treatAsBoolean: true));
                     } else throw new NotSupportedException(c.Kind().ToString());
@@ -602,8 +603,26 @@ namespace ICSharpCode.CodeConverter.CSharp
                 sections.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), list));
             }
 
-            var switchStatementSyntax = ValidSyntaxFactory.SwitchStatement(expr, sections);
-            return SingleStatement(switchStatementSyntax);
+            var switchStatementSyntax = ValidSyntaxFactory.SwitchStatement(reusableExpr, sections);
+            return stmts.Add(switchStatementSyntax);
+        }
+
+        private async Task<(ExpressionSyntax, SyntaxList<StatementSyntax>)> GetReusableExpression(VBasic.VisualBasicSyntaxNode contextNode, VBSyntax.ExpressionSyntax vbExpr)
+        {
+            var expr = (ExpressionSyntax)await vbExpr.AcceptAsync(_expressionVisitor);
+            var canEvaluateMultipleTimes = vbExpr.SkipParens() is VBSyntax.NameSyntax || _semanticModel.GetConstantValue(vbExpr).HasValue;
+            SyntaxList<StatementSyntax> stmts = SyntaxFactory.List<StatementSyntax>();
+            ExpressionSyntax reusableExpr;
+            if (!canEvaluateMultipleTimes) {
+                var varName = GetUniqueVariableNameInScope(contextNode, "switchExpr");
+                var stmt = CommonConversions.CreateVariableDeclarationAndAssignment(varName, expr);
+                stmts = stmts.Add(SyntaxFactory.LocalDeclarationStatement(stmt));
+                reusableExpr = SyntaxFactory.IdentifierName(varName);
+            } else {
+                reusableExpr = expr.WithoutTrivia().WithoutAnnotations();
+            }
+
+            return (reusableExpr, stmts);
         }
 
         private CasePatternSwitchLabelSyntax WrapInCasePatternSwitchLabelSyntax(VBSyntax.SelectBlockSyntax node, ExpressionSyntax cSharpSyntaxNode, bool treatAsBoolean = false)
