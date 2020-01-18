@@ -703,7 +703,7 @@ End Class");
 
     Public WriteOnly Property Blanket As String
         Set(ByVal value As String)
-            Throw New Exception
+            Throw New Exception()
         End Set
     End Property
 End Class");

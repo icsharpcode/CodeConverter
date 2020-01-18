@@ -133,7 +133,7 @@ Next", @"{
     var cmccIds = new List<int>();
     foreach (var scr in _sponsorPayment.SponsorClaimRevisions)
     {
-        foreach (var claim in scr.Claims)
+        foreach (var claim in (IEnumerable)scr.Claims)
         {
             if (claim.ClaimSummary is ClaimSummary)
             {

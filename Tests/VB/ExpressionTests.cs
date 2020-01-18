@@ -153,7 +153,7 @@ class TestClass
 
 Friend Class TestClass
     Private Shared Function [Do]() As Boolean
-        Dim d = New Dictionary(Of String, String)
+        Dim d = New Dictionary(Of String, String)()
         Dim output As string = Nothing
         Return d.TryGetValue("""", output)
     End Function
@@ -379,7 +379,7 @@ End Class
 
 Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim student2 = New StudentName With {
+        Dim student2 As StudentName = New StudentName With {
             .FirstName = ""Craig"",
             .LastName = ""Playstead""
         }
@@ -432,7 +432,7 @@ Friend Class SomeSettings
 End Class
 
 Friend Class Converter
-    Public Shared ReadOnly Settings = New SomeSettings With {
+    Public Shared ReadOnly Settings As SomeSettings = New SomeSettings With {
         .Converters = {}
     }
 End Class");
@@ -534,7 +534,7 @@ Imports System.Collections.Generic
 
 Namespace PreHOPL
     Friend Module Program
-        Private ReadOnly dict = New Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) From {
+        Private ReadOnly dict As Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) = New Dictionary(Of String, ValueTuple(Of Integer, [Delegate]))() From {
             {""SAY"", (1, CType(AddressOf System.Console.WriteLine, Action(Of String)))}
         }
 
@@ -560,8 +560,8 @@ End Namespace");
         test(3);
     }
 }", @"Friend Class TestClass
-    Private Shared m_Event1 As Action(Of Integer) = Function()
-                                                    End Function
+    Private Shared m_Event1 As Action(Of Integer) = Sub()
+                                                    End Sub
 
     Private Sub TestMethod()
         Dim test = Function(ByVal a As Integer) a * 2

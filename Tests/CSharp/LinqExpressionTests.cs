@@ -36,10 +36,10 @@ End Sub",
         {
             await TestConversionVisualBasicToCSharp(@"Public Shared Sub Linq40()
     Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
-    Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g Select New With {Key .Remainder = g.Key, Key .Numbers = g}
-
+    Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {Key .Remainder = __groupByKey1__, Key .Numbers = g}
+    
     For Each g In numberGroups
-        Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"")
+        Console.WriteLine($""Numbers with a remainder of { g.Remainder} when divided by 5:"")
 
         For Each n In g.Numbers
             Console.WriteLine(n)
@@ -51,7 +51,8 @@ End Sub",
     var numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };"/*TODO Remove need for new[]*/ + @"
     var numberGroups = from n in numbers
                        group n by n % 5 into g
-                       select new { Remainder = g.Key, Numbers = g };
+                       let __groupByKey1__ = g.Key
+                       select new { Remainder = __groupByKey1__, Numbers = g };
 
     foreach (var g in numberGroups)
     {

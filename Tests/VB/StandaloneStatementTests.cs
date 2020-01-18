@@ -27,7 +27,7 @@ expectSurroundingMethodBlock: true);
     Inherited = false
 };
 obj = null;",
-@"Dim obj = New AttributeUsageAttribute With {
+@"Dim obj As AttributeUsageAttribute = New AttributeUsageAttribute() With {
     .AllowMultiple = True,
     .Inherited = False
 }

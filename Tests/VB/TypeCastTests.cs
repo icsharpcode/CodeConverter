@@ -48,8 +48,8 @@ End Sub
     System.Collections.Generic.List<int> l = (System.Collections.Generic.List<int>) o;
 }
 ", @"Private Sub Test()
-    Dim o As Object = New List(Of Integer)
-    Dim l = CType(o, List(Of Integer))
+    Dim o As Object = New System.Collections.Generic.List(Of Integer)()
+    Dim l = CType(o, System.Collections.Generic.List(Of Integer))
 End Sub
 ");
         }
@@ -80,8 +80,8 @@ End Sub
     System.Collections.Generic.List<int> l = o as System.Collections.Generic.List<int>;
 }
 ", @"Private Sub Test()
-    Dim o As Object = New List(Of Integer)
-    Dim l = TryCast(o, List(Of Integer))
+    Dim o As Object = New System.Collections.Generic.List(Of Integer)()
+    Dim l = TryCast(o, System.Collections.Generic.List(Of Integer))
 End Sub
 ");
         }

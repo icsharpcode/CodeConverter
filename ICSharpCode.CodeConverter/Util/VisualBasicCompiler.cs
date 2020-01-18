@@ -67,6 +67,7 @@ namespace ICSharpCode.CodeConverter.Util
                     "System.Security",
                     "System.Text",
                     "System.Threading.Tasks",
+                    "System.Xml.Linq",
                     "Microsoft.VisualBasic"))
                 .WithOptionExplicit(true)
                 .WithOptionCompareText(false)

@@ -155,12 +155,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                     selectOrGroup = CreateDefaultSelectClause(fromClauseSyntax);
                     break;
                 case VBSyntax.GroupByClauseSyntax gcs:
-                    var continuationClauses = SyntaxFactory.List<CSSyntax.QueryClauseSyntax>();
+                    var letGroupKey = SyntaxFactory.LetClause(GetGroupKeyIdentifiers(gcs).Single(), SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName(GetGroupIdentifier(gcs)), SyntaxFactory.IdentifierName("Key")));
+                    var continuationClauses = SyntaxFactory.List(new CSSyntax.QueryClauseSyntax[]{ letGroupKey});
                     if (!gcs.Items.Any()) {
                         var identifierNameSyntax =
                             SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(fromClauseSyntax.Identifier));
-                        var letGroupKey = SyntaxFactory.LetClause(GetGroupKeyIdentifiers(gcs).Single(), SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName(GetGroupIdentifier(gcs)), SyntaxFactory.IdentifierName("Key")));
-                        continuationClauses = continuationClauses.Add(letGroupKey);
                         selectOrGroup = SyntaxFactory.GroupClause(identifierNameSyntax, await GetGroupExpression(gcs));
                     } else {
                         var item = (CSSyntax.IdentifierNameSyntax) await gcs.Items.Single().Expression.AcceptAsync(_triviaConvertingVisitor);
@@ -182,7 +181,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         private CSSyntax.QueryContinuationSyntax CreateGroupByContinuation(VBSyntax.GroupByClauseSyntax gcs, SyntaxList<CSSyntax.QueryClauseSyntax> convertedClauses, CSSyntax.QueryBodySyntax body)
         {
             var queryBody = SyntaxFactory.QueryBody(convertedClauses, body?.SelectOrGroup, null);
-            return SyntaxFactory.QueryContinuation(GetGroupIdentifier(gcs), queryBody);
+            SyntaxToken groupName = GetGroupIdentifier(gcs);
+            return SyntaxFactory.QueryContinuation(groupName, queryBody);
         }
 
         private async Task<IEnumerable<CSSyntax.ExpressionSyntax>> GetLinqArguments(CSSyntax.FromClauseSyntax fromClauseSyntax,
@@ -292,17 +292,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private SyntaxToken GetGroupIdentifier(VBSyntax.GroupByClauseSyntax gs)
         {
+            if (!gs.Items.Any()) return CommonConversions.CsEscapedIdentifier("Group");
             var name = gs.AggregationVariables.Select(v => v.Aggregation is VBSyntax.FunctionAggregationSyntax f
-                    ? f.FunctionName.Text : v.Aggregation is VBSyntax.GroupAggregationSyntax g ? g.GroupKeyword.Text : null)
-                .SingleOrDefault(x => x != null) ?? gs.Keys.Select(k => k.NameEquals.Identifier.Identifier.Text).Single();
-            return SyntaxFactory.Identifier(name);
+                    ? f.FunctionName : v.Aggregation is VBSyntax.GroupAggregationSyntax g ? v.NameEquals?.Identifier.Identifier : default(SyntaxToken?))
+                .SingleOrDefault(x => x != null) ?? gs.Keys.Select(k => k.NameEquals.Identifier.Identifier).Single();
+            return CommonConversions.ConvertIdentifier(name);
         }
 
         private IEnumerable<string> GetGroupKeyIdentifiers(VBSyntax.GroupByClauseSyntax gs)
         {
-            return gs.AggregationVariables
-                .Select(x => x.NameEquals?.Identifier.Identifier.Text)
-                .Concat(gs.Keys.Select(k => k.NameEquals?.Identifier.Identifier.Text))
+            return gs.Keys.Select(k => k.NameEquals?.Identifier.Identifier.Text)
                 .Where(x => x != null);
         }
 

@@ -119,7 +119,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = New String(""test"")
+        Dim b As String = New String(""test"")
     End Sub
 End Class");
         }

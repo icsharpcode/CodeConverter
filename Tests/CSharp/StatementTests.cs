@@ -242,7 +242,7 @@ internal partial class ContrivedFuncInferenceExample
 {
     private void TestMethod()
     {
-        for (Blah index = (List<string> pList) => pList.All(x => true), loopTo = new Blah(); index <= loopTo; index += new Blah())
+        for (Blah index = (pList) => pList.All(x => true), loopTo = new Blah(); index <= loopTo; index += new Blah())
         {
             bool buffer = index.Check(new List<string>());
             Console.WriteLine($""{buffer}"");
@@ -480,6 +480,26 @@ public partial class TestClass
         return numArray2;
     }
 }");
+        }
+
+        [Fact]
+        public async Task Redim2dArray()
+        {
+            // One statement turns into two, so can't auto-test comments
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Friend Class Program
+    Private My2darray As Integer()()
+    Public Shared Sub Main(ByVal args As String())
+        ReDim Me.My2darray(6)
+    End Sub
+End Class", @"internal partial class Program
+{
+    private int[][] My2darray;
+    public static void Main(string[] args)
+    {
+        My2darray = new int[7][];
+    }
+}
+");
         }
 
         [Fact]
@@ -1414,6 +1434,30 @@ End Class", @"internal partial class Program
         for (int idx = 0; idx <= 10; idx++)
         {
         }
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ForeachWithObjectCollection()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Friend Class Program
+    Public Shared Sub Main(ByVal args As String())
+        Dim zs As Object = { 1, 2, 3 }
+        For Each z in zs
+            Console.WriteLine(z)
+        Next
+    End Sub
+End Class", @"using System;
+using System.Collections;
+
+internal partial class Program
+{
+    public static void Main(string[] args)
+    {
+        object zs = new[] { 1, 2, 3 };
+        foreach (var z in (IEnumerable)zs)
+            Console.WriteLine(z);
     }
 }");
         }

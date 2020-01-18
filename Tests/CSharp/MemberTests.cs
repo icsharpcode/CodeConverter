@@ -596,9 +596,11 @@ internal static partial class TestClass
 
     Public Property Test3 As Integer
         Get
+            If 7 = Integer.Parse(""7"") Then Exit Property
             Return Me.m_test3
         End Get
         Set(ByVal value As Integer)
+            If 7 = Integer.Parse(""7"") Then Exit Property
             Me.m_test3 = value
         End Set
     End Property
@@ -620,10 +622,14 @@ End Class", @"internal partial class TestClass
     {
         get
         {
+            if (7 == int.Parse(""7""))
+                return default(int);
             return m_test3;
         }
         set
         {
+            if (7 == int.Parse(""7""))
+                return;
             m_test3 = value;
         }
     }
@@ -1343,7 +1349,10 @@ internal partial class TestClass
     Public Shared Sub CreateStatic()
     End Sub
 
-    Public Sub CreateInstance()
+    Public Overloads Sub CreateInstance()
+    End Sub
+
+    Public Overloads Sub CreateInstance(o As Object)
     End Sub
 
     Public MustOverride Sub CreateAbstractInstance()
@@ -1362,8 +1371,8 @@ Friend Class TestClass2
 
     Public Overrides Sub CreateAbstractInstance()
     End Sub
-
-    Public Overrides Sub CreateVirtualInstance()
+    
+    Public Overloads Sub CreateVirtualInstance(o As Object)
     End Sub
 End Class",
 @"internal abstract partial class TestClass1
@@ -1373,6 +1382,10 @@ End Class",
     }
 
     public void CreateInstance()
+    {
+    }
+
+    public void CreateInstance(object o)
     {
     }
 
@@ -1397,7 +1410,7 @@ internal partial class TestClass2 : TestClass1
     {
     }
 
-    public override void CreateVirtualInstance()
+    public void CreateVirtualInstance(object o)
     {
     }
 }");

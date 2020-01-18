@@ -203,7 +203,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool preserve = node.Parent is VBSyntax.ReDimStatementSyntax rdss && rdss.PreserveKeyword.IsKind(VBasic.SyntaxKind.PreserveKeyword);
 
             var csTargetArrayExpression = (ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor);
-            var convertedBounds = (await CommonConversions.ConvertArrayBounds(node.ArrayBounds)).ToList();
+            var convertedBounds = (await CommonConversions.ConvertArrayBounds(node.ArrayBounds)).Sizes.ToList();
 
             var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds, node.SpanStart);
             if (!preserve) return SingleStatement(newArrayAssignment);
@@ -309,12 +309,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             ExpressionSyntax csArrayExpression, List<ExpressionSyntax> convertedBounds,
             int nodeSpanStart)
         {
-            var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(convertedBounds));
             var convertedType = (IArrayTypeSymbol) _semanticModel.GetTypeInfo(vbArrayExpression).ConvertedType;
+            var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(convertedBounds));
+            var rankSpecifiers = SyntaxFactory.SingletonList(arrayRankSpecifierSyntax);
+            while (convertedType.ElementType is IArrayTypeSymbol ats) {
+                convertedType = ats;
+                rankSpecifiers = rankSpecifiers.Add(SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(SyntaxFactory.OmittedArraySizeExpression())));
+            };
             var typeSyntax = CommonConversions.GetTypeSyntax(convertedType.ElementType);
             var arrayCreation =
-                SyntaxFactory.ArrayCreationExpression(SyntaxFactory.ArrayType(typeSyntax,
-                    SyntaxFactory.SingletonList(arrayRankSpecifierSyntax)));
+                SyntaxFactory.ArrayCreationExpression(SyntaxFactory.ArrayType(typeSyntax, rankSpecifiers));
             var assignmentExpressionSyntax =
                 SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, csArrayExpression, arrayCreation);
             var newArrayAssignment = SyntaxFactory.ExpressionStatement(assignmentExpressionSyntax);
@@ -348,13 +352,17 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             switch (VBasic.VisualBasicExtensions.Kind(node.BlockKeyword)) {
                 case VBasic.SyntaxKind.SubKeyword:
+                case VBasic.SyntaxKind.PropertyKeyword when node.GetAncestor<VBSyntax.AccessorBlockSyntax>()?.IsKind(VBasic.SyntaxKind.GetAccessorBlock) != true:
                     return SingleStatement(SyntaxFactory.ReturnStatement());
                 case VBasic.SyntaxKind.FunctionKeyword:
-                    VBasic.VisualBasicSyntaxNode typeContainer = (VBasic.VisualBasicSyntaxNode)node.Ancestors().OfType<VBSyntax.LambdaExpressionSyntax>().FirstOrDefault()
-                                                                 ?? node.Ancestors().OfType<VBSyntax.MethodBlockSyntax>().FirstOrDefault();
+                case VBasic.SyntaxKind.PropertyKeyword when node.GetAncestor<VBSyntax.AccessorBlockSyntax>()?.IsKind(VBasic.SyntaxKind.GetAccessorBlock) == true:
+                    VBasic.VisualBasicSyntaxNode typeContainer = node.GetAncestor<VBSyntax.LambdaExpressionSyntax>()
+                                                                 ?? (VBasic.VisualBasicSyntaxNode)node.GetAncestor<VBSyntax.MethodBlockSyntax>()
+                                                                 ?? node.GetAncestor<VBSyntax.AccessorBlockSyntax>();
                     var enclosingMethodInfo = await typeContainer.TypeSwitch(
                         async (VBSyntax.LambdaExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).Symbol,
-                        async (VBSyntax.MethodBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e));
+                        async (VBSyntax.MethodBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e),
+                        async (VBSyntax.AccessorBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e));
                     var info = enclosingMethodInfo?.GetReturnType();
                     ExpressionSyntax expr;
                     if (HasReturnVariable)
@@ -514,13 +522,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var stmt = node.ForEachStatement;
 
-            TypeSyntax type = null;
+            TypeSyntax type;
             SyntaxToken id;
-            if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
-                var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
-                var declaration = (await CommonConversions.SplitVariableDeclarations(v)).Variables.Single();
+            if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax vds) {
+                var declaration = (await CommonConversions.SplitVariableDeclarations(vds)).Variables.Single();
                 type = declaration.Type;
-                id = declaration.Variables[0].Identifier;
+                id = declaration.Variables.Single().Identifier;
             } else {
                 var v = (IdentifierNameSyntax) await stmt.ControlVariable.AcceptAsync(_expressionVisitor);
                 id = v.Identifier;
@@ -528,10 +535,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
+            ExpressionSyntax csExpression = (ExpressionSyntax)await stmt.Expression.AcceptAsync(_expressionVisitor);
             return SingleStatement(SyntaxFactory.ForEachStatement(
                 type,
                 id,
-                (ExpressionSyntax) await stmt.Expression.AcceptAsync(_expressionVisitor),
+                CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.Expression, csExpression),
                 block.UnpackNonNestedBlock()
             ));
         }
