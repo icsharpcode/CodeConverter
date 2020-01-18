@@ -670,13 +670,11 @@ internal partial class TestClass
     {
         using (var cmd = new SqlCommand())
         {
-            {
-                var withBlock = cmd;
-                withBlock.ExecuteNonQuery();
-                withBlock?.ExecuteNonQuery();
-                withBlock.ExecuteNonQuery();
-                withBlock?.ExecuteNonQuery();
-            }
+            cmd
+.ExecuteNonQuery();
+            cmd?.ExecuteNonQuery();
+            cmd.ExecuteNonQuery();
+            cmd?.ExecuteNonQuery();
         }
     }
 }");
@@ -1865,7 +1863,8 @@ public partial class TestClass
 {
     public static string TimeAgo(string x)
     {
-        switch (Strings.UCase(x))
+        var switchExpr = Strings.UCase(x);
+        switch (switchExpr)
         {
             case var @case when @case == Strings.UCase(""a""):
             case var case1 when case1 == Strings.UCase(""b""):
