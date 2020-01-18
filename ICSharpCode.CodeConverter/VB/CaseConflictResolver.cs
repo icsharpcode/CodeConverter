@@ -27,18 +27,15 @@ namespace ICSharpCode.CodeConverter.VB
         {
             var compilation = await project.GetCompilationAsync();
             var memberRenames = compilation.GlobalNamespace.FollowProperty((INamespaceOrTypeSymbol n) => n.GetMembers().OfType<INamespaceOrTypeSymbol>().Where(s => s.IsDefinedInSource()))
-                .SelectMany(x => GetSymbolsWithNewNames(x, compilation)).Flatten();
+                .SelectMany(x => GetSymbolsWithNewNames(x, compilation));
             return await PerformRenames(project, memberRenames.ToList());
         }
 
-        private static IEnumerable<IEnumerable<(ISymbol Original, string NewName)>> GetSymbolsWithNewNames(INamespaceOrTypeSymbol containerSymbol, Compilation compilation)
+        private static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(INamespaceOrTypeSymbol containerSymbol, Compilation compilation)
         {
             var members = containerSymbol.GetMembers();
-            var localScopeSymbolSets = GetUniqueNamesForScopeSymbols(containerSymbol, compilation, members);
-            foreach (var scopeSymbolSet in localScopeSymbolSets) {
-                yield return GetUniqueNamesForSymbolSet(scopeSymbolSet);
-            }
-            yield return GetUniqueNamesForSymbolSet(members);
+            var symbolSets = GetUniqueNamesForScopeSymbols(containerSymbol, compilation, members).Concat(members.AsEnumerable().Yield());
+            return symbolSets.SelectMany(GetUniqueNamesForSymbolSet);
         }
 
         private static IEnumerable<IEnumerable<ISymbol>> GetUniqueNamesForScopeSymbols(INamespaceOrTypeSymbol containerSymbol, Compilation compilation, System.Collections.Immutable.ImmutableArray<ISymbol> members)
