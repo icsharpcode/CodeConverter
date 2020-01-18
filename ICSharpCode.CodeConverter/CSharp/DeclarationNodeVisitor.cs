@@ -207,7 +207,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return additionalStatements;
             }
 
-            return new MemberDeclarationSyntax[0];
+            return Array.Empty<MemberDeclarationSyntax>();
         }
 
         /// <summary>
@@ -904,7 +904,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             } else {
                 var tokenContext = GetMemberContext(node);
                 var declaredSymbol = _semanticModel.GetDeclaredSymbol(node) as IMethodSymbol;
-                var extraCsModifierKinds = declaredSymbol?.IsExtern == true ? new[] {SyntaxKind.ExternKeyword} : new SyntaxKind[0];
+                var extraCsModifierKinds = declaredSymbol?.IsExtern == true ? new[] {SyntaxKind.ExternKeyword} : Array.Empty<SyntaxKind>();
                 var convertedModifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext, extraCsModifierKinds: extraCsModifierKinds);
 
                 bool accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, declaredSymbol);

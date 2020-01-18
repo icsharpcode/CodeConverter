@@ -105,7 +105,7 @@ namespace ICSharpCode.CodeConverter.Util
         {
             internal class Array<T>
             {
-                public static readonly T[] Instance = new T[0];
+                public static readonly T[] Instance = Array.Empty<T>();
             }
 
             internal class Collection<T> : Enumerable<T>, ICollection<T>

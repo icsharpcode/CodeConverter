@@ -26,7 +26,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             return ProjectInfo.Create(projectId, project.Version, projectName, project.AssemblyName,
                 options.Language, null, project.OutputFilePath,
-                options, parseOptions, new DocumentInfo[0], projectProjectReferences,
+                options, parseOptions, System.Array.Empty<DocumentInfo>(), projectProjectReferences,
                 project.MetadataReferences, project.AnalyzerReferences);
         }
 

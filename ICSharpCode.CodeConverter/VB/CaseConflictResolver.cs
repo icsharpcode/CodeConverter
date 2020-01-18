@@ -128,14 +128,14 @@ namespace ICSharpCode.CodeConverter.VB
                 case IFieldSymbol fieldSymbol:
                     return GetCsSymbolsDeclaredByField(semanticModel, fieldSymbol).Yield();
                 default:
-                    return new ISymbol[0].Yield();
+                    return Array.Empty<ISymbol>().Yield();
             }
         }
 
         public static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsDeclaredByMethod<TNode>(SemanticModel semanticModel, IMethodSymbol methodSymbol, Func<TNode, CS.CSharpSyntaxNode> selectWhereNotNull)
         {
             if (methodSymbol == null) {
-                yield return new ISymbol[0];
+                yield return Array.Empty<ISymbol>();
                 yield break;
             }
             var bodies = DeclarationWhereNotNull(methodSymbol, selectWhereNotNull).Where(x => x.SyntaxTree == semanticModel.SyntaxTree);

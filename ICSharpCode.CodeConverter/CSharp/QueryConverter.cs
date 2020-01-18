@@ -64,7 +64,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             SyntaxFactory.Argument(SyntaxFactory.SimpleLambdaExpression(
                                 parameterSyntax, toAggregate))
                         }
-                        : new CSSyntax.ArgumentSyntax[0];
+                        : Array.Empty<CSSyntax.ArgumentSyntax>();
                     var args = SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(argumentSyntaxes));
                     var variable = SyntaxFactory.InvocationExpression(rootWithMethodCall, args);
                     return variable;

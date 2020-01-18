@@ -182,7 +182,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private async Task<(SyntaxNode convertedDoc, string[] errors)> SingleSecondPassHandled(Document convertedDocument)
         {
             SyntaxNode selectedNode = null;
-            string[] errors = new string[0];
+            string[] errors = Array.Empty<string>();
             try {
                 Document document = await _languageConversion.SingleSecondPass(convertedDocument);
                 if (_returnSelectedNode) {
