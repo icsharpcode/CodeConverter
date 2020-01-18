@@ -145,16 +145,15 @@ namespace ICSharpCode.CodeConverter.VB
         public static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsDeclaredByMethod<TNode>(SemanticModel semanticModel, IMethodSymbol methodSymbol, Func<TNode, CS.CSharpSyntaxNode> selectWhereNotNull)
         {
             if (methodSymbol == null) {
-                yield return Array.Empty<ISymbol>();
-                yield break;
+                return Enumerable.Empty<IEnumerable<ISymbol>>();
             }
             var bodies = DeclarationWhereNotNull(methodSymbol, selectWhereNotNull).Where(x => x.SyntaxTree == semanticModel.SyntaxTree);
-            foreach (var body in bodies) {
-                var descendantNodes = GetDeepestBlocks(body);
-                foreach (var descendant in descendantNodes) {
-                    yield return semanticModel.LookupSymbols(descendant.SpanStart).Where(x => x.MatchesKind(SymbolKind.Local, SymbolKind.Parameter, SymbolKind.TypeParameter));
-                }
-            }
+            return bodies.SelectMany(GetDeepestBlocks).Select(block => GetSymbolsInBlock(semanticModel, block));
+        }
+
+        private static IEnumerable<ISymbol> GetSymbolsInBlock(SemanticModel semanticModel, SyntaxNode descendant)
+        {
+            return semanticModel.LookupSymbols(descendant.SpanStart).Where(x => x.MatchesKind(SymbolKind.Local, SymbolKind.Parameter, SymbolKind.TypeParameter));
         }
 
         private static IEnumerable<CSS.BlockSyntax> GetDeepestBlocks(CS.CSharpSyntaxNode body)
