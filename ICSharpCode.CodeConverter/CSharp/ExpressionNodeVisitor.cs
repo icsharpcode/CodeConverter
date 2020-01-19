@@ -667,7 +667,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             var omitConversion = lhsTypeInfo.Type != null && rhsTypeInfo.Type != null &&
-                                 lhsTypeInfo.Type.IsEnumType() && Equals(lhsTypeInfo.Type, rhsTypeInfo.Type);
+                                 lhsTypeInfo.Type.IsEnumType() && Equals(lhsTypeInfo.Type, rhsTypeInfo.Type)
+                                 && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression);
             lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs);
             rhs = omitConversion ? rhs: CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
 

@@ -551,7 +551,36 @@ End Class",
 ");
         }
 
+        [Fact]
+        public async Task FlagsEnum()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"<Flags()> Public Enum FilePermissions As Integer
+    None = 0
+    Create = 1
+    Read = 2
+    Update = 4
+    Delete = 8
+End Enum
+Public Class MyTest
+    Public MyEnum As FilePermissions = FilePermissions.None + FilePermissions.Create
+End Class",
+@"using System;
 
+[Flags()]
+public enum FilePermissions : int
+{
+    None = 0,
+    Create = 1,
+    Read = 2,
+    Update = 4,
+    Delete = 8
+}
+
+public partial class MyTest
+{
+    public FilePermissions MyEnum = (FilePermissions)((int)FilePermissions.None + (int)FilePermissions.Create);
+}");
+        }
 
         [Fact]
         public async Task EnumSwitch()
