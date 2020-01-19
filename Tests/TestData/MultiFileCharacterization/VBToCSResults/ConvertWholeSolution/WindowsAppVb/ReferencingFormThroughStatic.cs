@@ -11,7 +11,9 @@ namespace WindowsAppVb
             }
 
             if (My.MyProject.Forms.m_WinformsDesignerTest != null && My.MyProject.Forms.WinformsDesignerTest.Text != null)
+            {
                 return My.MyProject.Forms.WinformsDesignerTest.Text;
+            }
             return "";
         }
     }

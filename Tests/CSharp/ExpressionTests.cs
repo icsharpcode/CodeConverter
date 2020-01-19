@@ -393,7 +393,9 @@ public partial class Class1
     {
         var argc1 = this;
         if (c1 != null && Strings.Len(Bar3(ref argc1)) != 0)
+        {
             return 1;
+        }
         return 0;
     }
 
@@ -1155,11 +1157,17 @@ public partial class Class1
         string s1 = null;
         string s2 = """";
         if ((s1 ?? """") != (s2 ?? """"))
+        {
             throw new Exception();
+        }
         if ((s1 ?? """") == ""something"")
+        {
             throw new Exception();
+        }
         if (""something"" == (s1 ?? """"))
+        {
             throw new Exception();
+        }
         if (s1 == null)
         {
         }
@@ -1204,11 +1212,17 @@ public partial class Class1
         string s1 = null;
         string s2 = """";
         if (CultureInfo.CurrentCulture.CompareInfo.Compare(s1, s2, CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) != 0)
+        {
             throw new Exception();
+        }
         if (CultureInfo.CurrentCulture.CompareInfo.Compare(s1, ""something"", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0)
+        {
             throw new Exception();
+        }
         if (CultureInfo.CurrentCulture.CompareInfo.Compare(""something"", s1, CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0)
+        {
             throw new Exception();
+        }
         if (s1 == null)
         {
         }
@@ -1409,9 +1423,13 @@ End Class", @"internal partial class TestClass
     {
         int result;
         if (int.TryParse(value, out result))
+        {
             return result;
+        }
         else
+        {
             return default(int?);
+        }
     }
 }");
         }
@@ -2110,7 +2128,9 @@ public partial class test
         set
         {
             if (!_state.Equals(value))
+            {
                 _state = value;
+            }
         }
     }
 }");
@@ -2254,9 +2274,13 @@ public partial class Foo
     protected void OnBar(EventArgs e)
     {
         if (Bar == null)
+        {
             Debug.WriteLine(""No subscriber"");
+        }
         else
+        {
             Bar?.Invoke(this, e);
+        }
     }
 }");
         }

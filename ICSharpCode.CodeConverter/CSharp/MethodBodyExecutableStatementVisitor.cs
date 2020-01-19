@@ -427,18 +427,18 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (node.ElseBlock != null) {
                 var elseBlock = SyntaxFactory.Block(await ConvertStatements(node.ElseBlock.Statements));
-                elseClause = SyntaxFactory.ElseClause(elseBlock.UnpackPossiblyNestedBlock());// so that you get a neat "else if" at the end
+                elseClause = SyntaxFactory.ElseClause(elseBlock);// so that you get a neat "else if" at the end
             }
 
             foreach (var elseIf in node.ElseIfBlocks.Reverse()) {
                 var elseBlock = SyntaxFactory.Block(await ConvertStatements(elseIf.Statements));
                 var elseIfCondition = (ExpressionSyntax) await elseIf.ElseIfStatement.Condition.AcceptAsync(_expressionVisitor);
                 elseIfCondition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(elseIf.ElseIfStatement.Condition, elseIfCondition, forceTargetType: _vbBooleanTypeSymbol);
-                var ifStmt = SyntaxFactory.IfStatement(elseIfCondition, elseBlock.UnpackNonNestedBlock(), elseClause);
+                var ifStmt = SyntaxFactory.IfStatement(elseIfCondition, elseBlock, elseClause);
                 elseClause = SyntaxFactory.ElseClause(ifStmt);
             }
 
-            return SingleStatement(SyntaxFactory.IfStatement(condition, block.UnpackNonNestedBlock(), elseClause));
+            return SingleStatement(SyntaxFactory.IfStatement(condition, block, elseClause));
         }
 
         private async Task<StatementSyntax[]> ConvertStatements(SyntaxList<VBSyntax.StatementSyntax> statementSyntaxs)

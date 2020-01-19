@@ -84,7 +84,9 @@ namespace ConsoleApp4
             public static XAttribute CreateAttribute(XName name, object value)
             {
                 if (value == null)
+                {
                     return null;
+                }
                 return new XAttribute(name, value);
             }
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -101,12 +103,16 @@ namespace ConsoleApp4
                 {
                     XElement elem = obj as XElement;
                     if (!(elem == null))
+                    {
                         return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elem);
+                    }
                     else
                     {
                         IEnumerable elems = obj as IEnumerable;
                         if (elems != null)
+                        {
                             return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elems);
+                        }
                     }
                 }
                 return obj;
@@ -118,9 +124,13 @@ namespace ConsoleApp4
                 {
                     IEnumerable<XElement> elems = obj as IEnumerable<XElement>;
                     if (elems != null)
+                    {
                         return elems.Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessXElement);
+                    }
                     else
+                    {
                         return obj.Cast<object>().Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessObject);
+                    }
                 }
                 return obj;
             }
@@ -149,9 +159,13 @@ namespace ConsoleApp4
                 {
                     XElement elem = obj as XElement;
                     if (elem != null)
+                    {
                         return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
+                    }
                     else
+                    {
                         return obj;
+                    }
                 }
             }
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -183,8 +197,10 @@ namespace ConsoleApp4
                                         if (prefix.Equals(currentInScopePrefix))
                                         {
                                             if (ns == currentInScopeNs)
+                                            {
                                                 // prefix and namespace match.  Remove the unneeded ns attribute 
                                                 a.Remove();
+                                            }
 
                                             // prefix is in scope but refers to something else.  Leave the ns attribute. 
                                             a = null;
@@ -211,8 +227,10 @@ namespace ConsoleApp4
                                                 if (prefix.Equals(currentInScopePrefix))
                                                 {
                                                     if (ns == currentInScopeNs)
+                                                    {
                                                         // prefix and namespace match.  Remove the unneeded ns attribute 
                                                         a.Remove();
+                                                    }
 
                                                     // prefix is in scope but refers to something else.  Leave the ns attribute. 
                                                     a = null;

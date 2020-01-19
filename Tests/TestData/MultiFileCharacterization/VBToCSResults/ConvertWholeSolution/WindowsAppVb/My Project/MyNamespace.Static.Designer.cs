@@ -135,10 +135,14 @@ namespace WindowsAppVb
                         if (m_FormBeingCreated != null)
                         {
                             if (m_FormBeingCreated.ContainsKey(typeof(T)) == true)
+                            {
                                 throw new InvalidOperationException(Utils.GetResourceString("WinForms_RecursiveFormCreate"));
+                            }
                         }
                         else
+                        {
                             m_FormBeingCreated = new Hashtable();
+                        }
                         m_FormBeingCreated.Add(typeof(T), null);
                         try
                         {
@@ -155,7 +159,9 @@ namespace WindowsAppVb
                         }
                     }
                     else
+                    {
                         return Instance;
+                    }
                 }
 
                 [DebuggerHidden()]
@@ -243,9 +249,13 @@ namespace WindowsAppVb
                 private static T Create__Instance__<T>(T instance) where T : new()
                 {
                     if (instance == null)
+                    {
                         return new T();
+                    }
                     else
+                    {
                         return instance;
+                    }
                 }
 
                 [DebuggerHidden()]
@@ -352,7 +362,9 @@ namespace WindowsAppVb
             public static XAttribute CreateAttribute(XName name, object value)
             {
                 if (value == null)
+                {
                     return null;
+                }
                 return new XAttribute(name, value);
             }
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -369,12 +381,16 @@ namespace WindowsAppVb
                 {
                     XElement elem = obj as XElement;
                     if (!(elem == null))
+                    {
                         return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elem);
+                    }
                     else
                     {
                         IEnumerable elems = obj as IEnumerable;
                         if (elems != null)
+                        {
                             return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elems);
+                        }
                     }
                 }
                 return obj;
@@ -386,9 +402,13 @@ namespace WindowsAppVb
                 {
                     IEnumerable<XElement> elems = obj as IEnumerable<XElement>;
                     if (elems != null)
+                    {
                         return elems.Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessXElement);
+                    }
                     else
+                    {
                         return obj.Cast<object>().Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessObject);
+                    }
                 }
                 return obj;
             }
@@ -417,9 +437,13 @@ namespace WindowsAppVb
                 {
                     XElement elem = obj as XElement;
                     if (elem != null)
+                    {
                         return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
+                    }
                     else
+                    {
                         return obj;
+                    }
                 }
             }
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -451,8 +475,10 @@ namespace WindowsAppVb
                                         if (prefix.Equals(currentInScopePrefix))
                                         {
                                             if (ns == currentInScopeNs)
+                                            {
                                                 // prefix and namespace match.  Remove the unneeded ns attribute 
                                                 a.Remove();
+                                            }
 
                                             // prefix is in scope but refers to something else.  Leave the ns attribute. 
                                             a = null;
@@ -479,8 +505,10 @@ namespace WindowsAppVb
                                                 if (prefix.Equals(currentInScopePrefix))
                                                 {
                                                     if (ns == currentInScopeNs)
+                                                    {
                                                         // prefix and namespace match.  Remove the unneeded ns attribute 
                                                         a.Remove();
+                                                    }
 
                                                     // prefix is in scope but refers to something else.  Leave the ns attribute. 
                                                     a = null;

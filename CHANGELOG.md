@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Avoid repeated redundant break statement caused by explicit Exit Select [#433](https://github.com/icsharpcode/CodeConverter/issues/433)
 * Convert return expression to match return type [#496](https://github.com/icsharpcode/CodeConverter/issues/496)
 * Fix conversion for hex values ending in "C" [#483](https://github.com/icsharpcode/CodeConverter/issues/483)
+* Converted multi line if blocks now always contain braces [#466](https://github.com/icsharpcode/CodeConverter/issues/466)
 
 ### C# -> VB
 

@@ -1151,13 +1151,21 @@ End Class", @"internal partial class TestClass
         int b;
 
         if (a == 0)
+        {
             b = 0;
+        }
         else if (a == 1)
+        {
             b = 1;
+        }
         else if (a == 2 || a == 3)
+        {
             b = 2;
+        }
         else
+        {
             b = 3;
+        }
     }
 }");
         }
@@ -1190,10 +1198,17 @@ End Class", @"internal partial class TestClass
             if (string.IsNullOrEmpty(needle))
             {
                 if (string.IsNullOrWhiteSpace(w[c].ToString()))
+                {
                     return c;
+                }
             }
-            else if ((w[c].ToString() ?? """") == (needle ?? """"))
-                return c;
+            else
+            {
+                if ((w[c].ToString() ?? """") == (needle ?? """"))
+                {
+                    return c;
+                }
+            }
         }
         return -1;
     }
@@ -1647,7 +1662,9 @@ internal partial class GotoTest1
             for (int j = 0, loopTo3 = y - 1; j <= loopTo3; j++)
             {
                 if (array[i, j].Equals(myNumber))
+                {
                     goto Found;
+                }
             }
         }
 
