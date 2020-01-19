@@ -333,7 +333,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (IsIterator)
                 return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
 
-            return SingleStatement(SyntaxFactory.ReturnStatement((ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor)));
+            var csExpression = (ExpressionSyntax)await node.Expression.AcceptAsync(_expressionVisitor);
+            csExpression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, csExpression);
+            return SingleStatement(SyntaxFactory.ReturnStatement(csExpression));
         }
 
         public override async Task<SyntaxList<StatementSyntax>> VisitContinueStatement(VBSyntax.ContinueStatementSyntax node)

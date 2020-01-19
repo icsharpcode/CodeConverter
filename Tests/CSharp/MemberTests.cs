@@ -437,6 +437,25 @@ End Class", @"internal partial class TestClass
         }
 
         [Fact]
+        public async Task TestFunctionReturningTypeRequiringConversion()
+        {
+            await TestConversionVisualBasicToCSharp(
+@"Class TestClass
+    Public Function Four() As String
+        Return 4
+    End Function
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+internal partial class TestClass
+{
+    public string Four()
+    {
+        return Conversions.ToString(4);
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestStaticMethod()
         {
             await TestConversionVisualBasicToCSharp(
@@ -720,6 +739,7 @@ End Class", @"internal partial class TestClass
         End Select
     End Sub
 End Class", @"using System.Linq;
+using Microsoft.VisualBasic.CompilerServices;
 
 public partial class ParameterizedPropertiesAndEnumTest
 {
@@ -730,7 +750,7 @@ public partial class ParameterizedPropertiesAndEnumTest
 
     public string get_MyProp(int blah)
     {
-        return blah;
+        return Conversions.ToString(blah);
     }
 
     public void set_MyProp(int blah, string value)

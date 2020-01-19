@@ -67,6 +67,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceTargetType = null)
         {
+            if (csNode == null) return null;
             var conversionKind = AnalyzeConversion(vbNode, defaultToCast, isConst, forceTargetType);
             csNode = addParenthesisIfNeeded && (conversionKind == TypeConversionKind.DestructiveCast || conversionKind == TypeConversionKind.NonDestructiveCast)
                 ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
@@ -198,15 +199,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             } else if (csConversion.IsExplicit && csConversion.IsEnumeration) {
                 typeConversionKind = TypeConversionKind.NonDestructiveCast;
                 return true;
-            } else if (csConversion.IsExplicit && csConversion.IsNumeric && vbConversion.IsNarrowing && isConst) {
-                typeConversionKind = TypeConversionKind.NonDestructiveCast;
-                return true;
-            } else if (csConversion.IsExplicit && vbConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
-                typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
-                return true;
-            } else if (csConversion.IsExplicit && vbConversion.IsIdentity && csConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
-                typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
-                return true;
             } else if (isArithmetic) {
                 var arithmeticConversion =
                     vbCompilation.ClassifyConversion(vbConvertedType,
@@ -215,6 +207,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                     typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
                     return true;
                 }
+            } else if (csConversion.IsExplicit && csConversion.IsNumeric && vbConversion.IsNarrowing && isConst) {
+                typeConversionKind = IsImplicitConstantConversion(vbNode) ? TypeConversionKind.Identity : TypeConversionKind.NonDestructiveCast;
+                return true;
+            } else if (csConversion.IsExplicit && vbConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
+                typeConversionKind = IsImplicitConstantConversion(vbNode) ? TypeConversionKind.Identity :
+                    isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
+                return true;
+            } else if (csConversion.IsExplicit && vbConversion.IsIdentity && csConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
+                typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
+                return true;
             } else if (isConvertToString && vbType.SpecialType == SpecialType.System_Object) {
                 typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
                 return true;
@@ -226,8 +228,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return true;
             }
 
-            typeConversionKind = TypeConversionKind.Unknown;
+            typeConversionKind = csConversion.IsIdentity ? TypeConversionKind.Identity : TypeConversionKind.Unknown;
             return false;
+        }
+
+        private bool IsImplicitConstantConversion(VBSyntax.ExpressionSyntax vbNode)
+        {
+            return _semanticModel.GetOperation(vbNode).Parent is IConversionOperation co && co.IsImplicit && co.Operand.ConstantValue.HasValue;
         }
 
         private static TypeConversionKind AnalyzeVbConversion(bool alwaysExplicit, ITypeSymbol vbType,
