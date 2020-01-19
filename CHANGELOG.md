@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Exit Property should become return [#497](https://github.com/icsharpcode/CodeConverter/issues/497)
 * First effort converting some Xml Member Access
 * Avoid adding new keyword when not allowed/required [#504](https://github.com/icsharpcode/CodeConverter/issues/504)
+* Avoid evaluating Select Case expression multiple times in some cases where it may be non-deterministic or have side effects [#323](https://github.com/icsharpcode/CodeConverter/issues/323)
 
 ### C# -> VB
 
