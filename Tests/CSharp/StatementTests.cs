@@ -1171,6 +1171,29 @@ End Class", @"internal partial class TestClass
         }
 
         [Fact]
+        public async Task IfStatementWithMultiStatementLine()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+    Public Shared Sub MultiStatement(a As Integer)
+        If a = 0 Then Console.WriteLine(1) : Console.WriteLine(2) : Return
+        Console.WriteLine(3)
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    public static void MultiStatement(int a)
+    {
+        if (a == 0)
+        {
+            Console.WriteLine(1); Console.WriteLine(2); return;
+        }
+        Console.WriteLine(3);
+    }
+}");
+        }
+
+        [Fact]
         public async Task NestedBlockStatementsKeepSameNesting()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
