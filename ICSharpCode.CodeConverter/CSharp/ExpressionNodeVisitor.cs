@@ -362,7 +362,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (left == null) {
                 if (IsSubPartOfConditionalAccess(node)) {
                     return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
-                        : (ExpressionSyntax)SyntaxFactory.MemberBindingExpression(simpleNameSyntax);
+                        : AddEmptyArgumentListIfImplicit(node, (ExpressionSyntax)SyntaxFactory.MemberBindingExpression(simpleNameSyntax));
                 }
                 left = _withBlockLhs.Peek();
             }

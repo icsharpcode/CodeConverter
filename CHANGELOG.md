@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Fix conversion for hex values ending in "C" [#483](https://github.com/icsharpcode/CodeConverter/issues/483)
 * Converted multi line if blocks now always contain braces [#466](https://github.com/icsharpcode/CodeConverter/issues/466)
 * Add conversions to allow arithmetic on enums
+* Add omitted argument lists on conditional expressions
 
 ### C# -> VB
 

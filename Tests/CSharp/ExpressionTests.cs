@@ -1542,6 +1542,22 @@ End Class", @"internal partial class TestClass
         }
 
         [Fact]
+        public async Task ConditionalExpressionWithOmittedArgsList()
+        {
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
+    Private Sub TestMethod(ByVal str As String)
+        Dim result = str?.GetType
+    End Sub
+End Class", @"internal partial class TestClass
+{
+    private void TestMethod(string str)
+    {
+        var result = str?.GetType();
+    }
+}");
+        }
+
+        [Fact]
         public async Task ConditionalExpressionInUnaryExpression()
         {
             await TestConversionVisualBasicToCSharp(@"Class TestClass
