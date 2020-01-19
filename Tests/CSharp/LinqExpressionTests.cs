@@ -296,6 +296,30 @@ End Sub", @"private static void ASub()
 }");
         }
 
+        [Fact()]
+        public async Task LinqGroupByTwoThingsAnonymously()
+        {
+            //Can't auto-test comments when newlines get inserted
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+    Sub Foo()
+        Dim xs As New List(Of String)
+        Dim y = From x In xs Group By x.Length, x.Count() Into Group
+    End Sub
+End Class", @"using System.Collections.Generic;
+using System.Linq;
+
+public partial class Class1
+{
+    public void Foo()
+    {
+        var xs = new List<string>();
+        var y = from x in xs
+                group x by new { x.Length, Count = x.Count() };
+    }
+}");
+            // Current characterization is slightly wrong, I think it still needs this on the end "into g select new { Length = g.Key.Length, Count = g.Key.Count, Group = g.AsEnumerable() }"
+        }
+
         [Fact]
         public async Task LinqGroupByAnonymous()
         {

@@ -6,6 +6,7 @@ using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
@@ -155,8 +156,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                     selectOrGroup = CreateDefaultSelectClause(fromClauseSyntax);
                     break;
                 case VBSyntax.GroupByClauseSyntax gcs:
-                    var letGroupKey = SyntaxFactory.LetClause(GetGroupKeyIdentifiers(gcs).Single(), SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName(GetGroupIdentifier(gcs)), SyntaxFactory.IdentifierName("Key")));
-                    var continuationClauses = SyntaxFactory.List(new CSSyntax.QueryClauseSyntax[]{ letGroupKey});
+                    var groupKeyIds = GetGroupKeyIdentifiers(gcs).ToList();
+
+                    var continuationClauses = SyntaxFactory.List<CSSyntax.QueryClauseSyntax>();
+                    if (groupKeyIds.Count == 1) {
+                        var letGroupKey = SyntaxFactory.LetClause(groupKeyIds.First(), SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName(GetGroupIdentifier(gcs)), SyntaxFactory.IdentifierName("Key")));
+                        continuationClauses = continuationClauses.Add(letGroupKey);
+                    }
                     if (!gcs.Items.Any()) {
                         var identifierNameSyntax =
                             SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(fromClauseSyntax.Identifier));
@@ -166,7 +172,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         var keyExpression = (CSSyntax.ExpressionSyntax) await gcs.Keys.Single().Expression.AcceptAsync(_triviaConvertingVisitor);
                         selectOrGroup = SyntaxFactory.GroupClause(item, keyExpression);
                     }
-                    queryContinuation = CreateGroupByContinuation(gcs, continuationClauses, nestedClause);
+                    queryContinuation = nestedClause != null ? CreateGroupByContinuation(gcs, continuationClauses, nestedClause) : null;
                     break;
                 case VBSyntax.SelectClauseSyntax scs:
                     selectOrGroup = await ConvertSelectClauseSyntax(scs);
@@ -180,7 +186,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CSSyntax.QueryContinuationSyntax CreateGroupByContinuation(VBSyntax.GroupByClauseSyntax gcs, SyntaxList<CSSyntax.QueryClauseSyntax> convertedClauses, CSSyntax.QueryBodySyntax body)
         {
-            var queryBody = SyntaxFactory.QueryBody(convertedClauses, body?.SelectOrGroup, null);
+            var queryBody = convertedClauses.Any() ? SyntaxFactory.QueryBody(convertedClauses, body?.SelectOrGroup, null) : SyntaxFactory.QueryBody(body?.SelectOrGroup);
             SyntaxToken groupName = GetGroupIdentifier(gcs);
             return SyntaxFactory.QueryContinuation(groupName, queryBody);
         }
@@ -287,7 +293,19 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<CSSyntax.ExpressionSyntax> GetGroupExpression(VBSyntax.GroupByClauseSyntax gs)
         {
-            return (CSSyntax.ExpressionSyntax) await gs.Keys.Single().Expression.AcceptAsync(_triviaConvertingVisitor);
+            var groupExpressions = (await gs.Keys.SelectAsync(async k => (vb: k.Expression, cs: (CSSyntax.ExpressionSyntax)await k.Expression.AcceptAsync(_triviaConvertingVisitor)))).ToList();
+            return (groupExpressions.Count == 1) ? groupExpressions.Single().cs : CreateAnonymousType(groupExpressions);
+        }
+
+        private CSSyntax.ExpressionSyntax CreateAnonymousType(List<(ExpressionSyntax vb, CSSyntax.ExpressionSyntax cs)> groupExpressions)
+        {
+            return SyntaxFactory.AnonymousObjectCreationExpression(SyntaxFactory.SeparatedList(groupExpressions.Select(CreateAnonymousMember)));
+        }
+
+        private static CSSyntax.AnonymousObjectMemberDeclaratorSyntax CreateAnonymousMember((ExpressionSyntax vb, CSSyntax.ExpressionSyntax cs) expr, int i)
+        {
+            var name = SyntaxFactory.Identifier(expr.vb.ExtractAnonymousTypeMemberName()?.Text ?? ("key" + i));
+            return SyntaxFactory.AnonymousObjectMemberDeclarator(SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(name)), expr.cs);
         }
 
         private SyntaxToken GetGroupIdentifier(VBSyntax.GroupByClauseSyntax gs)

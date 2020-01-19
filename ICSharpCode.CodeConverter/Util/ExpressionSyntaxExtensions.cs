@@ -109,5 +109,111 @@ namespace ICSharpCode.CodeConverter.Util
                     return false;
             }
         }
+
+        /// <summary>
+        /// This is a conversion heavily based on Microsoft.CodeAnalysis.VisualBasic.Syntax.InternalSyntax.SyntaxExtensions.ExtractAnonymousTypeMemberName from 1bbbfc28a8e4493b4057e171310343a4c7ba826c
+        /// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0
+        /// </summary>
+        public static SyntaxToken? ExtractAnonymousTypeMemberName(this VBSyntax.ExpressionSyntax input)
+        {
+            bool isNameDictionaryAccess;
+            Stack<VBSyntax.ConditionalAccessExpressionSyntax> conditionalAccessStack = null;
+            while (true) {
+                switch (input.Kind()) {
+                    case VBasic.SyntaxKind.IdentifierName: {
+                            return ((VBSyntax.IdentifierNameSyntax)input).Identifier;
+                        }
+
+                    case VBasic.SyntaxKind.XmlName: {
+                            var xmlNameInferredFrom = (VBSyntax.XmlNameSyntax)input;
+                            var name = xmlNameInferredFrom.LocalName;
+                            // CONVERSION NOTE: Slightly skimped on the details here for brevity
+                            return VBasic.SyntaxFacts.IsValidIdentifier(name.ToString()) ? name : default(SyntaxToken?);
+                        }
+
+                    case VBasic.SyntaxKind.XmlBracketedName: {
+                            // handles something like <a-a>
+                            var xmlNameInferredFrom = (VBSyntax.XmlBracketedNameSyntax)input;
+                            input = xmlNameInferredFrom.Name;
+                            continue;
+                        }
+
+                    case VBasic.SyntaxKind.SimpleMemberAccessExpression:
+                    case VBasic.SyntaxKind.DictionaryAccessExpression: {
+                            var memberAccess = (VBSyntax.MemberAccessExpressionSyntax)input;
+                            var receiver = memberAccess.Expression ?? conditionalAccessStack.Pop();
+
+                            if (input.Kind() == VBasic.SyntaxKind.SimpleMemberAccessExpression) {
+                                // See if this is an identifier qualified with XmlElementAccessExpression or XmlDescendantAccessExpression
+                                if (receiver != null) {
+                                    switch (receiver.Kind()) {
+                                        case VBasic.SyntaxKind.XmlElementAccessExpression:
+                                        case VBasic.SyntaxKind.XmlDescendantAccessExpression: {
+                                                input = receiver;
+                                                continue;
+                                            }
+                                    }
+                                }
+                            }
+
+                            conditionalAccessStack = null;
+
+                            isNameDictionaryAccess = input.Kind() == VBasic.SyntaxKind.DictionaryAccessExpression;
+                            input = memberAccess.Name;
+                            continue;
+                        }
+
+                    case VBasic.SyntaxKind.XmlElementAccessExpression:
+                    case VBasic.SyntaxKind.XmlAttributeAccessExpression:
+                    case VBasic.SyntaxKind.XmlDescendantAccessExpression: {
+                            var xmlAccess = (VBSyntax.XmlMemberAccessExpressionSyntax)input;
+                            conditionalAccessStack.Clear();
+
+                            input = xmlAccess.Name;
+                            continue;
+                        }
+
+                    case VBasic.SyntaxKind.InvocationExpression: {
+                            var invocation = (VBSyntax.InvocationExpressionSyntax)input;
+                            var target = invocation.Expression ?? conditionalAccessStack.Pop();
+
+                            if (target == null)
+                                break;
+
+                            if (invocation.ArgumentList == null || invocation.ArgumentList.Arguments.Count == 0) {
+                                input = target;
+                                continue;
+                            }
+
+                            if (invocation.ArgumentList.Arguments.Count == 1) {
+                                // See if this is an indexed XmlElementAccessExpression or XmlDescendantAccessExpression
+                                switch (target.Kind()) {
+                                    case VBasic.SyntaxKind.XmlElementAccessExpression:
+                                    case VBasic.SyntaxKind.XmlDescendantAccessExpression: {
+                                            input = target;
+                                            continue;
+                                        }
+                                }
+                            }
+
+                            break;
+                        }
+
+                    case VBasic.SyntaxKind.ConditionalAccessExpression: {
+                            var access = (VBSyntax.ConditionalAccessExpressionSyntax)input;
+
+                            if (conditionalAccessStack == null)
+                                conditionalAccessStack = new Stack<VBSyntax.ConditionalAccessExpressionSyntax>();
+
+                            conditionalAccessStack.Push(access);
+
+                            input = access.WhenNotNull;
+                            continue;
+                        }
+                }
+
+                return null;
+            }
+        }
     }
 }
