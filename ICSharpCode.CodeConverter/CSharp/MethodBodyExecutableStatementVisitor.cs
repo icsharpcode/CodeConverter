@@ -15,6 +15,7 @@ using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using static ICSharpCode.CodeConverter.CSharp.SyntaxKindExtensions;
+using Microsoft.CodeAnalysis.Text;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -609,8 +610,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var expr = (ExpressionSyntax)await vbExpr.AcceptAsync(_expressionVisitor);
             SyntaxList<StatementSyntax> stmts = SyntaxFactory.List<StatementSyntax>();
             ExpressionSyntax reusableExpr;
-            if (forceVariable || !CanEvaluateMultipleTimes(vbExpr)) {
-                var contextNode = vbExpr.GetAncestor<VBSyntax.MethodBaseSyntax>() ?? (VBasic.VisualBasicSyntaxNode) vbExpr.Parent;
+            if (forceVariable || !await CanEvaluateMultipleTimesAsync(vbExpr)) {
+                var contextNode = vbExpr.GetAncestor<VBSyntax.MethodBlockBaseSyntax>() ?? (VBasic.VisualBasicSyntaxNode) vbExpr.Parent;
                 var varName = GetUniqueVariableNameInScope(contextNode, variableNameBase);
                 var stmt = CreateLocalVariableDeclarationAndAssignment(varName, expr);
                 stmts = stmts.Add(stmt);
@@ -622,9 +623,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             return (reusableExpr, stmts);
         }
 
-        private bool CanEvaluateMultipleTimes(VBSyntax.ExpressionSyntax vbExpr)
+        private async Task<bool> CanEvaluateMultipleTimesAsync(VBSyntax.ExpressionSyntax vbExpr)
         {
-            return vbExpr.SkipParens() is VBSyntax.NameSyntax || _semanticModel.GetConstantValue(vbExpr).HasValue;
+            return _semanticModel.GetConstantValue(vbExpr).HasValue || vbExpr.SkipParens() is VBSyntax.NameSyntax ns && await IsNeverMutatedAsync(ns);
+        }
+
+        private async Task<bool> IsNeverMutatedAsync(VBSyntax.NameSyntax ns)
+        {
+            var allowedLocation = Location.Create(ns.SyntaxTree, TextSpan.FromBounds(ns.GetAncestor<VBSyntax.MethodBlockBaseSyntax>().SpanStart, ns.Span.End));
+            return await CommonConversions.Document.Project.Solution.IsNeverWritten(_semanticModel.GetSymbolInfo(ns).Symbol, allowedLocation);
         }
 
         private CasePatternSwitchLabelSyntax WrapInCasePatternSwitchLabelSyntax(VBSyntax.SelectBlockSyntax node, ExpressionSyntax cSharpSyntaxNode, bool treatAsBoolean = false)

@@ -75,7 +75,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var paramListWithTypes = param.WithParameters(SyntaxFactory.SeparatedList(paramsWithTypes));
             if (potentialAncestorDeclarationOperation is IFieldInitializerOperation fieldInit) {
                 var fieldSymbol = fieldInit.InitializedFields.Single();
-                if (fieldSymbol.GetResultantVisibility() != SymbolVisibility.Public && !fieldSymbol.Type.IsDelegateReferencableByName() && await _solution.HasWriteUsagesAsync(fieldSymbol) == false) {
+                if (fieldSymbol.GetResultantVisibility() != SymbolVisibility.Public && !fieldSymbol.Type.IsDelegateReferencableByName() && await _solution.IsNeverWritten(fieldSymbol)) {
                     return CreateMethodDeclaration(anonFuncOp, fieldSymbol, block, arrow);
                 }
             }
@@ -90,7 +90,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (potentialAncestorDeclarationOperation is IVariableDeclarationOperation variableDeclaration) {
                     var variableDeclaratorOperation = variableDeclaration.Declarators.Single();
                     if (!variableDeclaratorOperation.Symbol.Type.IsDelegateReferencableByName() &&
-                        await _solution.HasWriteUsagesAsync(variableDeclaratorOperation.Symbol) == false) {
+                        await _solution.IsNeverWritten(variableDeclaratorOperation.Symbol)) {
                         //Should do: Check no (other) write usages exist: SymbolFinder.FindReferencesAsync + checking if they're an assignment LHS or out parameter
                         return CreateLocalFunction(anonFuncOp, variableDeclaratorOperation, paramListWithTypes, block,
                             arrow);

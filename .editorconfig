@@ -131,3 +131,18 @@ dotnet_diagnostic.RCS1077.severity = none
 
 # IDE0040: Add accessibility modifiers
 dotnet_style_require_accessibility_modifiers = always:warning
+
+# IDE0048: Add parentheses for clarity
+dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:none
+
+# IDE0048: Add parentheses for clarity
+dotnet_style_parentheses_in_other_operators = never_if_unnecessary:none
+
+# IDE0048: Add parentheses for clarity
+dotnet_style_parentheses_in_other_binary_operators = always_for_clarity:none
+
+# IDE0048: Add parentheses for clarity
+dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity:none
+
+# RCS1123: Add parentheses according to operator precedence.
+dotnet_diagnostic.RCS1123.severity = none
