@@ -567,7 +567,7 @@ namespace ICSharpCode.CodeConverter.VB
             return vbExpression == null
                 ? SyntaxFactory.ReturnStatement()
                 : vbExpression.IsKind(SyntaxKind.EmptyStatement)
-                    ? SyntaxFactory.ReturnStatement().WithTriviaFrom(vbExpression)
+                    ? SyntaxFactory.ReturnStatement()
                     : SyntaxFactory.ReturnStatement((ExpressionSyntax)vbExpression);
         }
 
