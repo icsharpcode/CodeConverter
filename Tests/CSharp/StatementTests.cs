@@ -2009,6 +2009,33 @@ public partial class TestClass2
         }
 
         [Fact]
+        public async Task SelectCaseWithExplicitExit()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Class A
+    Public Function Add(ByVal x As Integer) As Integer
+        Select Case x
+            Case 1
+                Exit Select
+        End Select
+        Return 3
+    End Function
+End Class", @"internal partial class A
+{
+    public int Add(int x)
+    {
+        switch (x)
+        {
+            case 1:
+                {
+                    break;
+                }
+        }
+        return 3;
+    }
+}");
+        }
+
+        [Fact]
         public async Task TryCatch()
         {
             await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass

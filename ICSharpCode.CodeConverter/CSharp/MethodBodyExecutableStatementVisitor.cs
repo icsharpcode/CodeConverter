@@ -594,7 +594,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var csBlockStatements = (await ConvertStatements(block.Statements)).ToList();
                 if (csBlockStatements.LastOrDefault()
-                        ?.IsKind(SyntaxKind.ReturnStatement) != true) {
+                        ?.IsKind(SyntaxKind.ReturnStatement, SyntaxKind.BreakStatement) != true) {
                     csBlockStatements.Add(SyntaxFactory.BreakStatement());
                 }
                 var list = SingleStatement(SyntaxFactory.Block(csBlockStatements));
