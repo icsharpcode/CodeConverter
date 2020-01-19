@@ -127,9 +127,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 {"L", "L"}, // Normalizes casing
                 {"&", "L"},
             };
+
+            var isHex = textForUser.StartsWith("&H", StringComparison.OrdinalIgnoreCase);
+
             // Be careful not to replace only the "S" in "US" for example
-            var longestMatchingReplacement = replacements.Where(t => textForUser.EndsWith(t.Key, StringComparison.OrdinalIgnoreCase))
+            var longestMatchingReplacement = replacements.Where(t => textForUser.EndsWith(t.Key, StringComparison.OrdinalIgnoreCase) && (!isHex || !new[] { "C", "D", "F" }.Contains(t.Key)))
                 .GroupBy(t => t.Key.Length).OrderByDescending(g => g.Key).FirstOrDefault()?.SingleOrDefault();
+
 
             if (longestMatchingReplacement != null) {
                 textForUser = textForUser.ReplaceEnd(longestMatchingReplacement.Value);
@@ -137,9 +141,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (textForUser.Length <= 2 || !textForUser.StartsWith("&")) return textForUser;
 
-            if (textForUser.StartsWith("&H", StringComparison.OrdinalIgnoreCase))
+            if (isHex)
             {
-                return "0x" + textForUser.Substring(2).Replace("M", "D"); // Undo any accidental replacements that assumed this was a decimal
+                return "0x" + textForUser.Substring(2);
             }
 
             if (textForUser.StartsWith("&B", StringComparison.OrdinalIgnoreCase))

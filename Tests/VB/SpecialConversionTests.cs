@@ -364,6 +364,7 @@ End Module");
     Public CR = &H0D * &B1
 End Class");
         }
+
         [Fact]
         public async Task CaseConflict_LocalWithLocal() {
             await TestConversionCSharpToVisualBasic(

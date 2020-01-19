@@ -92,5 +92,27 @@ End Class", @"internal partial class Test
     public int CR = 0xD * 0b1;
 }");
         }
+
+        [Fact]
+        public async Task Issue483_HexAndBinaryLiterals()
+        {
+        await TestConversionVisualBasicToCSharp(
+        @"Public Class Issue483
+    Public Test1 as Integer = &H7A
+    Public Test2 as Integer = &H7B
+    Public Test3 as Integer = &H7C
+    Public Test4 as Integer = &H7D
+    Public Test5 as Integer = &H7E
+    Public Test6 as Integer = &H7F
+End Class", @"public partial class Issue483
+{
+    public int Test1 = 0x7A;
+    public int Test2 = 0x7B;
+    public int Test3 = 0x7C;
+    public int Test4 = 0x7D;
+    public int Test5 = 0x7E;
+    public int Test6 = 0x7F;
+}");
+        }
     }
 }
