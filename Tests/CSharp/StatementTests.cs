@@ -670,13 +670,11 @@ internal partial class TestClass
     {
         using (var cmd = new SqlCommand())
         {
-            {
-                var withBlock = cmd;
-                withBlock.ExecuteNonQuery();
-                withBlock?.ExecuteNonQuery();
-                withBlock.ExecuteNonQuery();
-                withBlock?.ExecuteNonQuery();
-            }
+            cmd
+.ExecuteNonQuery();
+            cmd?.ExecuteNonQuery();
+            cmd.ExecuteNonQuery();
+            cmd?.ExecuteNonQuery();
         }
     }
 }");
@@ -1865,7 +1863,8 @@ public partial class TestClass
 {
     public static string TimeAgo(string x)
     {
-        switch (Strings.UCase(x))
+        var switchExpr = Strings.UCase(x);
+        switch (switchExpr)
         {
             case var @case when @case == Strings.UCase(""a""):
             case var case1 when case1 == Strings.UCase(""b""):
@@ -1956,6 +1955,55 @@ public partial class TestClass2
     {
         // Do something to test SQL Server
         return true;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task SelectCaseWithNonDeterministicExpression()
+        {
+            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass2
+    Sub DoesNotThrow()
+        Dim rand As New Random
+        Select Case rand.Next(8)
+            Case Is < 4
+            Case 4
+            Case Is > 4
+            Case Else
+                Throw New Exception
+        End Select
+    End Sub
+End Class", @"using System;
+
+public partial class TestClass2
+{
+    public void DoesNotThrow()
+    {
+        var rand = new Random();
+        var switchExpr = rand.Next(8);
+        switch (switchExpr)
+        {
+            case object _ when switchExpr < 4:
+                {
+                    break;
+                }
+
+            case 4:
+                {
+                    break;
+                }
+
+            case object _ when switchExpr > 4:
+                {
+                    break;
+                }
+
+            default:
+                {
+                    throw new Exception();
+                    break;
+                }
+        }
     }
 }");
         }

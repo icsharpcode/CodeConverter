@@ -645,42 +645,34 @@ namespace Microsoft.VisualBasic
             private static System.Globalization.NumberFormatInfo GetNormalizedNumberFormat(System.Globalization.NumberFormatInfo InNumberFormat)
             {
                 System.Globalization.NumberFormatInfo OutNumberFormat;
+                if (!(InNumberFormat.CurrencyDecimalSeparator == null) && !(InNumberFormat.NumberDecimalSeparator == null) && !(InNumberFormat.CurrencyGroupSeparator == null) && !(InNumberFormat.NumberGroupSeparator == null) && InNumberFormat.CurrencyDecimalSeparator.Length == 1 && InNumberFormat.NumberDecimalSeparator.Length == 1 && InNumberFormat.CurrencyGroupSeparator.Length == 1 && InNumberFormat.NumberGroupSeparator.Length == 1 && InNumberFormat.CurrencyDecimalSeparator[0] == InNumberFormat.NumberDecimalSeparator[0] && InNumberFormat.CurrencyGroupSeparator[0] == InNumberFormat.NumberGroupSeparator[0] && InNumberFormat.CurrencyDecimalDigits == InNumberFormat.NumberDecimalDigits)
+                    return InNumberFormat;
+                if (!(InNumberFormat.CurrencyDecimalSeparator == null) && !(InNumberFormat.NumberDecimalSeparator == null) && InNumberFormat.CurrencyDecimalSeparator.Length == InNumberFormat.NumberDecimalSeparator.Length && !(InNumberFormat.CurrencyGroupSeparator == null) && !(InNumberFormat.NumberGroupSeparator == null) && InNumberFormat.CurrencyGroupSeparator.Length == InNumberFormat.NumberGroupSeparator.Length)
                 {
-                    var withBlock = InNumberFormat;
-                    if (!(withBlock.CurrencyDecimalSeparator == null) && !(withBlock.NumberDecimalSeparator == null) && !(withBlock.CurrencyGroupSeparator == null) && !(withBlock.NumberGroupSeparator == null) && withBlock.CurrencyDecimalSeparator.Length == 1 && withBlock.NumberDecimalSeparator.Length == 1 && withBlock.CurrencyGroupSeparator.Length == 1 && withBlock.NumberGroupSeparator.Length == 1 && withBlock.CurrencyDecimalSeparator[0] == withBlock.NumberDecimalSeparator[0] && withBlock.CurrencyGroupSeparator[0] == withBlock.NumberGroupSeparator[0] && withBlock.CurrencyDecimalDigits == withBlock.NumberDecimalDigits)
-                        return InNumberFormat;
-                }
-                {
-                    var withBlock1 = InNumberFormat;
-                    if (!(withBlock1.CurrencyDecimalSeparator == null) && !(withBlock1.NumberDecimalSeparator == null) && withBlock1.CurrencyDecimalSeparator.Length == withBlock1.NumberDecimalSeparator.Length && !(withBlock1.CurrencyGroupSeparator == null) && !(withBlock1.NumberGroupSeparator == null) && withBlock1.CurrencyGroupSeparator.Length == withBlock1.NumberGroupSeparator.Length)
+                    int i;
+                    var loopTo = InNumberFormat.CurrencyDecimalSeparator.Length - 1;
+                    for (i = 0; i <= loopTo; i++)
                     {
-                        int i;
-                        var loopTo = withBlock1.CurrencyDecimalSeparator.Length - 1;
-                        for (i = 0; i <= loopTo; i++)
-                        {
-                            if (withBlock1.CurrencyDecimalSeparator[i] != withBlock1.NumberDecimalSeparator[i])
-                                goto MisMatch;
-                        }
-
-                        var loopTo1 = withBlock1.CurrencyGroupSeparator.Length - 1;
-                        for (i = 0; i <= loopTo1; i++)
-                        {
-                            if (withBlock1.CurrencyGroupSeparator[i] != withBlock1.NumberGroupSeparator[i])
-                                goto MisMatch;
-                        }
-                        return InNumberFormat;
+                        if (InNumberFormat.CurrencyDecimalSeparator[i] != InNumberFormat.NumberDecimalSeparator[i])
+                            goto MisMatch;
                     }
+
+                    var loopTo1 = InNumberFormat.CurrencyGroupSeparator.Length - 1;
+                    for (i = 0; i <= loopTo1; i++)
+                    {
+                        if (InNumberFormat.CurrencyGroupSeparator[i] != InNumberFormat.NumberGroupSeparator[i])
+                            goto MisMatch;
+                    }
+                    return InNumberFormat;
                 }
 
             MisMatch:
                 ;
                 OutNumberFormat = (System.Globalization.NumberFormatInfo)InNumberFormat.Clone();
-                {
-                    var withBlock2 = OutNumberFormat;
-                    withBlock2.CurrencyDecimalSeparator = withBlock2.NumberDecimalSeparator;
-                    withBlock2.CurrencyGroupSeparator = withBlock2.NumberGroupSeparator;
-                    withBlock2.CurrencyDecimalDigits = withBlock2.NumberDecimalDigits;
-                }
+                OutNumberFormat
+.CurrencyDecimalSeparator = OutNumberFormat.NumberDecimalSeparator;
+                OutNumberFormat.CurrencyGroupSeparator = OutNumberFormat.NumberGroupSeparator;
+                OutNumberFormat.CurrencyDecimalDigits = OutNumberFormat.NumberDecimalDigits;
                 return OutNumberFormat;
             }
             public static float ToSingle(string Value)

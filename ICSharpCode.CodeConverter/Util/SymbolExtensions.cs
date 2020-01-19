@@ -230,6 +230,12 @@ namespace ICSharpCode.CodeConverter.Util
             return visibility;
         }
 
+        public static bool AllWriteUsagesKnowable(this ISymbol symbol)
+        {
+            if (symbol == null) return false;
+            return symbol.MatchesKind(SymbolKind.Local, SymbolKind.Parameter) || symbol.GetResultantVisibility() > SymbolVisibility.Public;
+        }
+
         public static bool IsAnonymousType(this ISymbol symbol)
         {
             return symbol is INamedTypeSymbol && ((INamedTypeSymbol)symbol).IsAnonymousType;
