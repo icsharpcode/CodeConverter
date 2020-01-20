@@ -73,6 +73,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             var assignBackingField = SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(
                 SyntaxKind.SimpleAssignmentExpression, fieldIdSyntax,
                 SyntaxFactory.IdentifierName("value")));
+
+            if (!methods.Any()) return new[] { assignBackingField };
+
             return new[]
             {
                 IfFieldNotNull(fieldIdSyntax, CreateHandlesUpdaters(propertyIdentifier, fieldIdSyntax, methods, SyntaxKind.SubtractAssignmentExpression)),
@@ -107,20 +110,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             (SyntaxToken EventContainerName, SyntaxToken EventSymbolName) e,
             SyntaxKind assignmentExpressionKind)
         {
-            var handledFieldMember = SyntaxFactory.MemberAccessExpression(
-                SyntaxKind.SimpleMemberAccessExpression,
-                eventSource, SyntaxFactory.IdentifierName(e.EventSymbolName));
+            var handledFieldMember = MemberAccess(eventSource, e);
             return SyntaxFactory.ExpressionStatement(
                 SyntaxFactory.AssignmentExpression(assignmentExpressionKind,
                     handledFieldMember,
                     _methodId));
         }
 
+        private static MemberAccessExpressionSyntax MemberAccess(IdentifierNameSyntax eventSource, (SyntaxToken EventContainerName, SyntaxToken EventSymbolName) e)
+        {
+            return SyntaxFactory.MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression,
+                            eventSource, SyntaxFactory.IdentifierName(e.EventSymbolName));
+        }
 
-        public IEnumerable<StatementSyntax> GetPreInitializeComponentEventHandlers()
+        public IEnumerable<(ExpressionSyntax EventField, SyntaxKind AssignmentKind, ExpressionSyntax HandlerId)> GetPreInitializeComponentEventHandlers()
         {
             return HandledClassEventCSharpIds.Select(e =>
-                CreateHandlesUpdater(SyntaxFactory.IdentifierName(e.EventContainerName), e, SyntaxKind.AddAssignmentExpression));
+                ((ExpressionSyntax) MemberAccess(SyntaxFactory.IdentifierName(e.EventContainerName), e), SyntaxKind.AddAssignmentExpression, (ExpressionSyntax)_methodId));
         }
 
 

@@ -177,19 +177,25 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         #region Namespace Members
 
-        async Task<IEnumerable<MemberDeclarationSyntax>> ConvertMembers(SyntaxList<VBSyntax.StatementSyntax> members)
+        private async Task<IEnumerable<MemberDeclarationSyntax>> ConvertMembers(SyntaxList<VBSyntax.StatementSyntax> members)
         {
             var parentType = members.FirstOrDefault()?.GetAncestor<VBSyntax.TypeBlockSyntax>();
             _methodsWithHandles.Initialize(GetMethodWithHandles(parentType));
             if (_methodsWithHandles.Any()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
 
             var directlyConvertedMembers = await GetDirectlyConvertMembers();
-            if (parentType == null || !_methodsWithHandles.Any()) {
+            if (parentType == null) {
                 return directlyConvertedMembers;
             }
 
             var typeSymbol = (ITypeSymbol) _semanticModel.GetDeclaredSymbol(parentType);
-            return _additionalInitializers.WithAdditionalInitializers(typeSymbol, directlyConvertedMembers.ToList(), CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier));
+            var syntaxToAddTypeWideInit = typeSymbol.DeclaringSyntaxReferences.FirstOrDefault(l => l.SyntaxTree.FilePath?.IsGeneratedFile() == false)
+                ?? typeSymbol.DeclaringSyntaxReferences.First();
+            var shouldAddTypeWideInitToThisPart = syntaxToAddTypeWideInit.Span == parentType.Span;
+            if (shouldAddTypeWideInitToThisPart) {
+                _additionalInitializers.AdditionalInstanceInitializers.AddRange(_methodsWithHandles.GetConstructorEventAssignments());
+            }
+            return _additionalInitializers.WithAdditionalInitializers(typeSymbol, directlyConvertedMembers.ToList(), CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier), shouldAddTypeWideInitToThisPart);
 
             async Task<IEnumerable<MemberDeclarationSyntax>> GetDirectlyConvertMembers()
             {
@@ -452,7 +458,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         : _additionalInitializers.AdditionalInstanceInitializers;
                     foreach (var initializer in initializers)
                     {
-                        initializerCollection.Add(initializer.Key, initializer.Value.Value);
+                        initializerCollection.Add((SyntaxFactory.IdentifierName(initializer.Key), SyntaxKind.SimpleAssignmentExpression, initializer.Value.Value));
                     }
 
                     var fieldDecls = _methodsWithHandles.GetDeclarationsForFieldBackedProperty(fieldDecl,
@@ -815,10 +821,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (!declaredSymbol.CanHaveMethodBody()) {
                 return methodBlock;
             }
-
             var csReturnVariableOrNull = _expressionNodeVisitor.GetRetVariableNameOrNull(node);
             var visualBasicSyntaxVisitor = _expressionNodeVisitor.CreateMethodBodyVisitor(node, node.IsIterator(), csReturnVariableOrNull);
             var convertedStatements = await ConvertStatements(node.Statements, visualBasicSyntaxVisitor);
+
             var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
 
             return methodBlock.WithBody(body);

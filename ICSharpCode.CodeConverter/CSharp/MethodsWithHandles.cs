@@ -55,10 +55,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.List<StatementSyntax>();
         }
 
-        public SyntaxList<StatementSyntax> GetPreInitializeComponentEventHandlers()
+        public (ExpressionSyntax EventField, SyntaxKind AssignmentKind, ExpressionSyntax HandlerId)[] GetConstructorEventAssignments()
         {
-            var handledMethods = _methodWithHandleses.SelectMany(m => m.GetPreInitializeComponentEventHandlers()).ToArray();
-            return SyntaxFactory.List(handledMethods);
+            return _methodWithHandleses.SelectMany(m => m.GetPreInitializeComponentEventHandlers()).ToArray();
         }
     }
 }

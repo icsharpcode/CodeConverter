@@ -124,17 +124,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<SyntaxList<StatementSyntax>> VisitExpressionStatement(VBSyntax.ExpressionStatementSyntax node)
         {
-            if (node.Expression is VBSyntax.InvocationExpressionSyntax invoke && invoke.Expression is VBSyntax.MemberAccessExpressionSyntax access) {
-                if (access.Expression is VBSyntax.MyBaseExpressionSyntax && access.Name.Identifier.ValueText.Equals("Finalize", StringComparison.OrdinalIgnoreCase)) {
-                    return new SyntaxList<StatementSyntax>();
-                } else if (CommonConversions.InMethodCalledInitializeComponent(node) &&
-                           access.Name.Identifier.ValueText.Equals("ResumeLayout",
-                               StringComparison.OrdinalIgnoreCase)) {
-                    var eventSubscriptionStatements = _methodsWithHandles.GetPreInitializeComponentEventHandlers();
-                    if (eventSubscriptionStatements.Any()) {
-                        return SyntaxFactory.List(eventSubscriptionStatements.Concat(SingleStatement((ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor))));
-                    }
-                }
+            if (node.Expression is VBSyntax.InvocationExpressionSyntax invoke && invoke.Expression is VBSyntax.MemberAccessExpressionSyntax access && access.Expression is VBSyntax.MyBaseExpressionSyntax && access.Name.Identifier.ValueText.Equals("Finalize", StringComparison.OrdinalIgnoreCase)) {
+                return new SyntaxList<StatementSyntax>();
             }
 
             return SingleStatement((ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor));

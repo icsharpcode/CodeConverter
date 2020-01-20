@@ -4,6 +4,13 @@ namespace WindowsAppVb
 {
     public partial class WinformsDesignerTest
     {
+        public WinformsDesignerTest()
+        {
+            base.Load += WinformsDesignerTest_EnsureSelfEventsWork;
+            this.SizeChanged += WinformsDesignerTest_EnsureSelfEventsWork;
+            InitializeComponent();
+        }
+
         private void Button1_Click(object sender, EventArgs e)
         {
         }

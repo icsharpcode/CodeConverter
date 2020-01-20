@@ -70,8 +70,6 @@ namespace WindowsAppVb
             Controls.Add(_Button1);
             Name = "WinformsDesignerTest";
             Text = "Form1";
-            base.Load += WinformsDesignerTest_EnsureSelfEventsWork;
-            this.SizeChanged += WinformsDesignerTest_EnsureSelfEventsWork;
             ResumeLayout(false);
             PerformLayout();
         }
