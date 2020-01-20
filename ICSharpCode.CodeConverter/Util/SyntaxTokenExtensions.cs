@@ -16,7 +16,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static class SyntaxTokenExtensions
+    internal static class SyntaxTokenExtensions
     {
         public static SyntaxNode GetAncestor(this SyntaxToken token, Func<SyntaxNode, bool> predicate)
         {

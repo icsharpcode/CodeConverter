@@ -99,12 +99,13 @@ namespace ICSharpCode.CodeConverter.Shared
             );
         }
 
-        static (string Find, string Replace, bool FirstOnly) ChangeLanguageVersionRegex(string languageVersion) {
+        private static (string Find, string Replace, bool FirstOnly) ChangeLanguageVersionRegex(string languageVersion) {
             return (Find: new Regex(@"<\s*LangVersion>(\d|\D)*</LangVersion\s*>").ToString(), Replace: $"<LangVersion>{languageVersion}</LangVersion>", FirstOnly: true);
         }
-        static (string Find, string Replace, bool FirstOnly) ChangeRootNamespaceRegex(string rootNamespace) {
+        private static (string Find, string Replace, bool FirstOnly) ChangeRootNamespaceRegex(string rootNamespace) {
             return (Find: new Regex(@"<\s*RootNamespace>(\d|\D)*</RootNamespace\s*>").ToString(), Replace: $"<RootNamespace>{rootNamespace}</RootNamespace>", FirstOnly: true);
         }
+
         private static (string Find, string Replace, bool FirstOnly) AddCompiledItemsRegexFromRelativePaths(
             string[] relativeFilePathsToAdd)
         {

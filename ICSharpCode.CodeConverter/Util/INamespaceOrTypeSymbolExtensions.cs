@@ -9,7 +9,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static partial class INamespaceOrTypeSymbolExtensions
+    internal static partial class INamespaceOrTypeSymbolExtensions
     {
         private static readonly ConditionalWeakTable<INamespaceOrTypeSymbol, List<string>> s_namespaceOrTypeToNameMap =
             new ConditionalWeakTable<INamespaceOrTypeSymbol, List<string>>();

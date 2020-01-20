@@ -6,7 +6,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static class IAssemblySymbolExtensions
+    internal static class IAssemblySymbolExtensions
     {
         private const string AttributeSuffix = "Attribute";
 

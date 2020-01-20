@@ -12,7 +12,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static class ISymbolExtensions
+    internal static class ISymbolExtensions
     {
         // A lot of symbols in DateAndTime do not exist in DateTime, eg. DateSerial(),
         // and some have different names/arguments, eg. DateAdd(). This needs to be handled properly

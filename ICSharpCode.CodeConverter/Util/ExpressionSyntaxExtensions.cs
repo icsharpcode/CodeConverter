@@ -16,7 +16,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static class ExpressionSyntaxExtensions
+    internal static class ExpressionSyntaxExtensions
     {
 
         /// <summary>

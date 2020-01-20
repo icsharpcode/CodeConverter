@@ -10,7 +10,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static partial class EnumerableExtensions
+    internal static partial class EnumerableExtensions
     {
         public static IEnumerable<T> Do<T>(this IEnumerable<T> source, Action<T> action)
         {

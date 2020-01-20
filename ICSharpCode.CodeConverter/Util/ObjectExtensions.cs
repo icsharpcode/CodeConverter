@@ -5,7 +5,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static partial class ObjectExtensions
+    internal static partial class ObjectExtensions
     {
 
         #region TypeSwitch on Action

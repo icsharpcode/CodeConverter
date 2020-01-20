@@ -21,7 +21,7 @@ using Task = System.Threading.Tasks.Task;
 
 namespace CodeConverter.VsExtension
 {
-    class CodeConversion
+    internal class CodeConversion
     {
         public Func<Task<ConverterOptionsPage>> GetOptions { get; }
         private readonly IAsyncServiceProvider _serviceProvider;

@@ -45,7 +45,7 @@ namespace CodeConverter.Web
             return Ok(response);
         }
 
-        string ParseLanguage(string language)
+        private string ParseLanguage(string language)
         {
             if (language == null)
                 throw new ArgumentNullException(nameof(language));
@@ -56,7 +56,7 @@ namespace CodeConverter.Web
             throw new ArgumentException($"{language} not supported!");
         }
 
-        int GetDefaultVersionForLanguage(string language)
+        private int GetDefaultVersionForLanguage(string language)
         {
             if (language == null)
                 throw new ArgumentNullException(nameof(language));

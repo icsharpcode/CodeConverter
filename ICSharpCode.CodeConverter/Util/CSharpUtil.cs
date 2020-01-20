@@ -8,7 +8,7 @@ using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.Util
 {
-    static class CSharpUtil
+    internal static class CSharpUtil
     {
         /// <summary>
         /// Inverts a boolean condition. Note: The condition object can be frozen (from AST) it's cloned internally.
@@ -19,7 +19,7 @@ namespace ICSharpCode.CodeConverter.Util
             return InvertConditionInternal(condition);
         }
 
-        static ExpressionSyntax InvertConditionInternal(ExpressionSyntax condition)
+        private static ExpressionSyntax InvertConditionInternal(ExpressionSyntax condition)
         {
             if (condition is ParenthesizedExpressionSyntax) {
                 return SyntaxFactory.ParenthesizedExpression(InvertCondition(((ParenthesizedExpressionSyntax)condition).Expression));

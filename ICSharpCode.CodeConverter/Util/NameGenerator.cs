@@ -11,7 +11,7 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.Util
 {
-    static class NameGenerator
+    internal static class NameGenerator
     {
         public static IList<string> EnsureUniqueness(
             IList<string> names,

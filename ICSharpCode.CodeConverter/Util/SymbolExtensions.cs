@@ -9,7 +9,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static class SymbolExtensions
+    internal static class SymbolExtensions
     {
         /// <summary>
         /// Returns true if the symbol wasn't tagged with

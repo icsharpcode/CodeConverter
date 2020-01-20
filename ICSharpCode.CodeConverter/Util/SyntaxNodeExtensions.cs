@@ -46,7 +46,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static partial class SyntaxNodeExtensions
+    internal static partial class SyntaxNodeExtensions
     {
         public static IEnumerable<SyntaxNode> GetAncestors(this SyntaxNode node)
         {

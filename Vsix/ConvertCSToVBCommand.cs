@@ -52,7 +52,7 @@ namespace CodeConverter.VsExtension
         /// <summary>
         /// Gets the service provider from the owner package.
         /// </summary>
-        IAsyncServiceProvider ServiceProvider {
+        private IAsyncServiceProvider ServiceProvider {
             get {
                 return _package;
             }
@@ -75,7 +75,7 @@ namespace CodeConverter.VsExtension
         /// <param name="codeConversion"></param>
         /// <param name="commandService"></param>
         /// <remarks>Must be called on the UI thread due to VS 2017's implementation of AddCommand which calls GetService</remarks>
-        ConvertCSToVBCommand(REConverterPackage package, CodeConversion codeConversion, OleMenuCommandService commandService)
+        private ConvertCSToVBCommand(REConverterPackage package, CodeConversion codeConversion, OleMenuCommandService commandService)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             this._package = package ?? throw new ArgumentNullException(nameof(package));

@@ -6,7 +6,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static class ITypeParameterSymbolExtensions
+    internal static class ITypeParameterSymbolExtensions
     {
         public static INamedTypeSymbol GetNamedTypeSymbolConstraint(this ITypeParameterSymbol typeParameter)
         {

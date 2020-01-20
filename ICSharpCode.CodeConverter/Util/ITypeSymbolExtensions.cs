@@ -12,7 +12,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static class ITypeSymbolExtensions
+    internal static class ITypeSymbolExtensions
     {
         public static bool ImplementsSpecialTypeInterface(this ITypeSymbol symbol, SpecialType type)
         {
@@ -363,7 +363,7 @@ namespace ICSharpCode.CodeConverter.Util
             return false;
         }
 
-        static bool HasAddMethod(ITypeSymbol typeSymbol)
+        private static bool HasAddMethod(ITypeSymbol typeSymbol)
         {
             return typeSymbol
                 .GetMembers(WellKnownMemberNames.CollectionInitializerAddMethodName)

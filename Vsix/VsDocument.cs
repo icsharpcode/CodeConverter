@@ -3,7 +3,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace CodeConverter.VsExtension
 {
-    class VsDocument
+    internal class VsDocument
     {
         private readonly IVsProject _hierarchy;
         private readonly uint _itemId;

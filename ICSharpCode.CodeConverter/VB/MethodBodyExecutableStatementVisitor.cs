@@ -28,14 +28,14 @@ namespace ICSharpCode.CodeConverter.VB
 {
     internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<SyntaxList<StatementSyntax>>
     {
-        SemanticModel _semanticModel;
-        readonly CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode> _nodesVisitor;
+        private SemanticModel _semanticModel;
+        private readonly CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode> _nodesVisitor;
         private readonly CommonConversions _commonConversions;
-        readonly Stack<BlockInfo> _blockInfo = new Stack<BlockInfo>(); // currently only works with switch blocks
-        int _switchCount = 0;
+        private readonly Stack<BlockInfo> _blockInfo = new Stack<BlockInfo>(); // currently only works with switch blocks
+        private int _switchCount = 0;
         public bool IsIterator { get; private set; }
 
-        class BlockInfo
+        private class BlockInfo
         {
             public readonly List<VisualBasicSyntaxNode> GotoCaseExpressions = new List<VisualBasicSyntaxNode>();
         }
@@ -69,7 +69,7 @@ namespace ICSharpCode.CodeConverter.VB
             );
         }
 
-        StatementSyntax ConvertSingleExpression(CSS.ExpressionSyntax node)
+        private StatementSyntax ConvertSingleExpression(CSS.ExpressionSyntax node)
         {
             var exprNode = node.Accept(_nodesVisitor);
             if (!(exprNode is StatementSyntax))
@@ -118,7 +118,7 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.SingletonList(stmt);
         }
 
-        bool IsSimpleStatement(CSS.StatementSyntax statement)
+        private bool IsSimpleStatement(CSS.StatementSyntax statement)
         {
             return statement is CSS.ExpressionStatementSyntax
                 || statement is CSS.BreakStatementSyntax
@@ -128,7 +128,7 @@ namespace ICSharpCode.CodeConverter.VB
                 || statement is CSS.ThrowStatementSyntax;
         }
 
-        bool TryConvertIfNotNullRaiseEvent(CSS.IfStatementSyntax node, out StatementSyntax raiseEventStatement)
+        private bool TryConvertIfNotNullRaiseEvent(CSS.IfStatementSyntax node, out StatementSyntax raiseEventStatement)
         {
             raiseEventStatement = null;
             return TryGetBinaryExpression(node, out var comparisonExpression, CS.SyntaxKind.NotEqualsExpression, CS.SyntaxKind.NullLiteralExpression)
@@ -173,7 +173,7 @@ namespace ICSharpCode.CodeConverter.VB
             return raiseEventStatement != null;
         }
 
-        void CollectElseBlocks(CSS.IfStatementSyntax node, List<ElseIfBlockSyntax> elseIfBlocks, ref ElseBlockSyntax elseBlock)
+        private void CollectElseBlocks(CSS.IfStatementSyntax node, List<ElseIfBlockSyntax> elseIfBlocks, ref ElseBlockSyntax elseBlock)
         {
             if (node.Else == null) return;
             if (node.Else.Statement is CSS.IfStatementSyntax) {
@@ -208,7 +208,7 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.SingletonList(stmt);
         }
 
-        IEnumerable<CaseBlockSyntax> AddLabels(CaseBlockSyntax[] blocks, List<VisualBasicSyntaxNode> gotoLabels)
+        private IEnumerable<CaseBlockSyntax> AddLabels(CaseBlockSyntax[] blocks, List<VisualBasicSyntaxNode> gotoLabels)
         {
             foreach (var block in blocks) {
                 var modifiedBlock = block;
@@ -221,7 +221,7 @@ namespace ICSharpCode.CodeConverter.VB
             }
         }
 
-        CaseBlockSyntax ConvertSwitchSection(CSS.SwitchSectionSyntax section)
+        private CaseBlockSyntax ConvertSwitchSection(CSS.SwitchSectionSyntax section)
         {
             if (IsDefaultSwitchStatement(section))
                 return SyntaxFactory.CaseElseBlock(SyntaxFactory.CaseElseStatement(SyntaxFactory.ElseCaseClause()), ConvertSwitchSectionBlock(section));
@@ -235,7 +235,7 @@ namespace ICSharpCode.CodeConverter.VB
             return c.Labels.OfType<CSS.DefaultSwitchLabelSyntax>().Any();
         }
 
-        SyntaxList<StatementSyntax> ConvertSwitchSectionBlock(CSS.SwitchSectionSyntax section)
+        private SyntaxList<StatementSyntax> ConvertSwitchSectionBlock(CSS.SwitchSectionSyntax section)
         {
             List<StatementSyntax> statements = new List<StatementSyntax>();
             var lastStatement = section.Statements.LastOrDefault();
@@ -295,7 +295,7 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.SingletonList(block);
         }
 
-        bool ConvertForToSimpleForNext(CSS.ForStatementSyntax node, out StatementSyntax block)
+        private bool ConvertForToSimpleForNext(CSS.ForStatementSyntax node, out StatementSyntax block)
         {
             //   ForStatement -> ForNextStatement when for-loop is simple
 
@@ -446,7 +446,7 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.SingletonList<StatementSyntax>(block);
         }
 
-        CatchBlockSyntax ConvertCatchClause(int index, CSS.CatchClauseSyntax catchClause)
+        private CatchBlockSyntax ConvertCatchClause(int index, CSS.CatchClauseSyntax catchClause)
         {
             var statements = ConvertBlock(catchClause.Block);
             if (catchClause.Declaration == null)
@@ -494,7 +494,7 @@ namespace ICSharpCode.CodeConverter.VB
                 .AddRange(ConvertBlock(node.Statement));
         }
 
-        string MakeGotoSwitchLabel(VisualBasicSyntaxNode expression)
+        private string MakeGotoSwitchLabel(VisualBasicSyntaxNode expression)
         {
             string expressionText;
             if (expression is ElseCaseClauseSyntax)
@@ -544,7 +544,7 @@ namespace ICSharpCode.CodeConverter.VB
             return ifBlock;
         }
 
-        SyntaxList<StatementSyntax> ConvertBlock(CSS.StatementSyntax node, params StatementSyntax[] prefixExtraVbStatements)
+        private SyntaxList<StatementSyntax> ConvertBlock(CSS.StatementSyntax node, params StatementSyntax[] prefixExtraVbStatements)
         {
             if (node is CSS.BlockSyntax b) {
                 return SyntaxFactory.List(prefixExtraVbStatements.Concat(b.Statements.Where(s => !(s is CSS.EmptyStatementSyntax))
@@ -654,7 +654,7 @@ namespace ICSharpCode.CodeConverter.VB
             return WrapInComment(ConvertBlock(node.Block), "Visual Basic does not support checked statements!");
         }
 
-        SyntaxList<StatementSyntax> WrapInComment(SyntaxList<StatementSyntax> nodes, string comment)
+        private SyntaxList<StatementSyntax> WrapInComment(SyntaxList<StatementSyntax> nodes, string comment)
         {
             if (nodes.Count > 0) {
                 nodes = nodes.Replace(nodes[0], nodes[0].WithPrependedLeadingTrivia(SyntaxFactory.CommentTrivia("BEGIN TODO : " + comment)));

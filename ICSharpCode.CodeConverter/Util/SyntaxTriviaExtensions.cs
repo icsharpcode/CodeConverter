@@ -14,7 +14,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static class SyntaxTriviaExtensions
+    internal static class SyntaxTriviaExtensions
     {
         /// <summary>
         /// Look inside a trivia list for a skipped token that contains the given position.

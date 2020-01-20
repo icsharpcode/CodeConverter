@@ -35,12 +35,12 @@ namespace ICSharpCode.CodeConverter
             return new ConversionResult(new NotSupportedException($"Converting from {code.FromLanguage} {code.FromLanguageVersion} to {code.ToLanguage} {code.ToLanguageVersion} is not supported!"));
         }
 
-        static bool IsSupportedTarget(string toLanguage, int toLanguageVersion)
+        private static bool IsSupportedTarget(string toLanguage, int toLanguageVersion)
         {
             return (toLanguage == "Visual Basic" && toLanguageVersion == 14) || (toLanguage == "C#" && toLanguageVersion == 6);
         }
 
-        static bool IsSupportedSource(string fromLanguage, int fromLanguageVersion)
+        private static bool IsSupportedSource(string fromLanguage, int fromLanguageVersion)
         {
             return (fromLanguage == "C#" && fromLanguageVersion == 6) || (fromLanguage == "Visual Basic" && fromLanguageVersion == 14);
         }

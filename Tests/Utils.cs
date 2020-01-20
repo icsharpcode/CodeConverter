@@ -2,7 +2,7 @@
 
 namespace CodeConverter.Tests
 {
-    static class Utils
+    internal static class Utils
     {
         internal static string HomogenizeEol(string str)
         {

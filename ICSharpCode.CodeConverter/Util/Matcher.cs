@@ -6,7 +6,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    abstract class Matcher<T>
+    internal abstract class Matcher<T>
     {
         // Tries to match this matcher against the provided sequence at the given index.  If the
         // match succeeds, 'true' is returned, and 'index' points to the location after the match
@@ -142,7 +142,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    class Matcher
+    internal class Matcher
     {
         /// <summary>
         /// Matcher equivalent to (m*)

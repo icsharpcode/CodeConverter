@@ -13,7 +13,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static class StringExtensions
+    internal static class StringExtensions
     {
         public static int? GetFirstNonWhitespaceOffset(this string line)
         {

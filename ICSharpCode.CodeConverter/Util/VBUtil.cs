@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.Util
 {
-    static class VBUtil
+    internal static class VBUtil
     {
         /// <summary>
         /// Inverts a boolean condition. Note: The condition object can be frozen (from AST) it's cloned internally.

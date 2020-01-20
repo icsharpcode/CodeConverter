@@ -759,18 +759,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SingleStatement((ExpressionSyntax) await node.Invocation.AcceptAsync(_expressionVisitor));
         }
 
-        SyntaxList<StatementSyntax> SingleStatement(StatementSyntax statement)
+        private SyntaxList<StatementSyntax> SingleStatement(StatementSyntax statement)
         {
             return SyntaxFactory.SingletonList(statement);
         }
 
-        SyntaxList<StatementSyntax> SingleStatement(ExpressionSyntax expression)
+        private SyntaxList<StatementSyntax> SingleStatement(ExpressionSyntax expression)
         {
             return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ExpressionStatement(expression));
         }
     }
 
-    static class Extensions
+    internal static class Extensions
     {
         /// <summary>
         /// Returns the single statement in a block if it has no nested statements.

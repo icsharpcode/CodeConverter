@@ -7,7 +7,7 @@ namespace CodeConverter.Tests
 #if NR6
     public
 #endif
-    enum UnicodeNewline
+    internal enum UnicodeNewline
     {
         Unknown,
 
@@ -56,7 +56,7 @@ namespace CodeConverter.Tests
 #if NR6
     public
 #endif
-    static class NewLine
+    internal static class NewLine
     {
         /// <summary>
         /// Carriage Return, U+000D

@@ -9,7 +9,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static class TypeExtensions
+    internal static class TypeExtensions
     {
         #region GetDelegateInvokeMethod
         /// <summary>

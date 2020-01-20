@@ -48,24 +48,24 @@ namespace ICSharpCode.CodeConverter.VB
     {
         private readonly Document _document;
         private readonly CS.CSharpCompilation _compilation;
-        readonly SemanticModel _semanticModel;
+        private readonly SemanticModel _semanticModel;
         private readonly VisualBasicCompilation _vbViewOfCsSymbols;
         private readonly SyntaxGenerator _vbSyntaxGenerator;
 
-        readonly List<ImportsStatementSyntax> _allImports = new List<ImportsStatementSyntax>();
+        private readonly List<ImportsStatementSyntax> _allImports = new List<ImportsStatementSyntax>();
 
 
-        int _placeholder = 1;
+        private int _placeholder = 1;
         private readonly CSharpHelperMethodDefinition _cSharpHelperMethodDefinition;
         private readonly CommonConversions _commonConversions;
         public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
 
-        string GeneratePlaceholder(string v)
+        private string GeneratePlaceholder(string v)
         {
             return $"__{v}{_placeholder++}__";
         }
 
-        IEnumerable<ImportsStatementSyntax> TidyImportsList(IEnumerable<ImportsStatementSyntax> allImports)
+        private IEnumerable<ImportsStatementSyntax> TidyImportsList(IEnumerable<ImportsStatementSyntax> allImports)
         {
             return allImports
                 .SelectMany(x => x.ImportsClauses)
@@ -489,7 +489,7 @@ namespace ICSharpCode.CodeConverter.VB
 
             return !implementors.Any() ? null: CreateImplementsClauseSyntax(implementors, id);
         }
-        ImplementsClauseSyntax CreateImplementsClauseSyntax(IEnumerable<ISymbol> implementors, SyntaxToken id) {
+        private ImplementsClauseSyntax CreateImplementsClauseSyntax(IEnumerable<ISymbol> implementors, SyntaxToken id) {
             return SyntaxFactory.ImplementsClause(implementors.Select(x => {
                     var namedTypeSymbol = x.ContainingSymbol as INamedTypeSymbol;
                     NameSyntax nameSyntax = null;
@@ -605,7 +605,7 @@ namespace ICSharpCode.CodeConverter.VB
                     throw new ArgumentOutOfRangeException(nameof(member), parentTypeKind, null);
             }
         }
-        bool IsNonGenericStatic(CSS.TypeDeclarationSyntax type) {
+        private bool IsNonGenericStatic(CSS.TypeDeclarationSyntax type) {
             return type.Modifiers.Any(CS.SyntaxKind.StaticKeyword) && type.TypeParameterList == null;
         }
 
@@ -665,7 +665,7 @@ namespace ICSharpCode.CodeConverter.VB
             ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
             return SyntaxFactory.EventStatement(attributes, CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)), id, null, SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Declaration.Type.Accept(TriviaConvertingVisitor)), null);
         }
-        TypeSyntax GetTypeSyntax(ITypeSymbol typeInfo) {
+        private TypeSyntax GetTypeSyntax(ITypeSymbol typeInfo) {
             return (TypeSyntax) _vbSyntaxGenerator.TypeExpression(typeInfo);
         }
 
@@ -704,7 +704,7 @@ namespace ICSharpCode.CodeConverter.VB
 
 
 
-        SyntaxKind ConvertOperatorDeclarationToken(CS.SyntaxKind syntaxKind, bool firstParameterIsString)
+        private SyntaxKind ConvertOperatorDeclarationToken(CS.SyntaxKind syntaxKind, bool firstParameterIsString)
         {
             switch (syntaxKind) {
                 case CS.SyntaxKind.PlusToken:
@@ -1033,7 +1033,7 @@ namespace ICSharpCode.CodeConverter.VB
                    || node.Parent.IsParentKind(CS.SyntaxKind.SetAccessorDeclaration);
         }
 
-        AssignmentStatementSyntax MakeAssignmentStatement(CSS.AssignmentExpressionSyntax node)
+        private AssignmentStatementSyntax MakeAssignmentStatement(CSS.AssignmentExpressionSyntax node)
         {
             var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
             if (node.IsKind(CS.SyntaxKind.AndAssignmentExpression, CS.SyntaxKind.OrAssignmentExpression, CS.SyntaxKind.ExclusiveOrAssignmentExpression, CS.SyntaxKind.ModuloAssignmentExpression)) {
@@ -1424,7 +1424,7 @@ namespace ICSharpCode.CodeConverter.VB
             );
         }
 
-        IEnumerable<QueryClauseSyntax> ConvertQueryBody(CSS.QueryBodySyntax body)
+        private IEnumerable<QueryClauseSyntax> ConvertQueryBody(CSS.QueryBodySyntax body)
         {
             if (body.SelectOrGroup is CSS.GroupClauseSyntax && body.Continuation == null)
                 throw new NotSupportedException("group by clause without into not supported in VB");
@@ -1690,7 +1690,7 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(node.Arguments.Select(a => (TypeSyntax)a.Accept(TriviaConvertingVisitor))));
         }
 
-        VisualBasicSyntaxNode WrapTypedNameIfNecessary(ExpressionSyntax name, CSS.ExpressionSyntax originalName)
+        private VisualBasicSyntaxNode WrapTypedNameIfNecessary(ExpressionSyntax name, CSS.ExpressionSyntax originalName)
         {
             if (originalName.Parent is CSS.NameSyntax
                 || originalName.Parent is CSS.AttributeSyntax

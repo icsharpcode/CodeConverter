@@ -7,7 +7,7 @@ namespace ICSharpCode.CodeConverter.Util
 #if NR6
     public
 #endif
-    static partial class SpecializedCollections
+    internal static partial class SpecializedCollections
     {
         public static readonly byte[] EmptyBytes = EmptyArray<byte>();
         public static readonly object[] EmptyObjects = EmptyArray<object>();

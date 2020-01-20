@@ -6,7 +6,7 @@ using CS = Microsoft.CodeAnalysis.CSharp;
 
 namespace ICSharpCode.CodeConverter.VB
 {
-    static class ConversionExtensions
+    internal static class ConversionExtensions
     {
         public static bool HasUsingDirective(this CS.CSharpSyntaxTree tree, string fullName)
         {
