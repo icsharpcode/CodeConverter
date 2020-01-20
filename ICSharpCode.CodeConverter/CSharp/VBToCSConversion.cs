@@ -57,7 +57,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             return new[] {
                 ("\\\\Microsoft\\.VisualBasic\\.targets", "\\Microsoft.CSharp.targets"),
                 ("\\.vb\"", ".cs\""),
-                ("\\.vb<", ".cs<")
+                ("\\.vb<", ".cs<"),
+                ("<\\s*Generator\\s*>\\s*VbMyResourcesResXFileCodeGenerator\\s*</\\s*Generator\\s*>", "<Generator>ResXFileCodeGenerator</Generator>")
             };
         }
 

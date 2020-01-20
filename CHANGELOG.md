@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Add conversions to allow arithmetic on enums
 * Add omitted argument lists on conditional expressions
 * Winforms initialization improvements
+* Convert VbMyResourcesResXFileCodeGenerator resource generator type in project file
 
 ### C# -> VB
 
