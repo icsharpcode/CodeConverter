@@ -55,9 +55,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.List<StatementSyntax>();
         }
 
-        public SyntaxList<StatementSyntax> GetPreResumeLayoutEventHandlers()
+        public SyntaxList<StatementSyntax> GetPreInitializeComponentEventHandlers()
         {
-            var handledMethods = _methodWithHandleses.SelectMany(m => m.GetPreResumeLayoutEventHandlers()).ToArray();
+            var handledMethods = _methodWithHandleses.SelectMany(m => m.GetPreInitializeComponentEventHandlers()).ToArray();
             return SyntaxFactory.List(handledMethods);
         }
     }

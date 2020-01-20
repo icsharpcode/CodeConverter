@@ -130,7 +130,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 } else if (CommonConversions.InMethodCalledInitializeComponent(node) &&
                            access.Name.Identifier.ValueText.Equals("ResumeLayout",
                                StringComparison.OrdinalIgnoreCase)) {
-                    var eventSubscriptionStatements = _methodsWithHandles.GetPreResumeLayoutEventHandlers();
+                    var eventSubscriptionStatements = _methodsWithHandles.GetPreInitializeComponentEventHandlers();
                     if (eventSubscriptionStatements.Any()) {
                         return SyntaxFactory.List(eventSubscriptionStatements.Concat(SingleStatement((ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor))));
                     }

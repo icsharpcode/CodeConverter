@@ -117,7 +117,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
 
-        public IEnumerable<StatementSyntax> GetPreResumeLayoutEventHandlers()
+        public IEnumerable<StatementSyntax> GetPreInitializeComponentEventHandlers()
         {
             return HandledClassEventCSharpIds.Select(e =>
                 CreateHandlesUpdater(SyntaxFactory.IdentifierName(e.EventContainerName), e, SyntaxKind.AddAssignmentExpression));
