@@ -875,7 +875,7 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitParenthesizedExpression(CSS.ParenthesizedExpressionSyntax node)
         {
             return node.Expression.Accept(TriviaConvertingVisitor)
-                .TypeSwitch<VisualBasicSyntaxNode, AssignmentStatementSyntax, CTypeExpressionSyntax, ExpressionSyntax, VisualBasicSyntaxNode>(
+                .TypeSwitch<VisualBasicSyntaxNode, AssignmentStatementSyntax, CTypeExpressionSyntax, TryCastExpressionSyntax, ExpressionSyntax, VisualBasicSyntaxNode>(
                     (AssignmentStatementSyntax statement) => {
                         var subOrFunctionHeader = SyntaxFactory.LambdaHeader(
                             SyntaxKind.FunctionLambdaHeader,
@@ -892,6 +892,7 @@ namespace ICSharpCode.CodeConverter.VB
                         return SyntaxFactory.InvocationExpression(multiLineFunctionLambdaExpression, SyntaxFactory.ArgumentList());
                     },
                     (CTypeExpressionSyntax cTypeExpression) => cTypeExpression,
+                    (TryCastExpressionSyntax tryCastExpression) => tryCastExpression,
                     (ExpressionSyntax expression) => SyntaxFactory.ParenthesizedExpression(expression)
                 );
         }
