@@ -153,7 +153,7 @@ class TestClass
 
 Friend Class TestClass
     Private Shared Function [Do]() As Boolean
-        Dim d = New Dictionary(Of String, String)
+        Dim d = New Dictionary(Of String, String)()
         Dim output As string = Nothing
         Return d.TryGetValue("""", output)
     End Function

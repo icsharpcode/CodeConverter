@@ -637,13 +637,6 @@ namespace ICSharpCode.CodeConverter.VB
                     .WithAsClause(SyntaxFactory.SimpleAsClause(GetTypeSyntax(x.Type)))
                     .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword)))
             );
-
-            var riseEventAccessor = SyntaxFactory.RaiseEventAccessorBlock(
-                SyntaxFactory.RaiseEventAccessorStatement(
-                    attributes,
-                    SyntaxFactory.TokenList(),
-                    SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(raiseEventParameters))
-            ));
             var eventFieldIdentifier = (IdentifierNameSyntax)node.AccessorList?.Accessors
                 .SelectMany(x => x.Body.Statements)
                 .OfType<CSS.ExpressionStatementSyntax>()
@@ -652,6 +645,13 @@ namespace ICSharpCode.CodeConverter.VB
                 .OfType<CSS.AssignmentExpressionSyntax>()
                 .SelectMany(x => x.Left.DescendantNodesAndSelf().OfType<CSS.IdentifierNameSyntax>())
                 .FirstOrDefault()?.Accept(TriviaConvertingVisitor);
+
+            var riseEventAccessor = SyntaxFactory.RaiseEventAccessorBlock(
+                SyntaxFactory.RaiseEventAccessorStatement(
+                    attributes,
+                    SyntaxFactory.TokenList(),
+                    SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(raiseEventParameters))
+            ));
             if (eventFieldIdentifier != null) {
                 riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList(
                     (StatementSyntax)SyntaxFactory.RaiseEventStatement(eventFieldIdentifier,
