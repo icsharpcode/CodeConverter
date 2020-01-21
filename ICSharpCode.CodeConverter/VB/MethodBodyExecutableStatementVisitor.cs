@@ -43,12 +43,12 @@ namespace ICSharpCode.CodeConverter.VB
 
         public MethodBodyExecutableStatementVisitor(SemanticModel semanticModel,
             CSharpSyntaxVisitor<VisualBasicSyntaxNode> nodesVisitor, TriviaConverter triviaConverter,
-            CommonConversions commonConversions)
+            CommonConversions commonConversions, System.Collections.BitArray lineTriviaMapped)
         {
             this._semanticModel = semanticModel;
             this._nodesVisitor = nodesVisitor;
             _commonConversions = commonConversions;
-            CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
+            CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter, lineTriviaMapped);
         }
 
         public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)

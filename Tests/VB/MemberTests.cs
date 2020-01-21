@@ -100,16 +100,16 @@ End Class");
         }
 
         [Fact]
-        public async Task TestMethod()
+        public async Task TestMethodWithComments()
         {
             await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class, new where T2 : struct
     {
-        argument = null;
-        argument2 = default(T2);
-        argument3 = default(T3);
+        argument = null; //1
+        argument2 = default(T2); //2
+        argument3 = default(T3); //3
     }
 }", @"Imports System.Runtime.InteropServices
 

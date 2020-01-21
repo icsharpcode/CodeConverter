@@ -759,6 +759,12 @@ namespace ICSharpCode.CodeConverter.Util
             return node.WithConvertedLeadingTriviaFrom(otherNode).WithConvertedTrailingTriviaFrom(otherNode);
         }
 
+        public static T WithConvertedLeadingTriviaFrom<T>(this T node, SyntaxToken fromToken) where T : SyntaxNode
+        {
+            var firstConvertedToken = node.GetFirstToken();
+            return node.ReplaceToken(firstConvertedToken, firstConvertedToken.WithConvertedLeadingTriviaFrom(fromToken));
+        }
+
         public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
         {
             var firstToken = otherNode?.GetFirstToken();
@@ -770,6 +776,12 @@ namespace ICSharpCode.CodeConverter.Util
             if (sourceToken == null) return node;
             var convertedTrivia = ConvertTrivia(sourceToken.Value.LeadingTrivia);
             return node.WithLeadingTrivia(convertedTrivia);
+        }
+
+        public static T WithConvertedTrailingTriviaFrom<T>(this T node, SyntaxToken fromToken) where T : SyntaxNode
+        {
+            var lastConvertedToken = node.GetLastToken();
+            return node.ReplaceToken(lastConvertedToken, lastConvertedToken.WithConvertedTrailingTriviaFrom(fromToken));
         }
 
         public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
@@ -845,8 +857,7 @@ namespace ICSharpCode.CodeConverter.Util
                 var outputCommentText = multiLine
                     ? "''' " + String.Join($"\r\n{previousWhitespace}''' ", commentTextLines)
                     : $"' {commentTextLines.Single()}";
-                return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.DocumentationCommentTrivia,
-                    outputCommentText);
+                return VBSyntaxFactory.CommentTrivia(outputCommentText);
             }
 
             if (t.IsKind(CSSyntaxKind.WhitespaceTrivia)) {

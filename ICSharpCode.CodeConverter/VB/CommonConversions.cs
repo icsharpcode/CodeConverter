@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.CodeConverter.Shared;
@@ -37,6 +38,7 @@ namespace ICSharpCode.CodeConverter.VB
         private readonly CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode> _nodesVisitor;
         private readonly TriviaConverter _triviaConverter;
         private readonly SemanticModel _semanticModel;
+        private readonly BitArray _lineTriviaMapped;
 
         public CommonConversions(SemanticModel semanticModel, SyntaxGenerator vbSyntaxGenerator,
             CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode> nodesVisitor,
@@ -201,7 +203,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private CS.CSharpSyntaxVisitor<SyntaxList<StatementSyntax>> CreateMethodBodyVisitor(MethodBodyExecutableStatementVisitor methodBodyExecutableStatementVisitor = null)
         {
-            var visitor = methodBodyExecutableStatementVisitor ?? new MethodBodyExecutableStatementVisitor(_semanticModel, _nodesVisitor, _triviaConverter, this);
+            var visitor = methodBodyExecutableStatementVisitor ?? new MethodBodyExecutableStatementVisitor(_semanticModel, _nodesVisitor, _triviaConverter, this, _lineTriviaMapped);
             return visitor.CommentConvertingVisitor;
         }
 
@@ -212,7 +214,7 @@ namespace ICSharpCode.CodeConverter.VB
             EndBlockStatementSyntax endStmt;
             SyntaxList<StatementSyntax> body;
             isIterator = false;
-            var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, _nodesVisitor, _triviaConverter, this);
+            var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, _nodesVisitor, _triviaConverter, this, _lineTriviaMapped);
             body = ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
             isIterator = isIteratorState.IsIterator;
             var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(_nodesVisitor)));

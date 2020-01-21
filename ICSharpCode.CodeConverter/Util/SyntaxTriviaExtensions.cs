@@ -197,7 +197,7 @@ namespace ICSharpCode.CodeConverter.Util
                 textBuilder.Remove(textBuilder.Length - newLine.Length, newLine.Length);
 
                 return textBuilder.ToString();
-            } else if (trivia.IsKind(VBasic.SyntaxKind.DocumentationCommentTrivia)) {
+            } else if (trivia.IsKind(VBasic.SyntaxKind.DocumentationCommentTrivia) || trivia.Kind() == CS.SyntaxKind.SingleLineDocumentationCommentTrivia) {
                 var textBuilder = new StringBuilder();
 
                 if (commentText.EndsWith("*/")) {

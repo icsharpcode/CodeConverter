@@ -39,6 +39,7 @@ using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExte
 using static ICSharpCode.CodeConverter.VB.SyntaxKindExtensions;
 using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 using Microsoft.VisualBasic;
+using System.Collections;
 
 namespace ICSharpCode.CodeConverter.VB
 {
@@ -52,14 +53,13 @@ namespace ICSharpCode.CodeConverter.VB
         private readonly SemanticModel _semanticModel;
         private readonly VisualBasicCompilation _vbViewOfCsSymbols;
         private readonly SyntaxGenerator _vbSyntaxGenerator;
-
         private readonly List<ImportsStatementSyntax> _convertedImports = new List<ImportsStatementSyntax>();
         private readonly HashSet<string> _extraImports = new HashSet<string>();
-
-
-        private int _placeholder = 1;
         private readonly CSharpHelperMethodDefinition _cSharpHelperMethodDefinition;
         private readonly CommonConversions _commonConversions;
+
+        private int _placeholder = 1;
+        private readonly BitArray _lineTriviaMapped;
         public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
 
         private string GeneratePlaceholder(string v)
@@ -77,14 +77,15 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
         public NodesVisitor(Document document, CS.CSharpCompilation compilation, SemanticModel semanticModel,
-            VisualBasicCompilation vbViewOfCsSymbols, SyntaxGenerator vbSyntaxGenerator)
+            VisualBasicCompilation vbViewOfCsSymbols, SyntaxGenerator vbSyntaxGenerator, int numberOfLines)
         {
             _document = document;
             _compilation = compilation;
             _semanticModel = semanticModel;
             _vbViewOfCsSymbols = vbViewOfCsSymbols;
             _vbSyntaxGenerator = vbSyntaxGenerator;
-            TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
+            _lineTriviaMapped = new BitArray(numberOfLines);
+            TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this, _lineTriviaMapped, _semanticModel);
             _commonConversions = new CommonConversions(semanticModel, vbSyntaxGenerator, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
             _cSharpHelperMethodDefinition = new CSharpHelperMethodDefinition();
         }
@@ -430,7 +431,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitMethodDeclaration(CSS.MethodDeclarationSyntax node)
         {
-            var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter, _commonConversions);
+            var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter, _commonConversions, _lineTriviaMapped);
             bool requiresBody = node.Body != null || node.ExpressionBody != null || node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword));
             var block = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
             var id = _commonConversions.ConvertIdentifier(node.Identifier);
