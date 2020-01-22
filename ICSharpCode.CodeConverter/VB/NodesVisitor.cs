@@ -663,7 +663,15 @@ namespace ICSharpCode.CodeConverter.VB
             var decl = node.Declaration.Variables.Single();
             var id = SyntaxFactory.Identifier(decl.Identifier.ValueText, SyntaxFacts.IsKeywordKind(decl.Identifier.Kind()), decl.Identifier.GetIdentifierText(), TypeCharacter.None);
             ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
-            return SyntaxFactory.EventStatement(attributes, CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)), id, null, SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Declaration.Type.Accept(TriviaConvertingVisitor)), null);
+            var declaredSymbol = _semanticModel.GetDeclaredSymbol(decl);
+            return SyntaxFactory.EventStatement(
+                attributes,
+                CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)),
+                id,
+                null,
+                SyntaxFactory.SimpleAsClause(returnAttributes,
+                (TypeSyntax)node.Declaration.Type.Accept(TriviaConvertingVisitor)),
+                declaredSymbol == null ? null : CreateImplementsClauseSyntaxOrNull(declaredSymbol, id));
         }
         private TypeSyntax GetTypeSyntax(ITypeSymbol typeInfo) {
             return (TypeSyntax) _vbSyntaxGenerator.TypeExpression(typeInfo);

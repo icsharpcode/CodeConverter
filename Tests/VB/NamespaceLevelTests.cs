@@ -441,5 +441,20 @@ Public Class TestClass
     End Sub
 End Class");
         }
+        [Fact]
+        public async Task ImplementsEvent() {
+            await TestConversionCSharpToVisualBasic(
+@"using System.ComponentModel;
+public class TestClass : INotifyPropertyChanged {
+    public event PropertyChangedEventHandler PropertyChanged;
+",
+@"Imports System.ComponentModel
+
+Public Class TestClass
+    Implements INotifyPropertyChanged
+
+    Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
+End Class");
+        }
     }
 }
