@@ -333,15 +333,17 @@ namespace ICSharpCode.CodeConverter.VB
                 modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
 
             var symbol = _semanticModel.GetDeclaredSymbol(node.Declaration.Variables.FirstOrDefault());
-            var isEventBackingField = symbol?.ContainingType.GetMembers()
-                .OfType<IEventSymbol>()
-                .Any(x => {
-                    var nodes = x.DeclaringSyntaxReferences.SelectMany(y => y.GetSyntax().DescendantNodes().OfType<CSS.AssignmentExpressionSyntax>());
-                    return nodes.Any(n => n.Left.DescendantNodesAndSelf().OfType<CSS.IdentifierNameSyntax>().Any(y => y.Identifier.ValueText == symbol.Name));
-                });
-
-            if (isEventBackingField == true) {
-                modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.EventKeyword));
+            var canBeEventHandler = (symbol as IFieldSymbol)?.Type.IsDelegateType();
+            if (canBeEventHandler == true) {
+                var isEventBackingField = symbol?.ContainingType.GetMembers()
+                    .OfType<IEventSymbol>()
+                    .Any(x => {
+                        var nodes = x.DeclaringSyntaxReferences.SelectMany(y => y.GetSyntax().DescendantNodes().OfType<CSS.AssignmentExpressionSyntax>());
+                        return nodes.Any(n => n.Left.DescendantNodesAndSelf().OfType<CSS.IdentifierNameSyntax>().Any(y => y.Identifier.ValueText == symbol.Name));
+                    });
+                if (isEventBackingField == true) {
+                    modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.EventKeyword));
+                }
             }
 
             return SyntaxFactory.FieldDeclaration(
