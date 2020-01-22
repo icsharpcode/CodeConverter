@@ -182,6 +182,9 @@ namespace ICSharpCode.CodeConverter.VB
             var nameToImport = _semanticModel.GetSymbolInfo(node.Name).Symbol is INamespaceOrTypeSymbol toImport
                 ? _commonConversions.GetFullyQualifiedNameSyntax(toImport)
                 : (NameSyntax)node.Name.Accept(TriviaConvertingVisitor);
+            var globalNameNode = nameToImport.DescendantNodes().OfType<GlobalNameSyntax>().FirstOrDefault();
+            if(globalNameNode != null)
+                nameToImport = nameToImport.ReplaceNodes((globalNameNode.Parent as QualifiedNameSyntax).Yield(), (orig, rewrite) => orig.Right);
             SimpleImportsClauseSyntax clause = SyntaxFactory.SimpleImportsClause(nameToImport);
 
             if (node.Alias != null) {
