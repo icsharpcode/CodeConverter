@@ -1086,5 +1086,29 @@ End Class", conversion: EmptyNamespaceOptionStrictOff);
             Assert.Contains("public static AcmeClass operator ++(int i, AcmeClass ac)", convertedCode);
             Assert.Contains("public static AcmeClass operator --(string s, AcmeClass ac)", convertedCode);
         }
+        [Fact]
+        public async Task MethodOverloads() {
+            await TestConversionCSharpToVisualBasic(
+@"public class MailEmployee {
+    public string Email { get; set; }
+    protected bool Equals(MailEmployee other) {
+        return Email == other.Email;
     }
+    public override bool Equals(object obj) {
+        return Equals((MailEmployee)obj);
+    }
+}",
+@"Public Class MailEmployee
+    Public Property Email As String
+
+    Protected Overloads Function Equals(ByVal other As MailEmployee) As Boolean
+        Return Email Is other.Email
+    End Function
+
+    Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Return Equals(CType(obj, MailEmployee))
+    End Function
+End Class");
+        }
+    }    
 }

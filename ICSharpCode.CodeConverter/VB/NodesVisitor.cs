@@ -435,8 +435,6 @@ namespace ICSharpCode.CodeConverter.VB
             bool requiresBody = node.Body != null || node.ExpressionBody != null || node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword));
             var block = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
             var id = _commonConversions.ConvertIdentifier(node.Identifier);
-            var methodInfo = _semanticModel.GetDeclaredSymbol(node);
-            var containingType = methodInfo?.ContainingType;
             var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor)));
             var parameterList = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor);
             var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node));
@@ -447,7 +445,11 @@ namespace ICSharpCode.CodeConverter.VB
                 if (!((CS.CSharpSyntaxTree)node.SyntaxTree).HasUsingDirective("System.Runtime.CompilerServices"))
                     _allImports.Add(SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(SyntaxFactory.SimpleImportsClause(SyntaxFactory.ParseName("System.Runtime.CompilerServices")))));
             }
-
+            var methodInfo = _semanticModel.GetDeclaredSymbol(node);
+            var needsOverloads = methodInfo?.ContainingType?.GetMembers(methodInfo.Name).Except(methodInfo.Yield()).Any(m => m.IsOverride);
+            if (needsOverloads == true) {
+                modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.OverloadsKeyword));
+            }
             var implementsClause = methodInfo == null ? null : CreateImplementsClauseSyntaxOrNull(methodInfo, id);
             if (methodInfo?.GetReturnType()?.SpecialType == SpecialType.System_Void) {
                 var stmt = SyntaxFactory.SubStatement(
