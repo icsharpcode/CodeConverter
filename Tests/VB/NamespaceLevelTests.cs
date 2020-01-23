@@ -420,6 +420,21 @@ Public NotInheritable Class TestClass(Of T As {Class1, New})
 End Class");
         }
         [Fact]
+        public async Task NestedStaticClass() {
+            await TestConversionCSharpToVisualBasic(
+@"public static class Factory {
+    static class Generator {
+        public static void Initialize() { }
+    }
+}",
+@"Module Factory
+    Friend NotInheritable Class Generator
+        Public Shared Sub Initialize()
+        End Sub
+    End Class
+End Module");
+        }
+        [Fact]
         public async Task ImplementsGenericInterface()
         {
             await TestConversionCSharpToVisualBasic(

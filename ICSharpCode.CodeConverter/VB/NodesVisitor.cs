@@ -209,7 +209,7 @@ namespace ICSharpCode.CodeConverter.VB
             List<ImplementsStatementSyntax> implements = new List<ImplementsStatementSyntax>();
             _commonConversions.ConvertBaseList(node, inherits, implements);
             members.AddRange(_cSharpHelperMethodDefinition.GetExtraMembers());
-            if (IsNonGenericStatic(node)) {
+            if (CanBeModule(node)) {
                 return SyntaxFactory.ModuleBlock(
                     SyntaxFactory.ModuleStatement(
                         SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.InterfaceOrModule),
@@ -594,7 +594,7 @@ namespace ICSharpCode.CodeConverter.VB
             var parentTypeKind = parentType?.Kind();
             switch (parentTypeKind) {
                 case CS.SyntaxKind.ClassDeclaration:
-                    return IsNonGenericStatic(parentType) ? TokenContext.MemberInModule : TokenContext.MemberInClass;
+                    return CanBeModule(parentType) ? TokenContext.MemberInModule : TokenContext.MemberInClass;
                 case CS.SyntaxKind.InterfaceDeclaration:
                     return TokenContext.MemberInInterface;
                 case CS.SyntaxKind.StructDeclaration:
@@ -603,8 +603,9 @@ namespace ICSharpCode.CodeConverter.VB
                     throw new ArgumentOutOfRangeException(nameof(member), parentTypeKind, null);
             }
         }
-        private bool IsNonGenericStatic(CSS.TypeDeclarationSyntax type) {
-            return type.Modifiers.Any(CS.SyntaxKind.StaticKeyword) && type.TypeParameterList == null;
+        private bool CanBeModule(CSS.TypeDeclarationSyntax type) {
+            var parentType = type.GetAncestor<CSS.TypeDeclarationSyntax>();
+            return type.Modifiers.Any(CS.SyntaxKind.StaticKeyword) && type.TypeParameterList == null && parentType == null;
         }
 
         public override VisualBasicSyntaxNode VisitEventDeclaration(CSS.EventDeclarationSyntax node)
