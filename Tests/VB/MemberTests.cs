@@ -1110,5 +1110,25 @@ End Class", conversion: EmptyNamespaceOptionStrictOff);
     End Function
 End Class");
         }
-    }    
+        [Fact]
+        public async Task Interface_Get() {
+            await TestConversionCSharpToVisualBasic(
+@"public interface IParametersProvider {
+    IEnumerable<object> Parameters { get; }
+}",
+@"Public Interface IParametersProvider
+    ReadOnly Property Parameters As IEnumerable(Of Object)
+End Interface");
+        }
+        [Fact]
+        public async Task Interface_Set() {
+            await TestConversionCSharpToVisualBasic(
+@"public interface IParametersProvider {
+    IEnumerable<object> Parameters { set; }
+}",
+@"Public Interface IParametersProvider
+    WriteOnly Property Parameters As IEnumerable(Of Object)
+End Interface");
+        }
+    }
 }

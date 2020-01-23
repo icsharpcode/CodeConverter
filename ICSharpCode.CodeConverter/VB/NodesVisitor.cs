@@ -535,7 +535,8 @@ namespace ICSharpCode.CodeConverter.VB
             bool isIterator = false;
             List<AccessorBlockSyntax> accessors = new List<AccessorBlockSyntax>();
             var hasAccessors = node.AccessorList != null;
-            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
+            IPropertySymbol declaredSymbol = _semanticModel.GetDeclaredSymbol(node) as IPropertySymbol;
+            modifiers = modifiers.AddRange(GetAccessLimitationSyntaxKinds(declaredSymbol).Select(x => SyntaxFactory.Token(x)));
             Func<PropertyStatementSyntax> getStatementSyntax = () => {
                 return SyntaxFactory.PropertyStatement(
                     attributes,
@@ -559,9 +560,6 @@ namespace ICSharpCode.CodeConverter.VB
                     accessors.Add(_commonConversions.ConvertAccessor(a, out var isAIterator, isAutoImplementedProperty));
                     isIterator |= isAIterator;
                 }
-
-                var accessLimitationTokens = GetAccessLimitationTokens(csAccessors);
-                modifiers = modifiers.AddRange(accessLimitationTokens);
                 if (isIterator) modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.IteratorKeyword));
             }
             else {
@@ -572,19 +570,17 @@ namespace ICSharpCode.CodeConverter.VB
                     SyntaxFactory.Token(SyntaxKind.GetKeyword));
                 accessors.Add(SyntaxFactory.GetAccessorBlock(accessorStatementSyntax,
                     SyntaxFactory.SingletonList(expressionStatementSyntax), SyntaxFactory.EndGetStatement()));
-                modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword));
             }
             return SyntaxFactory.PropertyBlock(getStatementSyntax(), SyntaxFactory.List(accessors));
         }
 
-        private static SyntaxToken[] GetAccessLimitationTokens(SyntaxList<CSS.AccessorDeclarationSyntax> csAccessors)
+        private static IEnumerable<SyntaxKind> GetAccessLimitationSyntaxKinds(IPropertySymbol propertySymbol)
         {
-            if (csAccessors.Count != 1) return Array.Empty<SyntaxToken>();
-
-            var accessLimitation = csAccessors.Single().IsKind(CS.SyntaxKind.SetAccessorDeclaration)
-                ? SyntaxKind.WriteOnlyKeyword
-                : SyntaxKind.ReadOnlyKeyword;
-            return new[] {SyntaxFactory.Token(accessLimitation)};
+            if (propertySymbol.IsReadOnly)
+                return SyntaxKind.ReadOnlyKeyword.Yield();
+            if (propertySymbol.IsWriteOnly)
+                return SyntaxKind.WriteOnlyKeyword.Yield();
+            return Enumerable.Empty<SyntaxKind>();
         }
 
         private static bool RequiresAccessorBody(CSS.AccessorListSyntax accessorListSyntaxOrNull)
