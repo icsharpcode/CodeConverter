@@ -41,6 +41,6 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="bin\$config$\netstandard1.3\$id$.*" target="lib\netstandard1.3" />
+    <file src="bin\$config$\netstandard1.3\$id$.*" target="lib" />
   </files>
 </package>
