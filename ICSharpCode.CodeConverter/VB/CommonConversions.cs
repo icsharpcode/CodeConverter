@@ -423,7 +423,7 @@ namespace ICSharpCode.CodeConverter.VB
             switch (context) {
                 case TokenContext.InterfaceOrModule:
                 case TokenContext.MemberInModule:
-                    return m.IsKind(CSSyntaxKind.StaticKeyword) || m.IsKind(CSSyntaxKind.PublicKeyword);
+                    return m.IsKind(CSSyntaxKind.StaticKeyword);
             }
             return false;
         }

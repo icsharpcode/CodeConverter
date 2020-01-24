@@ -71,7 +71,7 @@ End Namespace");
     }
 }", @"Namespace Test.class
     Friend Module TestClass
-        Sub Test()
+        Public Sub Test()
         End Sub
 
         Private Sub Test2()
@@ -427,11 +427,37 @@ End Class");
         public static void Initialize() { }
     }
 }",
-@"Module Factory
+@"Public Module Factory
     Friend NotInheritable Class Generator
         Public Shared Sub Initialize()
         End Sub
     End Class
+End Module");
+        }
+        [Fact]
+        public async Task VisibilityStaticClass() {
+            await TestConversionCSharpToVisualBasic(
+@"public static class Factory {
+    private const string Name = ""a"";
+    internal const string Name1 = ""b"";
+    public const string Name2 = ""c"";
+    public static void Initialize() { }
+    internal static void Initialize1() { }
+    private static void Initialize2() { }
+}",
+@"Public Module Factory
+    Private Const Name = ""a""
+    Friend Const Name1 = ""b""
+    Public Const Name2 = ""c""
+
+    Public Sub Initialize()
+    End Sub
+
+    Friend Sub Initialize1()
+    End Sub
+
+    Private Sub Initialize2()
+    End Sub
 End Module");
         }
         [Fact]

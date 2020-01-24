@@ -354,11 +354,11 @@ Imports System.Runtime.CompilerServices
 
 Friend Module TestClass
     <Extension()>
-    Sub TestMethod(ByVal str As String)
+    Public Sub TestMethod(ByVal str As String)
     End Sub
 
     <Extension()>
-    Sub TestMethod2Parameters(ByVal str As String, ByVal __ As Action(Of String))
+    Public Sub TestMethod2Parameters(ByVal str As String, ByVal __ As Action(Of String))
     End Sub
 End Module", conversion: EmptyNamespaceOptionStrictOff);
         }
@@ -379,7 +379,7 @@ static class TestClass
 
 Friend Module TestClass
     <Extension()>
-    Sub TestMethod(ByVal str As String)
+    Public Sub TestMethod(ByVal str As String)
     End Sub
 End Module");
         }

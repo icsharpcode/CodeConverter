@@ -345,7 +345,7 @@ Friend Module TestClass
         Return node
     End Function
 
-    Function Convert(ByVal node As Object) As Object
+    Public Function Convert(ByVal node As Object) As Object
         Return node.TypeSwitch(New Func(Of String, Object)(AddressOf ConvertString), New Func(Of Integer, Object)(AddressOf ConvertInt), Function(__)
                                                                                                                                              Throw New NotImplementedException($""Conversion for '{node.GetType}' not implemented"")
                                                                                                                                          End Function)
