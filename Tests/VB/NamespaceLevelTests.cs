@@ -71,7 +71,7 @@ End Namespace");
     }
 }", @"Namespace Test.class
     Friend Module TestClass
-        Sub Test()
+        Public Sub Test()
         End Sub
 
         Private Sub Test2()
@@ -420,6 +420,47 @@ Public NotInheritable Class TestClass(Of T As {Class1, New})
 End Class");
         }
         [Fact]
+        public async Task NestedStaticClass() {
+            await TestConversionCSharpToVisualBasic(
+@"public static class Factory {
+    static class Generator {
+        public static void Initialize() { }
+    }
+}",
+@"Public Module Factory
+    Friend NotInheritable Class Generator
+        Public Shared Sub Initialize()
+        End Sub
+    End Class
+End Module");
+        }
+        [Fact]
+        public async Task VisibilityStaticClass() {
+            await TestConversionCSharpToVisualBasic(
+@"public static class Factory {
+    private const string Name = ""a"";
+    internal const string Name1 = ""b"";
+    public const string Name2 = ""c"";
+    public static void Initialize() { }
+    internal static void Initialize1() { }
+    private static void Initialize2() { }
+}",
+@"Public Module Factory
+    Private Const Name = ""a""
+    Friend Const Name1 = ""b""
+    Public Const Name2 = ""c""
+
+    Public Sub Initialize()
+    End Sub
+
+    Friend Sub Initialize1()
+    End Sub
+
+    Private Sub Initialize2()
+    End Sub
+End Module");
+        }
+        [Fact]
         public async Task ImplementsGenericInterface()
         {
             await TestConversionCSharpToVisualBasic(
@@ -439,6 +480,21 @@ Public Class TestClass
 
     Public Sub Method(ByVal list As List(Of String)) Implements ITestInterface(Of String).Method
     End Sub
+End Class");
+        }
+        [Fact]
+        public async Task ImplementsEvent() {
+            await TestConversionCSharpToVisualBasic(
+@"using System.ComponentModel;
+public class TestClass : INotifyPropertyChanged {
+    public event PropertyChangedEventHandler PropertyChanged;
+",
+@"Imports System.ComponentModel
+
+Public Class TestClass
+    Implements INotifyPropertyChanged
+
+    Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
 End Class");
         }
     }

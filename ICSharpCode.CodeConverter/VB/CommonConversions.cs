@@ -330,7 +330,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static bool TryGetNodeForeSingleLineLambdaExpression(SyntaxKind kind, StatementSyntax statement, out VisualBasicSyntaxNode singleNode) {
             switch (kind) {
-                case SyntaxKind.SingleLineSubLambdaExpression when !(statement is MultiLineIfBlockSyntax):
+                case SyntaxKind.SingleLineSubLambdaExpression when statement.DescendantNodesAndSelf().OfType<StatementSyntax>().Count() == 1:
                     singleNode = statement;
                     return true;
                 case SyntaxKind.SingleLineFunctionLambdaExpression when UnpackExpressionFromStatement(statement, out var expression):
@@ -423,7 +423,7 @@ namespace ICSharpCode.CodeConverter.VB
             switch (context) {
                 case TokenContext.InterfaceOrModule:
                 case TokenContext.MemberInModule:
-                    return m.IsKind(CSSyntaxKind.StaticKeyword) || m.IsKind(CSSyntaxKind.PublicKeyword);
+                    return m.IsKind(CSSyntaxKind.StaticKeyword);
             }
             return false;
         }

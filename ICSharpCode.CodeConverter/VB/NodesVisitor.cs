@@ -209,7 +209,7 @@ namespace ICSharpCode.CodeConverter.VB
             List<ImplementsStatementSyntax> implements = new List<ImplementsStatementSyntax>();
             _commonConversions.ConvertBaseList(node, inherits, implements);
             members.AddRange(_cSharpHelperMethodDefinition.GetExtraMembers());
-            if (IsNonGenericStatic(node)) {
+            if (CanBeModule(node)) {
                 return SyntaxFactory.ModuleBlock(
                     SyntaxFactory.ModuleStatement(
                         SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.InterfaceOrModule),
@@ -435,8 +435,6 @@ namespace ICSharpCode.CodeConverter.VB
             bool requiresBody = node.Body != null || node.ExpressionBody != null || node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword));
             var block = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
             var id = _commonConversions.ConvertIdentifier(node.Identifier);
-            var methodInfo = _semanticModel.GetDeclaredSymbol(node);
-            var containingType = methodInfo?.ContainingType;
             var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor)));
             var parameterList = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor);
             var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node));
@@ -447,7 +445,11 @@ namespace ICSharpCode.CodeConverter.VB
                 if (!((CS.CSharpSyntaxTree)node.SyntaxTree).HasUsingDirective("System.Runtime.CompilerServices"))
                     _allImports.Add(SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(SyntaxFactory.SimpleImportsClause(SyntaxFactory.ParseName("System.Runtime.CompilerServices")))));
             }
-
+            var methodInfo = _semanticModel.GetDeclaredSymbol(node);
+            var needsOverloads = methodInfo?.ContainingType?.GetMembers(methodInfo.Name).Except(methodInfo.Yield()).Any(m => m.IsOverride);
+            if (needsOverloads == true) {
+                modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.OverloadsKeyword));
+            }
             var implementsClause = methodInfo == null ? null : CreateImplementsClauseSyntaxOrNull(methodInfo, id);
             if (methodInfo?.GetReturnType()?.SpecialType == SpecialType.System_Void) {
                 var stmt = SyntaxFactory.SubStatement(
@@ -533,7 +535,8 @@ namespace ICSharpCode.CodeConverter.VB
             bool isIterator = false;
             List<AccessorBlockSyntax> accessors = new List<AccessorBlockSyntax>();
             var hasAccessors = node.AccessorList != null;
-            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
+            IPropertySymbol declaredSymbol = _semanticModel.GetDeclaredSymbol(node) as IPropertySymbol;
+            modifiers = modifiers.AddRange(GetAccessLimitationSyntaxKinds(declaredSymbol).Select(x => SyntaxFactory.Token(x)));
             Func<PropertyStatementSyntax> getStatementSyntax = () => {
                 return SyntaxFactory.PropertyStatement(
                     attributes,
@@ -557,9 +560,6 @@ namespace ICSharpCode.CodeConverter.VB
                     accessors.Add(_commonConversions.ConvertAccessor(a, out var isAIterator, isAutoImplementedProperty));
                     isIterator |= isAIterator;
                 }
-
-                var accessLimitationTokens = GetAccessLimitationTokens(csAccessors);
-                modifiers = modifiers.AddRange(accessLimitationTokens);
                 if (isIterator) modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.IteratorKeyword));
             }
             else {
@@ -570,19 +570,17 @@ namespace ICSharpCode.CodeConverter.VB
                     SyntaxFactory.Token(SyntaxKind.GetKeyword));
                 accessors.Add(SyntaxFactory.GetAccessorBlock(accessorStatementSyntax,
                     SyntaxFactory.SingletonList(expressionStatementSyntax), SyntaxFactory.EndGetStatement()));
-                modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword));
             }
             return SyntaxFactory.PropertyBlock(getStatementSyntax(), SyntaxFactory.List(accessors));
         }
 
-        private static SyntaxToken[] GetAccessLimitationTokens(SyntaxList<CSS.AccessorDeclarationSyntax> csAccessors)
+        private static IEnumerable<SyntaxKind> GetAccessLimitationSyntaxKinds(IPropertySymbol propertySymbol)
         {
-            if (csAccessors.Count != 1) return Array.Empty<SyntaxToken>();
-
-            var accessLimitation = csAccessors.Single().IsKind(CS.SyntaxKind.SetAccessorDeclaration)
-                ? SyntaxKind.WriteOnlyKeyword
-                : SyntaxKind.ReadOnlyKeyword;
-            return new[] {SyntaxFactory.Token(accessLimitation)};
+            if (propertySymbol.IsReadOnly)
+                return SyntaxKind.ReadOnlyKeyword.Yield();
+            if (propertySymbol.IsWriteOnly)
+                return SyntaxKind.WriteOnlyKeyword.Yield();
+            return Enumerable.Empty<SyntaxKind>();
         }
 
         private static bool RequiresAccessorBody(CSS.AccessorListSyntax accessorListSyntaxOrNull)
@@ -596,7 +594,7 @@ namespace ICSharpCode.CodeConverter.VB
             var parentTypeKind = parentType?.Kind();
             switch (parentTypeKind) {
                 case CS.SyntaxKind.ClassDeclaration:
-                    return IsNonGenericStatic(parentType) ? TokenContext.MemberInModule : TokenContext.MemberInClass;
+                    return CanBeModule(parentType) ? TokenContext.MemberInModule : TokenContext.MemberInClass;
                 case CS.SyntaxKind.InterfaceDeclaration:
                     return TokenContext.MemberInInterface;
                 case CS.SyntaxKind.StructDeclaration:
@@ -605,8 +603,9 @@ namespace ICSharpCode.CodeConverter.VB
                     throw new ArgumentOutOfRangeException(nameof(member), parentTypeKind, null);
             }
         }
-        private bool IsNonGenericStatic(CSS.TypeDeclarationSyntax type) {
-            return type.Modifiers.Any(CS.SyntaxKind.StaticKeyword) && type.TypeParameterList == null;
+        private bool CanBeModule(CSS.TypeDeclarationSyntax type) {
+            var parentType = type.GetAncestor<CSS.TypeDeclarationSyntax>();
+            return type.Modifiers.Any(CS.SyntaxKind.StaticKeyword) && type.TypeParameterList == null && parentType == null;
         }
 
         public override VisualBasicSyntaxNode VisitEventDeclaration(CSS.EventDeclarationSyntax node)
@@ -663,7 +662,15 @@ namespace ICSharpCode.CodeConverter.VB
             var decl = node.Declaration.Variables.Single();
             var id = SyntaxFactory.Identifier(decl.Identifier.ValueText, SyntaxFacts.IsKeywordKind(decl.Identifier.Kind()), decl.Identifier.GetIdentifierText(), TypeCharacter.None);
             ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
-            return SyntaxFactory.EventStatement(attributes, CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)), id, null, SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Declaration.Type.Accept(TriviaConvertingVisitor)), null);
+            var declaredSymbol = _semanticModel.GetDeclaredSymbol(decl);
+            return SyntaxFactory.EventStatement(
+                attributes,
+                CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)),
+                id,
+                null,
+                SyntaxFactory.SimpleAsClause(returnAttributes,
+                (TypeSyntax)node.Declaration.Type.Accept(TriviaConvertingVisitor)),
+                declaredSymbol == null ? null : CreateImplementsClauseSyntaxOrNull(declaredSymbol, id));
         }
         private TypeSyntax GetTypeSyntax(ITypeSymbol typeInfo) {
             return (TypeSyntax) _vbSyntaxGenerator.TypeExpression(typeInfo);

@@ -354,11 +354,11 @@ Imports System.Runtime.CompilerServices
 
 Friend Module TestClass
     <Extension()>
-    Sub TestMethod(ByVal str As String)
+    Public Sub TestMethod(ByVal str As String)
     End Sub
 
     <Extension()>
-    Sub TestMethod2Parameters(ByVal str As String, ByVal __ As Action(Of String))
+    Public Sub TestMethod2Parameters(ByVal str As String, ByVal __ As Action(Of String))
     End Sub
 End Module", conversion: EmptyNamespaceOptionStrictOff);
         }
@@ -379,7 +379,7 @@ static class TestClass
 
 Friend Module TestClass
     <Extension()>
-    Sub TestMethod(ByVal str As String)
+    Public Sub TestMethod(ByVal str As String)
     End Sub
 End Module");
         }
@@ -1085,6 +1085,50 @@ End Class", conversion: EmptyNamespaceOptionStrictOff);
             Assert.Contains("Cannot convert", convertedCode);
             Assert.Contains("public static AcmeClass operator ++(int i, AcmeClass ac)", convertedCode);
             Assert.Contains("public static AcmeClass operator --(string s, AcmeClass ac)", convertedCode);
+        }
+        [Fact]
+        public async Task MethodOverloads() {
+            await TestConversionCSharpToVisualBasic(
+@"public class MailEmployee {
+    public string Email { get; set; }
+    protected bool Equals(MailEmployee other) {
+        return Email == other.Email;
+    }
+    public override bool Equals(object obj) {
+        return Equals((MailEmployee)obj);
+    }
+}",
+@"Public Class MailEmployee
+    Public Property Email As String
+
+    Protected Overloads Function Equals(ByVal other As MailEmployee) As Boolean
+        Return Email Is other.Email
+    End Function
+
+    Public Overrides Function Equals(ByVal obj As Object) As Boolean
+        Return Equals(CType(obj, MailEmployee))
+    End Function
+End Class");
+        }
+        [Fact]
+        public async Task Interface_Get() {
+            await TestConversionCSharpToVisualBasic(
+@"public interface IParametersProvider {
+    IEnumerable<object> Parameters { get; }
+}",
+@"Public Interface IParametersProvider
+    ReadOnly Property Parameters As IEnumerable(Of Object)
+End Interface");
+        }
+        [Fact]
+        public async Task Interface_Set() {
+            await TestConversionCSharpToVisualBasic(
+@"public interface IParametersProvider {
+    IEnumerable<object> Parameters { set; }
+}",
+@"Public Interface IParametersProvider
+    WriteOnly Property Parameters As IEnumerable(Of Object)
+End Interface");
         }
     }
 }

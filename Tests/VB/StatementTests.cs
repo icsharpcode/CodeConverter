@@ -755,6 +755,90 @@ End Class");
     End Sub
 End Class");
         }
+        [Fact(Skip = "month As Integer is reduced by Simplifier, and month threated as Date.Month method")]
+        public async Task ForWithDateTimeVariables() {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    void TestMethod() {
+        int summary = 0;
+        for (int month = 1; month <= 12; month++) {
+            summary += month;
+        }
+    }
+}",
+@"Friend Class TestClass
+    Private Sub TestMethod()
+        Dim summary = 0
+
+        For month As Integer = 1 To 12
+            summary += month
+        Next
+    End Sub
+End Class");
+        }
+        [Fact(Skip = "Should we rename, or add If True End If block?")]
+        public async Task Conflict_DeclarationsAfterConvertionForToWhile() {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    double height;
+    void TestMethod() {
+        for(double y = 0d; y < height; y += 10d)
+            Draw(y);
+        for(double y = 0d; y < height; y += 20d)
+            Draw(y);
+    }
+    void Draw(double height) {
+    }
+}",
+@"Friend Class TestClass
+    Private height As Double
+
+    Private Sub TestMethod()
+        Dim y = 0R
+
+        While y < height
+            Draw(y)
+            y += 10R
+        End While
+
+        Dim y = 0R
+
+        While y < height
+            Draw(y)
+            y += 20R
+        End While
+    End Sub
+
+    Private Sub Draw(ByVal height As Double)
+    End Sub
+End Class");
+        }
+        [Fact]
+        public async Task SubWithForEach_Multiline() {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    void TestMethod(IEnumerable<int> counts) {
+        int summary = 0;
+        Action action = () => {
+            foreach(var c in counts) {
+                var current = c;
+                summary += current;
+            }
+        };
+    }
+}",
+@"Friend Class TestClass
+    Private Sub TestMethod(ByVal counts As IEnumerable(Of Integer))
+        Dim summary = 0
+        Dim action As Action = Sub()
+                                   For Each c In counts
+                                       Dim current = c
+                                       summary += current
+                                   Next
+                               End Sub
+    End Sub
+End Class");
+        }
 
         [Fact]
         public async Task ForTupleDeconstruction()
