@@ -53,6 +53,7 @@ namespace ICSharpCode.CodeConverter.VB
         private readonly VisualBasicCompilation _vbViewOfCsSymbols;
         private readonly SyntaxGenerator _vbSyntaxGenerator;
 
+        private readonly List<ImportsStatementSyntax> _convertedImports = new List<ImportsStatementSyntax>();
         private readonly HashSet<string> _extraImports = new HashSet<string>();
 
 
@@ -101,14 +102,15 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitCompilationUnit(CSS.CompilationUnitSyntax node)
         {
-            var imports = node.Usings.Select(u => (ImportsStatementSyntax) u.Accept(TriviaConvertingVisitor));
+            foreach (var @using in node.Usings)
+                @using.Accept(TriviaConvertingVisitor);
             foreach (var @extern in node.Externs)
                 @extern.Accept(TriviaConvertingVisitor);
             var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => SyntaxFactory.AttributesStatement(SyntaxFactory.SingletonList((AttributeListSyntax)a.Accept(TriviaConvertingVisitor)))));
             var members = SyntaxFactory.List(node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor)));
 
             //TODO Add Usings from compilationoptions
-            var importsStatementSyntaxes = SyntaxFactory.List(TidyImportsList(imports.Concat(_extraImports.Select(Import))));
+            var importsStatementSyntaxes = SyntaxFactory.List(TidyImportsList(_convertedImports.Concat(_extraImports.Select(Import))));
             return SyntaxFactory.CompilationUnit(
                 SyntaxFactory.List<OptionStatementSyntax>(),
                 importsStatementSyntaxes,
@@ -196,8 +198,8 @@ namespace ICSharpCode.CodeConverter.VB
                 clause = clause.WithAlias(alias);
             }
 
-            var import = SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(clause));
-            return import;
+            _convertedImports.Add(SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(clause)));
+            return null;
         }
 
         #region Namespace Members
