@@ -1533,7 +1533,8 @@ namespace ICSharpCode.CodeConverter.VB
             if (IsReturnValueDiscarded(node)) return SyntaxFactory.ThrowStatement(convertedExceptionExpression);
 
             _cSharpHelperMethodDefinition.AddThrowMethod = true;
-            var typeName = SyntaxFactory.ParseTypeName(_semanticModel.GetTypeInfo(node.Parent).ConvertedType?.GetFullMetadataName() ?? "Object");
+            var convertedType = _semanticModel.GetTypeInfo(node.Parent).ConvertedType ?? _compilation.GetTypeByMetadataName("System.Object");
+            var typeName = _commonConversions.GetFullyQualifiedNameSyntax(convertedType);
             var throwEx = SyntaxFactory.GenericName(CSharpHelperMethodDefinition.QualifiedThrowMethodName, SyntaxFactory.TypeArgumentList(typeName));
             var argList = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList<ArgumentSyntax>(SyntaxFactory.SimpleArgument(convertedExceptionExpression)));
             return SyntaxFactory.InvocationExpression(throwEx, argList);
