@@ -9,10 +9,14 @@ using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using CS = Microsoft.CodeAnalysis.CSharp;
+using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using VBasic = Microsoft.CodeAnalysis.VisualBasic;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using AnonymousObjectCreationExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.AnonymousObjectCreationExpressionSyntax;
 using ArgumentListSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArgumentListSyntax;
 using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankSpecifierSyntax;
@@ -856,10 +860,12 @@ namespace ICSharpCode.CodeConverter.Util
                 return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.EndOfLineTrivia, t.ToString());
             }
 
-            var convertedKind = t.GetVBKind();
-            return convertedKind.HasValue
-                ? VBSyntaxFactory.CommentTrivia($"' TODO ERROR: Skipped {convertedKind.Value}")
-                : default(SyntaxTrivia);
+            //if (t.IsKind(CSSyntaxKind.IfDirectiveTrivia) && t.GetStructure() is CSSyntax.IfDirectiveTriviaSyntax idts) {
+            //    //TODO Actually use converter
+            //    return VBasic.SyntaxFactory.IfDirectiveTrivia(VBasic.SyntaxFactory.Token(VBSyntaxKind.IfKeyword), VBasic.SyntaxFactory.ParseExpression(idts.Condition.ToString()));
+            //}
+
+            return VBSyntaxFactory.CommentTrivia($"' TODO ERROR: Skipped {t}\r\n");
         }
 
         public static T WithoutTrailingEndOfLineTrivia<T>(this T cSharpNode) where T : CSharpSyntaxNode
