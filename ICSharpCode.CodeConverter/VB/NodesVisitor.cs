@@ -185,11 +185,8 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitUsingDirective(CSS.UsingDirectiveSyntax node)
         {
             var nameToImport = _semanticModel.GetSymbolInfo(node.Name).Symbol is INamespaceOrTypeSymbol toImport
-                ? _commonConversions.GetFullyQualifiedNameSyntax(toImport)
+                ? _commonConversions.GetFullyQualifiedNameSyntax(toImport, false)
                 : (NameSyntax)node.Name.Accept(TriviaConvertingVisitor);
-            var globalNameNode = nameToImport.DescendantNodes().OfType<GlobalNameSyntax>().FirstOrDefault();
-            if(globalNameNode != null)
-                nameToImport = nameToImport.ReplaceNodes((globalNameNode.Parent as QualifiedNameSyntax).Yield(), (orig, rewrite) => orig.Right);
             SimpleImportsClauseSyntax clause = SyntaxFactory.SimpleImportsClause(nameToImport);
 
             if (node.Alias != null) {

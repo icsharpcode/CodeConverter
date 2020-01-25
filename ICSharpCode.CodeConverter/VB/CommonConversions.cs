@@ -689,12 +689,13 @@ namespace ICSharpCode.CodeConverter.VB
             return GetFullyQualifiedNameSyntax(symbol).ToString();
         }
 
-        public NameSyntax GetFullyQualifiedNameSyntax(INamespaceOrTypeSymbol symbol)
+        public NameSyntax GetFullyQualifiedNameSyntax(INamespaceOrTypeSymbol symbol, bool allowGlobalPrefix = true)
         {
             switch (symbol)
             {
                 case ITypeSymbol ts:
-                    return (NameSyntax) VbSyntaxGenerator.TypeExpression(ts);
+                    var nameSyntax = (NameSyntax)VbSyntaxGenerator.TypeExpression(ts);
+                    return !allowGlobalPrefix && nameSyntax is QualifiedNameSyntax qns && qns.Left is GlobalNameSyntax ? qns.Right : nameSyntax;
                 case INamespaceSymbol ns:
                     return SyntaxFactory.ParseName(ns.GetFullMetadataName());
                 default:
