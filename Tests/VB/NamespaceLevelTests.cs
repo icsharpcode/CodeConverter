@@ -241,6 +241,26 @@ End Structure");
         }
 
         [Fact]
+        public async Task GlobalImportsStatement()
+        {
+               await TestConversionCSharpToVisualBasic(@"using MyAlias = global::System.Runtime.Remoting.Metadata.W3cXsd2001;
+using SO = global::System.Runtime.Remoting.Metadata.SoapOption;
+
+class ThisUri
+{
+    private MyAlias.SoapAnyUri s;
+    private SO so;
+}",
+                        @"Imports MyAlias = System.Runtime.Remoting.Metadata.W3cXsd2001
+Imports SO = System.Runtime.Remoting.Metadata.SoapOption
+
+Friend Class ThisUri
+    Private s As MyAlias.SoapAnyUri
+    Private so As SO
+End Class");
+        }
+
+        [Fact]
         public async Task MoveImportsStatement()
         {
             await TestConversionCSharpToVisualBasic("namespace test { using SomeNamespace; }",
@@ -249,6 +269,7 @@ End Structure");
 Namespace test
 End Namespace");
         }
+
         [Fact]
         public async Task InnerNamespace_MoveImportsStatement()
         {
@@ -267,6 +288,7 @@ Namespace System
     End Class
 End Namespace", conversion: EmptyNamespaceOptionStrictOff);
         }
+
         [Fact]
         public async Task ClassImplementsInterface()
         {
@@ -298,6 +320,7 @@ Public Interface iDisplay
     Sub DisplayName()
 End Interface");
         }
+
         [Fact]
         public async Task ClassExplicitlyImplementsInterface()
         {
@@ -329,6 +352,7 @@ Public Interface iDisplay
     Sub DisplayName()
 End Interface");
         }
+
         [Fact]
         public async Task ClassExplicitlyImplementsInterface_Indexer()
         {
@@ -359,6 +383,7 @@ Public Interface iDisplay
     Default Property Item(ByVal i As Integer) As Object
 End Interface");
         }
+
         [Fact]
         public async Task ClassImplementsInterface2()
         {
@@ -387,6 +412,7 @@ End Class");
     Inherits InvalidDataException
 End Class");
         }
+
         [Fact]
         public async Task StaticGenericClass() {
             await TestConversionCSharpToVisualBasic(
@@ -419,6 +445,7 @@ Public NotInheritable Class TestClass(Of T As {Class1, New})
     End Function
 End Class");
         }
+
         [Fact]
         public async Task ImplementsGenericInterface()
         {
