@@ -38,6 +38,7 @@ using TypeSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax;
 using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using static ICSharpCode.CodeConverter.VB.SyntaxKindExtensions;
 using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
+using Microsoft.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.VB
 {
@@ -52,7 +53,7 @@ namespace ICSharpCode.CodeConverter.VB
         private readonly VisualBasicCompilation _vbViewOfCsSymbols;
         private readonly SyntaxGenerator _vbSyntaxGenerator;
 
-        private readonly List<ImportsStatementSyntax> _allImports = new List<ImportsStatementSyntax>();
+        private readonly HashSet<string> _extraImports = new HashSet<string>();
 
 
         private int _placeholder = 1;
@@ -100,21 +101,25 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitCompilationUnit(CSS.CompilationUnitSyntax node)
         {
-            foreach (var @using in node.Usings)
-                @using.Accept(TriviaConvertingVisitor);
+            var imports = node.Usings.Select(u => (ImportsStatementSyntax) u.Accept(TriviaConvertingVisitor));
             foreach (var @extern in node.Externs)
                 @extern.Accept(TriviaConvertingVisitor);
             var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => SyntaxFactory.AttributesStatement(SyntaxFactory.SingletonList((AttributeListSyntax)a.Accept(TriviaConvertingVisitor)))));
             var members = SyntaxFactory.List(node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor)));
 
             //TODO Add Usings from compilationoptions
-            var importsStatementSyntaxes = SyntaxFactory.List(TidyImportsList(_allImports));
+            var importsStatementSyntaxes = SyntaxFactory.List(TidyImportsList(imports.Concat(_extraImports.Select(Import))));
             return SyntaxFactory.CompilationUnit(
                 SyntaxFactory.List<OptionStatementSyntax>(),
                 importsStatementSyntaxes,
                 attributes,
                 members
             );
+        }
+
+        private static ImportsStatementSyntax Import(string import)
+        {
+            return SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(SyntaxFactory.SimpleImportsClause(SyntaxFactory.ParseName(import))));
         }
 
         #region Attributes
@@ -195,10 +200,7 @@ namespace ICSharpCode.CodeConverter.VB
             }
 
             var import = SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(clause));
-
-            _allImports.Add(import);
-
-            return null;
+            return import;
         }
 
         #region Namespace Members
@@ -448,7 +450,7 @@ namespace ICSharpCode.CodeConverter.VB
             if (node.ParameterList.Parameters.Count > 0 && node.ParameterList.Parameters[0].Modifiers.Any(CS.SyntaxKind.ThisKeyword)) {
                 attributes = attributes.Insert(0, SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Attribute(null, SyntaxFactory.ParseTypeName("Extension"), SyntaxFactory.ArgumentList()))));
                 if (!((CS.CSharpSyntaxTree)node.SyntaxTree).HasUsingDirective("System.Runtime.CompilerServices"))
-                    _allImports.Add(SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(SyntaxFactory.SimpleImportsClause(SyntaxFactory.ParseName("System.Runtime.CompilerServices")))));
+                    _extraImports.Add(nameof(System) + "." + nameof(System.Runtime) + "." + nameof(System.Runtime.CompilerServices));
             }
 
             var implementsClause = methodInfo == null ? null : CreateImplementsClauseSyntaxOrNull(methodInfo, id);
@@ -807,7 +809,7 @@ namespace ICSharpCode.CodeConverter.VB
                             )
                         )
                     };
-                _allImports.Add(SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(SyntaxFactory.SimpleImportsClause(SyntaxFactory.ParseName("System.Runtime.InteropServices")))));
+                _extraImports.Add(nameof(System) + "." + nameof(System.Runtime) + "." + nameof(System.Runtime.InteropServices));
             } else {
                 newAttributes = Array.Empty<AttributeListSyntax>();
             }
@@ -917,7 +919,7 @@ namespace ICSharpCode.CodeConverter.VB
                 else
                     operatorName = "Decrement";
                 return SyntaxFactory.InvocationExpression(
-                    SyntaxFactory.ParseName("System.Threading.Interlocked." + operatorName),
+                    SyntaxFactory.ParseName(nameof(System) + "." + nameof(System.Threading) + "." + nameof(System.Threading.Interlocked) + "." + operatorName),
                     SyntaxFactory.ArgumentList(
                         SyntaxFactory.SeparatedList(
                             new ArgumentSyntax[] {
@@ -1008,7 +1010,7 @@ namespace ICSharpCode.CodeConverter.VB
                     op = SyntaxKind.AddExpression;
                 }
                 return SyntaxFactory.InvocationExpression(
-                    SyntaxFactory.ParseName("Math." + minMax),
+                    SyntaxFactory.ParseName(nameof(Math) + "." + minMax),
                     SyntaxFactory.ArgumentList(
                         SyntaxFactory.SeparatedList(
                             new ArgumentSyntax[] {
@@ -1261,7 +1263,7 @@ namespace ICSharpCode.CodeConverter.VB
                     return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CBoolKeyword), expr);
                 case SpecialType.System_Char:
                     return sourceType?.IsNumericType() == true
-                        ? (VisualBasicSyntaxNode)SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("ChrW"), ExpressionSyntaxExtensions.CreateArgList(expr))
+                        ? (VisualBasicSyntaxNode)SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(nameof(Strings.ChrW)), ExpressionSyntaxExtensions.CreateArgList(expr))
                         : SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CCharKeyword), expr);
                 case SpecialType.System_SByte:
                     return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CSByteKeyword), expr);
@@ -1732,11 +1734,8 @@ namespace ICSharpCode.CodeConverter.VB
                 var symbolInfo = _semanticModel.GetSymbolInfo(ies.Expression);
                 var destinationType = symbolInfo.ExtractBestMatch(m => m.GetParameters().Length > argIndex);
                 if (destinationType != null) {
-                    string symbolName = destinationType.GetParameters()[argIndex].Type
-                        .ToMinimalDisplayString(_semanticModel, argumentChildExpression.SpanStart);
-                    var csType = CS.SyntaxFactory.ParseTypeName(symbolName);
-                    var toCreate = (TypeSyntax) csType.Accept(TriviaConvertingVisitor);
-                    return toCreate;
+                    var symbolType = destinationType.GetParameters()[argIndex].Type;
+                    return _commonConversions.GetFullyQualifiedNameSyntax(symbolType);
                 }
             }
 
