@@ -1111,7 +1111,6 @@ public partial class AcmeClass
 }}");
         }
 
-
         [Fact]
         public async Task DeclareStatementWithAttributes()
         {

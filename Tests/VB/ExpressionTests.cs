@@ -24,7 +24,6 @@ World!""
 End Class");
         }
 
-
         [Fact]
         public async Task StringInterpolationWithDoubleQuotes()
         {
@@ -811,7 +810,6 @@ End Sub");
         }
         [Fact]
         public async Task MultilineSubExpressionWithSingleStatement() {
-            
             await TestConversionCSharpToVisualBasic(
 @"public class TestClass : System.Collections.ObjectModel.ObservableCollection<string> {
     public TestClass() {

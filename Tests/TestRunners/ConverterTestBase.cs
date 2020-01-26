@@ -127,7 +127,6 @@ End Sub";
             bool started = false;
 
             var newLines = lines.Select((s, i) => {
-
                 var prevLine = i > 0 ? lines[i - 1] : "";
                 var nextLine = i < lines.Length - 1 ? lines[i + 1] : "";
 

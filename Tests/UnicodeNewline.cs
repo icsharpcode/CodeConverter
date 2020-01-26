@@ -148,7 +148,6 @@ namespace CodeConverter.Tests
                 } else {
                     length = 1;
                     type = UnicodeNewline.CR;
-
                 }
                 return true;
             }
@@ -201,7 +200,6 @@ namespace CodeConverter.Tests
                 } else {
                     length = 1;
                     type = UnicodeNewline.CR;
-
                 }
                 return true;
             }

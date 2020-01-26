@@ -6,7 +6,6 @@ namespace CodeConverter.Tests.VB
 {
     public class TriviaTests : ConverterTestBase
     {
-
         [Fact]
         public async Task TestMethodWithComments()
         {
