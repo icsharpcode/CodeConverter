@@ -45,15 +45,22 @@ Imports System.Runtime.InteropServices
     
 Friend Class CommentTestClass
     ''' <summary>
-    ''' /// method xml doc
-    ''' /// </summary>    Public Sub TestMethod(Of T As Class, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) ' Only for structs
-        ' TODO ERROR: Skipped #if true
+    ''' method xml doc
+    ''' </summary>
+    Public Sub TestMethod(Of T As Class, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) ' Only for structs
+#If true
         argument = Nothing ' 1
+#Region Arg2
         argument2 = Nothing ' 2
+#End Region
         If argument IsNot Nothing Then ' never
             Debug.WriteLine(1) ' Check debug window
-        End If
+        End If ' argument1 != null
         argument3 = Nothing ' 3
+#Else
+' Skipped during conversion:         argument = new object();
+#End If
+        Console.Write()
     End Sub
 End Class");
         }

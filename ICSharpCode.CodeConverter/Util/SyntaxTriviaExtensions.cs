@@ -221,6 +221,10 @@ namespace ICSharpCode.CodeConverter.Util
                         trimmedLine = trimmedLine.TrimStart('\'');
                         trimmedLine = trimmedLine.TrimStart(null);
                     }
+                    if (trimmedLine.StartsWith("/")) {
+                        trimmedLine = trimmedLine.TrimStart('/');
+                        trimmedLine = trimmedLine.TrimStart(null);
+                    }
 
                     textBuilder.AppendLine(trimmedLine);
                 }

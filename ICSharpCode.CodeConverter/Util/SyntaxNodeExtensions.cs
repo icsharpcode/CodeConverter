@@ -44,6 +44,7 @@ using TypeOfExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeOfExpres
 using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 using UsingStatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.UsingStatementSyntax;
 using WhileStatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.WhileStatementSyntax;
+using VBCommonConversions = ICSharpCode.CodeConverter.VB.CommonConversions;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -814,7 +815,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static IEnumerable<SyntaxTrivia> ConvertTrivia(this IReadOnlyCollection<SyntaxTrivia> triviaToConvert)
         {
-            return triviaToConvert.Select(t => t.Language == LanguageNames.VisualBasic ? ConvertVBTrivia(t) : ConvertCSTrivia(t)).Where(x => x != default(SyntaxTrivia));
+            return triviaToConvert.SelectMany(t => t.Language == LanguageNames.VisualBasic ? ConvertVBTrivia(t).Yield() : ConvertCSTrivia(t)).Where(x => x != default(SyntaxTrivia));
         }
 
         private static SyntaxTrivia ConvertVBTrivia(SyntaxTrivia t)
@@ -846,10 +847,12 @@ namespace ICSharpCode.CodeConverter.Util
                 : default(SyntaxTrivia);
         }
 
-        private static SyntaxTrivia ConvertCSTrivia(SyntaxTrivia t)
+        private static IEnumerable<SyntaxTrivia> ConvertCSTrivia(SyntaxTrivia t)
         {
-            if (t.IsKind(CSSyntaxKind.SingleLineCommentTrivia))
-                return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.CommentTrivia, $"' {t.GetCommentText()}");
+            if (t.IsKind(CSSyntaxKind.SingleLineCommentTrivia)) {
+                yield return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.CommentTrivia, $"' {t.GetCommentText()}");
+                yield break;
+            }
             if (t.IsKind(CSSyntaxKind.SingleLineDocumentationCommentTrivia)) {
                 var previousWhitespace = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None).ToString();
                 var commentTextLines = t.GetCommentText().Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
@@ -857,26 +860,71 @@ namespace ICSharpCode.CodeConverter.Util
                 var outputCommentText = multiLine
                     ? "''' " + String.Join($"\r\n{previousWhitespace}''' ", commentTextLines)
                     : $"' {commentTextLines.Single()}";
-                return VBSyntaxFactory.CommentTrivia(outputCommentText);
+                yield return VBSyntaxFactory.CommentTrivia(outputCommentText);
+                yield return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.EndOfLineTrivia, "\r\n");
+                yield break;
             }
 
             if (t.IsKind(CSSyntaxKind.WhitespaceTrivia)) {
-                return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.WhitespaceTrivia, t.ToString());
+                yield return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.WhitespaceTrivia, t.ToString());
+                yield break;
             }
 
             if (t.IsKind(CSSyntaxKind.EndOfLineTrivia)) {
-                // Mapping one to one here leads to newlines appearing where the natural line-end was in VB.
-                // e.g. ToString\r\n()
-                // Because C Sharp needs those brackets. Handling each possible case of this is far more effort than it's worth.
-                return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.EndOfLineTrivia, t.ToString());
+                yield return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.EndOfLineTrivia, t.ToString());
+                yield break;
             }
 
-            //if (t.IsKind(CSSyntaxKind.IfDirectiveTrivia) && t.GetStructure() is CSSyntax.IfDirectiveTriviaSyntax idts) {
-            //    //TODO Actually use converter
-            //    return VBasic.SyntaxFactory.IfDirectiveTrivia(VBasic.SyntaxFactory.Token(VBSyntaxKind.IfKeyword), VBasic.SyntaxFactory.ParseExpression(idts.Condition.ToString()));
-            //}
+            if (t.IsKind(CSSyntaxKind.DisabledTextTrivia)) {
+                //TODO Actually use converter
+                yield return VBSyntaxFactory.DisabledTextTrivia("' Skipped during conversion: " + t.ToString().Trim('\r', '\n').Replace("\n", "\n'"));
+                yield break;
+            }
 
-            return VBSyntaxFactory.CommentTrivia($"' TODO ERROR: Skipped {t}\r\n");
+            var structured = GetStructuredTrivia(t);
+            if (structured != null) {
+                yield return VBSyntaxFactory.Trivia(structured);
+                yield return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.EndOfLineTrivia, "\r\n");
+                yield break;
+            }
+
+            yield return VBSyntaxFactory.CommentTrivia($"' TODO ERROR: Skipped {t}\r\n");
+        }
+
+        private static VBSyntax.StructuredTriviaSyntax GetStructuredTrivia(SyntaxTrivia t)
+        {
+
+            if (t.IsKind(CSSyntaxKind.RegionDirectiveTrivia)) {
+                var structure = ((CSSyntax.RegionDirectiveTriviaSyntax)t.GetStructure());
+                string name = structure.EndOfDirectiveToken.LeadingTrivia.Single().ToString();
+                var regionSyntax = VBSyntaxFactory.RegionDirectiveTrivia(VBSyntaxFactory.Token(VBSyntaxKind.HashToken), VBSyntaxFactory.Token(VBSyntaxKind.RegionKeyword), VBSyntaxFactory.StringLiteralToken(name, name));
+                return regionSyntax;
+            }
+
+            if (t.IsKind(CSSyntaxKind.EndRegionDirectiveTrivia)) {
+                var regionSyntax = VBSyntaxFactory.EndRegionDirectiveTrivia();
+                return regionSyntax;
+            }
+
+            if (t.IsKind(CSSyntaxKind.IfDirectiveTrivia) && t.GetStructure() is CSSyntax.IfDirectiveTriviaSyntax idts) {
+                //TODO Actually use converter
+                return VBSyntaxFactory.IfDirectiveTrivia(VBasic.SyntaxFactory.Token(VBSyntaxKind.IfKeyword), VBasic.SyntaxFactory.ParseExpression(idts.Condition.ToString()));
+            }
+
+            if (t.IsKind(CSSyntaxKind.ElifDirectiveTrivia) && t.GetStructure() is CSSyntax.IfDirectiveTriviaSyntax eidts) {
+                //TODO Actually use converter
+                return VBSyntaxFactory.IfDirectiveTrivia(VBasic.SyntaxFactory.Token(VBSyntaxKind.IfKeyword), VBasic.SyntaxFactory.ParseExpression(eidts.Condition.ToString()));
+            }
+
+            if (t.IsKind(CSSyntaxKind.ElseDirectiveTrivia)) {
+                return VBSyntaxFactory.ElseDirectiveTrivia();
+            }
+
+            if (t.IsKind(CSSyntaxKind.EndIfDirectiveTrivia)) {
+                return VBSyntaxFactory.EndIfDirectiveTrivia();
+            }
+
+            return null;
         }
 
         public static T WithoutTrailingEndOfLineTrivia<T>(this T cSharpNode) where T : CSharpSyntaxNode
