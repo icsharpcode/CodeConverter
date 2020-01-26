@@ -518,7 +518,7 @@ namespace ICSharpCode.CodeConverter.VB
                     idText = "Item";
                     break;
             }
-            return Identifier(idText, keywordRequiresEscaping);
+            return Identifier(idText, keywordRequiresEscaping).WithOriginalLineAnnotationsFrom(id);
         }
 
         private string AdjustIfEventIdentifier(SyntaxToken id, CS.CSharpSyntaxNode parent)

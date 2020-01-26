@@ -36,12 +36,7 @@ namespace ICSharpCode.CodeConverter.VB
             try {
                 var converted = _wrappedVisitor.Visit(node);
                 if (converted == null) return converted;
-                converted = node.CopyAnnotationsTo(converted);
-                var origLinespan = node.SyntaxTree.GetLineSpan(node.Span);
-                if (origLinespan.StartLinePosition.Line != origLinespan.EndLinePosition.Line) {
-                    return converted;
-                }
-                return converted.WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.WithinOriginalLineAnnotationKind, origLinespan.StartLinePosition.Line.ToString()));
+                return node.CopyAnnotationsTo(converted).WithOriginalLineAnnotationsFrom(node);
             } catch (Exception e) {
                 var dummyStatement = SyntaxFactory.EmptyStatement();
                 return dummyStatement.WithVbTrailingErrorComment<VbSyntax.StatementSyntax>((CSharpSyntaxNode) node, e);

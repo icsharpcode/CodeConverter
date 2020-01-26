@@ -42,7 +42,12 @@ class CommentTestClass //Don't rename
 } //End of class", @"Imports System.Diagnostics
 Imports System.Runtime.InteropServices
 
-Friend Class CommentTestClass
+' blank line
+
+''' <summary>
+''' class xml doc
+''' </summary>
+Friend Class CommentTestClass ' Don't rename
     ''' <summary>
     ''' method xml doc
     ''' </summary>

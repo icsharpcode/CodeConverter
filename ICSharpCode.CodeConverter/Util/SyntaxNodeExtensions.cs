@@ -222,6 +222,21 @@ namespace ICSharpCode.CodeConverter.Util
             return semanticModel.GetDeclaredSymbol(typeBlockSyntax);
         }
 
+        public static T WithOriginalLineAnnotationsFrom<T>(this T converted, SyntaxNode fromNode) where T : SyntaxNode
+        {
+            var origLinespan = fromNode.SyntaxTree.GetLineSpan(fromNode.Span);
+            if (origLinespan.StartLinePosition.Line == origLinespan.EndLinePosition.Line) {
+                converted = converted.WithAdditionalAnnotations(AnnotationConstants.OriginalLineAnnotation(origLinespan));
+            }
+
+            return converted;
+        }
+
+        public static T WithOriginalLineAnnotation<T>(this T node, int lineNumber) where T : SyntaxNode
+        {
+            return node.WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.WithinOriginalLineAnnotationKind, lineNumber.ToString()));
+        }
+
         /// <summary>
         /// create a new root node from the given root after adding annotations to the tokens
         ///
@@ -799,13 +814,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static IEnumerable<SyntaxTrivia> ImportantTrailingTrivia(this SyntaxToken node)
         {
-            return node.TrailingTrivia.Where(x => !IsWhitespaceTrivia(x)
-            );
-        }
-
-        public static bool IsWhitespaceTrivia(this SyntaxTrivia trivia)
-        {
-            return trivia.IsKind(CSSyntaxKind.WhitespaceTrivia) || trivia.IsKind(CSSyntaxKind.EndOfLineTrivia) || trivia.IsKind(VBSyntaxKind.WhitespaceTrivia) || trivia.IsKind(VBSyntaxKind.EndOfLineTrivia);
+            return node.TrailingTrivia.Where(x => !x.IsWhitespaceOrEndOfLine());
         }
 
         public static bool ParentHasSameTrailingTrivia(this SyntaxNode otherNode)
@@ -854,7 +863,8 @@ namespace ICSharpCode.CodeConverter.Util
                 yield break;
             }
             if (t.IsKind(CSSyntaxKind.SingleLineDocumentationCommentTrivia)) {
-                var previousWhitespace = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None).ToString();
+                var previousTrivia = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None);
+                var previousWhitespace = previousTrivia.IsWhitespace() ? previousTrivia.ToString() : "";
                 var commentTextLines = t.GetCommentText().Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
                 var multiLine = commentTextLines.Length > 1;
                 var outputCommentText = multiLine

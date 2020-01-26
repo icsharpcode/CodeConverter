@@ -31,13 +31,14 @@ namespace ICSharpCode.CodeConverter.VB
             try {
                 var converted = _wrappedVisitor.Visit(node);
                 if (!converted.Any()) return converted;
-                converted = converted.Replace(converted.First(), node.CopyAnnotationsTo(converted.First()));
+                var first = converted.First();
+                converted = converted.Replace(first, node.CopyAnnotationsTo(first));
+
                 var origLinespan = node.SyntaxTree.GetLineSpan(node.Span);
-                if (origLinespan.StartLinePosition.Line != origLinespan.EndLinePosition.Line) {
-                    return converted;
+                if (origLinespan.StartLinePosition == origLinespan.EndLinePosition) {
+                    converted = VBasic.SyntaxFactory.List(converted.Select(c => c.WithOriginalLineAnnotation(origLinespan.EndLinePosition.Line)));
                 }
-                var statementsWithAnnotations = converted.Select(s => s.WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.WithinOriginalLineAnnotationKind, origLinespan.StartLinePosition.Line.ToString())));
-                return VBasic.SyntaxFactory.List(statementsWithAnnotations);
+                return converted;
             } catch (Exception e) {
                 var dummyStatement = VBasic.SyntaxFactory.EmptyStatement();
                 var withVbTrailingErrorComment = dummyStatement.WithVbTrailingErrorComment<VBSyntax.StatementSyntax>((CS.CSharpSyntaxNode) node, e);

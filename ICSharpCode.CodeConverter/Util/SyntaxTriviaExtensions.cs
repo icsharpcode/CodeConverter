@@ -210,8 +210,7 @@ namespace ICSharpCode.CodeConverter.Util
 
                 commentText = commentText.Trim();
 
-                var newLine = commentText.Contains('\n') ? '\n' : '\r';
-                var lines = commentText.Split(new []{newLine}, StringSplitOptions.None);
+                var lines = commentText.Replace("\r\n", "\n").Split('\n');
                 foreach (var line in lines) {
                     var trimmedLine = line.Trim();
 
@@ -269,7 +268,7 @@ namespace ICSharpCode.CodeConverter.Util
             return x.IsKind(VBasic.SyntaxKind.EndOfLineTrivia) || x.IsKind(CS.SyntaxKind.EndOfLineTrivia);
         }
 
-        private static bool IsWhitespace(this SyntaxTrivia x)
+        public static bool IsWhitespace(this SyntaxTrivia x)
         {
             return x.IsKind(VBasic.SyntaxKind.WhitespaceTrivia) || x.IsKind(CS.SyntaxKind.WhitespaceTrivia);
         }

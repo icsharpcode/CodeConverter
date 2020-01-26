@@ -59,16 +59,18 @@ namespace ICSharpCode.CodeConverter.VB
         {
             var sourceLines = source.GetText().Lines;
             var originalTargetLines = target.GetText().Lines;
-            var targetNodesBySourceLine = target.GetAnnotatedNodes(AnnotationConstants.WithinOriginalLineAnnotationKind).ToLookup(n => n.GetAnnotations(AnnotationConstants.WithinOriginalLineAnnotationKind).Select(a => int.Parse(a.Data)).Min());
+            var targetNodesBySourceLine = target.GetAnnotatedNodesAndTokens(AnnotationConstants.WithinOriginalLineAnnotationKind).ToLookup(n => n.GetAnnotations(AnnotationConstants.WithinOriginalLineAnnotationKind).Select(a => int.Parse(a.Data)).Min());
             //TODO Try harder to avoid losing track of various precalculated positions changing during the replacements, for example build up a dictionary of replacements and make them in a single ReplaceTokens call
 
             for (int i = sourceLines.Count - 1; i >= 0; i--) {
                 var sourceLine = sourceLines[i];
                 var endOfSourceLine = source.FindToken(sourceLine.End);
-                var convertedTrailingTrivia = endOfSourceLine.TrailingTrivia.ConvertTrivia();
                 var startOfSourceLine = source.FindTokenOnRightOfPosition(sourceLine.Start);
+
+                if (endOfSourceLine.TrailingTrivia.Concat(startOfSourceLine.LeadingTrivia).All(t => t.IsWhitespaceOrEndOfLine())) continue;
+
+                var convertedTrailingTrivia = endOfSourceLine.TrailingTrivia.ConvertTrivia();
                 var convertedLeadingTrivia = startOfSourceLine.LeadingTrivia.ConvertTrivia();
-                if (convertedLeadingTrivia.Concat(convertedTrailingTrivia).All(t => t.IsWhitespaceTrivia())) continue;
 
                 var (leadingLine, trailingLine) = GetBestLeadingAndTrailingLine(originalTargetLines, targetNodesBySourceLine, i);
                 if (leadingLine == default || trailingLine == default) continue;
@@ -82,7 +84,7 @@ namespace ICSharpCode.CodeConverter.VB
             return target;
         }
 
-        private static (TextLine leadingLine, TextLine trailingLine) GetBestLeadingAndTrailingLine(Microsoft.CodeAnalysis.Text.TextLineCollection originalTargetLines, ILookup<int, SyntaxNode> targetNodesBySourceLine, int sourceLineIndex)
+        private static (TextLine leadingLine, TextLine trailingLine) GetBestLeadingAndTrailingLine(Microsoft.CodeAnalysis.Text.TextLineCollection originalTargetLines, ILookup<int, SyntaxNodeOrToken> targetNodesBySourceLine, int sourceLineIndex)
         {
             var targetNodeGroup = targetNodesBySourceLine[sourceLineIndex];
             if (targetNodeGroup.Any()) return GetExactLeadingLineAndTrailingLine(originalTargetLines, targetNodeGroup);
@@ -100,16 +102,16 @@ namespace ICSharpCode.CodeConverter.VB
             return (default, default);
         }
 
-        private static (int offset, IEnumerable<SyntaxNode>targetNodes) GetOffsetSourceLineTargetNodes(ILookup<int, SyntaxNode> targetNodesBySourceLine, int sourceLineIndex, int multiplier)
+        private static (int offset, IEnumerable<SyntaxNodeOrToken> targetNodes) GetOffsetSourceLineTargetNodes(ILookup<int, SyntaxNodeOrToken> targetNodesBySourceLine, int sourceLineIndex, int multiplier)
         {
             for (int offset = 1; offset <= 5; offset++) {
                 var thisLine = targetNodesBySourceLine[sourceLineIndex + (offset * multiplier)];
                 if (thisLine.Any()) return (offset, thisLine);
             }
-            return (0, Enumerable.Empty<SyntaxNode>());
+            return (0, Enumerable.Empty<SyntaxNodeOrToken>());
         }
 
-        private static (TextLine leadingLine, TextLine trailingLine) GetExactLeadingLineAndTrailingLine(TextLineCollection originalTargetLines, IEnumerable<SyntaxNode> targetNodeGroup)
+        private static (TextLine leadingLine, TextLine trailingLine) GetExactLeadingLineAndTrailingLine(TextLineCollection originalTargetLines, IEnumerable<SyntaxNodeOrToken> targetNodeGroup)
         {
             var trailingTriviaAfterPosition = targetNodeGroup.Max(x => x.GetLocation().SourceSpan.End);
             var leadTriviaBeforePosition = targetNodeGroup.Min(x => x.GetLocation().SourceSpan.Start);

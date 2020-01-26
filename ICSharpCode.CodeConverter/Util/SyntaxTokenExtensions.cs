@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.Text;
 using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
+using ICSharpCode.CodeConverter.Shared;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -1058,6 +1059,16 @@ namespace ICSharpCode.CodeConverter.Util
             return token.IsKind(SyntaxKind.PublicKeyword, SyntaxKind.InternalKeyword, SyntaxKind.ProtectedKeyword, SyntaxKind.PrivateKeyword)
                    || isVariableOrConst && token.IsKind(SyntaxKind.ConstKeyword)
                    || isConstructor && token.IsKind(SyntaxKind.StaticKeyword);
+        }
+
+        public static SyntaxToken WithOriginalLineAnnotationsFrom(this SyntaxToken converted, SyntaxToken fromToken)
+        {
+            var origLinespan = fromToken.SyntaxTree.GetLineSpan(fromToken.Span);
+            if (origLinespan.StartLinePosition.Line == origLinespan.EndLinePosition.Line) {
+                converted = converted.WithAdditionalAnnotations(AnnotationConstants.OriginalLineAnnotation(origLinespan));
+            }
+
+            return converted;
         }
     }
 }
