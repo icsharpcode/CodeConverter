@@ -46,8 +46,8 @@ namespace ICSharpCode.CodeConverter.Util
             {VBasic.SyntaxKind.ElseIfDirectiveTrivia, CS.SyntaxKind.ElifDirectiveTrivia},
             {VBasic.SyntaxKind.ElseDirectiveTrivia, CS.SyntaxKind.ElseDirectiveTrivia},
             {VBasic.SyntaxKind.EndIfDirectiveTrivia, CS.SyntaxKind.EndIfDirectiveTrivia},
-            //{VBSyntaxKind.RegionDirectiveTrivia, SyntaxKind.RegionDirectiveTrivia}, Oh no I accidentally disabled regions :O ;)
-            //{VBSyntaxKind.EndRegionDirectiveTrivia, SyntaxKind.EndRegionDirectiveTrivia},
+            {VBasic.SyntaxKind.RegionDirectiveTrivia, CS.SyntaxKind.RegionDirectiveTrivia},
+            {VBasic.SyntaxKind.EndRegionDirectiveTrivia, CS.SyntaxKind.EndRegionDirectiveTrivia},
             {VBasic.SyntaxKind.EnableWarningDirectiveTrivia, CS.SyntaxKind.WarningDirectiveTrivia},
             {VBasic.SyntaxKind.DisableWarningDirectiveTrivia, CS.SyntaxKind.WarningDirectiveTrivia},
             {VBasic.SyntaxKind.ReferenceDirectiveTrivia, CS.SyntaxKind.ReferenceDirectiveTrivia},
