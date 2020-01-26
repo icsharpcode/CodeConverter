@@ -52,7 +52,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             var convertedNode = _wrappedVisitor.Visit(node)
                 .WithPrependedLeadingTrivia(SyntaxFactory.EndOfLineTrivia(Environment.NewLine));
-            return TriviaConverter.PortConvertedTrivia(node, convertedNode);
+            return convertedNode;
         }
     }
 }

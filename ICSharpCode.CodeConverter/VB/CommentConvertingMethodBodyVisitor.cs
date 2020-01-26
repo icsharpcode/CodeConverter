@@ -44,14 +44,5 @@ namespace ICSharpCode.CodeConverter.VB
                 return VBasic.SyntaxFactory.SingletonList(withVbTrailingErrorComment);
             }
         }
-
-        private SyntaxList<VBSyntax.StatementSyntax> ConvertWithTrivia(SyntaxNode node)
-        {
-            var convertedNodes = _wrappedVisitor.Visit(node);
-            if (!convertedNodes.Any()) return convertedNodes;
-            // Port trivia to the last statement in the list
-            var lastWithConvertedTrivia = _triviaConverter.PortConvertedTrivia(node, convertedNodes.LastOrDefault());
-            return convertedNodes.Replace(convertedNodes.LastOrDefault(), lastWithConvertedTrivia);
-        }
     }
 }
