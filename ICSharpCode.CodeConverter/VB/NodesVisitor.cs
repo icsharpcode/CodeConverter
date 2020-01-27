@@ -922,13 +922,7 @@ namespace ICSharpCode.CodeConverter.VB
                     operatorName = "Decrement";
                 return SyntaxFactory.InvocationExpression(
                     SyntaxFactory.ParseName(nameof(System) + "." + nameof(System.Threading) + "." + nameof(System.Threading.Interlocked) + "." + operatorName),
-                    SyntaxFactory.ArgumentList(
-                        SyntaxFactory.SeparatedList(
-                            new ArgumentSyntax[] {
-                                    SyntaxFactory.SimpleArgument((ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor))
-                            }
-                        )
-                    )
+                    ExpressionSyntaxExtensions.CreateArgList((ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor))
                 );
             }
             return SyntaxFactory.UnaryExpression(kind, SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor));
@@ -992,15 +986,7 @@ namespace ICSharpCode.CodeConverter.VB
             _cSharpHelperMethodDefinition.AddInlineAssignMethod = true;
             return SyntaxFactory.InvocationExpression(
                 SyntaxFactory.IdentifierName(CSharpHelperMethodDefinition.QualifiedInlineAssignMethodName),
-                SyntaxFactory.ArgumentList(
-                    SyntaxFactory.SeparatedList(
-                        new ArgumentSyntax[]
-                        {
-                            SyntaxFactory.SimpleArgument(left),
-                            SyntaxFactory.SimpleArgument(right)
-                        }
-                    )
-                )
+                ExpressionSyntaxExtensions.CreateArgList(left, right)
             );
         }
 
@@ -1026,23 +1012,13 @@ namespace ICSharpCode.CodeConverter.VB
                 }
                 return SyntaxFactory.InvocationExpression(
                     SyntaxFactory.ParseName(nameof(Math) + "." + minMax),
-                    SyntaxFactory.ArgumentList(
-                        SyntaxFactory.SeparatedList(
-                            new ArgumentSyntax[] {
-                                    SyntaxFactory.SimpleArgument(
-                                        SyntaxFactory.InvocationExpression(
-                                            SyntaxFactory.ParseName("System.Threading.Interlocked." + operatorName),
-                                            SyntaxFactory.ArgumentList(
-                                                SyntaxFactory.SingletonSeparatedList<ArgumentSyntax>(
-                                                    SyntaxFactory.SimpleArgument((ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor))
-                                                )
-                                            )
-                                        )
-                                    ),
-                                    SyntaxFactory.SimpleArgument(SyntaxFactory.BinaryExpression(op, (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor), SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(op)), CommonConversions.Literal(1)))
-                            }
-                        )
-                    )
+                    new ExpressionSyntax[] {
+                                SyntaxFactory.InvocationExpression(
+                                    SyntaxFactory.ParseName("System.Threading.Interlocked." + operatorName),
+                                    ExpressionSyntaxExtensions.CreateArgList((ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor))
+                                ),
+                            SyntaxFactory.BinaryExpression(op, (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor), SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(op)), CommonConversions.Literal(1))
+                    }.CreateArgList()
                 );
             }
         }
@@ -1345,14 +1321,14 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitArrayCreationExpression(CSS.ArrayCreationExpressionSyntax node)
         {
             var upperBoundArguments = node.Type.RankSpecifiers.First()?.Sizes.Where(s => !(s is CSS.OmittedArraySizeExpressionSyntax)).Select(
-                s => (ArgumentSyntax)SyntaxFactory.SimpleArgument(_commonConversions.ReduceArrayUpperBoundExpression(s)));
+                s => _commonConversions.ReduceArrayUpperBoundExpression(s));
             var rankSpecifiers = node.Type.RankSpecifiers.Select(rs => (ArrayRankSpecifierSyntax)rs.Accept(TriviaConvertingVisitor));
 
             return SyntaxFactory.ArrayCreationExpression(
                 SyntaxFactory.Token(SyntaxKind.NewKeyword),
                 SyntaxFactory.List<AttributeListSyntax>(),
                 (TypeSyntax)node.Type.ElementType.Accept(TriviaConvertingVisitor),
-                upperBoundArguments.Any() ? SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(upperBoundArguments)) : null,
+                upperBoundArguments.Any() ? upperBoundArguments.CreateArgList() : null,
                 upperBoundArguments.Any() ? SyntaxFactory.List(rankSpecifiers.Skip(1)) : SyntaxFactory.List(rankSpecifiers),
                 (CollectionInitializerSyntax)node.Initializer?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.CollectionInitializer()
             );
@@ -1551,7 +1527,7 @@ namespace ICSharpCode.CodeConverter.VB
             var convertedType = _semanticModel.GetTypeInfo(node.Parent).ConvertedType ?? _compilation.GetTypeByMetadataName("System.Object");
             var typeName = _commonConversions.GetFullyQualifiedNameSyntax(convertedType);
             var throwEx = SyntaxFactory.GenericName(CSharpHelperMethodDefinition.QualifiedThrowMethodName, SyntaxFactory.TypeArgumentList(typeName));
-            var argList = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList<ArgumentSyntax>(SyntaxFactory.SimpleArgument(convertedExceptionExpression)));
+            var argList = ExpressionSyntaxExtensions.CreateArgList(convertedExceptionExpression);
             return SyntaxFactory.InvocationExpression(throwEx, argList);
         }
 
