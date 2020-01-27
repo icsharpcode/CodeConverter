@@ -695,7 +695,12 @@ namespace ICSharpCode.CodeConverter.VB
             {
                 case ITypeSymbol ts:
                     var nameSyntax = (NameSyntax)VbSyntaxGenerator.TypeExpression(ts);
-                    return !allowGlobalPrefix && nameSyntax is QualifiedNameSyntax qns && qns.Left is GlobalNameSyntax ? qns.Right : nameSyntax;
+                    if (allowGlobalPrefix)
+                        return nameSyntax;
+                    var globalNameNode = nameSyntax.DescendantNodes().OfType<GlobalNameSyntax>().FirstOrDefault();
+                    if (globalNameNode != null)
+                        nameSyntax = nameSyntax.ReplaceNodes((globalNameNode.Parent as QualifiedNameSyntax).Yield(), (orig, rewrite) => orig.Right);
+                    return nameSyntax;
                 case INamespaceSymbol ns:
                     return SyntaxFactory.ParseName(ns.GetFullMetadataName());
                 default:
