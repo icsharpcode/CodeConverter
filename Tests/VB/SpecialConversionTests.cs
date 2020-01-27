@@ -428,21 +428,21 @@ End Property");
     }
 }",
 @"Friend Class TestClass
-    Private Event f_Test As EventHandler
+    Private f_Test As EventHandler
 
     Public Custom Event Test As EventHandler
         AddHandler(ByVal value As EventHandler)
             Dim l_TeSt1 As Object = 5
             Dim l_TesT = CInt(o)
-            AddHandler f_Test, value
+            f_Test = [Delegate].Combine(f_Test, value)
         End AddHandler
         RemoveHandler(ByVal value As EventHandler)
             Dim l_TeSt1 As Object = 5
             Dim l_TesT = CInt(o)
-            RemoveHandler f_Test, value
+            f_Test = [Delegate].Remove(f_Test, value)
         End RemoveHandler
         RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
-            RaiseEvent f_Test(sender, e)
+            f_Test?(sender, e)
         End RaiseEvent
     End Event
 End Class");

@@ -49,7 +49,8 @@ namespace ICSharpCode.CodeConverter.Shared
         private static bool VbWouldBeSimplifiedIncorrectly(SyntaxNode n)
         {
             //Roslyn bug: empty argument list gets removed and changes behaviour: https://github.com/dotnet/roslyn/issues/40442
-            return n is VBSyntax.InvocationExpressionSyntax ies && !ies.ArgumentList.Arguments.Any()
+            // (Also null Expression blows up even though that's how conditional invocation on an IdentifierName happens)
+            return n is VBSyntax.InvocationExpressionSyntax ies && (!ies.ArgumentList.Arguments.Any() || ies.Expression == null)
                    // Roslyn bug: Tries to simplify to "InferredFieldInitializerSyntax" which cannot be placed within an ObjectCreationExpression https://github.com/icsharpcode/CodeConverter/issues/484
                    || n is VBSyntax.ObjectCreationExpressionSyntax;
         }

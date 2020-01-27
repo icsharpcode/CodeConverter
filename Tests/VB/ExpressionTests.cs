@@ -855,13 +855,13 @@ public class TestClass {
 @"Imports System
 
 Public Class TestClass
-    Private Event create As Func(Of Object, String) = Function(o)
-                                                          If TypeOf o Is TestClass Then
-                                                              Return ""first""
-                                                          Else
-                                                              Return ""second""
-                                                          End If
-                                                      End Function
+    Private create As Func(Of Object, String) = Function(o)
+                                                    If TypeOf o Is TestClass Then
+                                                        Return ""first""
+                                                    Else
+                                                        Return ""second""
+                                                    End If
+                                                End Function
 
     Public Sub New()
         Dim str = create(Me)

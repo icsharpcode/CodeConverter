@@ -844,13 +844,11 @@ End Class");
         }
 
         [Fact]
-        public async Task TestCustomEvent()
-        {
+        public async Task TestCustomEvent() {
             await TestConversionCSharpToVisualBasic(
-                @"using System;
+@"using System;
 
-class TestClass
-{
+class TestClass {
     EventHandler backingField;
 
     public event EventHandler MyEvent {
@@ -861,22 +859,30 @@ class TestClass
             this.backingField -= value;
         }
     }
-}", @"Imports System
+    public void Reset() {
+        backingField = null;
+    }
+}",
+@"Imports System
 
 Friend Class TestClass
-    Private Event backingField As EventHandler
+    Private backingField As EventHandler
 
     Public Custom Event MyEvent As EventHandler
         AddHandler(ByVal value As EventHandler)
-            AddHandler backingField, value
+            backingField = [Delegate].Combine(backingField, value)
         End AddHandler
         RemoveHandler(ByVal value As EventHandler)
-            RemoveHandler backingField, value
+            backingField = [Delegate].Remove(backingField, value)
         End RemoveHandler
         RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
-            RaiseEvent backingField(sender, e)
+            backingField?(sender, e)
         End RaiseEvent
     End Event
+
+    Public Sub Reset()
+        backingField = Nothing
+    End Sub
 End Class");
         }
         [Fact]
@@ -895,22 +901,21 @@ class TestClass {
 @"Imports System
 
 Friend Class TestClass
-    Private Event _backingField As EventHandler
+    Private _backingField As EventHandler
 
     Public Custom Event MyEvent As EventHandler
         AddHandler(ByVal value As EventHandler)
-            AddHandler _backingField, value
+            _backingField = [Delegate].Combine(_backingField, value)
         End AddHandler
         RemoveHandler(ByVal value As EventHandler)
-            RemoveHandler _backingField, value
+            _backingField = [Delegate].Remove(_backingField, value)
         End RemoveHandler
         RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
-            RaiseEvent _backingField(sender, e)
+            _backingField?(sender, e)
         End RaiseEvent
     End Event
 End Class");
         }
-
         [Fact]
         public async Task TestIndexer()
         {
