@@ -641,10 +641,12 @@ namespace ICSharpCode.CodeConverter.VB
                     SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(raiseEventParameters))
             ));
             if (eventFieldIdentifier != null) {
-                var invocationExpression = SyntaxFactory.InvocationExpression(
-                    SyntaxFactory.ConditionalAccessExpression(eventFieldIdentifier),
-                    raiseEventParameters.Select(x => SyntaxFactory.IdentifierName(x.Identifier.Identifier)).CreateArgList()
-                );
+
+                var invocationExpression =
+                    SyntaxFactory.InvocationExpression(
+                        SyntaxFactory.ParseExpression(eventFieldIdentifier.Identifier.ValueText + "?"), //I think this syntax tree is the wrong shape, but using the right shape causes the simplifier to fail
+                        raiseEventParameters.Select(x => SyntaxFactory.IdentifierName(x.Identifier.Identifier)).CreateArgList()
+                    );
                 riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ExpressionStatement(invocationExpression)));
             }
 
@@ -963,7 +965,7 @@ namespace ICSharpCode.CodeConverter.VB
         private static MemberAccessExpressionSyntax MemberAccess(params string[] nameParts)
         {
             MemberAccessExpressionSyntax lhs = null;
-            foreach (var namePart in nameParts) {
+            foreach (var namePart in nameParts.Skip(1)) {
                 lhs = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         lhs ?? (ExpressionSyntax) SyntaxFactory.IdentifierName(nameParts[0]), SyntaxFactory.Token(SyntaxKind.DotToken),
                         SyntaxFactory.IdentifierName(namePart)
