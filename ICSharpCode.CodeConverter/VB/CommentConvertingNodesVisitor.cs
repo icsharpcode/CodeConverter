@@ -20,7 +20,6 @@ namespace ICSharpCode.CodeConverter.VB
         private readonly CSharpSyntaxVisitor<VisualBasicSyntaxNode> _wrappedVisitor;
         private BitArray _lineTriviaMapped;
         private SemanticModel _semanticModel;
-        private TextLineCollection _lines;
 
         public CommentConvertingNodesVisitor(CSharpSyntaxVisitor<VisualBasicSyntaxNode> wrappedVisitor, BitArray lineTriviaMapped, SemanticModel semanticModel)
         {
@@ -28,24 +27,27 @@ namespace ICSharpCode.CodeConverter.VB
             _wrappedVisitor = wrappedVisitor;
             _lineTriviaMapped = lineTriviaMapped;
             _semanticModel = semanticModel;
-            _lines = semanticModel.SyntaxTree.GetText().Lines; //TODO: Consider using GetTextAsync
         }
 
         public override VisualBasicSyntaxNode DefaultVisit(SyntaxNode node)
         {
+            return DefaultVisitInner(node);
+        }
+
+        private VisualBasicSyntaxNode DefaultVisitInner(SyntaxNode node)
+        {
             try {
                 var converted = _wrappedVisitor.Visit(node);
-                if (converted == null) return converted;
-                return node.CopyAnnotationsTo(converted).WithOriginalLineAnnotationsFrom(node);
+                return converted.WithSourceMappingFrom(node);
             } catch (Exception e) {
                 var dummyStatement = SyntaxFactory.EmptyStatement();
-                return dummyStatement.WithVbTrailingErrorComment<VbSyntax.StatementSyntax>((CSharpSyntaxNode) node, e);
+                return dummyStatement.WithVbTrailingErrorComment<VbSyntax.StatementSyntax>((CSharpSyntaxNode)node, e);
             }
         }
 
         public override VisualBasicSyntaxNode VisitAttributeList(CsSyntax.AttributeListSyntax node)
         {
-            var convertedNode = _wrappedVisitor.Visit(node)
+            var convertedNode = DefaultVisitInner(node)
                 .WithPrependedLeadingTrivia(SyntaxFactory.EndOfLineTrivia(Environment.NewLine));
             return convertedNode;
         }

@@ -216,25 +216,39 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static ISymbol GetEnclosingDeclaredTypeSymbol(this SyntaxNode node, SemanticModel semanticModel)
         {
-            var typeBlockSyntax = (SyntaxNode) node.GetAncestor<TypeBlockSyntax>()
+            var typeBlockSyntax = (SyntaxNode)node.GetAncestor<TypeBlockSyntax>()
                 ?? node.GetAncestor<TypeSyntax>();
             if (typeBlockSyntax == null) return null;
             return semanticModel.GetDeclaredSymbol(typeBlockSyntax);
         }
 
-        public static T WithOriginalLineAnnotationsFrom<T>(this T converted, SyntaxNode fromNode) where T : SyntaxNode
+        public static T WithSourceMappingFrom<T>(this T converted, SyntaxNode fromNode) where T : SyntaxNode
         {
+            if (converted == null) return null;
             var origLinespan = fromNode.SyntaxTree.GetLineSpan(fromNode.Span);
-            if (origLinespan.StartLinePosition.Line == origLinespan.EndLinePosition.Line) {
-                converted = converted.WithAdditionalAnnotations(AnnotationConstants.OriginalLineAnnotation(origLinespan));
-            }
-
-            return converted;
+            return fromNode.CopyAnnotationsTo(converted)
+                .WithSourceStartLineAnnotation(origLinespan)
+                .WithSourceEndLineAnnotation(origLinespan);
         }
 
-        public static T WithOriginalLineAnnotation<T>(this T node, int lineNumber) where T : SyntaxNode
+        public static T WithSourceStartLineAnnotation<T>(this T node, FileLinePositionSpan sourcePosition) where T : SyntaxNode
         {
-            return node.WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.WithinOriginalLineAnnotationKind, lineNumber.ToString()));
+            return node.WithAdditionalAnnotations(AnnotationConstants.SourceStartLine(sourcePosition));
+        }
+
+        public static T WithSourceEndLineAnnotation<T>(this T node, FileLinePositionSpan sourcePosition) where T : SyntaxNode
+        {
+            return node.WithAdditionalAnnotations(AnnotationConstants.SourceEndLine(sourcePosition));
+        }
+
+        public static SyntaxList<T> WithSourceMappingFrom<T>(this SyntaxList<T> converted, SyntaxNode node) where T : SyntaxNode
+        {
+            if (!converted.Any()) return converted;
+            var origLinespan = node.SyntaxTree.GetLineSpan(node.Span);
+            var first = converted.First();
+            converted = converted.Replace(first, node.CopyAnnotationsTo(first).WithSourceStartLineAnnotation(origLinespan));
+            var last = converted.Last();
+            return converted.Replace(last, node.CopyAnnotationsTo(last).WithSourceEndLineAnnotation(origLinespan));
         }
 
         /// <summary>
@@ -1609,7 +1623,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static T WithCsTrailingErrorComment<T>(this T dummyDestNode,
             VisualBasicSyntaxNode sourceNode,
-            Exception exception) where T: CSharpSyntaxNode
+            Exception exception) where T : CSharpSyntaxNode
         {
             var errorDirective = SyntaxFactory.ParseTrailingTrivia($"#error Cannot convert {sourceNode.GetType().Name} - see comment for details{Environment.NewLine}");
             var errorDescription = sourceNode.DescribeConversionError(exception);

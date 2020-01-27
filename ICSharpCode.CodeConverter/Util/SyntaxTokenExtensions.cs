@@ -1061,14 +1061,22 @@ namespace ICSharpCode.CodeConverter.Util
                    || isConstructor && token.IsKind(SyntaxKind.StaticKeyword);
         }
 
-        public static SyntaxToken WithOriginalLineAnnotationsFrom(this SyntaxToken converted, SyntaxToken fromToken)
+        public static SyntaxToken WithSourceMappingFrom(this SyntaxToken converted, SyntaxToken fromToken)
         {
             var origLinespan = fromToken.SyntaxTree.GetLineSpan(fromToken.Span);
-            if (origLinespan.StartLinePosition.Line == origLinespan.EndLinePosition.Line) {
-                converted = converted.WithAdditionalAnnotations(AnnotationConstants.OriginalLineAnnotation(origLinespan));
-            }
+            return fromToken.CopyAnnotationsTo(converted)
+                .WithSourceStartLineAnnotation(origLinespan)
+                .WithSourceEndLineAnnotation(origLinespan);
+        }
 
-            return converted;
+        public static SyntaxToken WithSourceStartLineAnnotation(this SyntaxToken node, FileLinePositionSpan sourcePosition)
+        {
+            return node.WithAdditionalAnnotations(AnnotationConstants.SourceStartLine(sourcePosition));
+        }
+
+        public static SyntaxToken WithSourceEndLineAnnotation(this SyntaxToken node, FileLinePositionSpan sourcePosition)
+        {
+            return node.WithAdditionalAnnotations(AnnotationConstants.SourceEndLine(sourcePosition));
         }
     }
 }

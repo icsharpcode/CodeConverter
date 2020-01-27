@@ -30,15 +30,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             try {
                 var converted = _wrappedVisitor.Visit(node);
-                if (!converted.Any()) return converted;
-                var first = converted.First();
-                converted = converted.Replace(first, node.CopyAnnotationsTo(first));
-
-                var origLinespan = node.SyntaxTree.GetLineSpan(node.Span);
-                if (origLinespan.StartLinePosition == origLinespan.EndLinePosition) {
-                    converted = VBasic.SyntaxFactory.List(converted.Select(c => c.WithOriginalLineAnnotation(origLinespan.EndLinePosition.Line)));
-                }
-                return converted;
+                return converted.WithSourceMappingFrom(node);
             } catch (Exception e) {
                 var dummyStatement = VBasic.SyntaxFactory.EmptyStatement();
                 var withVbTrailingErrorComment = dummyStatement.WithVbTrailingErrorComment<VBSyntax.StatementSyntax>((CS.CSharpSyntaxNode) node, e);

@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using AttributeListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.AttributeListSyntax;
 using BinaryExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.BinaryExpressionSyntax;
 using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
+using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -518,7 +519,7 @@ namespace ICSharpCode.CodeConverter.VB
                     idText = "Item";
                     break;
             }
-            return Identifier(idText, keywordRequiresEscaping).WithOriginalLineAnnotationsFrom(id);
+            return Identifier(idText, keywordRequiresEscaping).WithSourceMappingFrom(id);
         }
 
         private string AdjustIfEventIdentifier(SyntaxToken id, CS.CSharpSyntaxNode parent)

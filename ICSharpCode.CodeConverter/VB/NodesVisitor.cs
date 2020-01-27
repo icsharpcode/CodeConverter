@@ -199,7 +199,9 @@ namespace ICSharpCode.CodeConverter.VB
                 clause = clause.WithAlias(alias);
             }
 
-            _convertedImports.Add(SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(clause)));
+            _convertedImports.Add(SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(clause))
+                .WithSourceMappingFrom(node) //Because we're returning null, the visiting process can't do the normal mapping
+            );
             return null;
         }
 
