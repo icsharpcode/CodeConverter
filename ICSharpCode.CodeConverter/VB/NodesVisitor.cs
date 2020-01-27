@@ -641,14 +641,11 @@ namespace ICSharpCode.CodeConverter.VB
                     SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(raiseEventParameters))
             ));
             if (eventFieldIdentifier != null) {
-                var invocactionExpression = (InvocationExpressionSyntax)_vbSyntaxGenerator.InvocationExpression(SyntaxFactory.ParseExpression(eventFieldIdentifier.Identifier.ValueText + "?"));
-                invocactionExpression = invocactionExpression
-                    .WithArgumentList(
-                        SyntaxFactory.ArgumentList(
-                            SyntaxFactory.SeparatedList(
-                                raiseEventParameters.Select(x => SyntaxFactory.SimpleArgument(SyntaxFactory.IdentifierName(x.Identifier.Identifier)))
-                                    .Cast<ArgumentSyntax>())));
-                riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ExpressionStatement(invocactionExpression)));
+                var invocationExpression = SyntaxFactory.InvocationExpression(
+                    SyntaxFactory.ConditionalAccessExpression(eventFieldIdentifier),
+                    raiseEventParameters.Select(x => SyntaxFactory.IdentifierName(x.Identifier.Identifier)).CreateArgList()
+                );
+                riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ExpressionStatement(invocationExpression)));
             }
 
             accessors.Add(riseEventAccessor);
@@ -931,13 +928,10 @@ namespace ICSharpCode.CodeConverter.VB
                 if (_semanticModel.GetTypeInfo(node.Right).ConvertedType.IsDelegateType()) {
                     var kind = node.GetAncestor<CSS.AccessorDeclarationSyntax>()?.Kind();
                     if (kind != null) {
-                        return SyntaxFactory.SimpleAssignmentStatement(
-                            left,
-                            ((InvocationExpressionSyntax)SyntaxFactory.ParseExpression($"[Delegate].{(kind.Value == CS.SyntaxKind.AddAccessorDeclaration ? "Combine" : "Remove")}()")).WithArgumentList(
-                                SyntaxFactory.ArgumentList(
-                                    SyntaxFactory.SeparatedList(
-                                        new[] { left, right }.Select(x => SyntaxFactory.SimpleArgument(x))
-                                            .Cast<ArgumentSyntax>()))));
+                        var methodName = kind.Value == CS.SyntaxKind.AddAccessorDeclaration ? "Combine" : "Remove";
+                        var delegateMethod = MemberAccess("[Delegate]", methodName);
+                        var invokeDelegateMethod = SyntaxFactory.InvocationExpression(delegateMethod, ExpressionSyntaxExtensions.CreateArgList(new[] { left, right }));
+                        return SyntaxFactory.SimpleAssignmentStatement(left, invokeDelegateMethod);
                     }
                     if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.PlusEqualsToken)) {
                         return SyntaxFactory.AddHandlerStatement(left, right);
@@ -965,6 +959,20 @@ namespace ICSharpCode.CodeConverter.VB
             }
             return CreateInlineAssignmentExpression(left, right);
         }
+
+        private static MemberAccessExpressionSyntax MemberAccess(params string[] nameParts)
+        {
+            MemberAccessExpressionSyntax lhs = null;
+            foreach (var namePart in nameParts) {
+                lhs = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        lhs ?? (ExpressionSyntax) SyntaxFactory.IdentifierName(nameParts[0]), SyntaxFactory.Token(SyntaxKind.DotToken),
+                        SyntaxFactory.IdentifierName(namePart)
+                      );
+            }
+
+            return lhs;
+        }
+
         private ExpressionSyntax CreateInlineAssignmentExpression(ExpressionSyntax left, ExpressionSyntax right)
         {
             _cSharpHelperMethodDefinition.AddInlineAssignMethod = true;

@@ -46,7 +46,8 @@ At the moment there's just a very small amount of first draft documentation. Con
 ## Implementation advice
 * Always try to convert directly between the VB and C# model, avoid converting then post-processing the converted result. This prevents the code getting tangled interdependencies, and means you have the full semantic model available to make an accurate conversion.
 * Aim to use symbols rather than syntax wherever possible. Remember, lots of the problems you need to solve have already been solved by the compiler - finding it is the hard part. http://source.roslyn.io helps a bit
-* Avoid using the `SyntaxFactory.Parse*` methods in general - it leads to getting mixed up between which language a string is from, and means you don't learn how the syntax trees are formed. You can use https://roslynquoter.azurewebsites.net/ to help find the correct methods to use.
+* Avoid using the `SyntaxFactory.Parse*` methods in general - it leads to getting mixed up between which language a string is from, and means you don't learn how the syntax trees are formed. You can use https://roslynquoter.azurewebsites.net/ to help find the correct methods to use, and [Syntax Vizualizer](https://marketplace.visualstudio.com/items?itemName=VisualStudioProductTeam.NETCompilerPlatformSDK) or [sharplab website](https://sharplab.io/#v2:EYLgtghgzgLgpgJwDQBsQDdhJiaMkAmIA1AD4CSYADgPYIxQAEAygJ6xxgCwAUAGIIAlnAB2BRgGEU0JgBU4sKTN6NVjAApD0EeI2AQAxgGtBIgOZ9hKcQEEmAUXSiYACQhiUiFWvUBXYCiCBpK+sDRgjI7OjACyrFEiMIx2kU6Jbh5ePGo5yQQEGQSeCAAUAEKsAGoQKIzaKL5wyQ5pru5FiACU3rm5+samFlbiALyMANoAInCeZjpwALoAdBLhwKZwJf0m5pYzBEh1NY3d2b2RYnkF7cU9uQBKnDROhcXlVTVHDU0pCW2ZCFO5z6hh2Q32jDGUxmcDm8GWjzAz0220Ge2sh3qJzuOXsl0RyNeWWB9wggigcD+72qtQpYkQzUYAHlgAArOAGfCMCo0xg/FrOGwIMxQIHAtSo3bDAD8JTpBEQhzgYt6ePEpPJlNadzVqWcdz8ASCLH8jEeFJgJRVIIGUohYwAcjQYAALQY6y7Mfy8XVKKBQIA===) to visualize the syntax tree.
+
 * Conversion errors should generally be made to result in a compile error. Simply throwing an exception anywhere will achieve this.
 
 ## Moving away from legacy patterns in the code
@@ -56,6 +57,7 @@ At the moment there's just a very small amount of first draft documentation. Con
 
 ## Resources
 * Lots of high level Roslyn introductions exist, e.g. https://github.com/dotnet/roslyn/wiki/Roslyn-Overview Getting deeper information is a lot harder. If you see good resources, PR them to this document!
+* To visualize syntax trees, use [Syntax Vizualizer](https://marketplace.visualstudio.com/items?itemName=VisualStudioProductTeam.NETCompilerPlatformSDK), [sharplab website](https://sharplab.io/#v2:EYLgtghgzgLgpgJwDQBsQDdhJiaMkAmIA1AD4CSYADgPYIxQAEAygJ6xxgCwAUAGIIAlnAB2BRgGEU0JgBU4sKTN6NVjAApD0EeI2AQAxgGtBIgOZ9hKcQEEmAUXSiYACQhiUiFWvUBXYCiCBpK+sDRgjI7OjACyrFEiMIx2kU6Jbh5ePGo5yQQEGQSeCAAUAEKsAGoQKIzaKL5wyQ5pru5FiACU3rm5+samFlbiALyMANoAInCeZjpwALoAdBLhwKZwJf0m5pYzBEh1NY3d2b2RYnkF7cU9uQBKnDROhcXlVTVHDU0pCW2ZCFO5z6hh2Q32jDGUxmcDm8GWjzAz0220Ge2sh3qJzuOXsl0RyNeWWB9wggigcD+72qtQpYkQzUYAHlgAArOAGfCMCo0xg/FrOGwIMxQIHAtSo3bDAD8JTpBEQhzgYt6ePEpPJlNadzVqWcdz8ASCLH8jEeFJgJRVIIGUohYwAcjQYAALQY6y7Mfy8XVKKBQIA===) and [Rolsyn Quoter](https://roslynquoter.azurewebsites.net/)
 * Understanding VB/C# differences:
  * https://en.wikipedia.org/wiki/Comparison_of_C_Sharp_and_Visual_Basic_.NET#Features_of_Visual_Basic_.NET_not_found_in_C#
  * https://anthonydgreen.net/2019/02/12/exhausting-list-of-differences-between-vb-net-c/

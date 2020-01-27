@@ -69,9 +69,14 @@ namespace ICSharpCode.CodeConverter.Util
             return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(args.Select(SyntaxFactory.Argument)));
         }
 
-        public static VBSyntax.ArgumentListSyntax CreateArgList(params VBSyntax.ExpressionSyntax[] args)
+        public static VBSyntax.ArgumentListSyntax CreateArgList<T>(params T[] args) where T : VBSyntax.ExpressionSyntax
         {
-            return VBasic.SyntaxFactory.ArgumentList(VBasic.SyntaxFactory.SeparatedList(args.Select(e => (VBSyntax.ArgumentSyntax) VBasic.SyntaxFactory.SimpleArgument(e))));
+            return CreateArgList(args);
+        }
+
+        public static VBSyntax.ArgumentListSyntax CreateArgList<T>(this IEnumerable<T> argExpressions) where T : VBSyntax.ExpressionSyntax
+        {
+            return VBasic.SyntaxFactory.ArgumentList(VBasic.SyntaxFactory.SeparatedList(argExpressions.Select(e => (VBSyntax.ArgumentSyntax) VBasic.SyntaxFactory.SimpleArgument(e))));
         }
 
         public static bool HasOperandOfUnconvertedType(this Microsoft.CodeAnalysis.VisualBasic.Syntax.BinaryExpressionSyntax node, string operandType, SemanticModel semanticModel)
