@@ -71,7 +71,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static VBSyntax.ArgumentListSyntax CreateArgList<T>(params T[] args) where T : VBSyntax.ExpressionSyntax
         {
-            return CreateArgList(args);
+            return CreateArgList((IEnumerable<T>) args);
         }
 
         public static VBSyntax.ArgumentListSyntax CreateArgList<T>(this IEnumerable<T> argExpressions) where T : VBSyntax.ExpressionSyntax
