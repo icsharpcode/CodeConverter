@@ -52,6 +52,8 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             //TODO Try harder to avoid losing track of various precalculated positions changing during the replacements, for example build up a dictionary of replacements and make them in a single ReplaceTokens call
             //TODO Keep track of lost comments and put them in a comment at the end of the file
+            var triviaMappings = new List<TriviaMapping>();
+            var leadingSourceForTargetMappings = new List<TriviaMapping>();
             for (int i = sourceLines.Count - 1; i >= 0; i--) {
                 var sourceLine = sourceLines[i];
                 var endOfSourceLine = source.FindToken(sourceLine.End);
@@ -63,6 +65,7 @@ namespace ICSharpCode.CodeConverter.Shared
                         var convertedTrivia = endOfSourceLine.TrailingTrivia.ConvertTrivia();
                         var toReplace = target.FindToken(line.End);
                         target = target.ReplaceToken(toReplace, toReplace.WithTrailingTrivia(convertedTrivia));
+                        triviaMappings.Add(new TriviaMapping(i, line.LineNumber, endOfSourceLine.TrailingTrivia, toReplace, false));
                     }
                 }
 
@@ -72,9 +75,11 @@ namespace ICSharpCode.CodeConverter.Shared
                         var convertedTrivia = startOfSourceLine.LeadingTrivia.ConvertTrivia();
                         var toReplace = target.FindTokenOnRightOfPosition(line.Start);
                         target = target.ReplaceToken(toReplace, toReplace.WithLeadingTrivia(convertedTrivia));
+                        triviaMappings.Add(new TriviaMapping(i, line.LineNumber, endOfSourceLine.TrailingTrivia, toReplace, true));
                     }
                 }
             }
+            triviaMappings = triviaMappings.OrderBy(x => x.TargetLine).ThenBy(x => !x.IsLeading).ToList();
             return target;
         }
 

@@ -39,8 +39,7 @@ class CommentTestClass //Don't rename
 #endif
         Console.Write();
     } //End of method
-} //End of class", @"Imports System.Diagnostics
-Imports System.Runtime.InteropServices
+} //End of class", @"Imports System.Runtime.InteropServices
 
 ' blank line
 
