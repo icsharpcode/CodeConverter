@@ -34,6 +34,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Add ReadOnly/WriteOnly modifier for interface properties that need it
 * Fix bug which led to nested modules
 * Fix accessibility of converted public static classes
+* Fix overqualifying with "Global" in some cases
+* Fix parenthesized TryCast which caused compile error
 
 ## [7.6.0] - 2020-01-11
 
