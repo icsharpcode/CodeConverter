@@ -86,26 +86,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private TextLine GetBestLine(IReadOnlyDictionary<int, TextLine> sourceToTargetLine, int sourceLineIndex)
         {
             if (sourceToTargetLine.TryGetValue(sourceLineIndex, out var targetLineIndex)) return targetLineIndex;
-
-            var (previousOffset, previousLine) = GetOffsetSourceLineTargetNodes(sourceToTargetLine, sourceLineIndex, -1);
-            var (nextOffset, nextLine) = GetOffsetSourceLineTargetNodes(sourceToTargetLine, sourceLineIndex, 1);
-            if (previousLine != default && nextLine != default) {
-                var guessedTargetLine = originalTargetLines[((previousLine.LineNumber - previousOffset) + (nextLine.LineNumber - nextOffset)) / 2];
-                //TODO Annotate this case with a comment to say it's a guess
-                //TODO Move this guessing phase to fill in the gaps after all other allocations are made to avoid clashes with other moved lines
-                if (previousLine.LineNumber < guessedTargetLine.LineNumber && guessedTargetLine.LineNumber < nextLine.LineNumber) return guessedTargetLine;
-            }
             return default;
-        }
-
-        private static (int offset, TextLine targetLine) GetOffsetSourceLineTargetNodes(IReadOnlyDictionary<int, TextLine> sourceToTargetLine, int sourceLineIndex, int multiplier)
-        {
-            for (int offset = 1; offset <= 5; offset++) {
-                if (sourceToTargetLine.TryGetValue(sourceLineIndex + (offset * multiplier), out var line)) {
-                    return (offset * multiplier, line);
-                }
-            }
-            return (0, default);
         }
     }
 }
