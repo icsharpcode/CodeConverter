@@ -28,6 +28,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### C# -> VB
 
 * Rename local symbols differing only in case [#80](https://github.com/icsharpcode/CodeConverter/issues/80)
+* Remove erroneous event modifier from delegates
+* Add Implements clause for event fields
+* Add Overloads modifier where needed in VB
+* Add ReadOnly/WriteOnly modifier for interface properties that need it
+* Fix bug which led to nested modules
+* Fix accessibility of converted public static classes
 
 ## [7.6.0] - 2020-01-11
 
