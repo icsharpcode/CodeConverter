@@ -16,9 +16,8 @@ namespace CodeConverter.Tests.VB
         public async Task TestPropertyWithModifier()
         {
             await TestConversionCSharpToVisualBasic(
-                @"class TestClass
-{
-    public string Text { get; private set; };
+@"class TestClass {
+    public string Text { get; private set; }
 }", @"Friend Class TestClass
     Private _Text As String
 
@@ -31,6 +30,57 @@ namespace CodeConverter.Tests.VB
         End Set
     End Property
 End Class");
+        }
+
+        [Fact]
+        public async Task TestProperty_StaticInferred() {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    public static string Text { get; private set; };
+    public int Count { get; private set; };
+}",
+@"Friend Class TestClass
+    Private Shared _Text As String
+    Private _Count As Integer
+
+    Public Shared Property Text As String
+        Get
+            Return _Text
+        End Get
+        Private Set(ByVal value As String)
+            _Text = value
+        End Set
+    End Property
+
+    Public Property Count As Integer
+        Get
+            Return _Count
+        End Get
+        Private Set(ByVal value As Integer)
+            _Count = value
+        End Set
+    End Property
+End Class");
+        }
+
+        [Fact]
+        public async Task TestProperty_StaticInferredInModule() {
+            await TestConversionCSharpToVisualBasic(
+@"static class TestClass {
+    public static string Text { get; private set; }
+}",
+@"Friend Module TestClass
+    Private _Text As String
+
+    Public Property Text As String
+        Get
+            Return _Text
+        End Get
+        Private Set(ByVal value As String)
+            _Text = value
+        End Set
+    End Property
+End Module");
         }
 
         [Fact]

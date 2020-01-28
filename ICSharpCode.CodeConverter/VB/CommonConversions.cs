@@ -98,17 +98,13 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
         public SyntaxList<StatementSyntax> InsertGeneratedClassMemberDeclarations(
-            SyntaxList<StatementSyntax> convertedStatements, CS.CSharpSyntaxNode originaNode)
+            SyntaxList<StatementSyntax> convertedStatements, CS.CSharpSyntaxNode originaNode, bool isModule)
         {
             var descendantNodes = originaNode.DescendantNodes().ToList();
             var propertyBlocks = descendantNodes.OfType<CSS.PropertyDeclarationSyntax>()
                 .Where(e => e.AccessorList != null && e.AccessorList.Accessors.Any(a => a.Body == null && a.ExpressionBody == null && a.Modifiers.ContainsDeclaredVisibility()))
                 .ToList();
-            if (propertyBlocks.Any()) {
-                convertedStatements = convertedStatements.Insert(0, ConvertToDeclarationStatement(propertyBlocks));
-            }
-
-            return convertedStatements;
+            return convertedStatements.InsertRange(0, ConvertToDeclarationStatement(propertyBlocks, isModule));
         }
 
         private IEnumerable<StatementSyntax> ConvertToDeclarationStatement(List<CSS.DeclarationExpressionSyntax> des,
@@ -120,10 +116,16 @@ namespace ICSharpCode.CodeConverter.VB
             return variableDeclaratorSyntaxes.Any() ? new StatementSyntax[]{CreateLocalDeclarationStatement(variableDeclaratorSyntaxes)} : Enumerable.Empty<StatementSyntax>();
         }
 
-        private StatementSyntax ConvertToDeclarationStatement(List<CSS.PropertyDeclarationSyntax> propertyBlocks)
+        private IEnumerable<StatementSyntax> ConvertToDeclarationStatement(List<CSS.PropertyDeclarationSyntax> propertyBlocks, bool isModule)
         {
-            IEnumerable<VariableDeclaratorSyntax> variableDeclaratorSyntaxs = propertyBlocks.Select(ConvertToVariableDeclarator);
-            return CreateLocalDeclarationStatement(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PrivateKeyword)), variableDeclaratorSyntaxs.ToArray());
+            var variableDeclaratorSyntaxs = propertyBlocks.GroupBy(x => x.Modifiers.Any(CSSyntaxKind.StaticKeyword)).ToList();
+            var shared = variableDeclaratorSyntaxs.Where(x => x.Key).SelectMany(x => x.Select(ConvertToVariableDeclarator));
+            var other = variableDeclaratorSyntaxs.Where(x => !x.Key).SelectMany(x => x.Select(ConvertToVariableDeclarator));
+            var tokens = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
+            return new[] {
+                CreateLocalDeclarationStatement(!isModule ? tokens.Add(SyntaxFactory.Token(SyntaxKind.SharedKeyword)) : tokens, shared.ToArray()),
+                CreateLocalDeclarationStatement(tokens, other.ToArray())
+            }.Where(x => x != null);
         }
 
         public static StatementSyntax CreateLocalDeclarationStatement(params VariableDeclaratorSyntax[] variableDeclarators)
@@ -135,6 +137,8 @@ namespace ICSharpCode.CodeConverter.VB
 
         public static StatementSyntax CreateLocalDeclarationStatement(SyntaxTokenList syntaxTokenList, params VariableDeclaratorSyntax[] DimVariableDeclarators)
         {
+            if (DimVariableDeclarators.Length == 0)
+                return null;
             var declarators = SyntaxFactory.SeparatedList(DimVariableDeclarators);
             return SyntaxFactory.LocalDeclarationStatement(syntaxTokenList, declarators);
         }
