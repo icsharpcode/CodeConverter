@@ -122,8 +122,9 @@ namespace ICSharpCode.CodeConverter.VB
             var shared = variableDeclaratorSyntaxs.Where(x => x.Key).SelectMany(x => x.Select(ConvertToVariableDeclarator));
             var instance = variableDeclaratorSyntaxs.Where(x => !x.Key).SelectMany(x => x.Select(ConvertToVariableDeclarator));
             var privateTokens = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
+            var privateSharedTokens = !isModule ? privateTokens.Add(SyntaxFactory.Token(SyntaxKind.SharedKeyword)) : privateTokens;
             return new[] {
-                CreateLocalDeclarationStatement(!isModule ? privateTokens.Add(SyntaxFactory.Token(SyntaxKind.SharedKeyword)) : privateTokens, shared.ToArray()),
+                CreateLocalDeclarationStatement(privateSharedTokens, shared.ToArray()),
                 CreateLocalDeclarationStatement(privateTokens, instance.ToArray())
             }.Where(x => x != null);
         }
