@@ -51,5 +51,11 @@ namespace ICSharpCode.CodeConverter.VB
                 .WithPrependedLeadingTrivia(SyntaxFactory.EndOfLineTrivia(Environment.NewLine));
             return convertedNode;
         }
+
+        public override VisualBasicSyntaxNode VisitCompilationUnit(CsSyntax.CompilationUnitSyntax node)
+        {
+            var convertedNode = (VbSyntax.CompilationUnitSyntax)DefaultVisitInner(node);
+            return convertedNode.WithEndOfFileToken(convertedNode.EndOfFileToken.WithSourceMappingFrom(node.EndOfFileToken));
+        }
     }
 }

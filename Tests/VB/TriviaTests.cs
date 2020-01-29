@@ -7,7 +7,7 @@ namespace CodeConverter.Tests.VB
     public class TriviaTests : ConverterTestBase
     {
         [Fact]
-        public async Task TestMethodWithComments()
+        public async Task MethodWithComments()
         {
             await TestConversionCSharpToVisualBasic(
                 @"using System;
@@ -16,7 +16,7 @@ using System.Diagnostics; //Using statement
 //blank line
 
 namespace ANamespace //namespace
-{ //BUG: Open brackets lose comments
+{ //BUG: Block start loses comments
     /// <summary>
     /// class xml doc
     /// </summary>
@@ -26,14 +26,14 @@ namespace ANamespace //namespace
         /// method xml doc
         /// </summary>
         public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class where T2 : struct //Only for structs
-        { //BUG: Open brackets lose comments
+        { //BUG: Block start loses comments
     #if true //BUG: IfDirective loses comments
             argument = null; //1
     #region Arg2
             argument2 = default(T2); //2
     #endregion //BUG: EndRegion loses comments
             if (argument != null) //never
-            {//BUG: Open brackets lose comments
+            { //BUG: Block start loses comments
              //This works because it's leading trivia for the next line
                 Debug.WriteLine(1); // Check debug window
                 Debug.WriteLine(2);
@@ -46,7 +46,7 @@ namespace ANamespace //namespace
         } //End of method
     } //End of class
 }
-//BUG: Last line loses comments", @"Imports System
+// Last line comment", @"Imports System
 Imports System.Diagnostics ' Using statement
 Imports System.Runtime.InteropServices
 
@@ -79,7 +79,21 @@ Namespace ANamespace ' namespace
             Console.Write(3)
         End Sub ' End of method
     End Class ' End of class
-End Namespace");
+End Namespace' Last line comment");
+        }
+
+        [Fact]
+        public async Task TrailingAndEndOfFileLineComments()
+        {
+            await TestConversionCSharpToVisualBasic(
+                @"//leading
+namespace ANamespace //namespace
+{ //BUG: Block start loses comments
+} //end namespace
+// Last line comment", @"' leading
+Namespace ANamespace ' namespace
+End Namespace ' end namespace
+' Last line comment");
         }
     }
 }

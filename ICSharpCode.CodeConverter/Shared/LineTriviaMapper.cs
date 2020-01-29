@@ -29,8 +29,13 @@ namespace ICSharpCode.CodeConverter.Shared
         /// Makes no attempt to convert whitespace/newline-only trivia
         /// Currently doesn't deal with any within-line trivia (i.e. /* block comments */)
         /// </summary>
-        public static SyntaxNode MapSourceTriviaToTarget(SyntaxNode source, SyntaxNode target)
+        public static SyntaxNode MapSourceTriviaToTarget<TSource, TTarget>(TSource source, TTarget target)
+            where TSource : SyntaxNode, ICompilationUnitSyntax where TTarget : SyntaxNode, ICompilationUnitSyntax
         {
+
+            //// Special case: The end of file doesn't have trailing trivia, there's a special token which has leading trivia instead
+            //target = target.ReplaceToken(target.EndOfFileToken, target.EndOfFileToken.WithLeadingTrivia(target.EndOfFileToken.LeadingTrivia.Concat(source.EndOfFileToken.LeadingTrivia.ConvertTrivia())));
+
             var originalTargetLines = target.GetText().Lines;
 
             var targetNodesBySourceStartLine = target.GetAnnotatedNodesAndTokens(AnnotationConstants.SourceStartLineAnnotationKind)
@@ -43,6 +48,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             var sourceLines = source.GetText().Lines;
             var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, targetNodesBySourceStartLine, targetNodesBySourceEndLine);
+
             return lineTriviaMapper.GetTargetWithSourceTrivia(target);
         }
 
@@ -50,33 +56,57 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             //TODO Try harder to avoid losing track of various precalculated positions changing during the replacements, for example build up a dictionary of replacements and make them in a single ReplaceTokens call
             //TODO Keep track of lost comments and put them in a comment at the end of the file
+            //TODO Possible perf: Find token starting from position of last replaced token rather than from the root node each time?
             var triviaMappings = new List<TriviaMapping>();
             for (int i = sourceLines.Count - 1; i >= 0; i--) {
-                var sourceLine = sourceLines[i];
-                var endOfSourceLine = source.FindToken(sourceLine.End);
-                var startOfSourceLine = source.FindTokenOnRightOfPosition(sourceLine.Start);
-
-                if (endOfSourceLine.TrailingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
-                    var line = GetBestLine(targetTrailingTextLineFromSourceLine, i);
-                    if (line != default) {
-                        var convertedTrivia = endOfSourceLine.TrailingTrivia.ConvertTrivia();
-                        var toReplace = target.FindToken(line.End);
-                        target = target.ReplaceToken(toReplace, toReplace.WithTrailingTrivia(convertedTrivia));
-                        triviaMappings.Add(new TriviaMapping(i, line.LineNumber, endOfSourceLine.TrailingTrivia, toReplace, false));
-                    }
-                }
-
-                if (startOfSourceLine.LeadingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
-                    var line = GetBestLine(targetLeadingTextLineFromSourceLine, i);
-                    if (line != default) {
-                        var convertedTrivia = startOfSourceLine.LeadingTrivia.ConvertTrivia();
-                        var toReplace = target.FindTokenOnRightOfPosition(line.Start);
-                        target = target.ReplaceToken(toReplace, toReplace.WithLeadingTrivia(convertedTrivia));
-                        triviaMappings.Add(new TriviaMapping(i, line.LineNumber, endOfSourceLine.TrailingTrivia, toReplace, true));
-                    }
-                }
+                target = ConvertTrailingForSourceLine(target, i);
+                target = ConvertLeadingForSourceLine(target, i);
             }
             triviaMappings = triviaMappings.OrderBy(x => x.TargetLine).ThenBy(x => !x.IsLeading).ToList();
+            return target;
+        }
+
+        private SyntaxNode ConvertLeadingForSourceLine(SyntaxNode target, int sourceLineIndex)
+        {
+            var startOfSourceLine = source.FindToken(sourceLines[sourceLineIndex].Start);
+            if (startOfSourceLine.LeadingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
+                var line = GetBestLine(targetLeadingTextLineFromSourceLine, sourceLineIndex);
+                if (line != default) {
+                    var convertedTrivia = startOfSourceLine.LeadingTrivia.ConvertTrivia();
+                    var toReplace = target.FindToken(line.Start);
+                    //TODO Check whether there's a general version of FindToken that covers this and similar comments
+                    if (toReplace.Span.End < line.Start) {
+                        toReplace = toReplace.GetNextToken(); //Zero width tokens with newline trivia can cause this, e.g. EOF
+                    }
+                    target = target.ReplaceToken(toReplace, toReplace.WithLeadingTrivia(convertedTrivia));
+                }
+            }
+
+            return target;
+        }
+
+        private SyntaxNode ConvertTrailingForSourceLine(SyntaxNode target, int sourceLineIndex)
+        {
+            var endOfSourceLine = source.FindToken(sourceLines[sourceLineIndex].End);
+
+            //TODO Check whether there's a general version of FindToken that covers this and similar comments
+            if (endOfSourceLine.Width() == 0 && !endOfSourceLine.HasTrailingTrivia && !endOfSourceLine.HasLeadingTrivia) {
+                endOfSourceLine = endOfSourceLine.GetPreviousToken();
+            }
+
+            if (endOfSourceLine.TrailingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
+                var line = GetBestLine(targetTrailingTextLineFromSourceLine, sourceLineIndex);
+                if (line != default) {
+                    var convertedTrivia = endOfSourceLine.TrailingTrivia.ConvertTrivia();
+                    var toReplace = target.FindToken(line.End);
+                    //TODO Check whether there's a general version of FindToken that covers this and similar comments
+                    if (toReplace.Span.Start > line.End) {
+                        toReplace = toReplace.GetPreviousToken(); //Zero width tokens with newline trivia can cause this, e.g. EOF
+                    }
+                    target = target.ReplaceToken(toReplace, toReplace.WithTrailingTrivia(convertedTrivia));
+                }
+            }
+
             return target;
         }
 

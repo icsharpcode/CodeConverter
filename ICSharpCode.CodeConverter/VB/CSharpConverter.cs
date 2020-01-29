@@ -16,6 +16,7 @@ using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.VB
 {
@@ -28,7 +29,7 @@ namespace ICSharpCode.CodeConverter.VB
             var compilation = await document.Project.GetCompilationAsync();
             var tree = await document.GetSyntaxTreeAsync();
             var semanticModel = compilation.GetSemanticModel(tree, true);
-            var root = await document.GetSyntaxRootAsync() as CS.CSharpSyntaxNode ??
+            var root = await document.GetSyntaxRootAsync() as CSS.CompilationUnitSyntax ??
                        throw new InvalidOperationException(NullRootError(document));
 
             var vbSyntaxGenerator = SyntaxGenerator.GetGenerator(vbReferenceProject);
@@ -36,7 +37,10 @@ namespace ICSharpCode.CodeConverter.VB
 
             var visualBasicSyntaxVisitor = new NodesVisitor(document, (CS.CSharpCompilation)compilation, semanticModel, vbViewOfCsSymbols, vbSyntaxGenerator, numberOfLines);
             var converted = root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
-            var formattedConverted = Formatter.Format(converted, document.Project.Solution.Workspace);
+
+            var formattedConverted = (VBSyntax.CompilationUnitSyntax) Formatter.Format(converted, document.Project.Solution.Workspace);
+
+
             return LineTriviaMapper.MapSourceTriviaToTarget(root, formattedConverted);
         }
 
