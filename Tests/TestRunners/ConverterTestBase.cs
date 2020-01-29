@@ -71,7 +71,16 @@ namespace CodeConverter.Tests.TestRunners
             var convertedCode = await Convert<CSToVBConversion>(sourceWithComments, conversion);
             var convertedCommentLineNumbers = convertedCode.Split(new[] { AutoTestCommentPrefix }, StringSplitOptions.None)
                 .Skip(1).Select(afterPrefix => afterPrefix.Split('\n')[0].TrimEnd()).ToList();
-            Assert.Equal(lineNumbersAdded, convertedCommentLineNumbers);
+            var missingSourceLineNumbers = lineNumbersAdded.Except(convertedCommentLineNumbers);
+            if (missingSourceLineNumbers.Any()) {
+                Assert.False(true, "Comments not converted from source lines: " + string.Join(", ", missingSourceLineNumbers) + GetSourceAndConverted(sourceWithComments, convertedCode));
+            }
+            Assert.Equal(string.Join(", ", lineNumbersAdded), string.Join(", ", convertedCommentLineNumbers));
+        }
+
+        private static string GetSourceAndConverted(string sourceLinesWithComments, string convertedCode)
+        {
+            return "\r\n\r\nSource:\r\n" + sourceLinesWithComments + "\r\n-------------------\r\nConverted:\r\n" + convertedCode;
         }
 
         private static string AddSurroundingMethodBlock(string expectedVisualBasicCode, bool expectSurroundingBlock)
