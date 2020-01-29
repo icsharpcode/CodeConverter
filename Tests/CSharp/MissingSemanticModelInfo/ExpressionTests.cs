@@ -251,24 +251,25 @@ End Class", @"internal partial class TestClass
         }
 
     [Fact]
-    public async Task CharacterizeRaiseEventWithMissingDefinitionActsLikeFunc()
+    public async Task CharacterizeRaiseEventWithMissingDefinitionActsLikeMultiIndexer()
     {
-    await TestConversionCSharpToVisualBasic(
-        @"using System;
-
-class TestClass
-{
-    void TestMethod()
-    {
-        if (MyEvent != null) MyEvent(this, EventArgs.Empty);
-    }
-}", @"Imports System
+    await TestConversionVisualBasicToCSharp(
+        @"Imports System
 
 Friend Class TestClass
     Private Sub TestMethod()
         If MyEvent IsNot Nothing Then MyEvent(Me, EventArgs.Empty)
     End Sub
-End Class");
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod()
+    {
+        if (MyEvent != null)
+            MyEvent[this, EventArgs.Empty];
+    }
+}");
         }
     }
 }
