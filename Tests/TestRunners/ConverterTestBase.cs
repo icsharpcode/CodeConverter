@@ -51,17 +51,22 @@ namespace CodeConverter.Tests.TestRunners
 
             await TestConversionCSharpToVisualBasicWithoutComments(csharpCode, expectedVisualBasicCode, conversion);
             if (_testCstoVBCommentsByDefault && !hasLineCommentConversionIssue) {
-                await AssertLineCommentsConvertedInSameOrder(csharpCode, conversion, "//");
+                await AssertLineCommentsConvertedInSameOrder(csharpCode, conversion, "//", LineCanHaveCSharpComment);
             }
+        }
+
+        private static bool LineCanHaveCSharpComment(string l)
+        {
+            return !l.TrimStart().StartsWith("#region");
         }
 
         /// <summary>
         /// Lines that already have cooments aren't automatically tested, so if a line changes order in a conversion, just add a comment to that line.
         /// If there's a comment conversion issue, set the optional hasLineCommentConversionIssue to true
         /// </summary>
-        private async Task AssertLineCommentsConvertedInSameOrder(string source, TextConversionOptions conversion, string singleLineCommentStart)
+        private async Task AssertLineCommentsConvertedInSameOrder(string source, TextConversionOptions conversion, string singleLineCommentStart, Func<string, bool> lineCanHaveComment)
         {
-            var (sourceLinesWithComments, lineNumbersAdded) = AddLineNumberComments(source, singleLineCommentStart, AutoTestCommentPrefix);
+            var (sourceLinesWithComments, lineNumbersAdded) = AddLineNumberComments(source, singleLineCommentStart, AutoTestCommentPrefix, lineCanHaveComment);
             string sourceWithComments = string.Join(Environment.NewLine, sourceLinesWithComments);
             var convertedCode = await Convert<CSToVBConversion>(sourceWithComments, conversion);
             var convertedCommentLineNumbers = convertedCode.Split(new[] { AutoTestCommentPrefix }, StringSplitOptions.None)
@@ -145,16 +150,16 @@ End Sub";
 
 
 
-        private static (IReadOnlyCollection<string> Lines, IReadOnlyCollection<string> LineNumbersAdded) AddLineNumberComments(string code, string singleLineCommentStart, string commentPrefix)
+        private static (IReadOnlyCollection<string> Lines, IReadOnlyCollection<string> LineNumbersAdded) AddLineNumberComments(string code, string singleLineCommentStart, string commentPrefix, Func<string, bool> lineCanHaveComment)
         {
             var lines = Utils.HomogenizeEol(code).Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             var lineNumbersAdded = new List<string>();
-            var newLines = lines.Select((s, i) => {
+            var newLines = lines.Select((line, i) => {
                 var lineNumber = (i + 1).ToString();
-                var potentialExistingComments = s.Split(new[] { singleLineCommentStart }, StringSplitOptions.None).Skip(1);
-                if (potentialExistingComments.Count() == 1) return s;
+                var potentialExistingComments = line.Split(new[] { singleLineCommentStart }, StringSplitOptions.None).Skip(1);
+                if (potentialExistingComments.Count() == 1 || !lineCanHaveComment(line)) return line;
                 lineNumbersAdded.Add(lineNumber);
-                return s + singleLineCommentStart + commentPrefix + lineNumber;
+                return line + singleLineCommentStart + commentPrefix + lineNumber;
             }).ToArray();
             return (newLines, lineNumbersAdded);
         }

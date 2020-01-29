@@ -921,7 +921,7 @@ namespace ICSharpCode.CodeConverter.Util
             if (t.IsKind(CSSyntaxKind.RegionDirectiveTrivia)) {
                 var structure = ((CSSyntax.RegionDirectiveTriviaSyntax)t.GetStructure());
                 string name = structure.EndOfDirectiveToken.LeadingTrivia.Single().ToString();
-                var regionSyntax = VBSyntaxFactory.RegionDirectiveTrivia(VBSyntaxFactory.Token(VBSyntaxKind.HashToken), VBSyntaxFactory.Token(VBSyntaxKind.RegionKeyword), VBSyntaxFactory.StringLiteralToken(name, name));
+                var regionSyntax = VBSyntaxFactory.RegionDirectiveTrivia(VBSyntaxFactory.Token(VBSyntaxKind.HashToken), VBSyntaxFactory.Token(VBSyntaxKind.RegionKeyword), VBSyntaxFactory.StringLiteralToken("\"" + name + "\"", name));
                 return regionSyntax;
             }
 

@@ -62,7 +62,7 @@ Namespace ANamespace ' namespace
         Public Sub TestMethod(Of T As Class, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) ' Only for structs
 #If true
             argument = Nothing ' 1
-#Region Arg2
+#Region ""Arg2""
             argument2 = Nothing ' 2
 #End Region
             If argument IsNot Nothing Then ' never
