@@ -67,11 +67,6 @@ namespace ICSharpCode.CodeConverter.VB
             return $"__{v}{_placeholder++}__";
         }
 
-        private static int GetImportantTriviaLength(ImportsClauseSyntax c)
-        {
-            return c.GetLeadingTrivia().Concat(c.GetTrailingTrivia()).Where(t => !t.IsWhitespaceOrEndOfLine()).Sum(t => t.ToString().Length);
-        }
-
         public NodesVisitor(Document document, CS.CSharpCompilation compilation, SemanticModel semanticModel,
             VisualBasicCompilation vbViewOfCsSymbols, SyntaxGenerator vbSyntaxGenerator, int numberOfLines)
         {
@@ -90,11 +85,6 @@ namespace ICSharpCode.CodeConverter.VB
         {
             throw new NotImplementedException($"Conversion for {CS.CSharpExtensions.Kind(node)} not implemented, please report this issue")
                 .WithNodeInformation(node);
-        }
-
-        private Func<SyntaxNode, SyntaxNode> DelegateConversion(Func<SyntaxNode, SyntaxList<StatementSyntax>> convert)
-        {
-            return node => MethodBodyExecutableStatementVisitor.CreateBlock(convert(node));
         }
 
         public override VisualBasicSyntaxNode VisitCompilationUnit(CSS.CompilationUnitSyntax node)

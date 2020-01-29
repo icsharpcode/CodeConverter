@@ -11,15 +11,13 @@ namespace ICSharpCode.CodeConverter.Shared
     {
         private readonly SyntaxNode source;
         private readonly TextLineCollection sourceLines;
-        private readonly TextLineCollection originalTargetLines;
         private readonly IReadOnlyDictionary<int, TextLine> targetLeadingTextLineFromSourceLine;
         private readonly IReadOnlyDictionary<int, TextLine> targetTrailingTextLineFromSourceLine;
 
-        public LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, TextLineCollection originalTargetLines, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
+        public LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
         {
             this.source = source;
             this.sourceLines = sourceLines;
-            this.originalTargetLines = originalTargetLines;
             this.targetLeadingTextLineFromSourceLine = targetLeadingTextLineFromSourceLine;
             this.targetTrailingTextLineFromSourceLine = targetTrailingTextLineFromSourceLine;
         }
@@ -44,7 +42,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 .ToDictionary(g => g.Key, g => originalTargetLines.GetLineFromPosition(g.Max(x => x.GetLocation().SourceSpan.End)));
 
             var sourceLines = source.GetText().Lines;
-            var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, originalTargetLines, targetNodesBySourceStartLine, targetNodesBySourceEndLine);
+            var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, targetNodesBySourceStartLine, targetNodesBySourceEndLine);
             return lineTriviaMapper.GetTargetWithSourceTrivia(target);
         }
 
@@ -53,7 +51,6 @@ namespace ICSharpCode.CodeConverter.Shared
             //TODO Try harder to avoid losing track of various precalculated positions changing during the replacements, for example build up a dictionary of replacements and make them in a single ReplaceTokens call
             //TODO Keep track of lost comments and put them in a comment at the end of the file
             var triviaMappings = new List<TriviaMapping>();
-            var leadingSourceForTargetMappings = new List<TriviaMapping>();
             for (int i = sourceLines.Count - 1; i >= 0; i--) {
                 var sourceLine = sourceLines[i];
                 var endOfSourceLine = source.FindToken(sourceLine.End);
