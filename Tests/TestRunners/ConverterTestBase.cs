@@ -61,7 +61,7 @@ namespace CodeConverter.Tests.TestRunners
         /// </summary>
         private async Task AssertLineCommentsConvertedInSameOrder(string source, TextConversionOptions conversion, string singleLineCommentStart)
         {
-            var (sourceLinesWithComments, lineNumbersAdded) = AddLineNumberComments(source, singleLineCommentStart + AutoTestCommentPrefix);
+            var (sourceLinesWithComments, lineNumbersAdded) = AddLineNumberComments(source, singleLineCommentStart, AutoTestCommentPrefix);
             string sourceWithComments = string.Join(Environment.NewLine, sourceLinesWithComments);
             var convertedCode = await Convert<CSToVBConversion>(sourceWithComments, conversion);
             var convertedCommentLineNumbers = convertedCode.Split(new[] { AutoTestCommentPrefix }, StringSplitOptions.None)
@@ -145,15 +145,16 @@ End Sub";
 
 
 
-        private static (IReadOnlyCollection<string> Lines, IReadOnlyCollection<string> LineNumbersAdded) AddLineNumberComments(string code, string singleLineCommentStart)
+        private static (IReadOnlyCollection<string> Lines, IReadOnlyCollection<string> LineNumbersAdded) AddLineNumberComments(string code, string singleLineCommentStart, string commentPrefix)
         {
             var lines = Utils.HomogenizeEol(code).Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             var lineNumbersAdded = new List<string>();
             var newLines = lines.Select((s, i) => {
+                var lineNumber = (i + 1).ToString();
                 var potentialExistingComments = s.Split(new[] { singleLineCommentStart }, StringSplitOptions.None).Skip(1);
                 if (potentialExistingComments.Count() == 1) return s;
-                lineNumbersAdded.Add(i.ToString());
-                return s + singleLineCommentStart + i.ToString();
+                lineNumbersAdded.Add(lineNumber);
+                return s + singleLineCommentStart + commentPrefix + lineNumber;
             }).ToArray();
             return (newLines, lineNumbersAdded);
         }

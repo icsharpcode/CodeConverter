@@ -53,7 +53,7 @@ namespace ICSharpCode.CodeConverter.VB
         private readonly SemanticModel _semanticModel;
         private readonly VisualBasicCompilation _vbViewOfCsSymbols;
         private readonly SyntaxGenerator _vbSyntaxGenerator;
-        private readonly List<ImportsStatementSyntax> _convertedImports = new List<ImportsStatementSyntax>();
+        private readonly List<CSS.UsingDirectiveSyntax> _importsToConvert = new List<CSS.UsingDirectiveSyntax>();
         private readonly HashSet<string> _extraImports = new HashSet<string>();
         private readonly CSharpHelperMethodDefinition _cSharpHelperMethodDefinition;
         private readonly CommonConversions _commonConversions;
@@ -67,13 +67,9 @@ namespace ICSharpCode.CodeConverter.VB
             return $"__{v}{_placeholder++}__";
         }
 
-        private IEnumerable<ImportsStatementSyntax> TidyImportsList(IEnumerable<ImportsStatementSyntax> allImports)
+        private static int GetImportantTriviaLength(ImportsClauseSyntax c)
         {
-            return allImports
-                .SelectMany(x => x.ImportsClauses)
-                .GroupBy(x => x.ToString())
-                .Select(g => g.First())
-                .Select(x => SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList(x)));
+            return c.GetLeadingTrivia().Concat(c.GetTrailingTrivia()).Where(t => !t.IsWhitespaceOrEndOfLine()).Sum(t => t.ToString().Length);
         }
 
         public NodesVisitor(Document document, CS.CSharpCompilation compilation, SemanticModel semanticModel,
@@ -103,15 +99,14 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitCompilationUnit(CSS.CompilationUnitSyntax node)
         {
-            foreach (var @using in node.Usings)
-                @using.Accept(TriviaConvertingVisitor);
+            _importsToConvert.AddRange(node.Usings);
             foreach (var @extern in node.Externs)
                 @extern.Accept(TriviaConvertingVisitor);
             var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => SyntaxFactory.AttributesStatement(SyntaxFactory.SingletonList((AttributeListSyntax)a.Accept(TriviaConvertingVisitor)))));
             var members = SyntaxFactory.List(node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor)));
 
             //TODO Add Usings from compilationoptions
-            var importsStatementSyntaxes = SyntaxFactory.List(TidyImportsList(_convertedImports.Concat(_extraImports.Select(Import))));
+            var importsStatementSyntaxes = SyntaxFactory.List(_importsToConvert.Select(import => (ImportsStatementSyntax) import.Accept(TriviaConvertingVisitor)).Concat(_extraImports.Select(Import)));
             return SyntaxFactory.CompilationUnit(
                 SyntaxFactory.List<OptionStatementSyntax>(),
                 importsStatementSyntaxes,
@@ -174,7 +169,7 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitNamespaceDeclaration(CSS.NamespaceDeclarationSyntax node)
         {
             foreach (var @using in node.Usings)
-                @using.Accept(TriviaConvertingVisitor);
+                _importsToConvert.AddRange(node.Usings);
             foreach (var @extern in node.Externs)
                 @extern.Accept(TriviaConvertingVisitor);
             var members = node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor));
@@ -199,10 +194,7 @@ namespace ICSharpCode.CodeConverter.VB
                 clause = clause.WithAlias(alias);
             }
 
-            _convertedImports.Add(SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(clause))
-                .WithSourceMappingFrom(node) //Because we're returning null, the visiting process can't do the normal mapping
-            );
-            return null;
+            return SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(clause));
         }
 
         #region Namespace Members
