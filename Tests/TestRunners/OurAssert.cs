@@ -29,10 +29,7 @@ namespace CodeConverter.Tests.TestRunners
 
         public static void StringsEqualIgnoringNewlines(string expectedText, string actualText)
         {
-            expectedText = Utils.HomogenizeEol(expectedText);
-            actualText = Utils.HomogenizeEol(actualText);
-            if (expectedText.Equals(actualText)) return;
-            Assert.True(false, DescribeStringDiff(expectedText, actualText).ToString());
+            StringsEqualIgnoringNewlines(expectedText, actualText, () => DescribeStringDiff(expectedText, actualText).ToString());
         }
 
         public static void StringsEqualIgnoringNewlines(string expectedText, string actualText, Func<string> getMessage)
