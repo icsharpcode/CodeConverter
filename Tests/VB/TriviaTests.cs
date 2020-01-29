@@ -10,7 +10,8 @@ namespace CodeConverter.Tests.VB
         public async Task TestMethodWithComments()
         {
             await TestConversionCSharpToVisualBasic(
-                @"using System.Diagnostics; //Using statement
+                @"using System;
+using System.Diagnostics; //Using statement
 
 //blank line
 
@@ -33,7 +34,7 @@ namespace ANamespace //namespace
     #endregion //BUG: EndRegion loses comments
             if (argument != null) //never
             {//BUG: Open brackets lose comments
-             //BUG: Open brackets lose comments
+             //This works because it's leading trivia for the next line
                 Debug.WriteLine(1); // Check debug window
                 Debug.WriteLine(2);
             } //argument1 != null
@@ -45,7 +46,8 @@ namespace ANamespace //namespace
         } //End of method
     } //End of class
 }
-//BUG: Last line loses comments", @"Imports System.Diagnostics ' Using statement
+//BUG: Last line loses comments", @"Imports System
+Imports System.Diagnostics ' Using statement
 Imports System.Runtime.InteropServices
 
 
@@ -66,6 +68,7 @@ Namespace ANamespace ' namespace
             argument2 = Nothing ' 2
 #End Region
             If argument IsNot Nothing Then ' never
+                ' This works because it's leading trivia for the next line
                 Debug.WriteLine(1) ' Check debug window
                 Debug.WriteLine(2)
             End If ' argument1 != null

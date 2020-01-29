@@ -12,9 +12,9 @@ namespace CodeConverter.Tests.TestRunners
             StringBuilder sb = new StringBuilder(l * 4);
             sb.AppendLine("expected:");
             sb.AppendLine(expectedConversion);
-            sb.AppendLine("got:");
+            sb.AppendLine("------------------------------------\r\ngot:");
             sb.AppendLine(actualConversion);
-            sb.AppendLine("diff:");
+            sb.AppendLine("------------------------------------\r\ndiff:");
             for (int i = 0; i < l; i++)
             {
                 if (i >= expectedConversion.Length || i >= actualConversion.Length ||
@@ -24,7 +24,7 @@ namespace CodeConverter.Tests.TestRunners
                     sb.Append(expectedConversion[i]);
             }
 
-            return sb;
+            return sb.AppendLine("------------------------------------");
         }
 
         public static void StringsEqualIgnoringNewlines(string expectedText, string actualText)
