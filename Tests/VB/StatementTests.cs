@@ -39,7 +39,22 @@ namespace CodeConverter.Tests.VB
     End Sub
 End Class");
         }
-
+        [Fact]
+        public async Task ForConvertedToWhile_Break() {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    void TestMethod() {
+        for (;;)
+            break;
+    }
+}", @"Friend Class TestClass
+    Private Sub TestMethod()
+        While True
+            Exit While
+        End While
+    End Sub
+End Class");
+        }
         [Fact]
         public async Task AssignmentStatement()
         {
@@ -1206,6 +1221,35 @@ End Class");
             Yield i
         Next
     End Function
+End Class");
+        }
+        [Fact(Skip="TODO")]
+        public async Task ObjectCreationExpressionInInvocationExpression() {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    int field;
+    TestClass(int param) {
+        this.field = param;
+    }
+    
+    static void TestMethod() {
+        new TestClass(10).Initialize();
+    }
+    void Initialize() { }
+}",
+@"Friend Class TestClass
+    Private field As Integer
+
+    Private Sub New(ByVal param As Integer)
+        field = param
+    End Sub
+
+    Private Shared Sub TestMethod()
+        Call New TestClass(10).Initialize()
+    End Sub
+
+    Private Sub Initialize()
+    End Sub
 End Class");
         }
     }

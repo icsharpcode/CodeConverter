@@ -276,7 +276,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             StatementSyntax block;
             if (!ConvertForToSimpleForNext(node, out block)) {
-                var stmts = ConvertBlock(node.Statement)
+                var stmts = SyntaxFactory.List(ConvertBlock(node.Statement).Select(ReplaceExitForToWhile))
                     .AddRange(node.Incrementors.Select(ConvertSingleExpression));
                 var condition = node.Condition == null ? CommonConversions.Literal(true) : (ExpressionSyntax)node.Condition.Accept(_nodesVisitor);
                 block = SyntaxFactory.WhileBlock(
@@ -293,6 +293,10 @@ namespace ICSharpCode.CodeConverter.VB
                 return SyntaxFactory.List(declarations.Concat(node.Initializers.Select(ConvertSingleExpression))).Add(block);
             }
             return SyntaxFactory.SingletonList(block);
+        }
+        private static StatementSyntax ReplaceExitForToWhile(StatementSyntax statement) {
+            var exitSyntaxes = statement.DescendantNodesAndSelf().OfType<ExitStatementSyntax>();
+            return statement.ReplaceNodes(exitSyntaxes, (_, __) => SyntaxFactory.ExitWhileStatement());
         }
 
         private bool ConvertForToSimpleForNext(CSS.ForStatementSyntax node, out StatementSyntax block)
