@@ -57,5 +57,39 @@ namespace ICSharpCode.CodeConverter.VB
             var convertedNode = (VbSyntax.CompilationUnitSyntax)DefaultVisitInner(node);
             return convertedNode.WithEndOfFileToken(convertedNode.EndOfFileToken.WithSourceMappingFrom(node.EndOfFileToken));
         }
+
+        public override VisualBasicSyntaxNode VisitNamespaceDeclaration(CsSyntax.NamespaceDeclarationSyntax node)
+        {
+            var convertedNode = (VbSyntax.NamespaceBlockSyntax)DefaultVisitInner(node);
+            var blockStart = convertedNode.NamespaceStatement.GetLastToken();
+            return convertedNode.ReplaceToken(blockStart, blockStart.WithSourceMappingFrom(node.OpenBraceToken));
+        }
+
+        public override VisualBasicSyntaxNode VisitClassDeclaration(CsSyntax.ClassDeclarationSyntax node)
+        {
+            var convertedNode = DefaultVisitInner(node);
+            VbSyntax.StatementSyntax blockStmt = convertedNode is VbSyntax.ClassBlockSyntax cbs ? (VbSyntax.StatementSyntax) cbs.ClassStatement
+                : convertedNode is VbSyntax.ModuleBlockSyntax mbs ? (VbSyntax.StatementSyntax) mbs.ModuleStatement
+                : null;
+            var endOfBlock = blockStmt?.GetLastToken();
+            if (endOfBlock != null) {
+                return convertedNode.ReplaceToken(endOfBlock.Value, endOfBlock.Value.WithSourceMappingFrom(node.OpenBraceToken));
+            }
+            return convertedNode;
+        }
+
+        public override VisualBasicSyntaxNode VisitStructDeclaration(CsSyntax.StructDeclarationSyntax node)
+        {
+            var convertedNode = (VbSyntax.StructureBlockSyntax)DefaultVisitInner(node);
+            var blockStart = convertedNode.StructureStatement.GetLastToken();
+            return convertedNode.ReplaceToken(blockStart, blockStart.WithSourceMappingFrom(node.OpenBraceToken));
+        }
+
+        public override VisualBasicSyntaxNode VisitEnumDeclaration(CsSyntax.EnumDeclarationSyntax node)
+        {
+            var convertedNode = (VbSyntax.EnumBlockSyntax)DefaultVisitInner(node);
+            var blockStart = convertedNode.EnumStatement.GetLastToken();
+            return convertedNode.ReplaceToken(blockStart, blockStart.WithSourceMappingFrom(node.OpenBraceToken));
+        }
     }
 }
