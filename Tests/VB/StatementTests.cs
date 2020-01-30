@@ -1223,7 +1223,7 @@ End Class");
     End Function
 End Class");
         }
-        [Fact(Skip="TODO")]
+        [Fact]
         public async Task ObjectCreationExpressionInInvocationExpression() {
             await TestConversionCSharpToVisualBasic(
 @"class TestClass {
