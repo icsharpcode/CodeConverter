@@ -75,7 +75,7 @@ namespace CodeConverter.Tests.TestRunners
             if (missingSourceLineNumbers.Any()) {
                 Assert.False(true, "Comments not converted from source lines: " + string.Join(", ", missingSourceLineNumbers) + GetSourceAndConverted(sourceWithComments, convertedCode));
             }
-            Assert.Equal(string.Join(", ", lineNumbersAdded), string.Join(", ", convertedCommentLineNumbers));
+            OurAssert.Equal(string.Join(", ", lineNumbersAdded), string.Join(", ", convertedCommentLineNumbers), () => GetSourceAndConverted(sourceWithComments, convertedCode));
         }
 
         private static string GetSourceAndConverted(string sourceLinesWithComments, string convertedCode)
@@ -145,7 +145,7 @@ End Sub";
 
         private static void AssertCodeEqual(string originalSource, string expectedConversion, string actualConversion)
         {
-            OurAssert.StringsEqualIgnoringNewlines(expectedConversion, actualConversion, () =>
+            OurAssert.EqualIgnoringNewlines(expectedConversion, actualConversion, () =>
             {
                 StringBuilder sb = OurAssert.DescribeStringDiff(expectedConversion, actualConversion);
                 sb.AppendLine();

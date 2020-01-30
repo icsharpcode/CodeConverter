@@ -4,7 +4,7 @@ using Xunit;
 
 namespace CodeConverter.Tests.TestRunners
 {
-    public class OurAssert
+    public static class OurAssert
     {
         public static StringBuilder DescribeStringDiff(string expectedConversion, string actualConversion)
         {
@@ -27,17 +27,30 @@ namespace CodeConverter.Tests.TestRunners
             return sb.AppendLine("------------------------------------");
         }
 
-        public static void StringsEqualIgnoringNewlines(string expectedText, string actualText)
+        public static void EqualIgnoringNewlines(string expectedText, string actualText)
         {
-            StringsEqualIgnoringNewlines(expectedText, actualText, () => DescribeStringDiff(expectedText, actualText).ToString());
+            EqualIgnoringNewlines(expectedText, actualText, () => DescribeStringDiff(expectedText, actualText).ToString());
         }
 
-        public static void StringsEqualIgnoringNewlines(string expectedText, string actualText, Func<string> getMessage)
+        public static void EqualIgnoringNewlines(string expectedText, string actualText, Func<string> getMessage)
         {
             expectedText = Utils.HomogenizeEol(expectedText);
             actualText = Utils.HomogenizeEol(actualText);
-            if (expectedText.Equals(actualText)) return;
-            Assert.True(false, getMessage());
+            Equal(expectedText, actualText, getMessage);
+        }
+
+        public static void Equal(object expectedText, object actualText, Func<string> getMessage)
+        {
+            WithMessage(() => Assert.Equal(expectedText, actualText), getMessage);
+        }
+
+        public static void WithMessage(Action assertion, Func<string> getMessage)
+        {
+            try {
+                assertion();
+            } catch (Exception e) {
+                throw new Exception(e.Message + "\r\n" + getMessage(), e);
+            }
         }
     }
 }
