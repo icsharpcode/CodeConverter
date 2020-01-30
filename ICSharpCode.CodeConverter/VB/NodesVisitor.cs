@@ -628,29 +628,38 @@ namespace ICSharpCode.CodeConverter.VB
                     .WithAsClause(SyntaxFactory.SimpleAsClause(GetTypeSyntax(x.Type)))
                     .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword)))
             );
-            var eventFieldIdentifier = (IdentifierNameSyntax)node.AccessorList?.Accessors
+            var csEventFieldIdentifier = node.AccessorList?.Accessors
                 .SelectMany(x => x.Body.Statements)
                 .OfType<CSS.ExpressionStatementSyntax>()
                 .Where(x => x.Expression != null)
                 .Select(x => x.Expression)
                 .OfType<CSS.AssignmentExpressionSyntax>()
                 .SelectMany(x => x.Left.DescendantNodesAndSelf().OfType<CSS.IdentifierNameSyntax>())
-                .FirstOrDefault()?.Accept(TriviaConvertingVisitor);
+                .FirstOrDefault();
+            var eventFieldIdentifier = (IdentifierNameSyntax)csEventFieldIdentifier?.Accept(TriviaConvertingVisitor);
 
             var riseEventAccessor = SyntaxFactory.RaiseEventAccessorBlock(
                 SyntaxFactory.RaiseEventAccessorStatement(
                     attributes,
                     SyntaxFactory.TokenList(),
                     SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(raiseEventParameters))
-            ));
+                )
+            );
             if (eventFieldIdentifier != null) {
-
-                var invocationExpression =
-                    SyntaxFactory.InvocationExpression(
-                        SyntaxFactory.ParseExpression(eventFieldIdentifier.Identifier.ValueText + "?"), //I think this syntax tree is the wrong shape, but using the right shape causes the simplifier to fail
-                        raiseEventParameters.Select(x => SyntaxFactory.IdentifierName(x.Identifier.Identifier)).CreateArgList()
+                if (_semanticModel.GetSymbolInfo(csEventFieldIdentifier).Symbol.Kind == SymbolKind.Event) {
+                    riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList(
+                        (StatementSyntax)SyntaxFactory.RaiseEventStatement(eventFieldIdentifier,
+                            SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(raiseEventParameters.Select(x => SyntaxFactory.SimpleArgument(SyntaxFactory.IdentifierName(x.Identifier.Identifier))).Cast<ArgumentSyntax>())))
+                        )
                     );
-                riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ExpressionStatement(invocationExpression)));
+                } else {
+                    var invocationExpression =
+                        SyntaxFactory.InvocationExpression(
+                            SyntaxFactory.ParseExpression(eventFieldIdentifier.Identifier.ValueText + "?"), //I think this syntax tree is the wrong shape, but using the right shape causes the simplifier to fail
+                            raiseEventParameters.Select(x => SyntaxFactory.IdentifierName(x.Identifier.Identifier)).CreateArgList()
+                        );
+                    riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ExpressionStatement(invocationExpression)));
+                }
             }
 
             accessors.Add(riseEventAccessor);
@@ -934,18 +943,21 @@ namespace ICSharpCode.CodeConverter.VB
             var right = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
             if (IsReturnValueDiscarded(node)) {
                 if (_semanticModel.GetTypeInfo(node.Right).ConvertedType.IsDelegateType()) {
-                    var kind = node.GetAncestor<CSS.AccessorDeclarationSyntax>()?.Kind();
-                    if (kind != null) {
-                        var methodName = kind.Value == CS.SyntaxKind.AddAccessorDeclaration ? "Combine" : "Remove";
-                        var delegateMethod = MemberAccess("[Delegate]", methodName);
-                        var invokeDelegateMethod = SyntaxFactory.InvocationExpression(delegateMethod, ExpressionSyntaxExtensions.CreateArgList(new[] { left, right }));
-                        return SyntaxFactory.SimpleAssignmentStatement(left, invokeDelegateMethod);
-                    }
-                    if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.PlusEqualsToken)) {
-                        return SyntaxFactory.AddHandlerStatement(left, right);
-                    }
-                    if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.MinusEqualsToken)) {
-                        return SyntaxFactory.RemoveHandlerStatement(left, right);
+                    if (_semanticModel.GetSymbolInfo(node.Left).Symbol.Kind != SymbolKind.Event) {
+                        var kind = node.GetAncestor<CSS.AccessorDeclarationSyntax>()?.Kind();
+                        if (kind != null && (kind.Value == CS.SyntaxKind.AddAccessorDeclaration || kind.Value == CS.SyntaxKind.RemoveAccessorDeclaration)) {
+                            var methodName = kind.Value == CS.SyntaxKind.AddAccessorDeclaration ? "Combine" : "Remove";
+                            var delegateMethod = MemberAccess("[Delegate]", methodName);
+                            var invokeDelegateMethod = SyntaxFactory.InvocationExpression(delegateMethod, ExpressionSyntaxExtensions.CreateArgList(new[] { left, right }));
+                            return SyntaxFactory.SimpleAssignmentStatement(left, invokeDelegateMethod);
+                        }
+                    } else {
+                        if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.PlusEqualsToken)) {
+                            return SyntaxFactory.AddHandlerStatement(left, right);
+                        }
+                        if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.MinusEqualsToken)) {
+                            return SyntaxFactory.RemoveHandlerStatement(left, right);
+                        }
                     }
                 }
                 return MakeAssignmentStatement(node, left, right);
