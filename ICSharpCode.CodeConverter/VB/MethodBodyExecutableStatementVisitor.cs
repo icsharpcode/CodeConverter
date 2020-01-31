@@ -275,8 +275,11 @@ namespace ICSharpCode.CodeConverter.VB
         public override SyntaxList<StatementSyntax> VisitForStatement(CSS.ForStatementSyntax node)
         {
             StatementSyntax block;
-            if (!ConvertForToSimpleForNext(node, out block)) {
-                var stmts = SyntaxFactory.List(ConvertBlock(node.Statement).Select(ReplaceExitForToWhile))
+            var convertedStatements = ConvertBlock(node.Statement);
+            if (ConvertForToSimpleForNextWithoutStatements(node, out var forBlock)) {
+                block = forBlock.WithStatements(convertedStatements);
+            } else {
+                var stmts = SyntaxFactory.List(convertedStatements)
                     .AddRange(node.Incrementors.Select(ConvertSingleExpression));
                 var condition = node.Condition == null ? CommonConversions.Literal(true) : (ExpressionSyntax)node.Condition.Accept(_nodesVisitor);
                 block = SyntaxFactory.WhileBlock(
@@ -294,12 +297,8 @@ namespace ICSharpCode.CodeConverter.VB
             }
             return SyntaxFactory.SingletonList(block);
         }
-        private static StatementSyntax ReplaceExitForToWhile(StatementSyntax statement) {
-            var exitSyntaxes = statement.DescendantNodesAndSelf().OfType<ExitStatementSyntax>();
-            return statement.ReplaceNodes(exitSyntaxes, (_, __) => SyntaxFactory.ExitWhileStatement());
-        }
 
-        private bool ConvertForToSimpleForNext(CSS.ForStatementSyntax node, out StatementSyntax block)
+        private bool ConvertForToSimpleForNextWithoutStatements(CSS.ForStatementSyntax node, out ForBlockSyntax blockWithoutStatements)
         {
             //   ForStatement -> ForNextStatement when for-loop is simple
 
@@ -313,7 +312,7 @@ namespace ICSharpCode.CodeConverter.VB
             // for (TypeReference name = start; name >= end; name -= step)
             // for (name = start; name >= end; name -= step)
 
-            block = null;
+            blockWithoutStatements = null;
 
             // check if the form is valid and collect TypeReference, name, start, end and step
             bool hasVariable = node.Declaration != null && node.Declaration.Variables.Count == 1;
@@ -379,9 +378,9 @@ namespace ICSharpCode.CodeConverter.VB
                 start = (ExpressionSyntax)initializer.Right.Accept(_nodesVisitor);
             }
 
-            block = SyntaxFactory.ForBlock(
+            blockWithoutStatements = SyntaxFactory.ForBlock(
                 SyntaxFactory.ForStatement(variable, start, end, step == 1 ? null : SyntaxFactory.ForStepClause(CommonConversions.Literal(step))),
-                ConvertBlock(node.Statement),
+                SyntaxFactory.List<StatementSyntax>(),
                 SyntaxFactory.NextStatement()
             );
             return true;
@@ -397,7 +396,7 @@ namespace ICSharpCode.CodeConverter.VB
                     var initializer = SyntaxFactory.EqualsValue(SyntaxFactory.SimpleMemberAccessExpression(
                         SyntaxFactory.IdentifierName(tupleName),
                         SyntaxFactory.IdentifierName("Item" + (i + 1).ToString())));
-                    VariableDeclaratorSyntax variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(
+                    var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(
                         SyntaxFactory.ModifiedIdentifier(SyntaxFactory.Identifier(v.ToString())))
                         .WithInitializer(initializer);
                     return CommonConversions.CreateLocalDeclarationStatement(variableDeclaratorSyntax);
@@ -611,9 +610,15 @@ namespace ICSharpCode.CodeConverter.VB
                     keywordKind = SyntaxKind.WhileKeyword;
                     break;
                 }
-                if (stmt is CSS.ForStatementSyntax || stmt is CSS.ForEachStatementSyntax) {
+                if (stmt is CSS.ForEachStatementSyntax) {
                     statementKind = SyntaxKind.ContinueForStatement;
                     keywordKind = SyntaxKind.ForKeyword;
+                    break;
+                }
+                if (stmt is CSS.ForStatementSyntax fs) {
+                    bool isFor = ConvertForToSimpleForNextWithoutStatements(fs, out _);
+                    statementKind = isFor ? SyntaxKind.ContinueForStatement : SyntaxKind.ContinueWhileStatement;
+                    keywordKind = isFor ? SyntaxKind.ForKeyword : SyntaxKind.WhileKeyword;
                     break;
                 }
             }
@@ -635,9 +640,15 @@ namespace ICSharpCode.CodeConverter.VB
                     keywordKind = SyntaxKind.WhileKeyword;
                     break;
                 }
-                if (stmt is CSS.ForStatementSyntax || stmt is CSS.ForEachStatementSyntax) {
+                if (stmt is CSS.ForEachStatementSyntax) {
                     statementKind = SyntaxKind.ExitForStatement;
                     keywordKind = SyntaxKind.ForKeyword;
+                    break;
+                }
+                if (stmt is CSS.ForStatementSyntax fs) {
+                    bool isFor = ConvertForToSimpleForNextWithoutStatements(fs, out _);
+                    statementKind = isFor ? SyntaxKind.ExitForStatement : SyntaxKind.ExitWhileStatement;
+                    keywordKind = isFor ? SyntaxKind.ForKeyword : SyntaxKind.WhileKeyword;
                     break;
                 }
                 if (stmt is CSS.SwitchStatementSyntax) {
