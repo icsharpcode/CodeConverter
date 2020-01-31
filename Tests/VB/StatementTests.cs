@@ -39,6 +39,7 @@ namespace CodeConverter.Tests.VB
     End Sub
 End Class");
         }
+
         [Fact]
         public async Task ForConvertedToWhile_Break() {
             await TestConversionCSharpToVisualBasic(
@@ -55,6 +56,55 @@ End Class");
     End Sub
 End Class");
         }
+
+        [Fact]
+        public async Task ForConvertedToWhile_BreakContinue() {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    void TestMethod(int arg) {
+        for (;;) //Becomes while loop
+        {
+            if (arg == 3) break;
+            switch (arg)
+            {
+                case 1:
+                    break; //From switch
+                case 2:
+                    break; //From switch
+                default:
+                    continue; // Outer while loop
+            }
+            for (var i = 0; i < arg; i++) // Becomes For Next loop
+            {
+                if (arg != 1) break; // From inner for loop
+                continue; // Inner for loop
+            }
+            continue; // Outer while loop
+        }
+    }
+}", @"Friend Class TestClass
+    Private Sub TestMethod(ByVal arg As Integer)
+        While True
+            If arg = 3 Then Exit While
+
+            Select Case arg
+                Case 1
+                Case 2
+                Case Else
+                    Continue While
+            End Select
+
+            For i = 0 To arg - 1
+                If arg <> 1 Then Exit For
+                Continue For
+            Next
+
+            Continue While
+        End While
+    End Sub
+End Class");
+        }
+
         [Fact]
         public async Task AssignmentStatement()
         {
