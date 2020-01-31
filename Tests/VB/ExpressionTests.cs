@@ -73,7 +73,7 @@ End Namespace");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim result = If(str Is """", True, False)
+        Dim result As Boolean = If(str Is """", True, False)
     End Sub
 End Class");
         }
@@ -171,7 +171,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim result = If(str Is """", CSharpImpl.__Throw(Of Boolean)(New Exception(""empty"")), False)
+        Dim result As Boolean = If(str Is """", CSharpImpl.__Throw(Of Boolean)(New Exception(""empty"")), False)
     End Sub
 
     Private Class CSharpImpl
@@ -194,7 +194,7 @@ End Class");
     {
     }
 }", @"Friend Class TestClass
-    Private n = NameOf(TestMethod)
+    Private n As String = NameOf(TestMethod)
 
     Private Sub TestMethod()
     End Sub
@@ -306,7 +306,7 @@ End Class");
 	}
 }", @"Public Class Test
     Public Shared Sub Main()
-        Dim y = 1
+        Dim y As Integer = 1
         y <<= 1
         y >>= 1
         y = y << 1
@@ -326,7 +326,7 @@ End Class");
 }",
 @"Public Class TestClass
     Private Sub TestMethod()
-        Dim x = 10
+        Dim x As Integer = 10
         x *= 3
         x /= 3
     End Sub
@@ -347,7 +347,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim length = If(str?.Length, -1)
+        Dim length As Integer = If(str?.Length, -1)
         Console.WriteLine(length)
         Console.ReadKey()
         Dim redirectUri As String = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri
@@ -585,7 +585,7 @@ static class Program
 
 Friend Module Program
     Private Sub Main(ByVal args As String())
-        Dim x = (Sub(__) Environment.Exit(0))
+        Dim x As Action(Of String) = (Sub(__) Environment.Exit(0))
     End Sub
 End Module");
         }
@@ -638,7 +638,7 @@ End Class");
     End Function
 
     Private Async Sub TestMethod()
-        Dim result = Await SomeAsyncMethod
+        Dim result As Integer = Await SomeAsyncMethod
         Console.WriteLine(result)
     End Sub
 End Class");
@@ -659,7 +659,7 @@ End Class");
         Console.WriteLine(n);
 }",
 @"Private Shared Sub SimpleQuery()
-    Dim numbers = {7, 9, 5, 3, 6}
+    Dim numbers As Integer() = {7, 9, 5, 3, 6}
     Dim res = From n In numbers Where n > 5 Select n
 
     For Each n In res
@@ -693,7 +693,7 @@ End Sub");
         }
     }",
 @"Public Shared Sub Linq40()
-    Dim numbers = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
+    Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
     Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {
         .Remainder = __groupByKey1__,
         .Numbers = g
@@ -749,7 +749,7 @@ End Class
 
 Friend Class Test
     Public Sub Linq102()
-        Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
+        Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
         Dim products As Product() = GetProductList()
         Dim q = From c In categories Join p In products On c Equals p.Category Select New With {
             .Category = c, p.ProductName
@@ -793,7 +793,7 @@ End Class");
         }
     }
 }", @"Public Sub Linq103()
-    Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
+    Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
     Dim products = GetProductList()
     Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {
         .Category = c,
@@ -864,7 +864,7 @@ Public Class TestClass
                                                 End Function
 
     Public Sub New()
-        Dim str = create(Me)
+        Dim str As String = create(Me)
     End Sub
 End Class");
         }

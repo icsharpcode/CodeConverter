@@ -134,7 +134,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = 0
+        Dim b As Integer = 0
     End Sub
 End Class");
         }
@@ -232,7 +232,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = {1, 2, 3}
+        Dim b As Integer() = {1, 2, 3}
     End Sub
 End Class");
         }
@@ -264,7 +264,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = New Integer() {1, 2, 3}
+        Dim b As Integer() = New Integer() {1, 2, 3}
     End Sub
 End Class");
         }
@@ -280,7 +280,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = New Integer(2) {1, 2, 3}
+        Dim b As Integer() = New Integer(2) {1, 2, 3}
     End Sub
 End Class");
         }
@@ -315,7 +315,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = {
+        Dim b As Integer(,) = {
         {1, 2},
         {3, 4}}
     End Sub
@@ -336,7 +336,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = New Integer(,) {
+        Dim b As Integer(,) = New Integer(,) {
         {1, 2},
         {3, 4}}
     End Sub
@@ -357,7 +357,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = New Integer(1, 1) {
+        Dim b As Integer(,) = New Integer(1, 1) {
         {1, 2},
         {3, 4}}
     End Sub
@@ -391,7 +391,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = {New Integer() {1, 2}, New Integer() {3, 4}}
+        Dim b As Integer()() = {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
         }
@@ -407,7 +407,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = New Integer()() {New Integer() {1, 2}, New Integer() {3, 4}}
+        Dim b As Integer()() = New Integer()() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
         }
@@ -423,7 +423,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
+        Dim b As Integer()() = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
         }
@@ -444,8 +444,8 @@ the_beginning:
 }", @"Friend Class Test
     Private Sub TestMethod()
 the_beginning:
-        Dim value = 1
-        Const myPIe = Math.PI
+        Dim value As Integer = 1
+        Const myPIe As Double = Math.PI
         Dim text = ""This is my text!""
         GoTo the_beginning
     End Sub
@@ -661,7 +661,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
-        For Each val In values
+        For Each val As Integer In values
             If val = 2 Then Continue For
             If val = 3 Then Exit For
         Next
@@ -753,7 +753,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim i = 0
+        Dim i As Integer = 0
 
         While unknownCondition
             b(i) = s(i)
@@ -820,7 +820,7 @@ End Class");
     End Sub
 End Class");
         }
-        [Fact(Skip = "month As Integer is reduced by Simplifier, and month threated as Date.Month method")]
+        [Fact]
         public async Task ForWithDateTimeVariables() {
             await TestConversionCSharpToVisualBasic(
 @"class TestClass {
@@ -833,7 +833,7 @@ End Class");
 }",
 @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim summary = 0
+        Dim summary As Integer = 0
 
         For month As Integer = 1 To 12
             summary += month
@@ -894,7 +894,7 @@ End Class");
 }",
 @"Friend Class TestClass
     Private Sub TestMethod(ByVal counts As IEnumerable(Of Integer))
-        Dim summary = 0
+        Dim summary As Integer = 0
         Dim action As Action = Sub()
                                    For Each c In counts
                                        Dim current = c
@@ -977,13 +977,13 @@ End Class");
         }
     }", @"Friend Class GotoTest1
     Private Shared Sub Main()
-        Dim x = 200, y = 4
-        Dim count = 0
-        Dim array = New String(x - 1, y - 1) {}
+        Dim x As Integer = 200, y As Integer = 4
+        Dim count As Integer = 0
+        Dim array As String(,) = New String(x - 1, y - 1) {}
 
-        For i = 0 To x - 1
+        For i As Integer = 0 To x - 1
 
-            For j = 0 To y - 1
+            For j As Integer = 0 To y - 1
                 array(i, j) = (System.Threading.Interlocked.Increment(count)).ToString()
             Next
         Next
@@ -991,9 +991,9 @@ End Class");
         Console.Write(""Enter the number to search for: "")
         Dim myNumber As String = Console.ReadLine()
 
-        For i = 0 To x - 1
+        For i As Integer = 0 To x - 1
 
-            For j = 0 To y - 1
+            For j As Integer = 0 To y - 1
 
                 If array(i, j).Equals(myNumber) Then
                     GoTo Found
@@ -1299,7 +1299,7 @@ End Class");
     Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
         If number < 0 Then Return
 
-        For i = 0 To number - 1
+        For i As Integer = 0 To number - 1
             Yield i
         Next
     End Function

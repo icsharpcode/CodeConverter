@@ -33,7 +33,7 @@ End Sub
 }
 ", @"Private Sub Test()
     Dim o As Object = ""Test""
-    Dim s = CStr(o)
+    Dim s As String = CStr(o)
 End Sub
 ");
         }
@@ -49,7 +49,7 @@ End Sub
 }
 ", @"Private Sub Test()
     Dim o As Object = New System.Collections.Generic.List(Of Integer)()
-    Dim l = CType(o, System.Collections.Generic.List(Of Integer))
+    Dim l As List(Of Integer) = CType(o, System.Collections.Generic.List(Of Integer))
 End Sub
 ");
         }
@@ -81,7 +81,7 @@ End Sub
 }
 ", @"Private Sub Test()
     Dim o As Object = New System.Collections.Generic.List(Of Integer)()
-    Dim l = TryCast(o, System.Collections.Generic.List(Of Integer))
+    Dim l As List(Of Integer) = TryCast(o, System.Collections.Generic.List(Of Integer))
 End Sub
 ");
         }
@@ -137,7 +137,7 @@ End Sub
     char CR = (char)0xD;
 }
 ", @"Private Sub Test()
-    Dim CR = ChrW(&HD)
+    Dim CR As Char = ChrW(&HD)
 End Sub
 ");
         }

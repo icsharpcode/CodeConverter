@@ -12,7 +12,7 @@ namespace CodeConverter.Tests.VB
             await TestConversionCSharpToVisualBasic(
 @"int num = 4;
 num = 5;",
-@"Dim num = 4
+@"Dim num As Integer = 4
 num = 5",
 expectSurroundingMethodBlock: true);
         }
@@ -66,7 +66,7 @@ obj = Nothing",
         {
             await TestConversionCSharpToVisualBasic(
 @"private int x = 3;",
-@"Private x = 3");
+@"Private x As Integer = 3");
         }
 
         [Fact]
