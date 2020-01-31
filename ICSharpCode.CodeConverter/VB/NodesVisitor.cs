@@ -59,8 +59,7 @@ namespace ICSharpCode.CodeConverter.VB
         private readonly CommonConversions _commonConversions;
 
         private int _placeholder = 1;
-        private readonly BitArray _lineTriviaMapped;
-        public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
+        public CommentConvertingVisitorWrapper<VisualBasicSyntaxNode> TriviaConvertingVisitor { get; }
 
         private string GeneratePlaceholder(string v)
         {
@@ -75,9 +74,8 @@ namespace ICSharpCode.CodeConverter.VB
             _semanticModel = semanticModel;
             _vbViewOfCsSymbols = vbViewOfCsSymbols;
             _vbSyntaxGenerator = vbSyntaxGenerator;
-            _lineTriviaMapped = new BitArray(numberOfLines);
-            TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this, _lineTriviaMapped, _semanticModel);
-            _commonConversions = new CommonConversions(semanticModel, vbSyntaxGenerator, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
+            TriviaConvertingVisitor = new CommentConvertingVisitorWrapper<VisualBasicSyntaxNode>(new CommentConvertingNodesVisitor(this));
+            _commonConversions = new CommonConversions(semanticModel, vbSyntaxGenerator, TriviaConvertingVisitor);
             _cSharpHelperMethodDefinition = new CSharpHelperMethodDefinition();
         }
 
@@ -415,7 +413,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitMethodDeclaration(CSS.MethodDeclarationSyntax node)
         {
-            var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter, _commonConversions, _lineTriviaMapped);
+            var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, TriviaConvertingVisitor, _commonConversions);
             bool requiresBody = node.Body != null || node.ExpressionBody != null || node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword));
             var block = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
             var id = _commonConversions.ConvertIdentifier(node.Identifier);

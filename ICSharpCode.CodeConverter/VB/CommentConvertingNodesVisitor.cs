@@ -16,17 +16,11 @@ namespace ICSharpCode.CodeConverter.VB
 {
     internal class CommentConvertingNodesVisitor : CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     {
-        public TriviaConverter TriviaConverter { get; }
         private readonly CSharpSyntaxVisitor<VisualBasicSyntaxNode> _wrappedVisitor;
-        private BitArray _lineTriviaMapped;
-        private SemanticModel _semanticModel;
 
-        public CommentConvertingNodesVisitor(CSharpSyntaxVisitor<VisualBasicSyntaxNode> wrappedVisitor, BitArray lineTriviaMapped, SemanticModel semanticModel)
+        public CommentConvertingNodesVisitor(CSharpSyntaxVisitor<VisualBasicSyntaxNode> wrappedVisitor)
         {
-            TriviaConverter = new TriviaConverter();
             _wrappedVisitor = wrappedVisitor;
-            _lineTriviaMapped = lineTriviaMapped;
-            _semanticModel = semanticModel;
         }
 
         public override VisualBasicSyntaxNode DefaultVisit(SyntaxNode node)
@@ -36,13 +30,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private VisualBasicSyntaxNode DefaultVisitInner(SyntaxNode node)
         {
-            try {
-                var converted = _wrappedVisitor.Visit(node);
-                return converted.WithSourceMappingFrom(node);
-            } catch (Exception e) {
-                var dummyStatement = SyntaxFactory.EmptyStatement();
-                return dummyStatement.WithVbTrailingErrorComment<VbSyntax.StatementSyntax>((CSharpSyntaxNode)node, e);
-            }
+            return _wrappedVisitor.Visit(node);
         }
 
         public override VisualBasicSyntaxNode VisitAttributeList(CsSyntax.AttributeListSyntax node)

@@ -16,14 +16,10 @@ namespace ICSharpCode.CodeConverter.VB
     public class CommentConvertingMethodBodyVisitor : CS.CSharpSyntaxVisitor<SyntaxList<VBSyntax.StatementSyntax>>
     {
         private readonly CS.CSharpSyntaxVisitor<SyntaxList<VBSyntax.StatementSyntax>> _wrappedVisitor;
-        private readonly TriviaConverter _triviaConverter;
-        private readonly BitArray _lineTriviaMapped;
 
-        public CommentConvertingMethodBodyVisitor(CS.CSharpSyntaxVisitor<SyntaxList<VBSyntax.StatementSyntax>> wrappedVisitor, TriviaConverter triviaConverter, BitArray lineTriviaMapped)
+        public CommentConvertingMethodBodyVisitor(CS.CSharpSyntaxVisitor<SyntaxList<VBSyntax.StatementSyntax>> wrappedVisitor)
         {
             this._wrappedVisitor = wrappedVisitor;
-            this._triviaConverter = triviaConverter;
-            _lineTriviaMapped = lineTriviaMapped;
         }
 
         public override SyntaxList<VBSyntax.StatementSyntax> DefaultVisit(SyntaxNode node)
