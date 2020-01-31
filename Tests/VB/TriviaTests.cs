@@ -16,7 +16,7 @@ using System.Diagnostics; //Using statement
 //blank line
 
 namespace ANamespace //namespace
-{ //BUG: Block start loses comments
+{ // Block start - namespace
     /// <summary>
     /// class xml doc
     /// </summary>
@@ -26,15 +26,15 @@ namespace ANamespace //namespace
         /// method xml doc
         /// </summary>
         public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class where T2 : struct //Only for structs
-        { //BUG: Block start loses comments
+        { // Block start - method
     #if true //BUG: IfDirective loses comments
             argument = null; //1
     #region Arg2
             argument2 = default(T2); //2
-    #endregion //BUG: EndRegion loses comments
+    #endregion // EndRegion loses comments
             if (argument != null) //never
-            { //BUG: Block start loses comments
-             //This works because it's leading trivia for the next line
+            { // Block start - if
+             // leading trivia for the next line
                 Debug.WriteLine(1); // Check debug window
                 Debug.WriteLine(2);
             } //argument1 != null
@@ -54,21 +54,25 @@ Imports System.Runtime.InteropServices
 ' blank line
 
 Namespace ANamespace ' namespace
+    ' Block start - namespace
     ''' <summary>
     ''' class xml doc
     ''' </summary>
     Friend Class CommentTestClass ' Don't rename
+        ' Keep this method at the top
         ''' <summary>
         ''' method xml doc
         ''' </summary>
         Public Sub TestMethod(Of T As Class, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) ' Only for structs
+            ' Block start - method
 #If true
             argument = Nothing ' 1
 #Region ""Arg2""
             argument2 = Nothing ' 2
 #End Region
             If argument IsNot Nothing Then ' never
-                ' This works because it's leading trivia for the next line
+                ' Block start - if
+                ' leading trivia for the next line
                 Debug.WriteLine(1) ' Check debug window
                 Debug.WriteLine(2)
             End If ' argument1 != null
@@ -92,6 +96,7 @@ namespace ANamespace //namespace
 } //end namespace
 // Last line comment", @"' leading
 Namespace ANamespace ' namespace
+    ' BUG: Block start loses comments
 End Namespace ' end namespace
 ' Last line comment");
         }

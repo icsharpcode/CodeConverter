@@ -6,8 +6,7 @@ Imports System.Runtime.InteropServices
 ' set of attributes. Change these attribute values to modify the information
 ' associated with an assembly.
 <Assembly: AssemblyTitle("ConsoleApp2")>
-<
-Assembly: AssemblyDescription("")>
+<Assembly: AssemblyDescription("")>
 <Assembly: AssemblyConfiguration("")>
 <Assembly: AssemblyCompany("")>
 <Assembly: AssemblyProduct("ConsoleApp2")>
@@ -21,8 +20,7 @@ Assembly: AssemblyDescription("")>
 <Assembly: ComVisible(False)>
 
 ' The following GUID is for the ID of the typelib if this project is exposed to COM
-<
-Assembly: Guid("b7602e54-8f45-4dc4-88b5-e11cdc7e8b41")>
+<Assembly: Guid("b7602e54-8f45-4dc4-88b5-e11cdc7e8b41")>
 
 ' Version information for an assembly consists of the following four values:
 ' 
@@ -34,7 +32,5 @@ Assembly: Guid("b7602e54-8f45-4dc4-88b5-e11cdc7e8b41")>
 ' You can specify all the values or you can default the Build and Revision Numbers
 ' by using the '*' as shown below:
 ' [assembly: AssemblyVersion("1.0.*")]
-<
-Assembly: AssemblyVersion("1.0.0.0")>
-<
-Assembly: AssemblyFileVersion("1.0.0.0")>
+<Assembly: AssemblyVersion("1.0.0.0")>
+<Assembly: AssemblyFileVersion("1.0.0.0")>

@@ -9,11 +9,7 @@ namespace CodeConverter.Tests.TestRunners
         public static StringBuilder DescribeStringDiff(string expectedConversion, string actualConversion)
         {
             int l = Math.Max(expectedConversion.Length, actualConversion.Length);
-            StringBuilder sb = new StringBuilder(l * 4);
-            sb.AppendLine("expected:");
-            sb.AppendLine(expectedConversion);
-            sb.AppendLine("------------------------------------\r\ngot:");
-            sb.AppendLine(actualConversion);
+            StringBuilder sb = new StringBuilder(l);
             sb.AppendLine("------------------------------------\r\ndiff:");
             for (int i = 0; i < l; i++)
             {
@@ -29,7 +25,8 @@ namespace CodeConverter.Tests.TestRunners
 
         public static void EqualIgnoringNewlines(string expectedText, string actualText)
         {
-            EqualIgnoringNewlines(expectedText, actualText, () => DescribeStringDiff(expectedText, actualText).ToString());
+            const string splitter = "\r\n------------------------------------\r\n";
+            EqualIgnoringNewlines(expectedText + splitter, actualText + splitter, () => DescribeStringDiff(expectedText, actualText).ToString());
         }
 
         public static void EqualIgnoringNewlines(string expectedText, string actualText, Func<string> getMessage)

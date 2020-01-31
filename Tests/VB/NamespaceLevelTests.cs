@@ -38,9 +38,11 @@ public class X
         return s.Empty;
     }
 }",
-                @"Public Class X
-    Private Function GetStr() As String
-        Return String.Empty
+                @"Imports s = System.String
+
+Public Class X
+    Private Function GetStr() As s
+        Return s.Empty
     End Function
 End Class");
         }
