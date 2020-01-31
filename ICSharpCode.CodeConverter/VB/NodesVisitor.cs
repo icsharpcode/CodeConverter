@@ -492,12 +492,7 @@ namespace ICSharpCode.CodeConverter.VB
         }
         private ImplementsClauseSyntax CreateImplementsClauseSyntax(IEnumerable<ISymbol> implementors, SyntaxToken id) {
             return SyntaxFactory.ImplementsClause(implementors.Select(x => {
-                    var namedTypeSymbol = x.ContainingSymbol as INamedTypeSymbol;
-                    NameSyntax nameSyntax = null;
-                    if(namedTypeSymbol == null || !namedTypeSymbol.IsGenericType)
-                        nameSyntax = SyntaxFactory.IdentifierName(x.ContainingSymbol.Name);
-                    else
-                        nameSyntax = SyntaxFactory.GenericName(x.ContainingSymbol.Name, SyntaxFactory.TypeArgumentList(namedTypeSymbol.TypeArguments.Select(y => GetTypeSyntax(y)).ToArray()));
+                    NameSyntax nameSyntax = _commonConversions.GetFullyQualifiedNameSyntax(x.ContainingSymbol as INamedTypeSymbol);
                     return SyntaxFactory.QualifiedName(nameSyntax, SyntaxFactory.IdentifierName(id));
                 }).ToArray()
             );

@@ -524,5 +524,17 @@ Public Class TestClass
     Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
 End Class");
         }
+        [Fact]
+        public async Task FullQualificationInImplements() {
+            await TestConversionCSharpToVisualBasic(
+@"public class TestClass : System.ComponentModel.INotifyPropertyChanged {
+    public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+",
+@"Public Class TestClass
+    Implements System.ComponentModel.INotifyPropertyChanged
+
+    Public Event PropertyChanged As System.ComponentModel.PropertyChangedEventHandler Implements System.ComponentModel.INotifyPropertyChanged.PropertyChanged
+End Class", conversion: EmptyNamespaceOptionStrictOff);
+        }
     }
 }
