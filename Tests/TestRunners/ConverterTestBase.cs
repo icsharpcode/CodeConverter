@@ -164,7 +164,7 @@ End Sub";
             var lines = Utils.HomogenizeEol(code).Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             var lineNumbersAdded = new List<string>();
             var newLines = lines.Select((line, i) => {
-                var lineNumber = (i + 1).ToString();
+                var lineNumber = i.ToString();
                 var potentialExistingComments = line.Split(new[] { singleLineCommentStart }, StringSplitOptions.None).Skip(1);
                 if (potentialExistingComments.Count() == 1 || !lineCanHaveComment(line)) return line;
                 lineNumbersAdded.Add(lineNumber);
