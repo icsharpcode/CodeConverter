@@ -1024,6 +1024,38 @@ Friend Class TestClass
     End Sub
 End Class");
         }
+        [Fact]
+        public async Task AddHandlerInSimpleLambda() {
+            await TestConversionCSharpToVisualBasic(
+@"using System;
+using System.ComponentModel;
+using System.Collections.Generic;
+
+class TestClass {
+    List<INotifyPropertyChanged> items;
+
+    void TestMethod(EventHandler e) {
+        items.ForEach(x => x.PropertyChanged += OnItemPropertyChanged);
+    }
+
+    void OnItemPropertyChanged(object sender, PropertyChangedEventArgs e) { }
+}",
+@"Imports System
+Imports System.ComponentModel
+Imports System.Collections.Generic
+
+Friend Class TestClass
+    Private items As List(Of INotifyPropertyChanged)
+
+    Private Sub TestMethod(ByVal e As EventHandler)
+        items.ForEach(Sub(x) AddHandler x.PropertyChanged, AddressOf OnItemPropertyChanged)
+    End Sub
+
+    Private Sub OnItemPropertyChanged(ByVal sender As Object, ByVal e As PropertyChangedEventArgs)
+    End Sub
+End Class");
+        }
+        
 
         [Fact]
         public async Task SelectCase1()

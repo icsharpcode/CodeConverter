@@ -1037,9 +1037,10 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static bool IsReturnValueDiscarded(CSS.ExpressionSyntax node)
         {
-            return node.Parent is CSS.ExpressionStatementSyntax
-                   || node.Parent is CSS.ForStatementSyntax
-                   || node.Parent.IsParentKind(CS.SyntaxKind.SetAccessorDeclaration);
+            return node.Parent is CSS.ExpressionStatementSyntax ||
+                node.Parent is CSS.SimpleLambdaExpressionSyntax ||
+                node.Parent is CSS.ForStatementSyntax ||
+                node.Parent.IsParentKind(CS.SyntaxKind.SetAccessorDeclaration);
         }
 
         private AssignmentStatementSyntax MakeAssignmentStatement(CSS.AssignmentExpressionSyntax node, ExpressionSyntax left, ExpressionSyntax right)
