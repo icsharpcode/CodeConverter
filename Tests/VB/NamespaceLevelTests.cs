@@ -277,13 +277,12 @@ End Namespace");
         {
             await TestConversionCSharpToVisualBasic(
 @"namespace System {
-    using Collections;
+    using Collections; // Moves outside namespace
     public class TestClass {
         public Hashtable Property { get; set; }
     }
 }",
-@"Imports System.Collections
-
+@"Imports System.Collections ' Moves outside namespace
 Namespace System
     Public Class TestClass
         Public Property [Property] As Hashtable
