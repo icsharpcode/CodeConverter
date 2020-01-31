@@ -28,7 +28,7 @@ End Class");
         public async Task StringInterpolationWithDoubleQuotes()
         {
             await TestConversionCSharpToVisualBasic(
-                @"using System;
+                @"using System; //Not required in VB due to global imports
 
 namespace global::InnerNamespace
 {
