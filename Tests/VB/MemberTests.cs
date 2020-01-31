@@ -967,6 +967,80 @@ Friend Class TestClass
 End Class");
         }
         [Fact]
+        public async Task TestCustomEventUsingFieldEvent() {
+            await TestConversionCSharpToVisualBasic(
+@"using System;
+
+class TestClass {
+    event EventHandler backingField;
+
+    public event EventHandler MyEvent {
+        add { backingField += value; }
+        remove { backingField -= value; }
+    }
+}",
+@"Imports System
+
+Friend Class TestClass
+    Private Event backingField As EventHandler
+
+    Public Custom Event MyEvent As EventHandler
+        AddHandler(ByVal value As EventHandler)
+            AddHandler backingField, value
+        End AddHandler
+        RemoveHandler(ByVal value As EventHandler)
+            RemoveHandler backingField, value
+        End RemoveHandler
+        RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
+            RaiseEvent backingField(sender, e)
+        End RaiseEvent
+    End Event
+End Class");
+        }
+        [Fact]
+        public async Task SubscribeEventInPropertySetter() {
+            await TestConversionCSharpToVisualBasic(
+@"using System;
+using System.ComponentModel;
+
+class TestClass {
+    OwnerClass owner;
+
+    public OwnerClass Owner {
+        get { return owner; }
+        set {
+            owner = value;
+            ((INotifyPropertyChanged)owner).PropertyChanged += OnOwnerChanged;
+        }
+    }
+    void OnOwnerChanged(object sender, PropertyChangedEventArgs args) { }
+}
+class OwnerClass : INotifyPropertyChanged {
+}",
+@"Imports System.ComponentModel
+
+Friend Class TestClass
+    Private f_Owner As OwnerClass
+
+    Public Property Owner As OwnerClass
+        Get
+            Return f_Owner
+        End Get
+        Set(ByVal value As OwnerClass)
+            f_Owner = value
+            AddHandler CType(f_Owner, INotifyPropertyChanged).PropertyChanged, AddressOf OnOwnerChanged
+        End Set
+    End Property
+
+    Private Sub OnOwnerChanged(ByVal sender As Object, ByVal args As PropertyChangedEventArgs)
+    End Sub
+End Class
+
+Friend Class OwnerClass
+    Implements INotifyPropertyChanged
+End Class");
+        }
+        [Fact]
         public async Task TestIndexer()
         {
             await TestConversionCSharpToVisualBasic(

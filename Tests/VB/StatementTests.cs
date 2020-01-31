@@ -41,6 +41,71 @@ End Class");
         }
 
         [Fact]
+        public async Task ForConvertedToWhile_Break() {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    void TestMethod() {
+        for (;;)
+            break;
+    }
+}", @"Friend Class TestClass
+    Private Sub TestMethod()
+        While True
+            Exit While
+        End While
+    End Sub
+End Class");
+        }
+
+        [Fact]
+        public async Task ForConvertedToWhile_BreakContinue() {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    void TestMethod(int arg) {
+        for (;;) //Becomes while loop
+        {
+            if (arg == 3) break;
+            switch (arg)
+            {
+                case 1:
+                    break; //From switch
+                case 2:
+                    break; //From switch
+                default:
+                    continue; // Outer while loop
+            }
+            for (var i = 0; i < arg; i++) // Becomes For Next loop
+            {
+                if (arg != 1) break; // From inner for loop
+                continue; // Inner for loop
+            }
+            continue; // Outer while loop
+        }
+    }
+}", @"Friend Class TestClass
+    Private Sub TestMethod(ByVal arg As Integer)
+        While True
+            If arg = 3 Then Exit While
+
+            Select Case arg
+                Case 1
+                Case 2
+                Case Else
+                    Continue While
+            End Select
+
+            For i = 0 To arg - 1
+                If arg <> 1 Then Exit For
+                Continue For
+            Next
+
+            Continue While
+        End While
+    End Sub
+End Class");
+        }
+
+        [Fact]
         public async Task AssignmentStatement()
         {
             await TestConversionCSharpToVisualBasic(@"class TestClass
@@ -1009,6 +1074,38 @@ Friend Class TestClass
     End Sub
 End Class");
         }
+        [Fact]
+        public async Task AddHandlerInSimpleLambda() {
+            await TestConversionCSharpToVisualBasic(
+@"using System;
+using System.ComponentModel;
+using System.Collections.Generic;
+
+class TestClass {
+    List<INotifyPropertyChanged> items;
+
+    void TestMethod(EventHandler e) {
+        items.ForEach(x => x.PropertyChanged += OnItemPropertyChanged);
+    }
+
+    void OnItemPropertyChanged(object sender, PropertyChangedEventArgs e) { }
+}",
+@"Imports System
+Imports System.ComponentModel
+Imports System.Collections.Generic
+
+Friend Class TestClass
+    Private items As List(Of INotifyPropertyChanged)
+
+    Private Sub TestMethod(ByVal e As EventHandler)
+        items.ForEach(Sub(x) AddHandler x.PropertyChanged, AddressOf OnItemPropertyChanged)
+    End Sub
+
+    Private Sub OnItemPropertyChanged(ByVal sender As Object, ByVal e As PropertyChangedEventArgs)
+    End Sub
+End Class");
+        }
+        
 
         [Fact]
         public async Task SelectCase1()
@@ -1206,6 +1303,35 @@ End Class");
             Yield i
         Next
     End Function
+End Class");
+        }
+        [Fact]
+        public async Task ObjectCreationExpressionInInvocationExpression() {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    int field;
+    TestClass(int param) {
+        this.field = param;
+    }
+    
+    static void TestMethod() {
+        new TestClass(10).Initialize();
+    }
+    void Initialize() { }
+}",
+@"Friend Class TestClass
+    Private field As Integer
+
+    Private Sub New(ByVal param As Integer)
+        field = param
+    End Sub
+
+    Private Shared Sub TestMethod()
+        Call New TestClass(10).Initialize()
+    End Sub
+
+    Private Sub Initialize()
+    End Sub
 End Class");
         }
     }
