@@ -93,9 +93,19 @@ End Module");
     int value = 10;
     readonly int v = 15;
 }", @"Friend Class TestClass
-    Const answer = 42
-    Private value = 10
-    Private ReadOnly v = 15
+    Const answer As Integer = 42
+    Private value As Integer = 10
+    Private ReadOnly v As Integer = 15
+End Class");
+        }
+        [Fact]
+        public async Task DoNotSimplifyArrayTypeInFieldDeclarations() {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    int[] answer = { 1, 2 };
+}",
+@"Friend Class TestClass
+    Private answer As Integer() = {1, 2}
 End Class");
         }
 
@@ -663,7 +673,7 @@ public partial class HasConflictingPropertyAndField {
 }",
 @"Public Partial Class HasConflictingPropertyAndField
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
-        Dim l_TEST = 0
+        Dim l_TEST As Integer = 0
         f_Test = test + l_TEST
         Return test
     End Function
@@ -674,7 +684,7 @@ Public Partial Class HasConflictingPropertyAndField
 
     Public Property Test As Integer
         Get
-            Dim l_TEST = 0
+            Dim l_TEST As Integer = 0
             Return f_Test + l_TEST
         End Get
         Set(ByVal value As Integer)

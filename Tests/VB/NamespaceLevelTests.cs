@@ -473,9 +473,9 @@ End Module");
     private static void Initialize2() { }
 }",
 @"Public Module Factory
-    Private Const Name = ""a""
-    Friend Const Name1 = ""b""
-    Public Const Name2 = ""c""
+    Private Const Name As String = ""a""
+    Friend Const Name1 As String = ""b""
+    Public Const Name2 As String = ""c""
 
     Public Sub Initialize()
     End Sub
