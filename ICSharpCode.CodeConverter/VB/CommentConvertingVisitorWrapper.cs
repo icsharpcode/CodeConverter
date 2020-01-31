@@ -17,8 +17,9 @@ namespace ICSharpCode.CodeConverter.VB
 
     internal class CommentConvertingVisitorWrapper<T> where T : VisualBasicSyntaxNode
     {
+        // Not thread safe
+        private bool _addSourceMapping = true;
         private readonly CSharpSyntaxVisitor<T> _wrappedVisitor;
-
         public CommentConvertingVisitorWrapper(CSharpSyntaxVisitor<T> wrappedVisitor)
         {
             _wrappedVisitor = wrappedVisitor;
@@ -26,15 +27,20 @@ namespace ICSharpCode.CodeConverter.VB
 
         public TriviaConverter TriviaConverter { get; }
 
-        public T Accept(SyntaxNode node, bool addSourceMapping)
+        public T Accept(SyntaxNode node, bool forceNoSourceMapping)
         {
+            bool toggleSourceMapping = forceNoSourceMapping && _addSourceMapping;
+            if (toggleSourceMapping) _addSourceMapping = false;
             try {
                 var converted = _wrappedVisitor.Visit(node);
-                return addSourceMapping ? converted.WithSourceMappingFrom(node) : converted;
+                return _addSourceMapping ? converted.WithSourceMappingFrom(node) : converted;
             } catch (Exception e) {
                 var dummyStatement = SyntaxFactory.EmptyStatement();
-                return ((T)(object) dummyStatement).WithVbTrailingErrorComment((CSharpSyntaxNode)node, e);
+                return ((T)(object)dummyStatement).WithVbTrailingErrorComment((CSharpSyntaxNode)node, e);
+            } finally {
+                if (toggleSourceMapping) _addSourceMapping = true;
             }
+
         }
     }
 }
