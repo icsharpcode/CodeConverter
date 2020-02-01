@@ -91,7 +91,7 @@ namespace ICSharpCode.CodeConverter.Shared
             if (toReplace.Width() == 0) {
                 toReplace = toReplace.GetPreviousToken(); //Never append *trailing* trivia to the end of file token
             }
-            target = target.ReplaceToken(toReplace, toReplace.WithTrailingTrivia(PrependPreservingImportantTrivia(convertedTrivia, toReplace.TrailingTrivia)));
+            target = target.ReplaceToken(toReplace, toReplace.WithTrailingTrivia(PrependPreservingImportantTrivia(convertedTrivia.ToList(), toReplace.TrailingTrivia)));
             return target;
         }
 
@@ -122,7 +122,7 @@ namespace ICSharpCode.CodeConverter.Shared
             if (toReplace.Span.End < targetLine.Start) {
                 toReplace = toReplace.GetNextToken(); //TODO: Find out why FindToken is off by one from what I want sometimes, is there a better alternative?
             }
-            target = target.ReplaceToken(toReplace, toReplace.WithLeadingTrivia(PrependPreservingImportantTrivia(convertedTrivia, toReplace.LeadingTrivia)));
+            target = target.ReplaceToken(toReplace, toReplace.WithLeadingTrivia(PrependPreservingImportantTrivia(convertedTrivia.ToList(), toReplace.LeadingTrivia)));
             return target;
         }
 
@@ -132,7 +132,7 @@ namespace ICSharpCode.CodeConverter.Shared
             return default;
         }
 
-        private static IEnumerable<SyntaxTrivia> PrependPreservingImportantTrivia(IEnumerable<SyntaxTrivia> convertedTrivia, IEnumerable<SyntaxTrivia> existingTrivia)
+        private static IEnumerable<SyntaxTrivia> PrependPreservingImportantTrivia(IReadOnlyCollection<SyntaxTrivia> convertedTrivia, IReadOnlyCollection<SyntaxTrivia> existingTrivia)
         {
             if (existingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
                 return convertedTrivia.Concat(existingTrivia);
