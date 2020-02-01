@@ -80,7 +80,7 @@ namespace CodeConverter.Tests.TestRunners
 
         private static string GetSourceAndConverted(string sourceLinesWithComments, string convertedCode)
         {
-            return "\r\n\r\nSource:\r\n" + sourceLinesWithComments + "\r\n-------------------\r\nConverted:\r\n" + convertedCode;
+            return "\r\n-------------------\r\nConverted:\r\n" + convertedCode + "\r\n\r\nSource:\r\n" + sourceLinesWithComments;
         }
 
         private static string AddSurroundingMethodBlock(string expectedVisualBasicCode, bool expectSurroundingBlock)
