@@ -66,12 +66,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private SyntaxNode ConvertTrailingForSourceLine(SyntaxNode target, int sourceLineIndex)
         {
             var sourceLine = sourceLines[sourceLineIndex];
-            var endOfSourceLine = source.FindToken(sourceLine.End);
-
-            //TODO Check whether there's a general version of FindToken that covers this and similar comments
-            if (endOfSourceLine.Width() == 0 && !endOfSourceLine.HasTrailingTrivia && !endOfSourceLine.HasLeadingTrivia) {
-                endOfSourceLine = endOfSourceLine.GetPreviousToken();
-            }
+            var endOfSourceLine = FindNonZeroWidthToken(source, sourceLine.End);
 
             if (endOfSourceLine.TrailingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
                 var line = GetBestLine(targetTrailingTextLineFromSourceLine, sourceLineIndex);
@@ -89,13 +84,12 @@ namespace ICSharpCode.CodeConverter.Shared
             return target;
         }
 
-        private static SyntaxNode PrependTrailingTrivia(SyntaxNode target, TextLine line, SyntaxTriviaList trailingTrivia)
+        private static SyntaxNode PrependTrailingTrivia(SyntaxNode target, TextLine targetLine, SyntaxTriviaList trailingTrivia)
         {
             var convertedTrivia = trailingTrivia.ConvertTrivia();
-            var toReplace = target.FindToken(line.End);
-            //TODO Check whether there's a general version of FindToken that covers this and similar comments
-            if (toReplace.Span.Start > line.End) {
-                toReplace = toReplace.GetPreviousToken(); //Zero width tokens with newline trivia can cause this, e.g. EOF
+            var toReplace = FindNonZeroWidthToken(target, targetLine.End);
+            if (toReplace.Span.Start > targetLine.End) {
+                toReplace = toReplace.GetPreviousToken(); //TODO: Find out why FindToken is off by one from what I want sometimes, is there a better alternative?
             }
             target = target.ReplaceToken(toReplace, toReplace.WithTrailingTrivia(PrependPreservingImportantTrivia(convertedTrivia, toReplace.TrailingTrivia)));
             return target;
@@ -104,7 +98,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private SyntaxNode ConvertLeadingForSourceLine(SyntaxNode target, int sourceLineIndex)
         {
             var sourceLine = sourceLines[sourceLineIndex];
-            var startOfSourceLine = source.FindToken(sourceLine.Start);
+            var startOfSourceLine = FindNonZeroWidthToken(source, sourceLine.Start);
             if (startOfSourceLine.LeadingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
                 var line = GetBestLine(targetLeadingTextLineFromSourceLine, sourceLineIndex);
                 if (line != default) {
@@ -121,13 +115,12 @@ namespace ICSharpCode.CodeConverter.Shared
             return target;
         }
 
-        private static SyntaxNode PrependLeadingTrivia(SyntaxNode target, TextLine line, SyntaxTriviaList leadingTrivia)
+        private static SyntaxNode PrependLeadingTrivia(SyntaxNode target, TextLine targetLine, SyntaxTriviaList leadingTrivia)
         {
             var convertedTrivia = leadingTrivia.ConvertTrivia();
-            var toReplace = target.FindToken(line.Start);
-            //TODO Check whether there's a general version of FindToken that covers this and similar comments
-            if (toReplace.Span.End < line.Start) {
-                toReplace = toReplace.GetNextToken(); //Zero width tokens with newline trivia can cause this, e.g. EOF
+            var toReplace = FindNonZeroWidthToken(target, targetLine.Start);
+            if (toReplace.Span.End < targetLine.Start) {
+                toReplace = toReplace.GetNextToken(); //TODO: Find out why FindToken is off by one from what I want sometimes, is there a better alternative?
             }
             target = target.ReplaceToken(toReplace, toReplace.WithLeadingTrivia(PrependPreservingImportantTrivia(convertedTrivia, toReplace.LeadingTrivia)));
             return target;
@@ -145,6 +138,16 @@ namespace ICSharpCode.CodeConverter.Shared
                 return convertedTrivia.Concat(existingTrivia);
             }
             return convertedTrivia;
+        }
+
+        private static SyntaxToken FindNonZeroWidthToken(SyntaxNode node, int position)
+        {
+            var syntaxToken = node.FindToken(position);
+            if (syntaxToken.FullWidth() == 0) {
+                return syntaxToken.GetPreviousToken();
+            } else {
+                return syntaxToken;
+            }
         }
     }
 }

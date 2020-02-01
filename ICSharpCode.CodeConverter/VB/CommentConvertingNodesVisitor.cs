@@ -45,7 +45,7 @@ namespace ICSharpCode.CodeConverter.VB
             var convertedNode = (VbSyntax.CompilationUnitSyntax)DefaultVisitInner(node);
             // Special case where we need to map manually because it's a special zero-width token that just has leading trivia that isn't at the start of the line necessarily
             return convertedNode.WithEndOfFileToken(
-                convertedNode.EndOfFileToken.WithSourceMappingFrom(node.EndOfFileToken).WithConvertedLeadingTriviaFrom(node.EndOfFileToken)
+                convertedNode.EndOfFileToken.WithSourceMappingFrom(node.EndOfFileToken)
             );
         }
 
