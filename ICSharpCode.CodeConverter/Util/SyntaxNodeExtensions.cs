@@ -225,10 +225,11 @@ namespace ICSharpCode.CodeConverter.Util
         public static T WithSourceMappingFrom<T>(this T converted, SyntaxNodeOrToken fromSource) where T : SyntaxNode
         {
             if (converted == null) return null;
-            var origLinespan = fromSource.SyntaxTree.GetLineSpan(fromSource.Span);
+            var startLinespan = fromSource.SyntaxTree.GetLineSpan(fromSource.Span);
+            var endLinespan = fromSource.IsNode ? fromSource.SyntaxTree.GetLineSpan(fromSource.AsNode().GetLastToken().Span) : startLinespan;
             return converted
-                .WithSourceStartLineAnnotation(origLinespan)
-                .WithSourceEndLineAnnotation(origLinespan);
+                .WithSourceStartLineAnnotation(startLinespan)
+                .WithSourceEndLineAnnotation(endLinespan);
         }
 
         public static T WithSourceStartLineAnnotation<T>(this T node, FileLinePositionSpan sourcePosition) where T : SyntaxNode
