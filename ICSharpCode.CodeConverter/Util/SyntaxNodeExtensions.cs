@@ -222,11 +222,11 @@ namespace ICSharpCode.CodeConverter.Util
             return semanticModel.GetDeclaredSymbol(typeBlockSyntax);
         }
 
-        public static T WithSourceMappingFrom<T>(this T converted, SyntaxNode fromNode) where T : SyntaxNode
+        public static T WithSourceMappingFrom<T>(this T converted, SyntaxNodeOrToken fromSource) where T : SyntaxNode
         {
             if (converted == null) return null;
-            var origLinespan = fromNode.SyntaxTree.GetLineSpan(fromNode.Span);
-            return fromNode.CopyAnnotationsTo(converted)
+            var origLinespan = fromSource.SyntaxTree.GetLineSpan(fromSource.Span);
+            return converted
                 .WithSourceStartLineAnnotation(origLinespan)
                 .WithSourceEndLineAnnotation(origLinespan);
         }

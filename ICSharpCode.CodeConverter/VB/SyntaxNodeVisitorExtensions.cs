@@ -19,12 +19,7 @@ namespace ICSharpCode.CodeConverter.VB
         public static T Accept<T>(this SyntaxNode node, CommentConvertingVisitorWrapper<T> visitorWrapper, bool addSourceMapping = true) where T : VBasic.VisualBasicSyntaxNode
         {
             if (node == null) return default(T);
-            try {
-                return visitorWrapper.Accept(node, !addSourceMapping);
-            } finally {
-
-            }
-
+            return visitorWrapper.Accept(node, !addSourceMapping);
         }
     }
 }

@@ -33,7 +33,7 @@ namespace ICSharpCode.CodeConverter.VB
             if (toggleSourceMapping) _addSourceMapping = false;
             try {
                 var converted = _wrappedVisitor.Visit(node);
-                return _addSourceMapping ? converted.WithSourceMappingFrom(node) : converted;
+                return _addSourceMapping ? node.CopyAnnotationsTo(converted).WithSourceMappingFrom(node) : converted;
             } catch (Exception e) {
                 var dummyStatement = SyntaxFactory.EmptyStatement();
                 return ((T)(object)dummyStatement).WithVbTrailingErrorComment((CSharpSyntaxNode)node, e);
