@@ -58,7 +58,7 @@ obj = Nothing",
         {
             await TestConversionCSharpToVisualBasic(
 @"var x = 3;",
-@"Dim x = 3");
+                @"Dim x = 3");
         }
 
         [Fact]
@@ -66,7 +66,7 @@ obj = Nothing",
         {
             await TestConversionCSharpToVisualBasic(
 @"private int x = 3;",
-@"Private x = 3");
+                @"Private x = 3");
         }
 
         [Fact]
@@ -76,7 +76,7 @@ obj = Nothing",
 @"public class Test
 {
 }",
-@"Public Class Test
+                @"Public Class Test
 End Class");
         }
 
@@ -85,7 +85,7 @@ End Class");
         {
             await TestConversionCSharpToVisualBasic(
 @"protected abstract void abs();",
-@"Protected MustOverride Sub abs()");
+                @"Protected MustOverride Sub abs()");
         }
 
         [Fact]
@@ -95,7 +95,7 @@ End Class");
 @"namespace nam
 {
 }",
-@"Namespace nam
+                @"Namespace nam
 End Namespace");
         }
 
@@ -106,7 +106,7 @@ End Namespace");
 @"this.DataContext = from task in tasks
     where task.Priority == pri
     select task;",
-@"Me.DataContext = From task In tasks Where task.Priority Is pri Select task");
+                @"Me.DataContext = From task In tasks Where task.Priority Is pri Select task");
         }
     }
 }

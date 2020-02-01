@@ -70,6 +70,7 @@ Namespace ANamespace ' namespace
 #Region ""Arg2""
             argument2 = Nothing ' 2
 #End Region
+
             If argument IsNot Nothing Then ' never
                 ' Block start - if
                 ' leading trivia for the next line

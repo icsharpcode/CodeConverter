@@ -188,7 +188,11 @@ namespace ICSharpCode.CodeConverter.Shared
                 Document document = await _languageConversion.SingleSecondPass(convertedDocument);
                 if (_returnSelectedNode) {
                     selectedNode = await GetSelectedNode(document);
+                    var extraLeadingTrivia = selectedNode.GetFirstToken().GetPreviousToken().TrailingTrivia;
+                    var extraTrailingTrivia = selectedNode.GetLastToken().GetNextToken().LeadingTrivia;
                     selectedNode = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
+                    if (extraLeadingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) selectedNode = selectedNode.WithPrependedLeadingTrivia(extraLeadingTrivia);
+                    if (extraTrailingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) selectedNode = selectedNode.WithAppendedTrailingTrivia(extraTrailingTrivia);
                 } else {
                     selectedNode = await document.GetSyntaxRootAsync();
                     selectedNode = Formatter.Format(selectedNode, document.Project.Solution.Workspace);

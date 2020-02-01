@@ -766,7 +766,7 @@ End Class");
         }
     }
 }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Private Sub TestMethod()
         Dim summary = 0
 
@@ -790,7 +790,7 @@ End Class");
     void Draw(double height) {
     }
 }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Private height As Double
 
     Private Sub TestMethod()
@@ -827,7 +827,7 @@ End Class");
         };
     }
 }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Private Sub TestMethod(ByVal counts As IEnumerable(Of Integer))
         Dim summary = 0
         Dim action As Action = Sub()

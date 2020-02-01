@@ -838,7 +838,13 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static IEnumerable<SyntaxTrivia> ConvertTrivia(this IReadOnlyCollection<SyntaxTrivia> triviaToConvert)
         {
-            return triviaToConvert.SelectMany(t => t.Language == LanguageNames.VisualBasic ? ConvertVBTrivia(t).Yield() : ConvertCSTrivia(t)).Where(x => x != default(SyntaxTrivia));
+            return triviaToConvert.SelectMany(t => {
+                if (t.Language == LanguageNames.VisualBasic) {
+                    return ConvertVBTrivia(t).Yield();
+                } else {
+                    return ConvertCSTrivia(t).Where(x => x != default(SyntaxTrivia));
+                }
+            });
         }
 
         private static SyntaxTrivia ConvertVBTrivia(SyntaxTrivia t)
@@ -872,6 +878,8 @@ namespace ICSharpCode.CodeConverter.Util
 
         private static IEnumerable<SyntaxTrivia> ConvertCSTrivia(SyntaxTrivia t)
         {
+            var endOfLine = SyntaxTriviaExtensions.GetEndOfLine(LanguageNames.VisualBasic);
+
             if (t.IsKind(CSSyntaxKind.SingleLineCommentTrivia)) {
                 yield return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.CommentTrivia, $"' {t.GetCommentText()}");
                 yield break;
@@ -885,7 +893,7 @@ namespace ICSharpCode.CodeConverter.Util
                     ? "''' " + String.Join($"\r\n{previousWhitespace}''' ", commentTextLines)
                     : $"' {commentTextLines.Single()}";
                 yield return VBSyntaxFactory.CommentTrivia(outputCommentText);
-                yield return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.EndOfLineTrivia, "\r\n");
+                yield return endOfLine;
                 yield break;
             }
 
@@ -902,13 +910,14 @@ namespace ICSharpCode.CodeConverter.Util
             if (t.IsKind(CSSyntaxKind.DisabledTextTrivia)) {
                 //TODO Actually use converter
                 yield return VBSyntaxFactory.DisabledTextTrivia("' Skipped during conversion: " + t.ToString().Trim('\r', '\n').Replace("\n", "\n'"));
+                yield return endOfLine;
                 yield break;
             }
 
             var structured = GetStructuredTrivia(t);
             if (structured != null) {
                 yield return VBSyntaxFactory.Trivia(structured);
-                yield return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.EndOfLineTrivia, "\r\n");
+                yield return endOfLine;
                 yield break;
             }
 

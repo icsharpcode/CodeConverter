@@ -149,6 +149,15 @@ namespace ICSharpCode.CodeConverter.Util
             return trivia.Kind() == CS.SyntaxKind.MultiLineDocumentationCommentTrivia;
         }
 
+        public static SyntaxTrivia GetEndOfLine(string lang)
+        {
+            if (lang == LanguageNames.CSharp) {
+                return CS.SyntaxFactory.ElasticCarriageReturnLineFeed;
+            } else {
+                return VBasic.SyntaxFactory.ElasticCarriageReturnLineFeed;
+            }
+        }
+
         /// <remarks>Good candidate for unit testing to catch newline issues hidden by the test harness</remarks>
         public static string GetCommentText(this SyntaxTrivia trivia)
         {

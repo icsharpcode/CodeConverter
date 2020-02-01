@@ -39,7 +39,7 @@ End Class");
     public static string Text { get; private set; };
     public int Count { get; private set; };
 }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Private Shared _Text As String
     Private _Count As Integer
 
@@ -69,7 +69,7 @@ End Class");
 @"static class TestClass {
     public static string Text { get; private set; }
 }",
-@"Friend Module TestClass
+                @"Friend Module TestClass
     Private _Text As String
 
     Public Property Text As String
@@ -417,7 +417,7 @@ End Module", conversion: EmptyNamespaceOptionStrictOff);
         public async Task TestExtensionMethodWithExistingImport()
         {
             await TestConversionCSharpToVisualBasic(
-@"using System;
+@"using System; //Gets simplified away
 using System.Runtime.CompilerServices;
 
 static class TestClass
@@ -489,7 +489,7 @@ public class ShouldNotChange {
     }
 }
 ",
-@"Public Class HasConflictingPropertyAndField
+                @"Public Class HasConflictingPropertyAndField
     Private f_Test As Integer
 
     Public Property Test As Integer
@@ -587,7 +587,7 @@ End Class");
         set { test = value}
     }
 }",
-@"Public Class HasConflictingPropertyAndField
+                @"Public Class HasConflictingPropertyAndField
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
         f_Test = test
         Return test
@@ -620,7 +620,7 @@ End Class");
         return test;
     }
 }",
-@"Public Class HasConflictingPropertyAndField
+                @"Public Class HasConflictingPropertyAndField
     Private f_Test As Integer
 
     Public Property Test As Integer
@@ -661,7 +661,7 @@ public partial class HasConflictingPropertyAndField {
         set { test = value}
     }
 }",
-@"Public Partial Class HasConflictingPropertyAndField
+                @"Public Partial Class HasConflictingPropertyAndField
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
         Dim l_TEST = 0
         f_Test = test + l_TEST
@@ -912,7 +912,7 @@ class TestClass {
         backingField = null;
     }
 }",
-@"Imports System
+                @"Imports System
 
 Friend Class TestClass
     Private backingField As EventHandler
@@ -947,7 +947,7 @@ class TestClass {
         remove { _backingField -= value; }
     }
 }",
-@"Imports System
+                @"Imports System
 
 Friend Class TestClass
     Private _backingField As EventHandler
@@ -1043,7 +1043,7 @@ End Class");
 @"public interface iDisplay {
     object this[int i] { get; set; }
 }",
-@"Public Interface iDisplay
+                @"Public Interface iDisplay
     Default Property Item(ByVal i As Integer) As Object
 End Interface");
         }
@@ -1060,7 +1060,7 @@ class TestClass : IList {
         set { }
     }
 }",
-@"Imports System.Collections
+                @"Imports System.Collections
 
 Friend Class TestClass
     Implements IList
@@ -1084,7 +1084,7 @@ End Class");
         set { }
     }
 }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Default Public Property Item(ByVal index As Integer) As Object
         Get
         End Get
@@ -1096,12 +1096,12 @@ End Class");
         [Fact]
         public async Task NameMatchesWithTypeDate() {
             await TestConversionCSharpToVisualBasic(
-@"using System;
+@"using System; //Gets simplified away
 
 class TestClass {
     private DateTime date;
 }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Private [date] As Date
 End Class");
         }
@@ -1113,7 +1113,7 @@ End Class");
         return null;
     }
 }",
-@"Public Class TestClass
+                @"Public Class TestClass
     Public Function TestMethod(ByVal param1 As System.Type, ByVal param2 As System.Globalization.CultureInfo) As Object
         Return Nothing
     End Function
@@ -1152,7 +1152,7 @@ End Class", conversion: EmptyNamespaceOptionStrictOff);
         return Equals((MailEmployee)obj);
     }
 }",
-@"Public Class MailEmployee
+                @"Public Class MailEmployee
     Public Property Email As String
 
     Protected Overloads Function Equals(ByVal other As MailEmployee) As Boolean
@@ -1170,7 +1170,7 @@ End Class");
 @"public interface IParametersProvider {
     IEnumerable<object> Parameters { get; }
 }",
-@"Public Interface IParametersProvider
+                @"Public Interface IParametersProvider
     ReadOnly Property Parameters As IEnumerable(Of Object)
 End Interface");
         }
@@ -1180,7 +1180,7 @@ End Interface");
 @"public interface IParametersProvider {
     IEnumerable<object> Parameters { set; }
 }",
-@"Public Interface IParametersProvider
+                @"Public Interface IParametersProvider
     WriteOnly Property Parameters As IEnumerable(Of Object)
 End Interface");
         }

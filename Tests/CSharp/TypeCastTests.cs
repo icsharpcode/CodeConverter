@@ -282,7 +282,8 @@ End Class" + Environment.NewLine, @"internal partial class Class1
         public async Task CastConstantNumberToCharacterW()
         {
             await TestConversionVisualBasicToCSharp(
-                @"Private Sub Test()
+                @"
+Private Sub Test()
     Dim CR = ChrW(&HD)
 End Sub
 ", @"private void Test()

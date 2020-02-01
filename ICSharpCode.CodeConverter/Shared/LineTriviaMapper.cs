@@ -88,8 +88,8 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var convertedTrivia = trailingTrivia.ConvertTrivia();
             var toReplace = FindNonZeroWidthToken(target, targetLine.End);
-            if (toReplace.Span.Start > targetLine.End) {
-                toReplace = toReplace.GetPreviousToken(); //TODO: Find out why FindToken is off by one from what I want sometimes, is there a better alternative?
+            if (toReplace.Width() == 0) {
+                toReplace = toReplace.GetPreviousToken(); //Never append *trailing* trivia to the end of file token
             }
             target = target.ReplaceToken(toReplace, toReplace.WithTrailingTrivia(PrependPreservingImportantTrivia(convertedTrivia, toReplace.TrailingTrivia)));
             return target;
