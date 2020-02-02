@@ -85,22 +85,14 @@ namespace ICSharpCode.CodeConverter.Shared
                 var targetLine = GetBestLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
                 if (targetLine != default) {
                     _trailingTriviaCarriedOver.Add(endOfSourceLine.TrailingTrivia);
-                    foreach (var triviaList in _trailingTriviaCarriedOver) {
-                        PrependTrailingTrivia(target, targetLine, triviaList);
-                    }
+                    var originalToReplace = GetTrailingForLine(_target, targetLine);
+                    SaveTrailingTrivia(originalToReplace, _trailingTriviaCarriedOver);
                     _trailingTriviaCarriedOver.Clear();
                 } else if (endOfSourceLine.TrailingTrivia.Span.Start > sourceLine.Start) {
                     _trailingTriviaCarriedOver.Add(endOfSourceLine.TrailingTrivia);
                 }
             }
 
-            return target;
-        }
-
-        private SyntaxNode PrependTrailingTrivia(SyntaxNode target, TextLine targetLine, SyntaxTriviaList trailingTrivia)
-        {
-            var originalToReplace = GetTrailingForLine(_target, targetLine);
-            SaveTrailingTrivia(originalToReplace, new [] { trailingTrivia }.ToList());
             return target;
         }
 
@@ -122,22 +114,14 @@ namespace ICSharpCode.CodeConverter.Shared
                 var targetLine = GetBestLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
                 if (targetLine != default) {
                     _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
-                    foreach (var triviaList in _leadingTriviaCarriedOver) {
-                        PrependLeadingTrivia(target, targetLine, triviaList);
-                    }
+                    var originalToReplace = GetLeadingForLine(_target, targetLine);
+                    SaveLeadingTrivia(originalToReplace, _leadingTriviaCarriedOver);
                     _leadingTriviaCarriedOver.Clear();
                 } else if (startOfSourceLine.LeadingTrivia.Span.End < sourceLine.End) {
                     _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
                 }
             }
 
-            return target;
-        }
-
-        private SyntaxNode PrependLeadingTrivia(SyntaxNode target, TextLine targetLine, SyntaxTriviaList leadingTrivia)
-        {
-            var originalToReplace = GetLeadingForLine(_target, targetLine);
-            SaveLeadingTrivia(originalToReplace, new[] { leadingTrivia }.ToList());
             return target;
         }
 
