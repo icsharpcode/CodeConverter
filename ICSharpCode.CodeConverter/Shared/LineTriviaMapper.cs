@@ -57,10 +57,12 @@ namespace ICSharpCode.CodeConverter.Shared
             //TODO Possible perf: Find token starting from position of last replaced token rather than from the root node each time?
             _target = target;
 
-            // TODO: Loop in other direction for leading trivia
+            for (int i = 0; i < _sourceLines.Count ; i++) {
+                MapLeading(i);
+            }
+
             for (int i = _sourceLines.Count - 1; i >= 0; i--) {
                 MapTrailing(i);
-                MapLeading(i);
             }
 
             return _target.ReplaceTokens(_targetTokenToTrivia.Keys, WithMappedTrivia);
@@ -82,18 +84,19 @@ namespace ICSharpCode.CodeConverter.Shared
         private void MapTrailing(int sourceLineIndex)
         {
             var sourceLine = _sourceLines[sourceLineIndex];
-            var endOfSourceLine = _source.FindNonZeroWidthToken(sourceLine.End);
+            var endOfSourceLine = sourceLine.FindLastTokenWithinLine(_source);
 
             if (endOfSourceLine.TrailingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
-                var targetLine = GetBestLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
-                if (targetLine != default) {
-                    _trailingTriviaCarriedOver.Add(endOfSourceLine.TrailingTrivia);
-                    var originalToReplace = targetLine.GetTrailingForLine(_target); //TODO Use withinline textline extensions
+                _trailingTriviaCarriedOver.Add(endOfSourceLine.TrailingTrivia);
+            }
+
+            var targetLine = GetBestLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
+            if (targetLine != default) {
+                var originalToReplace = targetLine.GetTrailingForLine(_target); //TODO Use withinline textline extensions
+                if (originalToReplace != null) {
                     var targetTrivia = GetTargetTriviaCollection(originalToReplace);
                     targetTrivia.Trailing.AddRange(_trailingTriviaCarriedOver.Select(t => t.ConvertTrivia().ToList()));
                     _trailingTriviaCarriedOver.Clear();
-                } else if (endOfSourceLine.TrailingTrivia.Span.Start > sourceLine.Start) {
-                    _trailingTriviaCarriedOver.Add(endOfSourceLine.TrailingTrivia);
                 }
             }
         }
@@ -101,18 +104,20 @@ namespace ICSharpCode.CodeConverter.Shared
         private void MapLeading(int sourceLineIndex)
         {
             var sourceLine = _sourceLines[sourceLineIndex];
-            var startOfSourceLine = _source.FindNonZeroWidthToken(sourceLine.Start);
+            var startOfSourceLine = sourceLine.FindFirstTokenWithinLine(_source);
 
             if (startOfSourceLine.LeadingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
-                var targetLine = GetBestLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
-                if (targetLine != default) {
-                    _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
-                    var originalToReplace = targetLine.GetLeadingForLine(_target); //TODO Use withinline textline extensions
+                _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
+            }
+
+            var targetLine = GetBestLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
+            if (targetLine != default) {
+                var originalToReplace = targetLine.GetLeadingForLine(_target);
+                if (originalToReplace != default) {
                     var targetTrivia = GetTargetTriviaCollection(originalToReplace);
                     targetTrivia.Leading.AddRange(_leadingTriviaCarriedOver.Select(t => t.ConvertTrivia().ToList()));
                     _leadingTriviaCarriedOver.Clear();
-                } else if (startOfSourceLine.LeadingTrivia.Span.End < sourceLine.End) {
-                    _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
+                    return;
                 }
             }
         }
