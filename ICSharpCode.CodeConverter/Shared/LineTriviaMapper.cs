@@ -15,6 +15,8 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly IReadOnlyDictionary<int, TextLine> _targetTrailingTextLineFromSourceLine;
         private readonly List<SyntaxTriviaList> _leadingTriviaCarriedOver = new List<SyntaxTriviaList>();
         private readonly List<SyntaxTriviaList> _trailingTriviaCarriedOver = new List<SyntaxTriviaList>();
+        private readonly Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>> Leading, List<IReadOnlyCollection<SyntaxTrivia>> Trailing)> _targetTokenToTrivia = new Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>>, List<IReadOnlyCollection<SyntaxTrivia>>)>();
+
         public LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
         {
             _source = source;
@@ -132,12 +134,34 @@ namespace ICSharpCode.CodeConverter.Shared
             return default;
         }
 
+        private void SaveLeadingTrivia(SyntaxToken toReplace, List<SyntaxTriviaList> leadingTriviaLists)
+        {
+            var targetTrivia = GetTargetTriviaCollection(toReplace);
+            targetTrivia.Trailing.AddRange(leadingTriviaLists.Select(t => t.ConvertTrivia().ToList()));
+        }
+
+        private void SaveTrailingTrivia(SyntaxToken toReplace, List<SyntaxTriviaList> trailingTriviaLists)
+        {
+            var targetTrivia = GetTargetTriviaCollection(toReplace);
+            targetTrivia.Trailing.AddRange(trailingTriviaLists.Select(t => t.ConvertTrivia().ToList()));
+        }
+
         private static IEnumerable<SyntaxTrivia> PrependPreservingImportantTrivia(IReadOnlyCollection<SyntaxTrivia> convertedTrivia, IReadOnlyCollection<SyntaxTrivia> existingTrivia)
         {
             if (existingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
                 return convertedTrivia.Concat(existingTrivia);
             }
             return convertedTrivia;
+        }
+
+        private (List<IReadOnlyCollection<SyntaxTrivia>> Leading, List<IReadOnlyCollection<SyntaxTrivia>> Trailing) GetTargetTriviaCollection(SyntaxToken toReplace)
+        {
+            if (!_targetTokenToTrivia.TryGetValue(toReplace, out var targetTrivia)) {
+                targetTrivia = (new List<IReadOnlyCollection<SyntaxTrivia>>(), new List<IReadOnlyCollection<SyntaxTrivia>>());
+                _targetTokenToTrivia[toReplace] = targetTrivia;
+            }
+
+            return targetTrivia;
         }
 
         private static SyntaxToken FindNonZeroWidthToken(SyntaxNode node, int position)
