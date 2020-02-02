@@ -286,7 +286,8 @@ End Class" + Environment.NewLine, @"internal partial class Class1
 Private Sub Test()
     Dim CR = ChrW(&HD)
 End Sub
-", @"private void Test()
+", @"
+private void Test()
 {
     char CR = (char)0xD;
 }

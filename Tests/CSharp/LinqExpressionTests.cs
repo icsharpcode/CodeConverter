@@ -19,13 +19,13 @@ Private Shared Sub SimpleQuery()
         Console.WriteLine(n)
     Next
 End Sub",
-                @"private static void SimpleQuery()
+                @"
+private static void SimpleQuery()
 {
     var numbers = new[] { 7, 9, 5, 3, 6 };
     var res = from n in numbers
               where n > 5
               select n;
-
     foreach (var n in res)
         Console.WriteLine(n);
 }");

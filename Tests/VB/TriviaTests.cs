@@ -93,11 +93,11 @@ End Namespace' Last line comment");
             await TestConversionCSharpToVisualBasic(
                 @"//leading
 namespace ANamespace //namespace
-{ //BUG: Block start loses comments
+{ // start of block - namespace
 } //end namespace
 // Last line comment", @"' leading
 Namespace ANamespace ' namespace
-    ' BUG: Block start loses comments
+    ' start of block - namespace
 End Namespace ' end namespace
 ' Last line comment");
         }

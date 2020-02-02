@@ -98,7 +98,8 @@ End Class",
             await TestConversionVisualBasicToCSharp(
                 @"
 Protected MustOverride Sub abs()",
-                @"protected abstract void abs();");
+                @"
+protected abstract void abs();");
         }
 
         [Fact]
