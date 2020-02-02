@@ -40,11 +40,11 @@ namespace ICSharpCode.CodeConverter.Shared
 
             var targetNodesBySourceStartLine = target.GetAnnotatedNodesAndTokens(AnnotationConstants.SourceStartLineAnnotationKind)
                 .ToLookup(n => n.GetAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).Select(a => int.Parse(a.Data)).Min())
-                .ToDictionary(g => g.Key, g => originalTargetLines.GetLineFromPosition(g.Min(x => x.GetLocation().SourceSpan.Start)));
+                .ToDictionary(g => g.Key, g => originalTargetLines.GetLineFromPosition(g.Min(x => x.Span.Start)));
 
             var targetNodesBySourceEndLine = target.GetAnnotatedNodesAndTokens(AnnotationConstants.SourceEndLineAnnotationKind)
                 .ToLookup(n => n.GetAnnotations(AnnotationConstants.SourceEndLineAnnotationKind).Select(a => int.Parse(a.Data)).Max())
-                .ToDictionary(g => g.Key, g => originalTargetLines.GetLineFromPosition(g.Max(x => x.GetLocation().SourceSpan.End)));
+                .ToDictionary(g => g.Key, g => originalTargetLines.GetLineFromPosition(g.Max(x => x.Span.End)));
 
             var sourceLines = source.GetText().Lines;
             var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, targetNodesBySourceStartLine, targetNodesBySourceEndLine);
@@ -54,9 +54,10 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private SyntaxNode GetTargetWithSourceTrivia(SyntaxNode target)
         {
-            //TODO Try harder to avoid losing track of various precalculated positions changing during the replacements, for example build up a dictionary of replacements and make them in a single ReplaceTokens call
             //TODO Possible perf: Find token starting from position of last replaced token rather than from the root node each time?
             _target = target;
+
+            // TODO: Loop in other direction for leading trivia
             for (int i = _sourceLines.Count - 1; i >= 0; i--) {
                 ConvertTrailingForSourceLine(target, i);
                 ConvertLeadingForSourceLine(target, i);
@@ -64,6 +65,7 @@ namespace ICSharpCode.CodeConverter.Shared
             //return target;
             return _target.ReplaceTokens(_targetTokenToTrivia.Keys, (original, rewritten) => {
                 var trivia = _targetTokenToTrivia[original];
+                //TODO SelectMany
                 foreach (var triviaList in trivia.Trailing) {
                     rewritten = rewritten.WithTrailingTrivia(PrependPreservingImportantTrivia(triviaList.ToList(), rewritten.TrailingTrivia));
                 }
@@ -85,7 +87,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 var targetLine = GetBestLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
                 if (targetLine != default) {
                     _trailingTriviaCarriedOver.Add(endOfSourceLine.TrailingTrivia);
-                    var originalToReplace = GetTrailingForLine(_target, targetLine);
+                    var originalToReplace = GetTrailingForLine(_target, targetLine); //TODO Use withinline textline extensions
                     SaveTrailingTrivia(originalToReplace, _trailingTriviaCarriedOver);
                     _trailingTriviaCarriedOver.Clear();
                 } else if (endOfSourceLine.TrailingTrivia.Span.Start > sourceLine.Start) {
@@ -114,7 +116,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 var targetLine = GetBestLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
                 if (targetLine != default) {
                     _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
-                    var originalToReplace = GetLeadingForLine(_target, targetLine);
+                    var originalToReplace = GetLeadingForLine(_target, targetLine); //TODO Use withinline textline extensions
                     SaveLeadingTrivia(originalToReplace, _leadingTriviaCarriedOver);
                     _leadingTriviaCarriedOver.Clear();
                 } else if (startOfSourceLine.LeadingTrivia.Span.End < sourceLine.End) {
