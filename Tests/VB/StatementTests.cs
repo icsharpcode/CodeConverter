@@ -1030,8 +1030,8 @@ End Class");
                 Console.Write(""section 4"");
                 goto default;
             default:
-                Console.Write(""default section"");
-                break;
+                Console.Write(""default section""); // Block moves to end - 1
+                break; // Block moves to end - 2
             case 5:
                 Console.Write(""section 5"");
                 break;
@@ -1053,7 +1053,8 @@ _Select0_Case5:
                 Console.Write(""section 5"")
             Case Else
 _Select0_CaseDefault:
-                Console.Write(""default section"")
+                Console.Write(""default section"") ' Block moves to end - 1
+                ' Block moves to end - 2
         End Select
     End Sub
 End Class");
