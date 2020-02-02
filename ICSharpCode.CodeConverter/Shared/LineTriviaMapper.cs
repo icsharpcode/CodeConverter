@@ -61,15 +61,17 @@ namespace ICSharpCode.CodeConverter.Shared
                 target = ConvertTrailingForSourceLine(target, i);
                 target = ConvertLeadingForSourceLine(target, i);
             }
-            return target;
-            //return _target.ReplaceTokens(_targetTokenToTrivia.Keys, (original, rewritten) => {
-            //    var trivia = _targetTokenToTrivia[original];
-            //    trivia.Leading.Reverse();
-            //    trivia.Trailing.Reverse();
-            //    var leadingTrivia = rewritten.LeadingTrivia.Concat(trivia.Leading.SelectMany(triviaList => triviaList));
-            //    var trailingTrivia = rewritten.TrailingTrivia.Concat(trivia.Trailing.SelectMany(triviaList => triviaList));
-            //    return rewritten.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(trailingTrivia);
-            //});
+            //return target;
+            return _target.ReplaceTokens(_targetTokenToTrivia.Keys, (original, rewritten) => {
+                var trivia = _targetTokenToTrivia[original];
+                foreach (var triviaList in trivia.Trailing) {
+                    rewritten = rewritten.WithTrailingTrivia(PrependPreservingImportantTrivia(triviaList.ToList(), rewritten.TrailingTrivia));
+                }
+                foreach (var triviaList in trivia.Leading) {
+                    rewritten = rewritten.WithLeadingTrivia(PrependPreservingImportantTrivia(triviaList.ToList(), rewritten.LeadingTrivia));
+                }
+                return rewritten;
+            });
         }
 
 
