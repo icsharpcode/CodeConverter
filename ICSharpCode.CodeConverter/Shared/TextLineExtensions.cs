@@ -32,5 +32,25 @@ namespace ICSharpCode.CodeConverter.Shared
             return new[] { nextToken, syntaxToken, previousToken }
                 .FirstOrDefault(t => line.ContainsPosition(t.Span.End) && t.Width() > 0);
         }
+
+        public static SyntaxToken GetLeadingForLine(this TextLine targetLine, SyntaxNode target)
+        {
+            var toReplace = target.FindNonZeroWidthToken(targetLine.Start);
+            if (toReplace.Span.End < targetLine.Start) {
+                toReplace = toReplace.GetNextToken(); //TODO: Find out why FindToken is off by one from what I want sometimes, is there a better alternative?
+            }
+
+            return toReplace;
+        }
+
+        public static SyntaxToken GetTrailingForLine(this TextLine targetLine, SyntaxNode target)
+        {
+            var toReplace = target.FindNonZeroWidthToken(targetLine.End);
+            if (toReplace.Width() == 0) {
+                toReplace = toReplace.GetPreviousToken(); //Never append *trailing* trivia to the end of file token
+            }
+
+            return toReplace;
+        }
     }
 }

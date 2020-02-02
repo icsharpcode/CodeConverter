@@ -59,108 +59,68 @@ namespace ICSharpCode.CodeConverter.Shared
 
             // TODO: Loop in other direction for leading trivia
             for (int i = _sourceLines.Count - 1; i >= 0; i--) {
-                ConvertTrailingForSourceLine(target, i);
-                ConvertLeadingForSourceLine(target, i);
+                MapTrailing(i);
+                MapLeading(i);
             }
-            //return target;
-            return _target.ReplaceTokens(_targetTokenToTrivia.Keys, (original, rewritten) => {
-                var trivia = _targetTokenToTrivia[original];
-                //TODO SelectMany
-                foreach (var triviaList in trivia.Trailing) {
-                    rewritten = rewritten.WithTrailingTrivia(PrependPreservingImportantTrivia(triviaList.ToList(), rewritten.TrailingTrivia));
-                }
-                foreach (var triviaList in trivia.Leading) {
-                    rewritten = rewritten.WithLeadingTrivia(PrependPreservingImportantTrivia(triviaList.ToList(), rewritten.LeadingTrivia));
-                }
-                return rewritten;
-            });
+
+            return _target.ReplaceTokens(_targetTokenToTrivia.Keys, WithMappedTrivia);
         }
 
+        private SyntaxToken WithMappedTrivia(SyntaxToken original, SyntaxToken rewritten)
+        {
+            var trivia = _targetTokenToTrivia[original];
+            //TODO SelectMany
+            foreach (var triviaList in trivia.Trailing) {
+                rewritten = rewritten.WithTrailingTrivia(triviaList.PrependPreservingImportantTrivia(rewritten.TrailingTrivia));
+            }
+            foreach (var triviaList in trivia.Leading) {
+                rewritten = rewritten.WithLeadingTrivia(triviaList.PrependPreservingImportantTrivia(rewritten.LeadingTrivia));
+            }
+            return rewritten;
+        }
 
-
-        private SyntaxNode ConvertTrailingForSourceLine(SyntaxNode target, int sourceLineIndex)
+        private void MapTrailing(int sourceLineIndex)
         {
             var sourceLine = _sourceLines[sourceLineIndex];
-            var endOfSourceLine = FindNonZeroWidthToken(_source, sourceLine.End);
+            var endOfSourceLine = _source.FindNonZeroWidthToken(sourceLine.End);
 
             if (endOfSourceLine.TrailingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
                 var targetLine = GetBestLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
                 if (targetLine != default) {
                     _trailingTriviaCarriedOver.Add(endOfSourceLine.TrailingTrivia);
-                    var originalToReplace = GetTrailingForLine(_target, targetLine); //TODO Use withinline textline extensions
-                    SaveTrailingTrivia(originalToReplace, _trailingTriviaCarriedOver);
+                    var originalToReplace = targetLine.GetTrailingForLine(_target); //TODO Use withinline textline extensions
+                    var targetTrivia = GetTargetTriviaCollection(originalToReplace);
+                    targetTrivia.Trailing.AddRange(_trailingTriviaCarriedOver.Select(t => t.ConvertTrivia().ToList()));
                     _trailingTriviaCarriedOver.Clear();
                 } else if (endOfSourceLine.TrailingTrivia.Span.Start > sourceLine.Start) {
                     _trailingTriviaCarriedOver.Add(endOfSourceLine.TrailingTrivia);
                 }
             }
-
-            return target;
         }
 
-        private static SyntaxToken GetTrailingForLine(SyntaxNode target, TextLine targetLine)
-        {
-            var toReplace = FindNonZeroWidthToken(target, targetLine.End);
-            if (toReplace.Width() == 0) {
-                toReplace = toReplace.GetPreviousToken(); //Never append *trailing* trivia to the end of file token
-            }
-
-            return toReplace;
-        }
-
-        private SyntaxNode ConvertLeadingForSourceLine(SyntaxNode target, int sourceLineIndex)
+        private void MapLeading(int sourceLineIndex)
         {
             var sourceLine = _sourceLines[sourceLineIndex];
-            var startOfSourceLine = FindNonZeroWidthToken(_source, sourceLine.Start);
+            var startOfSourceLine = _source.FindNonZeroWidthToken(sourceLine.Start);
+
             if (startOfSourceLine.LeadingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
                 var targetLine = GetBestLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
                 if (targetLine != default) {
                     _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
-                    var originalToReplace = GetLeadingForLine(_target, targetLine); //TODO Use withinline textline extensions
-                    SaveLeadingTrivia(originalToReplace, _leadingTriviaCarriedOver);
+                    var originalToReplace = targetLine.GetLeadingForLine(_target); //TODO Use withinline textline extensions
+                    var targetTrivia = GetTargetTriviaCollection(originalToReplace);
+                    targetTrivia.Trailing.AddRange(_leadingTriviaCarriedOver.Select(t => t.ConvertTrivia().ToList()));
                     _leadingTriviaCarriedOver.Clear();
                 } else if (startOfSourceLine.LeadingTrivia.Span.End < sourceLine.End) {
                     _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
                 }
             }
-
-            return target;
-        }
-
-        private static SyntaxToken GetLeadingForLine(SyntaxNode target, TextLine targetLine)
-        {
-            var toReplace = FindNonZeroWidthToken(target, targetLine.Start);
-            if (toReplace.Span.End < targetLine.Start) {
-                toReplace = toReplace.GetNextToken(); //TODO: Find out why FindToken is off by one from what I want sometimes, is there a better alternative?
-            }
-
-            return toReplace;
         }
 
         private TextLine GetBestLine(IReadOnlyDictionary<int, TextLine> sourceToTargetLine, int sourceLineIndex)
         {
-            if (sourceToTargetLine.TryGetValue(sourceLineIndex, out var targetLineIndex)) return targetLineIndex;
+            if (sourceToTargetLine.TryGetValue(sourceLineIndex, out var targetLine)) return targetLine;
             return default;
-        }
-
-        private void SaveLeadingTrivia(SyntaxToken toReplace, List<SyntaxTriviaList> leadingTriviaLists)
-        {
-            var targetTrivia = GetTargetTriviaCollection(toReplace);
-            targetTrivia.Trailing.AddRange(leadingTriviaLists.Select(t => t.ConvertTrivia().ToList()));
-        }
-
-        private void SaveTrailingTrivia(SyntaxToken toReplace, List<SyntaxTriviaList> trailingTriviaLists)
-        {
-            var targetTrivia = GetTargetTriviaCollection(toReplace);
-            targetTrivia.Trailing.AddRange(trailingTriviaLists.Select(t => t.ConvertTrivia().ToList()));
-        }
-
-        private static IEnumerable<SyntaxTrivia> PrependPreservingImportantTrivia(IReadOnlyCollection<SyntaxTrivia> convertedTrivia, IReadOnlyCollection<SyntaxTrivia> existingTrivia)
-        {
-            if (existingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
-                return convertedTrivia.Concat(existingTrivia);
-            }
-            return convertedTrivia;
         }
 
         private (List<IReadOnlyCollection<SyntaxTrivia>> Leading, List<IReadOnlyCollection<SyntaxTrivia>> Trailing) GetTargetTriviaCollection(SyntaxToken toReplace)
@@ -171,16 +131,6 @@ namespace ICSharpCode.CodeConverter.Shared
             }
 
             return targetTrivia;
-        }
-
-        private static SyntaxToken FindNonZeroWidthToken(SyntaxNode node, int position)
-        {
-            var syntaxToken = node.FindToken(position);
-            if (syntaxToken.FullWidth() == 0) {
-                return syntaxToken.GetPreviousToken();
-            } else {
-                return syntaxToken;
-            }
         }
     }
 }

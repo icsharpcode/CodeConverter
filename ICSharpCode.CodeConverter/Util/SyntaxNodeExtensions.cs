@@ -1673,5 +1673,15 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return modifiers.Any(m => m.IsCsVisibility(isVariableOrConst, isConstructor));
         }
+
+        public static SyntaxToken FindNonZeroWidthToken(this SyntaxNode node, int position)
+        {
+            var syntaxToken = node.FindToken(position);
+            if (syntaxToken.FullWidth() == 0) {
+                return syntaxToken.GetPreviousToken();
+            } else {
+                return syntaxToken;
+            }
+        }
     }
 }
