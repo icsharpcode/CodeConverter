@@ -82,11 +82,11 @@ namespace ICSharpCode.CodeConverter.Shared
             var endOfSourceLine = FindNonZeroWidthToken(_source, sourceLine.End);
 
             if (endOfSourceLine.TrailingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
-                var line = GetBestLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
-                if (line != default) {
+                var targetLine = GetBestLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
+                if (targetLine != default) {
                     _trailingTriviaCarriedOver.Add(endOfSourceLine.TrailingTrivia);
                     foreach (var triviaList in _trailingTriviaCarriedOver) {
-                        PrependTrailingTrivia(target, line, triviaList);
+                        PrependTrailingTrivia(target, targetLine, triviaList);
                     }
                     _trailingTriviaCarriedOver.Clear();
                 } else if (endOfSourceLine.TrailingTrivia.Span.Start > sourceLine.Start) {
@@ -119,11 +119,11 @@ namespace ICSharpCode.CodeConverter.Shared
             var sourceLine = _sourceLines[sourceLineIndex];
             var startOfSourceLine = FindNonZeroWidthToken(_source, sourceLine.Start);
             if (startOfSourceLine.LeadingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
-                var line = GetBestLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
-                if (line != default) {
+                var targetLine = GetBestLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
+                if (targetLine != default) {
                     _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
                     foreach (var triviaList in _leadingTriviaCarriedOver) {
-                        PrependLeadingTrivia(target, line, triviaList);
+                        PrependLeadingTrivia(target, targetLine, triviaList);
                     }
                     _leadingTriviaCarriedOver.Clear();
                 } else if (startOfSourceLine.LeadingTrivia.Span.End < sourceLine.End) {
