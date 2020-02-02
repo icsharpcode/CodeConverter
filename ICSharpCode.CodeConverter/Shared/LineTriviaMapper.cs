@@ -109,7 +109,7 @@ namespace ICSharpCode.CodeConverter.Shared
                     _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
                     var originalToReplace = targetLine.GetLeadingForLine(_target); //TODO Use withinline textline extensions
                     var targetTrivia = GetTargetTriviaCollection(originalToReplace);
-                    targetTrivia.Trailing.AddRange(_leadingTriviaCarriedOver.Select(t => t.ConvertTrivia().ToList()));
+                    targetTrivia.Leading.AddRange(_leadingTriviaCarriedOver.Select(t => t.ConvertTrivia().ToList()));
                     _leadingTriviaCarriedOver.Clear();
                 } else if (startOfSourceLine.LeadingTrivia.Span.End < sourceLine.End) {
                     _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
