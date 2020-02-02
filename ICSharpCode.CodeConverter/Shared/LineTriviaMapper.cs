@@ -58,8 +58,8 @@ namespace ICSharpCode.CodeConverter.Shared
             //TODO Possible perf: Find token starting from position of last replaced token rather than from the root node each time?
             _target = target;
             for (int i = _sourceLines.Count - 1; i >= 0; i--) {
-                target = ConvertTrailingForSourceLine(target, i);
-                target = ConvertLeadingForSourceLine(target, i);
+                ConvertTrailingForSourceLine(target, i);
+                ConvertLeadingForSourceLine(target, i);
             }
             //return target;
             return _target.ReplaceTokens(_targetTokenToTrivia.Keys, (original, rewritten) => {
@@ -86,7 +86,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 if (line != default) {
                     _trailingTriviaCarriedOver.Add(endOfSourceLine.TrailingTrivia);
                     foreach (var triviaList in _trailingTriviaCarriedOver) {
-                        target = PrependTrailingTrivia(target, line, triviaList);
+                        PrependTrailingTrivia(target, line, triviaList);
                     }
                     _trailingTriviaCarriedOver.Clear();
                 } else if (endOfSourceLine.TrailingTrivia.Span.Start > sourceLine.Start) {
@@ -126,7 +126,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 if (line != default) {
                     _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
                     foreach (var triviaList in _leadingTriviaCarriedOver) {
-                        target = PrependLeadingTrivia(target, line, triviaList);
+                        PrependLeadingTrivia(target, line, triviaList);
                     }
                     _leadingTriviaCarriedOver.Clear();
                 } else if (startOfSourceLine.LeadingTrivia.Span.End < sourceLine.End) {
