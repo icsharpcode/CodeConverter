@@ -99,11 +99,8 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private SyntaxNode PrependTrailingTrivia(SyntaxNode target, TextLine targetLine, SyntaxTriviaList trailingTrivia)
         {
-            var convertedTrivia = trailingTrivia.ConvertTrivia();
-            var toReplace = GetTrailingForLine(target, targetLine);
             var originalToReplace = GetTrailingForLine(_target, targetLine);
             SaveTrailingTrivia(originalToReplace, new [] { trailingTrivia }.ToList());
-            target = target.ReplaceToken(toReplace, toReplace.WithTrailingTrivia(PrependPreservingImportantTrivia(convertedTrivia.ToList(), toReplace.TrailingTrivia)));
             return target;
         }
 
@@ -139,11 +136,8 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private SyntaxNode PrependLeadingTrivia(SyntaxNode target, TextLine targetLine, SyntaxTriviaList leadingTrivia)
         {
-            var convertedTrivia = leadingTrivia.ConvertTrivia();
-            var toReplace = GetLeadingForLine(target, targetLine);
             var originalToReplace = GetLeadingForLine(_target, targetLine);
             SaveLeadingTrivia(originalToReplace, new[] { leadingTrivia }.ToList());
-            target = target.ReplaceToken(toReplace, toReplace.WithLeadingTrivia(PrependPreservingImportantTrivia(convertedTrivia.ToList(), toReplace.LeadingTrivia)));
             return target;
         }
 
