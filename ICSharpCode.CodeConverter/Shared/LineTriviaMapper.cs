@@ -55,7 +55,6 @@ namespace ICSharpCode.CodeConverter.Shared
 
         /// <remarks>
         /// Possible future improvements:
-        /// * Accuracy: Can we make use of both dictionaries for each trivia type?
         /// * Performance: Probably faster to find tokens starting from position of last replaced token rather than from the root node each time
         /// </remarks>
         private SyntaxNode GetTargetWithSourceTrivia()
@@ -111,6 +110,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             if (_trailingTriviaCarriedOver.Any()) {
                 var targetLine = GetTargetLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
+                if (targetLine == default) targetLine = GetTargetLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
                 if (targetLine != default) {
                     var originalToReplace = targetLine.GetTrailingForLine(_target);
                     if (originalToReplace != null) {
@@ -133,6 +133,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             if (_leadingTriviaCarriedOver.Any()) {
                 var targetLine = GetTargetLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
+                if (targetLine == default) targetLine = GetTargetLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
                 if (targetLine != default) {
                     var originalToReplace = targetLine.GetLeadingForLine(_target);
                     if (originalToReplace != default) {
