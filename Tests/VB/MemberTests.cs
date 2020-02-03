@@ -1009,8 +1009,7 @@ End Class");
         [Fact]
         public async Task SubscribeEventInPropertySetter() {
             await TestConversionCSharpToVisualBasic(
-@"using System;
-using System.ComponentModel;
+@"using System.ComponentModel;
 
 class TestClass {
     OwnerClass owner;
