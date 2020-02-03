@@ -179,7 +179,7 @@ namespace CSharpToVBCodeConverter.Util
 
             if (Text.StartsWith("#if") || Text.StartsWith("#elif"))
             {
-                string Expression1 = Text.Replace("#if ", "").Replace("#elif ", "").Replace("!", "Not ").Replace("==", "=").Replace("!=", "<>").Replace("&&", "And").Replace("||", "Or").Replace("  ", " ").Replace("false", "False").Replace("true", "True").Replace("//", " ' ").Replace("  ", " ");
+                string Expression1 = StringReplaceCondition(Text.Replace("#if ", "").Replace("#elif ", "")).Replace("//", " ' ").Replace("  ", " ");
 
                 var Kind = Text.StartsWith("#if") ? VB.SyntaxKind.IfDirectiveTrivia : VB.SyntaxKind.ElseIfDirectiveTrivia;
                 var IfOrElseIfKeyword = Text.StartsWith("#if") ? global::VisualBasicSyntaxFactory.IfKeyword : global::VisualBasicSyntaxFactory.ElseIfKeyword;
@@ -1135,7 +1135,7 @@ namespace CSharpToVBCodeConverter.Util
                             global::RestuructureSeparatedLists.IgnoredIfDepth += 1;
                         }
                         CSS.IfDirectiveTriviaSyntax IfDirective = (CSS.IfDirectiveTriviaSyntax)StructuredTrivia;
-                        string Expression1 = IfDirective.Condition.ToString().Replace("!", "Not ").Replace("==", "=").Replace("!=", "<>").Replace("&&", "And").Replace("||", "Or").Replace("  ", " ").Replace("false", "False").Replace("true", "True");
+                        string Expression1 = StringReplaceCondition(IfDirective.Condition.ToString());
 
                         return VBFactory.Trivia(VBFactory.IfDirectiveTrivia(global::VisualBasicSyntaxFactory.IfKeyword, VBFactory.ParseExpression(Expression1)).With(IfDirective.GetLeadingTrivia().ConvertTrivia(), IfDirective.Condition.GetTrailingTrivia().ConvertTrivia()).WithAppendedTriviaFromEndOfDirectiveToken(IfDirective.EndOfDirectiveToken));
                     }
@@ -1147,7 +1147,7 @@ namespace CSharpToVBCodeConverter.Util
                             global::RestuructureSeparatedLists.IgnoredIfDepth += 1;
                         }
                         CSS.ElifDirectiveTriviaSyntax ELIfDirective = (CSS.ElifDirectiveTriviaSyntax)StructuredTrivia;
-                        string Expression1 = ELIfDirective.Condition.ToString().Replace("!", "Not ").Replace("==", "=").Replace("!=", "<>").Replace("&&", "And").Replace("||", "Or").Replace("  ", " ").Replace("false", "False").Replace("true", "True");
+                        string Expression1 = StringReplaceCondition(ELIfDirective.Condition.ToString());
 
                         SyntaxToken IfOrElseIfKeyword;
                         if (t.IsKind(CS.SyntaxKind.ElifDirectiveTrivia))
@@ -1288,6 +1288,11 @@ namespace CSharpToVBCodeConverter.Util
                     }
             }
             throw new NotImplementedException($"t.Kind({(VB.SyntaxKind)Conversions.ToUShort(t.RawKind)}) Is unknown");
+        }
+
+        public static string StringReplaceCondition(string csCondition)
+        {
+            return csCondition.Replace("!", "Not ").Replace("==", "=").Replace("!=", "<>").Replace("&&", "And").Replace("||", "Or").Replace("  ", " ").Replace("false", "False").Replace("true", "True");
         }
 
         public static IEnumerable<SyntaxTrivia> ConvertTrivia(this IReadOnlyCollection<SyntaxTrivia> TriviaToConvert)
