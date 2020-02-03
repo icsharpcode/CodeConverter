@@ -1,8 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-using Microsoft.VisualBasic;
+﻿using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,6 +6,8 @@ using Microsoft.CodeAnalysis;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using VB = Microsoft.CodeAnalysis.VisualBasic;
 using VBFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
+using ICSharpCode.CodeConverter.Util;
+using CSharpToVBCodeConverter.Util;
 
 namespace CSharpToVBCodeConverter.DestVisualBasic
 {
@@ -134,8 +132,8 @@ namespace CSharpToVBCodeConverter.DestVisualBasic
                     {
                         if (t.IsKind(CS.SyntaxKind.DocumentationCommentExteriorTrivia))
                         {
-                            NewLeadingTriviaList = NewLeadingTriviaList.Add(VBFactory.DocumentationCommentExteriorTrivia(token.LeadingTrivia[0].ToString().Replace("///", "'''", StringComparison.InvariantCulture)));
-                            if (!TokenText.StartsWith(" ", StringComparison.InvariantCulture))
+                            NewLeadingTriviaList = NewLeadingTriviaList.Add(VBFactory.DocumentationCommentExteriorTrivia(token.LeadingTrivia[0].ToString().Replace("///", "'''")));
+                            if (!TokenText.StartsWith(" "))
                             {
                                 TokenText = " " + TokenText;
                                 ValueText = " " + ValueText;

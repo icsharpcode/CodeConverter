@@ -1,7 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-using Microsoft.VisualBasic;
+﻿using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,6 +8,7 @@ using CS = Microsoft.CodeAnalysis.CSharp;
 using VB = Microsoft.CodeAnalysis.VisualBasic;
 using VBFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 using VBS = Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using ICSharpCode.CodeConverter.Util;
 
 namespace CSharpToVBCodeConverter.Util
 {
@@ -147,40 +145,6 @@ namespace CSharpToVBCodeConverter.Util
             return node.With(NewLeadingTrivia, NewTrailingTrivia);
         }
 
-        public static bool ContainsCommentOrDirectiveTrivia(this List<SyntaxTrivia> TriviaList)
-        {
-            if (TriviaList == null || TriviaList.Count == 0)
-            {
-                return false;
-            }
-            foreach (SyntaxTrivia t in TriviaList)
-            {
-                if (t.IsWhitespaceOrEndOfLine())
-                {
-                    continue;
-                }
-                if (t.IsNone())
-                {
-                    continue;
-                }
-                if (t.IsCommentOrDirectiveTrivia())
-                {
-                    return true;
-                }
-                if (t.RawKind == (int)VB.SyntaxKind.DocumentationCommentTrivia)
-                {
-                    return true;
-                }
-                if (t.RawKind == (int)VB.SyntaxKind.DocumentationCommentExteriorTrivia)
-                {
-                    return true;
-                }
-
-                throw global::ExceptionUtilities.UnexpectedValue(t.ToString());
-            }
-            return false;
-        }
-
         /// <summary>
         /// Syntax Trivia in any Language
         /// </summary>
@@ -315,10 +279,10 @@ namespace CSharpToVBCodeConverter.Util
                 NewTriviaList.Add(VBFactory.CommentTrivia($" ' TODO VB does not allow Disabled Text here, original text:"));
                 NewTriviaList.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
                 var TextStrings = Trivia.ToFullString().Split(new[] { Constants.vbCrLf }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var TriviaAsString in TextStrings)
+                foreach (var triviaAsString in TextStrings)
                 {
                     NewTriviaList.AddRange(LeadingTriviaList);
-                    NewTriviaList.Add(VBFactory.CommentTrivia($" ' {TriviaAsString}".Replace("  ", " ", StringComparison.Ordinal).TrimEnd()));
+                    NewTriviaList.Add(VBFactory.CommentTrivia($" ' {triviaAsString}".Replace("  ", " ").TrimEnd()));
                     NewTriviaList.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
                 }
                 if (NewTriviaList.Last().IsKind(VB.SyntaxKind.EndOfLineTrivia))
@@ -417,11 +381,6 @@ namespace CSharpToVBCodeConverter.Util
         public static bool IsDocComment(this SyntaxTrivia trivia)
         {
             return trivia.IsSingleLineDocComment() || trivia.IsMultiLineDocComment();
-        }
-
-        public static bool IsEndOfLine(this SyntaxTrivia trivia)
-        {
-            return trivia.IsKind(CS.SyntaxKind.EndOfLineTrivia) || trivia.IsKind(VB.SyntaxKind.EndOfLineTrivia);
         }
 
         public static bool IsMultiLineComment(this SyntaxTrivia trivia)

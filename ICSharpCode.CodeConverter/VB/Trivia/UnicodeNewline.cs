@@ -1,8 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-using Microsoft.VisualBasic;
+﻿using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -467,7 +463,7 @@ public static class NewLine
 
             case UnicodeNewline.NEL:
                 {
-                    return (char)0x85.ToString(System.Globalization.CultureInfo.CurrentCulture);
+                    return ((char)0x85).ToString();
                 }
 
             case UnicodeNewline.VT:
@@ -482,12 +478,12 @@ public static class NewLine
 
             case UnicodeNewline.LS:
                 {
-                    return (char)0x2028.ToString(System.Globalization.CultureInfo.CurrentCulture);
+                    return ((char)0x2028).ToString();
                 }
 
             case UnicodeNewline.PS:
                 {
-                    return (char)0x2029.ToString(System.Globalization.CultureInfo.CurrentCulture);
+                    return ((char)0x2029).ToString();
                 }
 
             default:
@@ -515,7 +511,7 @@ public static class NewLine
             char ch = text[i];
             // Do not delete the next line
             int j = i;
-            if (TryGetDelimiterLengthAndType(ch, out length, out type, () => j < text.Length - 1 ? text[j + 1] : ControlChars.NullChar))
+            if (TryGetDelimiterLengthAndType(ch, out length, out type, () => j < text.Length - 1 ? text[j + 1] : default))
             {
                 result.Add(sb.ToString());
                 sb.Length = 0;
@@ -532,23 +528,13 @@ public static class NewLine
         return result.ToArray();
     }
 
-    public static string JoinLines(this string[] Lines, string Delimiter)
-    {
-        return string.Join(separator: Delimiter, values: Lines);
-    }
-
-    internal static string NormalizeLineEndings(this string Lines, string Delimiter = Constants.vbCrLf)
-    {
-        return Lines.SplitLines().JoinLines(Delimiter);
-    }
-
     /// <summary>
     /// Replace Unicode NewLines with ControlChars.NullChar or Specified Character
     /// </summary>
     /// <param name="text">Source Test</param>
     /// <param name="SubstituteChar">Default is vbNullChar</param>
     /// <returns>String with Unicode NewLines replaced with SubstituteChar</returns>
-    public static string WithoutNewLines(this string text, char SubstituteChar = ControlChars.NullChar)
+    public static string WithoutNewLines(this string text, char SubstituteChar = default)
     {
         System.Diagnostics.Contracts.Contract.Requires(text != null);
         var sb = new StringBuilder();

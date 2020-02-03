@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -133,11 +134,10 @@ namespace CSharpToVBCodeConverter.DestVisualBasic
         {
             var VBAttributes = new SyntaxList<VBS.XmlNodeSyntax>();
             foreach (CSS.XmlAttributeSyntax a in ListOfAttributes)
-                VBAttributes = VBAttributes.Add((VBS.XmlNodeSyntax)a.Accept(this).WithConvertedLeadingTriviaFrom(a));
+                VBAttributes = VBAttributes.Add((VBS.XmlNodeSyntax)a.Accept(this));
             return VBAttributes;
         }
 
-        [ExcludeFromCodeCoverage]
         public override VB.VisualBasicSyntaxNode DefaultVisit(SyntaxNode node)
         {
             return base.DefaultVisit(node);
@@ -206,7 +206,7 @@ namespace CSharpToVBCodeConverter.DestVisualBasic
 
         public override VB.VisualBasicSyntaxNode VisitPredefinedType(CSS.PredefinedTypeSyntax node)
         {
-            var Token = CSharpToVBCodeConverter.Util.VBUtil.ConvertTypesTokenToKind(CS.CSharpExtensions.Kind(node.Keyword), context: DestVisualBasic.AttributeAndModifierSupport.TokenContext.XMLComment);
+            var Token = VBUtil.ConvertTypesTokenToKind(CS.CSharpExtensions.Kind(node.Keyword), true);
             var switchExpr = Token.RawKind;
             switch (switchExpr)
             {
@@ -259,7 +259,7 @@ namespace CSharpToVBCodeConverter.DestVisualBasic
 
         public override VB.VisualBasicSyntaxNode VisitXmlComment(CSS.XmlCommentSyntax node)
         {
-            return base.VisitXmlComment(node).WithConvertedTriviaFrom(node);
+            return base.VisitXmlComment(node);
         }
 
         public override VB.VisualBasicSyntaxNode VisitXmlCrefAttribute(CSS.XmlCrefAttributeSyntax node)
@@ -269,38 +269,38 @@ namespace CSharpToVBCodeConverter.DestVisualBasic
             var cref = node.Cref.Accept(this);
             var SyntaxTokens = new SyntaxTokenList();
             SyntaxTokens = SyntaxTokens.AddRange(cref.DescendantTokens());
-            VBS.XmlNodeSyntax Value = VBFactory.XmlString(global::VisualBasicSyntaxFactory.DoubleQuoteToken, SyntaxTokens, global::VisualBasicSyntaxFactory.DoubleQuoteToken).WithConvertedTriviaFrom(node);
+            VBS.XmlNodeSyntax Value = VBFactory.XmlString(global::VisualBasicSyntaxFactory.DoubleQuoteToken, SyntaxTokens, global::VisualBasicSyntaxFactory.DoubleQuoteToken);
             return VBFactory.XmlAttribute(Name, Value);
         }
 
         public override VB.VisualBasicSyntaxNode VisitXmlElement(CSS.XmlElementSyntax node)
         {
             var Content = new SyntaxList<VBS.XmlNodeSyntax>();
-            VBS.XmlElementStartTagSyntax StartTag = (VBS.XmlElementStartTagSyntax)node.StartTag.Accept(this).WithConvertedTriviaFrom(node.StartTag);
+            VBS.XmlElementStartTagSyntax StartTag = (VBS.XmlElementStartTagSyntax)node.StartTag.Accept(this);
 
             bool NoEndTag = string.IsNullOrWhiteSpace(node.EndTag.Name.LocalName.ValueText);
-            var EndTag = NoEndTag ? VBFactory.XmlElementEndTag(((VBS.XmlNameSyntax)StartTag.Name).WithConvertedTriviaFrom(node.EndTag)) : VBFactory.XmlElementEndTag((VBS.XmlNameSyntax)node.EndTag.Name.Accept(this));
+            var EndTag = NoEndTag ? VBFactory.XmlElementEndTag(((VBS.XmlNameSyntax)StartTag.Name)) : VBFactory.XmlElementEndTag((VBS.XmlNameSyntax)node.EndTag.Name.Accept(this));
             try
             {
                 for (int i = 0, loopTo = node.Content.Count - 1; i <= loopTo; i++)
                 {
                     var C = node.Content[i];
-                    VBS.XmlNodeSyntax Node1 = (VBS.XmlNodeSyntax)C.Accept(this).WithConvertedTriviaFrom(C);
+                    VBS.XmlNodeSyntax Node1 = (VBS.XmlNodeSyntax)C.Accept(this);
                     if (NoEndTag)
                     {
                         var LastToken = Node1.GetLastToken();
                         if (LastToken.ValueText.IsNewLine())
                         {
-                            Node1 = Node1.ReplaceToken(LastToken, (SyntaxToken)null);
+                            Node1 = Node1.ReplaceToken(LastToken, default(SyntaxToken));
                         }
                     }
                     Content = Content.Add(Node1);
                 }
 
-                if (node.EndTag?.HasLeadingTrivia && node.EndTag.GetLeadingTrivia()[0].IsKind(CS.SyntaxKind.DocumentationCommentExteriorTrivia) == true)
+                if (node.EndTag?.HasLeadingTrivia ==true && node.EndTag.GetLeadingTrivia()[0].IsKind(CS.SyntaxKind.DocumentationCommentExteriorTrivia) == true)
                 {
                     var NewLeadingTriviaList = new SyntaxTriviaList();
-                    NewLeadingTriviaList = NewLeadingTriviaList.Add(VBFactory.DocumentationCommentExteriorTrivia(node.EndTag.GetLeadingTrivia()[0].ToString().Replace("///", "'''", StringComparison.InvariantCulture)));
+                    NewLeadingTriviaList = NewLeadingTriviaList.Add(VBFactory.DocumentationCommentExteriorTrivia(node.EndTag.GetLeadingTrivia()[0].ToString().Replace("///", "'''")));
                     var NewTokenList = new SyntaxTokenList();
                     NewTokenList = NewTokenList.Add(VBFactory.XmlTextLiteralToken(NewLeadingTriviaList, " ", " ", new SyntaxTriviaList()));
                     Content = Content.Add(VBFactory.XmlText(NewTokenList));
@@ -336,7 +336,7 @@ namespace CSharpToVBCodeConverter.DestVisualBasic
             {
                 VBS.XmlNodeSyntax Name = (VBS.XmlNodeSyntax)node.Name.Accept(this);
                 var ListOfAttributes = GatherAttributes(node.Attributes);
-                return VBFactory.XmlEmptyElement(Name, ListOfAttributes).WithConvertedTriviaFrom(node);
+                return VBFactory.XmlEmptyElement(Name, ListOfAttributes);
             }
             catch (OperationCanceledException ex)
             {
@@ -358,20 +358,20 @@ namespace CSharpToVBCodeConverter.DestVisualBasic
 
         public override VB.VisualBasicSyntaxNode VisitXmlNameAttribute(CSS.XmlNameAttributeSyntax node)
         {
-            var Name = ((VBS.XmlNodeSyntax)node.Name.Accept(this)).WithConvertedLeadingTriviaFrom(node.Name);
+            var Name = ((VBS.XmlNodeSyntax)node.Name.Accept(this));
             string ValueString = node.Identifier.ToString();
             VBS.XmlNodeSyntax Value = VBFactory.XmlString(global::VisualBasicSyntaxFactory.DoubleQuoteToken, SyntaxTokenList.Create(VBFactory.XmlTextLiteralToken(ValueString, ValueString)), global::VisualBasicSyntaxFactory.DoubleQuoteToken);
-            return VBFactory.XmlAttribute(Name, Value).WithConvertedTriviaFrom(node).WithConvertedTriviaFrom(node);
+            return VBFactory.XmlAttribute(Name, Value);
         }
 
         public override VB.VisualBasicSyntaxNode VisitXmlPrefix(CSS.XmlPrefixSyntax node)
         {
-            return base.VisitXmlPrefix(node).WithConvertedTriviaFrom(node);
+            return base.VisitXmlPrefix(node);
         }
 
         public override VB.VisualBasicSyntaxNode VisitXmlProcessingInstruction(CSS.XmlProcessingInstructionSyntax node)
         {
-            return base.VisitXmlProcessingInstruction(node).WithConvertedTriviaFrom(node);
+            return base.VisitXmlProcessingInstruction(node);
         }
 
         public override VB.VisualBasicSyntaxNode VisitXmlText(CSS.XmlTextSyntax node)
@@ -383,7 +383,7 @@ namespace CSharpToVBCodeConverter.DestVisualBasic
 
         public override VB.VisualBasicSyntaxNode VisitXmlTextAttribute(CSS.XmlTextAttributeSyntax node)
         {
-            VBS.XmlNodeSyntax Name = (VBS.XmlNodeSyntax)node.Name.Accept(this).WithConvertedTriviaFrom(node.Name);
+            VBS.XmlNodeSyntax Name = (VBS.XmlNodeSyntax)node.Name.Accept(this);
             var TextTokens = DestVisualBasic.TriviaListSupport.TranslateTokenList(node.TextTokens);
             var XmlText = VBFactory.XmlText(TextTokens);
             VBS.XmlNodeSyntax Value = VBFactory.XmlString(global::VisualBasicSyntaxFactory.DoubleQuoteToken, SyntaxTokenList.Create(VBFactory.XmlTextLiteralToken(XmlText.ToString(), XmlText.ToString())), global::VisualBasicSyntaxFactory.DoubleQuoteToken);
