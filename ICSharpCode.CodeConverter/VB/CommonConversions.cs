@@ -112,7 +112,7 @@ namespace ICSharpCode.CodeConverter.VB
             IEnumerable<VariableDeclaratorSyntax> variableDeclaratorSyntaxs = des.Select(ConvertToVariableDeclarator)
                 .Concat(isPatternExpressions.Select(ConvertToVariableDeclaratorOrNull).Where(x => x != null));
             var variableDeclaratorSyntaxes = variableDeclaratorSyntaxs.ToArray();
-            return variableDeclaratorSyntaxes.Any() ? new StatementSyntax[]{CreateLocalDeclarationStatement(variableDeclaratorSyntaxes)} : Enumerable.Empty<StatementSyntax>();
+            return variableDeclaratorSyntaxes.Any() ? new StatementSyntax[] { CreateLocalDeclarationStatement(variableDeclaratorSyntaxes) } : Enumerable.Empty<StatementSyntax>();
         }
 
         private IEnumerable<StatementSyntax> ConvertToDeclarationStatement(List<CSS.PropertyDeclarationSyntax> propertyBlocks, bool isModule)
@@ -164,20 +164,20 @@ namespace ICSharpCode.CodeConverter.VB
         {
             switch (node.Pattern) {
                 case CSS.DeclarationPatternSyntax d: {
-                    var id = ((IdentifierNameSyntax)d.Designation.Accept(_nodesVisitor)).Identifier;
-                    var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
-                    TypeSyntax right = (TypeSyntax)d.Type.Accept(_nodesVisitor);
+                        var id = ((IdentifierNameSyntax)d.Designation.Accept(_nodesVisitor)).Identifier;
+                        var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
+                        TypeSyntax right = (TypeSyntax)d.Type.Accept(_nodesVisitor);
 
-                    var simpleAsClauseSyntax = SyntaxFactory.SimpleAsClause(right);
-                    var equalsValueSyntax = SyntaxFactory.EqualsValue(
-                        SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression,
-                            SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
-                    return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
-                }
+                        var simpleAsClauseSyntax = SyntaxFactory.SimpleAsClause(right);
+                        var equalsValueSyntax = SyntaxFactory.EqualsValue(
+                            SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression,
+                                SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
+                        return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
+                    }
                 case CSS.ConstantPatternSyntax _:
                     return null;
                 default:
-                 throw new ArgumentOutOfRangeException(nameof(node.Pattern), node.Pattern, null);
+                    throw new ArgumentOutOfRangeException(nameof(node.Pattern), node.Pattern, null);
             }
         }
 
@@ -238,7 +238,11 @@ namespace ICSharpCode.CodeConverter.VB
                     endStmt = SyntaxFactory.EndSetStatement();
                     if (isAutoImplementedProperty) {
                         body = body.Count > 0 ? body :
-                        SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.AssignmentStatement(SyntaxKind.SimpleAssignmentStatement, SyntaxFactory.IdentifierName(GetVbPropertyBackingFieldName(parent)), SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(SyntaxKind.SimpleAssignmentStatement)), SyntaxFactory.IdentifierName("value")));
+                        SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.AssignmentStatement(SyntaxKind.SimpleAssignmentStatement,
+                            SyntaxFactory.IdentifierName(GetVbPropertyBackingFieldName(parent)),
+                            SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(SyntaxKind.SimpleAssignmentStatement)),
+                            SyntaxFactory.IdentifierName("value")
+                        ));
                     }
                     break;
                 case CSSyntaxKind.AddAccessorDeclaration:
@@ -281,7 +285,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public LambdaExpressionSyntax ConvertLambdaExpression(CSS.AnonymousFunctionExpressionSyntax node, CS.CSharpSyntaxNode body, IEnumerable<ParameterSyntax> parameters, SyntaxTokenList modifiers)
         {
-            var symbol = (IMethodSymbol) ModelExtensions.GetSymbolInfo(_semanticModel, node).Symbol;
+            var symbol = (IMethodSymbol)ModelExtensions.GetSymbolInfo(_semanticModel, node).Symbol;
             var parameterList = SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters.Select(p => (Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterSyntax)p.Accept(_nodesVisitor))));
             LambdaHeaderSyntax header;
             EndBlockStatementSyntax endBlock;
@@ -313,7 +317,7 @@ namespace ICSharpCode.CodeConverter.VB
                     SyntaxFactory.SingletonList<StatementSyntax>(vbThrowStatement), endBlock);
             } else {
                 var expressionSyntax = (ExpressionSyntax)body.Accept(_nodesVisitor);
-                var stmt = isSub ? (StatementSyntax) SyntaxFactory.ExpressionStatement(expressionSyntax) : SyntaxFactory.ReturnStatement(expressionSyntax);
+                var stmt = isSub ? (StatementSyntax)SyntaxFactory.ExpressionStatement(expressionSyntax) : SyntaxFactory.ReturnStatement(expressionSyntax);
                 statements = InsertRequiredDeclarations(SyntaxFactory.SingletonList(stmt), body);
             }
 
@@ -325,14 +329,15 @@ namespace ICSharpCode.CodeConverter.VB
             SyntaxKind multiLineExpressionKind,
             LambdaHeaderSyntax header, SyntaxList<StatementSyntax> statements, EndBlockStatementSyntax endBlock)
         {
-            if (statements.Count == 1  && TryGetNodeForeSingleLineLambdaExpression(singleLineKind, statements[0], out VisualBasicSyntaxNode singleNode)) {
+            if (statements.Count == 1 && TryGetNodeForeSingleLineLambdaExpression(singleLineKind, statements[0], out VisualBasicSyntaxNode singleNode)) {
                 return SyntaxFactory.SingleLineLambdaExpression(singleLineKind, header, singleNode);
             }
 
             return SyntaxFactory.MultiLineLambdaExpression(multiLineExpressionKind, header, statements, endBlock);
         }
 
-        private static bool TryGetNodeForeSingleLineLambdaExpression(SyntaxKind kind, StatementSyntax statement, out VisualBasicSyntaxNode singleNode) {
+        private static bool TryGetNodeForeSingleLineLambdaExpression(SyntaxKind kind, StatementSyntax statement, out VisualBasicSyntaxNode singleNode)
+        {
             switch (kind) {
                 case SyntaxKind.SingleLineSubLambdaExpression when statement.DescendantNodesAndSelf().OfType<StatementSyntax>().Count() == 1:
                     singleNode = statement;
@@ -502,7 +507,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public SyntaxToken ConvertIdentifier(SyntaxToken id)
         {
-            var parent = (CS.CSharpSyntaxNode) id.Parent;
+            var parent = (CS.CSharpSyntaxNode)id.Parent;
             var idText = AdjustIfEventIdentifier(id, parent);
             // Underscore is a special character in VB lexer which continues lines - not sure where to find the whole set of other similar tokens if any
             // Rather than a complicated contextual rename, just add an extra dash to all identifiers and hope this method is consistently used
@@ -695,8 +700,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public NameSyntax GetFullyQualifiedNameSyntax(INamespaceOrTypeSymbol symbol, bool allowGlobalPrefix = true)
         {
-            switch (symbol)
-            {
+            switch (symbol) {
                 case ITypeSymbol ts:
                     var nameSyntax = (NameSyntax)VbSyntaxGenerator.TypeExpression(ts);
                     if (allowGlobalPrefix)

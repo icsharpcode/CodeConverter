@@ -29,8 +29,8 @@ namespace ICSharpCode.CodeConverter.VB
 
         public T Accept(SyntaxNode node, bool forceNoSourceMapping)
         {
-            bool toggleSourceMapping = forceNoSourceMapping && _addSourceMapping;
-            if (toggleSourceMapping) _addSourceMapping = false;
+            bool disableSourceMapping = forceNoSourceMapping && _addSourceMapping;
+            if (disableSourceMapping) _addSourceMapping = false;
             try {
                 var converted = _wrappedVisitor.Visit(node);
                 return _addSourceMapping ? node.CopyAnnotationsTo(converted).WithSourceMappingFrom(node) : converted;
@@ -38,7 +38,7 @@ namespace ICSharpCode.CodeConverter.VB
                 var dummyStatement = SyntaxFactory.EmptyStatement();
                 return ((T)(object)dummyStatement).WithVbTrailingErrorComment((CSharpSyntaxNode)node, e);
             } finally {
-                if (toggleSourceMapping) _addSourceMapping = true;
+                if (disableSourceMapping) _addSourceMapping = true;
             }
 
         }
