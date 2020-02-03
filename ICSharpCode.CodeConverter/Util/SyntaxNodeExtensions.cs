@@ -222,14 +222,23 @@ namespace ICSharpCode.CodeConverter.Util
             return semanticModel.GetDeclaredSymbol(typeBlockSyntax);
         }
 
+        public static SyntaxList<T> WithSourceMappingFrom<T>(this SyntaxList<T> converted, SyntaxNode node) where T : SyntaxNode
+        {
+            if (!converted.Any()) return converted;
+            var origLinespan = node.SyntaxTree.GetLineSpan(node.Span);
+            var first = converted.First();
+            converted = converted.Replace(first, node.CopyAnnotationsTo(first).WithSourceStartLineAnnotation(origLinespan));
+            var last = converted.Last();
+            return converted.Replace(last, last.WithSourceEndLineAnnotation(origLinespan));
+        }
+
         public static T WithSourceMappingFrom<T>(this T converted, SyntaxNodeOrToken fromSource) where T : SyntaxNode
         {
             if (converted == null) return null;
             var startLinespan = fromSource.SyntaxTree.GetLineSpan(fromSource.Span);
-            var endLinespan = fromSource.IsNode ? fromSource.SyntaxTree.GetLineSpan(fromSource.AsNode().GetLastToken().Span) : startLinespan;
             return converted
                 .WithSourceStartLineAnnotation(startLinespan)
-                .WithSourceEndLineAnnotation(endLinespan);
+                .WithSourceEndLineAnnotation(startLinespan);
         }
 
         public static T WithSourceStartLineAnnotation<T>(this T node, FileLinePositionSpan sourcePosition) where T : SyntaxNode
@@ -240,16 +249,6 @@ namespace ICSharpCode.CodeConverter.Util
         public static T WithSourceEndLineAnnotation<T>(this T node, FileLinePositionSpan sourcePosition) where T : SyntaxNode
         {
             return node.WithAdditionalAnnotations(AnnotationConstants.SourceEndLine(sourcePosition));
-        }
-
-        public static SyntaxList<T> WithSourceMappingFrom<T>(this SyntaxList<T> converted, SyntaxNode node) where T : SyntaxNode
-        {
-            if (!converted.Any()) return converted;
-            var origLinespan = node.SyntaxTree.GetLineSpan(node.Span);
-            var first = converted.First();
-            converted = converted.Replace(first, node.CopyAnnotationsTo(first).WithSourceStartLineAnnotation(origLinespan));
-            var last = converted.Last();
-            return converted.Replace(last, node.CopyAnnotationsTo(last).WithSourceEndLineAnnotation(origLinespan));
         }
 
         /// <summary>
