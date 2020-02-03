@@ -1292,7 +1292,7 @@ namespace CSharpToVBCodeConverter.Util
 
         public static string StringReplaceCondition(string csCondition)
         {
-            return csCondition.Replace("!", "Not ").Replace("==", "=").Replace("!=", "<>").Replace("&&", "And").Replace("||", "Or").Replace("  ", " ").Replace("false", "False").Replace("true", "True");
+            return csCondition.Replace("==", "=").Replace("!=", "<>").Replace("&&", "And").Replace("||", "Or").Replace("  ", " ").Replace("!", "Not ").Replace("false", "False").Replace("true", "True");
         }
 
         public static IEnumerable<SyntaxTrivia> ConvertTrivia(this IReadOnlyCollection<SyntaxTrivia> TriviaToConvert)
