@@ -93,7 +93,7 @@ End Class");
 }", @"Public Class Test
     Public ReadOnly Property Foo As Boolean
         Get
-            Return Bar Is Nothing ' Crashes conversion to VB
+            Return Bar Is Nothing 'Crashes conversion to VB
         End Get
     End Property
 
