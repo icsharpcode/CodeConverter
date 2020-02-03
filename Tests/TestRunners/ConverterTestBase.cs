@@ -158,7 +158,7 @@ End Sub";
         }
 
 
-
+        /// <remarks>Currently puts comments in multi-line comments which then don't get converted</remarks>
         private static (IReadOnlyCollection<string> Lines, IReadOnlyCollection<string> LineNumbersAdded) AddLineNumberComments(string code, string singleLineCommentStart, string commentPrefix, Func<string, bool> lineCanHaveComment)
         {
             var lines = Utils.HomogenizeEol(code).Split(new[] { Environment.NewLine }, StringSplitOptions.None);
