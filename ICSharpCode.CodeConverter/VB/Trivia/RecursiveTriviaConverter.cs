@@ -17,10 +17,16 @@ using ICSharpCode.CodeConverter.Util;
 
 namespace CSharpToVBCodeConverter.Util
 {
-    public static class SyntaxNodeExtensions
+    internal class RecursiveTriviaConverter
     {
+        public static IEnumerable<SyntaxTrivia> ConvertTopLevel(IReadOnlyCollection<SyntaxTrivia> triviaToConvert)
+        {
+            return new RecursiveTriviaConverter().ConvertTrivia(triviaToConvert);
+        }
 
-        private static string RemoveLeadingSpacesStar(string line)
+        private int TriviaDepth = 0;
+
+        private string RemoveLeadingSpacesStar(string line)
         {
             var NewStringBuilder = new StringBuilder();
             bool SkipSpace = true;
@@ -63,7 +69,7 @@ namespace CSharpToVBCodeConverter.Util
             return NewStringBuilder.ToString();
         }
 
-        private static string ReplaceLeadingSlashes(string CommentTriviaBody)
+        private string ReplaceLeadingSlashes(string CommentTriviaBody)
         {
             for (int i = 0, loopTo = CommentTriviaBody.Length - 1; i <= loopTo; i++)
             {
@@ -79,12 +85,12 @@ namespace CSharpToVBCodeConverter.Util
             return CommentTriviaBody;
         }
 
-        internal static T With<T>(this T node, IEnumerable<SyntaxTrivia> leadingTrivia, IEnumerable<SyntaxTrivia> trailingTrivia) where T : SyntaxNode
+        internal T With<T>(T node, IEnumerable<SyntaxTrivia> leadingTrivia, IEnumerable<SyntaxTrivia> trailingTrivia) where T : SyntaxNode
         {
             return node.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(trailingTrivia);
         }
 
-        internal static IEnumerable<TNode> GetAncestors<TNode>(this SyntaxNode node) where TNode : SyntaxNode
+        internal IEnumerable<TNode> GetAncestors<TNode>(SyntaxNode node) where TNode : SyntaxNode
         {
             var current = node.Parent;
             while (current != null)
@@ -98,7 +104,7 @@ namespace CSharpToVBCodeConverter.Util
             }
         }
 
-        internal static bool ParentHasSameTrailingTrivia(this SyntaxNode otherNode)
+        internal bool ParentHasSameTrailingTrivia(SyntaxNode otherNode)
         {
             if (otherNode.Parent == null)
             {
@@ -107,7 +113,7 @@ namespace CSharpToVBCodeConverter.Util
             return otherNode.Parent.GetLastToken() == otherNode.GetLastToken();
         }
 
-        internal static T WithAppendedTriviaFromEndOfDirectiveToken<T>(this T node, SyntaxToken Token) where T : SyntaxNode
+        internal T WithAppendedTriviaFromEndOfDirectiveToken<T>(T node, SyntaxToken Token) where T : SyntaxNode
         {
             var NewTrailingTrivia = new List<SyntaxTrivia>();
             if (Token.HasLeadingTrivia)
@@ -119,10 +125,10 @@ namespace CSharpToVBCodeConverter.Util
                 NewTrailingTrivia.AddRange(Token.TrailingTrivia.ConvertTrivia());
             }
 
-            return node.WithAppendedTrailingTrivia(NewTrailingTrivia).WithTrailingEOL();
+            return WithTrailingEOL(node.WithAppendedTrailingTrivia(NewTrailingTrivia));
         }
 
-        internal static T WithPrependedLeadingTrivia<T>(this T node, SyntaxTriviaList trivia) where T : SyntaxNode
+        internal T WithPrependedLeadingTrivia<T>(T node, SyntaxTriviaList trivia) where T : SyntaxNode
         {
             if (trivia.Count == 0)
             {
@@ -135,7 +141,7 @@ namespace CSharpToVBCodeConverter.Util
             return node.WithLeadingTrivia(trivia.Concat(node.GetLeadingTrivia()));
         }
 
-        internal static T WithPrependedLeadingTrivia<T>(this T node, IEnumerable<SyntaxTrivia> trivia) where T : SyntaxNode
+        internal T WithPrependedLeadingTrivia<T>(T node, IEnumerable<SyntaxTrivia> trivia) where T : SyntaxNode
         {
             if (trivia == null)
             {
@@ -144,7 +150,7 @@ namespace CSharpToVBCodeConverter.Util
             return node.WithPrependedLeadingTrivia(trivia.ToSyntaxTriviaList());
         }
 
-        internal static T WithRestructuredingEOLTrivia<T>(this T node) where T : SyntaxNode
+        internal T WithRestructuredingEOLTrivia<T>(T node) where T : SyntaxNode
         {
             if (!node.HasTrailingTrivia)
             {
@@ -177,7 +183,7 @@ namespace CSharpToVBCodeConverter.Util
         /// <typeparam name="T"></typeparam>
         /// <param name="node"></param>
         /// <returns></returns>
-        internal static T WithTrailingEOL<T>(this T node) where T : SyntaxNode
+        internal T WithTrailingEOL<T>(T node) where T : SyntaxNode
         {
             var TrailingTrivia = node.GetTrailingTrivia().ToList();
             int Count = TrailingTrivia.Count;
@@ -289,7 +295,7 @@ namespace CSharpToVBCodeConverter.Util
                                     if (TrailingTrivia[Count - 1].IsKind(VB.SyntaxKind.EndOfLineTrivia))
                                     {
                                         TrailingTrivia.RemoveAt(Count);
-                                        return node.WithTrailingTrivia(TrailingTrivia).WithTrailingEOL();
+                                        return WithTrailingEOL(node.WithTrailingTrivia(TrailingTrivia));
                                     }
                                     return node;
                                 }
@@ -299,7 +305,7 @@ namespace CSharpToVBCodeConverter.Util
                                     if (TrailingTrivia[Count - 1].IsKind(VB.SyntaxKind.WhitespaceTrivia))
                                     {
                                         TrailingTrivia.RemoveAt(Count - 1);
-                                        return node.WithTrailingTrivia(TrailingTrivia).WithTrailingEOL();
+                                        return WithTrailingEOL(node.WithTrailingTrivia(TrailingTrivia));
                                     }
                                     else if (TrailingTrivia[Count - 1].IsKind(VB.SyntaxKind.EndOfLineTrivia))
                                     {
@@ -326,8 +332,7 @@ namespace CSharpToVBCodeConverter.Util
             return node;
         }
 
-        private static int TriviaDepth = 0;
-        public static SyntaxTrivia ConvertTrivia(this SyntaxTrivia t)
+        internal SyntaxTrivia ConvertTrivia(SyntaxTrivia t)
         {
             var switchExpr = t.RawKind;
 
@@ -403,7 +408,7 @@ namespace CSharpToVBCodeConverter.Util
                         CSS.DefineDirectiveTriviaSyntax DefineDirective = (CSS.DefineDirectiveTriviaSyntax)StructuredTrivia;
                         var Name = VBFactory.Identifier(DefineDirective.Name.ValueText);
                         VBS.ExpressionSyntax value = VBFactory.TrueLiteralExpression(global::VisualBasicSyntaxFactory.TrueKeyword);
-                        return VBFactory.Trivia(VBFactory.ConstDirectiveTrivia(Name, value).WithConvertedTriviaFrom(DefineDirective).WithAppendedTriviaFromEndOfDirectiveToken(DefineDirective.EndOfDirectiveToken)
+                        return VBFactory.Trivia(WithAppendedTriviaFromEndOfDirectiveToken(WithConvertedTriviaFrom(VBFactory.ConstDirectiveTrivia(Name, value), DefineDirective), DefineDirective.EndOfDirectiveToken)
     );
                     }
 
@@ -412,7 +417,7 @@ namespace CSharpToVBCodeConverter.Util
                         CSS.UndefDirectiveTriviaSyntax UndefineDirective = (CSS.UndefDirectiveTriviaSyntax)StructuredTrivia;
                         var Name = VBFactory.Identifier(UndefineDirective.Name.ValueText);
                         VBS.ExpressionSyntax value = global::VisualBasicSyntaxFactory.NothingExpression;
-                        return VBFactory.Trivia(VBFactory.ConstDirectiveTrivia(Name, value).WithConvertedTriviaFrom(UndefineDirective).WithAppendedTriviaFromEndOfDirectiveToken(UndefineDirective.EndOfDirectiveToken)
+                        return VBFactory.Trivia(WithAppendedTriviaFromEndOfDirectiveToken(WithConvertedTriviaFrom(VBFactory.ConstDirectiveTrivia(Name, value), UndefineDirective), UndefineDirective.EndOfDirectiveToken)
     );
                     }
 
@@ -424,7 +429,7 @@ namespace CSharpToVBCodeConverter.Util
                             return VBFactory.CommentTrivia($"' TODO VB does not allow directives here, original statement {t.ToFullString().WithoutNewLines(' ')}");
                         }
                         CSS.EndIfDirectiveTriviaSyntax EndIfDirective = (CSS.EndIfDirectiveTriviaSyntax)StructuredTrivia;
-                        return VBFactory.Trivia(VBFactory.EndIfDirectiveTrivia().WithConvertedTrailingTriviaFrom(EndIfDirective.EndIfKeyword).WithAppendedTriviaFromEndOfDirectiveToken(EndIfDirective.EndOfDirectiveToken)
+                        return VBFactory.Trivia(WithAppendedTriviaFromEndOfDirectiveToken(VBFactory.EndIfDirectiveTrivia().WithConvertedTrailingTriviaFrom(EndIfDirective.EndIfKeyword), EndIfDirective.EndOfDirectiveToken)
     );
                     }
 
@@ -443,7 +448,7 @@ namespace CSharpToVBCodeConverter.Util
                         CSS.IfDirectiveTriviaSyntax IfDirective = (CSS.IfDirectiveTriviaSyntax)StructuredTrivia;
                         string Expression1 = StringReplaceCondition(IfDirective.Condition.ToString());
 
-                        return VBFactory.Trivia(VBFactory.IfDirectiveTrivia(global::VisualBasicSyntaxFactory.IfKeyword, VBFactory.ParseExpression(Expression1)).With(IfDirective.GetLeadingTrivia().ConvertTrivia(), IfDirective.Condition.GetTrailingTrivia().ConvertTrivia()).WithAppendedTriviaFromEndOfDirectiveToken(IfDirective.EndOfDirectiveToken));
+                        return VBFactory.Trivia(WithAppendedTriviaFromEndOfDirectiveToken(VBFactory.IfDirectiveTrivia(global::VisualBasicSyntaxFactory.IfKeyword, VBFactory.ParseExpression(Expression1)).With(IfDirective.GetLeadingTrivia().ConvertTrivia(), IfDirective.Condition.GetTrailingTrivia().ConvertTrivia()), IfDirective.EndOfDirectiveToken));
                     }
 
                 case (int)CS.SyntaxKind.ElifDirectiveTrivia:
@@ -464,9 +469,9 @@ namespace CSharpToVBCodeConverter.Util
                         {
                             IfOrElseIfKeyword = global::VisualBasicSyntaxFactory.IfKeyword;
                         }
-                        return VBFactory.Trivia(VBFactory.ElseIfDirectiveTrivia(IfOrElseIfKeyword, VBFactory.ParseExpression(Expression1))
+                        return VBFactory.Trivia(WithAppendedTriviaFromEndOfDirectiveToken(VBFactory.ElseIfDirectiveTrivia(IfOrElseIfKeyword, VBFactory.ParseExpression(Expression1))
                             .With(ELIfDirective.GetLeadingTrivia().ConvertTrivia(), ELIfDirective.Condition.GetTrailingTrivia().ConvertTrivia())
-                            .WithAppendedTriviaFromEndOfDirectiveToken(ELIfDirective.EndOfDirectiveToken));
+                            ,ELIfDirective.EndOfDirectiveToken));
                     }
 
                 case (int)CS.SyntaxKind.LineDirectiveTrivia:
@@ -476,13 +481,13 @@ namespace CSharpToVBCodeConverter.Util
 
                 case (int)CS.SyntaxKind.ElseDirectiveTrivia:
                     {
-                        return VBFactory.Trivia(VBFactory.ElseDirectiveTrivia().NormalizeWhitespace().WithConvertedTrailingTriviaFrom(((CSS.ElseDirectiveTriviaSyntax)StructuredTrivia).ElseKeyword).WithTrailingEOL());
+                        return VBFactory.Trivia(WithTrailingEOL(VBFactory.ElseDirectiveTrivia().NormalizeWhitespace().WithConvertedTrailingTriviaFrom(((CSS.ElseDirectiveTriviaSyntax)StructuredTrivia).ElseKeyword)));
                     }
 
                 case (int)CS.SyntaxKind.EndRegionDirectiveTrivia:
                     {
                         CSS.EndRegionDirectiveTriviaSyntax EndRegionDirective = (CSS.EndRegionDirectiveTriviaSyntax)StructuredTrivia;
-                        return VBFactory.Trivia(VBFactory.EndRegionDirectiveTrivia(global::VisualBasicSyntaxFactory.HashToken, global::VisualBasicSyntaxFactory.EndKeyword, global::VisualBasicSyntaxFactory.RegionKeyword).WithAppendedTriviaFromEndOfDirectiveToken(EndRegionDirective.EndOfDirectiveToken));
+                        return VBFactory.Trivia(WithAppendedTriviaFromEndOfDirectiveToken(VBFactory.EndRegionDirectiveTrivia(global::VisualBasicSyntaxFactory.HashToken, global::VisualBasicSyntaxFactory.EndKeyword, global::VisualBasicSyntaxFactory.RegionKeyword), EndRegionDirective.EndOfDirectiveToken));
                     }
 
                 case (int)CS.SyntaxKind.PragmaWarningDirectiveTrivia:
@@ -517,7 +522,7 @@ namespace CSharpToVBCodeConverter.Util
                         string NameString = $"\"{EndOfDirectiveToken.LeadingTrivia.ToString().Replace("\"", "")}\"";
                         var RegionDirectiveTriviaNode = VBFactory.RegionDirectiveTrivia(global::VisualBasicSyntaxFactory.HashToken, global::VisualBasicSyntaxFactory.RegionKeyword, VBFactory.StringLiteralToken(NameString, NameString)
     ).WithConvertedTrailingTriviaFrom(EndOfDirectiveToken);
-                        return VBFactory.Trivia(RegionDirectiveTriviaNode.WithTrailingEOL());
+                        return VBFactory.Trivia(WithTrailingEOL(RegionDirectiveTriviaNode));
                     }
 
                 case (int)CS.SyntaxKind.SingleLineDocumentationCommentTrivia:
@@ -560,8 +565,8 @@ namespace CSharpToVBCodeConverter.Util
                         var Guid1 = VBFactory.ParseToken(PragmaChecksumDirective.Guid.Text.ToUpperInvariant());
                         var Bytes = VBFactory.ParseToken(PragmaChecksumDirective.Bytes.Text);
                         var ExternalSource = VBFactory.ParseToken(PragmaChecksumDirective.File.Text);
-                        return VBFactory.Trivia(VBFactory.ExternalChecksumDirectiveTrivia(global::VisualBasicSyntaxFactory.HashToken, global::VisualBasicSyntaxFactory.ExternalChecksumKeyword, global::VisualBasicSyntaxFactory.OpenParenToken, ExternalSource, global::VisualBasicSyntaxFactory.CommaToken, Guid1, global::VisualBasicSyntaxFactory.CommaToken, Bytes, global::VisualBasicSyntaxFactory.CloseParenToken).WithAppendedTriviaFromEndOfDirectiveToken(PragmaChecksumDirective.EndOfDirectiveToken)
-    );
+                        return VBFactory.Trivia(WithAppendedTriviaFromEndOfDirectiveToken(
+                            VBFactory.ExternalChecksumDirectiveTrivia(global::VisualBasicSyntaxFactory.HashToken, global::VisualBasicSyntaxFactory.ExternalChecksumKeyword, global::VisualBasicSyntaxFactory.OpenParenToken, ExternalSource, global::VisualBasicSyntaxFactory.CommaToken, Guid1, global::VisualBasicSyntaxFactory.CommaToken, Bytes, global::VisualBasicSyntaxFactory.CloseParenToken), PragmaChecksumDirective.EndOfDirectiveToken));
                     }
 
                 case (int)CS.SyntaxKind.SkippedTokensTrivia:
@@ -597,12 +602,12 @@ namespace CSharpToVBCodeConverter.Util
             throw new NotImplementedException($"t.Kind({(VB.SyntaxKind)Conversions.ToUShort(t.RawKind)}) Is unknown");
         }
 
-        public static string StringReplaceCondition(string csCondition)
+        internal string StringReplaceCondition(string csCondition)
         {
             return csCondition.Replace("==", "=").Replace("!=", "<>").Replace("&&", "And").Replace("||", "Or").Replace("  ", " ").Replace("!", "Not ").Replace("false", "False").Replace("true", "True");
         }
 
-        public static IEnumerable<SyntaxTrivia> ConvertTrivia(this IReadOnlyCollection<SyntaxTrivia> TriviaToConvert)
+        internal IEnumerable<SyntaxTrivia> ConvertTrivia(IReadOnlyCollection<SyntaxTrivia> TriviaToConvert)
         {
             var TriviaList = new List<SyntaxTrivia>();
             if (TriviaToConvert == null)
@@ -672,7 +677,7 @@ namespace CSharpToVBCodeConverter.Util
 
                         default:
                             {
-                                var ConvertedTrivia = Trivia.ConvertTrivia();
+                                var ConvertedTrivia = ConvertTrivia(Trivia);
                                 if (ConvertedTrivia == null)
                                 {
                                     continue;
@@ -703,35 +708,7 @@ namespace CSharpToVBCodeConverter.Util
             return TriviaList;
         }
 
-        public static T WithAppendedTrailingTrivia<T>(this T node, SyntaxTriviaList trivia) where T : SyntaxNode
-        {
-            if (trivia.Count == 0)
-            {
-                return node;
-            }
-            if (node == null)
-            {
-                return null;
-            }
-
-            return node.WithTrailingTrivia(node.GetTrailingTrivia().Concat(trivia));
-        }
-
-        public static T WithAppendedTrailingTrivia<T>(this T node, IEnumerable<SyntaxTrivia> trivia) where T : SyntaxNode
-        {
-            if (node == null)
-            {
-                return null;
-            }
-            if (trivia == null)
-            {
-                return node;
-            }
-            return node.WithAppendedTrailingTrivia(trivia.ToSyntaxTriviaList());
-        }
-
-        /* TODO ERROR: Skipped RegionDirectiveTrivia */
-        internal static T WithConvertedTriviaFrom<T>(this T node, SyntaxNode otherNode) where T : SyntaxNode
+        internal T WithConvertedTriviaFrom<T>(T node, SyntaxNode otherNode) where T : SyntaxNode
         {
             if (otherNode == null)
             {
@@ -746,15 +723,6 @@ namespace CSharpToVBCodeConverter.Util
                 return node;
             }
             return node.WithTrailingTrivia(otherNode.GetTrailingTrivia().ConvertTrivia());
-        }
-
-        internal static T WithConvertedTrailingTriviaFrom<T>(this T node, SyntaxToken otherToken) where T : SyntaxNode
-        {
-            if (!otherToken.HasTrailingTrivia)
-            {
-                return node;
-            }
-            return node.WithTrailingTrivia(otherToken.TrailingTrivia.ConvertTrivia());
         }
     }
 }
