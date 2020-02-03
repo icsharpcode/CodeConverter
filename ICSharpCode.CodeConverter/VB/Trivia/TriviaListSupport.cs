@@ -141,7 +141,7 @@ namespace CSharpToVBCodeConverter.DestVisualBasic
                         }
                         else
                         {
-                            Debugger.Break();
+
                         }
                     }
                 }
@@ -169,7 +169,7 @@ namespace CSharpToVBCodeConverter.DestVisualBasic
 
                     default:
                         {
-                            Debugger.Break();
+
                             break;
                         }
                 }

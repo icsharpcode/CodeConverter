@@ -15,9 +15,6 @@ namespace CSharpToVBCodeConverter.Util
     public static class SyntaxTriviaExtensions
     {
 
-        /// <summary>
-        /// 
-        /// </summary>
         /// <param name="node"></param>
         /// <returns>True if any Trivia is a Comment or a Directive</returns>
         internal static bool ContainsCommentOrDirectiveTrivia(this VB.VisualBasicSyntaxNode node)
@@ -95,7 +92,7 @@ namespace CSharpToVBCodeConverter.Util
 
                     default:
                         {
-                            Debugger.Break();
+
                             break;
                         }
                 }
@@ -136,7 +133,7 @@ namespace CSharpToVBCodeConverter.Util
 
                     default:
                         {
-                            Debugger.Break();
+
                             break;
                         }
                 }
@@ -180,7 +177,7 @@ namespace CSharpToVBCodeConverter.Util
                 {
                     continue;
                 }
-                Debugger.Break();
+
             }
             return false;
         }
@@ -209,7 +206,7 @@ namespace CSharpToVBCodeConverter.Util
                 {
                     return true;
                 }
-                Debugger.Break();
+
             }
             return false;
         }
@@ -333,7 +330,7 @@ namespace CSharpToVBCodeConverter.Util
 
                 default:
                     {
-                        Debugger.Break();
+
                         break;
                     }
             }

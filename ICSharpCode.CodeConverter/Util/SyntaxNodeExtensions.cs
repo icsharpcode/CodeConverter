@@ -838,11 +838,12 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static IEnumerable<SyntaxTrivia> ConvertTrivia(this IReadOnlyCollection<SyntaxTrivia> triviaToConvert)
         {
-            return triviaToConvert.SelectMany(t => {
+
+            return triviaToConvert.Select(t => {
                 if (t.Language == LanguageNames.VisualBasic) {
-                    return ConvertVBTrivia(t).Yield();
+                    return ConvertVBTrivia(t);
                 } else {
-                    return ConvertCSTrivia(t);
+                    return CSharpToVBCodeConverter.Util.SyntaxNodeExtensions.ConvertTrivia(t);
                 }
             }).Where(x => x != default(SyntaxTrivia));
         }

@@ -313,7 +313,7 @@ namespace CSharpToVBCodeConverter.DestVisualBasic
             }
             catch (Exception ex)
             {
-                Debugger.Break();
+
             }
             var XmlElement = VBFactory.XmlElement(StartTag, Content, EndTag);
             return XmlElement;

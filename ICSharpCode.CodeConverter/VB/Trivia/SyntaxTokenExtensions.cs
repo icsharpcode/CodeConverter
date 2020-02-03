@@ -265,7 +265,7 @@ namespace CSharpToVBCodeConverter.Util
 
                                     default:
                                         {
-                                            Debugger.Break();
+
                                             break;
                                         }
                                 }
@@ -275,7 +275,7 @@ namespace CSharpToVBCodeConverter.Util
 
                         default:
                             {
-                                Debugger.Break();
+
                                 break;
                             }
                     }
@@ -388,7 +388,7 @@ namespace CSharpToVBCodeConverter.Util
 
                         default:
                             {
-                                Debugger.Break();
+
                                 break;
                             }
                     }

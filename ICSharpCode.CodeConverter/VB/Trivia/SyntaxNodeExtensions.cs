@@ -98,7 +98,7 @@ namespace CSharpToVBCodeConverter.Util
                             }
                             else
                             {
-                                Debugger.Break();
+
                             }
 
                             break;
@@ -199,7 +199,7 @@ namespace CSharpToVBCodeConverter.Util
                 Text = Text.Replace("#endregion", "");
                 if (Text.Length > 0)
                 {
-                    Debugger.Break();
+
                 }
                 return ResultTrivia;
             }
@@ -293,7 +293,7 @@ namespace CSharpToVBCodeConverter.Util
 
                     default:
                         {
-                            Debugger.Break();
+
                             break;
                         }
                 }
@@ -546,7 +546,7 @@ namespace CSharpToVBCodeConverter.Util
 
                     default:
                         {
-                            Debugger.Break();
+
                             break;
                         }
                 }
@@ -688,7 +688,7 @@ namespace CSharpToVBCodeConverter.Util
 
                     default:
                         {
-                            Debugger.Break();
+
                             break;
                         }
                 }
@@ -793,7 +793,7 @@ namespace CSharpToVBCodeConverter.Util
 
                     default:
                         {
-                            Debugger.Break();
+
                             break;
                         }
                 }
@@ -928,7 +928,7 @@ namespace CSharpToVBCodeConverter.Util
 
                                         default:
                                             {
-                                                Debugger.Break();
+
                                                 break;
                                             }
                                     }
@@ -946,7 +946,7 @@ namespace CSharpToVBCodeConverter.Util
                                     {
                                         return node.WithTrailingTrivia(global::VisualBasicSyntaxFactory.VBEOLTrivia);
                                     }
-                                    Debugger.Break();
+
                                     break;
                                 }
 
@@ -957,7 +957,7 @@ namespace CSharpToVBCodeConverter.Util
                                         TrailingTrivia.RemoveAt(1);
                                         TrailingTrivia.Insert(0, global::VisualBasicSyntaxFactory.SpaceTrivia);
                                         // EOL added below
-                                        Debugger.Break();
+
                                     }
 
                                     break;
@@ -965,7 +965,7 @@ namespace CSharpToVBCodeConverter.Util
 
                             default:
                                 {
-                                    Debugger.Break();
+
                                     break;
                                 }
                         }
@@ -1010,11 +1010,11 @@ namespace CSharpToVBCodeConverter.Util
 
                             default:
                                 {
-                                    Debugger.Break();
+
                                     break;
                                 }
                         }
-                        Debugger.Break();
+
                         break;
                     }
             }
@@ -1082,7 +1082,7 @@ namespace CSharpToVBCodeConverter.Util
             }
             if (!t.HasStructure)
             {
-                Debugger.Break();
+
             }
 
             /* TODO ERROR: Skipped EndRegionDirectiveTrivia */
@@ -1283,7 +1283,7 @@ namespace CSharpToVBCodeConverter.Util
                 default:
                     {
                         Debug.WriteLine(((VB.SyntaxKind)Conversions.ToUShort(t.RawKind)).ToString());
-                        Debugger.Break();
+
                         break;
                     }
             }
@@ -1385,7 +1385,7 @@ namespace CSharpToVBCodeConverter.Util
             }
             catch (Exception ex)
             {
-                Debugger.Break();
+
                 throw;
             }
             return TriviaList;
@@ -1539,7 +1539,7 @@ namespace CSharpToVBCodeConverter.Util
             }
             catch (Exception ex)
             {
-                Debugger.Break();
+
             }
 
             return default(SyntaxToken);
