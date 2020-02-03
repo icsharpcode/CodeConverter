@@ -27,7 +27,7 @@ namespace ANamespace //namespace
         /// </summary>
         public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class where T2 : struct //Only for structs
         { // Block start - method
-    #if true //BUG: IfDirective loses comments
+    #if true //IfDirective keeps comments
             argument = null; //1
     #region Arg2
             argument2 = default(T2); //2
@@ -39,9 +39,9 @@ namespace ANamespace //namespace
                 Debug.WriteLine(2);
             } //argument1 != null
             argument3 = default(T3); //3
-    #else //BUG: ElseDirective loses comments
+    #else //ElseDirective keeps comments
             argument = new object();
-    #endif //BUG: EndIfDirective loses comments
+    #endif //EndIfDirective keeps comments
             Console.Write(3);
         } //End of method
     } //End of class
@@ -65,7 +65,7 @@ Namespace ANamespace 'namespace
         ''' </summary>
         Public Sub TestMethod(Of T As Class, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) 'Only for structs
             ' Block start - method
-#If True 'BUG: IfDirective loses comments
+#If True 'IfDirective keeps comments
             argument = Nothing '1
 #Region ""Arg2""
             argument2 = Nothing '2
@@ -77,9 +77,9 @@ Namespace ANamespace 'namespace
                 Debug.WriteLine(2)
             End If 'argument1 != null
             argument3 = Nothing '3
-#Else 'BUG: ElseDirective loses comments
+#Else 'ElseDirective keeps comments
             argument = new object();
-#End If 'BUG: EndIfDirective loses comments
+#End If 'EndIfDirective keeps comments
             Console.Write(3)
         End Sub 'End of method
     End Class 'End of class
