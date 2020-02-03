@@ -20,93 +20,6 @@ namespace CSharpToVBCodeConverter.Util
     public static class SyntaxNodeExtensions
     {
 
-        /// <summary>
-        /// Used at the end of a statement to adjust trivia from two items (like semicolon) the second
-        /// of which will be removed. Directives are allowed.
-        /// </summary>
-        /// <param name="TriviaList"></param>
-        /// <param name="NewTrailingTrivia"></param>
-        /// <param name="FoundEOL"></param>
-        /// <param name="FoundWhiteSpace"></param>
-        private static void AdjustTrailingTrivia(IEnumerable<SyntaxTrivia> TriviaList, List<SyntaxTrivia> NewTrailingTrivia, ref bool FoundEOL, ref bool FoundWhiteSpace)
-        {
-            for (int i = 0, loopTo = TriviaList.Count() - 1; i <= loopTo; i++)
-            {
-                var Trivia = TriviaList.ElementAtOrDefault(i);
-                var NextTrivia = i < TriviaList.Count() - 1 ? TriviaList.ElementAtOrDefault(i + 1) : default(SyntaxTrivia);
-                var switchExpr = Trivia.RawKind;
-                switch (switchExpr)
-                {
-                    case (int)VB.SyntaxKind.WhitespaceTrivia:
-                        {
-                            if (!FoundWhiteSpace && !NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia))
-                            {
-                                NewTrailingTrivia.Add(Trivia);
-                                FoundEOL = false;
-                                FoundWhiteSpace = true;
-                            }
-
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.EndOfLineTrivia:
-                        {
-                            if (!FoundEOL)
-                            {
-                                NewTrailingTrivia.Add(Trivia);
-                                FoundEOL = true;
-                            }
-                            FoundWhiteSpace = false;
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.CommentTrivia:
-                        {
-                            NewTrailingTrivia.Add(Trivia);
-                            if (!NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia))
-                            {
-                                NewTrailingTrivia.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
-                                FoundEOL = true;
-                            }
-                            FoundWhiteSpace = false;
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.EndRegionDirectiveTrivia:
-                        {
-                            if (!FoundEOL)
-                            {
-                                NewTrailingTrivia.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
-                            }
-                            NewTrailingTrivia.Add(Trivia);
-                            FoundEOL = false;
-                            FoundWhiteSpace = false;
-                            break;
-                        }
-
-                    default:
-                        {
-                            if (Trivia.IsDirective)
-                            {
-                                if (!FoundEOL)
-                                {
-                                    NewTrailingTrivia.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
-                                }
-                                NewTrailingTrivia.Add(Trivia);
-                                FoundEOL = false;
-                                FoundWhiteSpace = false;
-                            }
-                            else
-                            {
-
-                            }
-
-                            break;
-                        }
-                }
-            }
-        }
-
         private static string RemoveLeadingSpacesStar(string line)
         {
             var NewStringBuilder = new StringBuilder();
@@ -171,62 +84,6 @@ namespace CSharpToVBCodeConverter.Util
             return node.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(trailingTrivia);
         }
 
-        internal static List<SyntaxTrivia> ConvertDirectiveTrivia(this string OriginalText)
-        {
-            string Text = OriginalText.Trim(' ');
-            var ResultTrivia = new List<SyntaxTrivia>();
-            Debug.Assert(Text.StartsWith("#"), "All directives must start with #");
-
-            if (Text.StartsWith("#if") || Text.StartsWith("#elif"))
-            {
-                string Expression1 = StringReplaceCondition(Text.Replace("#if ", "").Replace("#elif ", "")).Replace("//", " ' ").Replace("  ", " ");
-
-                var Kind = Text.StartsWith("#if") ? VB.SyntaxKind.IfDirectiveTrivia : VB.SyntaxKind.ElseIfDirectiveTrivia;
-                var IfOrElseIfKeyword = Text.StartsWith("#if") ? global::VisualBasicSyntaxFactory.IfKeyword : global::VisualBasicSyntaxFactory.ElseIfKeyword;
-                var Expr = VBFactory.ParseExpression(Expression1);
-                var IfDirectiveTrivia = VBFactory.IfDirectiveTrivia(IfOrElseIfKeyword, Expr);
-                ResultTrivia.Add(VBFactory.Trivia(IfDirectiveTrivia));
-                return ResultTrivia;
-            }
-            if (Text.StartsWith("#region") || Text.StartsWith("# region"))
-            {
-                ResultTrivia.AddRange(CS.SyntaxFactory.ParseLeadingTrivia(Text).ConvertTrivia());
-                return ResultTrivia;
-            }
-            if (Text.StartsWith("#endregion"))
-            {
-                ResultTrivia.Add(VBFactory.Trivia(VBFactory.EndRegionDirectiveTrivia()));
-                Text = Text.Replace("#endregion", "");
-                if (Text.Length > 0)
-                {
-
-                }
-                return ResultTrivia;
-            }
-            if (Text.StartsWith("#else"))
-            {
-                var ElseKeywordWithTrailingTrivia = global::VisualBasicSyntaxFactory.ElseKeyword.WithTrailingTrivia(CS.SyntaxFactory.ParseTrailingTrivia(Text.Replace("#else", "")).ConvertTrivia());
-                ResultTrivia.Add(VBFactory.Trivia(VBFactory.ElseDirectiveTrivia(global::VisualBasicSyntaxFactory.HashToken, ElseKeywordWithTrailingTrivia)));
-                return ResultTrivia;
-            }
-            if (Text.StartsWith("#endif"))
-            {
-                Text = Text.Replace("#endif", "");
-                var IfKeywordWithTrailingTrivia = global::VisualBasicSyntaxFactory.IfKeyword.WithTrailingTrivia(CS.SyntaxFactory.ParseTrailingTrivia(Text.Replace("#endif", "")).ConvertTrivia());
-                ResultTrivia.Add(VBFactory.Trivia(VBFactory.EndIfDirectiveTrivia(global::VisualBasicSyntaxFactory.HashToken, global::VisualBasicSyntaxFactory.EndKeyword, IfKeywordWithTrailingTrivia)));
-                return ResultTrivia;
-            }
-            if (Text.StartsWith("#pragma warning"))
-            {
-                ResultTrivia.AddRange(CS.SyntaxFactory.ParseLeadingTrivia(Text).ConvertTrivia());
-                return ResultTrivia;
-            }
-            else
-            {
-                throw new NotImplementedException($"Directive \"{Text}\" Is unknown");
-            }
-        }
-
         internal static IEnumerable<TNode> GetAncestors<TNode>(this SyntaxNode node) where TNode : SyntaxNode
         {
             var current = node.Parent;
@@ -241,23 +98,6 @@ namespace CSharpToVBCodeConverter.Util
             }
         }
 
-        internal static bool IsKind(this SyntaxNode node, params CS.SyntaxKind[] kind1)
-        {
-            if (node == null)
-            {
-                return false;
-            }
-
-            foreach (CS.SyntaxKind k in kind1)
-            {
-                if (node.IsKind(k))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         internal static bool ParentHasSameTrailingTrivia(this SyntaxNode otherNode)
         {
             if (otherNode.Parent == null)
@@ -265,137 +105,6 @@ namespace CSharpToVBCodeConverter.Util
                 return false;
             }
             return otherNode.Parent.GetLastToken() == otherNode.GetLastToken();
-        }
-
-        internal static T RelocateDirectivesInLeadingTrivia<T>(this T Statement) where T : VB.VisualBasicSyntaxNode
-        {
-            var NewLeadingTrivia = new List<SyntaxTrivia>();
-            var NewTrailingTrivia = new List<SyntaxTrivia>();
-            NewLeadingTrivia.AddRange(Statement.GetLeadingTrivia());
-            foreach (SyntaxTrivia Trivia in Statement.GetTrailingTrivia())
-            {
-                var switchExpr = Trivia.RawKind;
-                switch (switchExpr)
-                {
-                    case (int)VB.SyntaxKind.WhitespaceTrivia:
-                    case (int)VB.SyntaxKind.EndOfLineTrivia:
-                    case (int)VB.SyntaxKind.CommentTrivia:
-                        {
-                            NewTrailingTrivia.Add(Trivia);
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.IfDirectiveTrivia:
-                        {
-                            NewLeadingTrivia.Add(Trivia);
-                            break;
-                        }
-
-                    default:
-                        {
-
-                            break;
-                        }
-                }
-            }
-            return Statement.With(NewLeadingTrivia, NewTrailingTrivia).WithTrailingEOL();
-        }
-
-        /// <summary>
-        /// Remove Leading EOL and convert multiple EOL's to one.
-        /// This is used in statements that are more then 1 line
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="node"></param>
-        /// <returns>Node with extra EOL trivia removed</returns>
-        internal static T RemoveExtraLeadingEOL<T>(this T node) where T : SyntaxNode
-        {
-            var LeadingTrivia = node.GetLeadingTrivia().ToList();
-            var switchExpr = LeadingTrivia.Count;
-            switch (switchExpr)
-            {
-                case 0:
-                    {
-                        return node;
-                    }
-
-                case 1:
-                    {
-                        if (LeadingTrivia.First().IsKind(VB.SyntaxKind.EndOfLineTrivia))
-                        {
-                            return node.WithoutLeadingTrivia();
-                        }
-
-                        break;
-                    }
-
-                case 2:
-                    {
-                        var switchExpr1 = LeadingTrivia.First().RawKind;
-                        switch (switchExpr1)
-                        {
-                            case (int)VB.SyntaxKind.WhitespaceTrivia:
-                                {
-                                    if (LeadingTrivia.Last().IsKind(VB.SyntaxKind.EndOfLineTrivia))
-                                    {
-                                        return node.WithoutLeadingTrivia();
-                                    }
-                                    return node;
-                                }
-
-                            case (int)VB.SyntaxKind.EndOfLineTrivia:
-                                {
-                                    if (LeadingTrivia.Last().IsKind(VB.SyntaxKind.EndOfLineTrivia))
-                                    {
-                                        return node.WithoutLeadingTrivia();
-                                    }
-                                    return node.WithLeadingTrivia(LeadingTrivia.Last());
-                                }
-
-                            default:
-                                {
-                                    break;
-                                }
-                        }
-
-                        break;
-                    }
-
-                default:
-                    {
-                        break;
-                    }
-            }
-            var NewLeadingTrivia = new List<SyntaxTrivia>();
-            bool FirstTrivia = true;
-            for (int i = 0, loopTo = node.GetLeadingTrivia().Count - 1; i <= loopTo; i++)
-            {
-                var Trivia = node.GetLeadingTrivia()[i];
-                var NextTrivia = i < node.GetLeadingTrivia().Count - 1 ? node.GetLeadingTrivia()[i + 1] : default(SyntaxTrivia);
-                if (Trivia.IsKind(VB.SyntaxKind.EndOfLineTrivia) && (FirstTrivia || NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia)))
-                {
-                    continue;
-                }
-                if (Trivia.IsKind(VB.SyntaxKind.WhitespaceTrivia) && NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia))
-                {
-                    continue;
-                }
-
-                FirstTrivia = false;
-                NewLeadingTrivia.Add(Trivia);
-            }
-
-            return node.WithLeadingTrivia(NewLeadingTrivia);
-        }
-
-        internal static T WithAppendedTrailingTrivia<T>(this T node, params SyntaxTrivia[] trivia) where T : SyntaxNode
-        {
-            if (trivia.Length == 0)
-            {
-                return node;
-            }
-
-            return node.WithAppendedTrailingTrivia((IEnumerable<SyntaxTrivia>)trivia);
         }
 
         internal static T WithAppendedTriviaFromEndOfDirectiveToken<T>(this T node, SyntaxToken Token) where T : SyntaxNode
@@ -411,408 +120,6 @@ namespace CSharpToVBCodeConverter.Util
             }
 
             return node.WithAppendedTrailingTrivia(NewTrailingTrivia).WithTrailingEOL();
-        }
-
-        /// <summary>
-        /// Merge trailing trivia
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="node"></param>
-        /// <param name="TriviaListToMerge"></param>
-        /// <returns></returns>
-        internal static T WithMergedTrailingTrivia<T>(this T node, IEnumerable<SyntaxTrivia> TriviaListToMerge) where T : SyntaxNode
-        {
-            if (node == null)
-            {
-                return null;
-            }
-            if (!TriviaListToMerge?.Any() == true)
-            {
-                return node;
-            }
-            var NodeTrailingTrivia = node.GetTrailingTrivia().ToList();
-            if (!NodeTrailingTrivia.Any())
-            {
-                return node.WithTrailingTrivia(TriviaListToMerge);
-            }
-            var NewTrailingTrivia = new List<SyntaxTrivia>();
-            // Both nodes have trivia
-            bool FoundEOL = false;
-            bool FoundWhiteSpace = false;
-            AdjustTrailingTrivia(NodeTrailingTrivia, NewTrailingTrivia, ref FoundEOL, ref FoundWhiteSpace);
-            AdjustTrailingTrivia(TriviaListToMerge, NewTrailingTrivia, ref FoundEOL, ref FoundWhiteSpace);
-            return node.WithTrailingTrivia(NewTrailingTrivia);
-        }
-
-        internal static T WithModifiedNodeTrailingTrivia<T>(this T Node, bool SeparatorFollows) where T : VB.VisualBasicSyntaxNode
-        {
-            bool AfterLineContinuation = false;
-            bool AfterWhiteSpace = false;
-            var FinalLeadingTriviaList = new List<SyntaxTrivia>();
-            var InitialTriviaList = Node.GetTrailingTrivia().ToList();
-            int InitialTriviaListUBound = InitialTriviaList.Count - 1;
-            bool AfterComment = false;
-            bool AfterLinefeed = false;
-            var FinalTrailingTriviaList = new List<SyntaxTrivia>();
-            for (int i = 0, loopTo = InitialTriviaListUBound; i <= loopTo; i++)
-            {
-                var Trivia = InitialTriviaList[i];
-                var NextTrivia = i < InitialTriviaListUBound ? InitialTriviaList[i + 1] : VBFactory.ElasticMarker;
-                var switchExpr = Trivia.RawKind;
-                switch (switchExpr)
-                {
-                    case (int)VB.SyntaxKind.WhitespaceTrivia:
-                        {
-                            if (NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia))
-                            {
-                                continue;
-                            }
-
-                            if (NextTrivia.IsKind(VB.SyntaxKind.CommentTrivia) || NextTrivia.IsKind(VB.SyntaxKind.LineContinuationTrivia))
-                            {
-                                FinalTrailingTriviaList.Add(Trivia);
-                                AfterLinefeed = false;
-                                AfterComment = false;
-                                AfterWhiteSpace = true;
-                            }
-
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.EndOfLineTrivia:
-                        {
-                            if (NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia))
-                            {
-                                continue;
-                            }
-                            if (!AfterLinefeed)
-                            {
-                                if (AfterComment || AfterLineContinuation)
-                                {
-                                    FinalTrailingTriviaList.Add(Trivia);
-                                }
-                                else
-                                {
-                                    if (SeparatorFollows)
-                                    {
-                                        FinalTrailingTriviaList.Add(global::VisualBasicSyntaxFactory.SpaceTrivia);
-                                        FinalTrailingTriviaList.Add(global::VisualBasicSyntaxFactory.LineContinuation);
-                                        FinalTrailingTriviaList.Add(Trivia);
-                                    }
-                                }
-                                AfterComment = false;
-                                AfterLinefeed = true;
-                                AfterWhiteSpace = false;
-                                AfterLineContinuation = false;
-                            }
-
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.CommentTrivia:
-                        {
-                            if (!AfterWhiteSpace)
-                            {
-                                FinalTrailingTriviaList.Add(global::VisualBasicSyntaxFactory.SpaceTrivia);
-                            }
-                            if (!AfterLineContinuation)
-                            {
-                                FinalTrailingTriviaList.Add(global::VisualBasicSyntaxFactory.LineContinuation);
-                                FinalTrailingTriviaList.Add(global::VisualBasicSyntaxFactory.SpaceTrivia);
-                            }
-                            FinalTrailingTriviaList.Add(Trivia);
-                            if (!NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia))
-                            {
-                                FinalTrailingTriviaList.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
-                                AfterLineContinuation = false;
-                                AfterLinefeed = true;
-                            }
-                            AfterComment = true;
-                            AfterWhiteSpace = false;
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.LineContinuationTrivia:
-                        {
-                            if (FinalTrailingTriviaList.Last().IsKind(VB.SyntaxKind.LineContinuationTrivia))
-                            {
-                                continue;
-                            }
-                            AfterWhiteSpace = false;
-                            AfterLineContinuation = true;
-                            FinalTrailingTriviaList.Add(global::VisualBasicSyntaxFactory.LineContinuation);
-                            break;
-                        }
-
-                    default:
-                        {
-
-                            break;
-                        }
-                }
-            }
-            return Node.With(FinalLeadingTriviaList, FinalTrailingTriviaList);
-        }
-
-        /// <summary>
-        /// This function is used where a Token is Followed by a Node followed by a Token
-        /// in the middle of a statement where VB does not allow Directives
-        /// </summary>
-        /// <param name="Node"></param>
-        /// <returns>New Node with valid Trivia</returns>
-        internal static T WithModifiedNodeTrivia<T>(this T Node, bool SeparatorFollows) where T : VB.VisualBasicSyntaxNode
-        {
-            bool AfterFirstTrivia = false;
-            bool AfterLineContinuation = false;
-            bool AfterWhiteSpace = false;
-            var FinalLeadingTriviaList = new List<SyntaxTrivia>();
-            var InitialTriviaList = Node.GetLeadingTrivia().ToList();
-            int InitialTriviaListUBound = InitialTriviaList.Count - 1;
-            for (int i = 0, loopTo = InitialTriviaListUBound; i <= loopTo; i++)
-            {
-                var Trivia = InitialTriviaList[i];
-                var NextTrivia = i < InitialTriviaList.Count - 1 ? InitialTriviaList[i + 1] : default(SyntaxTrivia);
-                var switchExpr = Trivia.RawKind;
-                switch (switchExpr)
-                {
-                    case (int)VB.SyntaxKind.WhitespaceTrivia:
-                        {
-                            if (NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia) || AfterLineContinuation)
-                            {
-                                continue;
-                            }
-                            else if (NextTrivia.IsKind(VB.SyntaxKind.WhitespaceTrivia))
-                            {
-                                if (Trivia.FullSpan.Length < NextTrivia.FullSpan.Length)
-                                {
-                                    AfterFirstTrivia = false;
-                                    continue;
-                                }
-                                else
-                                {
-                                    Trivia = NextTrivia;
-                                    i += 1;
-                                }
-                            }
-                            AfterFirstTrivia = true;
-                            AfterWhiteSpace = true;
-                            FinalLeadingTriviaList.Add(Trivia);
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.EndOfLineTrivia:
-                        {
-                            if (!AfterFirstTrivia)
-                            {
-                                AfterFirstTrivia = true;
-                                continue;
-                            }
-                            FinalLeadingTriviaList.Add(Trivia);
-                            AfterWhiteSpace = false;
-                            if (FinalLeadingTriviaList.Count == 1 || NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia))
-                            {
-                                FinalLeadingTriviaList.Add(global::VisualBasicSyntaxFactory.SpaceTrivia);
-                                FinalLeadingTriviaList.Add(global::VisualBasicSyntaxFactory.LineContinuation);
-                                AfterLineContinuation = true;
-                            }
-                            else
-                            {
-                                AfterLineContinuation = false;
-                            }
-
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.CommentTrivia:
-                        {
-                            AfterFirstTrivia = true;
-                            if (!AfterLineContinuation)
-                            {
-                                if (!AfterWhiteSpace)
-                                {
-                                    FinalLeadingTriviaList.Add(global::VisualBasicSyntaxFactory.SpaceTrivia);
-                                }
-                                FinalLeadingTriviaList.Add(global::VisualBasicSyntaxFactory.LineContinuation);
-                                AfterLineContinuation = true;
-                            }
-                            FinalLeadingTriviaList.Add(Trivia);
-                            if (!NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia))
-                            {
-                                FinalLeadingTriviaList.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
-                            }
-
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.DisableWarningDirectiveTrivia:
-                    case (int)VB.SyntaxKind.EnableWarningDirectiveTrivia:
-                    case (int)VB.SyntaxKind.IfDirectiveTrivia:
-                    case (int)VB.SyntaxKind.DisabledTextTrivia:
-                    case (int)VB.SyntaxKind.ElseDirectiveTrivia:
-                    case (int)VB.SyntaxKind.EndIfDirectiveTrivia:
-                        {
-                            FinalLeadingTriviaList.AddRange(Util.SyntaxTriviaExtensions.DirectiveNotAllowedHere(Trivia));
-                            AfterFirstTrivia = true;
-                            AfterLineContinuation = false;
-                            if (NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia) || NextTrivia.IsNone())
-                            {
-                                continue;
-                            }
-                            FinalLeadingTriviaList.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.LineContinuationTrivia:
-                        {
-                            if (!AfterLineContinuation)
-                            {
-                                FinalLeadingTriviaList.Add(Trivia);
-                            }
-                            AfterLineContinuation = true;
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.RegionDirectiveTrivia:
-                    case (int)VB.SyntaxKind.EndRegionDirectiveTrivia:
-                        {
-                            AfterFirstTrivia = true;
-                            AfterLineContinuation = false;
-                            FinalLeadingTriviaList.Add(Trivia);
-                            if (NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia) || NextTrivia.IsNone())
-                            {
-                                continue;
-                            }
-                            FinalLeadingTriviaList.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
-                            break;
-                        }
-
-                    default:
-                        {
-
-                            break;
-                        }
-                }
-            }
-            InitialTriviaList.Clear();
-            InitialTriviaList.AddRange(Node.GetTrailingTrivia());
-            InitialTriviaListUBound = InitialTriviaList.Count - 1;
-            AfterWhiteSpace = false;
-            bool AfterComment = false;
-            AfterLineContinuation = false;
-            bool AfterLinefeed = false;
-            var FinalTrailingTriviaList = new List<SyntaxTrivia>();
-            for (int i = 0, loopTo1 = InitialTriviaListUBound; i <= loopTo1; i++)
-            {
-                var Trivia = InitialTriviaList[i];
-                var NextTrivia = i < InitialTriviaListUBound ? InitialTriviaList[i + 1] : VBFactory.ElasticMarker;
-                var switchExpr1 = Trivia.RawKind;
-                switch (switchExpr1)
-                {
-                    case (int)VB.SyntaxKind.WhitespaceTrivia:
-                        {
-                            if (NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia))
-                            {
-                                continue;
-                            }
-
-                            if (NextTrivia.IsKind(VB.SyntaxKind.CommentTrivia) || NextTrivia.IsKind(VB.SyntaxKind.LineContinuationTrivia))
-                            {
-                                FinalTrailingTriviaList.Add(Trivia);
-                                AfterLinefeed = false;
-                                AfterComment = false;
-                                AfterWhiteSpace = true;
-                            }
-
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.EndOfLineTrivia:
-                        {
-                            if (NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia))
-                            {
-                                continue;
-                            }
-                            if (!AfterLinefeed)
-                            {
-                                if (AfterComment || AfterLineContinuation)
-                                {
-                                    FinalTrailingTriviaList.Add(Trivia);
-                                }
-                                else
-                                {
-                                    if (SeparatorFollows)
-                                    {
-                                        FinalTrailingTriviaList.Add(global::VisualBasicSyntaxFactory.SpaceTrivia);
-                                        FinalTrailingTriviaList.Add(global::VisualBasicSyntaxFactory.LineContinuation);
-                                        FinalTrailingTriviaList.Add(Trivia);
-                                    }
-                                }
-                                AfterComment = false;
-                                AfterLinefeed = true;
-                                AfterWhiteSpace = false;
-                                AfterLineContinuation = false;
-                            }
-
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.CommentTrivia:
-                        {
-                            if (!AfterWhiteSpace)
-                            {
-                                FinalTrailingTriviaList.Add(global::VisualBasicSyntaxFactory.SpaceTrivia);
-                            }
-                            if (!AfterLineContinuation)
-                            {
-                                FinalTrailingTriviaList.Add(global::VisualBasicSyntaxFactory.LineContinuation);
-                                FinalTrailingTriviaList.Add(global::VisualBasicSyntaxFactory.SpaceTrivia);
-                            }
-                            FinalTrailingTriviaList.Add(Trivia);
-                            if (!NextTrivia.IsKind(VB.SyntaxKind.EndOfLineTrivia))
-                            {
-                                FinalTrailingTriviaList.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
-                                AfterLineContinuation = false;
-                                AfterLinefeed = true;
-                            }
-                            AfterComment = true;
-                            AfterWhiteSpace = false;
-                            break;
-                        }
-
-                    case (int)VB.SyntaxKind.LineContinuationTrivia:
-                        {
-                            if (FinalTrailingTriviaList.Last().IsKind(VB.SyntaxKind.LineContinuationTrivia))
-                            {
-                                continue;
-                            }
-                            AfterWhiteSpace = false;
-                            AfterLineContinuation = true;
-                            FinalTrailingTriviaList.Add(global::VisualBasicSyntaxFactory.LineContinuation);
-                            break;
-                        }
-
-                    default:
-                        {
-
-                            break;
-                        }
-                }
-            }
-            return Node.With(FinalLeadingTriviaList, FinalTrailingTriviaList);
-        }
-
-        internal static T WithPrependedLeadingTrivia<T>(this T node, params SyntaxTrivia[] trivia) where T : SyntaxNode
-        {
-            if (trivia.Length == 0)
-            {
-                return node;
-            }
-            var TriviaList = trivia.ToList();
-            if (TriviaList.Last().IsKind(VB.SyntaxKind.CommentTrivia))
-            {
-                TriviaList.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
-            }
-            return node.WithPrependedLeadingTrivia(TriviaList);
         }
 
         internal static T WithPrependedLeadingTrivia<T>(this T node, SyntaxTriviaList trivia) where T : SyntaxNode
@@ -899,8 +206,6 @@ namespace CSharpToVBCodeConverter.Util
                                     return node.WithTrailingTrivia(TrailingTrivia);
                                 }
                         }
-
-                        break;
                     }
 
                 case 2:
@@ -1021,6 +326,7 @@ namespace CSharpToVBCodeConverter.Util
             return node;
         }
 
+        private static int TriviaDepth = 0;
         public static SyntaxTrivia ConvertTrivia(this SyntaxTrivia t)
         {
             var switchExpr = t.RawKind;
@@ -1063,7 +369,7 @@ namespace CSharpToVBCodeConverter.Util
 
                 case (int)CS.SyntaxKind.DisabledTextTrivia:
                     {
-                        if (global::RestuructureSeparatedLists.IgnoredIfDepth > 0)
+                        if (TriviaDepth > 0)
                         {
                             return VBFactory.DisabledTextTrivia(t.ToString().WithoutNewLines(' '));
                         }
@@ -1112,9 +418,9 @@ namespace CSharpToVBCodeConverter.Util
 
                 case (int)CS.SyntaxKind.EndIfDirectiveTrivia:
                     {
-                        if (global::RestuructureSeparatedLists.IgnoredIfDepth > 0)
+                        if (TriviaDepth > 0)
                         {
-                            global::RestuructureSeparatedLists.IgnoredIfDepth -= 1;
+                            TriviaDepth -= 1;
                             return VBFactory.CommentTrivia($"' TODO VB does not allow directives here, original statement {t.ToFullString().WithoutNewLines(' ')}");
                         }
                         CSS.EndIfDirectiveTriviaSyntax EndIfDirective = (CSS.EndIfDirectiveTriviaSyntax)StructuredTrivia;
@@ -1132,7 +438,7 @@ namespace CSharpToVBCodeConverter.Util
                     {
                         if (t.Token.Parent?.AncestorsAndSelf().OfType<CSS.InitializerExpressionSyntax>().Any() == true)
                         {
-                            global::RestuructureSeparatedLists.IgnoredIfDepth += 1;
+                            TriviaDepth += 1;
                         }
                         CSS.IfDirectiveTriviaSyntax IfDirective = (CSS.IfDirectiveTriviaSyntax)StructuredTrivia;
                         string Expression1 = StringReplaceCondition(IfDirective.Condition.ToString());
@@ -1144,7 +450,7 @@ namespace CSharpToVBCodeConverter.Util
                     {
                         if (t.Token.Parent.AncestorsAndSelf().OfType<CSS.InitializerExpressionSyntax>().Any())
                         {
-                            global::RestuructureSeparatedLists.IgnoredIfDepth += 1;
+                            TriviaDepth += 1;
                         }
                         CSS.ElifDirectiveTriviaSyntax ELIfDirective = (CSS.ElifDirectiveTriviaSyntax)StructuredTrivia;
                         string Expression1 = StringReplaceCondition(ELIfDirective.Condition.ToString());
@@ -1158,8 +464,9 @@ namespace CSharpToVBCodeConverter.Util
                         {
                             IfOrElseIfKeyword = global::VisualBasicSyntaxFactory.IfKeyword;
                         }
-                        return VBFactory.Trivia(VBFactory.ElseIfDirectiveTrivia(IfOrElseIfKeyword, VBFactory.ParseExpression(Expression1)
-    ).With(ELIfDirective.GetLeadingTrivia().ConvertTrivia(), ELIfDirective.Condition.GetTrailingTrivia().ConvertTrivia()).WithAppendedTriviaFromEndOfDirectiveToken(ELIfDirective.EndOfDirectiveToken));
+                        return VBFactory.Trivia(VBFactory.ElseIfDirectiveTrivia(IfOrElseIfKeyword, VBFactory.ParseExpression(Expression1))
+                            .With(ELIfDirective.GetLeadingTrivia().ConvertTrivia(), ELIfDirective.Condition.GetTrailingTrivia().ConvertTrivia())
+                            .WithAppendedTriviaFromEndOfDirectiveToken(ELIfDirective.EndOfDirectiveToken));
                     }
 
                 case (int)CS.SyntaxKind.LineDirectiveTrivia:
@@ -1396,80 +703,6 @@ namespace CSharpToVBCodeConverter.Util
             return TriviaList;
         }
 
-        public static TNode GetAncestor<TNode>(this SyntaxNode node) where TNode : SyntaxNode
-        {
-            if (node == null)
-            {
-                return null;
-            }
-
-            return node.GetAncestors<TNode>().FirstOrDefault();
-        }
-
-        public static (SyntaxToken, SyntaxToken) GetBraces(this SyntaxNode node)
-        {
-            CSS.NamespaceDeclarationSyntax namespaceNode = node as CSS.NamespaceDeclarationSyntax;
-            if (namespaceNode != null)
-            {
-                return ValueTuple.Create(namespaceNode.OpenBraceToken, namespaceNode.CloseBraceToken);
-            }
-
-            CSS.BaseTypeDeclarationSyntax baseTypeNode = node as CSS.BaseTypeDeclarationSyntax;
-            if (baseTypeNode != null)
-            {
-                return ValueTuple.Create(baseTypeNode.OpenBraceToken, baseTypeNode.CloseBraceToken);
-            }
-
-            CSS.AccessorListSyntax accessorListNode = node as CSS.AccessorListSyntax;
-            if (accessorListNode != null)
-            {
-                return ValueTuple.Create(accessorListNode.OpenBraceToken, accessorListNode.CloseBraceToken);
-            }
-
-            CSS.BlockSyntax blockNode = node as CSS.BlockSyntax;
-            if (blockNode != null)
-            {
-                return ValueTuple.Create(blockNode.OpenBraceToken, blockNode.CloseBraceToken);
-            }
-
-            CSS.SwitchStatementSyntax switchStatementNode = node as CSS.SwitchStatementSyntax;
-            if (switchStatementNode != null)
-            {
-                return ValueTuple.Create(switchStatementNode.OpenBraceToken, switchStatementNode.CloseBraceToken);
-            }
-
-            CSS.AnonymousObjectCreationExpressionSyntax anonymousObjectCreationExpression = node as CSS.AnonymousObjectCreationExpressionSyntax;
-            if (anonymousObjectCreationExpression != null)
-            {
-                return ValueTuple.Create(anonymousObjectCreationExpression.OpenBraceToken, anonymousObjectCreationExpression.CloseBraceToken);
-            }
-
-            CSS.InitializerExpressionSyntax initializeExpressionNode = node as CSS.InitializerExpressionSyntax;
-            if (initializeExpressionNode != null)
-            {
-                return ValueTuple.Create(initializeExpressionNode.OpenBraceToken, initializeExpressionNode.CloseBraceToken);
-            }
-
-            return (default, default);
-        }
-
-        public static bool IsKind(this SyntaxNode node, params VB.SyntaxKind[] kind1)
-        {
-            if (node == null)
-            {
-                return false;
-            }
-
-            foreach (VB.SyntaxKind k in kind1)
-            {
-                if ((VB.SyntaxKind)Conversions.ToUShort(node.RawKind) == k)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         public static T WithAppendedTrailingTrivia<T>(this T node, SyntaxTriviaList trivia) where T : SyntaxNode
         {
             if (trivia.Count == 0)
@@ -1515,102 +748,6 @@ namespace CSharpToVBCodeConverter.Util
             return node.WithTrailingTrivia(otherNode.GetTrailingTrivia().ConvertTrivia());
         }
 
-        internal static SyntaxToken WithConvertedTriviaFrom(this SyntaxToken Token, SyntaxNode otherNode)
-        {
-            if (otherNode.HasLeadingTrivia)
-            {
-                Token = Token.WithLeadingTrivia(otherNode.GetLeadingTrivia().ConvertTrivia());
-            }
-            if (!otherNode.HasTrailingTrivia || otherNode.ParentHasSameTrailingTrivia())
-            {
-                return Token;
-            }
-            return Token.WithTrailingTrivia(otherNode.GetTrailingTrivia().ConvertTrivia());
-        }
-
-        internal static SyntaxToken WithConvertedTriviaFrom(this SyntaxToken Token, SyntaxToken otherToken)
-        {
-            try
-            {
-                if (otherToken.HasLeadingTrivia)
-                {
-                    Token = Token.WithLeadingTrivia(otherToken.LeadingTrivia.ConvertTrivia().ToList());
-                }
-                return Token.WithTrailingTrivia(otherToken.TrailingTrivia.ConvertTrivia());
-            }
-            catch (OperationCanceledException ex)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-
-            }
-
-            return default(SyntaxToken);
-        }
-
-        public static T WithConvertedTriviaFrom<T>(this T node, SyntaxToken otherToken) where T : SyntaxNode
-        {
-            if (node == null)
-            {
-                throw new ArgumentException($"Parameter {nameof(node)} Is Nothing");
-            }
-            if (otherToken.HasLeadingTrivia)
-            {
-                node = node.WithLeadingTrivia(otherToken.LeadingTrivia.ConvertTrivia());
-            }
-            if (!otherToken.HasTrailingTrivia)
-            {
-                return node;
-            }
-            return node.WithTrailingTrivia(otherToken.TrailingTrivia.ConvertTrivia());
-        }
-
-        /* TODO ERROR: Skipped EndRegionDirectiveTrivia */
-        /* TODO ERROR: Skipped RegionDirectiveTrivia */
-        internal static T WithConvertedLeadingTriviaFrom<T>(this T node, SyntaxNode otherNode) where T : SyntaxNode
-        {
-            if (otherNode == null || !otherNode.HasLeadingTrivia)
-            {
-                return node;
-            }
-            return node.WithLeadingTrivia(otherNode.GetLeadingTrivia().ConvertTrivia());
-        }
-
-        internal static T WithConvertedLeadingTriviaFrom<T>(this T node, SyntaxToken otherToken) where T : SyntaxNode
-        {
-            if (!otherToken.HasLeadingTrivia)
-            {
-                return node;
-            }
-            return node.WithLeadingTrivia(otherToken.LeadingTrivia.ConvertTrivia());
-        }
-
-        public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxToken otherToken)
-        {
-            if (!otherToken.HasLeadingTrivia)
-            {
-                return node;
-            }
-            return node.WithLeadingTrivia(otherToken.LeadingTrivia.ConvertTrivia());
-        }
-
-        /* TODO ERROR: Skipped EndRegionDirectiveTrivia */
-        /* TODO ERROR: Skipped RegionDirectiveTrivia */
-        internal static T WithConvertedTrailingTriviaFrom<T>(this T node, SyntaxNode otherNode) where T : SyntaxNode
-        {
-            if (otherNode == null || !otherNode.HasTrailingTrivia)
-            {
-                return node;
-            }
-            if (otherNode.ParentHasSameTrailingTrivia())
-            {
-                return node;
-            }
-            return node.WithTrailingTrivia(otherNode.GetTrailingTrivia().ConvertTrivia());
-        }
-
         internal static T WithConvertedTrailingTriviaFrom<T>(this T node, SyntaxToken otherToken) where T : SyntaxNode
         {
             if (!otherToken.HasTrailingTrivia)
@@ -1618,11 +755,6 @@ namespace CSharpToVBCodeConverter.Util
                 return node;
             }
             return node.WithTrailingTrivia(otherToken.TrailingTrivia.ConvertTrivia());
-        }
-
-        public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken Token, SyntaxToken otherToken)
-        {
-            return Token.WithTrailingTrivia(otherToken.TrailingTrivia.ConvertTrivia());
         }
     }
 }
