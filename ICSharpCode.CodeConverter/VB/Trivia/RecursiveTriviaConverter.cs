@@ -18,6 +18,10 @@ using CodeConverter.Util;
 
 namespace CSharpToVBCodeConverter.Util
 {
+    /// <summary>
+    /// Ported from https://github.com/paul1956/CSharpToVB/blob/fb33d1e7b938255b215a71c54552d2db29d535fb/CodeConverter/Extensions/SyntaxNodeExtensions.vb#L938
+    /// With permission of Paul1956: https://github.com/icsharpcode/CodeConverter/issues/8#issuecomment-554716065
+    /// </summary>
     internal class RecursiveTriviaConverter
     {
         public static IEnumerable<SyntaxTrivia> ConvertTopLevel(IReadOnlyCollection<SyntaxTrivia> triviaToConvert)

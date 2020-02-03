@@ -11,110 +11,8 @@ using CSharpToVBCodeConverter.Util;
 
 namespace CSharpToVBCodeConverter.DestVisualBasic
 {
-    public static class TriviaListSupport
+    internal static class TriviaListSupport
     {
-        internal static void RelocateAttributeDirectiveDisabledTrivia(SyntaxTriviaList TriviaList, bool FoundDirective, bool IsTheory, ref List<SyntaxTrivia> StatementLeadingTrivia, ref List<SyntaxTrivia> StatementTrailingTrivia)
-        {
-            if (IsTheory)
-            {
-                return;
-            }
-            foreach (SyntaxTrivia t in TriviaList)
-            {
-                if (!(t.IsDirective || t.MatchesKind(VB.SyntaxKind.DisabledTextTrivia, VB.SyntaxKind.RegionDirectiveTrivia, VB.SyntaxKind.EndRegionDirectiveTrivia)))
-                {
-                    continue;
-                }
-                if (FoundDirective)
-                {
-                    if (StatementTrailingTrivia.Count == 0)
-                    {
-                        StatementTrailingTrivia.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
-                    }
-                    StatementTrailingTrivia.Add(t);
-                }
-                else
-                {
-                    if (t.IsDirective)
-                    {
-                        StatementLeadingTrivia.Add(t);
-                        FoundDirective = true;
-                    }
-                    else
-                    {
-                        StatementTrailingTrivia.Add(t);
-                    }
-                }
-            }
-        }
-
-        internal static SyntaxTriviaList RelocateDirectiveDisabledTrivia(SyntaxTriviaList TriviaList, ref List<SyntaxTrivia> StatementTrivia, bool RemoveEOL)
-        {
-            var NewTrivia = new SyntaxTriviaList();
-            bool FoundDirective = false;
-            foreach (SyntaxTrivia t in TriviaList)
-            {
-                if (!(FoundDirective || t.IsDirective || t.IsKind(VB.SyntaxKind.DisabledTextTrivia)))
-                {
-                    if (t.IsEndOfLine() && RemoveEOL)
-                    {
-                        NewTrivia = NewTrivia.Add(global::VisualBasicSyntaxFactory.SpaceTrivia);
-                    }
-                    else
-                    {
-                        NewTrivia = NewTrivia.Add(t);
-                    }
-                }
-                else
-                {
-                    if (t.IsDirective)
-                    {
-                        StatementTrivia.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
-                        StatementTrivia.Add(t);
-                        FoundDirective = true;
-                    }
-                    else
-                    {
-                        StatementTrivia.Add(t);
-                    }
-                }
-            }
-            return NewTrivia;
-        }
-
-        internal static SyntaxTriviaList RelocateLeadingCommentTrivia(SyntaxTriviaList TriviaList, ref List<SyntaxTrivia> StatementLeadingTrivia)
-        {
-            var NewLeadingTrivia = new SyntaxTriviaList();
-            bool FoundComment = false;
-            foreach (SyntaxTrivia t in TriviaList)
-            {
-                if (!(FoundComment || t.IsComment()))
-                {
-                    if (t.IsEndOfLine())
-                    {
-                        NewLeadingTrivia = NewLeadingTrivia.Add(global::VisualBasicSyntaxFactory.SpaceTrivia);
-                    }
-                    else
-                    {
-                        NewLeadingTrivia = NewLeadingTrivia.Add(t);
-                    }
-                }
-                else
-                {
-                    if (t.IsComment())
-                    {
-                        StatementLeadingTrivia.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
-                        StatementLeadingTrivia.Add(t);
-                        FoundComment = true;
-                    }
-                    else
-                    {
-                        StatementLeadingTrivia.Add(t);
-                    }
-                }
-            }
-            return NewLeadingTrivia;
-        }
 
         internal static SyntaxTokenList TranslateTokenList(IEnumerable<SyntaxToken> ChildTokens)
         {
@@ -175,20 +73,6 @@ namespace CSharpToVBCodeConverter.DestVisualBasic
                 }
             }
             return NewTokenList;
-        }
-
-        internal static bool TriviaIsIdentical(SyntaxTriviaList LeadingTrivia, List<SyntaxTrivia> NodeLeadingTrivia)
-        {
-            if (LeadingTrivia.Count != NodeLeadingTrivia.Count)
-                return false;
-            for (int i = 0, loopTo = LeadingTrivia.Count - 1; i <= loopTo; i++)
-            {
-                if ((LeadingTrivia[i].ToFullString().Trim() ?? "") != (NodeLeadingTrivia[i].ToFullString().Trim() ?? ""))
-                {
-                    return false;
-                }
-            }
-            return true;
         }
     }
 }

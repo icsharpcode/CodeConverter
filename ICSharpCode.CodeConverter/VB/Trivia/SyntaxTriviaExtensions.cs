@@ -12,7 +12,7 @@ using ICSharpCode.CodeConverter.Util;
 
 namespace CSharpToVBCodeConverter.Util
 {
-    public static class SyntaxTriviaExtensions
+    internal static class SyntaxTriviaExtensions
     {
         public static bool ContainsEOLTrivia(this SyntaxTriviaList TriviaList)
         {
@@ -24,11 +24,6 @@ namespace CSharpToVBCodeConverter.Util
                 }
             }
             return false;
-        }
-
-        public static bool IsComment(this SyntaxTrivia trivia)
-        {
-            return trivia.IsSingleLineComment() || trivia.IsMultiLineComment();
         }
 
         public static bool IsCommentOrDirectiveTrivia(this SyntaxTrivia t)
@@ -53,19 +48,9 @@ namespace CSharpToVBCodeConverter.Util
             return trivia.IsKind(CS.SyntaxKind.MultiLineCommentTrivia) || trivia.IsKind(CS.SyntaxKind.DocumentationCommentExteriorTrivia) || trivia.IsKind(CS.SyntaxKind.MultiLineDocumentationCommentTrivia);
         }
 
-        public static bool IsMultiLineDocComment(this SyntaxTrivia trivia)
-        {
-            return trivia.IsKind(CS.SyntaxKind.MultiLineDocumentationCommentTrivia);
-        }
-
         public static bool IsSingleLineComment(this SyntaxTrivia trivia)
         {
             return trivia.IsKind(CS.SyntaxKind.SingleLineCommentTrivia) || trivia.IsKind(CS.SyntaxKind.SingleLineDocumentationCommentTrivia) || trivia.IsKind(VB.SyntaxKind.CommentTrivia);
-        }
-
-        public static bool IsSingleLineDocComment(this SyntaxTrivia trivia)
-        {
-            return trivia.IsKind(CS.SyntaxKind.SingleLineDocumentationCommentTrivia);
         }
 
         public static SyntaxTriviaList ToSyntaxTriviaList(this IEnumerable<SyntaxTrivia> l)
