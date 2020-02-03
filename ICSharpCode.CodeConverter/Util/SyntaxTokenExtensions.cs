@@ -769,12 +769,12 @@ namespace ICSharpCode.CodeConverter.Util
                 || SyntaxFacts.IsPreprocessorKeyword(token.Kind());
         }
 
-        public static SyntaxToken GetNextNonZeroWidthTokenOrEndOfFile(this SyntaxToken token)
+        public static SyntaxToken GetNextNonZeroWidthCsTokenOrEndOfFile(this SyntaxToken token)
         {
-            return token.GetNextTokenOrEndOfFile();
+            return token.GetNextCsTokenOrEndOfFile();
         }
 
-        public static SyntaxToken GetNextTokenOrEndOfFile(
+        public static SyntaxToken GetNextCsTokenOrEndOfFile(
             this SyntaxToken token,
             bool includeZeroWidth = false,
             bool includeSkipped = false,
@@ -897,7 +897,7 @@ namespace ICSharpCode.CodeConverter.Util
                 yield return trivia;
             }
 
-            var nextToken = token.GetNextTokenOrEndOfFile(includeZeroWidth: true, includeSkipped: true, includeDirectives: true, includeDocumentationComments: true);
+            var nextToken = token.GetNextCsTokenOrEndOfFile(includeZeroWidth: true, includeSkipped: true, includeDirectives: true, includeDocumentationComments: true);
 
             foreach (var trivia in nextToken.LeadingTrivia) {
                 yield return trivia;
