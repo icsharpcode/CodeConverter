@@ -871,10 +871,8 @@ End Sub", @"public SurroundingClass()
         public async Task TestStaticConstructor()
         {
             await TestConversionVisualBasicToCSharp(
-@"
-Shared Sub New()
-End Sub", @"
-static SurroundingClass()
+@"Shared Sub New()
+End Sub", @"static SurroundingClass()
 {
 }");
         }
@@ -2049,11 +2047,9 @@ internal partial class AsyncCode
         public async Task TestExternDllImport()
         {
             await TestConversionVisualBasicToCSharp(
-                @"
-<DllImport(""kernel32.dll"", SetLastError:=True)>
+                @"<DllImport(""kernel32.dll"", SetLastError:=True)>
 Private Shared Function OpenProcess(ByVal dwDesiredAccess As AccessMask, ByVal bInheritHandle As Boolean, ByVal dwProcessId As UInteger) As IntPtr
-End Function", @"
-[DllImport(""kernel32.dll"", SetLastError = true)]
+End Function", @"[DllImport(""kernel32.dll"", SetLastError = true)]
 private static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);");
         }
     }

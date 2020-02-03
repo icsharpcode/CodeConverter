@@ -96,10 +96,8 @@ End Class",
         public async Task SingleAbstractMethod()
         {
             await TestConversionVisualBasicToCSharp(
-                @"
-Protected MustOverride Sub abs()",
-                @"
-protected abstract void abs();");
+                @"Protected MustOverride Sub abs()",
+                @"protected abstract void abs();");
         }
 
         [Fact]

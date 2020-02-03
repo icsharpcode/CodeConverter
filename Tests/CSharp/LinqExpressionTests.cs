@@ -11,16 +11,14 @@ namespace CodeConverter.Tests.CSharp
         [Fact]
         public async Task Linq1()
         {
-            await TestConversionVisualBasicToCSharp(@"
-Private Shared Sub SimpleQuery()
+            await TestConversionVisualBasicToCSharp(@"Private Shared Sub SimpleQuery()
     Dim numbers = {7, 9, 5, 3, 6}
     Dim res = From n In numbers Where n > 5 Select n
     For Each n In res
         Console.WriteLine(n)
     Next
 End Sub",
-                @"
-private static void SimpleQuery()
+                @"private static void SimpleQuery()
 {
     var numbers = new[] { 7, 9, 5, 3, 6 };
     var res = from n in numbers
