@@ -316,13 +316,18 @@ namespace ICSharpCode.CodeConverter.VB
                 return SyntaxFactory.MultiLineFunctionLambdaExpression(header,
                     SyntaxFactory.SingletonList<StatementSyntax>(vbThrowStatement), endBlock);
             } else {
-                var expressionSyntax = (ExpressionSyntax)body.Accept(_nodesVisitor);
-                var stmt = isSub ? (StatementSyntax)SyntaxFactory.ExpressionStatement(expressionSyntax) : SyntaxFactory.ReturnStatement(expressionSyntax);
+                var stmt = GetStatementSyntax(body.Accept(_nodesVisitor),
+                    expression => isSub ? (StatementSyntax)SyntaxFactory.ExpressionStatement(expression) : SyntaxFactory.ReturnStatement(expression));
                 statements = InsertRequiredDeclarations(SyntaxFactory.SingletonList(stmt), body);
             }
 
             return CreateLambdaExpression(singleLineExpressionKind, multiLineExpressionKind, header, statements, endBlock);
 
+        }
+        StatementSyntax GetStatementSyntax(VisualBasicSyntaxNode node, Func<ExpressionSyntax, StatementSyntax> create) {
+            if (node is StatementSyntax)
+                return (StatementSyntax)node;
+            return create(node as ExpressionSyntax);
         }
 
         private static LambdaExpressionSyntax CreateLambdaExpression(SyntaxKind singleLineKind,

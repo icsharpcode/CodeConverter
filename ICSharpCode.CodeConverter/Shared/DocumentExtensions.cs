@@ -8,6 +8,7 @@ using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Options;
 using Microsoft.CodeAnalysis.Simplification;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -102,7 +103,9 @@ namespace ICSharpCode.CodeConverter.Shared
             var root = syntaxRoot ?? await doc.GetSyntaxRootAsync();
             var withSyntaxRoot = doc.WithSyntaxRoot(root);
             try {
-                return await Simplifier.ReduceAsync(withSyntaxRoot);
+                var options = await doc.GetOptionsAsync();
+                var newOptions = doc.Project.Language == LanguageNames.VisualBasic ? GetVBOptions(options) : GetCSOptions(options);
+                return await Simplifier.ReduceAsync(withSyntaxRoot, newOptions);
             } catch (Exception ex) {
                 var warningText = "Conversion warning: Qualified name reduction failed for this file. " + ex;
                 return doc.WithSyntaxRoot(WithWarningAnnotation(root, warningText));
@@ -112,6 +115,12 @@ namespace ICSharpCode.CodeConverter.Shared
         private static SyntaxNode WithWarningAnnotation(SyntaxNode node, string warningText)
         {
             return node.WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, warningText));
+        }
+        private static OptionSet GetVBOptions(DocumentOptionSet options) {
+            return options.WithChangedOption(SimplificationOptions.PreferImplicitTypeInLocalDeclaration, false);
+        }
+        private static OptionSet GetCSOptions(DocumentOptionSet options) {
+            return options;
         }
     }
 }

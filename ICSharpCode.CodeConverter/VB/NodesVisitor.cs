@@ -475,12 +475,7 @@ namespace ICSharpCode.CodeConverter.VB
         }
         private ImplementsClauseSyntax CreateImplementsClauseSyntax(IEnumerable<ISymbol> implementors, SyntaxToken id) {
             return SyntaxFactory.ImplementsClause(implementors.Select(x => {
-                    var namedTypeSymbol = x.ContainingSymbol as INamedTypeSymbol;
-                    NameSyntax nameSyntax = null;
-                    if(namedTypeSymbol == null || !namedTypeSymbol.IsGenericType)
-                        nameSyntax = SyntaxFactory.IdentifierName(x.ContainingSymbol.Name);
-                    else
-                        nameSyntax = SyntaxFactory.GenericName(x.ContainingSymbol.Name, SyntaxFactory.TypeArgumentList(namedTypeSymbol.TypeArguments.Select(y => GetTypeSyntax(y)).ToArray()));
+                    NameSyntax nameSyntax = _commonConversions.GetFullyQualifiedNameSyntax(x.ContainingSymbol as INamedTypeSymbol);
                     return SyntaxFactory.QualifiedName(nameSyntax, SyntaxFactory.IdentifierName(id));
                 }).ToArray()
             );
@@ -611,29 +606,38 @@ namespace ICSharpCode.CodeConverter.VB
                     .WithAsClause(SyntaxFactory.SimpleAsClause(GetTypeSyntax(x.Type)))
                     .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword)))
             );
-            var eventFieldIdentifier = (IdentifierNameSyntax)node.AccessorList?.Accessors
+            var csEventFieldIdentifier = node.AccessorList?.Accessors
                 .SelectMany(x => x.Body.Statements)
                 .OfType<CSS.ExpressionStatementSyntax>()
                 .Where(x => x.Expression != null)
                 .Select(x => x.Expression)
                 .OfType<CSS.AssignmentExpressionSyntax>()
                 .SelectMany(x => x.Left.DescendantNodesAndSelf().OfType<CSS.IdentifierNameSyntax>())
-                .FirstOrDefault()?.Accept(TriviaConvertingVisitor, false);
+                .FirstOrDefault();
+            var eventFieldIdentifier = (IdentifierNameSyntax)csEventFieldIdentifier?.Accept(TriviaConvertingVisitor, false);
 
             var riseEventAccessor = SyntaxFactory.RaiseEventAccessorBlock(
                 SyntaxFactory.RaiseEventAccessorStatement(
                     attributes,
                     SyntaxFactory.TokenList(),
                     SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(raiseEventParameters))
-            ));
+                )
+            );
             if (eventFieldIdentifier != null) {
-
-                var invocationExpression =
-                    SyntaxFactory.InvocationExpression(
-                        SyntaxFactory.ParseExpression(eventFieldIdentifier.Identifier.ValueText + "?"), //I think this syntax tree is the wrong shape, but using the right shape causes the simplifier to fail
-                        raiseEventParameters.Select(x => SyntaxFactory.IdentifierName(x.Identifier.Identifier)).CreateArgList()
+                if (_semanticModel.GetSymbolInfo(csEventFieldIdentifier).Symbol.Kind == SymbolKind.Event) {
+                    riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList(
+                        (StatementSyntax)SyntaxFactory.RaiseEventStatement(eventFieldIdentifier,
+                            SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(raiseEventParameters.Select(x => SyntaxFactory.SimpleArgument(SyntaxFactory.IdentifierName(x.Identifier.Identifier))).Cast<ArgumentSyntax>())))
+                        )
                     );
-                riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ExpressionStatement(invocationExpression)));
+                } else {
+                    var invocationExpression =
+                        SyntaxFactory.InvocationExpression(
+                            SyntaxFactory.ParseExpression(eventFieldIdentifier.Identifier.ValueText + "?"), //I think this syntax tree is the wrong shape, but using the right shape causes the simplifier to fail
+                            raiseEventParameters.Select(x => SyntaxFactory.IdentifierName(x.Identifier.Identifier)).CreateArgList()
+                        );
+                    riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ExpressionStatement(invocationExpression)));
+                }
             }
 
             accessors.Add(riseEventAccessor);
@@ -917,18 +921,21 @@ namespace ICSharpCode.CodeConverter.VB
             var right = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
             if (IsReturnValueDiscarded(node)) {
                 if (_semanticModel.GetTypeInfo(node.Right).ConvertedType.IsDelegateType()) {
-                    var kind = node.GetAncestor<CSS.AccessorDeclarationSyntax>()?.Kind();
-                    if (kind != null) {
-                        var methodName = kind.Value == CS.SyntaxKind.AddAccessorDeclaration ? "Combine" : "Remove";
-                        var delegateMethod = MemberAccess("[Delegate]", methodName);
-                        var invokeDelegateMethod = SyntaxFactory.InvocationExpression(delegateMethod, ExpressionSyntaxExtensions.CreateArgList(new[] { left, right }));
-                        return SyntaxFactory.SimpleAssignmentStatement(left, invokeDelegateMethod);
-                    }
-                    if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.PlusEqualsToken)) {
-                        return SyntaxFactory.AddHandlerStatement(left, right);
-                    }
-                    if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.MinusEqualsToken)) {
-                        return SyntaxFactory.RemoveHandlerStatement(left, right);
+                    if (_semanticModel.GetSymbolInfo(node.Left).Symbol.Kind != SymbolKind.Event) {
+                        var kind = node.GetAncestor<CSS.AccessorDeclarationSyntax>()?.Kind();
+                        if (kind != null && (kind.Value == CS.SyntaxKind.AddAccessorDeclaration || kind.Value == CS.SyntaxKind.RemoveAccessorDeclaration)) {
+                            var methodName = kind.Value == CS.SyntaxKind.AddAccessorDeclaration ? "Combine" : "Remove";
+                            var delegateMethod = MemberAccess("[Delegate]", methodName);
+                            var invokeDelegateMethod = SyntaxFactory.InvocationExpression(delegateMethod, ExpressionSyntaxExtensions.CreateArgList(new[] { left, right }));
+                            return SyntaxFactory.SimpleAssignmentStatement(left, invokeDelegateMethod);
+                        }
+                    } else {
+                        if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.PlusEqualsToken)) {
+                            return SyntaxFactory.AddHandlerStatement(left, right);
+                        }
+                        if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.MinusEqualsToken)) {
+                            return SyntaxFactory.RemoveHandlerStatement(left, right);
+                        }
                     }
                 }
                 return MakeAssignmentStatement(node, left, right);
@@ -1008,9 +1015,10 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static bool IsReturnValueDiscarded(CSS.ExpressionSyntax node)
         {
-            return node.Parent is CSS.ExpressionStatementSyntax
-                   || node.Parent is CSS.ForStatementSyntax
-                   || node.Parent.IsParentKind(CS.SyntaxKind.SetAccessorDeclaration);
+            return node.Parent is CSS.ExpressionStatementSyntax ||
+                node.Parent is CSS.SimpleLambdaExpressionSyntax ||
+                node.Parent is CSS.ForStatementSyntax ||
+                node.Parent.IsParentKind(CS.SyntaxKind.SetAccessorDeclaration);
         }
 
         private AssignmentStatementSyntax MakeAssignmentStatement(CSS.AssignmentExpressionSyntax node, ExpressionSyntax left, ExpressionSyntax right)
@@ -1053,7 +1061,12 @@ namespace ICSharpCode.CodeConverter.VB
 
             var vbEventExpression = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
             var argumentListSyntax = (ArgumentListSyntax)node.ArgumentList.Accept(TriviaConvertingVisitor);
-            return SyntaxFactory.InvocationExpression(vbEventExpression, argumentListSyntax);
+            var invocationExpressionSyntax = SyntaxFactory.InvocationExpression(vbEventExpression, argumentListSyntax);
+            var objectCreationExpression = node.Expression.DescendantNodesAndSelf().OfType<CSS.MemberAccessExpressionSyntax>().FirstOrDefault()?.Expression as CSS.ObjectCreationExpressionSyntax;
+            if (node.Parent is CSS.ExpressionStatementSyntax && objectCreationExpression != null) {
+                return SyntaxFactory.CallStatement(invocationExpressionSyntax);
+            }
+            return invocationExpressionSyntax;
         }
 
         private bool TryCreateRaiseEventStatement(CSS.ExpressionSyntax invokedCsExpression,

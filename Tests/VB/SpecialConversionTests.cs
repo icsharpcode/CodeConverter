@@ -47,7 +47,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer, a = 5
+        Dim b As Integer, a As Integer = 5
         b = Math.Min(Threading.Interlocked.Increment(a), a - 1)
     End Sub
 End Class");
@@ -361,7 +361,7 @@ End Module");
 {
     public int CR = 0x0D * 0b1;
 }", @"Friend Class Test
-    Public CR = &H0D * &B1
+    Public CR As Integer = &H0D * &B1
 End Class");
         }
 
@@ -374,7 +374,7 @@ End Class");
 }",
                 @"Private Sub Test()
     Dim l_AB As Object = 5
-    Dim Ab = CInt(o)
+    Dim Ab As Integer = CInt(o)
 End Sub");
         }
         [Fact]
@@ -386,7 +386,7 @@ End Sub");
 }",
                 @"Private Sub Test()
     Dim l_Test1 As Object = 5
-    Dim l_TesT = CInt(o)
+    Dim l_TesT As Integer = CInt(o)
 End Sub");
         }
         [Fact]
@@ -402,7 +402,7 @@ End Sub");
                 @"Public ReadOnly Property Test As Integer
     Get
         Dim l_Test1 As Object = 5
-        Dim l_TesT = CInt(o)
+        Dim l_TesT As Integer = CInt(o)
         Return l_Test1
     End Get
 End Property");
@@ -433,12 +433,12 @@ End Property");
     Public Custom Event Test As EventHandler
         AddHandler(ByVal value As EventHandler)
             Dim l_TeSt1 As Object = 5
-            Dim l_TesT = CInt(o)
+            Dim l_TesT As Integer = CInt(o)
             f_Test = [Delegate].Combine(f_Test, value)
         End AddHandler
         RemoveHandler(ByVal value As EventHandler)
             Dim l_TeSt1 As Object = 5
-            Dim l_TesT = CInt(o)
+            Dim l_TesT As Integer = CInt(o)
             f_Test = [Delegate].Remove(f_Test, value)
         End RemoveHandler
         RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)

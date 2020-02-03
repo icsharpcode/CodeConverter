@@ -93,9 +93,19 @@ End Module");
     int value = 10;
     readonly int v = 15;
 }", @"Friend Class TestClass
-    Const answer = 42
-    Private value = 10
-    Private ReadOnly v = 15
+    Const answer As Integer = 42
+    Private value As Integer = 10
+    Private ReadOnly v As Integer = 15
+End Class");
+        }
+        [Fact]
+        public async Task DoNotSimplifyArrayTypeInFieldDeclarations() {
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    int[] answer = { 1, 2 };
+}",
+@"Friend Class TestClass
+    Private answer As Integer() = {1, 2}
 End Class");
         }
 
@@ -663,7 +673,7 @@ public partial class HasConflictingPropertyAndField {
 }",
                 @"Public Partial Class HasConflictingPropertyAndField
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
-        Dim l_TEST = 0
+        Dim l_TEST As Integer = 0
         f_Test = test + l_TEST
         Return test
     End Function
@@ -674,7 +684,7 @@ Public Partial Class HasConflictingPropertyAndField
 
     Public Property Test As Integer
         Get
-            Dim l_TEST = 0
+            Dim l_TEST As Integer = 0
             Return f_Test + l_TEST
         End Get
         Set(ByVal value As Integer)
@@ -963,6 +973,80 @@ Friend Class TestClass
             _backingField?(sender, e)
         End RaiseEvent
     End Event
+End Class");
+        }
+        [Fact]
+        public async Task TestCustomEventUsingFieldEvent() {
+            await TestConversionCSharpToVisualBasic(
+@"using System;
+
+class TestClass {
+    event EventHandler backingField;
+
+    public event EventHandler MyEvent {
+        add { backingField += value; }
+        remove { backingField -= value; }
+    }
+}",
+@"Imports System
+
+Friend Class TestClass
+    Private Event backingField As EventHandler
+
+    Public Custom Event MyEvent As EventHandler
+        AddHandler(ByVal value As EventHandler)
+            AddHandler backingField, value
+        End AddHandler
+        RemoveHandler(ByVal value As EventHandler)
+            RemoveHandler backingField, value
+        End RemoveHandler
+        RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
+            RaiseEvent backingField(sender, e)
+        End RaiseEvent
+    End Event
+End Class");
+        }
+        [Fact]
+        public async Task SubscribeEventInPropertySetter() {
+            await TestConversionCSharpToVisualBasic(
+@"using System;
+using System.ComponentModel;
+
+class TestClass {
+    OwnerClass owner;
+
+    public OwnerClass Owner {
+        get { return owner; }
+        set {
+            owner = value;
+            ((INotifyPropertyChanged)owner).PropertyChanged += OnOwnerChanged;
+        }
+    }
+    void OnOwnerChanged(object sender, PropertyChangedEventArgs args) { }
+}
+class OwnerClass : INotifyPropertyChanged {
+}",
+@"Imports System.ComponentModel
+
+Friend Class TestClass
+    Private f_Owner As OwnerClass
+
+    Public Property Owner As OwnerClass
+        Get
+            Return f_Owner
+        End Get
+        Set(ByVal value As OwnerClass)
+            f_Owner = value
+            AddHandler CType(f_Owner, INotifyPropertyChanged).PropertyChanged, AddressOf OnOwnerChanged
+        End Set
+    End Property
+
+    Private Sub OnOwnerChanged(ByVal sender As Object, ByVal args As PropertyChangedEventArgs)
+    End Sub
+End Class
+
+Friend Class OwnerClass
+    Implements INotifyPropertyChanged
 End Class");
         }
         [Fact]
