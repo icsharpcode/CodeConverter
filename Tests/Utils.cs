@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using CodeConverter.Util;
 
 namespace CodeConverter.Tests
 {
