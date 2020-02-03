@@ -530,7 +530,7 @@ End Class");
             await TestConversionCSharpToVisualBasic(
 @"public class TestClass : System.ComponentModel.INotifyPropertyChanged {
     public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-",
+}",
 @"Public Class TestClass
     Implements System.ComponentModel.INotifyPropertyChanged
 
