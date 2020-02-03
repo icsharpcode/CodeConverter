@@ -65,3 +65,4 @@ At the moment there's just a very small amount of first draft documentation. Con
 
 ## Codebase details
 * All parallelism is controlled by Env.MaxDop. When a debugger is attached to a debug build, it sets parallelism to 1. If you're seeing a transient issue when the debugger isn't attached but can't reproduce the issue with the debugger, set this to a large number instead.
+* The worst part of the code is the query syntax conversion. It's just evolved messily to cover basic cases. To comprehensively cover the syntax would need a proper architecture defined to match how the queries are formed. For an example of other code that solves a similar query syntax problem, see ILSpy's [`CSharpDecompiler`](https://github.com/icsharpcode/ILSpy/blob/e189ad9ca301142b9134c2839e416199cbd3360e/ICSharpCode.Decompiler/CSharp/Transforms/IntroduceQueryExpressions.cs)
