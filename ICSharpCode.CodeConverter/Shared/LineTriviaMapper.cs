@@ -18,10 +18,11 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly List<SyntaxTriviaList> _trailingTriviaCarriedOver = new List<SyntaxTriviaList>();
         private readonly Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>> Leading, List<IReadOnlyCollection<SyntaxTrivia>> Trailing)> _targetTokenToTrivia = new Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>>, List<IReadOnlyCollection<SyntaxTrivia>>)>();
 
-        public LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
+        public LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, SyntaxNode target, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
         {
             _source = source;
             _sourceLines = sourceLines;
+            _target = target;
             _targetLeadingTextLineFromSourceLine = targetLeadingTextLineFromSourceLine;
             _targetTrailingTextLineFromSourceLine = targetTrailingTextLineFromSourceLine;
         }
@@ -47,29 +48,28 @@ namespace ICSharpCode.CodeConverter.Shared
                 .ToDictionary(g => g.Key, g => originalTargetLines.GetLineFromPosition(g.Max(x => x.Span.End)));
 
             var sourceLines = source.GetText().Lines;
-            var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, targetNodesBySourceStartLine, targetNodesBySourceEndLine);
+            var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, target, targetNodesBySourceStartLine, targetNodesBySourceEndLine);
 
-            return lineTriviaMapper.GetTargetWithSourceTrivia(target);
+            return lineTriviaMapper.GetTargetWithSourceTrivia();
         }
 
-        private SyntaxNode GetTargetWithSourceTrivia(SyntaxNode target)
+        /// <remarks>
+        /// Possible future improvements:
+        /// * Accuracy: Can we make use of both dictionaries for each trivia type?
+        /// * Performance: Probably faster to find tokens starting from position of last replaced token rather than from the root node each time
+        /// </remarks>
+        private SyntaxNode GetTargetWithSourceTrivia()
         {
-            //TODO Possible perf: Find token starting from position of last replaced token rather than from the root node each time?
-            _target = target;
-
-            // Reverse iterate to ensure leading trivia never ends up after the place it came from
+            // Reverse iterate to ensure trivia never ends up after the place it came from (consider #if directive or opening brace of method)
             for (int i = _sourceLines.Count - 1; i >= 0; i--) {
                 MapLeading(i);
-            }
-
-            // TODO: Should this iterate forwards?
-            for (int i = _sourceLines.Count - 1; i >= 0; i--) {
                 MapTrailing(i);
             }
 
+            //Reverse trivia due to above reverse looping
             foreach (var trivia in _targetTokenToTrivia) {
-                trivia.Value.Leading.Reverse(); //Because of reverse iteration above
-                trivia.Value.Trailing.Reverse();//Because of reverse iteration above
+                trivia.Value.Leading.Reverse();
+                trivia.Value.Trailing.Reverse();
             }
 
             BalanceTrivia();
@@ -110,9 +110,9 @@ namespace ICSharpCode.CodeConverter.Shared
             }
 
             if (_trailingTriviaCarriedOver.Any()) {
-                var targetLine = GetBestLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
+                var targetLine = GetTargetLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
                 if (targetLine != default) {
-                    var originalToReplace = targetLine.GetTrailingForLine(_target); //TODO Use withinline textline extensions
+                    var originalToReplace = targetLine.GetTrailingForLine(_target);
                     if (originalToReplace != null) {
                         var targetTrivia = GetTargetTriviaCollection(originalToReplace);
                         targetTrivia.Trailing.AddRange(_trailingTriviaCarriedOver.Select(t => t.ConvertTrivia().ToList()));
@@ -132,7 +132,7 @@ namespace ICSharpCode.CodeConverter.Shared
             }
 
             if (_leadingTriviaCarriedOver.Any()) {
-                var targetLine = GetBestLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
+                var targetLine = GetTargetLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
                 if (targetLine != default) {
                     var originalToReplace = targetLine.GetLeadingForLine(_target);
                     if (originalToReplace != default) {
@@ -145,7 +145,7 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        private TextLine GetBestLine(IReadOnlyDictionary<int, TextLine> sourceToTargetLine, int sourceLineIndex)
+        private TextLine GetTargetLine(IReadOnlyDictionary<int, TextLine> sourceToTargetLine, int sourceLineIndex)
         {
             if (sourceToTargetLine.TryGetValue(sourceLineIndex, out var targetLine)) return targetLine;
             return default;

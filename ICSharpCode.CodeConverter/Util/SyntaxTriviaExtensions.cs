@@ -293,14 +293,6 @@ namespace ICSharpCode.CodeConverter.Util
             return syntaxTree.GetRoot(cancellationToken).FindTrivia(span.Start - 1, findInsideTrivia);
         }
 
-        public static IEnumerable<SyntaxTrivia> PrependPreservingImportantTrivia(this IReadOnlyCollection<SyntaxTrivia> convertedTrivia, IReadOnlyCollection<SyntaxTrivia> existingTrivia)
-        {
-            if (existingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
-                return convertedTrivia.Concat(existingTrivia);
-            }
-            return convertedTrivia;
-        }
-
 #if false
         public static int Width(this SyntaxTrivia trivia)
         {
