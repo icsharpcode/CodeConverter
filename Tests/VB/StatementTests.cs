@@ -84,12 +84,12 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal arg As Integer)
-        While True ' Becomes while loop
+        While True 'Becomes while loop
             If arg = 3 Then Exit While
 
             Select Case arg
-                Case 1 ' From switch
-                Case 2 ' From switch
+                Case 1 'From switch
+                Case 2 'From switch
                 Case Else
                     Continue While ' Outer while loop
             End Select

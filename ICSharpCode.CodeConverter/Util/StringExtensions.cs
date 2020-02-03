@@ -15,6 +15,11 @@ namespace ICSharpCode.CodeConverter.Util
 #endif
     internal static class StringExtensions
     {
+        public static string ConsistentNewlines(this string str)
+        {
+            return str.Replace("\r\n", "\n").Replace("\n", "\r\n");
+        }
+
         public static int? GetFirstNonWhitespaceOffset(this string line)
         {
             for (int i = 0; i < line.Length; i++) {

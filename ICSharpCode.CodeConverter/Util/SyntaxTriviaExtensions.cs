@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
-using static Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -68,7 +67,7 @@ namespace ICSharpCode.CodeConverter.Util
         }
         public static VBasic.SyntaxKind? GetVBKind(this SyntaxTrivia t)
         {
-            return CSToVBSyntaxKinds.TryGetValue(t.Kind(), out var vbKind) ? vbKind : (VBasic.SyntaxKind?) null;
+            return CSToVBSyntaxKinds.TryGetValue(CS.CSharpExtensions.Kind(t), out var vbKind) ? vbKind : (VBasic.SyntaxKind?) null;
         }
 
         public static int Width(this SyntaxTrivia trivia)
@@ -88,18 +87,34 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool MatchesKind(this SyntaxTrivia trivia, CS.SyntaxKind kind)
         {
-            return trivia.Kind() == kind;
+            return CS.CSharpExtensions.Kind(trivia) == kind;
         }
 
         public static bool MatchesKind(this SyntaxTrivia trivia, CS.SyntaxKind kind1, CS.SyntaxKind kind2)
         {
-            var triviaKind = trivia.Kind();
+            var triviaKind = CS.CSharpExtensions.Kind(trivia);
             return triviaKind == kind1 || triviaKind == kind2;
         }
 
         public static bool MatchesKind(this SyntaxTrivia trivia, params CS.SyntaxKind[] kinds)
         {
-            return kinds.Contains(trivia.Kind());
+            return kinds.Contains(CS.CSharpExtensions.Kind(trivia));
+        }
+
+        public static bool MatchesKind(this SyntaxTrivia trivia, VBasic.SyntaxKind kind)
+        {
+            return VBasic.VisualBasicExtensions.Kind(trivia) == kind;
+        }
+
+        public static bool MatchesKind(this SyntaxTrivia trivia, VBasic.SyntaxKind kind1, VBasic.SyntaxKind kind2)
+        {
+            var triviaKind = VBasic.VisualBasicExtensions.Kind(trivia);
+            return triviaKind == kind1 || triviaKind == kind2;
+        }
+
+        public static bool MatchesKind(this SyntaxTrivia trivia, params VBasic.SyntaxKind[] kinds)
+        {
+            return kinds.Contains(VBasic.VisualBasicExtensions.Kind(trivia));
         }
 
         public static bool IsRegularComment(this SyntaxTrivia trivia)
@@ -114,17 +129,17 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsSingleLineComment(this SyntaxTrivia trivia)
         {
-            return trivia.Kind() == CS.SyntaxKind.SingleLineCommentTrivia;
+            return CS.CSharpExtensions.Kind(trivia) == CS.SyntaxKind.SingleLineCommentTrivia;
         }
 
         public static bool IsMultiLineComment(this SyntaxTrivia trivia)
         {
-            return trivia.Kind() == CS.SyntaxKind.MultiLineCommentTrivia;
+            return CS.CSharpExtensions.Kind(trivia) == CS.SyntaxKind.MultiLineCommentTrivia;
         }
 
         public static bool IsCompleteMultiLineComment(this SyntaxTrivia trivia)
         {
-            if (trivia.Kind() != CS.SyntaxKind.MultiLineCommentTrivia) {
+            if (CS.CSharpExtensions.Kind(trivia) != CS.SyntaxKind.MultiLineCommentTrivia) {
                 return false;
             }
 
@@ -141,12 +156,12 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsSingleLineDocComment(this SyntaxTrivia trivia)
         {
-            return trivia.Kind() == CS.SyntaxKind.SingleLineDocumentationCommentTrivia;
+            return CS.CSharpExtensions.Kind(trivia) == CS.SyntaxKind.SingleLineDocumentationCommentTrivia;
         }
 
         public static bool IsMultiLineDocComment(this SyntaxTrivia trivia)
         {
-            return trivia.Kind() == CS.SyntaxKind.MultiLineDocumentationCommentTrivia;
+            return CS.CSharpExtensions.Kind(trivia) == CS.SyntaxKind.MultiLineDocumentationCommentTrivia;
         }
 
         public static SyntaxTrivia GetEndOfLine(string lang)
@@ -174,7 +189,7 @@ namespace ICSharpCode.CodeConverter.Util
                 }
 
                 return commentText.TrimStart(null);
-            } else if (trivia.Kind() == CS.SyntaxKind.MultiLineCommentTrivia) {
+            } else if (CS.CSharpExtensions.Kind(trivia) == CS.SyntaxKind.MultiLineCommentTrivia) {
                 var textBuilder = new StringBuilder();
 
                 if (commentText.EndsWith("*/")) {
@@ -206,7 +221,7 @@ namespace ICSharpCode.CodeConverter.Util
                 textBuilder.Remove(textBuilder.Length - newLine.Length, newLine.Length);
 
                 return textBuilder.ToString();
-            } else if (trivia.IsKind(VBasic.SyntaxKind.DocumentationCommentTrivia) || trivia.Kind() == CS.SyntaxKind.SingleLineDocumentationCommentTrivia) {
+            } else if (trivia.IsKind(VBasic.SyntaxKind.DocumentationCommentTrivia) || CS.CSharpExtensions.Kind(trivia) == CS.SyntaxKind.SingleLineDocumentationCommentTrivia) {
                 var textBuilder = new StringBuilder();
 
                 if (commentText.EndsWith("*/")) {

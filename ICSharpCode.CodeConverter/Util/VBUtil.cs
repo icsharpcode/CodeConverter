@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using CS = Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
@@ -258,6 +259,35 @@ namespace ICSharpCode.CodeConverter.Util
 
             var vbKind = node.Kind();
             return kinds.Any(k => vbKind == k);
+        }
+
+        public static SyntaxToken ConvertTypesTokenToKind(CS.SyntaxKind t, bool isXml = false)
+        {
+            switch (t) {
+                case CS.SyntaxKind.None: return global::VisualBasicSyntaxFactory.EmptyToken;
+                case CS.SyntaxKind.BoolKeyword: return global::VisualBasicSyntaxFactory.BooleanKeyword;
+                case CS.SyntaxKind.ByteKeyword: return global::VisualBasicSyntaxFactory.ByteKeyword;
+                case CS.SyntaxKind.SByteKeyword: return global::VisualBasicSyntaxFactory.SByteKeyword;
+                case CS.SyntaxKind.ShortKeyword: return global::VisualBasicSyntaxFactory.ShortKeyword;
+                case CS.SyntaxKind.UShortKeyword: return global::VisualBasicSyntaxFactory.UShortKeyword;
+                case CS.SyntaxKind.IntKeyword: return global::VisualBasicSyntaxFactory.IntegerKeyword;
+                case CS.SyntaxKind.UIntKeyword: return global::VisualBasicSyntaxFactory.UIntegerKeyword;
+                case CS.SyntaxKind.LongKeyword: return global::VisualBasicSyntaxFactory.LongKeyword;
+                case CS.SyntaxKind.ULongKeyword: return global::VisualBasicSyntaxFactory.ULongKeyword;
+                case CS.SyntaxKind.DoubleKeyword: return global::VisualBasicSyntaxFactory.DoubleKeyword;
+                case CS.SyntaxKind.FloatKeyword: return global::VisualBasicSyntaxFactory.SingleKeyword;
+                case CS.SyntaxKind.DecimalKeyword: return global::VisualBasicSyntaxFactory.DecimalKeyword;
+                case CS.SyntaxKind.StringKeyword: return global::VisualBasicSyntaxFactory.StringKeyword;
+                case CS.SyntaxKind.CharKeyword: return global::VisualBasicSyntaxFactory.CharKeyword;
+                case CS.SyntaxKind.VoidKeyword:                         // not supported
+                    if (isXml) {
+                        return global::VisualBasicSyntaxFactory.NothingKeyword;
+                    }
+                    return global::VisualBasicSyntaxFactory.EmptyToken;
+                case CS.SyntaxKind.ObjectKeyword: return global::VisualBasicSyntaxFactory.ObjectKeyword;
+            }
+
+            throw new NotSupportedException($"Type.Kind {t} is not supported!");
         }
     }
 }

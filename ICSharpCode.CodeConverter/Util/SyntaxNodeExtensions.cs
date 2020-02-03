@@ -838,13 +838,10 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static IEnumerable<SyntaxTrivia> ConvertTrivia(this IReadOnlyCollection<SyntaxTrivia> triviaToConvert)
         {
-            return triviaToConvert.SelectMany(t => {
-                if (t.Language == LanguageNames.VisualBasic) {
-                    return ConvertVBTrivia(t).Yield();
-                } else {
-                    return ConvertCSTrivia(t);
-                }
-            }).Where(x => x != default(SyntaxTrivia));
+            if (triviaToConvert.Any() && triviaToConvert.First().Language == LanguageNames.CSharp) {
+                return CSharpToVBCodeConverter.Util.RecursiveTriviaConverter.ConvertTopLevel(triviaToConvert).Where(x => x != default(SyntaxTrivia));
+            }
+            return triviaToConvert.Select(ConvertVBTrivia).Where(x => x != default(SyntaxTrivia));
         }
 
         private static SyntaxTrivia ConvertVBTrivia(SyntaxTrivia t)
@@ -874,90 +871,6 @@ namespace ICSharpCode.CodeConverter.Util
             return convertedKind.HasValue
                 ? SyntaxFactory.Comment($"/* TODO ERROR: Skipped {convertedKind.Value} */")
                 : default(SyntaxTrivia);
-        }
-
-        private static IEnumerable<SyntaxTrivia> ConvertCSTrivia(SyntaxTrivia t)
-        {
-            var endOfLine = SyntaxTriviaExtensions.GetEndOfLine(LanguageNames.VisualBasic);
-
-            if (t.IsKind(CSSyntaxKind.SingleLineCommentTrivia)) {
-                yield return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.CommentTrivia, $"' {t.GetCommentText()}");
-                yield break;
-            }
-            if (t.IsKind(CSSyntaxKind.SingleLineDocumentationCommentTrivia)) {
-                var previousTrivia = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None);
-                var previousWhitespace = previousTrivia.IsWhitespace() ? previousTrivia.ToString() : "";
-                var commentTextLines = t.GetCommentText().Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
-                var multiLine = commentTextLines.Length > 1;
-                var outputCommentText = multiLine
-                    ? "''' " + String.Join($"\r\n{previousWhitespace}''' ", commentTextLines)
-                    : $"' {commentTextLines.Single()}";
-                yield return VBSyntaxFactory.CommentTrivia(outputCommentText);
-                yield return endOfLine;
-                yield break;
-            }
-
-            if (t.IsKind(CSSyntaxKind.WhitespaceTrivia)) {
-                yield return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.WhitespaceTrivia, t.ToString());
-                yield break;
-            }
-
-            if (t.IsKind(CSSyntaxKind.EndOfLineTrivia)) {
-                yield return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.EndOfLineTrivia, t.ToString());
-                yield break;
-            }
-
-            if (t.IsKind(CSSyntaxKind.DisabledTextTrivia)) {
-                //TODO Actually use converter
-                yield return VBSyntaxFactory.DisabledTextTrivia("' Skipped during conversion: " + t.ToString().Trim('\r', '\n').Replace("\n", "\n'"));
-                yield return endOfLine;
-                yield break;
-            }
-
-            var structured = GetStructuredTrivia(t);
-            if (structured != null) {
-                yield return VBSyntaxFactory.Trivia(structured);
-                yield return endOfLine;
-                yield break;
-            }
-
-            yield return VBSyntaxFactory.CommentTrivia($"' TODO ERROR: Skipped {t}\r\n");
-        }
-
-        private static VBSyntax.StructuredTriviaSyntax GetStructuredTrivia(SyntaxTrivia t)
-        {
-
-            if (t.IsKind(CSSyntaxKind.RegionDirectiveTrivia)) {
-                var structure = ((CSSyntax.RegionDirectiveTriviaSyntax)t.GetStructure());
-                string name = structure.EndOfDirectiveToken.LeadingTrivia.Single().ToString();
-                var regionSyntax = VBSyntaxFactory.RegionDirectiveTrivia(VBSyntaxFactory.Token(VBSyntaxKind.HashToken), VBSyntaxFactory.Token(VBSyntaxKind.RegionKeyword), VBSyntaxFactory.StringLiteralToken("\"" + name + "\"", name));
-                return regionSyntax;
-            }
-
-            if (t.IsKind(CSSyntaxKind.EndRegionDirectiveTrivia)) {
-                var regionSyntax = VBSyntaxFactory.EndRegionDirectiveTrivia();
-                return regionSyntax;
-            }
-
-            if (t.IsKind(CSSyntaxKind.IfDirectiveTrivia) && t.GetStructure() is CSSyntax.IfDirectiveTriviaSyntax idts) {
-                //TODO Actually use converter
-                return VBSyntaxFactory.IfDirectiveTrivia(VBasic.SyntaxFactory.Token(VBSyntaxKind.IfKeyword), VBasic.SyntaxFactory.ParseExpression(idts.Condition.ToString()));
-            }
-
-            if (t.IsKind(CSSyntaxKind.ElifDirectiveTrivia) && t.GetStructure() is CSSyntax.IfDirectiveTriviaSyntax eidts) {
-                //TODO Actually use converter
-                return VBSyntaxFactory.IfDirectiveTrivia(VBasic.SyntaxFactory.Token(VBSyntaxKind.IfKeyword), VBasic.SyntaxFactory.ParseExpression(eidts.Condition.ToString()));
-            }
-
-            if (t.IsKind(CSSyntaxKind.ElseDirectiveTrivia)) {
-                return VBSyntaxFactory.ElseDirectiveTrivia();
-            }
-
-            if (t.IsKind(CSSyntaxKind.EndIfDirectiveTrivia)) {
-                return VBSyntaxFactory.EndIfDirectiveTrivia();
-            }
-
-            return null;
         }
 
         public static T WithoutTrailingEndOfLineTrivia<T>(this T cSharpNode) where T : CSharpSyntaxNode
