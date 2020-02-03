@@ -24,12 +24,11 @@ World!""
 End Class");
         }
 
-
         [Fact]
         public async Task StringInterpolationWithDoubleQuotes()
         {
             await TestConversionCSharpToVisualBasic(
-                @"using System;
+                @"using System; //Not required in VB due to global imports
 
 namespace global::InnerNamespace
 {
@@ -94,7 +93,7 @@ End Class");
 }", @"Public Class Test
     Public ReadOnly Property Foo As Boolean
         Get
-            Return Bar Is Nothing
+            Return Bar Is Nothing ' Crashes conversion to VB
         End Get
     End Property
 
@@ -233,7 +232,7 @@ End Class");
         return """";
     }
 }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Private prop As String
     Private prop2 As String
 
@@ -324,7 +323,7 @@ End Class");
         x /= 3;
     }
 }",
-@"Public Class TestClass
+                @"Public Class TestClass
     Private Sub TestMethod()
         Dim x As Integer = 10
         x *= 3
@@ -658,7 +657,7 @@ End Class");
     foreach (var n in res)
         Console.WriteLine(n);
 }",
-@"Private Shared Sub SimpleQuery()
+                @"Private Shared Sub SimpleQuery()
     Dim numbers As Integer() = {7, 9, 5, 3, 6}
     Dim res = From n In numbers Where n > 5 Select n
 
@@ -692,7 +691,7 @@ End Sub");
             }
         }
     }",
-@"Public Shared Sub Linq40()
+                @"Public Shared Sub Linq40()
     Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
     Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {
         .Remainder = __groupByKey1__,
@@ -742,7 +741,7 @@ class Test {
         }
     }
 }",
-@"Friend Class Product
+                @"Friend Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -811,7 +810,6 @@ End Sub");
         }
         [Fact]
         public async Task MultilineSubExpressionWithSingleStatement() {
-            
             await TestConversionCSharpToVisualBasic(
 @"public class TestClass : System.Collections.ObjectModel.ObservableCollection<string> {
     public TestClass() {
@@ -823,7 +821,7 @@ End Sub");
         };
     }
 }",
-@"Public Class TestClass
+                @"Public Class TestClass
     Inherits ObjectModel.ObservableCollection(Of String)
 
     Public Sub New()
@@ -852,7 +850,7 @@ public class TestClass {
         string str = create(this);
     }
 }",
-@"Imports System
+                @"Imports System
 
 Public Class TestClass
     Private create As Func(Of Object, String) = Function(o)

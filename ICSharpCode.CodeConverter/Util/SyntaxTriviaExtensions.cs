@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using CSharp = Microsoft.CodeAnalysis.CSharp;
+using static Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
+using CS = Microsoft.CodeAnalysis.CSharp;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
+using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -33,37 +34,37 @@ namespace ICSharpCode.CodeConverter.Util
         /// </summary>
         private static IEnumerable<SyntaxToken> GetSkippedTokens(SyntaxTriviaList list)
         {
-            return list.Where(trivia => trivia.RawKind == (int)SyntaxKind.SkippedTokensTrivia)
-                .SelectMany(t => ((SkippedTokensTriviaSyntax)t.GetStructure()).Tokens);
+            return list.Where(trivia => trivia.RawKind == (int)CS.SyntaxKind.SkippedTokensTrivia)
+                .SelectMany(t => ((CSSyntax.SkippedTokensTriviaSyntax)t.GetStructure()).Tokens);
         }
 
-        private static readonly Dictionary<VBasic.SyntaxKind, SyntaxKind> VBToCSSyntaxKinds = new Dictionary<VBasic.SyntaxKind, SyntaxKind> {
-            {VBasic.SyntaxKind.SkippedTokensTrivia, SyntaxKind.SkippedTokensTrivia},
-            {VBasic.SyntaxKind.DisabledTextTrivia, SyntaxKind.DisabledTextTrivia},
-            {VBasic.SyntaxKind.ConstDirectiveTrivia, SyntaxKind.DefineDirectiveTrivia}, // Just a guess
-            {VBasic.SyntaxKind.IfDirectiveTrivia, SyntaxKind.IfDirectiveTrivia},
-            {VBasic.SyntaxKind.ElseIfDirectiveTrivia, SyntaxKind.ElifDirectiveTrivia},
-            {VBasic.SyntaxKind.ElseDirectiveTrivia, SyntaxKind.ElseDirectiveTrivia},
-            {VBasic.SyntaxKind.EndIfDirectiveTrivia, SyntaxKind.EndIfDirectiveTrivia},
-            //{VBSyntaxKind.RegionDirectiveTrivia, SyntaxKind.RegionDirectiveTrivia}, Oh no I accidentally disabled regions :O ;)
-            //{VBSyntaxKind.EndRegionDirectiveTrivia, SyntaxKind.EndRegionDirectiveTrivia},
-            {VBasic.SyntaxKind.EnableWarningDirectiveTrivia, SyntaxKind.WarningDirectiveTrivia},
-            {VBasic.SyntaxKind.DisableWarningDirectiveTrivia, SyntaxKind.WarningDirectiveTrivia},
-            {VBasic.SyntaxKind.ReferenceDirectiveTrivia, SyntaxKind.ReferenceDirectiveTrivia},
-            {VBasic.SyntaxKind.BadDirectiveTrivia, SyntaxKind.BadDirectiveTrivia},
-            {VBasic.SyntaxKind.ConflictMarkerTrivia, SyntaxKind.ConflictMarkerTrivia},
-            {VBasic.SyntaxKind.ExternalSourceDirectiveTrivia, SyntaxKind.LoadDirectiveTrivia}, //Just a guess
-            {VBasic.SyntaxKind.ExternalChecksumDirectiveTrivia, SyntaxKind.LineDirectiveTrivia}, // Even more random guess
+        private static readonly Dictionary<VBasic.SyntaxKind, CS.SyntaxKind> VBToCSSyntaxKinds = new Dictionary<VBasic.SyntaxKind, CS.SyntaxKind> {
+            {VBasic.SyntaxKind.SkippedTokensTrivia, CS.SyntaxKind.SkippedTokensTrivia},
+            {VBasic.SyntaxKind.DisabledTextTrivia, CS.SyntaxKind.DisabledTextTrivia},
+            {VBasic.SyntaxKind.ConstDirectiveTrivia, CS.SyntaxKind.DefineDirectiveTrivia}, // Just a guess
+            {VBasic.SyntaxKind.IfDirectiveTrivia, CS.SyntaxKind.IfDirectiveTrivia},
+            {VBasic.SyntaxKind.ElseIfDirectiveTrivia, CS.SyntaxKind.ElifDirectiveTrivia},
+            {VBasic.SyntaxKind.ElseDirectiveTrivia, CS.SyntaxKind.ElseDirectiveTrivia},
+            {VBasic.SyntaxKind.EndIfDirectiveTrivia, CS.SyntaxKind.EndIfDirectiveTrivia},
+            {VBasic.SyntaxKind.RegionDirectiveTrivia, CS.SyntaxKind.RegionDirectiveTrivia},
+            {VBasic.SyntaxKind.EndRegionDirectiveTrivia, CS.SyntaxKind.EndRegionDirectiveTrivia},
+            {VBasic.SyntaxKind.EnableWarningDirectiveTrivia, CS.SyntaxKind.WarningDirectiveTrivia},
+            {VBasic.SyntaxKind.DisableWarningDirectiveTrivia, CS.SyntaxKind.WarningDirectiveTrivia},
+            {VBasic.SyntaxKind.ReferenceDirectiveTrivia, CS.SyntaxKind.ReferenceDirectiveTrivia},
+            {VBasic.SyntaxKind.BadDirectiveTrivia, CS.SyntaxKind.BadDirectiveTrivia},
+            {VBasic.SyntaxKind.ConflictMarkerTrivia, CS.SyntaxKind.ConflictMarkerTrivia},
+            {VBasic.SyntaxKind.ExternalSourceDirectiveTrivia, CS.SyntaxKind.LoadDirectiveTrivia}, //Just a guess
+            {VBasic.SyntaxKind.ExternalChecksumDirectiveTrivia, CS.SyntaxKind.LineDirectiveTrivia}, // Even more random guess
         };
 
-        private static readonly Dictionary<SyntaxKind, VBasic.SyntaxKind> CSToVBSyntaxKinds =
+        private static readonly Dictionary<CS.SyntaxKind, VBasic.SyntaxKind> CSToVBSyntaxKinds =
             VBToCSSyntaxKinds
                 .ToLookup(kvp => kvp.Value, kvp => kvp.Key)
                 .ToDictionary(g => g.Key, g => g.First());
 
-        public static SyntaxKind? GetCSKind(this SyntaxTrivia t)
+        public static CS.SyntaxKind? GetCSKind(this SyntaxTrivia t)
         {
-            return VBToCSSyntaxKinds.TryGetValue(VBasic.VisualBasicExtensions.Kind(t), out var csKind) ? csKind : (SyntaxKind?)null;
+            return VBToCSSyntaxKinds.TryGetValue(VBasic.VisualBasicExtensions.Kind(t), out var csKind) ? csKind : (CS.SyntaxKind?)null;
         }
         public static VBasic.SyntaxKind? GetVBKind(this SyntaxTrivia t)
         {
@@ -85,18 +86,18 @@ namespace ICSharpCode.CodeConverter.Util
             return trivia.HasAnnotation(SyntaxAnnotation.ElasticAnnotation);
         }
 
-        public static bool MatchesKind(this SyntaxTrivia trivia, SyntaxKind kind)
+        public static bool MatchesKind(this SyntaxTrivia trivia, CS.SyntaxKind kind)
         {
             return trivia.Kind() == kind;
         }
 
-        public static bool MatchesKind(this SyntaxTrivia trivia, SyntaxKind kind1, SyntaxKind kind2)
+        public static bool MatchesKind(this SyntaxTrivia trivia, CS.SyntaxKind kind1, CS.SyntaxKind kind2)
         {
             var triviaKind = trivia.Kind();
             return triviaKind == kind1 || triviaKind == kind2;
         }
 
-        public static bool MatchesKind(this SyntaxTrivia trivia, params SyntaxKind[] kinds)
+        public static bool MatchesKind(this SyntaxTrivia trivia, params CS.SyntaxKind[] kinds)
         {
             return kinds.Contains(trivia.Kind());
         }
@@ -113,17 +114,17 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsSingleLineComment(this SyntaxTrivia trivia)
         {
-            return trivia.Kind() == SyntaxKind.SingleLineCommentTrivia;
+            return trivia.Kind() == CS.SyntaxKind.SingleLineCommentTrivia;
         }
 
         public static bool IsMultiLineComment(this SyntaxTrivia trivia)
         {
-            return trivia.Kind() == SyntaxKind.MultiLineCommentTrivia;
+            return trivia.Kind() == CS.SyntaxKind.MultiLineCommentTrivia;
         }
 
         public static bool IsCompleteMultiLineComment(this SyntaxTrivia trivia)
         {
-            if (trivia.Kind() != SyntaxKind.MultiLineCommentTrivia) {
+            if (trivia.Kind() != CS.SyntaxKind.MultiLineCommentTrivia) {
                 return false;
             }
 
@@ -140,19 +141,28 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsSingleLineDocComment(this SyntaxTrivia trivia)
         {
-            return trivia.Kind() == SyntaxKind.SingleLineDocumentationCommentTrivia;
+            return trivia.Kind() == CS.SyntaxKind.SingleLineDocumentationCommentTrivia;
         }
 
         public static bool IsMultiLineDocComment(this SyntaxTrivia trivia)
         {
-            return trivia.Kind() == SyntaxKind.MultiLineDocumentationCommentTrivia;
+            return trivia.Kind() == CS.SyntaxKind.MultiLineDocumentationCommentTrivia;
+        }
+
+        public static SyntaxTrivia GetEndOfLine(string lang)
+        {
+            if (lang == LanguageNames.CSharp) {
+                return CS.SyntaxFactory.ElasticCarriageReturnLineFeed;
+            } else {
+                return VBasic.SyntaxFactory.ElasticCarriageReturnLineFeed;
+            }
         }
 
         /// <remarks>Good candidate for unit testing to catch newline issues hidden by the test harness</remarks>
         public static string GetCommentText(this SyntaxTrivia trivia)
         {
             var commentText = trivia.ToString();
-            if (trivia.IsKind(SyntaxKind.SingleLineCommentTrivia)) {
+            if (trivia.IsKind(CS.SyntaxKind.SingleLineCommentTrivia)) {
                 if (commentText.StartsWith("//")) {
                     commentText = commentText.Substring(2);
                 }
@@ -164,7 +174,7 @@ namespace ICSharpCode.CodeConverter.Util
                 }
 
                 return commentText.TrimStart(null);
-            } else if (trivia.Kind() == SyntaxKind.MultiLineCommentTrivia) {
+            } else if (trivia.Kind() == CS.SyntaxKind.MultiLineCommentTrivia) {
                 var textBuilder = new StringBuilder();
 
                 if (commentText.EndsWith("*/")) {
@@ -196,7 +206,7 @@ namespace ICSharpCode.CodeConverter.Util
                 textBuilder.Remove(textBuilder.Length - newLine.Length, newLine.Length);
 
                 return textBuilder.ToString();
-            } else if (trivia.IsKind(VBasic.SyntaxKind.DocumentationCommentTrivia)) {
+            } else if (trivia.IsKind(VBasic.SyntaxKind.DocumentationCommentTrivia) || trivia.Kind() == CS.SyntaxKind.SingleLineDocumentationCommentTrivia) {
                 var textBuilder = new StringBuilder();
 
                 if (commentText.EndsWith("*/")) {
@@ -209,8 +219,7 @@ namespace ICSharpCode.CodeConverter.Util
 
                 commentText = commentText.Trim();
 
-                var newLine = commentText.Contains('\n') ? '\n' : '\r';
-                var lines = commentText.Split(new []{newLine}, StringSplitOptions.None);
+                var lines = commentText.Replace("\r\n", "\n").Split('\n');
                 foreach (var line in lines) {
                     var trimmedLine = line.Trim();
 
@@ -218,6 +227,10 @@ namespace ICSharpCode.CodeConverter.Util
                     // If the ' was intentional, sorry, it's gone.
                     if (trimmedLine.StartsWith("'")) {
                         trimmedLine = trimmedLine.TrimStart('\'');
+                        trimmedLine = trimmedLine.TrimStart(null);
+                    }
+                    if (trimmedLine.StartsWith("/")) {
+                        trimmedLine = trimmedLine.TrimStart('/');
                         trimmedLine = trimmedLine.TrimStart(null);
                     }
 
@@ -251,7 +264,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static SyntaxTriviaList AsTrivia(this string s)
         {
-            return SyntaxFactory.ParseLeadingTrivia(s ?? String.Empty);
+            return CS.SyntaxFactory.ParseLeadingTrivia(s ?? String.Empty);
         }
 
         public static bool IsWhitespaceOrEndOfLine(this SyntaxTrivia trivia)
@@ -261,12 +274,12 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsEndOfLine(this SyntaxTrivia x)
         {
-            return x.IsKind(VBasic.SyntaxKind.EndOfLineTrivia) || x.IsKind(SyntaxKind.EndOfLineTrivia);
+            return x.IsKind(VBasic.SyntaxKind.EndOfLineTrivia) || x.IsKind(CS.SyntaxKind.EndOfLineTrivia);
         }
 
-        private static bool IsWhitespace(this SyntaxTrivia x)
+        public static bool IsWhitespace(this SyntaxTrivia x)
         {
-            return x.IsKind(VBasic.SyntaxKind.WhitespaceTrivia) || x.IsKind(SyntaxKind.WhitespaceTrivia);
+            return x.IsKind(VBasic.SyntaxKind.WhitespaceTrivia) || x.IsKind(CS.SyntaxKind.WhitespaceTrivia);
         }
 
         public static SyntaxTrivia GetPreviousTrivia(

@@ -84,22 +84,22 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal arg As Integer)
-        While True
+        While True ' Becomes while loop
             If arg = 3 Then Exit While
 
             Select Case arg
-                Case 1
-                Case 2
+                Case 1 ' From switch
+                Case 2 ' From switch
                 Case Else
-                    Continue While
+                    Continue While ' Outer while loop
             End Select
 
-            For i = 0 To arg - 1
-                If arg <> 1 Then Exit For
-                Continue For
+            For i = 0 To arg - 1 ' Becomes For Next loop
+                If arg <> 1 Then Exit For ' From inner for loop
+                Continue For ' Inner for loop
             Next
 
-            Continue While
+            Continue While ' Outer while loop
         End While
     End Sub
 End Class");
@@ -747,7 +747,7 @@ End Class");
 {
     void TestMethod()
     {
-        for (int i = 0; unknownCondition; i++) {
+        for (int i = 0; unknownCondition; i++) { // Increment moves to bottom of loop
             b[i] = s[i];
         }
     }
@@ -757,7 +757,7 @@ End Class");
 
         While unknownCondition
             b(i) = s(i)
-            i += 1
+            i += 1 ' Increment moves to bottom of loop
         End While
     End Sub
 End Class");
@@ -831,7 +831,7 @@ End Class");
         }
     }
 }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Private Sub TestMethod()
         Dim summary As Integer = 0
 
@@ -855,7 +855,7 @@ End Class");
     void Draw(double height) {
     }
 }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Private height As Double
 
     Private Sub TestMethod()
@@ -892,7 +892,7 @@ End Class");
         };
     }
 }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Private Sub TestMethod(ByVal counts As IEnumerable(Of Integer))
         Dim summary As Integer = 0
         Dim action As Action = Sub()
@@ -1127,8 +1127,8 @@ End Class");
                 Console.Write(""section 4"");
                 goto default;
             default:
-                Console.Write(""default section"");
-                break;
+                Console.Write(""default section""); // Block moves to end - 1
+                break; // Block moves to end - 2
             case 5:
                 Console.Write(""section 5"");
                 break;
@@ -1150,7 +1150,8 @@ _Select0_Case5:
                 Console.Write(""section 5"")
             Case Else
 _Select0_CaseDefault:
-                Console.Write(""default section"")
+                Console.Write(""default section"") ' Block moves to end - 1
+                ' Block moves to end - 2
         End Select
     End Sub
 End Class");

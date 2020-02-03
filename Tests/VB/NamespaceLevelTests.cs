@@ -38,9 +38,11 @@ public class X
         return s.Empty;
     }
 }",
-                @"Public Class X
-    Private Function GetStr() As String
-        Return String.Empty
+                @"Imports s = System.String
+
+Public Class X
+    Private Function GetStr() As s
+        Return s.Empty
     End Function
 End Class");
         }
@@ -97,7 +99,7 @@ namespace Test
     }
 }
 ",
-@"Namespace Test.class
+                @"Namespace Test.class
     Public MustInherit Class TestClass
     End Class
 End Namespace
@@ -251,7 +253,7 @@ class ThisUri
     private MyAlias.SoapAnyUri s;
     private SO so;
 }",
-                        @"Imports MyAlias = System.Runtime.Remoting.Metadata.W3cXsd2001
+                   @"Imports MyAlias = System.Runtime.Remoting.Metadata.W3cXsd2001
 Imports SO = System.Runtime.Remoting.Metadata.SoapOption
 
 Friend Class ThisUri
@@ -264,7 +266,7 @@ End Class");
         public async Task MoveImportsStatement()
         {
             await TestConversionCSharpToVisualBasic("namespace test { using SomeNamespace; }",
-                        @"Imports SomeNamespace
+                @"Imports SomeNamespace
 
 Namespace test
 End Namespace");
@@ -275,13 +277,12 @@ End Namespace");
         {
             await TestConversionCSharpToVisualBasic(
 @"namespace System {
-    using Collections;
+    using Collections; // Moves outside namespace
     public class TestClass {
         public Hashtable Property { get; set; }
     }
 }",
-@"Imports System.Collections
-
+                @"Imports System.Collections ' Moves outside namespace
 Namespace System
     Public Class TestClass
         Public Property [Property] As Hashtable
@@ -306,7 +307,7 @@ public interface iDisplay
     string Name { get; set; }
     void DisplayName();
 }",
-@"Public Class ToBeDisplayed
+                @"Public Class ToBeDisplayed
     Implements iDisplay
 
     Public Property Name As String Implements iDisplay.Name
@@ -338,7 +339,7 @@ public interface iDisplay
     string Name { get; set; }
     void DisplayName();
 }",
-@"Public Class ToBeDisplayed
+                @"Public Class ToBeDisplayed
     Implements iDisplay
 
     Private Property Name As String Implements iDisplay.Name
@@ -366,7 +367,7 @@ End Interface");
 public interface iDisplay {
     object this[int i] { get; set; }
 }",
-@"Public Class ToBeDisplayed
+                @"Public Class ToBeDisplayed
     Implements iDisplay
 
     Private Property Item(ByVal i As Integer) As Object Implements iDisplay.Item
@@ -388,7 +389,7 @@ End Interface");
         public async Task ClassImplementsInterface2()
         {
             await TestConversionCSharpToVisualBasic("class test : System.IComparable { }",
-@"Friend Class test
+                @"Friend Class test
     Implements IComparable
 End Class");
         }
@@ -397,7 +398,7 @@ End Class");
         public async Task ClassInheritsClass()
         {
             await TestConversionCSharpToVisualBasic("using System.IO; class test : InvalidDataException { }",
-@"Imports System.IO
+                @"Imports System.IO
 
 Friend Class test
     Inherits InvalidDataException
@@ -408,7 +409,7 @@ End Class");
         public async Task ClassInheritsClass2()
         {
             await TestConversionCSharpToVisualBasic("class test : System.IO.InvalidDataException { }",
-@"Friend Class test
+                @"Friend Class test
     Inherits InvalidDataException
 End Class");
         }
@@ -429,7 +430,7 @@ public static class TestClass<T> where T : Class1, new() {
             return task;
         }
     }",
-@"Imports System.Threading.Tasks
+                @"Imports System.Threading.Tasks
 
 Public MustInherit Class Class1
 End Class
@@ -454,7 +455,7 @@ End Class");
         public static void Initialize() { }
     }
 }",
-@"Public Module Factory
+                @"Public Module Factory
     Friend NotInheritable Class Generator
         Public Shared Sub Initialize()
         End Sub
@@ -472,7 +473,7 @@ End Module");
     internal static void Initialize1() { }
     private static void Initialize2() { }
 }",
-@"Public Module Factory
+                @"Public Module Factory
     Private Const Name As String = ""a""
     Friend Const Name1 As String = ""b""
     Public Const Name2 As String = ""c""
@@ -497,8 +498,8 @@ End Module");
 public class TestClass : ITestInterface<string> {
     public void Method(List<string> list) {
     }
-",
-@"Public Interface ITestInterface(Of T)
+}",
+                @"Public Interface ITestInterface(Of T)
     Sub Method(ByVal list As List(Of T))
 End Interface
 
@@ -515,8 +516,8 @@ End Class");
 @"using System.ComponentModel;
 public class TestClass : INotifyPropertyChanged {
     public event PropertyChangedEventHandler PropertyChanged;
-",
-@"Imports System.ComponentModel
+}",
+                @"Imports System.ComponentModel
 
 Public Class TestClass
     Implements INotifyPropertyChanged
@@ -529,7 +530,7 @@ End Class");
             await TestConversionCSharpToVisualBasic(
 @"public class TestClass : System.ComponentModel.INotifyPropertyChanged {
     public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-",
+}",
 @"Public Class TestClass
     Implements System.ComponentModel.INotifyPropertyChanged
 

@@ -29,7 +29,7 @@ namespace ICSharpCode.CodeConverter.VB
             var aliasNodes = expandedNode.GetAnnotatedNodes(Simplifier.Annotation).Select(syntaxNode =>
                 LeftMostDescendant(syntaxNode).Parent).OfType<AliasQualifiedNameSyntax>().Where(n => n.Alias.IsGlobalId()).ToArray();
             if (aliasNodes.Any()) {
-                return expandedNode.ReplaceNodes(aliasNodes, (orig, rewrite) => rewrite.Name);
+                return expandedNode.ReplaceNodes(aliasNodes, (orig, rewrite) => rewrite.Name.WithLeadingTrivia(rewrite.GetLeadingTrivia()));
             }
             return expandedNode;
         }

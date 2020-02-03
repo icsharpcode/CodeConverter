@@ -29,7 +29,7 @@ namespace ICSharpCode.CodeConverter.VB
     internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<SyntaxList<StatementSyntax>>
     {
         private SemanticModel _semanticModel;
-        private readonly CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode> _nodesVisitor;
+        private readonly CommentConvertingVisitorWrapper<VisualBasicSyntaxNode> _nodesVisitor;
         private readonly CommonConversions _commonConversions;
         private readonly Stack<BlockInfo> _blockInfo = new Stack<BlockInfo>(); // currently only works with switch blocks
         private int _switchCount = 0;
@@ -42,13 +42,12 @@ namespace ICSharpCode.CodeConverter.VB
         public CommentConvertingMethodBodyVisitor CommentConvertingVisitor { get; }
 
         public MethodBodyExecutableStatementVisitor(SemanticModel semanticModel,
-            CSharpSyntaxVisitor<VisualBasicSyntaxNode> nodesVisitor, TriviaConverter triviaConverter,
-            CommonConversions commonConversions)
+            CommentConvertingVisitorWrapper<VisualBasicSyntaxNode> nodesVisitor, CommonConversions commonConversions)
         {
             this._semanticModel = semanticModel;
             this._nodesVisitor = nodesVisitor;
             _commonConversions = commonConversions;
-            CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this, triviaConverter);
+            CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(this);
         }
 
         public override SyntaxList<StatementSyntax> DefaultVisit(SyntaxNode node)

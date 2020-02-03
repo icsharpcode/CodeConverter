@@ -372,7 +372,7 @@ End Class");
     object aB = 5;
     int Ab = (int) o;
 }",
-@"Private Sub Test()
+                @"Private Sub Test()
     Dim l_AB As Object = 5
     Dim Ab As Integer = CInt(o)
 End Sub");
@@ -384,7 +384,7 @@ End Sub");
     object test = 5;
     int tesT = (int) o;
 }",
-@"Private Sub Test()
+                @"Private Sub Test()
     Dim l_Test1 As Object = 5
     Dim l_TesT As Integer = CInt(o)
 End Sub");
@@ -399,7 +399,7 @@ End Sub");
         return test;
     }
 }",
-@"Public ReadOnly Property Test As Integer
+                @"Public ReadOnly Property Test As Integer
     Get
         Dim l_Test1 As Object = 5
         Dim l_TesT As Integer = CInt(o)
@@ -427,7 +427,7 @@ End Property");
         }
     }
 }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Private f_Test As EventHandler
 
     Public Custom Event Test As EventHandler
@@ -454,7 +454,7 @@ End Class");
     int tesT = (int)test;
     return tesT;
 }",
-@"Private Function Method(ByVal test As Object) As Integer
+                @"Private Function Method(ByVal test As Object) As Integer
     Dim l_TesT As Integer = test
     Return l_TesT
 End Function");
@@ -468,7 +468,7 @@ End Function");
         public int Test { get { return test; } }
     }
 }",
-@"Namespace System
+                @"Namespace System
     Public Class TestClass
         Private f_Test As Integer
 

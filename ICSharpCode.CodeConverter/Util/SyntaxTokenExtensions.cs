@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.Text;
 using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
+using ICSharpCode.CodeConverter.Shared;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -768,12 +769,12 @@ namespace ICSharpCode.CodeConverter.Util
                 || SyntaxFacts.IsPreprocessorKeyword(token.Kind());
         }
 
-        public static SyntaxToken GetNextNonZeroWidthTokenOrEndOfFile(this SyntaxToken token)
+        public static SyntaxToken GetNextNonZeroWidthCsTokenOrEndOfFile(this SyntaxToken token)
         {
-            return token.GetNextTokenOrEndOfFile();
+            return token.GetNextCsTokenOrEndOfFile();
         }
 
-        public static SyntaxToken GetNextTokenOrEndOfFile(
+        public static SyntaxToken GetNextCsTokenOrEndOfFile(
             this SyntaxToken token,
             bool includeZeroWidth = false,
             bool includeSkipped = false,
@@ -896,7 +897,7 @@ namespace ICSharpCode.CodeConverter.Util
                 yield return trivia;
             }
 
-            var nextToken = token.GetNextTokenOrEndOfFile(includeZeroWidth: true, includeSkipped: true, includeDirectives: true, includeDocumentationComments: true);
+            var nextToken = token.GetNextCsTokenOrEndOfFile(includeZeroWidth: true, includeSkipped: true, includeDirectives: true, includeDocumentationComments: true);
 
             foreach (var trivia in nextToken.LeadingTrivia) {
                 yield return trivia;
@@ -1058,6 +1059,24 @@ namespace ICSharpCode.CodeConverter.Util
             return token.IsKind(SyntaxKind.PublicKeyword, SyntaxKind.InternalKeyword, SyntaxKind.ProtectedKeyword, SyntaxKind.PrivateKeyword)
                    || isVariableOrConst && token.IsKind(SyntaxKind.ConstKeyword)
                    || isConstructor && token.IsKind(SyntaxKind.StaticKeyword);
+        }
+
+        public static SyntaxToken WithSourceMappingFrom(this SyntaxToken converted, SyntaxToken fromToken)
+        {
+            var origLinespan = fromToken.SyntaxTree.GetLineSpan(fromToken.Span);
+            return fromToken.CopyAnnotationsTo(converted)
+                .WithSourceStartLineAnnotation(origLinespan)
+                .WithSourceEndLineAnnotation(origLinespan);
+        }
+
+        public static SyntaxToken WithSourceStartLineAnnotation(this SyntaxToken node, FileLinePositionSpan sourcePosition)
+        {
+            return node.WithAdditionalAnnotations(AnnotationConstants.SourceStartLine(sourcePosition));
+        }
+
+        public static SyntaxToken WithSourceEndLineAnnotation(this SyntaxToken node, FileLinePositionSpan sourcePosition)
+        {
+            return node.WithAdditionalAnnotations(AnnotationConstants.SourceEndLine(sourcePosition));
         }
     }
 }

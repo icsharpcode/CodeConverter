@@ -39,6 +39,7 @@ using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExte
 using static ICSharpCode.CodeConverter.VB.SyntaxKindExtensions;
 using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 using Microsoft.VisualBasic;
+using System.Collections;
 
 namespace ICSharpCode.CodeConverter.VB
 {
@@ -52,40 +53,29 @@ namespace ICSharpCode.CodeConverter.VB
         private readonly SemanticModel _semanticModel;
         private readonly VisualBasicCompilation _vbViewOfCsSymbols;
         private readonly SyntaxGenerator _vbSyntaxGenerator;
-
-        private readonly List<ImportsStatementSyntax> _convertedImports = new List<ImportsStatementSyntax>();
+        private readonly List<CSS.UsingDirectiveSyntax> _importsToConvert = new List<CSS.UsingDirectiveSyntax>();
         private readonly HashSet<string> _extraImports = new HashSet<string>();
-
-
-        private int _placeholder = 1;
         private readonly CSharpHelperMethodDefinition _cSharpHelperMethodDefinition;
         private readonly CommonConversions _commonConversions;
-        public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
+
+        private int _placeholder = 1;
+        public CommentConvertingVisitorWrapper<VisualBasicSyntaxNode> TriviaConvertingVisitor { get; }
 
         private string GeneratePlaceholder(string v)
         {
             return $"__{v}{_placeholder++}__";
         }
 
-        private IEnumerable<ImportsStatementSyntax> TidyImportsList(IEnumerable<ImportsStatementSyntax> allImports)
-        {
-            return allImports
-                .SelectMany(x => x.ImportsClauses)
-                .GroupBy(x => x.ToString())
-                .Select(g => g.First())
-                .Select(x => SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList(x)));
-        }
-
         public NodesVisitor(Document document, CS.CSharpCompilation compilation, SemanticModel semanticModel,
-            VisualBasicCompilation vbViewOfCsSymbols, SyntaxGenerator vbSyntaxGenerator)
+            VisualBasicCompilation vbViewOfCsSymbols, SyntaxGenerator vbSyntaxGenerator, int numberOfLines)
         {
             _document = document;
             _compilation = compilation;
             _semanticModel = semanticModel;
             _vbViewOfCsSymbols = vbViewOfCsSymbols;
             _vbSyntaxGenerator = vbSyntaxGenerator;
-            TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this);
-            _commonConversions = new CommonConversions(semanticModel, vbSyntaxGenerator, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter);
+            TriviaConvertingVisitor = new CommentConvertingVisitorWrapper<VisualBasicSyntaxNode>(new CommentConvertingNodesVisitor(this));
+            _commonConversions = new CommonConversions(semanticModel, vbSyntaxGenerator, TriviaConvertingVisitor);
             _cSharpHelperMethodDefinition = new CSharpHelperMethodDefinition();
         }
 
@@ -95,22 +85,16 @@ namespace ICSharpCode.CodeConverter.VB
                 .WithNodeInformation(node);
         }
 
-        private Func<SyntaxNode, SyntaxNode> DelegateConversion(Func<SyntaxNode, SyntaxList<StatementSyntax>> convert)
-        {
-            return node => MethodBodyExecutableStatementVisitor.CreateBlock(convert(node));
-        }
-
         public override VisualBasicSyntaxNode VisitCompilationUnit(CSS.CompilationUnitSyntax node)
         {
-            foreach (var @using in node.Usings)
-                @using.Accept(TriviaConvertingVisitor);
+            _importsToConvert.AddRange(node.Usings);
             foreach (var @extern in node.Externs)
                 @extern.Accept(TriviaConvertingVisitor);
             var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => SyntaxFactory.AttributesStatement(SyntaxFactory.SingletonList((AttributeListSyntax)a.Accept(TriviaConvertingVisitor)))));
             var members = SyntaxFactory.List(node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor)));
 
             //TODO Add Usings from compilationoptions
-            var importsStatementSyntaxes = SyntaxFactory.List(TidyImportsList(_convertedImports.Concat(_extraImports.Select(Import))));
+            var importsStatementSyntaxes = SyntaxFactory.List(_importsToConvert.Select(import => (ImportsStatementSyntax) import.Accept(TriviaConvertingVisitor)).Concat(_extraImports.Select(Import)));
             return SyntaxFactory.CompilationUnit(
                 SyntaxFactory.List<OptionStatementSyntax>(),
                 importsStatementSyntaxes,
@@ -173,7 +157,7 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitNamespaceDeclaration(CSS.NamespaceDeclarationSyntax node)
         {
             foreach (var @using in node.Usings)
-                @using.Accept(TriviaConvertingVisitor);
+                _importsToConvert.AddRange(node.Usings);
             foreach (var @extern in node.Externs)
                 @extern.Accept(TriviaConvertingVisitor);
             var members = node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor));
@@ -198,8 +182,7 @@ namespace ICSharpCode.CodeConverter.VB
                 clause = clause.WithAlias(alias);
             }
 
-            _convertedImports.Add(SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(clause)));
-            return null;
+            return SyntaxFactory.ImportsStatement(SyntaxFactory.SingletonSeparatedList<ImportsClauseSyntax>(clause));
         }
 
         #region Namespace Members
@@ -430,7 +413,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitMethodDeclaration(CSS.MethodDeclarationSyntax node)
         {
-            var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter, _commonConversions);
+            var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, TriviaConvertingVisitor, _commonConversions);
             bool requiresBody = node.Body != null || node.ExpressionBody != null || node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword));
             var block = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
             var id = _commonConversions.ConvertIdentifier(node.Identifier);
@@ -631,7 +614,7 @@ namespace ICSharpCode.CodeConverter.VB
                 .OfType<CSS.AssignmentExpressionSyntax>()
                 .SelectMany(x => x.Left.DescendantNodesAndSelf().OfType<CSS.IdentifierNameSyntax>())
                 .FirstOrDefault();
-            var eventFieldIdentifier = (IdentifierNameSyntax)csEventFieldIdentifier?.Accept(TriviaConvertingVisitor);
+            var eventFieldIdentifier = (IdentifierNameSyntax)csEventFieldIdentifier?.Accept(TriviaConvertingVisitor, false);
 
             var riseEventAccessor = SyntaxFactory.RaiseEventAccessorBlock(
                 SyntaxFactory.RaiseEventAccessorStatement(

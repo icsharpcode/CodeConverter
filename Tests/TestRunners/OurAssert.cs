@@ -4,17 +4,13 @@ using Xunit;
 
 namespace CodeConverter.Tests.TestRunners
 {
-    public class OurAssert
+    public static class OurAssert
     {
         public static StringBuilder DescribeStringDiff(string expectedConversion, string actualConversion)
         {
             int l = Math.Max(expectedConversion.Length, actualConversion.Length);
-            StringBuilder sb = new StringBuilder(l * 4);
-            sb.AppendLine("expected:");
-            sb.AppendLine(expectedConversion);
-            sb.AppendLine("got:");
-            sb.AppendLine(actualConversion);
-            sb.AppendLine("diff:");
+            StringBuilder sb = new StringBuilder(l);
+            sb.AppendLine("------------------------------------\r\ndiff:");
             for (int i = 0; i < l; i++)
             {
                 if (i >= expectedConversion.Length || i >= actualConversion.Length ||
@@ -24,23 +20,34 @@ namespace CodeConverter.Tests.TestRunners
                     sb.Append(expectedConversion[i]);
             }
 
-            return sb;
+            return sb.AppendLine("------------------------------------");
         }
 
-        public static void StringsEqualIgnoringNewlines(string expectedText, string actualText)
+        public static void EqualIgnoringNewlines(string expectedText, string actualText)
+        {
+            const string splitter = "\r\n------------------------------------\r\n";
+            EqualIgnoringNewlines(expectedText + splitter, actualText + splitter, () => DescribeStringDiff(expectedText, actualText).ToString());
+        }
+
+        public static void EqualIgnoringNewlines(string expectedText, string actualText, Func<string> getMessage)
         {
             expectedText = Utils.HomogenizeEol(expectedText);
             actualText = Utils.HomogenizeEol(actualText);
-            if (expectedText.Equals(actualText)) return;
-            Assert.True(false, DescribeStringDiff(expectedText, actualText).ToString());
+            Equal(expectedText, actualText, getMessage);
         }
 
-        public static void StringsEqualIgnoringNewlines(string expectedText, string actualText, Func<string> getMessage)
+        public static void Equal(object expectedText, object actualText, Func<string> getMessage)
         {
-            expectedText = Utils.HomogenizeEol(expectedText);
-            actualText = Utils.HomogenizeEol(actualText);
-            if (expectedText.Equals(actualText)) return;
-            Assert.True(false, getMessage());
+            WithMessage(() => Assert.Equal(expectedText, actualText), getMessage);
+        }
+
+        public static void WithMessage(Action assertion, Func<string> getMessage)
+        {
+            try {
+                assertion();
+            } catch (Exception e) {
+                throw new Exception(e.Message + "\r\n" + getMessage(), e);
+            }
         }
     }
 }

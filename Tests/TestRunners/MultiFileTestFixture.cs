@@ -201,7 +201,7 @@ namespace CodeConverter.Tests.TestRunners
             var conversionResult = conversionResults[convertedFilePath];
             var actualText = conversionResult.ConvertedCode ?? "" + conversionResult.GetExceptionsAsString() ?? "";
 
-            OurAssert.StringsEqualIgnoringNewlines(expectedText, actualText);
+            OurAssert.EqualIgnoringNewlines(expectedText, actualText);
             Assert.Equal(GetEncoding(expectedFile.FullName), GetEncoding(conversionResult));
         }
 

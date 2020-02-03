@@ -9,10 +9,14 @@ using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using CS = Microsoft.CodeAnalysis.CSharp;
+using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using VBasic = Microsoft.CodeAnalysis.VisualBasic;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using AnonymousObjectCreationExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.AnonymousObjectCreationExpressionSyntax;
 using ArgumentListSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArgumentListSyntax;
 using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankSpecifierSyntax;
@@ -40,6 +44,7 @@ using TypeOfExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeOfExpres
 using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 using UsingStatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.UsingStatementSyntax;
 using WhileStatementSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.WhileStatementSyntax;
+using VBCommonConversions = ICSharpCode.CodeConverter.VB.CommonConversions;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -211,10 +216,39 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static ISymbol GetEnclosingDeclaredTypeSymbol(this SyntaxNode node, SemanticModel semanticModel)
         {
-            var typeBlockSyntax = (SyntaxNode) node.GetAncestor<TypeBlockSyntax>()
+            var typeBlockSyntax = (SyntaxNode)node.GetAncestor<TypeBlockSyntax>()
                 ?? node.GetAncestor<TypeSyntax>();
             if (typeBlockSyntax == null) return null;
             return semanticModel.GetDeclaredSymbol(typeBlockSyntax);
+        }
+
+        public static SyntaxList<T> WithSourceMappingFrom<T>(this SyntaxList<T> converted, SyntaxNode node) where T : SyntaxNode
+        {
+            if (!converted.Any()) return converted;
+            var origLinespan = node.SyntaxTree.GetLineSpan(node.Span);
+            var first = converted.First();
+            converted = converted.Replace(first, node.CopyAnnotationsTo(first).WithSourceStartLineAnnotation(origLinespan));
+            var last = converted.Last();
+            return converted.Replace(last, last.WithSourceEndLineAnnotation(origLinespan));
+        }
+
+        public static T WithSourceMappingFrom<T>(this T converted, SyntaxNodeOrToken fromSource) where T : SyntaxNode
+        {
+            if (converted == null) return null;
+            var startLinespan = fromSource.SyntaxTree.GetLineSpan(fromSource.Span);
+            return converted
+                .WithSourceStartLineAnnotation(startLinespan)
+                .WithSourceEndLineAnnotation(startLinespan);
+        }
+
+        public static T WithSourceStartLineAnnotation<T>(this T node, FileLinePositionSpan sourcePosition) where T : SyntaxNode
+        {
+            return node.WithAdditionalAnnotations(AnnotationConstants.SourceStartLine(sourcePosition));
+        }
+
+        public static T WithSourceEndLineAnnotation<T>(this T node, FileLinePositionSpan sourcePosition) where T : SyntaxNode
+        {
+            return node.WithAdditionalAnnotations(AnnotationConstants.SourceEndLine(sourcePosition));
         }
 
         /// <summary>
@@ -755,6 +789,12 @@ namespace ICSharpCode.CodeConverter.Util
             return node.WithConvertedLeadingTriviaFrom(otherNode).WithConvertedTrailingTriviaFrom(otherNode);
         }
 
+        public static T WithConvertedLeadingTriviaFrom<T>(this T node, SyntaxToken fromToken) where T : SyntaxNode
+        {
+            var firstConvertedToken = node.GetFirstToken();
+            return node.ReplaceToken(firstConvertedToken, firstConvertedToken.WithConvertedLeadingTriviaFrom(fromToken));
+        }
+
         public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
         {
             var firstToken = otherNode?.GetFirstToken();
@@ -766,6 +806,12 @@ namespace ICSharpCode.CodeConverter.Util
             if (sourceToken == null) return node;
             var convertedTrivia = ConvertTrivia(sourceToken.Value.LeadingTrivia);
             return node.WithLeadingTrivia(convertedTrivia);
+        }
+
+        public static T WithConvertedTrailingTriviaFrom<T>(this T node, SyntaxToken fromToken) where T : SyntaxNode
+        {
+            var lastConvertedToken = node.GetLastToken();
+            return node.ReplaceToken(lastConvertedToken, lastConvertedToken.WithConvertedTrailingTriviaFrom(fromToken));
         }
 
         public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
@@ -782,13 +828,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static IEnumerable<SyntaxTrivia> ImportantTrailingTrivia(this SyntaxToken node)
         {
-            return node.TrailingTrivia.Where(x => !IsWhitespaceTrivia(x)
-            );
-        }
-
-        public static bool IsWhitespaceTrivia(this SyntaxTrivia trivia)
-        {
-            return trivia.IsKind(CSSyntaxKind.WhitespaceTrivia) || trivia.IsKind(CSSyntaxKind.EndOfLineTrivia) || trivia.IsKind(CSSyntaxKind.WhitespaceTrivia) || trivia.IsKind(CSSyntaxKind.EndOfLineTrivia);
+            return node.TrailingTrivia.Where(x => !x.IsWhitespaceOrEndOfLine());
         }
 
         public static bool ParentHasSameTrailingTrivia(this SyntaxNode otherNode)
@@ -798,7 +838,13 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static IEnumerable<SyntaxTrivia> ConvertTrivia(this IReadOnlyCollection<SyntaxTrivia> triviaToConvert)
         {
-            return triviaToConvert.Select(t => t.Language == "Visual Basic" ? ConvertVBTrivia(t) : ConvertCSTrivia(t)).Where(x => x != default(SyntaxTrivia));
+            return triviaToConvert.SelectMany(t => {
+                if (t.Language == LanguageNames.VisualBasic) {
+                    return ConvertVBTrivia(t).Yield();
+                } else {
+                    return ConvertCSTrivia(t);
+                }
+            }).Where(x => x != default(SyntaxTrivia));
         }
 
         private static SyntaxTrivia ConvertVBTrivia(SyntaxTrivia t)
@@ -830,36 +876,88 @@ namespace ICSharpCode.CodeConverter.Util
                 : default(SyntaxTrivia);
         }
 
-        private static SyntaxTrivia ConvertCSTrivia(SyntaxTrivia t)
+        private static IEnumerable<SyntaxTrivia> ConvertCSTrivia(SyntaxTrivia t)
         {
-            if (t.IsKind(CSSyntaxKind.SingleLineCommentTrivia))
-                return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.CommentTrivia, $"' {t.GetCommentText()}");
+            var endOfLine = SyntaxTriviaExtensions.GetEndOfLine(LanguageNames.VisualBasic);
+
+            if (t.IsKind(CSSyntaxKind.SingleLineCommentTrivia)) {
+                yield return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.CommentTrivia, $"' {t.GetCommentText()}");
+                yield break;
+            }
             if (t.IsKind(CSSyntaxKind.SingleLineDocumentationCommentTrivia)) {
-                var previousWhitespace = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None).ToString();
+                var previousTrivia = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None);
+                var previousWhitespace = previousTrivia.IsWhitespace() ? previousTrivia.ToString() : "";
                 var commentTextLines = t.GetCommentText().Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
                 var multiLine = commentTextLines.Length > 1;
                 var outputCommentText = multiLine
                     ? "''' " + String.Join($"\r\n{previousWhitespace}''' ", commentTextLines)
                     : $"' {commentTextLines.Single()}";
-                return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.DocumentationCommentTrivia,
-                    outputCommentText);
+                yield return VBSyntaxFactory.CommentTrivia(outputCommentText);
+                yield return endOfLine;
+                yield break;
             }
 
             if (t.IsKind(CSSyntaxKind.WhitespaceTrivia)) {
-                return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.WhitespaceTrivia, t.ToString());
+                yield return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.WhitespaceTrivia, t.ToString());
+                yield break;
             }
 
             if (t.IsKind(CSSyntaxKind.EndOfLineTrivia)) {
-                // Mapping one to one here leads to newlines appearing where the natural line-end was in VB.
-                // e.g. ToString\r\n()
-                // Because C Sharp needs those brackets. Handling each possible case of this is far more effort than it's worth.
-                return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.EndOfLineTrivia, t.ToString());
+                yield return VBSyntaxFactory.SyntaxTrivia(VBSyntaxKind.EndOfLineTrivia, t.ToString());
+                yield break;
             }
 
-            var convertedKind = t.GetVBKind();
-            return convertedKind.HasValue
-                ? VBSyntaxFactory.CommentTrivia($"' TODO ERROR: Skipped {convertedKind.Value}")
-                : default(SyntaxTrivia);
+            if (t.IsKind(CSSyntaxKind.DisabledTextTrivia)) {
+                //TODO Actually use converter
+                yield return VBSyntaxFactory.DisabledTextTrivia("' Skipped during conversion: " + t.ToString().Trim('\r', '\n').Replace("\n", "\n'"));
+                yield return endOfLine;
+                yield break;
+            }
+
+            var structured = GetStructuredTrivia(t);
+            if (structured != null) {
+                yield return VBSyntaxFactory.Trivia(structured);
+                yield return endOfLine;
+                yield break;
+            }
+
+            yield return VBSyntaxFactory.CommentTrivia($"' TODO ERROR: Skipped {t}\r\n");
+        }
+
+        private static VBSyntax.StructuredTriviaSyntax GetStructuredTrivia(SyntaxTrivia t)
+        {
+
+            if (t.IsKind(CSSyntaxKind.RegionDirectiveTrivia)) {
+                var structure = ((CSSyntax.RegionDirectiveTriviaSyntax)t.GetStructure());
+                string name = structure.EndOfDirectiveToken.LeadingTrivia.Single().ToString();
+                var regionSyntax = VBSyntaxFactory.RegionDirectiveTrivia(VBSyntaxFactory.Token(VBSyntaxKind.HashToken), VBSyntaxFactory.Token(VBSyntaxKind.RegionKeyword), VBSyntaxFactory.StringLiteralToken("\"" + name + "\"", name));
+                return regionSyntax;
+            }
+
+            if (t.IsKind(CSSyntaxKind.EndRegionDirectiveTrivia)) {
+                var regionSyntax = VBSyntaxFactory.EndRegionDirectiveTrivia();
+                return regionSyntax;
+            }
+
+            if (t.IsKind(CSSyntaxKind.IfDirectiveTrivia) && t.GetStructure() is CSSyntax.IfDirectiveTriviaSyntax idts) {
+                //TODO Actually use converter
+                return VBSyntaxFactory.IfDirectiveTrivia(VBasic.SyntaxFactory.Token(VBSyntaxKind.IfKeyword), VBasic.SyntaxFactory.ParseExpression(idts.Condition.ToString()));
+            }
+
+            if (t.IsKind(CSSyntaxKind.ElifDirectiveTrivia) && t.GetStructure() is CSSyntax.IfDirectiveTriviaSyntax eidts) {
+                //TODO Actually use converter
+                return VBSyntaxFactory.IfDirectiveTrivia(VBasic.SyntaxFactory.Token(VBSyntaxKind.IfKeyword), VBasic.SyntaxFactory.ParseExpression(eidts.Condition.ToString()));
+            }
+
+            if (t.IsKind(CSSyntaxKind.ElseDirectiveTrivia)) {
+                return VBSyntaxFactory.ElseDirectiveTrivia();
+            }
+
+            if (t.IsKind(CSSyntaxKind.EndIfDirectiveTrivia)) {
+                return VBSyntaxFactory.EndIfDirectiveTrivia();
+            }
+
+            return null;
         }
 
         public static T WithoutTrailingEndOfLineTrivia<T>(this T cSharpNode) where T : CSharpSyntaxNode
@@ -1534,7 +1632,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static T WithCsTrailingErrorComment<T>(this T dummyDestNode,
             VisualBasicSyntaxNode sourceNode,
-            Exception exception) where T: CSharpSyntaxNode
+            Exception exception) where T : CSharpSyntaxNode
         {
             var errorDirective = SyntaxFactory.ParseTrailingTrivia($"#error Cannot convert {sourceNode.GetType().Name} - see comment for details{Environment.NewLine}");
             var errorDescription = sourceNode.DescribeConversionError(exception);
@@ -1573,6 +1671,16 @@ namespace ICSharpCode.CodeConverter.Util
         public static bool ContainsDeclaredVisibility(this SyntaxTokenList modifiers, bool isVariableOrConst = false, bool isConstructor = false)
         {
             return modifiers.Any(m => m.IsCsVisibility(isVariableOrConst, isConstructor));
+        }
+
+        public static SyntaxToken FindNonZeroWidthToken(this SyntaxNode node, int position)
+        {
+            var syntaxToken = node.FindToken(position);
+            if (syntaxToken.FullWidth() == 0) {
+                return syntaxToken.GetPreviousToken();
+            } else {
+                return syntaxToken;
+            }
         }
     }
 }
