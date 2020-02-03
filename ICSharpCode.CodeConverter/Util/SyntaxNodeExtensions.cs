@@ -842,9 +842,9 @@ namespace ICSharpCode.CodeConverter.Util
                 if (t.Language == LanguageNames.VisualBasic) {
                     return ConvertVBTrivia(t).Yield();
                 } else {
-                    return ConvertCSTrivia(t).Where(x => x != default(SyntaxTrivia));
+                    return ConvertCSTrivia(t);
                 }
-            });
+            }).Where(x => x != default(SyntaxTrivia));
         }
 
         private static SyntaxTrivia ConvertVBTrivia(SyntaxTrivia t)

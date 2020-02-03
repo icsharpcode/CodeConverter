@@ -1177,64 +1177,18 @@ End Class", @"internal partial class TestClass
         If a = 0 Then Console.WriteLine(1) : Console.WriteLine(2) : Return
         Console.WriteLine(3)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"using System;
+
+internal partial class TestClass
 {
-    class _failedMemberConversionMarker1
+    public static void MultiStatement(int a)
     {
+        if (a == 0)
+        {
+            Console.WriteLine(1); Console.WriteLine(2); return;
+        }
+        Console.WriteLine(3);
     }
-#error Cannot convert MethodBlockSyntax - see comment for details
-    /* Cannot convert MethodBlockSyntax, System.NullReferenceException: Object reference not set to an instance of an object.
-       at Microsoft.CodeAnalysis.GreenNode.AdjustFlagsAndWidth(GreenNode node)
-       at Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxList.WithTwoChildren..ctor(GreenNode child0, GreenNode child1)
-       at Microsoft.CodeAnalysis.Syntax.InternalSyntax.SyntaxList.List(GreenNode child0, GreenNode child1)
-       at Microsoft.CodeAnalysis.GreenNode.CreateList(IEnumerable`1 nodes, Boolean alwaysCreateListNode)
-       at Microsoft.CodeAnalysis.SyntaxToken.WithTrailingTrivia(IEnumerable`1 trivia)
-       at ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions.WithConvertedTrailingTriviaFrom(SyntaxToken node, Nullable`1 otherToken) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\Util\SyntaxNodeExtensions.cs:line 827
-       at ICSharpCode.CodeConverter.Shared.TriviaConverter.<>c__DisplayClass8_0`1.<WithTrailingTriviaConversions>b__0(SyntaxToken originalToken, SyntaxToken updatedToken) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\Shared\TriviaConverter.cs:line 133
-       at Microsoft.CodeAnalysis.CSharp.Syntax.SyntaxReplacer.Replacer`1.VisitToken(SyntaxToken token)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxRewriter.VisitExpressionStatement(ExpressionStatementSyntax node)
-       at Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionStatementSyntax.Accept[TResult](CSharpSyntaxVisitor`1 visitor)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxRewriter.Visit(SyntaxNode node)
-       at Microsoft.CodeAnalysis.CSharp.Syntax.SyntaxReplacer.Replacer`1.Visit(SyntaxNode node)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxRewriter.VisitListElement[TNode](TNode node)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxRewriter.VisitList[TNode](SyntaxList`1 list)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxRewriter.VisitBlock(BlockSyntax node)
-       at Microsoft.CodeAnalysis.CSharp.Syntax.BlockSyntax.Accept[TResult](CSharpSyntaxVisitor`1 visitor)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxRewriter.Visit(SyntaxNode node)
-       at Microsoft.CodeAnalysis.CSharp.Syntax.SyntaxReplacer.Replacer`1.Visit(SyntaxNode node)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxRewriter.VisitIfStatement(IfStatementSyntax node)
-       at Microsoft.CodeAnalysis.CSharp.Syntax.IfStatementSyntax.Accept[TResult](CSharpSyntaxVisitor`1 visitor)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxRewriter.Visit(SyntaxNode node)
-       at Microsoft.CodeAnalysis.CSharp.Syntax.SyntaxReplacer.Replacer`1.Visit(SyntaxNode node)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxRewriter.VisitListElement[TNode](TNode node)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxRewriter.VisitList[TNode](SyntaxList`1 list)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxRewriter.VisitBlock(BlockSyntax node)
-       at Microsoft.CodeAnalysis.CSharp.Syntax.BlockSyntax.Accept[TResult](CSharpSyntaxVisitor`1 visitor)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxRewriter.Visit(SyntaxNode node)
-       at Microsoft.CodeAnalysis.CSharp.Syntax.SyntaxReplacer.Replacer`1.Visit(SyntaxNode node)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxRewriter.VisitMethodDeclaration(MethodDeclarationSyntax node)
-       at Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax.Accept[TResult](CSharpSyntaxVisitor`1 visitor)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxRewriter.Visit(SyntaxNode node)
-       at Microsoft.CodeAnalysis.CSharp.Syntax.SyntaxReplacer.Replacer`1.Visit(SyntaxNode node)
-       at Microsoft.CodeAnalysis.CSharp.Syntax.SyntaxReplacer.Replace[TNode](SyntaxNode root, IEnumerable`1 nodes, Func`3 computeReplacementNode, IEnumerable`1 tokens, Func`3 computeReplacementToken, IEnumerable`1 trivia, Func`3 computeReplacementTrivia)
-       at Microsoft.CodeAnalysis.CSharp.CSharpSyntaxNode.ReplaceCore[TNode](IEnumerable`1 nodes, Func`3 computeReplacementNode, IEnumerable`1 tokens, Func`3 computeReplacementToken, IEnumerable`1 trivia, Func`3 computeReplacementTrivia)
-       at Microsoft.CodeAnalysis.SyntaxNodeExtensions.ReplaceTokens[TRoot](TRoot root, IEnumerable`1 tokens, Func`3 computeReplacementToken)
-       at ICSharpCode.CodeConverter.Shared.TriviaConverter.WithTrailingTriviaConversions[T](T destination, Nullable`1 parentLastToken, Boolean hasVisitedContainingBlock) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\Shared\TriviaConverter.cs:line 119
-       at ICSharpCode.CodeConverter.Shared.TriviaConverter.PortConvertedTrivia[T](SyntaxNode sourceNode, T destination) in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\Shared\TriviaConverter.cs:line 61
-       at ICSharpCode.CodeConverter.CSharp.CommentConvertingNodesVisitor.<DefaultVisit>d__5.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\CommentConvertingNodesVisitor.cs:line 30
-    --- End of stack trace from previous location where exception was thrown ---
-       at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
-       at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
-       at System.Runtime.CompilerServices.TaskAwaiter`1.GetResult()
-       at ICSharpCode.CodeConverter.CSharp.DeclarationNodeVisitor.<ConvertMember>d__36.MoveNext() in C:\Users\Graham\Documents\GitHub\CodeConverter\ICSharpCode.CodeConverter\CSharp\DeclarationNodeVisitor.cs:line 229
-
-    Input:
-        Public Shared Sub MultiStatement(a As Integer)
-            If a = 0 Then Global.System.Console.WriteLine(1) : Global.System.Console.WriteLine(2) : Return
-            Global.System.Console.WriteLine(3)
-        End Sub
-
-     */
 }");
         }
 
