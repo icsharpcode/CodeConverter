@@ -618,7 +618,7 @@ namespace ICSharpCode.CodeConverter.VB
                 .Select(x => x.Expression)
                 .OfType<CSS.AssignmentExpressionSyntax>()
                 .SelectMany(x => x.Left.DescendantNodesAndSelf().OfType<CSS.IdentifierNameSyntax>())
-                .FirstOrDefault()?.Accept(TriviaConvertingVisitor);
+                .FirstOrDefault()?.Accept(TriviaConvertingVisitor, false);
 
             var riseEventAccessor = SyntaxFactory.RaiseEventAccessorBlock(
                 SyntaxFactory.RaiseEventAccessorStatement(

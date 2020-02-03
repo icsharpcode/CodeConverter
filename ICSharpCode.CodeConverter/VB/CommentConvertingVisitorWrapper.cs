@@ -17,8 +17,6 @@ namespace ICSharpCode.CodeConverter.VB
 
     internal class CommentConvertingVisitorWrapper<T> where T : VisualBasicSyntaxNode
     {
-        // Not thread safe
-        private bool _addSourceMapping = true;
         private readonly CSharpSyntaxVisitor<T> _wrappedVisitor;
         public CommentConvertingVisitorWrapper(CSharpSyntaxVisitor<T> wrappedVisitor)
         {
@@ -27,20 +25,27 @@ namespace ICSharpCode.CodeConverter.VB
 
         public TriviaConverter TriviaConverter { get; }
 
-        public T Accept(SyntaxNode node, bool forceNoSourceMapping)
+        public T Accept(SyntaxNode node, bool addSourceMapping)
         {
-            bool disableSourceMapping = forceNoSourceMapping && _addSourceMapping;
-            if (disableSourceMapping) _addSourceMapping = false;
             try {
                 var converted = _wrappedVisitor.Visit(node);
-                return _addSourceMapping ? node.CopyAnnotationsTo(converted).WithSourceMappingFrom(node) : converted;
+                return addSourceMapping ? node.CopyAnnotationsTo(converted).WithSourceMappingFrom(node)
+                    : WithoutSourceMapping(converted);
             } catch (Exception e) {
                 var dummyStatement = SyntaxFactory.EmptyStatement();
                 return ((T)(object)dummyStatement).WithVbTrailingErrorComment((CSharpSyntaxNode)node, e);
-            } finally {
-                if (disableSourceMapping) _addSourceMapping = true;
             }
 
+        }
+
+        private T WithoutSourceMapping(T converted)
+        {
+            converted = converted.ReplaceTokens(converted.DescendantTokens(), (o, r) =>
+                r.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind)
+            );
+            return converted.ReplaceNodes(converted.DescendantNodes(), (o, r) => 
+                r.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind)
+            );
         }
     }
 }
