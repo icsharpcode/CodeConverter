@@ -72,7 +72,25 @@ namespace ICSharpCode.CodeConverter.Shared
                 trivia.Value.Trailing.Reverse();//Because of reverse iteration above
             }
 
+            BalanceTrivia();
+
             return _target.ReplaceTokens(_targetTokenToTrivia.Keys, AttachMappedTrivia);
+        }
+
+        /// <summary>
+        /// Trailing trivia can't contain multiple newlines (it gets lost during formatting), so prepend as leading trivia of the next token
+        /// </summary>
+        private void BalanceTrivia()
+        {
+            foreach (var trivia in _targetTokenToTrivia.Where(t => t.Value.Trailing.Count > 1).ToList()) {
+                var lastIndexToKeep = trivia.Value.Trailing.FindIndex(tl => tl.Any(t => t.IsEndOfLine()));
+                var moveToLeadingTrivia = trivia.Value.Trailing.Skip(lastIndexToKeep + 1).ToList();
+                if (moveToLeadingTrivia.Any()) {
+                    var nextTrivia = GetTargetTriviaCollection(trivia.Key.GetNextToken(true));
+                    nextTrivia.Leading.InsertRange(0, moveToLeadingTrivia);
+                    trivia.Value.Trailing.RemoveRange(lastIndexToKeep + 1, moveToLeadingTrivia.Count);
+                }
+            }
         }
 
         private SyntaxToken AttachMappedTrivia(SyntaxToken original, SyntaxToken rewritten)
