@@ -176,48 +176,48 @@ namespace CSharpToVBCodeConverter.Util
         {
             string Text = OriginalText.Trim(' ');
             var ResultTrivia = new List<SyntaxTrivia>();
-            Debug.Assert(Text.StartsWith("#", StringComparison.InvariantCulture), "All directives must start with #");
+            Debug.Assert(Text.StartsWith("#", StringComparison.Ordinal), "All directives must start with #");
 
-            if (Text.StartsWith("#if", StringComparison.InvariantCulture) || Text.StartsWith("#elif", StringComparison.InvariantCulture))
+            if (Text.StartsWith("#if", StringComparison.Ordinal) || Text.StartsWith("#elif", StringComparison.Ordinal))
             {
-                string Expression1 = Text.Replace("#if ", "", StringComparison.InvariantCulture).Replace("#elif ", "", StringComparison.InvariantCulture).Replace("!", "Not ", StringComparison.InvariantCulture).Replace("==", "=", StringComparison.InvariantCulture).Replace("!=", "<>", StringComparison.InvariantCulture).Replace("&&", "And", StringComparison.InvariantCulture).Replace("||", "Or", StringComparison.InvariantCulture).Replace("  ", " ", StringComparison.InvariantCulture).Replace("false", "False", StringComparison.InvariantCulture).Replace("true", "True", StringComparison.InvariantCulture).Replace("//", " ' ", StringComparison.InvariantCulture).Replace("  ", " ", StringComparison.InvariantCulture);
+                string Expression1 = Text.Replace("#if ", "", StringComparison.Ordinal).Replace("#elif ", "", StringComparison.Ordinal).Replace("!", "Not ", StringComparison.Ordinal).Replace("==", "=", StringComparison.Ordinal).Replace("!=", "<>", StringComparison.Ordinal).Replace("&&", "And", StringComparison.Ordinal).Replace("||", "Or", StringComparison.Ordinal).Replace("  ", " ", StringComparison.Ordinal).Replace("false", "False", StringComparison.Ordinal).Replace("true", "True", StringComparison.Ordinal).Replace("//", " ' ", StringComparison.Ordinal).Replace("  ", " ", StringComparison.Ordinal);
 
-                var Kind = Text.StartsWith("#if", StringComparison.InvariantCulture) ? VB.SyntaxKind.IfDirectiveTrivia : VB.SyntaxKind.ElseIfDirectiveTrivia;
-                var IfOrElseIfKeyword = Text.StartsWith("#if", StringComparison.InvariantCulture) ? global::VisualBasicSyntaxFactory.IfKeyword : global::VisualBasicSyntaxFactory.ElseIfKeyword;
+                var Kind = Text.StartsWith("#if", StringComparison.Ordinal) ? VB.SyntaxKind.IfDirectiveTrivia : VB.SyntaxKind.ElseIfDirectiveTrivia;
+                var IfOrElseIfKeyword = Text.StartsWith("#if", StringComparison.Ordinal) ? global::VisualBasicSyntaxFactory.IfKeyword : global::VisualBasicSyntaxFactory.ElseIfKeyword;
                 var Expr = VBFactory.ParseExpression(Expression1);
                 var IfDirectiveTrivia = VBFactory.IfDirectiveTrivia(IfOrElseIfKeyword, Expr);
                 ResultTrivia.Add(VBFactory.Trivia(IfDirectiveTrivia));
                 return ResultTrivia;
             }
-            if (Text.StartsWith("#region", StringComparison.InvariantCulture) || Text.StartsWith("# region", StringComparison.InvariantCulture))
+            if (Text.StartsWith("#region", StringComparison.Ordinal) || Text.StartsWith("# region", StringComparison.Ordinal))
             {
                 ResultTrivia.AddRange(CS.SyntaxFactory.ParseLeadingTrivia(Text).ConvertTrivia());
                 return ResultTrivia;
             }
-            if (Text.StartsWith("#endregion", StringComparison.InvariantCulture))
+            if (Text.StartsWith("#endregion", StringComparison.Ordinal))
             {
                 ResultTrivia.Add(VBFactory.Trivia(VBFactory.EndRegionDirectiveTrivia()));
-                Text = Text.Replace("#endregion", "", StringComparison.InvariantCulture);
+                Text = Text.Replace("#endregion", "", StringComparison.Ordinal);
                 if (Text.Length > 0)
                 {
                     Debugger.Break();
                 }
                 return ResultTrivia;
             }
-            if (Text.StartsWith("#else", StringComparison.InvariantCulture))
+            if (Text.StartsWith("#else", StringComparison.Ordinal))
             {
-                var ElseKeywordWithTrailingTrivia = global::VisualBasicSyntaxFactory.ElseKeyword.WithTrailingTrivia(CS.SyntaxFactory.ParseTrailingTrivia(Text.Replace("#else", "", StringComparison.InvariantCulture)).ConvertTrivia());
+                var ElseKeywordWithTrailingTrivia = global::VisualBasicSyntaxFactory.ElseKeyword.WithTrailingTrivia(CS.SyntaxFactory.ParseTrailingTrivia(Text.Replace("#else", "", StringComparison.Ordinal)).ConvertTrivia());
                 ResultTrivia.Add(VBFactory.Trivia(VBFactory.ElseDirectiveTrivia(global::VisualBasicSyntaxFactory.HashToken, ElseKeywordWithTrailingTrivia)));
                 return ResultTrivia;
             }
-            if (Text.StartsWith("#endif", StringComparison.InvariantCulture))
+            if (Text.StartsWith("#endif", StringComparison.Ordinal))
             {
-                Text = Text.Replace("#endif", "", StringComparison.InvariantCulture);
-                var IfKeywordWithTrailingTrivia = global::VisualBasicSyntaxFactory.IfKeyword.WithTrailingTrivia(CS.SyntaxFactory.ParseTrailingTrivia(Text.Replace("#endif", "", StringComparison.InvariantCulture)).ConvertTrivia());
+                Text = Text.Replace("#endif", "", StringComparison.Ordinal);
+                var IfKeywordWithTrailingTrivia = global::VisualBasicSyntaxFactory.IfKeyword.WithTrailingTrivia(CS.SyntaxFactory.ParseTrailingTrivia(Text.Replace("#endif", "", StringComparison.Ordinal)).ConvertTrivia());
                 ResultTrivia.Add(VBFactory.Trivia(VBFactory.EndIfDirectiveTrivia(global::VisualBasicSyntaxFactory.HashToken, global::VisualBasicSyntaxFactory.EndKeyword, IfKeywordWithTrailingTrivia)));
                 return ResultTrivia;
             }
-            if (Text.StartsWith("#pragma warning", StringComparison.InvariantCulture))
+            if (Text.StartsWith("#pragma warning", StringComparison.Ordinal))
             {
                 ResultTrivia.AddRange(CS.SyntaxFactory.ParseLeadingTrivia(Text).ConvertTrivia());
                 return ResultTrivia;
@@ -1041,7 +1041,7 @@ namespace CSharpToVBCodeConverter.Util
 
                 case (int)CS.SyntaxKind.SingleLineCommentTrivia:
                     {
-                        if (t.ToFullString().EndsWith("*/", StringComparison.InvariantCulture))
+                        if (t.ToFullString().EndsWith("*/", StringComparison.Ordinal))
                         {
                             return VBFactory.CommentTrivia($"'{ReplaceLeadingSlashes(t.ToFullString().Substring(2, t.ToFullString().Length - 4))}");
                         }
@@ -1050,11 +1050,11 @@ namespace CSharpToVBCodeConverter.Util
 
                 case (int)CS.SyntaxKind.MultiLineCommentTrivia:
                     {
-                        if (t.ToFullString().EndsWith("*/", StringComparison.InvariantCulture))
+                        if (t.ToFullString().EndsWith("*/", StringComparison.Ordinal))
                         {
-                            return VBFactory.CommentTrivia($"'{ReplaceLeadingSlashes(t.ToFullString().Substring(2, t.ToFullString().Length - 4)).Replace(Constants.vbLf, "", StringComparison.InvariantCulture)}");
+                            return VBFactory.CommentTrivia($"'{ReplaceLeadingSlashes(t.ToFullString().Substring(2, t.ToFullString().Length - 4)).Replace(Constants.vbLf, "", StringComparison.Ordinal)}");
                         }
-                        return VBFactory.CommentTrivia($"'{ReplaceLeadingSlashes(t.ToFullString().Substring(2)).Replace(Constants.vbLf, "", StringComparison.InvariantCulture)}");
+                        return VBFactory.CommentTrivia($"'{ReplaceLeadingSlashes(t.ToFullString().Substring(2)).Replace(Constants.vbLf, "", StringComparison.Ordinal)}");
                     }
 
                 case (int)CS.SyntaxKind.DocumentationCommentExteriorTrivia:
@@ -1068,7 +1068,7 @@ namespace CSharpToVBCodeConverter.Util
                         {
                             return VBFactory.DisabledTextTrivia(t.ToString().WithoutNewLines(' '));
                         }
-                        return VBFactory.DisabledTextTrivia(t.ToString().Replace(Constants.vbLf, Constants.vbCrLf, StringComparison.InvariantCulture));
+                        return VBFactory.DisabledTextTrivia(t.ToString().Replace(Constants.vbLf, Constants.vbCrLf, StringComparison.Ordinal));
                     }
 
                 case (int)CS.SyntaxKind.PreprocessingMessageTrivia:
@@ -1136,7 +1136,7 @@ namespace CSharpToVBCodeConverter.Util
                             global::RestuructureSeparatedLists.IgnoredIfDepth += 1;
                         }
                         CSS.IfDirectiveTriviaSyntax IfDirective = (CSS.IfDirectiveTriviaSyntax)StructuredTrivia;
-                        string Expression1 = IfDirective.Condition.ToString().Replace("!", "Not ", StringComparison.InvariantCulture).Replace("==", "=", StringComparison.InvariantCulture).Replace("!=", "<>", StringComparison.InvariantCulture).Replace("&&", "And", StringComparison.InvariantCulture).Replace("||", "Or", StringComparison.InvariantCulture).Replace("  ", " ", StringComparison.InvariantCulture).Replace("false", "False", StringComparison.InvariantCulture).Replace("true", "True", StringComparison.InvariantCulture);
+                        string Expression1 = IfDirective.Condition.ToString().Replace("!", "Not ", StringComparison.Ordinal).Replace("==", "=", StringComparison.Ordinal).Replace("!=", "<>", StringComparison.Ordinal).Replace("&&", "And", StringComparison.Ordinal).Replace("||", "Or", StringComparison.Ordinal).Replace("  ", " ", StringComparison.Ordinal).Replace("false", "False", StringComparison.Ordinal).Replace("true", "True", StringComparison.Ordinal);
 
                         return VBFactory.Trivia(VBFactory.IfDirectiveTrivia(global::VisualBasicSyntaxFactory.IfKeyword, VBFactory.ParseExpression(Expression1)).With(IfDirective.GetLeadingTrivia().ConvertTrivia(), IfDirective.Condition.GetTrailingTrivia().ConvertTrivia()).WithAppendedTriviaFromEndOfDirectiveToken(IfDirective.EndOfDirectiveToken));
                     }
@@ -1148,7 +1148,7 @@ namespace CSharpToVBCodeConverter.Util
                             global::RestuructureSeparatedLists.IgnoredIfDepth += 1;
                         }
                         CSS.ElifDirectiveTriviaSyntax ELIfDirective = (CSS.ElifDirectiveTriviaSyntax)StructuredTrivia;
-                        string Expression1 = ELIfDirective.Condition.ToString().Replace("!", "Not ", StringComparison.InvariantCulture).Replace("==", "=", StringComparison.InvariantCulture).Replace("!=", "<>", StringComparison.InvariantCulture).Replace("&&", "And", StringComparison.InvariantCulture).Replace("||", "Or", StringComparison.InvariantCulture).Replace("  ", " ", StringComparison.InvariantCulture).Replace("false", "False", StringComparison.InvariantCulture).Replace("true", "True", StringComparison.InvariantCulture);
+                        string Expression1 = ELIfDirective.Condition.ToString().Replace("!", "Not ", StringComparison.Ordinal).Replace("==", "=", StringComparison.Ordinal).Replace("!=", "<>", StringComparison.Ordinal).Replace("&&", "And", StringComparison.Ordinal).Replace("||", "Or", StringComparison.Ordinal).Replace("  ", " ", StringComparison.Ordinal).Replace("false", "False", StringComparison.Ordinal).Replace("true", "True", StringComparison.Ordinal);
 
                         SyntaxToken IfOrElseIfKeyword;
                         if (t.IsKind(CS.SyntaxKind.ElifDirectiveTrivia))
@@ -1208,7 +1208,7 @@ namespace CSharpToVBCodeConverter.Util
                     {
                         CSS.RegionDirectiveTriviaSyntax RegionDirective = (CSS.RegionDirectiveTriviaSyntax)StructuredTrivia;
                         var EndOfDirectiveToken = RegionDirective.EndOfDirectiveToken;
-                        string NameString = $"\"{EndOfDirectiveToken.LeadingTrivia.ToString().Replace("\"", "", StringComparison.InvariantCulture)}\"";
+                        string NameString = $"\"{EndOfDirectiveToken.LeadingTrivia.ToString().Replace("\"", "", StringComparison.Ordinal)}\"";
                         var RegionDirectiveTriviaNode = VBFactory.RegionDirectiveTrivia(global::VisualBasicSyntaxFactory.HashToken, global::VisualBasicSyntaxFactory.RegionKeyword, VBFactory.StringLiteralToken(NameString, NameString)
     ).WithConvertedTrailingTriviaFrom(EndOfDirectiveToken);
                         return VBFactory.Trivia(RegionDirectiveTriviaNode.WithTrailingEOL());
@@ -1330,10 +1330,10 @@ namespace CSharpToVBCodeConverter.Util
                                 var Lines = Trivia.ToFullString().Substring(2).Split(Conversions.ToChar(Constants.vbLf));
                                 foreach (string line in Lines)
                                 {
-                                    if (line.EndsWith("*/", StringComparison.InvariantCulture))
+                                    if (line.EndsWith("*/", StringComparison.Ordinal))
                                     {
                                         TriviaList.Add(VBFactory.CommentTrivia($"' {RemoveLeadingSpacesStar(line.Substring(0, line.Length - 2))}"));
-                                        if (Trivia.ToFullString().EndsWith(Constants.vbLf, StringComparison.InvariantCulture))
+                                        if (Trivia.ToFullString().EndsWith(Constants.vbLf, StringComparison.Ordinal))
                                         {
                                             TriviaList.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
                                         }
@@ -1370,7 +1370,7 @@ namespace CSharpToVBCodeConverter.Util
                                     var Lines = t1.ToFullString().Split(Conversions.ToChar(Constants.vbLf));
                                     foreach (string line in Lines)
                                     {
-                                        if (line.StartsWith("/*", StringComparison.InvariantCulture))
+                                        if (line.StartsWith("/*", StringComparison.Ordinal))
                                         {
                                             TriviaList.Add(VBFactory.CommentTrivia($"' {RemoveLeadingSpacesStar(line.Substring(1, line.Length - 1))}"));
                                             TriviaList.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);

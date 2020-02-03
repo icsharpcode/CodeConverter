@@ -318,7 +318,7 @@ namespace CSharpToVBCodeConverter.Util
                 foreach (var TriviaAsString in TextStrings)
                 {
                     NewTriviaList.AddRange(LeadingTriviaList);
-                    NewTriviaList.Add(VBFactory.CommentTrivia($" ' {TriviaAsString}".Replace("  ", " ", StringComparison.InvariantCulture).TrimEnd()));
+                    NewTriviaList.Add(VBFactory.CommentTrivia($" ' {TriviaAsString}".Replace("  ", " ", StringComparison.Ordinal).TrimEnd()));
                     NewTriviaList.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
                 }
                 if (NewTriviaList.Last().IsKind(VB.SyntaxKind.EndOfLineTrivia))
@@ -382,7 +382,7 @@ namespace CSharpToVBCodeConverter.Util
                 global::VisualBasicSyntaxFactory.SpaceTrivia,
                 global::VisualBasicSyntaxFactory.LineContinuation,
                 global::VisualBasicSyntaxFactory.SpaceTrivia,
-                VBFactory.CommentTrivia($"{Msg}{TriviaAsString}".Replace("  ", " ", StringComparison.InvariantCulture).TrimEnd())
+                VBFactory.CommentTrivia($"{Msg}{TriviaAsString}".Replace("  ", " ").TrimEnd())
             };
             return NewTriviaList;
         }
