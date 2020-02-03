@@ -304,9 +304,9 @@ namespace CSharpToVBCodeConverter.Util
 
                 case (int)CS.SyntaxKind.MultiLineCommentTrivia: {
                         if (t.ToFullString().EndsWith("*/")) {
-                            return VBFactory.CommentTrivia($"'{ReplaceLeadingSlashes(t.ToFullString().Substring(2, t.ToFullString().Length - 4)).Replace(Constants.vbLf, "")}");
+                            return VBFactory.CommentTrivia($"'{ReplaceLeadingSlashes(t.ToFullString().Substring(2, t.ToFullString().Length - 4)).Replace(Constants.vbLf, "").Replace(Constants.vbCr, "")}");
                         }
-                        return VBFactory.CommentTrivia($"'{ReplaceLeadingSlashes(t.ToFullString().Substring(2)).Replace(Constants.vbLf, "")}");
+                        return VBFactory.CommentTrivia($"'{ReplaceLeadingSlashes(t.ToFullString().Substring(2)).Replace(Constants.vbLf, "").Replace(Constants.vbCr, "")}");
                     }
 
                 case (int)CS.SyntaxKind.DocumentationCommentExteriorTrivia: {
@@ -317,7 +317,7 @@ namespace CSharpToVBCodeConverter.Util
                         if (TriviaDepth > 0) {
                             return VBFactory.DisabledTextTrivia(t.ToString().WithoutNewLines(' '));
                         }
-                        return VBFactory.DisabledTextTrivia(t.ToString().Replace(Constants.vbLf, Constants.vbCrLf));
+                        return VBFactory.DisabledTextTrivia(t.ToString().ConsistentNewlines());
                     }
 
                 case (int)CS.SyntaxKind.PreprocessingMessageTrivia: {
@@ -327,9 +327,6 @@ namespace CSharpToVBCodeConverter.Util
                 case (int)CS.SyntaxKind.None: {
                         return default(SyntaxTrivia);
                     }
-            }
-            if (!t.HasStructure) {
-
             }
 
             /* TODO ERROR: Skipped EndRegionDirectiveTrivia */
@@ -526,7 +523,7 @@ namespace CSharpToVBCodeConverter.Util
                 var switchExpr = Trivia.RawKind;
                 switch (switchExpr) {
                     case (int)CS.SyntaxKind.MultiLineCommentTrivia: {
-                            var Lines = Trivia.ToFullString().Substring(2).Split(Conversions.ToChar(Constants.vbLf));
+                            var Lines = Trivia.ToFullString().Substring(2).Split(new[] { "\r\n" }, StringSplitOptions.None);
                             foreach (string line in Lines) {
                                 if (line.EndsWith("*/")) {
                                     TriviaList.Add(VBFactory.CommentTrivia($"' {RemoveLeadingSpacesStar(line.Substring(0, line.Length - 2))}"));
@@ -548,7 +545,7 @@ namespace CSharpToVBCodeConverter.Util
                     case (int)CS.SyntaxKind.MultiLineDocumentationCommentTrivia: {
                             CSS.StructuredTriviaSyntax sld = (CSS.StructuredTriviaSyntax)Trivia.GetStructure();
                             foreach (SyntaxNode t1 in sld.ChildNodes()) {
-                                var Lines = t1.ToFullString().Split(Conversions.ToChar(Constants.vbLf));
+                                var Lines = t1.ToFullString().ConsistentNewlines().Split(new[] { "\r\n" }, StringSplitOptions.None);
                                 foreach (string line in Lines) {
                                     if (line.StartsWith("/*")) {
                                         TriviaList.Add(VBFactory.CommentTrivia($"' {RemoveLeadingSpacesStar(line.Substring(1, line.Length - 1))}"));
