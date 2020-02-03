@@ -682,7 +682,7 @@ End Class");
 {
     void TestMethod()
     {
-        for (int i = 0; unknownCondition; i++) {
+        for (int i = 0; unknownCondition; i++) { // Increment moves to bottom of loop
             b[i] = s[i];
         }
     }
@@ -692,7 +692,7 @@ End Class");
 
         While unknownCondition
             b(i) = s(i)
-            i += 1
+            i += 1 ' Increment moves to bottom of loop
         End While
     End Sub
 End Class");
