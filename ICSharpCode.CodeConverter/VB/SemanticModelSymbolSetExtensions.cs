@@ -23,7 +23,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             switch (symbol) {
                 case IMethodSymbol methodSymbol:
-                    return GetCsSymbolsDeclaredByMethod(semanticModel, methodSymbol, (CSS.BaseMethodDeclarationSyntax n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body);
+                    return GetCsSymbolsDeclaredByMethod(semanticModel, methodSymbol, (CSS.BaseMethodDeclarationSyntax n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body, new SymbolKind[] { SymbolKind.Local, SymbolKind.Parameter, SymbolKind.TypeParameter });
                 case IPropertySymbol propertySymbol:
                     return GetCsSymbolsDeclaredByProperty(semanticModel, propertySymbol);
                 case IEventSymbol eventSymbol:
@@ -34,19 +34,13 @@ namespace ICSharpCode.CodeConverter.VB
                     return Array.Empty<ISymbol>().Yield();
             }
         }
-
-        public static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsDeclaredByMethod<TNode>(SemanticModel semanticModel, IMethodSymbol methodSymbol, Func<TNode, CS.CSharpSyntaxNode> selectWhereNotNull)
+        public static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsDeclaredByMethod<TNode>(SemanticModel semanticModel, IMethodSymbol methodSymbol, Func<TNode, CS.CSharpSyntaxNode> selectWhereNotNull, SymbolKind[] kinds)
         {
             if (methodSymbol == null) {
                 return Enumerable.Empty<IEnumerable<ISymbol>>();
             }
             var bodies = DeclarationWhereNotNull(methodSymbol, selectWhereNotNull).Where(x => x.SyntaxTree == semanticModel.SyntaxTree);
-            return bodies.SelectMany(GetDeepestBlocks).Select(block => GetSymbolsInBlock(semanticModel, block));
-        }
-
-        private static IEnumerable<ISymbol> GetSymbolsInBlock(SemanticModel semanticModel, SyntaxNode descendant)
-        {
-            return semanticModel.LookupSymbols(descendant.SpanStart).Where(x => x.MatchesKind(SymbolKind.Local, SymbolKind.Parameter, SymbolKind.TypeParameter));
+            return bodies.SelectMany(GetDeepestBlocks).Select(block => semanticModel.LookupSymbols(block.SpanStart).Where(x => x.MatchesKind(kinds)));
         }
 
         private static IEnumerable<CSS.BlockSyntax> GetDeepestBlocks(CS.CSharpSyntaxNode body)
@@ -67,8 +61,8 @@ namespace ICSharpCode.CodeConverter.VB
         private static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsDeclaredByProperty(SemanticModel semanticModel, IPropertySymbol propertySymbol)
         {
             Func<CSS.AccessorDeclarationSyntax, CS.CSharpSyntaxNode> getAccessorBody = (n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body;
-            return GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.GetMethod, getAccessorBody)
-                .Concat(GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.SetMethod, getAccessorBody));
+            return GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.GetMethod, getAccessorBody, new SymbolKind[] { SymbolKind.Local, SymbolKind.Parameter, SymbolKind.TypeParameter })
+                .Concat(GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.SetMethod, getAccessorBody, new SymbolKind[] { SymbolKind.Local, SymbolKind.TypeParameter }));
         }
 
         private static IEnumerable<ISymbol> GetCsSymbolsDeclaredByField(SemanticModel semanticModel, IFieldSymbol fieldSymbol)
@@ -80,9 +74,10 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsDeclaredByEvent(SemanticModel semanticModel, IEventSymbol propertySymbol)
         {
+            var kinds = new SymbolKind[] { SymbolKind.Local, SymbolKind.TypeParameter };
             Func<CSS.AccessorDeclarationSyntax, CS.CSharpSyntaxNode> getAccessorBody = (n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body;
-            return GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.AddMethod, getAccessorBody)
-                .Concat(GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.RemoveMethod, getAccessorBody));
+            return GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.AddMethod, getAccessorBody, kinds)
+                .Concat(GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.RemoveMethod, getAccessorBody, kinds));
         }
     }
 }
