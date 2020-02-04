@@ -251,6 +251,16 @@ namespace ICSharpCode.CodeConverter.Util
             return node.WithAdditionalAnnotations(AnnotationConstants.SourceEndLine(sourcePosition));
         }
 
+        public static T WithoutSourceMapping<T>(this T converted) where T : SyntaxNode
+        {
+            converted = converted.ReplaceTokens(converted.DescendantTokens(), (o, r) =>
+                r.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind)
+            );
+            return converted.ReplaceNodes(converted.DescendantNodes(), (o, r) =>
+                r.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind)
+            );
+        }
+
         /// <summary>
         /// create a new root node from the given root after adding annotations to the tokens
         ///

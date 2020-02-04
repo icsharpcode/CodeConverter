@@ -23,29 +23,16 @@ namespace ICSharpCode.CodeConverter.VB
             _wrappedVisitor = wrappedVisitor;
         }
 
-        public TriviaConverter TriviaConverter { get; }
-
         public T Accept(SyntaxNode node, bool addSourceMapping)
         {
             try {
                 var converted = _wrappedVisitor.Visit(node);
                 return addSourceMapping ? node.CopyAnnotationsTo(converted).WithSourceMappingFrom(node)
-                    : WithoutSourceMapping(converted);
+                    : converted.WithoutSourceMapping();
             } catch (Exception e) {
                 var dummyStatement = SyntaxFactory.EmptyStatement();
                 return ((T)(object)dummyStatement).WithVbTrailingErrorComment((CSharpSyntaxNode)node, e);
             }
-
-        }
-
-        private T WithoutSourceMapping(T converted)
-        {
-            converted = converted.ReplaceTokens(converted.DescendantTokens(), (o, r) =>
-                r.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind)
-            );
-            return converted.ReplaceNodes(converted.DescendantNodes(), (o, r) => 
-                r.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind)
-            );
         }
     }
 }
