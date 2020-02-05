@@ -636,9 +636,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)),
                     SyntaxFactory.DiscardDesignation());
             } else {
-                var varName = CommonConversions.ConvertIdentifier(SyntaxFactory.Identifier(GetUniqueVariableNameInScope(node, "case"))).ValueText;
+                var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
                 patternMatch = SyntaxFactory.DeclarationPattern(
-                    SyntaxFactory.ParseTypeName("var"), SyntaxFactory.SingleVariableDesignation(SyntaxFactory.Identifier(varName)));
+                    SyntaxFactory.ParseTypeName("var"), SyntaxFactory.SingleVariableDesignation(varName));
                 cSharpSyntaxNode = SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, SyntaxFactory.IdentifierName(varName), cSharpSyntaxNode);
             }
 
