@@ -109,9 +109,7 @@ internal partial class Class1
     {
         var x = new ArrayList();
         x.Add(""a"");
-
         var xs = new string[2];
-
         xs[0] = Conversions.ToString(x[0]);
     }
 }" + Environment.NewLine);

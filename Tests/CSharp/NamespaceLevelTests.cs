@@ -163,6 +163,7 @@ End Module", @"namespace Aaa
     internal partial class Z
     {
     }
+
     internal partial class Z
     {
     }
@@ -170,13 +171,16 @@ End Module", @"namespace Aaa
     internal abstract partial class Base
     {
         public abstract void UPPER();
+
         public abstract bool FOO { get; set; }
     }
+
     internal partial class NotBase : Base
     {
         public override void UPPER()
         {
         }
+
         public override bool FOO { get; set; }
     }
 }
@@ -452,9 +456,6 @@ End Class",
 End Class",
                 @"public partial class MyTestClass
 {
-    /// <summary>
-    /// Returns empty
-    /// </summary>
     private string MyFunc()
     {
         return """";
@@ -473,10 +474,7 @@ Public Class MyTestClass
         Return """"
     End Function
 End Class",
-                @"/// <summary>
-/// Returns empty
-/// </summary>
-public partial class MyTestClass
+                @"public partial class MyTestClass
 {
     private string MyFunc()
     {
@@ -854,7 +852,8 @@ End Class",
     }
 
     public virtual int F1() => MyClassF1();
-    public abstract int F2();
+public abstract int F2();
+
     public void TestMethod()
     {
         int w = MyClassF1();
@@ -896,6 +895,7 @@ End Class",
     }
 
     public abstract int P2 { get; set; }
+
     public void TestMethod()
     {
         int w = MyClassP1;

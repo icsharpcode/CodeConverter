@@ -25,8 +25,7 @@ namespace VbLibrary
             string nothing = Enumerable.Empty<string>().ToArray()[(int)AnEnum.AnEnumMember];
             switch (m)
             {
-                case (AnEnum)(-1
-               ):
+                case (AnEnum)(-1):
                     {
                         return;
                     }

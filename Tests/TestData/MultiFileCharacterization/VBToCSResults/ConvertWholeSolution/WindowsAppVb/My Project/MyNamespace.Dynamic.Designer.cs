@@ -19,6 +19,7 @@ namespace WindowsAppVb.My
                     m_WinformsDesignerTest = MyForms.Create__Instance__(m_WinformsDesignerTest);
                     return m_WinformsDesignerTest;
                 }
+
                 [DebuggerHidden]
                 set
                 {

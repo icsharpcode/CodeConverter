@@ -176,6 +176,7 @@ public partial class TestFunc
 {
     public Func<int, int> pubIdent = (row) => row;
     public Func<int, object> pubWrite = (row) => Console.WriteLine(row);
+
     private bool isFalse(int row) => false;
     private void write0() => Console.WriteLine(0);
 
@@ -262,22 +263,27 @@ internal partial class ContrivedFuncInferenceExample
         {
             return new Blah(p1);
         }
+
         public static implicit operator Func<List<string>, bool>(Blah p1)
         {
             return p1.Check;
         }
+
         public static Blah operator -(Blah p1, Blah p2)
         {
             return new Blah();
         }
+
         public static Blah operator +(Blah p1, Blah p2)
         {
             return new Blah();
         }
+
         public static bool operator <=(Blah p1, Blah p2)
         {
             return p1.Check(new List<string>());
         }
+
         public static bool operator >=(Blah p1, Blah p2)
         {
             return p2.Check(new List<string>());
@@ -494,6 +500,7 @@ public partial class TestClass
 End Class", @"internal partial class Program
 {
     private int[][] My2darray;
+
     public static void Main(string[] args)
     {
         My2darray = new int[7][];
@@ -525,7 +532,6 @@ public partial class Class1
     private void test123(object sender, EventArgs e)
     {
         test = new List<int>[43];
-
         Tuple<int, int>[] test1;
         test1 = new Tuple<int, int>[43];
     }
@@ -611,10 +617,7 @@ End Class", @"internal partial class TestClass
     private int FuncReturningAssignedValue()
     {
         int FuncReturningAssignedValueRet = default(int);
-        void aSub(object y)
-        {
-            return;
-        };
+        void aSub(object y) { return; };
         FuncReturningAssignedValueRet = 3;
         return FuncReturningAssignedValueRet;
     }
@@ -670,8 +673,7 @@ internal partial class TestClass
     {
         using (var cmd = new SqlCommand())
         {
-            cmd
-.ExecuteNonQuery();
+            cmd.ExecuteNonQuery();
             cmd?.ExecuteNonQuery();
             cmd.ExecuteNonQuery();
             cmd?.ExecuteNonQuery();
@@ -702,8 +704,7 @@ End Structure", @"public partial class VisualBasicClass
     public void Stuff()
     {
         var str = default(SomeStruct);
-        str
-.ArrField = new string[2];
+        str.ArrField = new string[2];
         str.ArrProp = new string[3];
     }
 }
@@ -711,6 +712,7 @@ End Structure", @"public partial class VisualBasicClass
 public partial struct SomeStruct
 {
     public string[] ArrField;
+
     public string[] ArrProp { get; set; }
 }");
         }
@@ -861,23 +863,12 @@ End Class", @"internal partial class TestClass
 {
     private void TestMethod()
     {
-        // Declare a single-dimension array of 5 numbers.
         var numbers1 = new int[5];
-
-        // Declare a single-dimension array and set its 4 values.
         var numbers2 = new int[] { 1, 2, 4, 8 };
-
-        // Declare a 6 x 6 multidimensional array.
         var matrix1 = new double[6, 6];
-
-        // Declare a 4 x 3 multidimensional array and set array element values.
         var matrix2 = new int[4, 3] { { 1, 2, 3 }, { 2, 3, 4 }, { 3, 4, 5 }, { 4, 5, 6 } };
-
-        // Combine rank specifiers with initializers of various kinds
         var rankSpecifiers = new double[2, 2] { { 1.0, 2.0 }, { 3.0, 4.0 } };
         var rankSpecifiers2 = new double[2, 2];
-
-        // Declare a jagged array
         var sales = new double[12][] { };
     }
 }");
@@ -1148,7 +1139,6 @@ End Class", @"internal partial class TestClass
     private void TestMethod(int a)
     {
         int b;
-
         if (a == 0)
         {
             b = 0;
@@ -1185,8 +1175,11 @@ internal partial class TestClass
     {
         if (a == 0)
         {
-            Console.WriteLine(1); Console.WriteLine(2); return;
+            Console.WriteLine(1);
+            Console.WriteLine(2);
+            return;
         }
+
         Console.WriteLine(3);
     }
 }");
@@ -1232,6 +1225,7 @@ End Class", @"internal partial class TestClass
                 }
             }
         }
+
         return -1;
     }
 }");
@@ -1257,7 +1251,6 @@ End Class", @"internal partial class TestClass
     {
         int b;
         b = 0;
-
         while (b == 0)
         {
             if (b == 2)
@@ -1287,7 +1280,6 @@ End Class", @"internal partial class TestClass
     private void TestMethod()
     {
         int charIndex;
-        // allow only digits and letters
         do
             charIndex = rand.Next(48, 123);
         while ((charIndex < 48 || charIndex > 57) && (charIndex < 65 || charIndex > 90) && (charIndex < 97 || charIndex > 122));
@@ -1315,7 +1307,6 @@ End Class", @"internal partial class TestClass
     {
         int b;
         b = 0;
-
         do
         {
             if (b == 2)
@@ -1349,7 +1340,6 @@ End Class", @"internal partial class TestClass
     {
         int b;
         b = 0;
-
         do
         {
             if (b == 2)
@@ -1383,7 +1373,6 @@ End Class", @"internal partial class TestClass
     {
         int b;
         b = 0;
-
         do
         {
             if (b == 2)
@@ -1516,7 +1505,6 @@ internal partial class TestClass
     {
         if (nullObject == null)
             throw new ArgumentNullException(nameof(nullObject));
-
         lock (nullObject)
             Console.WriteLine(nullObject);
     }
@@ -1669,7 +1657,6 @@ internal partial class GotoTest1
         int y = 4;
         int count = 0;
         var array = new string[x, y];
-
         for (int i = 0, loopTo = x - 1; i <= loopTo; i++)
         {
             for (int j = 0, loopTo1 = y - 1; j <= loopTo1; j++)
@@ -1678,7 +1665,6 @@ internal partial class GotoTest1
 
         Console.Write(""Enter the number to search for: "");
         string myNumber = Console.ReadLine();
-
         for (int i = 0, loopTo2 = x - 1; i <= loopTo2; i++)
         {
             for (int j = 0, loopTo3 = y - 1; j <= loopTo3; j++)
@@ -1966,25 +1952,21 @@ public partial class TestClass2
         {
             case object _ when DateAndTime.Today.DayOfWeek == DayOfWeek.Saturday | DateAndTime.Today.DayOfWeek == DayOfWeek.Sunday:
                 {
-                    // we do not work on weekends
                     return false;
                 }
 
             case object _ when !IsSqlAlive():
                 {
-                    // Database unavailable
                     return false;
                 }
 
             case object _ when Something is int:
                 {
-                    // Do something with the Integer
                     return true;
                 }
 
             default:
                 {
-                    // Do something else
                     return false;
                 }
         }
@@ -1992,7 +1974,6 @@ public partial class TestClass2
 
     private bool IsSqlAlive()
     {
-        // Do something to test SQL Server
         return true;
     }
 }");
@@ -2069,6 +2050,7 @@ End Class", @"internal partial class A
                     break;
                 }
         }
+
         return 3;
     }
 }");

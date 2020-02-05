@@ -82,6 +82,7 @@ End Class", @"using System;
 internal partial class TestClass
 {
     private const int someConstField = 42;
+
     public void TestMethod()
     {
         const DateTimeKind someConst = DateTimeKind.Local;
@@ -226,6 +227,7 @@ public partial class Class1
             return FooRet;
         }
     }
+
     public string X
     {
         get
@@ -237,7 +239,9 @@ public partial class Class1
             return XRet;
         }
     }
+
     public string _y;
+
     public string Y
     {
         set
@@ -271,6 +275,7 @@ End Class", @"using System;
 public partial class Class1
 {
     public event EventHandler MyEvent;
+
     protected override string Foo()
     {
         string FooRet = default(string);
@@ -377,7 +382,6 @@ public partial class VisualBasicClass
     End Sub
 End Class", @"internal partial class TestClass
 {
-    /// <summary>Xml doc</summary>
     public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
         where T2 : struct
@@ -563,7 +567,6 @@ internal partial class TestSubclass : TestClass
 {
     public new void TestMethod()
     {
-        // Not possible: TestMethod(3)
         Console.WriteLine(""New implementation"");
     }
 }");
@@ -603,8 +606,7 @@ Module TestClass
     <Extension()>
     Sub TestMethod(ByVal str As String)
     End Sub
-End Module", @"
-internal static partial class TestClass
+End Module", @"internal static partial class TestClass
 {
     public static void TestMethod(this string str)
     {
@@ -659,6 +661,7 @@ End Class", @"internal partial class TestClass
                 return default(int);
             return m_test3;
         }
+
         set
         {
             if (7 == int.Parse(""7""))
@@ -775,14 +778,12 @@ public partial class ParameterizedPropertiesAndEnumTest
     {
     }
 
-
     public void ReturnWhatever(MyEnum m)
     {
         var enumerableThing = Enumerable.Empty<string>();
         switch (m)
         {
-            case (MyEnum)(-1
-           ):
+            case (MyEnum)(-1):
                 {
                     return;
                 }
@@ -1152,6 +1153,7 @@ internal partial class Class1
     {
         NonSharedEventClassInstance = new MyEventClass();
     }
+
     private static MyEventClass _SharedEventClassInstance;
 
     private static MyEventClass SharedEventClassInstance
@@ -1280,6 +1282,7 @@ public partial class Class1
         EventClassInstance = new MyEventClass();
         EventClassInstance2 = new MyEventClass();
     }
+
     private MyEventClass _EventClassInstance, _EventClassInstance2;
 
     private MyEventClass EventClassInstance
@@ -1471,6 +1474,7 @@ End Class"
     {
         return new MyInt();
     }
+
     public static implicit operator int(MyInt myInt)
     {
         return 1;
@@ -1543,70 +1547,87 @@ End Class", @"public partial class AcmeClass
     {
         return ac;
     }
+
     public static AcmeClass operator +(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator -(int i, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator !(AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator *(int i, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator /(int i, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator /(int i, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator %(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator <<(AcmeClass ac, int i)
     {
         return ac;
     }
+
     public static AcmeClass operator >>(AcmeClass ac, int i)
     {
         return ac;
     }
+
     public static AcmeClass operator ==(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator !=(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator <(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator >(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator <=(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator >=(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator &(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator |(string s, AcmeClass ac)
     {
         return ac;
@@ -1750,7 +1771,7 @@ public partial class TestClass
     }
 }
 
-public partial class TestClass // VB doesn't require partial here (when just a single class omits it)
+public partial class TestClass
 {
     partial void DoNothing();
 }");
@@ -1902,6 +1923,7 @@ End Class", @"internal partial class TestClass
         {
             return _Items[index];
         }
+
         set
         {
             _Items[index] = value;
@@ -1924,6 +1946,7 @@ End Class", @"internal partial class TestClass
         {
             return m_test3;
         }
+
         set
         {
             m_test3 = value;
@@ -1982,12 +2005,14 @@ End Class", @"public partial class SomeClass
 End Class", @"internal partial class TestClass
 {
     private int[] _Items;
+
     public int[] Items
     {
         get
         {
             return _Items;
         }
+
         set
         {
             _Items = value;
@@ -2026,8 +2051,11 @@ internal partial class AsyncCode
     public void NotAsync()
     {
         async Task<int> a1() => 3;
+
         async Task<int> a2() => await Task.FromResult(3);
+
         async void a3() => await Task.CompletedTask;
+
         async void a4() => await Task.CompletedTask;
     }
 
@@ -2035,6 +2063,7 @@ internal partial class AsyncCode
     {
         return await Task.FromResult(3);
     }
+
     public async void AsyncSub()
     {
         await Task.CompletedTask;

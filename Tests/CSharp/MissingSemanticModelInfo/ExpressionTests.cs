@@ -19,6 +19,7 @@ Public Property SomeProperty As System.Some.UnknownType
 End Class", @"internal partial class TestClass
 {
     public System.Some.UnknownType SomeProperty { get; set; }
+
     private void TestMethod()
     {
         var value = SomeProperty[0];
@@ -202,8 +203,10 @@ public partial class EnumAndValTest
                     break;
                 }
         }
+
         return tPos;
     }
+
     public string PositionEnumStringFromConstant(PositionEnum pS)
     {
         string tS;
@@ -227,6 +230,7 @@ public partial class EnumAndValTest
                     break;
                 }
         }
+
         return tS;
     }
 }");
@@ -243,6 +247,7 @@ public partial class EnumAndValTest
 End Class", @"internal partial class TestClass
 {
     private System.SomeUnknownType DefaultDate { get; set; }
+
     private void TestMethod()
     {
         var a = DefaultDate[1, 2, 3].Blawer(1, 2, 3);

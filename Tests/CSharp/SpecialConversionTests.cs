@@ -64,11 +64,13 @@ internal partial class TestClass45
         {
             backingField += value;
         }
+
         remove
         {
             backingField -= value;
         }
     }
+
     void OnMyEvent(object sender, EventArgs e)
     {
         Console.WriteLine(""Event Raised"");

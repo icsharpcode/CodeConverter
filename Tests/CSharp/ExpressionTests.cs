@@ -136,6 +136,7 @@ internal partial class TestClass
     {
         return ""{\""title\"": \"""" + pName + ""\"", \""msg\"": \"""" + pValue + ""\""}"";
     }
+
     public static string GetDeltaPoint(int pDelta)
     {
         return ""{\""delta\"": \"""" + Conversions.ToString(pDelta) + ""\""}"";
@@ -259,6 +260,7 @@ End Class", @"public partial class VisualBasicClass
 End Class", @"public partial class Class1
 {
     private Class1 C1 { get; set; }
+
     private Class1 _c2;
     private object _o1;
 
@@ -394,6 +396,7 @@ public partial class Class1
         {
             return 1;
         }
+
         return 0;
     }
 
@@ -430,6 +433,7 @@ public partial class Class1
             Bar(ref argx);
         }
     }
+
     public void Bar(ref SqlConnection x)
     {
     }
@@ -700,6 +704,7 @@ End Class", @"public partial class Class1
     {
         return 1;
     }
+
     public int Baz { get; set; }
 }");
         }
@@ -748,6 +753,7 @@ internal partial class TestClass
 End Class", @"public partial class A
 {
     public static int x = 2;
+
     public void Test()
     {
         var tmp = this;
@@ -1187,17 +1193,21 @@ public partial class Class1
         {
             throw new Exception();
         }
+
         if ((s1 ?? """") == ""something"")
         {
             throw new Exception();
         }
+
         if (""something"" == (s1 ?? """"))
         {
             throw new Exception();
         }
+
         if (s1 == null)
         {
         }
+
         if (string.IsNullOrEmpty(s1))
         {
         }
@@ -1242,17 +1252,21 @@ public partial class Class1
         {
             throw new Exception();
         }
+
         if (CultureInfo.CurrentCulture.CompareInfo.Compare(s1, ""something"", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0)
         {
             throw new Exception();
         }
+
         if (CultureInfo.CurrentCulture.CompareInfo.Compare(""something"", s1, CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0)
         {
             throw new Exception();
         }
+
         if (s1 == null)
         {
         }
+
         if (string.IsNullOrEmpty(s1))
         {
         }
@@ -1734,6 +1748,7 @@ internal partial class TestClass3
     {
         public Rec Prop { get; private set; } = new Rec();
     }
+
     private Rec TestMethod(string str)
     {
         int length = str?.Length ?? -1;
@@ -1802,6 +1817,7 @@ internal partial class TestClass
     private void DoStuff(object a)
     {
     }
+
     private void TestMethod()
     {
         DoStuff(new[] { 1, 2 });
@@ -1926,13 +1942,7 @@ internal partial class TestClass
     private void TestMethod()
     {
         Func<int, int> test = a => a * 2;
-        Func<int, int, double> test2 = (a, b) =>
-        {
-            if (b > 0)
-                return a / (double)b;
-            return 0;
-        };
-
+        Func<int, int, double> test2 = (a, b) => { if (b > 0) return a / (double)b; return 0; };
         Func<int, int, int> test3 = (a, b) => a % b;
         test(3);
     }
@@ -1965,13 +1975,7 @@ internal partial class TestClass
     private void TestMethod()
     {
         object test(object a) => a * 2;
-        object test2(object a, object b)
-        {
-            if (Conversions.ToBoolean(b > 0))
-                return a / b;
-            return 0;
-        };
-
+        object test2(object a, object b) { if (Conversions.ToBoolean(b > 0)) return a / b; return 0; };
         object test3(object a, object b) => a % b;
         test(3);
     }
@@ -2162,12 +2166,14 @@ end class", @"public enum TestState
 public partial class test
 {
     private TestState _state;
+
     public TestState State
     {
         get
         {
             return _state;
         }
+
         set
         {
             if (!_state.Equals(value))
@@ -2518,10 +2524,7 @@ public partial class MoreParsing
 {
     public void DoGet()
     {
-        var anon = new
-        {
-            TheType = MoreParsing.GetEnumValues<TheType>()
-        };
+        var anon = new { TheType = MoreParsing.GetEnumValues<TheType>() };
     }
 
     private IDictionary<int, string> GetEnumValues<TEnum>()
@@ -2555,10 +2558,7 @@ public partial class MoreParsing
 {
     public void DoGet()
     {
-        var anon = new
-        {
-            ANumber = 5
-        };
+        var anon = new { ANumber = 5 };
         var sameAnon = Identity(anon);
         var repeated = Enumerable.Repeat(anon, 5).ToList();
     }
@@ -2602,8 +2602,6 @@ public partial class Test
 {
     private string aliased = VB.Strings.Left(""SomeText"", 1);
     private Delegate aliased2 = new SIO.ErrorEventHandler(OnError);
-
-    // Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
     private string Tr = nameof(SIO.TextReader);
     private string Strings = nameof(VB.VBCodeProvider);
 

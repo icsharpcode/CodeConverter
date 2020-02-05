@@ -109,7 +109,6 @@ internal partial class Test
         var q = from c in categories
                 join p in products on c equals p.Category
                 select new { Category = c, p.ProductName };
-
         foreach (var v in q)
             Console.WriteLine($""{v.ProductName}: {v.Category}"");
     }
@@ -165,11 +164,9 @@ internal partial class Test
         var q = from c in categories
                 join p in products on c equals p.Category into ps
                 select new { Category = c, Products = ps };
-
         foreach (var v in q)
         {
             Console.WriteLine(v.Category + "":"");
-
             foreach (var p in v.Products)
                 Console.WriteLine(""   "" + p.ProductName);
         }
@@ -251,13 +248,7 @@ public partial class VisualBasicClass
 End Function", @"private static IEnumerable<string> FindPicFilePath()
 {
     var words = new[] { ""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away"" };
-
-    return words
-.Skip(1)
-.SkipWhile(word => word.Length >= 1)
-.TakeWhile(word => word.Length < 5)
-.Take(2)
-.Distinct();
+    return words.Skip(1).SkipWhile(word => word.Length >= 1).TakeWhile(word => word.Length < 5).Take(2).Distinct();
 }");
         }
 
@@ -401,36 +392,9 @@ internal static partial class Ext
     {
         return from _accountEntry in accountEntries
                where _accountEntry.Amount > 0M
-               group _accountEntry by new
-               {
-                   _accountEntry.LookupAccountEntryTypeId,
-                   _accountEntry.LookupAccountEntrySourceId,
-                   _accountEntry.SponsorId,
-                   _accountEntry.LookupFundTypeId,
-                   _accountEntry.StartDate,
-                   _accountEntry.SatisfiedDate,
-                   _accountEntry.InterestStartDate,
-                   _accountEntry.ComputeInterestFlag,
-                   _accountEntry.SponsorClaimRevision
-               } into Group
+               group _accountEntry by new { _accountEntry.LookupAccountEntryTypeId, _accountEntry.LookupAccountEntrySourceId, _accountEntry.SponsorId, _accountEntry.LookupFundTypeId, _accountEntry.StartDate, _accountEntry.SatisfiedDate, _accountEntry.InterestStartDate, _accountEntry.ComputeInterestFlag, _accountEntry.SponsorClaimRevision } into Group
                let _keys = Group.Key
-               select new AccountEntry()
-               {
-                   LookupAccountEntryTypeId = _keys.LookupAccountEntryTypeId,
-                   LookupAccountEntrySourceId = _keys.LookupAccountEntrySourceId,
-                   SponsorId = _keys.SponsorId,
-                   LookupFundTypeId = _keys.LookupFundTypeId,
-                   StartDate = _keys.StartDate,
-                   SatisfiedDate = _keys.SatisfiedDate,
-                   ComputeInterestFlag = _keys.ComputeInterestFlag,
-                   InterestStartDate = _keys.InterestStartDate,
-                   SponsorClaimRevision = _keys.SponsorClaimRevision,
-                   Amount = Group.Sum(accountEntry => accountEntry.Amount),
-                   AccountTransactions = new List<object>(),
-                   AccountEntryClaimDetails = (from _accountEntry in Group
-                                               from _claimDetail in _accountEntry.AccountEntryClaimDetails
-                                               select _claimDetail).Reduce().ToList()
-               };
+               select new AccountEntry() { LookupAccountEntryTypeId = _keys.LookupAccountEntryTypeId, LookupAccountEntrySourceId = _keys.LookupAccountEntrySourceId, SponsorId = _keys.SponsorId, LookupFundTypeId = _keys.LookupFundTypeId, StartDate = _keys.StartDate, SatisfiedDate = _keys.SatisfiedDate, ComputeInterestFlag = _keys.ComputeInterestFlag, InterestStartDate = _keys.InterestStartDate, SponsorClaimRevision = _keys.SponsorClaimRevision, Amount = Group.Sum(accountEntry => accountEntry.Amount), AccountTransactions = new List<object>(), AccountEntryClaimDetails = (from _accountEntry in Group from _claimDetail in _accountEntry.AccountEntryClaimDetails select _claimDetail).Reduce().ToList() };
     }
 }");
         }
