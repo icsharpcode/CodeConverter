@@ -1,3 +1,5 @@
+// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
+
 using Microsoft.VisualBasic;
 using System;
 using System.Collections;
@@ -16,8 +18,10 @@ namespace Microsoft.VisualBasic
     internal sealed class Embedded : Attribute
     {
     }
-}
 
+    // Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
+
+}
 namespace Microsoft.VisualBasic
 {
     namespace CompilerServices
@@ -2041,6 +2045,10 @@ namespace Microsoft.VisualBasic
 
 namespace VbNetStandardLib
 {
+
+    // Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
+
+    // See Compiler::LoadXmlSolutionExtension
     namespace My
     {
         [Embedded()]
@@ -2221,9 +2229,11 @@ namespace VbNetStandardLib
                                         {
                                             if (ns == currentInScopeNs)
                                             {
+                                                // prefix and namespace match.  Remove the unneeded ns attribute 
                                                 a.Remove();
                                             }
 
+                                            // prefix is in scope but refers to something else.  Leave the ns attribute. 
                                             a = null;
                                             break;
                                         }
@@ -2232,6 +2242,9 @@ namespace VbNetStandardLib
 
                                 if (a != null)
                                 {
+                                    // Prefix is not in scope 
+                                    // Now check whether it's going to be in scope because it is in the attributes list 
+
                                     if (attributes != null)
                                     {
                                         int lastIndex = attributes.Count - 1;
@@ -2246,9 +2259,11 @@ namespace VbNetStandardLib
                                                 {
                                                     if (ns == currentInScopeNs)
                                                     {
+                                                        // prefix and namespace match.  Remove the unneeded ns attribute 
                                                         a.Remove();
                                                     }
 
+                                                    // prefix is in scope but refers to something else.  Leave the ns attribute. 
                                                     a = null;
                                                     break;
                                                 }
@@ -2258,7 +2273,9 @@ namespace VbNetStandardLib
 
                                     if (a != null)
                                     {
+                                        // Prefix is definitely not in scope  
                                         a.Remove();
+                                        // namespace is not defined either.  Add this attributes list 
                                         attributes.Add(a);
                                     }
                                 }

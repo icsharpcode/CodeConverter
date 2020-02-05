@@ -1,3 +1,5 @@
+// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
+
 using Microsoft.VisualBasic;
 using System;
 using System.Collections;
@@ -21,29 +23,46 @@ namespace Microsoft.VisualBasic
 
 namespace VbLibrary
 {
+
+    /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
+    /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia */
+    /* TODO ERROR: Skipped DefineDirectiveTrivia *//* TODO ERROR: Skipped DefineDirectiveTrivia *//* TODO ERROR: Skipped DefineDirectiveTrivia *//* TODO ERROR: Skipped DefineDirectiveTrivia */
+    /* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
+    /* TODO ERROR: Skipped IfDirectiveTrivia */
     namespace My
     {
+
+        /* TODO ERROR: Skipped IfDirectiveTrivia */
         [System.CodeDom.Compiler.GeneratedCode("MyTemplate", "11.0.0.0")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+
+        /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia */
         internal partial class MyApplication : Microsoft.VisualBasic.ApplicationServices.ConsoleApplicationBase
         {
+            /* TODO ERROR: Skipped EndIfDirectiveTrivia */
         }
-
+        /* TODO ERROR: Skipped EndIfDirectiveTrivia */
+        /* TODO ERROR: Skipped IfDirectiveTrivia */
         [System.CodeDom.Compiler.GeneratedCode("MyTemplate", "11.0.0.0")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+
+        /* TODO ERROR: Skipped IfDirectiveTrivia */
         internal partial class MyComputer : Microsoft.VisualBasic.Devices.Computer
         {
+            /* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
             [DebuggerHidden()]
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public MyComputer() : base()
             {
             }
         }
-
+        /* TODO ERROR: Skipped EndIfDirectiveTrivia */
         [HideModuleName()]
         [System.CodeDom.Compiler.GeneratedCode("MyTemplate", "11.0.0.0")]
         internal static class MyProject
         {
+
+            /* TODO ERROR: Skipped IfDirectiveTrivia */
             [System.ComponentModel.Design.HelpKeyword("My.Computer")]
             internal static MyComputer Computer
             {
@@ -55,7 +74,8 @@ namespace VbLibrary
             }
 
             private readonly static ThreadSafeObjectProvider<MyComputer> m_ComputerObjectProvider = new ThreadSafeObjectProvider<MyComputer>();
-
+            /* TODO ERROR: Skipped EndIfDirectiveTrivia */
+            /* TODO ERROR: Skipped IfDirectiveTrivia */
             [System.ComponentModel.Design.HelpKeyword("My.Application")]
             internal static MyApplication Application
             {
@@ -67,7 +87,8 @@ namespace VbLibrary
             }
 
             private readonly static ThreadSafeObjectProvider<MyApplication> m_AppObjectProvider = new ThreadSafeObjectProvider<MyApplication>();
-
+            /* TODO ERROR: Skipped EndIfDirectiveTrivia */
+            /* TODO ERROR: Skipped IfDirectiveTrivia */
             [System.ComponentModel.Design.HelpKeyword("My.User")]
             internal static Microsoft.VisualBasic.ApplicationServices.User User
             {
@@ -79,7 +100,9 @@ namespace VbLibrary
             }
 
             private readonly static ThreadSafeObjectProvider<Microsoft.VisualBasic.ApplicationServices.User> m_UserObjectProvider = new ThreadSafeObjectProvider<Microsoft.VisualBasic.ApplicationServices.User>();
-
+            /* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
+            /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
+            /* TODO ERROR: Skipped IfDirectiveTrivia */
             [System.ComponentModel.Design.HelpKeyword("My.WebServices")]
             internal static MyWebServices WebServices
             {
@@ -149,13 +172,15 @@ namespace VbLibrary
             }
 
             private readonly static ThreadSafeObjectProvider<MyWebServices> m_MyWebServicesObjectProvider = new ThreadSafeObjectProvider<MyWebServices>();
-
+            /* TODO ERROR: Skipped EndIfDirectiveTrivia */
+            /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [System.Runtime.InteropServices.ComVisible(false)]
             internal sealed class ThreadSafeObjectProvider<T> where T : new()
             {
                 internal T GetInstance
                 {
+                    /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElseDirectiveTrivia */
                     [DebuggerHidden()]
                     get
                     {
@@ -163,21 +188,26 @@ namespace VbLibrary
                             m_ThreadStaticValue = new T();
                         return m_ThreadStaticValue;
                     }
+                    /* TODO ERROR: Skipped EndIfDirectiveTrivia */
                 }
-
                 [DebuggerHidden()]
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 public ThreadSafeObjectProvider() : base()
                 {
                 }
 
+                /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElseDirectiveTrivia */
                 [System.Runtime.CompilerServices.CompilerGenerated()]
                 [ThreadStatic()]
                 private static T m_ThreadStaticValue;
+                /* TODO ERROR: Skipped EndIfDirectiveTrivia */
             }
         }
     }
+    /* TODO ERROR: Skipped EndIfDirectiveTrivia */
+    // Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
+    // See Compiler::LoadXmlSolutionExtension
     namespace My
     {
         [Embedded()]
@@ -358,9 +388,11 @@ namespace VbLibrary
                                         {
                                             if (ns == currentInScopeNs)
                                             {
+                                                // prefix and namespace match.  Remove the unneeded ns attribute 
                                                 a.Remove();
                                             }
 
+                                            // prefix is in scope but refers to something else.  Leave the ns attribute. 
                                             a = null;
                                             break;
                                         }
@@ -369,6 +401,9 @@ namespace VbLibrary
 
                                 if (a != null)
                                 {
+                                    // Prefix is not in scope 
+                                    // Now check whether it's going to be in scope because it is in the attributes list 
+
                                     if (attributes != null)
                                     {
                                         int lastIndex = attributes.Count - 1;
@@ -383,9 +418,11 @@ namespace VbLibrary
                                                 {
                                                     if (ns == currentInScopeNs)
                                                     {
+                                                        // prefix and namespace match.  Remove the unneeded ns attribute 
                                                         a.Remove();
                                                     }
 
+                                                    // prefix is in scope but refers to something else.  Leave the ns attribute. 
                                                     a = null;
                                                     break;
                                                 }
@@ -395,7 +432,9 @@ namespace VbLibrary
 
                                     if (a != null)
                                     {
+                                        // Prefix is definitely not in scope  
                                         a.Remove();
+                                        // namespace is not defined either.  Add this attributes list 
                                         attributes.Add(a);
                                     }
                                 }
@@ -409,5 +448,8 @@ namespace VbLibrary
                 return e;
             }
         }
+
+        // Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
+
     }
 }

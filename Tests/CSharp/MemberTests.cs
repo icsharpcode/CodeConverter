@@ -380,7 +380,8 @@ public partial class VisualBasicClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
@@ -567,6 +568,7 @@ internal partial class TestSubclass : TestClass
 {
     public new void TestMethod()
     {
+        // Not possible: TestMethod(3)
         Console.WriteLine(""New implementation"");
     }
 }");
@@ -606,7 +608,8 @@ Module TestClass
     <Extension()>
     Sub TestMethod(ByVal str As String)
     End Sub
-End Module", @"internal static partial class TestClass
+End Module", @"
+internal static partial class TestClass
 {
     public static void TestMethod(this string str)
     {
@@ -639,7 +642,8 @@ End Module", @"internal static partial class TestClass
             Me.m_test3 = value
         End Set
     End Property
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public int Test { get; set; }
 
@@ -1468,7 +1472,8 @@ internal partial class TestClass2 : TestClass1
         Return 1
     End Operator
 End Class"
-                , @"public partial class MyInt
+                , @"
+public partial class MyInt
 {
     public static explicit operator MyInt(int i)
     {
@@ -1541,7 +1546,8 @@ End Class"
     Public Shared Operator Or(s As String, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-End Class", @"public partial class AcmeClass
+End Class", @"
+public partial class AcmeClass
 {
     public static AcmeClass operator +(int i, AcmeClass ac)
     {
@@ -1771,7 +1777,7 @@ public partial class TestClass
     }
 }
 
-public partial class TestClass
+public partial class TestClass // VB doesn't require partial here (when just a single class omits it)
 {
     partial void DoNothing();
 }");
@@ -1913,7 +1919,8 @@ internal partial class MyClassC
             Me.m_test3 = value
         End Set
     End Property
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private int[] _Items;
 
@@ -2002,7 +2009,8 @@ End Class", @"public partial class SomeClass
             _Items = v
         End Set
     End Property
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private int[] _Items;
 

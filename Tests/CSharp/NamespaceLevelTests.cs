@@ -151,7 +151,8 @@ Friend Module C
         aaa.b.bar()
         Aaa.B.Bar()
     End Sub
-End Module", @"namespace Aaa
+End Module", @"
+namespace Aaa
 {
     internal partial class A
     {
@@ -454,7 +455,12 @@ End Class",
         Return """"
     End Function
 End Class",
-                @"public partial class MyTestClass
+                @"/// <summary>
+/// Returns empty
+/// </summary>
+
+
+public partial class MyTestClass
 {
     private string MyFunc()
     {
@@ -474,7 +480,12 @@ Public Class MyTestClass
         Return """"
     End Function
 End Class",
-                @"public partial class MyTestClass
+                @"/// <summary>
+/// Returns empty
+/// </summary>
+
+
+public partial class MyTestClass
 {
     private string MyFunc()
     {
@@ -497,6 +508,11 @@ End Class",
                 @"    /// <summary>
     /// Returns empty
     /// </summary>
+/// <summary>
+/// Returns empty
+/// </summary>
+
+
 public partial class MyTestClass
 {
     private string MyFunc()
@@ -844,7 +860,8 @@ public partial class Bar<x> where x : Foo, new()
         Dim z = Me.F2()
     End Sub
 End Class",
-                @"public partial class A
+                @"
+public partial class A
 {
     public int MyClassF1()
     {
@@ -877,7 +894,8 @@ public abstract int F2();
         Dim z = Me.P2
     End Sub
 End Class",
-                @"public partial class A
+                @"
+public partial class A
 {
     public int MyClassP1 { get; set; } = 1;
 

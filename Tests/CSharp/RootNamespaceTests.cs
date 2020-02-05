@@ -166,7 +166,8 @@ Namespace NestedWithinRoot
     Class AClassInANamespace
     End Class
 End Namespace",
-                @"namespace TheRootNamespace.NestedWithinRoot
+                @"
+namespace TheRootNamespace.NestedWithinRoot
 {
     internal partial class AClassInANamespace
     {
@@ -183,7 +184,8 @@ Namespace Global.NotNestedWithinRoot
     Class AClassInANamespace
     End Class
 End Namespace",
-                @"namespace NotNestedWithinRoot
+                @"
+namespace NotNestedWithinRoot
 {
     internal partial class AClassInANamespace
     {
@@ -208,7 +210,9 @@ Namespace NestedWithinRoot
     Class AClassInANamespace
     End Class
 End Namespace",
-                @"namespace NotNestedWithinRoot
+                @"
+
+namespace NotNestedWithinRoot
 {
     internal partial class AClassInANamespace
     {

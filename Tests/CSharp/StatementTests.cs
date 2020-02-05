@@ -497,7 +497,8 @@ public partial class TestClass
     Public Shared Sub Main(ByVal args As String())
         ReDim Me.My2darray(6)
     End Sub
-End Class", @"internal partial class Program
+End Class", @"
+internal partial class Program
 {
     private int[][] My2darray;
 
@@ -600,7 +601,8 @@ internal partial class TestClass
         FuncReturningAssignedValue = 3
         Exit Function
     End Function
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private object FuncReturningNull()
     {
@@ -699,7 +701,8 @@ End Class
 Public Structure SomeStruct
     Public ArrField As String()
     Public Property ArrProp As String()
-End Structure", @"public partial class VisualBasicClass
+End Structure", @"
+public partial class VisualBasicClass
 {
     public void Stuff()
     {
@@ -859,16 +862,24 @@ End Class", @"internal partial class TestClass
         ' Declare a jagged array
         Dim sales()() As Double = New Double(11)() {}
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
+        // Declare a single-dimension array of 5 numbers.
         var numbers1 = new int[5];
         var numbers2 = new int[] { 1, 2, 4, 8 };
+
+        // Declare a 6 x 6 multidimensional array.
         var matrix1 = new double[6, 6];
         var matrix2 = new int[4, 3] { { 1, 2, 3 }, { 2, 3, 4 }, { 3, 4, 5 }, { 4, 5, 6 } };
+
+        // Combine rank specifiers with initializers of various kinds
         var rankSpecifiers = new double[2, 2] { { 1.0, 2.0 }, { 3.0, 4.0 } };
         var rankSpecifiers2 = new double[2, 2];
+
+        // Declare a jagged array
         var sales = new double[12][] { };
     }
 }");
@@ -1134,7 +1145,8 @@ public partial class AcmeClass
             b = 3
         End If
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod(int a)
     {
@@ -1204,7 +1216,8 @@ internal partial class TestClass
         Next
         Return -1
     End Function
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public static int FindTextInCol(string w, int pTitleRow, int startCol, string needle)
     {
@@ -1245,7 +1258,8 @@ End Class", @"internal partial class TestClass
             b = 1
         End While
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1275,7 +1289,8 @@ End Class", @"internal partial class TestClass
             charIndex = rand.Next(48, 123)
         Loop Until (charIndex >= 48 AndAlso charIndex <= 57) OrElse (charIndex >= 65 AndAlso charIndex <= 90) OrElse (charIndex >= 97 AndAlso charIndex <= 122)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1301,7 +1316,8 @@ End Class", @"internal partial class TestClass
             b = 1
         Loop
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1334,7 +1350,9 @@ End Class", @"internal partial class TestClass
             b = 1
         Loop While b = 0
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1367,7 +1385,9 @@ End Class", @"internal partial class TestClass
             b = 1
         Loop While b = 0
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1952,6 +1972,7 @@ public partial class TestClass2
         {
             case object _ when DateAndTime.Today.DayOfWeek == DayOfWeek.Saturday | DateAndTime.Today.DayOfWeek == DayOfWeek.Sunday:
                 {
+                    // we do not work on weekends
                     return false;
                 }
 
@@ -1962,6 +1983,7 @@ public partial class TestClass2
 
             case object _ when Something is int:
                 {
+                    // Do something with the Integer
                     return true;
                 }
 
@@ -2039,7 +2061,8 @@ public partial class TestClass2
         End Select
         Return 3
     End Function
-End Class", @"internal partial class A
+End Class", @"
+internal partial class A
 {
     public int Add(int x)
     {

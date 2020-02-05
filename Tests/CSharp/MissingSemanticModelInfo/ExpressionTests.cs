@@ -16,7 +16,8 @@ Public Property SomeProperty As System.Some.UnknownType
     Private Sub TestMethod()
         Dim value = SomeProperty(0)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public System.Some.UnknownType SomeProperty { get; set; }
 
@@ -244,7 +245,8 @@ public partial class EnumAndValTest
     private sub TestMethod()
         Dim a = DefaultDate(1, 2, 3).Blawer(1, 2, 3)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private System.SomeUnknownType DefaultDate { get; set; }
 

@@ -257,7 +257,8 @@ End Class", @"public partial class VisualBasicClass
 
     Sub Bar(ByRef class1)
     End Sub
-End Class", @"public partial class Class1
+End Class", @"
+public partial class Class1
 {
     private Class1 C1 { get; set; }
 
@@ -690,7 +691,8 @@ internal static partial class Module1
         Return 1
     End Function
     Property Baz As Integer
-End Class", @"public partial class Class1
+End Class", @"
+public partial class Class1
 {
     public void Foo()
     {
@@ -750,7 +752,8 @@ internal partial class TestClass
         Dim y = Me.x
         Dim z = tmp.x
     End Sub
-End Class", @"public partial class A
+End Class", @"
+public partial class A
 {
     public static int x = 2;
 
@@ -1080,7 +1083,8 @@ public partial class Class1
             Return y
         End Get
     End Property
-End Class", @"public partial class Class1
+End Class", @"
+public partial class Class1
 {
     public Class1()
     {
@@ -1206,8 +1210,8 @@ public partial class Class1
 
         if (s1 == null)
         {
+            // 
         }
-
         if (string.IsNullOrEmpty(s1))
         {
         }
@@ -1269,6 +1273,7 @@ public partial class Class1
 
         if (string.IsNullOrEmpty(s1))
         {
+            // 
         }
     }
 }");
@@ -2157,7 +2162,8 @@ private _state as TestState
             End If
         End Set
     End Property
-end class", @"public enum TestState
+end class", @"
+public enum TestState
 {
     one,
     two
@@ -2594,6 +2600,8 @@ Public Class Test
     End Sub
 End Class",
                 @"using System;
+
+// Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
 using System.IO;
 using SIO = System.IO;
 using VB = Microsoft.VisualBasic;
