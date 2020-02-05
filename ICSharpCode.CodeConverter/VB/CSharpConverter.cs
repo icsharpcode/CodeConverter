@@ -20,7 +20,7 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.VB
 {
-    internal class CSharpConverter
+    internal static class CSharpConverter
     {
         public static async Task<SyntaxNode> ConvertCompilationTree(Document document,
             VisualBasicCompilation vbViewOfCsSymbols, Project vbReferenceProject)

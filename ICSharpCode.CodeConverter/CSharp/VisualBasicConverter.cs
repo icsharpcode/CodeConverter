@@ -5,19 +5,21 @@ using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
+using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Simplification;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    internal class VisualBasicConverter
+    internal static class VisualBasicConverter
     {
         public static async Task<SyntaxNode> ConvertCompilationTree(Document document,
             CSharpCompilation csharpViewOfVbSymbols, Project csharpReferenceProject)
         {
             document = await document.WithExpandedRootAsync();
-            var root = await document.GetSyntaxRootAsync() as VBasic.VisualBasicSyntaxNode ??
+            var root = await document.GetSyntaxRootAsync() as VBSyntax.CompilationUnitSyntax ??
                        throw new InvalidOperationException(NullRootError(document));
 
             var compilation = await document.Project.GetCompilationAsync();
@@ -28,7 +30,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             var semanticModel = compilation.GetSemanticModel(tree, true);
             var visualBasicSyntaxVisitor = new
                 DeclarationNodeVisitor(document, compilation, semanticModel, csharpViewOfVbSymbols, csSyntaxGenerator);
-            return await root.AcceptAsync(visualBasicSyntaxVisitor.TriviaConvertingDeclarationVisitor);
+            var converted = await root.AcceptAsync(visualBasicSyntaxVisitor.TriviaConvertingDeclarationVisitor);
+
+            var formattedConverted = (CSS.CompilationUnitSyntax) Formatter.Format(converted, document.Project.Solution.Workspace);
+            return LineTriviaMapper.MapSourceTriviaToTarget(root, formattedConverted);
         }
 
         private static string NullRootError(Document document)
