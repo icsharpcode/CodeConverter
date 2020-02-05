@@ -371,10 +371,10 @@ public interface iDisplay {
 
     Private Property Item(ByVal i As Integer) As Object Implements iDisplay.Item
         Get
-            Throw New System.NotImplementedException()
+            Throw New NotImplementedException()
         End Get
         Set(ByVal value As Object)
-            Throw New System.NotImplementedException()
+            Throw New NotImplementedException()
         End Set
     End Property
 End Class
