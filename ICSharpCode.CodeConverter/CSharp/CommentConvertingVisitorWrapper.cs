@@ -1,25 +1,32 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    internal class CommentConvertingVisitorWrapper<T> where T: SyntaxNode
+    internal class CommentConvertingVisitorWrapper<T> where T : CSharpSyntaxNode
     {
         private readonly VisualBasicSyntaxVisitor<Task<T>> _wrappedVisitor;
 
-        public CommentConvertingVisitorWrapper(VisualBasicSyntaxVisitor<Task<T>> wrappedVisitor, TriviaConverter triviaConverter)
+        public CommentConvertingVisitorWrapper(VisualBasicSyntaxVisitor<Task<T>> wrappedVisitor)
         {
-            TriviaConverter = triviaConverter;
             _wrappedVisitor = wrappedVisitor;
         }
 
-        public TriviaConverter TriviaConverter { get; }
-
-        public async Task<T> Visit(SyntaxNode node)
+        public async Task<T> Accept(SyntaxNode node, bool addSourceMapping)
         {
-            return TriviaConverter.PortConvertedTrivia(node, await _wrappedVisitor.Visit(node));
+            try {
+                var converted = await _wrappedVisitor.Visit(node);
+                return addSourceMapping ? node.CopyAnnotationsTo(converted).WithSourceMappingFrom(node)
+                    : converted.WithoutSourceMapping();
+            } catch (Exception e) {
+                var dummyStatement = (T)(object)Microsoft.CodeAnalysis.CSharp.SyntaxFactory.EmptyStatement();
+                return dummyStatement.WithCsTrailingErrorComment((VisualBasicSyntaxNode)node, e);
+            }
         }
     }
 }

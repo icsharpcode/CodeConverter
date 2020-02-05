@@ -28,7 +28,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var semanticModel = compilation.GetSemanticModel(tree, true);
             var visualBasicSyntaxVisitor = new
                 DeclarationNodeVisitor(document, compilation, semanticModel, csharpViewOfVbSymbols, csSyntaxGenerator);
-            return await root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
+            return await root.AcceptAsync(visualBasicSyntaxVisitor.TriviaConvertingDeclarationVisitor);
         }
 
         private static string NullRootError(Document document)

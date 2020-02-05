@@ -44,8 +44,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public MethodBodyExecutableStatementVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
             CommentConvertingVisitorWrapper<CSharpSyntaxNode> expressionVisitor, CommonConversions commonConversions,
             Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
-            AdditionalLocals additionalLocals, MethodsWithHandles methodsWithHandles,
-            TriviaConverter triviaConverter)
+            AdditionalLocals additionalLocals, MethodsWithHandles methodsWithHandles)
         {
             _methodNode = methodNode;
             _semanticModel = semanticModel;
@@ -55,7 +54,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _extraUsingDirectives = extraUsingDirectives;
             _methodsWithHandles = methodsWithHandles;
             var byRefParameterVisitor = new ByRefParameterVisitor(this, additionalLocals, semanticModel, _generatedNames);
-            CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor, triviaConverter);
+            CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor);
             _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
         }
 

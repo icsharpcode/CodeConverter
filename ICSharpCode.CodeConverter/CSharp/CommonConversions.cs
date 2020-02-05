@@ -271,7 +271,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            return CsEscapedIdentifier(text);
+            return CsEscapedIdentifier(text).WithSourceMappingFrom(id);
         }
 
         /// <summary>
@@ -484,6 +484,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                 convertedExpression, SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
         }
 
+        public async Task<SyntaxList<CSSyntax.AttributeListSyntax>> ConvertAttributes(SyntaxList<VBSyntax.AttributeListSyntax> attributeListSyntaxs)
+        {
+            return SyntaxFactory.List(await attributeListSyntaxs.SelectManyAsync(ConvertAttribute));
+        }
+
+        public async Task<IEnumerable<CSSyntax.AttributeListSyntax>> ConvertAttribute(VBSyntax.AttributeListSyntax attributeList)
+        {
+            // These attributes' semantic effects are expressed differently in CSharp.
+            return await attributeList.Attributes.Where(a => !IsExtensionAttribute(a) && !IsOutAttribute(a))
+                .SelectAsync(async a => (CSSyntax.AttributeListSyntax)await a.AcceptAsync(TriviaConvertingExpressionVisitor));
+        }
+
         public static AttributeArgumentListSyntax CreateAttributeArgumentList(params AttributeArgumentSyntax[] attributeArgumentSyntaxs)
         {
             return SyntaxFactory.AttributeArgumentList(SyntaxFactory.SeparatedList(attributeArgumentSyntaxs));
@@ -513,12 +525,51 @@ namespace ICSharpCode.CodeConverter.CSharp
                 !pro.Property.IsDefault()) {
                 var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.Children.First() == pro;
                 var extraArg = isSetter
-                    ? (ExpressionSyntax) await TriviaConvertingExpressionVisitor.Visit(operation.Parent.Syntax.ChildNodes().ElementAt(1))
+                    ? (ExpressionSyntax) await operation.Parent.Syntax.ChildNodes().ElementAt(1).AcceptAsync(TriviaConvertingExpressionVisitor)
                     : null;
                 return (isSetter ? pro.Property.SetMethod.Name : pro.Property.GetMethod.Name, extraArg);
             }
 
             return (null, null);
+        }
+
+        public CSSyntax.IdentifierNameSyntax GetRetVariableNameOrNull(VBSyntax.MethodBlockBaseSyntax node)
+        {
+            if (!node.AllowsImplicitReturn()) return null;
+
+            bool assignsToMethodNameVariable = false;
+
+            if (!node.Statements.IsEmpty()) {
+                string methodName = GetMethodBlockBaseIdentifierForImplicitReturn(node).ValueText ?? "";
+                Func<ISymbol, bool> equalsMethodName = s => s.IsKind(SymbolKind.Local) && s.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase);
+                var flow = _semanticModel.AnalyzeDataFlow(node.Statements.First(), node.Statements.Last());
+
+                if (flow.Succeeded) {
+                    assignsToMethodNameVariable = flow.ReadInside.Any(equalsMethodName) || flow.WrittenInside.Any(equalsMethodName);
+                }
+            }
+
+            CSSyntax.IdentifierNameSyntax csReturnVariable = null;
+
+            if (assignsToMethodNameVariable) {
+                // In VB, assigning to the method name implicitly creates a variable that is returned when the method exits
+                var csReturnVariableName =
+                    ConvertIdentifier(GetMethodBlockBaseIdentifierForImplicitReturn(node)).ValueText + "Ret";
+                csReturnVariable = SyntaxFactory.IdentifierName(csReturnVariableName);
+            }
+
+            return csReturnVariable;
+        }
+
+        public static SyntaxToken GetMethodBlockBaseIdentifierForImplicitReturn(SyntaxNode vbMethodBlock)
+        {
+            if (vbMethodBlock.Parent is VBSyntax.PropertyBlockSyntax pb) {
+                return pb.PropertyStatement.Identifier;
+            } else if (vbMethodBlock is VBSyntax.MethodBlockSyntax mb) {
+                return mb.SubOrFunctionStatement.Identifier;
+            } else {
+                throw new NotImplementedException("MethodBlockBaseIdentifier " + VisualBasicExtensions.Kind(vbMethodBlock).ToString());
+            }
         }
 
         public static bool IsDefaultIndexer(SyntaxNode node)

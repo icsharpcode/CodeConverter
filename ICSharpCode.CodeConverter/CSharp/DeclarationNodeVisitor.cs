@@ -18,6 +18,7 @@ using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using SyntaxToken = Microsoft.CodeAnalysis.SyntaxToken;
+using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -30,7 +31,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private static readonly Type DllImportType = typeof(DllImportAttribute);
         private static readonly Type CharSetType = typeof(CharSet);
-        private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(SyntaxKind.SemicolonToken);
+        private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SemicolonToken);
         private static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
         private readonly CSharpCompilation _csCompilation;
         private readonly SyntaxGenerator _csSyntaxGenerator;
@@ -44,12 +45,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly HashSet<string> _extraUsingDirectives = new HashSet<string>();
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
         private HashSet<string> _accessedThroughMyClass;
-        public CommentConvertingNodesVisitor TriviaConvertingVisitor { get; }
+        public CommentConvertingVisitorWrapper<CSharpSyntaxNode> TriviaConvertingDeclarationVisitor { get; }
         private readonly CommentConvertingVisitorWrapper<CSharpSyntaxNode> _triviaConvertingExpressionVisitor;
-        private readonly ExpressionNodeVisitor _expressionNodeVisitor;
+
+
         private string _topAncestorNamespace;
 
         private CommonConversions CommonConversions { get; }
+        private Func<VisualBasicSyntaxNode, bool, IdentifierNameSyntax, VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>> _createMethodBodyVisitor { get; }
 
         public DeclarationNodeVisitor(Document document, Compilation compilation, SemanticModel semanticModel,
             CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator)
@@ -59,14 +62,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csCompilation = csCompilation;
             _csSyntaxGenerator = csSyntaxGenerator;
             _visualBasicEqualityComparison = new VisualBasicEqualityComparison(_semanticModel, _extraUsingDirectives);
-            TriviaConverter triviaConverter = new TriviaConverter();
-            TriviaConvertingVisitor = new CommentConvertingNodesVisitor(this, triviaConverter);
+            TriviaConvertingDeclarationVisitor = new CommentConvertingVisitorWrapper<CSharpSyntaxNode>(this);
             var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator, _visualBasicEqualityComparison);
             CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, csCompilation);
             _additionalInitializers = new AdditionalInitializers();
-            _expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _methodsWithHandles, CommonConversions, triviaConverter, _extraUsingDirectives);
-            _triviaConvertingExpressionVisitor = _expressionNodeVisitor.TriviaConvertingVisitor;
+            var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _methodsWithHandles, CommonConversions, _extraUsingDirectives);
+            _triviaConvertingExpressionVisitor = expressionNodeVisitor.TriviaConvertingExpressionVisitor;
+            _createMethodBodyVisitor = expressionNodeVisitor.CreateMethodBodyVisitor;
             CommonConversions.TriviaConvertingExpressionVisitor = _triviaConvertingExpressionVisitor;
+        }
+
+        public VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
+        {
+            return _createMethodBodyVisitor(node, isIterator, csReturnVariable);
         }
 
         public override async Task<CSharpSyntaxNode> DefaultVisit(SyntaxNode node)
@@ -85,7 +93,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _topAncestorNamespace = node.Members.Any(m => !IsNamespaceDeclaration(m)) ? options.RootNamespace : null;
             _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive = optionCompareText;
 
-            var attributes = SyntaxFactory.List(await node.Attributes.SelectMany(a => a.AttributeLists).SelectManyAsync(_expressionNodeVisitor.ConvertAttribute));
+            var attributes = SyntaxFactory.List(await node.Attributes.SelectMany(a => a.AttributeLists).SelectManyAsync(CommonConversions.ConvertAttribute));
             var sourceAndConverted = await node.Members
                 .Where(m => !(m is VBSyntax.OptionStatementSyntax)) //TODO Record values for use in conversion
                 .SelectAsync(async m => (Source: m, Converted: await ConvertMember(m)));
@@ -96,7 +104,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : PrependRootNamespace(sourceAndConverted, SyntaxFactory.IdentifierName(options.RootNamespace));
 
             var usings = await importsClauses.GroupBy(c => c.ToString()).Select(g => g.First())
-                .SelectAsync(async c => (UsingDirectiveSyntax) await c.Accept(TriviaConvertingVisitor));
+                .SelectAsync(async c => (UsingDirectiveSyntax) await c.AcceptAsync(TriviaConvertingDeclarationVisitor));
             var usingDirectiveSyntax = usings
                 .Concat(_extraUsingDirectives.Select(u => SyntaxFactory.UsingDirective(SyntaxFactory.ParseName(u))))
                 .GroupBy(u => (Name: u.Name.ToString(), Alias: u.Alias))
@@ -145,10 +153,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitNamespaceBlock(VBSyntax.NamespaceBlockSyntax node)
         {
             var members = (await node.Members.SelectAsync(ConvertMember)).Where(m => m != null);
-            var sym = _semanticModel.GetDeclaredSymbol(node);
+            var sym = ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
             string namespaceToDeclare = await WithDeclarationCasing(node, sym);
             var parentNamespaceSyntax = node.GetAncestor<VBSyntax.NamespaceBlockSyntax>();
-            var parentNamespaceDecl = parentNamespaceSyntax != null ? _semanticModel.GetDeclaredSymbol(parentNamespaceSyntax) : null;
+            var parentNamespaceDecl = parentNamespaceSyntax != null ? ModelExtensions.GetDeclaredSymbol(_semanticModel, parentNamespaceSyntax) : null;
             var parentNamespaceFullName = parentNamespaceDecl?.ToDisplayString() ?? _topAncestorNamespace;
             if (parentNamespaceFullName != null && namespaceToDeclare.StartsWith(parentNamespaceFullName + "."))
                 namespaceToDeclare = namespaceToDeclare.Substring(parentNamespaceFullName.Length + 1);
@@ -188,7 +196,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return directlyConvertedMembers;
             }
 
-            var typeSymbol = (ITypeSymbol) _semanticModel.GetDeclaredSymbol(parentType);
+            var typeSymbol = (ITypeSymbol)ModelExtensions.GetDeclaredSymbol(_semanticModel, parentType);
             var syntaxToAddTypeWideInit = typeSymbol.DeclaringSyntaxReferences.FirstOrDefault(l => l.SyntaxTree.FilePath?.IsGeneratedFile() == false)
                 ?? typeSymbol.DeclaringSyntaxReferences.First();
             var shouldAddTypeWideInitToThisPart = syntaxToAddTypeWideInit.Span == parentType.Span;
@@ -226,7 +234,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<MemberDeclarationSyntax> ConvertMember(VBSyntax.StatementSyntax member)
         {
             try {
-                return (MemberDeclarationSyntax) await member.Accept(TriviaConvertingVisitor);
+                return (MemberDeclarationSyntax) await member.AcceptAsync(TriviaConvertingDeclarationVisitor);
             } catch (Exception e) {
                 return CreateErrorMember(member, e);
             }
@@ -243,7 +251,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             _accessedThroughMyClass = GetMyClassAccessedNames(node);
             var classStatement = node.ClassStatement;
-            var attributes = await _expressionNodeVisitor.ConvertAttributes(classStatement.AttributeLists);
+            var attributes = await CommonConversions.ConvertAttributes(classStatement.AttributeLists);
             var (parameters, constraints) = await SplitTypeParameters(classStatement.TypeParameterList);
             var convertedIdentifier = CommonConversions.ConvertIdentifier(classStatement.Identifier);
 
@@ -270,12 +278,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitModuleBlock(VBSyntax.ModuleBlockSyntax node)
         {
             var stmt = node.ModuleStatement;
-            var attributes = await _expressionNodeVisitor.ConvertAttributes(stmt.AttributeLists);
+            var attributes = await CommonConversions.ConvertAttributes(stmt.AttributeLists);
             var members = SyntaxFactory.List(await ConvertMembers(node.Members));
             var (parameters, constraints) = await SplitTypeParameters(stmt.TypeParameterList);
 
             return SyntaxFactory.ClassDeclaration(
-                attributes, ConvertTypeBlockModifiers(stmt, TokenContext.InterfaceOrModule, SyntaxKind.StaticKeyword),
+                attributes, ConvertTypeBlockModifiers(stmt, TokenContext.InterfaceOrModule, Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword),
                 CommonConversions.ConvertIdentifier(stmt.Identifier),
                 parameters,
                 await ConvertInheritsAndImplements(node.Inherits, node.Implements),
@@ -287,7 +295,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitStructureBlock(VBSyntax.StructureBlockSyntax node)
         {
             var stmt = node.StructureStatement;
-            var attributes = await _expressionNodeVisitor.ConvertAttributes(stmt.AttributeLists);
+            var attributes = await CommonConversions.ConvertAttributes(stmt.AttributeLists);
             var members = SyntaxFactory.List(await ConvertMembers(node.Members));
 
             var (parameters, constraints) = await SplitTypeParameters(stmt.TypeParameterList);
@@ -304,7 +312,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitInterfaceBlock(VBSyntax.InterfaceBlockSyntax node)
         {
             var stmt = node.InterfaceStatement;
-            var attributes = await _expressionNodeVisitor.ConvertAttributes(stmt.AttributeLists);
+            var attributes = await CommonConversions.ConvertAttributes(stmt.AttributeLists);
             var members = SyntaxFactory.List(await ConvertMembers(node.Members));
 
             var (parameters, constraints) = await SplitTypeParameters(stmt.TypeParameterList);
@@ -319,10 +327,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         private SyntaxTokenList ConvertTypeBlockModifiers(VBSyntax.TypeStatementSyntax stmt,
-            TokenContext interfaceOrModule, params SyntaxKind[] extraModifiers)
+            TokenContext interfaceOrModule, params Microsoft.CodeAnalysis.CSharp.SyntaxKind[] extraModifiers)
         {
             if (IsPartialType(stmt) && !HasPartialKeyword(stmt.Modifiers)) {
-                extraModifiers = extraModifiers.Concat(new[] {SyntaxKind.PartialKeyword})
+                extraModifiers = extraModifiers.Concat(new[] { Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword})
                     .ToArray();
             }
 
@@ -344,20 +352,20 @@ namespace ICSharpCode.CodeConverter.CSharp
             var stmt = node.EnumStatement;
             // we can cast to SimpleAsClause because other types make no sense as enum-type.
             var asClause = (VBSyntax.SimpleAsClauseSyntax)stmt.UnderlyingType;
-            var attributes = await stmt.AttributeLists.SelectManyAsync(_expressionNodeVisitor.ConvertAttribute);
+            var attributes = await stmt.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttribute);
             BaseListSyntax baseList = null;
             if (asClause != null) {
                 baseList = SyntaxFactory.BaseList(SyntaxFactory.SingletonSeparatedList<BaseTypeSyntax>(SyntaxFactory.SimpleBaseType((TypeSyntax) await asClause.Type.AcceptAsync(_triviaConvertingExpressionVisitor))));
                 if (asClause.AttributeLists.Count > 0) {
-                    var attributeLists = await asClause.AttributeLists.SelectManyAsync(l => _expressionNodeVisitor.ConvertAttribute(l));
+                    var attributeLists = await asClause.AttributeLists.SelectManyAsync(l => CommonConversions.ConvertAttribute(l));
                     attributes = attributes.Concat(
                         SyntaxFactory.AttributeList(
-                            SyntaxFactory.AttributeTargetSpecifier(SyntaxFactory.Token(SyntaxKind.ReturnKeyword)),
+                            SyntaxFactory.AttributeTargetSpecifier(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ReturnKeyword)),
                             SyntaxFactory.SeparatedList(attributeLists.SelectMany(a => a.Attributes)))
                     ).ToArray();
                 }
             }
-            var members = SyntaxFactory.SeparatedList(await node.Members.SelectAsync(async m => (EnumMemberDeclarationSyntax) await m.Accept(TriviaConvertingVisitor)));
+            var members = SyntaxFactory.SeparatedList(await node.Members.SelectAsync(async m => (EnumMemberDeclarationSyntax) await m.AcceptAsync(TriviaConvertingDeclarationVisitor)));
             return SyntaxFactory.EnumDeclaration(
                 SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(stmt, stmt.Modifiers, TokenContext.Global), CommonConversions.ConvertIdentifier(stmt.Identifier),
                 baseList,
@@ -367,7 +375,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitEnumMemberDeclaration(VBSyntax.EnumMemberDeclarationSyntax node)
         {
-            var attributes = await _expressionNodeVisitor.ConvertAttributes(node.AttributeLists);
+            var attributes = await CommonConversions.ConvertAttributes(node.AttributeLists);
             return SyntaxFactory.EnumMemberDeclaration(
                 attributes, CommonConversions.ConvertIdentifier(node.Identifier),
                 (EqualsValueClauseSyntax) await node.Initializer.AcceptAsync(_triviaConvertingExpressionVisitor)
@@ -376,21 +384,21 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitDelegateStatement(VBSyntax.DelegateStatementSyntax node)
         {
-            var attributes = await node.AttributeLists.SelectManyAsync(_expressionNodeVisitor.ConvertAttribute);
+            var attributes = await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttribute);
 
             var (typeParameters, constraints) = await SplitTypeParameters(node.TypeParameterList);
 
             TypeSyntax returnType;
             var asClause = node.AsClause;
             if (asClause == null) {
-                returnType = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword));
+                returnType = SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VoidKeyword));
             } else {
                 returnType = (TypeSyntax) await asClause.Type.AcceptAsync(_triviaConvertingExpressionVisitor);
                 if (asClause.AttributeLists.Count > 0) {
-                    var attributeListSyntaxs = await asClause.AttributeLists.SelectManyAsync(l => _expressionNodeVisitor.ConvertAttribute(l));
+                    var attributeListSyntaxs = await asClause.AttributeLists.SelectManyAsync(l => CommonConversions.ConvertAttribute(l));
                     attributes = attributes.Concat(
                         SyntaxFactory.AttributeList(
-                            SyntaxFactory.AttributeTargetSpecifier(SyntaxFactory.Token(SyntaxKind.ReturnKeyword)),
+                            SyntaxFactory.AttributeTargetSpecifier(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ReturnKeyword)),
                             SyntaxFactory.SeparatedList(attributeListSyntaxs.SelectMany(a => a.Attributes)))
                         ).ToArray();
                 }
@@ -424,7 +432,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<List<MemberDeclarationSyntax>> GetMemberDeclarations(VBSyntax.FieldDeclarationSyntax node)
         {
-            var attributes = (await node.AttributeLists.SelectManyAsync(_expressionNodeVisitor.ConvertAttribute)).ToList();
+            var attributes = (await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttribute)).ToList();
             var convertableModifiers =
                 node.Modifiers.Where(m => !SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
             var isWithEvents = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
@@ -453,12 +461,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                         .Where(a => a.Initializer != null)
                         .ToDictionary(v => v.Identifier.Text, v => v.Initializer);
                     var fieldDecl = decl.RemoveNodes(initializers.Values, SyntaxRemoveOptions.KeepNoTrivia);
-                    var initializerCollection = convertedModifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword))
+                    var initializerCollection = convertedModifiers.Any(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword))
                         ? _additionalInitializers.AdditionalStaticInitializers
                         : _additionalInitializers.AdditionalInstanceInitializers;
                     foreach (var initializer in initializers)
                     {
-                        initializerCollection.Add((SyntaxFactory.IdentifierName(initializer.Key), SyntaxKind.SimpleAssignmentExpression, initializer.Value.Value));
+                        initializerCollection.Add((SyntaxFactory.IdentifierName(initializer.Key), Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression, initializer.Value.Value));
                     }
 
                     var fieldDecls = _methodsWithHandles.GetDeclarationsForFieldBackedProperty(fieldDecl,
@@ -505,7 +513,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             localVars.Concat(SyntaxFactory.SingletonList(SyntaxFactory.ReturnStatement(newInitializer))));
                         var methodAttrs = SyntaxFactory.List<AttributeListSyntax>();
                         // Method calls in initializers must be static in C# - Supporting this is #281
-                        var modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword));
+                        var modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
                         var typeConstraints = SyntaxFactory.List<TypeParameterConstraintClauseSyntax>();
                         var parameterList = SyntaxFactory.ParameterList();
                         var methodDecl = SyntaxFactory.MethodDeclaration(methodAttrs, modifiers, decl.Type, null,
@@ -534,7 +542,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private List<MethodWithHandles> GetMethodWithHandles(VBSyntax.TypeBlockSyntax parentType)
         {
-            if (parentType == null || !(_semanticModel.GetDeclaredSymbol(parentType) is ITypeSymbol containingType)) return new List<MethodWithHandles>();
+            if (parentType == null || !(this._semanticModel.GetDeclaredSymbol((global::Microsoft.CodeAnalysis.SyntaxNode)parentType) is ITypeSymbol containingType)) return new List<MethodWithHandles>();
 
             var methodWithHandleses = containingType.GetMembers().OfType<IMethodSymbol>()
                 .Where(m => VBasic.VisualBasicExtensions.HandledEvents(m).Any())
@@ -573,13 +581,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitPropertyStatement(VBSyntax.PropertyStatementSyntax node)
         {
-            var attributes = await node.AttributeLists.SelectManyAsync(_expressionNodeVisitor.ConvertAttribute);
+            var attributes = await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttribute);
             var isReadonly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.ReadOnlyKeyword));
             var isWriteOnly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WriteOnlyKeyword));
             var convertibleModifiers = node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword, VBasic.SyntaxKind.WriteOnlyKeyword, VBasic.SyntaxKind.DefaultKeyword));
             var modifiers = CommonConversions.ConvertModifiers(node, convertibleModifiers.ToList(), GetMemberContext(node));
             var isIndexer = CommonConversions.IsDefaultIndexer(node);
-            var accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, _semanticModel.GetDeclaredSymbol(node));
+            var accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, ModelExtensions.GetDeclaredSymbol(_semanticModel, node));
             bool isInInterface = node.Ancestors().OfType<VBSyntax.InterfaceBlockSyntax>().FirstOrDefault() != null;
 
             var initializer = (EqualsValueClauseSyntax) await node.Initializer.AcceptAsync(_triviaConvertingExpressionVisitor);
@@ -599,7 +607,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     throw new NotImplementedException($"{node.AsClause.GetType().FullName} not implemented!");
             }
 
-            var rawType = (TypeSyntax) await vbType.AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword));
+            var rawType = (TypeSyntax) await vbType.AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ObjectKeyword));
 
             AccessorListSyntax accessors = null;
             if (node.Parent is VBSyntax.PropertyBlockSyntax propertyBlock) {
@@ -610,7 +618,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
 
                     var methodDeclarationSyntaxs = await propertyBlock.Accessors.SelectAsync(async a =>
-                        (MethodDeclarationSyntax) await a.Accept(TriviaConvertingVisitor));
+                        (MethodDeclarationSyntax) await a.AcceptAsync(TriviaConvertingDeclarationVisitor));
                     var accessorMethods = methodDeclarationSyntaxs.Select(WithMergedModifiers).ToArray();
                     _additionalDeclarations.Add(propertyBlock, accessorMethods.Skip(1).ToArray());
                     return accessorMethods[0];
@@ -619,7 +627,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 accessors = SyntaxFactory.AccessorList(
                     SyntaxFactory.List(
                         (await propertyBlock.Accessors.SelectAsync(async a =>
-                            (AccessorDeclarationSyntax) await a.Accept(TriviaConvertingVisitor))
+                            (AccessorDeclarationSyntax) await a.AcceptAsync(TriviaConvertingDeclarationVisitor))
                         )
                     ));
             } else {
@@ -648,11 +656,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 if (accessedThroughMyClass) {
                     string csIndentifierName = AddRealPropertyDelegatingToMyClassVersion(node, csIdentifier, attributes, modifiers, rawType);
-                    modifiers = modifiers.Remove(modifiers.Single(m => m.IsKind(SyntaxKind.VirtualKeyword)));
+                    modifiers = modifiers.Remove(modifiers.Single(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VirtualKeyword)));
                     csIdentifier = SyntaxFactory.Identifier(csIndentifierName);
                 }
 
-                var semicolonToken = SyntaxFactory.Token(initializer == null ? SyntaxKind.None : SyntaxKind.SemicolonToken);
+                var semicolonToken = SyntaxFactory.Token(initializer == null ? Microsoft.CodeAnalysis.CSharp.SyntaxKind.None : Microsoft.CodeAnalysis.CSharp.SyntaxKind.SemicolonToken);
                 return SyntaxFactory.PropertyDeclaration(
                     SyntaxFactory.List(attributes),
                     modifiers,
@@ -679,11 +687,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csIndentifierName = "MyClass" + csIdentifier.ValueText;
             ExpressionSyntax thisDotIdentifier = SyntaxFactory.ParseExpression($"this.{csIndentifierName}");
             var getReturn = SyntaxFactory.Block(SyntaxFactory.ReturnStatement(thisDotIdentifier));
-            var getAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration, getReturn);
+            var getAccessor = SyntaxFactory.AccessorDeclaration(Microsoft.CodeAnalysis.CSharp.SyntaxKind.GetAccessorDeclaration, getReturn);
             var setValue = SyntaxFactory.Block(SyntaxFactory.ExpressionStatement(
-                SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, thisDotIdentifier,
+                SyntaxFactory.AssignmentExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression, thisDotIdentifier,
                     SyntaxFactory.IdentifierName("value"))));
-            var setAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration, setValue);
+            var setAccessor = SyntaxFactory.AccessorDeclaration(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SetAccessorDeclaration, setValue);
             var realAccessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor, setAccessor}));
             var realDecl = SyntaxFactory.PropertyDeclaration(
                 SyntaxFactory.List(attributes),
@@ -693,27 +701,27 @@ namespace ICSharpCode.CodeConverter.CSharp
                 csIdentifier, realAccessors,
                 null,
                 null,
-                SyntaxFactory.Token(SyntaxKind.None));
+                SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.None));
 
-            _additionalDeclarations.Add(node, new MemberDeclarationSyntax[] {realDecl});
+            _additionalDeclarations.Add(node, new MemberDeclarationSyntax[] { realDecl });
             return csIndentifierName;
         }
 
         private static AccessorListSyntax ConvertSimpleAccessors(bool isWriteOnly, bool isReadonly, bool isInInterface)
         {
             AccessorListSyntax accessors;
-            var getAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
+            var getAccessor = SyntaxFactory.AccessorDeclaration(Microsoft.CodeAnalysis.CSharp.SyntaxKind.GetAccessorDeclaration)
                 .WithSemicolonToken(SemicolonToken);
-            var setAccessor = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration)
+            var setAccessor = SyntaxFactory.AccessorDeclaration(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SetAccessorDeclaration)
                 .WithSemicolonToken(SemicolonToken);
             if (isWriteOnly)
             {
-                getAccessor = getAccessor.AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
+                getAccessor = getAccessor.AddModifiers(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword));
             }
 
             if (isReadonly)
             {
-                setAccessor = setAccessor.AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
+                setAccessor = setAccessor.AddModifiers(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword));
             }
 
             if (isInInterface && isReadonly)
@@ -736,23 +744,23 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitPropertyBlock(VBSyntax.PropertyBlockSyntax node)
         {
-            return await node.PropertyStatement.Accept(TriviaConvertingVisitor);
+            return await node.PropertyStatement.AcceptAsync(TriviaConvertingDeclarationVisitor);
         }
 
         public override async Task<CSharpSyntaxNode> VisitAccessorBlock(VBSyntax.AccessorBlockSyntax node)
         {
-            SyntaxKind blockKind;
+            Microsoft.CodeAnalysis.CSharp.SyntaxKind blockKind;
             bool isIterator = node.IsIterator();
-            var csReturnVariableOrNull = _expressionNodeVisitor.GetRetVariableNameOrNull(node);
-            var convertedStatements = await ConvertStatements(node.Statements, _expressionNodeVisitor.CreateMethodBodyVisitor(node, isIterator));
+            var csReturnVariableOrNull = CommonConversions.GetRetVariableNameOrNull(node);
+            var convertedStatements = await ConvertStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator));
             var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
-            var attributes = await _expressionNodeVisitor.ConvertAttributes(node.AccessorStatement.AttributeLists);
+            var attributes = await CommonConversions.ConvertAttributes(node.AccessorStatement.AttributeLists);
             var modifiers = CommonConversions.ConvertModifiers(node, node.AccessorStatement.Modifiers, TokenContext.Local);
             string potentialMethodId = null;
             var containingProperty = node.GetAncestor<VBSyntax.PropertyBlockSyntax>()?.PropertyStatement;
             switch (node.Kind()) {
                 case VBasic.SyntaxKind.GetAccessorBlock:
-                    blockKind = SyntaxKind.GetAccessorDeclaration;
+                    blockKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind.GetAccessorDeclaration;
                     potentialMethodId = $"get_{(containingProperty.Identifier.Text)}";
 
                     if (containingProperty.AsClause is VBSyntax.SimpleAsClauseSyntax getAsClause &&
@@ -762,7 +770,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                     break;
                 case VBasic.SyntaxKind.SetAccessorBlock:
-                    blockKind = SyntaxKind.SetAccessorDeclaration;
+                    blockKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind.SetAccessorDeclaration;
                     potentialMethodId = $"set_{(containingProperty.Identifier.Text)}";
 
                     if (containingProperty.AsClause is VBSyntax.SimpleAsClauseSyntax setAsClause && await ShouldConvertAsParameterizedProperty()) {
@@ -772,10 +780,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                     break;
                 case VBasic.SyntaxKind.AddHandlerAccessorBlock:
-                    blockKind = SyntaxKind.AddAccessorDeclaration;
+                    blockKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind.AddAccessorDeclaration;
                     break;
                 case VBasic.SyntaxKind.RemoveHandlerAccessorBlock:
-                    blockKind = SyntaxKind.RemoveAccessorDeclaration;
+                    blockKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind.RemoveAccessorDeclaration;
                     break;
                 case VBasic.SyntaxKind.RaiseEventAccessorBlock:
                     var eventStatement = ((VBSyntax.EventBlockSyntax)node.Parent).EventStatement;
@@ -801,7 +809,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var parameterListSyntax = await containingPropParameterList.AcceptAsync(_triviaConvertingExpressionVisitor);
                 MethodDeclarationSyntax methodDeclarationSyntax = SyntaxFactory.MethodDeclaration(attributes, modifiers,
-                    SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)), null,
+                    SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VoidKeyword)), null,
                     SyntaxFactory.Identifier(potentialMethodId), null,
                     (ParameterListSyntax) parameterListSyntax, SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), body, null);
                 return methodDeclarationSyntax;
@@ -815,14 +823,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitMethodBlock(VBSyntax.MethodBlockSyntax node)
         {
-            var methodBlock = (BaseMethodDeclarationSyntax) await node.SubOrFunctionStatement.Accept(TriviaConvertingVisitor);
+            var methodBlock = (BaseMethodDeclarationSyntax) await node.SubOrFunctionStatement.AcceptAsync(TriviaConvertingDeclarationVisitor);
 
-            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
+            var declaredSymbol = ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
             if (!declaredSymbol.CanHaveMethodBody()) {
                 return methodBlock;
             }
-            var csReturnVariableOrNull = _expressionNodeVisitor.GetRetVariableNameOrNull(node);
-            var visualBasicSyntaxVisitor = _expressionNodeVisitor.CreateMethodBodyVisitor(node, node.IsIterator(), csReturnVariableOrNull);
+            var csReturnVariableOrNull = CommonConversions.GetRetVariableNameOrNull(node);
+            var visualBasicSyntaxVisitor = CreateMethodBodyVisitor(node, node.IsIterator(), csReturnVariableOrNull);
             var convertedStatements = await ConvertStatements(node.Statements, visualBasicSyntaxVisitor);
 
             var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
@@ -838,7 +846,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var preBodyStatements = new List<StatementSyntax>();
             var postBodyStatements = new List<StatementSyntax>();
 
-            var functionSym = _semanticModel.GetDeclaredSymbol(node);
+            var functionSym = ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
             if (functionSym != null) {
                 var returnType = CommonConversions.GetTypeSyntax(functionSym.GetReturnType());
 
@@ -852,7 +860,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 ControlFlowAnalysis controlFlowAnalysis = null;
                 if (!node.Statements.IsEmpty())
                     controlFlowAnalysis =
-                        _semanticModel.AnalyzeControlFlow(node.Statements.First(), node.Statements.Last());
+                        ModelExtensions.AnalyzeControlFlow(_semanticModel, node.Statements.First(), node.Statements.Last());
 
                 bool mayNeedReturn = controlFlowAnalysis?.EndPointIsReachable != false;
                 if (mayNeedReturn) {
@@ -898,7 +906,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitMethodStatement(VBSyntax.MethodStatementSyntax node)
         {
-            var attributes = await _expressionNodeVisitor.ConvertAttributes(node.AttributeLists);
+            var attributes = await CommonConversions.ConvertAttributes(node.AttributeLists);
             bool hasBody = node.Parent is VBSyntax.MethodBlockBaseSyntax;
 
             if ("Finalize".Equals(node.Identifier.ValueText, StringComparison.OrdinalIgnoreCase)
@@ -909,8 +917,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return decl.WithSemicolonToken(SemicolonToken);
             } else {
                 var tokenContext = GetMemberContext(node);
-                var declaredSymbol = _semanticModel.GetDeclaredSymbol(node) as IMethodSymbol;
-                var extraCsModifierKinds = declaredSymbol?.IsExtern == true ? new[] {SyntaxKind.ExternKeyword} : Array.Empty<SyntaxKind>();
+                var declaredSymbol = ModelExtensions.GetDeclaredSymbol(_semanticModel, node) as IMethodSymbol;
+                var extraCsModifierKinds = declaredSymbol?.IsExtern == true ? new[] { Microsoft.CodeAnalysis.CSharp.SyntaxKind.ExternKeyword} : Array.Empty<Microsoft.CodeAnalysis.CSharp.SyntaxKind>();
                 var convertedModifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext, extraCsModifierKinds: extraCsModifierKinds);
 
                 bool accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, declaredSymbol);
@@ -918,12 +926,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var isPartialDefinition = declaredSymbol.IsPartialMethodDefinition();
 
                 if (declaredSymbol.IsPartialMethodImplementation() || isPartialDefinition) {
-                    var privateModifier = convertedModifiers.SingleOrDefault(m => m.IsKind(SyntaxKind.PrivateKeyword));
+                    var privateModifier = convertedModifiers.SingleOrDefault(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword));
                     if (privateModifier != default(SyntaxToken)) {
                         convertedModifiers = convertedModifiers.Remove(privateModifier);
                     }
                     if (!HasPartialKeyword(node.Modifiers)) {
-                        convertedModifiers = convertedModifiers.Add(SyntaxFactory.Token(SyntaxKind.PartialKeyword));
+                        convertedModifiers = convertedModifiers.Add(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword));
                     }
                 }
                 var (typeParameters, constraints) = await SplitTypeParameters(node.TypeParameterList);
@@ -932,7 +940,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 // If the method is virtual, and there is a MyClass.SomeMethod() call,
                 // we need to emit a non-virtual method for it to call
                 var returnType = (TypeSyntax) (declaredSymbol != null ? CommonConversions.GetTypeSyntax(declaredSymbol.ReturnType) :
-                    await (node.AsClause?.Type).AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)));
+                    await (node.AsClause?.Type).AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VoidKeyword)));
                 if (accessedThroughMyClass)
                 {
                     var identifierName = "MyClass" + csIdentifier.ValueText;
@@ -953,7 +961,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     var declNode = (VBSyntax.StatementSyntax)node.Parent;
                     _additionalDeclarations.Add(declNode, new MemberDeclarationSyntax[] { realDecl });
-                    convertedModifiers = convertedModifiers.Remove(convertedModifiers.Single(m => m.IsKind(SyntaxKind.VirtualKeyword)));
+                    convertedModifiers = convertedModifiers.Remove(convertedModifiers.Single(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VirtualKeyword)));
                     csIdentifier = SyntaxFactory.Identifier(identifierName);
                 }
 
@@ -994,12 +1002,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitEventBlock(VBSyntax.EventBlockSyntax node)
         {
             var block = node.EventStatement;
-            var attributes = await block.AttributeLists.SelectManyAsync(_expressionNodeVisitor.ConvertAttribute);
+            var attributes = await block.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttribute);
             var modifiers = CommonConversions.ConvertModifiers(block, block.Modifiers, GetMemberContext(node));
 
             var rawType = (TypeSyntax) await (block.AsClause?.Type).AcceptAsync(_triviaConvertingExpressionVisitor) ?? VarType;
 
-            var convertedAccessors = await node.Accessors.SelectAsync(async a => await a.Accept(TriviaConvertingVisitor));
+            var convertedAccessors = await node.Accessors.SelectAsync(async a => await a.AcceptAsync(TriviaConvertingDeclarationVisitor));
             _additionalDeclarations.Add(node, convertedAccessors.OfType<MemberDeclarationSyntax>().ToArray());
             return SyntaxFactory.EventDeclaration(
                 SyntaxFactory.List(attributes),
@@ -1012,7 +1020,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitEventStatement(VBSyntax.EventStatementSyntax node)
         {
-            var attributes = await node.AttributeLists.SelectManyAsync(_expressionNodeVisitor.ConvertAttribute);
+            var attributes = await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttribute);
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, GetMemberContext(node));
             var id = CommonConversions.ConvertIdentifier(node.Identifier);
 
@@ -1050,17 +1058,17 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitOperatorBlock(VBSyntax.OperatorBlockSyntax node)
         {
-            return await node.BlockStatement.Accept(TriviaConvertingVisitor);
+            return await node.BlockStatement.AcceptAsync(TriviaConvertingDeclarationVisitor);
         }
 
         public override async Task<CSharpSyntaxNode> VisitOperatorStatement(VBSyntax.OperatorStatementSyntax node)
         {
             var containingBlock = (VBSyntax.OperatorBlockSyntax) node.Parent;
-            var attributes = await node.AttributeLists.SelectManyAsync(_expressionNodeVisitor.ConvertAttribute);
+            var attributes = await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttribute);
             var attributeList = SyntaxFactory.List(attributes);
-            var returnType = (TypeSyntax) await (node.AsClause?.Type).AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword));
+            var returnType = (TypeSyntax) await (node.AsClause?.Type).AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VoidKeyword));
             var parameterList = (ParameterListSyntax) await node.ParameterList.AcceptAsync(_triviaConvertingExpressionVisitor);
-            var methodBodyVisitor = _expressionNodeVisitor.CreateMethodBodyVisitor(node);
+            var methodBodyVisitor = CreateMethodBodyVisitor(node);
             var body = SyntaxFactory.Block(await containingBlock.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor)));
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, GetMemberContext(node));
 
@@ -1078,7 +1086,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitConstructorBlock(VBSyntax.ConstructorBlockSyntax node)
         {
             var block = node.BlockStatement;
-            var attributes = await block.AttributeLists.SelectManyAsync(_expressionNodeVisitor.ConvertAttribute);
+            var attributes = await block.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttribute);
             var modifiers = CommonConversions.ConvertModifiers(block, block.Modifiers, GetMemberContext(node));
 
             var ctor = (node.Statements.FirstOrDefault() as VBSyntax.ExpressionStatementSyntax)?.Expression as VBSyntax.InvocationExpressionSyntax;
@@ -1092,16 +1100,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                 ctorCall = null;
             } else if (ctorExpression.Expression is VBSyntax.MyBaseExpressionSyntax) {
                 statements = node.Statements.Skip(1);
-                ctorCall = SyntaxFactory.ConstructorInitializer(SyntaxKind.BaseConstructorInitializer, ctorArgs);
+                ctorCall = SyntaxFactory.ConstructorInitializer(Microsoft.CodeAnalysis.CSharp.SyntaxKind.BaseConstructorInitializer, ctorArgs);
             } else if (ctorExpression.Expression is VBSyntax.MeExpressionSyntax || ctorExpression.Expression is VBSyntax.MyClassExpressionSyntax) {
                 statements = node.Statements.Skip(1);
-                ctorCall = SyntaxFactory.ConstructorInitializer(SyntaxKind.ThisConstructorInitializer, ctorArgs);
+                ctorCall = SyntaxFactory.ConstructorInitializer(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ThisConstructorInitializer, ctorArgs);
             } else {
                 statements = node.Statements;
                 ctorCall = null;
             }
 
-            var methodBodyVisitor = _expressionNodeVisitor.CreateMethodBodyVisitor(node);
+            var methodBodyVisitor = CreateMethodBodyVisitor(node);
             return SyntaxFactory.ConstructorDeclaration(
                 SyntaxFactory.List(attributes),
                 modifiers, CommonConversions.ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier),
@@ -1124,16 +1132,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                 importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("EntryPoint"), null, (ExpressionSyntax) await node.AliasName.AcceptAsync(_triviaConvertingExpressionVisitor)));
             }
 
-            if (!node.CharsetKeyword.IsKind(SyntaxKind.None)) {
-                importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals(CharSetType.Name), null, SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.ParseTypeName(CharSetType.Name), SyntaxFactory.IdentifierName(node.CharsetKeyword.Text))));
+            if (!node.CharsetKeyword.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.None)) {
+                importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals(CharSetType.Name), null, SyntaxFactory.MemberAccessExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.ParseTypeName(CharSetType.Name), SyntaxFactory.IdentifierName(node.CharsetKeyword.Text))));
             }
 
             var attributeArguments = CommonConversions.CreateAttributeArgumentList(importAttributes.ToArray());
             var dllImportAttributeList = SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Attribute(dllImportAttributeName, attributeArguments)));
 
-            var attributeLists = (await _expressionNodeVisitor.ConvertAttributes(node.AttributeLists)).Add(dllImportAttributeList);
+            var attributeLists = (await CommonConversions.ConvertAttributes(node.AttributeLists)).Add(dllImportAttributeList);
 
-            var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers).Add(SyntaxFactory.Token(SyntaxKind.StaticKeyword)).Add(SyntaxFactory.Token(SyntaxKind.ExternKeyword));
+            var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers).Add(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)).Add(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ExternKeyword));
             var returnType = (TypeSyntax) await (node.AsClause?.Type).AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParseTypeName("void");
             var parameterListSyntax = (ParameterListSyntax) await (node.ParameterList).AcceptAsync(_triviaConvertingExpressionVisitor) ??
                                       SyntaxFactory.ParameterList();
@@ -1145,7 +1153,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitTypeParameterList(VBSyntax.TypeParameterListSyntax node)
         {
             return SyntaxFactory.TypeParameterList(
-                SyntaxFactory.SeparatedList(await node.Parameters.SelectAsync(async p => (TypeParameterSyntax) await p.Accept(TriviaConvertingVisitor)))
+                SyntaxFactory.SeparatedList(await node.Parameters.SelectAsync(async p => (TypeParameterSyntax) await p.AcceptAsync(TriviaConvertingDeclarationVisitor)))
             );
         }
 
@@ -1160,9 +1168,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             var paramList = new List<TypeParameterSyntax>();
             var constraintList = new List<TypeParameterConstraintClauseSyntax>();
             foreach (var p in typeParameterList.Parameters) {
-                var tp = (TypeParameterSyntax) await p.Accept(TriviaConvertingVisitor);
+                var tp = (TypeParameterSyntax) await p.AcceptAsync(TriviaConvertingDeclarationVisitor);
                 paramList.Add(tp);
-                var constraint = (TypeParameterConstraintClauseSyntax) await (p.TypeParameterConstraintClause).AcceptAsync(TriviaConvertingVisitor);
+                var constraint = (TypeParameterConstraintClauseSyntax) await (p.TypeParameterConstraintClause).AcceptAsync(TriviaConvertingDeclarationVisitor);
                 if (constraint != null)
                     constraintList.Add(constraint);
             }
@@ -1175,7 +1183,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             SyntaxToken variance = default(SyntaxToken);
             if (!SyntaxTokenExtensions.IsKind(node.VarianceKeyword, VBasic.SyntaxKind.None)) {
-                variance = SyntaxFactory.Token(SyntaxTokenExtensions.IsKind(node.VarianceKeyword, VBasic.SyntaxKind.InKeyword) ? SyntaxKind.InKeyword : SyntaxKind.OutKeyword);
+                variance = SyntaxFactory.Token(SyntaxTokenExtensions.IsKind(node.VarianceKeyword, VBasic.SyntaxKind.InKeyword) ? Microsoft.CodeAnalysis.CSharp.SyntaxKind.InKeyword : Microsoft.CodeAnalysis.CSharp.SyntaxKind.OutKeyword);
             }
             return SyntaxFactory.TypeParameter(SyntaxFactory.List<AttributeListSyntax>(), variance, CommonConversions.ConvertIdentifier(node.Identifier));
         }
@@ -1183,21 +1191,21 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitTypeParameterSingleConstraintClause(VBSyntax.TypeParameterSingleConstraintClauseSyntax node)
         {
             var id = SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(((VBSyntax.TypeParameterSyntax)node.Parent).Identifier));
-            return SyntaxFactory.TypeParameterConstraintClause(id, SyntaxFactory.SingletonSeparatedList((TypeParameterConstraintSyntax) await node.Constraint.Accept(TriviaConvertingVisitor)));
+            return SyntaxFactory.TypeParameterConstraintClause(id, SyntaxFactory.SingletonSeparatedList((TypeParameterConstraintSyntax) await node.Constraint.AcceptAsync(TriviaConvertingDeclarationVisitor)));
         }
 
         public override async Task<CSharpSyntaxNode> VisitTypeParameterMultipleConstraintClause(VBSyntax.TypeParameterMultipleConstraintClauseSyntax node)
         {
             var id = SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(((VBSyntax.TypeParameterSyntax)node.Parent).Identifier));
-            var constraints = await node.Constraints.SelectAsync(async c => (TypeParameterConstraintSyntax) await c.Accept(TriviaConvertingVisitor));
-            return SyntaxFactory.TypeParameterConstraintClause(id, SyntaxFactory.SeparatedList(constraints.OrderBy(c => c.Kind() == SyntaxKind.ConstructorConstraint ? 1 : 0)));
+            var constraints = await node.Constraints.SelectAsync(async c => (TypeParameterConstraintSyntax) await c.AcceptAsync(TriviaConvertingDeclarationVisitor));
+            return SyntaxFactory.TypeParameterConstraintClause(id, SyntaxFactory.SeparatedList(constraints.OrderBy(c => c.Kind() == Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstructorConstraint ? 1 : 0)));
         }
 
         public override async Task<CSharpSyntaxNode> VisitSpecialConstraint(VBSyntax.SpecialConstraintSyntax node)
         {
             if (SyntaxTokenExtensions.IsKind(node.ConstraintKeyword, VBasic.SyntaxKind.NewKeyword))
                 return SyntaxFactory.ConstructorConstraint();
-            return SyntaxFactory.ClassOrStructConstraint(node.IsKind(VBasic.SyntaxKind.ClassConstraint) ? SyntaxKind.ClassConstraint : SyntaxKind.StructConstraint);
+            return SyntaxFactory.ClassOrStructConstraint(node.IsKind(VBasic.SyntaxKind.ClassConstraint) ? Microsoft.CodeAnalysis.CSharp.SyntaxKind.ClassConstraint : Microsoft.CodeAnalysis.CSharp.SyntaxKind.StructConstraint);
         }
 
         public override async Task<CSharpSyntaxNode> VisitTypeConstraint(VBSyntax.TypeConstraintSyntax node)

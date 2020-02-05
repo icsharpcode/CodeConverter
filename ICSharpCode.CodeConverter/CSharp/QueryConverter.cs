@@ -109,8 +109,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             foreach (var (queryContinuation, queryEnd) in querySegments) {
                 query = (CSSyntax.ExpressionSyntax) await ConvertQueryWithContinuations(queryContinuation, fromClauseSyntax);
                 if (queryEnd == null) return query;
-                var queryWithoutTrivia = await ConvertQueryToLinq(fromClauseSyntax, queryEnd, query);
-                query = _triviaConvertingVisitor.TriviaConverter.PortConvertedTrivia(queryEnd, queryWithoutTrivia);
+                query = await ConvertQueryToLinq(fromClauseSyntax, queryEnd, query);
                 fromClauseSyntax = SyntaxFactory.FromClause(fromClauseSyntax.Identifier, query);
             }
 
