@@ -21,7 +21,8 @@ namespace CodeConverter.Tests.TestRunners
         private const string AutoTestCommentPrefix = " SourceLine:";
         private static readonly bool RecharacterizeByWritingExpectedOverActual = TestConstants.RecharacterizeByWritingExpectedOverActual;
 
-        private bool _testCstoVBCommentsByDefault = true;
+        private bool _testCstoVbCommentsByDefault = true;
+        private bool _testVbtoCsCommentsByDefault = false;
         private readonly string _rootNamespace;
 
         protected TextConversionOptions EmptyNamespaceOptionStrictOff { get; set; }
@@ -50,7 +51,7 @@ namespace CodeConverter.Tests.TestRunners
             expectedVisualBasicCode = AddSurroundingMethodBlock(expectedVisualBasicCode, expectSurroundingMethodBlock);
 
             await TestConversionCSharpToVisualBasicWithoutComments(csharpCode, expectedVisualBasicCode, conversion);
-            if (_testCstoVBCommentsByDefault && !hasLineCommentConversionIssue) {
+            if (_testCstoVbCommentsByDefault && !hasLineCommentConversionIssue) {
                 await AssertLineCommentsConvertedInSameOrder(csharpCode, conversion, "//", LineCanHaveCSharpComment);
             }
         }
@@ -108,7 +109,7 @@ End Sub";
         {
             if (expectSurroundingBlock) expectedCsharpCode = SurroundWithBlock(expectedCsharpCode);
             await TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode);
-            if (!hasLineCommentConversionIssue) await TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true));
+            if (!hasLineCommentConversionIssue && _testVbtoCsCommentsByDefault) await TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true));
         }
 
         private static string SurroundWithBlock(string expectedCsharpCode)
@@ -244,9 +245,5 @@ End Sub";
         }
 
         public static void Fail(string message) => throw new XunitException(message);
-    }
-
-    public class ConversionOptions
-    {
     }
 }
