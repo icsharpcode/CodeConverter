@@ -26,7 +26,7 @@ namespace CodeConverter.Tests.TestRunners
         public static IEnumerable<NamedFact> GetSelfVerifyingFacts<TSourceCompiler, TTargetCompiler, TLanguageConversion>(string testFilepath)
             where TSourceCompiler : ICompiler, new() where TTargetCompiler : ICompiler, new() where TLanguageConversion : ILanguageConversion, new()
         {
-            var sourceFileText = File.ReadAllText(testFilepath);
+            var sourceFileText = File.ReadAllText(testFilepath, Encoding.UTF8);
             var sourceCompiler = new TSourceCompiler();
             var syntaxTree = sourceCompiler.CreateTree(sourceFileText).WithFilePath(Path.GetFullPath(testFilepath));
             var compiledSource = sourceCompiler.AssemblyFromCode(syntaxTree, AdditionalReferences);

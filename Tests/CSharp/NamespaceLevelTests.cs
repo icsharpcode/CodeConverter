@@ -7,7 +7,6 @@ namespace CodeConverter.Tests.CSharp
 {
     public class NamespaceLevelTests : ConverterTestBase
     {
-
         [Fact]
         public async Task TestNamespace()
         {
@@ -812,7 +811,6 @@ internal static partial class Module1
         object vObjectULong = EULong.M1;
     }
 }");
-
         }
 
         [Fact]
@@ -907,6 +905,5 @@ End Class",
     }
 }");
         }
-
     }
 }

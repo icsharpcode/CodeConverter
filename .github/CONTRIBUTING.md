@@ -56,7 +56,7 @@ At the moment there's just a very small amount of first draft documentation. Con
 * Investigate: The code heavily uses SyntaxFactory at the moment. In future I intend to make further use of [`SyntaxGenerator`](https://docs.microsoft.com/en-us/dotnet/api/microsoft.codeanalysis.editing.syntaxgenerator?view=roslyn-dotnet).
 
 ## Resources
-* Lots of high level Roslyn introductions exist, e.g. https://github.com/dotnet/roslyn/wiki/Roslyn-Overview Getting deeper information is a lot harder. If you see good resources, PR them to this document!
+* Lots of high level Roslyn introductions exist, e.g. https://github.com/dotnet/roslyn/wiki/Roslyn-Overview There's lots more on that wiki such as the [FAQs](https://github.com/dotnet/roslyn/wiki/FAQ). Getting deep information is a lot harder. If you see good resources, PR them to this document!
 * To visualize syntax trees, use [Syntax Vizualizer](https://marketplace.visualstudio.com/items?itemName=VisualStudioProductTeam.NETCompilerPlatformSDK), [sharplab website](https://sharplab.io/#v2:EYLgtghgzgLgpgJwDQBsQDdhJiaMkAmIA1AD4CSYADgPYIxQAEAygJ6xxgCwAUAGIIAlnAB2BRgGEU0JgBU4sKTN6NVjAApD0EeI2AQAxgGtBIgOZ9hKcQEEmAUXSiYACQhiUiFWvUBXYCiCBpK+sDRgjI7OjACyrFEiMIx2kU6Jbh5ePGo5yQQEGQSeCAAUAEKsAGoQKIzaKL5wyQ5pru5FiACU3rm5+samFlbiALyMANoAInCeZjpwALoAdBLhwKZwJf0m5pYzBEh1NY3d2b2RYnkF7cU9uQBKnDROhcXlVTVHDU0pCW2ZCFO5z6hh2Q32jDGUxmcDm8GWjzAz0220Ge2sh3qJzuOXsl0RyNeWWB9wggigcD+72qtQpYkQzUYAHlgAArOAGfCMCo0xg/FrOGwIMxQIHAtSo3bDAD8JTpBEQhzgYt6ePEpPJlNadzVqWcdz8ASCLH8jEeFJgJRVIIGUohYwAcjQYAALQY6y7Mfy8XVKKBQIA===) and [Rolsyn Quoter](https://roslynquoter.azurewebsites.net/)
 * Understanding VB/C# differences:
  * https://en.wikipedia.org/wiki/Comparison_of_C_Sharp_and_Visual_Basic_.NET#Features_of_Visual_Basic_.NET_not_found_in_C#
@@ -65,3 +65,4 @@ At the moment there's just a very small amount of first draft documentation. Con
 
 ## Codebase details
 * All parallelism is controlled by Env.MaxDop. When a debugger is attached to a debug build, it sets parallelism to 1. If you're seeing a transient issue when the debugger isn't attached but can't reproduce the issue with the debugger, set this to a large number instead.
+* The worst part of the code is the query syntax conversion. It's just evolved messily to cover basic cases. To comprehensively cover the syntax would need a proper architecture defined to match how the queries are formed. For an example of other code that solves a similar query syntax problem, see ILSpy's [`CSharpDecompiler`](https://github.com/icsharpcode/ILSpy/blob/e189ad9ca301142b9134c2839e416199cbd3360e/ICSharpCode.Decompiler/CSharp/Transforms/IntroduceQueryExpressions.cs)

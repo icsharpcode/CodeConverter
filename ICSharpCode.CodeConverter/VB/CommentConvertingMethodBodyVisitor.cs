@@ -8,38 +8,30 @@ using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using System.Linq;
+using System.Collections;
 
 namespace ICSharpCode.CodeConverter.VB
 {
     public class CommentConvertingMethodBodyVisitor : CS.CSharpSyntaxVisitor<SyntaxList<VBSyntax.StatementSyntax>>
     {
         private readonly CS.CSharpSyntaxVisitor<SyntaxList<VBSyntax.StatementSyntax>> _wrappedVisitor;
-        private readonly TriviaConverter _triviaConverter;
 
-        public CommentConvertingMethodBodyVisitor(CS.CSharpSyntaxVisitor<SyntaxList<VBSyntax.StatementSyntax>> wrappedVisitor, TriviaConverter triviaConverter)
+        public CommentConvertingMethodBodyVisitor(CS.CSharpSyntaxVisitor<SyntaxList<VBSyntax.StatementSyntax>> wrappedVisitor)
         {
             this._wrappedVisitor = wrappedVisitor;
-            this._triviaConverter = triviaConverter;
         }
 
         public override SyntaxList<VBSyntax.StatementSyntax> DefaultVisit(SyntaxNode node)
         {
             try {
-                return ConvertWithTrivia(node);
+                var converted = _wrappedVisitor.Visit(node);
+                return converted.WithSourceMappingFrom(node);
             } catch (Exception e) {
                 var dummyStatement = VBasic.SyntaxFactory.EmptyStatement();
                 var withVbTrailingErrorComment = dummyStatement.WithVbTrailingErrorComment<VBSyntax.StatementSyntax>((CS.CSharpSyntaxNode) node, e);
                 return VBasic.SyntaxFactory.SingletonList(withVbTrailingErrorComment);
             }
-        }
-
-        private SyntaxList<VBSyntax.StatementSyntax> ConvertWithTrivia(SyntaxNode node)
-        {
-            var convertedNodes = _wrappedVisitor.Visit(node);
-            if (!convertedNodes.Any()) return convertedNodes;
-            // Port trivia to the last statement in the list
-            var lastWithConvertedTrivia = _triviaConverter.PortConvertedTrivia(node, convertedNodes.LastOrDefault());
-            return convertedNodes.Replace(convertedNodes.LastOrDefault(), lastWithConvertedTrivia);
         }
     }
 }

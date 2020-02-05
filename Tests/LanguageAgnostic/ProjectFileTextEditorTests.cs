@@ -11,7 +11,6 @@ namespace CodeConverter.Tests.LanguageAgnostic
 {
     public class ProjectFileTextEditorTests
     {
-
         [Fact]
         public void TogglesExistingValue()
         {

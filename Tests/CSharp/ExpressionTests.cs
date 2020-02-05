@@ -37,7 +37,6 @@ public partial class TestClass
         bool enumEnumEquality = eEnum == RankEnum.First;
     }
 }");
-
         }
 
         [Fact]
@@ -58,7 +57,6 @@ End Class", @"public partial class TestClass
 
     private static int Val;
 }");
-
         }
 
         [Fact]
@@ -2227,7 +2225,6 @@ End Module", @"internal static partial class Module1
 ");
         }
 
-
         [Fact]
         public async Task StringInterpolationWithConditionalOperator()
         {
@@ -2619,7 +2616,6 @@ public partial class Test
     }
 }");
         }
-
 
     }
 }

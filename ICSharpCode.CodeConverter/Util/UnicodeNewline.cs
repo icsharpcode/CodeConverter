@@ -2,11 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CodeConverter.Tests
+namespace CodeConverter.Util
 {
-#if NR6
-    public
-#endif
     internal enum UnicodeNewline
     {
         Unknown,
@@ -148,7 +145,6 @@ namespace CodeConverter.Tests
                 } else {
                     length = 1;
                     type = UnicodeNewline.CR;
-
                 }
                 return true;
             }
@@ -201,7 +197,6 @@ namespace CodeConverter.Tests
                 } else {
                     length = 1;
                     type = UnicodeNewline.CR;
-
                 }
                 return true;
             }
@@ -311,6 +306,34 @@ namespace CodeConverter.Tests
                 ch == NewLine.FF ||
                 ch == NewLine.LS ||
                 ch == NewLine.PS;
+        }    
+        
+        /// <summary>
+        /// Determines if a string is a new line delimiter.
+        /// 
+        /// Note that the only 2 char wide new line is CR LF
+        /// </summary>
+        public static bool IsNewLine(this string str)
+        {
+            if (str == null || str.Length == 0) {
+                return false;
+            }
+            char ch = str[0];
+            var switchExpr = str.Length;
+            switch (switchExpr) {
+                case 0: {
+                        return false;
+                    }
+
+                case 1:
+                case 2: {
+                        return ch == CR || ch == LF || ch == NEL || ch == VT || ch == FF || ch == LS || ch == PS;
+                    }
+
+                default: {
+                        return false;
+                    }
+            }
         }
 
         /// <summary>
@@ -364,6 +387,32 @@ namespace CodeConverter.Tests
                 result.Add(sb.ToString());
 
             return result.ToArray();
+        }
+
+        /// <summary>
+        /// Replace Unicode NewLines with ControlChars.NullChar or Specified Character
+        /// </summary>
+        /// <param name="text">Source Test</param>
+        /// <param name="SubstituteChar">Default is vbNullChar</param>
+        /// <returns>String with Unicode NewLines replaced with SubstituteChar</returns>
+        public static string WithoutNewLines(this string text, char SubstituteChar = default)
+        {
+            System.Diagnostics.Contracts.Contract.Requires(text != null);
+            var sb = new StringBuilder();
+            int length = default(int);
+            UnicodeNewline type = default(UnicodeNewline);
+
+            for (int i = 0, loopTo = text.Length - 1; i <= loopTo; i++) {
+                char ch = text[i];
+                // Do not delete the next line
+                int j = i;
+                if (TryGetDelimiterLengthAndType(ch, out length, out type, () => j < text.Length - 1 ? text[j + 1] : SubstituteChar)) {
+                    i += length - 1;
+                    continue;
+                }
+                sb.Append(ch);
+            }
+            return sb.ToString();
         }
     }
 }

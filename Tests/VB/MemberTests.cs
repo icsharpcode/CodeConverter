@@ -63,7 +63,7 @@ End Class");
     public static string Text { get; private set; };
     public int Count { get; private set; };
 }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Private Shared _Text As String
     Private _Count As Integer
 
@@ -93,7 +93,7 @@ End Class");
 @"static class TestClass {
     public static string Text { get; private set; }
 }",
-@"Friend Module TestClass
+                @"Friend Module TestClass
     Private _Text As String
 
     Public Property Text As String
@@ -134,24 +134,24 @@ End Class");
         }
 
         [Fact]
-        public async Task TestMethod()
+        public async Task TestMethodWithComments()
         {
             await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
     public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class, new where T2 : struct
     {
-        argument = null;
-        argument2 = default(T2);
-        argument3 = default(T3);
+        argument = null; //1
+        argument2 = default(T2); //2
+        argument3 = default(T3); //3
     }
 }", @"Imports System.Runtime.InteropServices
 
 Friend Class TestClass
     Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
-        argument = Nothing
-        argument2 = Nothing
-        argument3 = Nothing
+        argument = Nothing '1
+        argument2 = Nothing '2
+        argument3 = Nothing '3
     End Sub
 End Class");
         }
@@ -451,7 +451,7 @@ End Module", conversion: EmptyNamespaceOptionStrictOff);
         public async Task TestExtensionMethodWithExistingImport()
         {
             await TestConversionCSharpToVisualBasic(
-@"using System;
+@"using System; //Gets simplified away
 using System.Runtime.CompilerServices;
 
 static class TestClass
@@ -523,7 +523,7 @@ public class ShouldNotChange {
     }
 }
 ",
-@"Public Class HasConflictingPropertyAndField
+                @"Public Class HasConflictingPropertyAndField
     Private f_Test As Integer
 
     Public Property Test As Integer
@@ -621,7 +621,7 @@ End Class");
         set { test = value}
     }
 }",
-@"Public Class HasConflictingPropertyAndField
+                @"Public Class HasConflictingPropertyAndField
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
         f_Test = test
         Return test
@@ -654,7 +654,7 @@ End Class");
         return test;
     }
 }",
-@"Public Class HasConflictingPropertyAndField
+                @"Public Class HasConflictingPropertyAndField
     Private f_Test As Integer
 
     Public Property Test As Integer
@@ -695,7 +695,7 @@ public partial class HasConflictingPropertyAndField {
         set { test = value}
     }
 }",
-@"Public Partial Class HasConflictingPropertyAndField
+                @"Public Partial Class HasConflictingPropertyAndField
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
         Dim l_TEST As Integer = 0
         f_Test = test + l_TEST
@@ -909,8 +909,7 @@ End Class");
         {
             await TestConversionCSharpToVisualBasic(
                 @"[DllImport(""kernel32.dll"", SetLastError = true)]
-static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);", @"
-<DllImport(""kernel32.dll"", SetLastError:=True)>
+static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);", @"<DllImport(""kernel32.dll"", SetLastError:=True)>
 Private Shared Function OpenProcess(ByVal dwDesiredAccess As AccessMask, ByVal bInheritHandle As Boolean, ByVal dwProcessId As UInteger) As IntPtr
 End Function");
         }
@@ -947,7 +946,7 @@ class TestClass {
         backingField = null;
     }
 }",
-@"Imports System
+                @"Imports System
 
 Friend Class TestClass
     Private backingField As EventHandler
@@ -982,7 +981,7 @@ class TestClass {
         remove { _backingField -= value; }
     }
 }",
-@"Imports System
+                @"Imports System
 
 Friend Class TestClass
     Private _backingField As EventHandler
@@ -1034,8 +1033,7 @@ End Class");
         [Fact]
         public async Task SubscribeEventInPropertySetter() {
             await TestConversionCSharpToVisualBasic(
-@"using System;
-using System.ComponentModel;
+@"using System.ComponentModel;
 
 class TestClass {
     OwnerClass owner;
@@ -1152,7 +1150,7 @@ End Class");
 @"public interface iDisplay {
     object this[int i] { get; set; }
 }",
-@"Public Interface iDisplay
+                @"Public Interface iDisplay
     Default Property Item(ByVal i As Integer) As Object
 End Interface");
         }
@@ -1169,7 +1167,7 @@ class TestClass : IList {
         set { }
     }
 }",
-@"Imports System.Collections
+                @"Imports System.Collections
 
 Friend Class TestClass
     Implements IList
@@ -1193,7 +1191,7 @@ End Class");
         set { }
     }
 }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Default Public Property Item(ByVal index As Integer) As Object
         Get
         End Get
@@ -1205,12 +1203,12 @@ End Class");
         [Fact]
         public async Task NameMatchesWithTypeDate() {
             await TestConversionCSharpToVisualBasic(
-@"using System;
+@"using System; //Gets simplified away
 
 class TestClass {
     private DateTime date;
 }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Private [date] As Date
 End Class");
         }
@@ -1222,7 +1220,7 @@ End Class");
         return null;
     }
 }",
-@"Public Class TestClass
+                @"Public Class TestClass
     Public Function TestMethod(ByVal param1 As System.Type, ByVal param2 As System.Globalization.CultureInfo) As Object
         Return Nothing
     End Function
@@ -1261,7 +1259,7 @@ End Class", conversion: EmptyNamespaceOptionStrictOff);
         return Equals((MailEmployee)obj);
     }
 }",
-@"Public Class MailEmployee
+                @"Public Class MailEmployee
     Public Property Email As String
 
     Protected Overloads Function Equals(ByVal other As MailEmployee) As Boolean
@@ -1279,7 +1277,7 @@ End Class");
 @"public interface IParametersProvider {
     IEnumerable<object> Parameters { get; }
 }",
-@"Public Interface IParametersProvider
+                @"Public Interface IParametersProvider
     ReadOnly Property Parameters As IEnumerable(Of Object)
 End Interface");
         }
@@ -1289,7 +1287,7 @@ End Interface");
 @"public interface IParametersProvider {
     IEnumerable<object> Parameters { set; }
 }",
-@"Public Interface IParametersProvider
+                @"Public Interface IParametersProvider
     WriteOnly Property Parameters As IEnumerable(Of Object)
 End Interface");
         }
