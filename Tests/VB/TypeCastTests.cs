@@ -154,7 +154,7 @@ End Sub");
 End Sub
 ");
         }
-        [Fact(Skip="Many code generation")]
+        [Fact(Skip = "Many code generation")]
         public async Task CastCharacterIncrement() {
             await TestConversionCSharpToVisualBasic(
 @"void Test() {
@@ -165,6 +165,7 @@ End Sub
 @"Private Sub Test()
     Dim a As Char = ""A""c
     a == ChrW(AscW(a) + 1)
+End Sub");
         }
         [Fact]
         public async Task MethodInvocation() {
