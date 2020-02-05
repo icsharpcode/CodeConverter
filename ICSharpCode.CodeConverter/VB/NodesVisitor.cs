@@ -1260,6 +1260,11 @@ namespace ICSharpCode.CodeConverter.VB
             var sourceType = _semanticModel.GetTypeInfo(node.Expression).Type;
             var destType = _semanticModel.GetTypeInfo(node.Type).Type;
             var expr = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
+            Func<SyntaxKind, VisualBasicSyntaxNode> toNumber = kind => {
+                if (sourceType?.SpecialType == SpecialType.System_Char)
+                    return SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(nameof(Strings.AscW)), ExpressionSyntaxExtensions.CreateArgList(expr));
+                return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(kind), expr);
+            };
             switch (destType.SpecialType) {
                 case SpecialType.System_Object:
                     return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CObjKeyword), expr);
@@ -1270,27 +1275,27 @@ namespace ICSharpCode.CodeConverter.VB
                         ? (VisualBasicSyntaxNode)SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(nameof(Strings.ChrW)), ExpressionSyntaxExtensions.CreateArgList(expr))
                         : SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CCharKeyword), expr);
                 case SpecialType.System_SByte:
-                    return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CSByteKeyword), expr);
+                    return toNumber(SyntaxKind.CSByteKeyword);
                 case SpecialType.System_Byte:
-                    return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CByteKeyword), expr);
+                    return toNumber(SyntaxKind.CByteKeyword);
                 case SpecialType.System_Int16:
-                    return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CShortKeyword), expr);
+                    return toNumber(SyntaxKind.CShortKeyword);
                 case SpecialType.System_UInt16:
-                    return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CUShortKeyword), expr);
+                    return toNumber(SyntaxKind.CUShortKeyword);
                 case SpecialType.System_Int32:
-                    return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CIntKeyword), expr);
+                    return toNumber(SyntaxKind.CIntKeyword);
                 case SpecialType.System_UInt32:
-                    return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CUIntKeyword), expr);
+                    return toNumber(SyntaxKind.CUIntKeyword);
                 case SpecialType.System_Int64:
-                    return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CLngKeyword), expr);
+                    return toNumber(SyntaxKind.CLngKeyword);
                 case SpecialType.System_UInt64:
-                    return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CULngKeyword), expr);
+                    return toNumber(SyntaxKind.CULngKeyword);
                 case SpecialType.System_Decimal:
-                    return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CDecKeyword), expr);
+                    return toNumber(SyntaxKind.CDecKeyword);
                 case SpecialType.System_Single:
-                    return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CSngKeyword), expr);
+                    return toNumber(SyntaxKind.CSngKeyword);
                 case SpecialType.System_Double:
-                    return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CDblKeyword), expr);
+                    return toNumber(SyntaxKind.CDblKeyword);
                 case SpecialType.System_String:
                     return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CStrKeyword), expr);
                 case SpecialType.System_DateTime:

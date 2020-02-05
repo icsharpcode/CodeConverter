@@ -142,6 +142,34 @@ End Sub
 ");
         }
         [Fact]
+        public async Task CastCharacterToNumber() {
+            await TestConversionCSharpToVisualBasic(
+@"void Test() {
+    byte a = (byte)'A';
+    decimal b = (byte)'B';
+}
+",
+@"Private Sub Test()
+    Dim a As Byte = AscW(""A""c)
+    Dim b As Decimal = AscW(""B""c)
+End Sub
+");
+        }
+        [Fact(Skip="Many code generation")]
+        public async Task CastCharacterIncrement() {
+            await TestConversionCSharpToVisualBasic(
+@"void Test() {
+    char a = 'A';
+    a++;
+}
+",
+@"Private Sub Test()
+    Dim a As Char = ""A""c
+    a == ChrW(AscW(a) + 1)
+End Sub
+");
+        }
+        [Fact]
         public async Task MethodInvocation() {
             await TestConversionCSharpToVisualBasic(
 @"public class Test {
