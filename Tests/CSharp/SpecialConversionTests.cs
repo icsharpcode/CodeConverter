@@ -89,7 +89,8 @@ internal partial class TestClass45
         await TestConversionVisualBasicToCSharp(
         @"Class Test
     Public CR As Integer = &HD * &B1
-End Class", @"internal partial class Test
+End Class", @"
+internal partial class Test
 {
     public int CR = 0xD * 0b1;
 }");
@@ -106,7 +107,8 @@ End Class", @"internal partial class Test
     Public Test4 as Integer = &H7D
     Public Test5 as Integer = &H7E
     Public Test6 as Integer = &H7F
-End Class", @"public partial class Issue483
+End Class", @"
+public partial class Issue483
 {
     public int Test1 = 0x7A;
     public int Test2 = 0x7B;

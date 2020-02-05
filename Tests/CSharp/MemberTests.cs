@@ -17,7 +17,8 @@ namespace CodeConverter.Tests.CSharp
     Const answer As Integer = 42
     Private value As Integer = 10
     ReadOnly v As Integer = 15
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private const int answer = 42;
     private int value = 10;
@@ -31,7 +32,8 @@ End Class", @"internal partial class TestClass
             await TestConversionVisualBasicToCSharp(
 @"Module TestModule
     Const answer As Integer = 42
-End Module", @"internal static partial class TestModule
+End Module", @"
+internal static partial class TestModule
 {
     private const int answer = 42;
 }");
@@ -43,7 +45,8 @@ End Module", @"internal static partial class TestModule
             await TestConversionVisualBasicToCSharpWithoutComments(@"Class Class1
     Sub New(x As Boolean)
     End Sub
-End Class", @"internal partial class Class1
+End Class", @"
+internal partial class Class1
 {
     public Class1(bool x)
     {
@@ -59,7 +62,8 @@ End Class", @"internal partial class Class1
     Sub New()
         Dim someValue As Integer = 0
     End Sub
-End Module", @"internal static partial class Module1
+End Module", @"
+internal static partial class Module1
 {
     static Module1()
     {
@@ -163,7 +167,8 @@ internal partial class TestClass
             TestMethod = TestMethod(1)
         End If
     End Function
-End Class", @"internal partial class Class1
+End Class", @"
+internal partial class Class1
 {
     public int TestMethod(int x)
     {
@@ -302,7 +307,8 @@ public partial class Class1
             TestMethod *= TestMethod(1)
         End If
     End Function
-End Class", @"internal partial class Class1
+End Class", @"
+internal partial class Class1
 {
     public int TestMethod(int x)
     {
@@ -334,7 +340,8 @@ End Class", @"internal partial class Class1
     Function TestMethod() As Integer
 
     End Function
-End Class", @"internal partial class Class1
+End Class", @"
+internal partial class Class1
 {
     public int TestMethod()
     {
@@ -423,7 +430,8 @@ internal partial class TestClass
     Public Function TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) As Integer
         Return 0
     End Function
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public int TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
@@ -445,7 +453,8 @@ End Class", @"internal partial class TestClass
         Dim firstCharacter = Text.Substring(0, 1).ToUpper()
         Return firstCharacter + Text.Substring(1)
     End Function
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private object TurnFirstToUp(string Text)
     {
@@ -484,7 +493,8 @@ internal partial class TestClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public static void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
@@ -503,7 +513,8 @@ End Class", @"internal partial class TestClass
             await TestConversionVisualBasicToCSharp(
 @"MustInherit Class TestClass
     Public MustOverride Sub TestMethod()
-End Class", @"internal abstract partial class TestClass
+End Class", @"
+internal abstract partial class TestClass
 {
     public abstract void TestMethod();
 }");
@@ -519,7 +530,8 @@ End Class", @"internal abstract partial class TestClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public sealed void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
@@ -586,7 +598,8 @@ internal partial class TestSubclass : TestClass
     <System.Runtime.CompilerServices.Extension()>
     Sub TestMethod2Parameters(ByVal str As String, other As String)
     End Sub
-End Module", @"internal static partial class TestClass
+End Module", @"
+internal static partial class TestClass
 {
     public static void TestMethod(this string str)
     {
@@ -702,7 +715,8 @@ internal partial class TestClass
         FullName(False, True) = ""hello""
         Return FullName(False, True)
     End Function
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public string FirstName { get; set; }
     public string LastName { get; set; }
@@ -818,7 +832,8 @@ public partial class ParameterizedPropertiesAndEnumTest
                         Return mx
                     End Get
                 End Property
-End Class", @"internal partial class MissingPropertyType
+End Class", @"
+internal partial class MissingPropertyType
 {
     public object Max
     {
@@ -838,7 +853,8 @@ End Class", @"internal partial class MissingPropertyType
 @"Public Interface Foo
     ReadOnly Property P1() As String
     WriteOnly Property P2() As String
-End Interface", @"public partial interface Foo
+End Interface", @"
+public partial interface Foo
 {
     string P1 { get; }
     string P2 { set; }
@@ -852,7 +868,8 @@ End Interface", @"public partial interface Foo
 @"Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
     Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
     End Sub
-End Class", @"internal partial class TestClass<T, T2, T3>
+End Class", @"
+internal partial class TestClass<T, T2, T3>
     where T : class, new()
     where T2 : struct
 {
@@ -889,7 +906,8 @@ End Sub", @"static SurroundingClass()
 @"Class TestClass
     Protected Overrides Sub Finalize()
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     ~TestClass()
     {
@@ -922,7 +940,8 @@ internal partial class TestClass
     Public Sub RaisingFlour()
         RaiseEvent OnCakeChange
     End Sub
-End Class", @"public partial class TestEventWithNoType
+End Class", @"
+public partial class TestEventWithNoType
 {
     public event OnCakeChangeEventHandler OnCakeChange;
 
@@ -1363,7 +1382,8 @@ public partial class Class1
     Private Shared Property First As Integer
 
     Private Second As Integer = _First
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private static int First { get; set; }
 
@@ -1420,7 +1440,8 @@ Friend Class TestClass2
     Public Overloads Sub CreateVirtualInstance(o As Object)
     End Sub
 End Class",
-@"internal abstract partial class TestClass1
+@"
+internal abstract partial class TestClass1
 {
     public static void CreateStatic()
     {
@@ -1696,7 +1717,8 @@ internal partial class TestClass
             await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub SomeBools(ParamArray anyName As Boolean())
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void SomeBools(params bool[] anyName)
     {
@@ -1710,7 +1732,8 @@ End Class", @"internal partial class TestClass
             await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub SomeBools(ParamArray bool As Boolean())
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void SomeBools(params bool[] @bool)
     {
@@ -1727,7 +1750,8 @@ End Class", @"internal partial class TestClass
         Dim moreStrs() As String
     End Sub
 End Class",
-@"internal partial class TestClass
+@"
+internal partial class TestClass
 {
     public void DoNothing(string[] strs)
     {
@@ -1744,7 +1768,8 @@ End Class",
     Public Sub DoNothing(obj, objs())
     End Sub
 End Class",
-@"internal partial class TestClass
+@"
+internal partial class TestClass
 {
     public void DoNothing(object obj, object[] objs)
     {
@@ -1806,7 +1831,9 @@ Class MyClassC
         ClA.MA()
         ClA.ClassB.MB()
     End Sub
-End Class", @"internal partial class ClA
+End Class", @"
+
+internal partial class ClA
 {
     public static void MA()
     {
@@ -1858,7 +1885,9 @@ Class MyClassC
         ClA.MA()
         ClA.ClassB.MB()
     End Sub
-End Class", @"internal partial class ClA
+End Class", @"
+
+internal partial class ClA
 {
     public static void MA()
     {
@@ -1968,7 +1997,8 @@ internal partial class TestClass
             await TestConversionVisualBasicToCSharpWithoutComments(
 @"Interface TestInterface
     WriteOnly Property Items As Integer()
-End Interface", @"internal partial interface TestInterface
+End Interface", @"
+internal partial interface TestInterface
 {
     int[] Items { set; }
 }");
@@ -1984,7 +2014,8 @@ End Interface", @"internal partial interface TestInterface
     Public Sub SetValue(value1 As Integer, value2 As Integer)
         _SomeValue = value1 + value2
     End Sub
-End Class", @"public partial class SomeClass
+End Class", @"
+public partial class SomeClass
 {
     public int SomeValue { get; private set; }
 

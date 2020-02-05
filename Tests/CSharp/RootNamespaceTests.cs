@@ -21,7 +21,8 @@ Namespace NestedWithinRoot
     Class AClassInANamespace
     End Class
 End Namespace",
-                @"namespace TheRootNamespace
+                @"
+namespace TheRootNamespace
 {
     internal partial class AClassInRootNamespace
     {
@@ -42,7 +43,8 @@ End Namespace",
             // Auto comment testing not used since it can't handle the added namespace
             await TestConversionVisualBasicToCSharpWithoutComments(@"Class AClassInRootNamespace
 End Class",
-                @"namespace TheRootNamespace
+                @"
+namespace TheRootNamespace
 {
     internal partial class AClassInRootNamespace
     {
@@ -57,7 +59,8 @@ End Class",
     Public Class Class1
     End Class
 End Namespace",
-                @"namespace TheRootNamespace.A.B
+                @"
+namespace TheRootNamespace.A.B
 {
     public partial class Class1
     {
@@ -77,7 +80,8 @@ Namespace Aaa.aAAb.aAa
     Public Class Class2
     End Class
 End Namespace",
-                @"namespace TheRootNamespace.AAA.AAaB.AaA
+                @"
+namespace TheRootNamespace.AAA.AAaB.AaA
 {
     public partial class Class1
     {
@@ -101,7 +105,8 @@ namespace TheRootNamespace.Aaa.aAAb.aAa
         End Class
     End Namespace
 End Namespace",
-                @"namespace TheRootNamespace.A.B
+                @"
+namespace TheRootNamespace.A.B
 {
     namespace C
     {
@@ -124,7 +129,8 @@ End Namespace
 
 Public Class RootClass
 End Class",
-                @"namespace TheRootNamespace
+                @"
+namespace TheRootNamespace
 {
     namespace A.B
     {
@@ -149,7 +155,8 @@ End Class",
     Public Class Class1
     End Class
 End Namespace",
-                @"namespace A.B
+                @"
+namespace A.B
 {
     public partial class Class1
     {
@@ -211,13 +218,13 @@ Namespace NestedWithinRoot
     End Class
 End Namespace",
                 @"
-
 namespace NotNestedWithinRoot
 {
     internal partial class AClassInANamespace
     {
     }
 }
+
 
 namespace TheRootNamespace
 {

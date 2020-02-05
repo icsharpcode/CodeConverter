@@ -232,7 +232,8 @@ internal partial class Class1
         Dim o As Object = 5L
     End Sub
 End Class",
-@"internal partial class Class1
+@"
+internal partial class Class1
 {
     private void Test()
     {
@@ -250,7 +251,8 @@ End Class",
         Dim o As Object = 5F
     End Sub
 End Class",
-@"internal partial class Class1
+@"
+internal partial class Class1
 {
     private void Test()
     {
@@ -267,7 +269,8 @@ End Class",
     Private Sub Test()
         Dim o As Object = 5.0D
     End Sub
-End Class" + Environment.NewLine, @"internal partial class Class1
+End Class" + Environment.NewLine, @"
+internal partial class Class1
 {
     private void Test()
     {
@@ -312,7 +315,8 @@ End Sub
     Private Function QuoteSplit(ByVal text As String) As String()
         Return text.Split("""""""")
     End Function
-End Class", @"internal partial class CharTestClass
+End Class", @"
+internal partial class CharTestClass
 {
     private string[] QuoteSplit(string text)
     {

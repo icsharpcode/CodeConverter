@@ -11,7 +11,9 @@ namespace CodeConverter.Tests.CSharp
         public async Task TestNamespace()
         {
             await TestConversionVisualBasicToCSharp(@"Namespace Test
-End Namespace", @"namespace Test
+End Namespace", @"
+
+namespace Test
 {
 }");
         }
@@ -20,7 +22,8 @@ End Namespace", @"namespace Test
         public async Task TestLongNamespace()
         {
             await TestConversionVisualBasicToCSharp(@"Namespace Test1.Test2.Test3
-End Namespace", @"namespace Test1.Test2.Test3
+End Namespace", @"
+namespace Test1.Test2.Test3
 {
 }");
         }
@@ -29,7 +32,9 @@ End Namespace", @"namespace Test1.Test2.Test3
         public async Task TestGlobalNamespace()
         {
             await TestConversionVisualBasicToCSharp(@"Namespace Global.Test
-End Namespace", @"namespace Test
+End Namespace", @"
+
+namespace Test
 {
 }");
         }
@@ -42,7 +47,8 @@ End Class
 Class B
     Inherits A(Of String)
 End Class
-", @"internal partial class A<T>
+", @"
+internal partial class A<T>
 {
 }
 
@@ -92,7 +98,8 @@ public partial class Test
             await TestConversionVisualBasicToCSharp(@"Namespace Test.[class]
     Class TestClass(Of T)
     End Class
-End Namespace", @"namespace Test.@class
+End Namespace", @"
+namespace Test.@class
 {
     internal partial class TestClass<T>
     {
@@ -229,7 +236,8 @@ internal static partial class C
         Private Sub Test2()
         End Sub
     End Module
-End Namespace", @"namespace Test.@class
+End Namespace", @"
+namespace Test.@class
 {
     internal static partial class TestClass
     {
@@ -250,7 +258,8 @@ End Namespace", @"namespace Test.@class
             await TestConversionVisualBasicToCSharp(@"Namespace Test.[class]
     MustInherit Class TestClass
     End Class
-End Namespace", @"namespace Test.@class
+End Namespace", @"
+namespace Test.@class
 {
     internal abstract partial class TestClass
     {
@@ -264,7 +273,8 @@ End Namespace", @"namespace Test.@class
             await TestConversionVisualBasicToCSharp(@"Namespace Test.[class]
     NotInheritable Class TestClass
     End Class
-End Namespace", @"namespace Test.@class
+End Namespace", @"
+namespace Test.@class
 {
     internal sealed partial class TestClass
     {
@@ -297,7 +307,8 @@ internal partial interface ITest : IDisposable
     ArgumentOutOfRange_NeedNonNegNum
     ArgumentOutOfRange_NeedNonNegNumRequired
     Arg_ArrayPlusOffTooSmall
-End Enum", @"internal enum ExceptionResource
+End Enum", @"
+internal enum ExceptionResource
 {
     Argument_ImplementIComparable,
     ArgumentOutOfRange_NeedNonNegNum,
@@ -435,7 +446,8 @@ internal partial class test : InvalidDataException
         MyBase.New
     End Sub
 End Class",
-                @"public partial class DataSet1 : System.Data.DataSet
+                @"
+public partial class DataSet1 : System.Data.DataSet
 {
     public DataSet1() : base()
     {
@@ -458,7 +470,6 @@ End Class",
                 @"/// <summary>
 /// Returns empty
 /// </summary>
-
 
 public partial class MyTestClass
 {
@@ -483,7 +494,6 @@ End Class",
                 @"/// <summary>
 /// Returns empty
 /// </summary>
-
 
 public partial class MyTestClass
 {
@@ -511,7 +521,6 @@ End Class",
 /// <summary>
 /// Returns empty
 /// </summary>
-
 
 public partial class MyTestClass
 {
@@ -836,7 +845,8 @@ End Interface
 Public Class Bar(Of x As {New, Foo})
 
 End Class",
-                @"public partial interface Foo
+                @"
+public partial interface Foo
 {
 }
 

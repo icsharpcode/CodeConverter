@@ -39,7 +39,8 @@ internal partial class TestClass
         Return x
     End Function
 
-End Class", @"public partial class Class1
+End Class", @"
+public partial class Class1
 {
     public void Foo()
     {
@@ -63,7 +64,8 @@ End Class", @"public partial class Class1
 
         Next
     End Sub
-End Class", @"public partial class Class1
+End Class", @"
+public partial class Class1
 {
     public void Foo()
     {

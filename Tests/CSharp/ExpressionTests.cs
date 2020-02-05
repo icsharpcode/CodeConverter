@@ -23,7 +23,8 @@ Public Class TestClass
         Dim eEnum = RankEnum.Second
         Dim enumEnumEquality As Boolean = eEnum = RankEnum.First
     End Sub
-End Class", @"internal enum RankEnum : sbyte
+End Class", @"
+internal enum RankEnum : sbyte
 {
     First = 1,
     Second = 2
@@ -48,7 +49,8 @@ public partial class TestClass
     End Sub
 
     Shared Val As Integer
-End Class", @"public partial class TestClass
+End Class", @"
+public partial class TestClass
 {
     public void TestMethod()
     {
@@ -70,7 +72,8 @@ World!""
         Dim y = $""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!""
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -153,7 +156,8 @@ internal partial class TestClass
         Dim rslt2 = Not True
         Dim rslt3 = TypeOf True IsNot Boolean
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -223,7 +227,8 @@ internal partial class TestClass
 
   Public Sub Stuff(ByRef strs As String())
   End Sub
-End Class", @"public partial class VisualBasicClass
+End Class", @"
+public partial class VisualBasicClass
 {
     public void UseStuff()
     {
@@ -449,7 +454,8 @@ public partial class Class1
     Public Shared Function Foo(ByRef c1 As Class1) As Class1
         Return c1
     End Function
-End Class", @"public partial class Class1
+End Class", @"
+public partial class Class1
 {
     static Class1 Foo__p1()
     {
@@ -537,7 +543,8 @@ public partial class Class1
         Dim t1 As Integer = EnumVariable
     End Sub
 End Class",
-@"public partial class MyTest
+@"
+public partial class MyTest
 {
     public enum TestEnum : int
     {
@@ -606,7 +613,8 @@ public partial class MyTest
 
     End Sub
 End Class",
-@"public partial class Class1
+@"
+public partial class Class1
 {
     public enum E
     {
@@ -719,7 +727,8 @@ public partial class Class1
         Dim rslt = Ctype(true, Object).ToString()
         Dim rslt2 = Ctype(true, Object)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -847,7 +856,8 @@ public partial class A
     Function GetStringsFromAmbiguous(amb As Integer) As String()()
         Return New String()() { New String() { ""1"" }}
     End Function
-End Class", @"public partial class A
+End Class", @"
+public partial class A
 {
     public void Test()
     {
@@ -897,7 +907,8 @@ End Class", @"public partial class A
     Private bIsNot as Boolean = New Object IsNot New Object
     Private bLeftShift as Integer = 1 << 3
     Private bRightShift as Integer = 8 >> 3
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private bool bIs = new object() == new object();
     private bool bIsNot = new object() != new object();
@@ -1151,7 +1162,8 @@ public partial class Class1
         x <<= 4
         x >>= 3
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1368,7 +1380,8 @@ internal partial class TestClass
         Dim z As Integer = 8
         z /= 3
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1389,7 +1402,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim strings = { ""1"", ""2"" }
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1424,7 +1438,8 @@ internal partial class TestClass
         Dim str = ""Hello, ""
         str &= ""World""
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1441,7 +1456,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim typ = GetType(String)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1463,7 +1479,8 @@ End Class", @"internal partial class TestClass
             Return Nothing
         End If
     End Function
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public int? Bar(string value)
     {
@@ -1512,7 +1529,8 @@ internal partial class TestClass
         Dim s = ""1,2""
         Return s.Split(s(1))
     End Function
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private string[] TestMethod()
     {
@@ -1549,7 +1567,8 @@ internal partial class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = If((str = """"), True, False)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod(string str)
     {
@@ -1565,7 +1584,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result = str?.GetType
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod(string str)
     {
@@ -1581,7 +1601,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = Not If((str = """"), True, False)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod(string str)
     {
@@ -1597,7 +1618,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Integer = 5 - If((str = """"), 1, 2)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod(string str)
     {
@@ -1715,7 +1737,8 @@ Class TestClass
     Private Sub TestMethod(ByVal str As String)
         str.Use(Of object)
     End Sub
-End Class", @"internal static partial class AppBuilderUseExtensions
+End Class", @"
+internal static partial class AppBuilderUseExtensions
 {
     public static object Use<T>(this string app, params object[] args)
     {
@@ -1775,7 +1798,8 @@ Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 As StudentName = New StudentName With {.FirstName = ""Craig"", .LastName = ""Playstead""}
     End Sub
-End Class", @"internal partial class StudentName
+End Class", @"
+internal partial class StudentName
 {
     public string LastName, FirstName;
 }
@@ -1796,7 +1820,8 @@ internal partial class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 = New With {Key .FirstName = ""Craig"", Key .LastName = ""Playstead""}
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod(string str)
     {
@@ -1841,7 +1866,8 @@ internal partial class TestClass
     Private Sub TestMethod()
         Me.member = 0
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private int member;
 
@@ -1865,7 +1891,8 @@ Class TestClass
     Private Sub TestMethod()
         MyBase.member = 0
     End Sub
-End Class", @"internal partial class BaseTestClass
+End Class", @"
+internal partial class BaseTestClass
 {
     public int member;
 }
@@ -1892,7 +1919,8 @@ Public Class ActualController
     Public Sub Do()
         Request.StatusCode = 200
     End Sub
-End Class", @"public partial class BaseController
+End Class", @"
+public partial class BaseController
 {
     protected HttpRequest Request;
 }
@@ -2077,7 +2105,8 @@ Class TestClass
     Public Sub TestMethod(dir As String)
         TestNamespace.ModuleFunction()
     End Sub
-End Class", @"namespace TestNamespace
+End Class", @"
+namespace TestNamespace
 {
     public static partial class TestModule
     {
@@ -2108,7 +2137,8 @@ Class TestClass
     Private Sub TestMethod()
         DoStuff()
     End Sub
-End Class", @"internal partial class TestClassBase
+End Class", @"
+internal partial class TestClassBase
 {
     public void DoStuff()
     {
@@ -2213,7 +2243,8 @@ public partial class test
     Sub Main()
         Const x As SByte = 4
     End Sub
-End Module", @"internal static partial class Module1
+End Module", @"
+internal static partial class Module1
 {
     private const bool a = true;
     private const char b = (char)1;
@@ -2403,7 +2434,8 @@ public partial class Class1
     Protected Overrides Sub Finalize()
         MyBase.Finalize()
     End Sub
-End Class", @"public partial class Class1
+End Class", @"
+public partial class Class1
 {
     ~Class1()
     {
@@ -2460,7 +2492,8 @@ internal static partial class Module1
         bar()
         me.bar()
     End Sub
-End Class", @"public partial class Class1
+End Class", @"
+public partial class Class1
 {
     public void Bar()
     {

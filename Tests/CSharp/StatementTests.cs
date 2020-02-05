@@ -20,7 +20,8 @@ namespace CodeConverter.Tests.CSharp
         Do
         Loop While True
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -48,7 +49,8 @@ End Class", @"internal partial class TestClass
         Dim b As Integer
         b = 0
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -94,7 +96,9 @@ internal partial class TestClass
     Private Sub TestMethod()
         Dim b As Integer = 0
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -110,7 +114,9 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim b = 0
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -300,7 +306,8 @@ internal partial class ContrivedFuncInferenceExample
         Dim b As String
         b = New String(""test"")
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -317,7 +324,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim totales As (fics As Integer, dirs As Integer) = (0, 0)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -333,7 +341,9 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim b As String = New String(""test"")
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -349,7 +359,9 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim b = New String(""test"")
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -371,7 +383,8 @@ Class UseClass
         Dim surrounding As SurroundingClass = New SurroundingClass()
         surrounding.Arr(1) = ""bla""
     End Sub
-End Class", @"internal partial class SurroundingClass
+End Class", @"
+internal partial class SurroundingClass
 {
     public string[] Arr;
 }
@@ -393,7 +406,8 @@ internal partial class UseClass
     Private Sub TestMethod()
         Dim b As Integer()
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -762,7 +776,9 @@ internal partial class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = {1, 2, 3}
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -778,7 +794,9 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim b = {1, 2, 3}
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -794,7 +812,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer() {1, 2, 3}
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -810,7 +829,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer(2) {1, 2, 3}
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -826,7 +846,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer(2) { }
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -892,7 +913,8 @@ internal partial class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -908,7 +930,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = {{1, 2}, {3, 4}}
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -924,7 +947,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = New Integer(,) {{1, 2}, {3, 4}}
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -945,7 +969,8 @@ End Class", @"internal partial class TestClass
         Dim e As Integer()(,) = New Integer()(,) {}
         Dim f As Integer()(,) = New Integer(-1)(,) {}
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -966,7 +991,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim b As Integer()()
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -982,7 +1008,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -998,7 +1025,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim b = New Integer()() {New Integer() {1}}
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1014,7 +1042,8 @@ End Class", @"internal partial class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod()
     {
@@ -1290,6 +1319,8 @@ internal partial class TestClass
         Loop Until (charIndex >= 48 AndAlso charIndex <= 57) OrElse (charIndex >= 65 AndAlso charIndex <= 90) OrElse (charIndex >= 97 AndAlso charIndex <= 122)
     End Sub
 End Class", @"
+// allow only digits and letters
+
 internal partial class TestClass
 {
     private void TestMethod()
@@ -1351,7 +1382,6 @@ internal partial class TestClass
         Loop While b = 0
     End Sub
 End Class", @"
-
 internal partial class TestClass
 {
     private void TestMethod()
@@ -1386,7 +1416,6 @@ internal partial class TestClass
         Loop While b = 0
     End Sub
 End Class", @"
-
 internal partial class TestClass
 {
     private void TestMethod()
@@ -1416,7 +1445,8 @@ internal partial class TestClass
             If val = 3 Then Exit For
         Next
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod(int[] values)
     {
@@ -1441,7 +1471,8 @@ End Class", @"internal partial class TestClass
             If val = 3 Then Exit For
         Next
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod(int[] values)
     {
@@ -1467,7 +1498,8 @@ End Class", @"internal partial class TestClass
         For idx = 0 To 10
         Next
     End Sub
-End Class", @"internal partial class Program
+End Class", @"
+internal partial class Program
 {
     public static void Main(string[] args)
     {
@@ -1542,7 +1574,8 @@ internal partial class TestClass
             b(i) = s(i)
         Next
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod(int end)
     {
@@ -1565,7 +1598,8 @@ End Class", @"internal partial class TestClass
 
         Next
     End Sub
-End Class", @"public partial class Class1
+End Class", @"
+public partial class Class1
 {
     private int Index;
 
@@ -1618,7 +1652,8 @@ internal partial class TestClass
             b(i) = s(i)
         Next
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void TestMethod(int end)
     {
