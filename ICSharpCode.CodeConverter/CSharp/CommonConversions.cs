@@ -44,7 +44,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly SemanticModel _semanticModel;
         public SyntaxGenerator CsSyntaxGenerator { get; }
         private readonly CSharpCompilation _csCompilation;
-        public CommentConvertingVisitorWrapper<CSharpSyntaxNode> TriviaConvertingExpressionVisitor { get; set; }
+        public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; set; }
         public TypeConversionAnalyzer TypeConversionAnalyzer { get; }
 
         public CommonConversions(Document document, SemanticModel semanticModel,

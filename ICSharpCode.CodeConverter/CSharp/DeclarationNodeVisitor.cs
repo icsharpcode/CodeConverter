@@ -45,8 +45,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly HashSet<string> _extraUsingDirectives = new HashSet<string>();
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
         private HashSet<string> _accessedThroughMyClass;
-        public CommentConvertingVisitorWrapper<CSharpSyntaxNode> TriviaConvertingDeclarationVisitor { get; }
-        private readonly CommentConvertingVisitorWrapper<CSharpSyntaxNode> _triviaConvertingExpressionVisitor;
+        public CommentConvertingVisitorWrapper TriviaConvertingDeclarationVisitor { get; }
+        private readonly CommentConvertingVisitorWrapper _triviaConvertingExpressionVisitor;
 
 
         private string _topAncestorNamespace;
@@ -62,7 +62,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csCompilation = csCompilation;
             _csSyntaxGenerator = csSyntaxGenerator;
             _visualBasicEqualityComparison = new VisualBasicEqualityComparison(_semanticModel, _extraUsingDirectives);
-            TriviaConvertingDeclarationVisitor = new CommentConvertingVisitorWrapper<CSharpSyntaxNode>(this);
+            TriviaConvertingDeclarationVisitor = new CommentConvertingVisitorWrapper(this);
             var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator, _visualBasicEqualityComparison);
             CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, csCompilation);
             _additionalInitializers = new AdditionalInitializers();

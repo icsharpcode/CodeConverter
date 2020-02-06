@@ -31,7 +31,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
     {
         private static readonly Type ConvertType = typeof(Microsoft.VisualBasic.CompilerServices.Conversions);
-        public CommentConvertingVisitorWrapper<CSharpSyntaxNode> TriviaConvertingExpressionVisitor { get; }
+        public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; }
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _extraUsingDirectives;
         private readonly bool _optionCompareText = false;
@@ -55,7 +55,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _lambdaConverter = new LambdaConverter(commonConversions, semanticModel);
             _visualBasicEqualityComparison = visualBasicEqualityComparison;
             _additionalLocals = additionalLocals;
-            TriviaConvertingExpressionVisitor = new CommentConvertingVisitorWrapper<CSharpSyntaxNode>(this);
+            TriviaConvertingExpressionVisitor = new CommentConvertingVisitorWrapper(this);
             _queryConverter = new QueryConverter(commonConversions, TriviaConvertingExpressionVisitor);
             _csCompilation = csCompilation;
             _methodsWithHandles = methodsWithHandles;
@@ -454,18 +454,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitObjectMemberInitializer(VBasic.Syntax.ObjectMemberInitializerSyntax node)
         {
-            var initializers = await node.Initializers.SelectAsync(initializer => initializer.AcceptAsync(TriviaConvertingExpressionVisitor));
-            var memberDeclaratorSyntaxs = SyntaxFactory.SeparatedList(
-                initializers.Cast<ExpressionSyntax>());
-            return SyntaxFactory.InitializerExpression(SyntaxKind.ObjectInitializerExpression, memberDeclaratorSyntaxs);
+            var initializers = await node.Initializers.AcceptSeparatedListAsync<VBSyntax.FieldInitializerSyntax, ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+            return SyntaxFactory.InitializerExpression(SyntaxKind.ObjectInitializerExpression, initializers);
         }
 
         public override async Task<CSharpSyntaxNode> VisitAnonymousObjectCreationExpression(VBasic.Syntax.AnonymousObjectCreationExpressionSyntax node)
         {
-            var initializers = await node.Initializer.Initializers.SelectAsync(initializer => initializer.AcceptAsync(TriviaConvertingExpressionVisitor));
-            var memberDeclaratorSyntaxs = SyntaxFactory.SeparatedList(
-                initializers.Cast<AnonymousObjectMemberDeclaratorSyntax>());
-            return SyntaxFactory.AnonymousObjectCreationExpression(memberDeclaratorSyntaxs);
+            var initializers = await node.Initializer.Initializers.AcceptSeparatedListAsync<VBSyntax.FieldInitializerSyntax, AnonymousObjectMemberDeclaratorSyntax>(TriviaConvertingExpressionVisitor);
+            return SyntaxFactory.AnonymousObjectCreationExpression(initializers);
         }
 
         public override async Task<CSharpSyntaxNode> VisitInferredFieldInitializer(VBasic.Syntax.InferredFieldInitializerSyntax node)
@@ -815,11 +811,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             async Task<CSharpSyntaxNode> CreateElementAccess()
             {
                 var args =
-                    await node.ArgumentList.Arguments.AcceptAsync<CSharpSyntaxNode, ArgumentSyntax>(
-                        TriviaConvertingExpressionVisitor);
-                var bracketedArgumentListSyntax = SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(
-                    args
-                ));
+                    await node.ArgumentList.Arguments.AcceptSeparatedListAsync<VBSyntax.ArgumentSyntax, ArgumentSyntax>(TriviaConvertingExpressionVisitor);
+                var bracketedArgumentListSyntax = SyntaxFactory.BracketedArgumentList(args);
                 if (convertedExpression is ElementBindingExpressionSyntax binding &&
                     !binding.ArgumentList.Arguments.Any()) {
                     // Special case where structure changes due to conditional access (See VisitMemberAccessExpression)
