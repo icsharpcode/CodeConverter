@@ -97,7 +97,6 @@ internal partial class TestClass
         Dim b As Integer = 0
     End Sub
 End Class", @"
-
 internal partial class TestClass
 {
     private void TestMethod()
@@ -115,7 +114,6 @@ internal partial class TestClass
         Dim b = 0
     End Sub
 End Class", @"
-
 internal partial class TestClass
 {
     private void TestMethod()
@@ -342,7 +340,6 @@ internal partial class TestClass
         Dim b As String = New String(""test"")
     End Sub
 End Class", @"
-
 internal partial class TestClass
 {
     private void TestMethod()
@@ -360,7 +357,6 @@ internal partial class TestClass
         Dim b = New String(""test"")
     End Sub
 End Class", @"
-
 internal partial class TestClass
 {
     private void TestMethod()
@@ -777,7 +773,6 @@ internal partial class TestClass
         Dim b As Integer() = {1, 2, 3}
     End Sub
 End Class", @"
-
 internal partial class TestClass
 {
     private void TestMethod()
@@ -795,7 +790,6 @@ internal partial class TestClass
         Dim b = {1, 2, 3}
     End Sub
 End Class", @"
-
 internal partial class TestClass
 {
     private void TestMethod()
@@ -890,10 +884,13 @@ internal partial class TestClass
     {
         // Declare a single-dimension array of 5 numbers.
         var numbers1 = new int[5];
+
+        // Declare a single-dimension array and set its 4 values.
         var numbers2 = new int[] { 1, 2, 4, 8 };
 
         // Declare a 6 x 6 multidimensional array.
         var matrix1 = new double[6, 6];
+        // Declare a 4 x 3 multidimensional array and set array element values.
         var matrix2 = new int[4, 3] { { 1, 2, 3 }, { 2, 3, 4 }, { 3, 4, 5 }, { 4, 5, 6 } };
 
         // Combine rank specifiers with initializers of various kinds
@@ -1319,13 +1316,12 @@ internal partial class TestClass
         Loop Until (charIndex >= 48 AndAlso charIndex <= 57) OrElse (charIndex >= 65 AndAlso charIndex <= 90) OrElse (charIndex >= 97 AndAlso charIndex <= 122)
     End Sub
 End Class", @"
-// allow only digits and letters
-
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int charIndex;
+        // allow only digits and letters
         do
             charIndex = rand.Next(48, 123);
         while ((charIndex < 48 || charIndex > 57) && (charIndex < 65 || charIndex > 90) && (charIndex < 97 || charIndex > 122));
