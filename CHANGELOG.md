@@ -36,6 +36,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Fix accessibility of converted public static classes
 * Fix overqualifying with "Global" in some cases
 * Fix parenthesized TryCast which caused compile error
+* Fix erroneous rename of value argument in events' accessors and properties' setter
+* Add call AscW method to convert Char to numeric types
+* Remove erroneous backing fields' generation in root classes
+* Add TryCast expression for convering to generic types
 
 ## [7.6.0] - 2020-01-11
 
