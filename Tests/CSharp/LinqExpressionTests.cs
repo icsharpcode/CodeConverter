@@ -51,11 +51,9 @@ End Sub",
                        group n by n % 5 into g
                        let __groupByKey1__ = g.Key
                        select new { Remainder = __groupByKey1__, Numbers = g };
-
     foreach (var g in numberGroups)
     {
         Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"");
-
         foreach (var n in g.Numbers)
             Console.WriteLine(n);
     }
@@ -392,9 +390,36 @@ internal static partial class Ext
     {
         return from _accountEntry in accountEntries
                where _accountEntry.Amount > 0M
-               group _accountEntry by new { _accountEntry.LookupAccountEntryTypeId, _accountEntry.LookupAccountEntrySourceId, _accountEntry.SponsorId, _accountEntry.LookupFundTypeId, _accountEntry.StartDate, _accountEntry.SatisfiedDate, _accountEntry.InterestStartDate, _accountEntry.ComputeInterestFlag, _accountEntry.SponsorClaimRevision } into Group
+               group _accountEntry by new
+               {
+                   _accountEntry.LookupAccountEntryTypeId,
+                   _accountEntry.LookupAccountEntrySourceId,
+                   _accountEntry.SponsorId,
+                   _accountEntry.LookupFundTypeId,
+                   _accountEntry.StartDate,
+                   _accountEntry.SatisfiedDate,
+                   _accountEntry.InterestStartDate,
+                   _accountEntry.ComputeInterestFlag,
+                   _accountEntry.SponsorClaimRevision
+               } into Group
                let _keys = Group.Key
-               select new AccountEntry() { LookupAccountEntryTypeId = _keys.LookupAccountEntryTypeId, LookupAccountEntrySourceId = _keys.LookupAccountEntrySourceId, SponsorId = _keys.SponsorId, LookupFundTypeId = _keys.LookupFundTypeId, StartDate = _keys.StartDate, SatisfiedDate = _keys.SatisfiedDate, ComputeInterestFlag = _keys.ComputeInterestFlag, InterestStartDate = _keys.InterestStartDate, SponsorClaimRevision = _keys.SponsorClaimRevision, Amount = Group.Sum(accountEntry => accountEntry.Amount), AccountTransactions = new List<object>(), AccountEntryClaimDetails = (from _accountEntry in Group from _claimDetail in _accountEntry.AccountEntryClaimDetails select _claimDetail).Reduce().ToList() };
+               select new AccountEntry()
+               {
+                   LookupAccountEntryTypeId = _keys.LookupAccountEntryTypeId,
+                   LookupAccountEntrySourceId = _keys.LookupAccountEntrySourceId,
+                   SponsorId = _keys.SponsorId,
+                   LookupFundTypeId = _keys.LookupFundTypeId,
+                   StartDate = _keys.StartDate,
+                   SatisfiedDate = _keys.SatisfiedDate,
+                   ComputeInterestFlag = _keys.ComputeInterestFlag,
+                   InterestStartDate = _keys.InterestStartDate,
+                   SponsorClaimRevision = _keys.SponsorClaimRevision,
+                   Amount = Group.Sum(accountEntry => accountEntry.Amount),
+                   AccountTransactions = new List<object>(),
+                   AccountEntryClaimDetails = (from _accountEntry in Group
+                                               from _claimDetail in _accountEntry.AccountEntryClaimDetails
+                                               select _claimDetail).Reduce().ToList()
+               };
     }
 }");
         }

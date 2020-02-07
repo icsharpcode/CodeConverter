@@ -890,6 +890,7 @@ internal partial class TestClass
 
         // Declare a 6 x 6 multidimensional array.
         var matrix1 = new double[6, 6];
+
         // Declare a 4 x 3 multidimensional array and set array element values.
         var matrix2 = new int[4, 3] { { 1, 2, 3 }, { 2, 3, 4 }, { 3, 4, 5 }, { 4, 5, 6 } };
 
@@ -1322,8 +1323,7 @@ internal partial class TestClass
     {
         int charIndex;
         // allow only digits and letters
-        do
-            charIndex = rand.Next(48, 123);
+        do charIndex = rand.Next(48, 123);
         while ((charIndex < 48 || charIndex > 57) && (charIndex < 65 || charIndex > 90) && (charIndex < 97 || charIndex > 122));
     }
 }");
@@ -2009,6 +2009,7 @@ public partial class TestClass2
 
             case object _ when !IsSqlAlive():
                 {
+                    // Database unavailable
                     return false;
                 }
 
@@ -2020,6 +2021,7 @@ public partial class TestClass2
 
             default:
                 {
+                    // Do something else
                     return false;
                 }
         }
@@ -2027,6 +2029,7 @@ public partial class TestClass2
 
     private bool IsSqlAlive()
     {
+        // Do something to test SQL Server
         return true;
     }
 }");

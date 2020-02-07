@@ -104,7 +104,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : PrependRootNamespace(sourceAndConverted, SyntaxFactory.IdentifierName(options.RootNamespace));
 
             var usings = await importsClauses.GroupBy(c => c.ToString()).Select(g => g.First())
-                .SelectAsync(async c => (UsingDirectiveSyntax) await c.AcceptAsync(TriviaConvertingDeclarationVisitor));
+                .SelectAsync(async c => (UsingDirectiveSyntax) await c.AcceptAsync(TriviaConvertingDeclarationVisitor, c.SyntaxTree == _semanticModel.SyntaxTree));
             var usingDirectiveSyntax = usings
                 .Concat(_extraUsingDirectives.Select(u => SyntaxFactory.UsingDirective(SyntaxFactory.ParseName(u))))
                 .GroupBy(u => (Name: u.Name.ToString(), Alias: u.Alias))

@@ -12,7 +12,6 @@ namespace CodeConverter.Tests.CSharp
         {
             await TestConversionVisualBasicToCSharp(@"Namespace Test
 End Namespace", @"
-
 namespace Test
 {
 }");
@@ -33,7 +32,6 @@ namespace Test1.Test2.Test3
         {
             await TestConversionVisualBasicToCSharp(@"Namespace Global.Test
 End Namespace", @"
-
 namespace Test
 {
 }");
@@ -463,17 +461,17 @@ public partial class DataSet1 : System.Data.DataSet
     ''' <summary>
     ''' Returns empty
     ''' </summary>
-    Private Function MyFunc() As String
+    Private Function MyFunc3() As String
         Return """"
     End Function
 End Class",
-                @"/// <summary>
-/// Returns empty
-/// </summary>
-
+                @"
 public partial class MyTestClass
 {
-    private string MyFunc()
+    /// <summary>
+    /// Returns empty
+    /// </summary>
+    private string MyFunc3()
     {
         return """";
     }
@@ -484,20 +482,20 @@ public partial class MyTestClass
         public async Task MultilineCommentRootOfFile()
         {
             await TestConversionVisualBasicToCSharp(@"''' <summary>
-''' Returns empty
+''' Class xml doc
 ''' </summary>
 Public Class MyTestClass
-    Private Function MyFunc() As String
+    Private Function MyFunc4() As String
         Return """"
     End Function
 End Class",
                 @"/// <summary>
-/// Returns empty
+/// Class xml doc
 /// </summary>
 
 public partial class MyTestClass
 {
-    private string MyFunc()
+    private string MyFunc4()
     {
         return """";
     }
@@ -508,23 +506,19 @@ public partial class MyTestClass
         public async Task MultilineCommentRootOfFileLeadingSpaces()
         {
             await TestConversionVisualBasicToCSharp(@"    ''' <summary>
-    ''' Returns empty
+    ''' Class xml doc with leading spaces
     ''' </summary>
 Public Class MyTestClass
-    Private Function MyFunc() As String
+    Private Function MyFunc5() As String
         Return """"
     End Function
 End Class",
                 @"    /// <summary>
-    /// Returns empty
+    /// Class xml doc with leading spaces
     /// </summary>
-/// <summary>
-/// Returns empty
-/// </summary>
-
 public partial class MyTestClass
 {
-    private string MyFunc()
+    private string MyFunc5()
     {
         return """";
     }

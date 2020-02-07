@@ -1226,6 +1226,7 @@ public partial class Class1
         }
         if (string.IsNullOrEmpty(s1))
         {
+            // 
         }
     }
 }");
@@ -1281,8 +1282,8 @@ public partial class Class1
 
         if (s1 == null)
         {
+            // 
         }
-
         if (string.IsNullOrEmpty(s1))
         {
             // 
@@ -2633,8 +2634,6 @@ Public Class Test
     End Sub
 End Class",
                 @"using System;
-
-// Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
 using System.IO;
 using SIO = System.IO;
 using VB = Microsoft.VisualBasic;
@@ -2643,6 +2642,8 @@ public partial class Test
 {
     private string aliased = VB.Strings.Left(""SomeText"", 1);
     private Delegate aliased2 = new SIO.ErrorEventHandler(OnError);
+
+    // Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
     private string Tr = nameof(SIO.TextReader);
     private string Strings = nameof(VB.VBCodeProvider);
 

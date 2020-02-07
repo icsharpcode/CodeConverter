@@ -117,6 +117,7 @@ internal partial class TestClass
     }
 
     private object EnumVariable = TestEnum.Test1;" /* VB doesn't infer the type like you'd think, it just uses object */ + @"
+
     public void AMethod()
     {
         int t1 = Conversions.ToInteger(EnumVariable);" /* VB compiler uses Conversions rather than any plainer casting */ + @"
@@ -390,6 +391,7 @@ public partial class VisualBasicClass
 End Class", @"
 internal partial class TestClass
 {
+    /// <summary>Xml doc</summary>
     public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
         where T2 : struct
@@ -1832,7 +1834,6 @@ Class MyClassC
         ClA.ClassB.MB()
     End Sub
 End Class", @"
-
 internal partial class ClA
 {
     public static void MA()
@@ -1886,7 +1887,6 @@ Class MyClassC
         ClA.ClassB.MB()
     End Sub
 End Class", @"
-
 internal partial class ClA
 {
     public static void MA()
