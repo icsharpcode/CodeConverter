@@ -47,8 +47,8 @@ End Sub");
     object o = new System.Collections.Generic.List<int>();
     System.Collections.Generic.List<int> l = (System.Collections.Generic.List<int>) o;
 }", @"Private Sub Test()
-    Dim o As Object = New System.Collections.Generic.List(Of Integer)()
-    Dim l As List(Of Integer) = CType(o, System.Collections.Generic.List(Of Integer))
+    Dim o As Object = New List(Of Integer)()
+    Dim l As List(Of Integer) = CType(o, List(Of Integer))
 End Sub");
         }
 
@@ -75,9 +75,22 @@ End Sub");
     object o = new System.Collections.Generic.List<int>();
     System.Collections.Generic.List<int> l = o as System.Collections.Generic.List<int>;
 }", @"Private Sub Test()
-    Dim o As Object = New System.Collections.Generic.List(Of Integer)()
-    Dim l As List(Of Integer) = TryCast(o, System.Collections.Generic.List(Of Integer))
+    Dim o As Object = New List(Of Integer)()
+    Dim l As List(Of Integer) = TryCast(o, List(Of Integer))
 End Sub");
+        }
+
+        [Fact]
+        public async Task TryCastObjectToGenericType() {
+            await TestConversionCSharpToVisualBasic(
+@"T Test<T>() where T : class {
+    return this as T;
+}
+",
+@"Private Function Test(Of T As Class)() As T
+    Return TryCast(Me, T)
+End Function
+");
         }
 
         [Fact]
@@ -125,6 +138,33 @@ End Sub");
     char CR = (char)0xD;
 }", @"Private Sub Test()
     Dim CR As Char = ChrW(&HD)
+End Sub");
+        }
+        [Fact]
+        public async Task CastCharacterToNumber() {
+            await TestConversionCSharpToVisualBasic(
+@"void Test() {
+    byte a = (byte)'A';
+    decimal b = (byte)'B';
+}
+",
+@"Private Sub Test()
+    Dim a As Byte = AscW(""A""c)
+    Dim b As Decimal = AscW(""B""c)
+End Sub
+");
+        }
+        [Fact(Skip = "Many code generation")]
+        public async Task CastCharacterIncrement() {
+            await TestConversionCSharpToVisualBasic(
+@"void Test() {
+    char a = 'A';
+    a++;
+}
+",
+@"Private Sub Test()
+    Dim a As Char = ""A""c
+    a == ChrW(AscW(a) + 1)
 End Sub");
         }
         [Fact]

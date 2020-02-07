@@ -33,6 +33,30 @@ End Class");
         }
 
         [Fact]
+        public async Task TestInferredPropertyInnerClass(){
+            await TestConversionCSharpToVisualBasic(
+@"class TestClass {
+    class InnerClass {
+        public string Text { get; private set; }
+    }
+}",
+@"Friend Class TestClass
+    Friend Class InnerClass
+        Private _Text As String
+
+        Public Property Text As String
+            Get
+                Return _Text
+            End Get
+            Private Set(ByVal value As String)
+                _Text = value
+            End Set
+        End Property
+    End Class
+End Class");
+        }
+
+        [Fact]
         public async Task TestProperty_StaticInferred() {
             await TestConversionCSharpToVisualBasic(
 @"class TestClass {

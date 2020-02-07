@@ -239,10 +239,10 @@ End Class");
     Private ReadOnly Property [Property] As String
         Get
             Dim z = (Function() 3)()
-            Return If(Me.prop, Function()
-                                   Me.prop2 = CreateProperty()
-                                   Return Me.prop2
-                               End Function())
+            Return If(prop, Function()
+                                prop2 = CreateProperty()
+                                Return prop2
+                            End Function())
         End Get
     End Property
 
@@ -491,7 +491,7 @@ End Class");
 {
     return new object() == new object();
 }", @"Public Shared Function AreTwoObjectsReferenceEqual() As Boolean
-    Return New Object Is New Object
+    Return New Object() Is New Object()
 End Function");
         }
 
@@ -534,7 +534,7 @@ Imports System.Collections.Generic
 Namespace PreHOPL
     Friend Module Program
         Private ReadOnly dict As Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) = New Dictionary(Of String, ValueTuple(Of Integer, [Delegate]))() From {
-            {""SAY"", (1, CType(AddressOf System.Console.WriteLine, Action(Of String)))}
+            {""SAY"", (1, CType(AddressOf Console.WriteLine, Action(Of String)))}
         }
 
         Private Sub Main(ByVal args As String())
@@ -584,7 +584,7 @@ static class Program
 
 Friend Module Program
     Private Sub Main(ByVal args As String())
-        Dim x As Action(Of String) = (Sub(__) Environment.Exit(0))
+        Dim x As Action(Of String) = Sub(__) Environment.Exit(0)
     End Sub
 End Module");
         }
@@ -637,7 +637,7 @@ End Class");
     End Function
 
     Private Async Sub TestMethod()
-        Dim result As Integer = Await SomeAsyncMethod
+        Dim result As Integer = Await SomeAsyncMethod()
         Console.WriteLine(result)
     End Sub
 End Class");

@@ -30,15 +30,15 @@ namespace ICSharpCode.CodeConverter.Shared
                 .Select(d => originalRoot.FindNode(d.Location.SourceSpan).GetAncestor<TUsingDirectiveSyntax>())
                 .ToLookup(d => (SyntaxNode) d);
             var nodesToConsider = originalRoot
-                .DescendantNodes(n =>
-                    !(n is TExpressionSyntax) && !nodesWithUnresolvedTypes.Contains(n) &&
-                    !wouldBeSimplifiedIncorrectly(n))
+                .DescendantNodes()
+                .Where(n => nodesWithUnresolvedTypes.Contains(n) || wouldBeSimplifiedIncorrectly(n))
                 .ToArray();
             var doNotSimplify = nodesToConsider
-                .Where(n => nodesWithUnresolvedTypes.Contains(n) || wouldBeSimplifiedIncorrectly(n))
                 .SelectMany(n => n.AncestorsAndSelf())
                 .ToImmutableHashSet();
-            var toSimplify = nodesToConsider.Where(n => !doNotSimplify.Contains(n));
+            var toSimplify = originalRoot
+                .DescendantNodes()
+                .Where(n => !doNotSimplify.Contains(n));
             var newRoot = originalRoot.ReplaceNodes(toSimplify, (orig, rewritten) =>
                 rewritten.WithAdditionalAnnotations(Simplifier.Annotation)
             );
@@ -52,8 +52,9 @@ namespace ICSharpCode.CodeConverter.Shared
             //Roslyn bug: empty argument list gets removed and changes behaviour: https://github.com/dotnet/roslyn/issues/40442
             // (Also null Expression blows up even though that's how conditional invocation on an IdentifierName happens)
             return n is VBSyntax.InvocationExpressionSyntax ies && (!ies.ArgumentList.Arguments.Any() || ies.Expression == null)
-                   // Roslyn bug: Tries to simplify to "InferredFieldInitializerSyntax" which cannot be placed within an ObjectCreationExpression https://github.com/icsharpcode/CodeConverter/issues/484
-                   || n is VBSyntax.ObjectCreationExpressionSyntax;
+                || n is VBSyntax.TryCastExpressionSyntax
+                // Roslyn bug: Tries to simplify to "InferredFieldInitializerSyntax" which cannot be placed within an ObjectCreationExpression https://github.com/icsharpcode/CodeConverter/issues/484
+                || n is VBSyntax.ObjectCreationExpressionSyntax;
         }
 
         private static bool CsWouldBeSimplifiedIncorrectly(SyntaxNode n)

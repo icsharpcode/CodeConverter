@@ -96,11 +96,8 @@ namespace ICSharpCode.CodeConverter.VB
             return convertedStatements;
         }
 
-        public SyntaxList<StatementSyntax> InsertGeneratedClassMemberDeclarations(
-            SyntaxList<StatementSyntax> convertedStatements, CS.CSharpSyntaxNode originaNode, bool isModule)
-        {
-            var descendantNodes = originaNode.DescendantNodes().ToList();
-            var propertyBlocks = descendantNodes.OfType<CSS.PropertyDeclarationSyntax>()
+        public SyntaxList<StatementSyntax> InsertGeneratedClassMemberDeclarations(SyntaxList<StatementSyntax> convertedStatements, CSS.TypeDeclarationSyntax typeNode, bool isModule) {
+            var propertyBlocks = typeNode.Members.OfType<CSS.PropertyDeclarationSyntax>()
                 .Where(e => e.AccessorList != null && e.AccessorList.Accessors.Any(a => a.Body == null && a.ExpressionBody == null && a.Modifiers.ContainsDeclaredVisibility()))
                 .ToList();
             return convertedStatements.InsertRange(0, ConvertToDeclarationStatement(propertyBlocks, isModule));

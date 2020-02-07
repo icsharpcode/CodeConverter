@@ -347,7 +347,7 @@ Friend Module TestClass
 
     Public Function Convert(ByVal node As Object) As Object
         Return node.TypeSwitch(New Func(Of String, Object)(AddressOf ConvertString), New Func(Of Integer, Object)(AddressOf ConvertInt), Function(__)
-                                                                                                                                             Throw New NotImplementedException($""Conversion for '{node.GetType}' not implemented"")
+                                                                                                                                             Throw New NotImplementedException($""Conversion for '{node.GetType()}' not implemented"")
                                                                                                                                          End Function)
     End Function
 End Module");
@@ -458,6 +458,65 @@ End Class");
     Dim l_TesT As Integer = test
     Return l_TesT
 End Function");
+        }
+        [Fact]
+        public async Task NonConflictingArgument_Property() {
+            await TestConversionCSharpToVisualBasic(
+@"public class TestClass {
+    public int Value {
+        get { return GetValue(); }
+        set { SetValue(value) }
+    }
+    int GetValue() { return 0; }
+    void SetValue(int value) { }
+}",
+@"Public Class TestClass
+    Public Property Value As Integer
+        Get
+            Return GetValue()
+        End Get
+        Set(ByVal value As Integer)
+            SetValue(value)
+        End Set
+    End Property
+
+    Private Function GetValue() As Integer
+        Return 0
+    End Function
+
+    Private Sub SetValue(ByVal value As Integer)
+    End Sub
+End Class");
+        }
+        [Fact]
+        public async Task NonConflictingArgument_Event() {
+            await TestConversionCSharpToVisualBasic(
+@"using System;
+
+public class TestClass {
+    EventHandler value;
+    public event EventHandler Value {
+        add { this.value += value; }
+        remove { this.value -= value; }
+    }
+}",
+@"Imports System
+
+Public Class TestClass
+    Private f_Value As EventHandler
+
+    Public Custom Event Value As EventHandler
+        AddHandler(ByVal value As EventHandler)
+            f_Value = [Delegate].Combine(f_Value, value)
+        End AddHandler
+        RemoveHandler(ByVal value As EventHandler)
+            f_Value = [Delegate].Remove(f_Value, value)
+        End RemoveHandler
+        RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
+            f_Value?(sender, e)
+        End RaiseEvent
+    End Event
+End Class");
         }
         [Fact]
         public async Task CaseConflict_ForeignNamespace() {
