@@ -431,7 +431,7 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitMethodDeclaration(CSS.MethodDeclarationSyntax node)
         {
             var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, TriviaConvertingVisitor, TriviaConvertingVisitor.TriviaConverter, _commonConversions);
-            bool requiresBody = node.Body != null || node.ExpressionBody != null || node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword));
+            bool requiresBody = node.Body != null || node.ExpressionBody != null || node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword, CS.SyntaxKind.PartialKeyword));
             var block = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
             var id = _commonConversions.ConvertIdentifier(node.Identifier);
             var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor)));

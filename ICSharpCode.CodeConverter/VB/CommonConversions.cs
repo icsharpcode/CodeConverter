@@ -405,24 +405,20 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
 
-        private static IEnumerable<SyntaxToken> ConvertModifiersCore(IReadOnlyCollection<SyntaxToken> modifiers,
-            TokenContext context, bool isConstructor)
-        {
-            if (context != TokenContext.Local && context != TokenContext.MemberInInterface && context != TokenContext.MemberInProperty) {
-                bool visibility = false;
-                foreach (var token in modifiers) {
-                    if (token.IsCsVisibility(true, isConstructor)) { //TODO Don't always treat as variable or const, pass in more context to detect this
-                        visibility = true;
-                        break;
-                    }
-                }
-                if (!visibility)
-                    yield return CSharpDefaultVisibility(context);
-            }
-            foreach (var token in modifiers.Where(m => !IgnoreInContext(m, context))) {
-                var m = ConvertModifier(token, context);
-                if (m.HasValue) yield return m.Value;
-            }
+        private static IEnumerable<SyntaxToken> ConvertModifiersCore(IReadOnlyCollection<SyntaxToken> modifiers, TokenContext context, bool isConstructor) {
+            var needsExplicitVisibility = context != TokenContext.Local
+                && context != TokenContext.MemberInInterface
+                && context != TokenContext.MemberInProperty
+                && !modifiers.Any(x => x.IsCsVisibility(true, isConstructor)); //TODO Don't always treat as variable or const, pass in more context to detect this
+            var vbModifiers = modifiers
+                .Where(m => !IgnoreInContext(m, context))
+                .Select(x => ConvertModifier(x, context))
+                .Where(x => x.HasValue)
+                .Select(x => x.Value)
+                .ToList();
+            if(needsExplicitVisibility)
+                vbModifiers.Insert(vbModifiers.FirstOrDefault().IsKind(SyntaxKind.PartialKeyword) ? 1 : 0, CSharpDefaultVisibility(context));
+            return vbModifiers;
         }
 
         private static bool IgnoreInContext(SyntaxToken m, TokenContext context)

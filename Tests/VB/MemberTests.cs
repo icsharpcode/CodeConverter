@@ -1293,5 +1293,17 @@ End Interface");
     WriteOnly Property Parameters As IEnumerable(Of Object)
 End Interface");
         }
+        [Fact]
+        public async Task PartialMethod() {
+            await TestConversionCSharpToVisualBasic(
+@"public partial class Entities {
+    partial void OnContextCreated();
+}",
+@"Public Partial Class Entities
+    Partial Private Sub OnContextCreated()
+    End Sub
+End Class");
+        }
+
     }
 }
