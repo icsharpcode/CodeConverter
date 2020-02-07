@@ -1224,6 +1224,7 @@ public partial class Class1
         {
             // 
         }
+
         if (string.IsNullOrEmpty(s1))
         {
             // 
@@ -1284,6 +1285,7 @@ public partial class Class1
         {
             // 
         }
+
         if (string.IsNullOrEmpty(s1))
         {
             // 

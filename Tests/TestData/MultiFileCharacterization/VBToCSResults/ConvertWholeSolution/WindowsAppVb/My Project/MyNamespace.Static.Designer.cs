@@ -59,6 +59,7 @@ namespace WindowsAppVb
             /* TODO ERROR: Skipped EndIfDirectiveTrivia */
             /* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
         }
+
         /* TODO ERROR: Skipped EndIfDirectiveTrivia */
         /* TODO ERROR: Skipped IfDirectiveTrivia */
         [System.CodeDom.Compiler.GeneratedCode("MyTemplate", "11.0.0.0")]
@@ -305,6 +306,7 @@ namespace WindowsAppVb
                     }
                     /* TODO ERROR: Skipped EndIfDirectiveTrivia */
                 }
+
                 [DebuggerHidden()]
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 public ThreadSafeObjectProvider() : base()

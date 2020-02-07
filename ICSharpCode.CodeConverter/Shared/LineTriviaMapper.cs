@@ -95,8 +95,9 @@ namespace ICSharpCode.CodeConverter.Shared
         private SyntaxToken AttachMappedTrivia(SyntaxToken original, SyntaxToken rewritten)
         {
             var trivia = _targetTokenToTrivia[original];
-            return rewritten.WithLeadingTrivia(trivia.Leading.SelectMany(tl => tl))
-                .WithTrailingTrivia(trivia.Trailing.SelectMany(tl => tl));
+            if (trivia.Leading.Any()) rewritten = rewritten.WithLeadingTrivia(trivia.Leading.SelectMany(tl => tl));
+            if (trivia.Trailing.Any()) rewritten = rewritten.WithTrailingTrivia(trivia.Trailing.SelectMany(tl => tl));
+            return rewritten;
         }
 
         private void MapTrailing(int sourceLineIndex)

@@ -41,6 +41,7 @@ namespace VbLibrary
         {
             /* TODO ERROR: Skipped EndIfDirectiveTrivia */
         }
+
         /* TODO ERROR: Skipped EndIfDirectiveTrivia */
         /* TODO ERROR: Skipped IfDirectiveTrivia */
         [System.CodeDom.Compiler.GeneratedCode("MyTemplate", "11.0.0.0")]
@@ -190,6 +191,7 @@ namespace VbLibrary
                     }
                     /* TODO ERROR: Skipped EndIfDirectiveTrivia */
                 }
+
                 [DebuggerHidden()]
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 public ThreadSafeObjectProvider() : base()
