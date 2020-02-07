@@ -42,7 +42,7 @@ internal static partial class TestModule
         [Fact]
         public async Task TestConstructorVisibility()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class Class1
+            await TestConversionVisualBasicToCSharp(@"Class Class1
     Sub New(x As Boolean)
     End Sub
 End Class", @"
@@ -156,7 +156,7 @@ internal partial class TestClass
         [Fact]
         public async Task TestMethodAssignmentReturn()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class Class1
     Function TestMethod(x As Integer) As Integer
         If x = 1 Then
@@ -196,7 +196,7 @@ internal partial class Class1
         [Fact]
         public async Task TestPropertyAssignmentReturn()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Class Class1
     Public ReadOnly Property Foo() As String
         Get
@@ -268,7 +268,7 @@ public partial class Class1
         [Fact]
         public async Task TestMethodAssignmentReturn293()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Class Class1
     Public Event MyEvent As EventHandler
     Protected Overrides Function Foo() As String
@@ -296,7 +296,7 @@ public partial class Class1
         [Fact]
         public async Task TestMethodAssignmentAdditionReturn()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class Class1
     Function TestMethod(x As Integer) As Integer
         If x = 1 Then
@@ -336,7 +336,7 @@ internal partial class Class1
         [Fact]
         public async Task TestMethodMissingReturn()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class Class1
     Function TestMethod() As Integer
 
@@ -354,7 +354,7 @@ internal partial class Class1
         [Fact]
         public async Task TestGetIteratorDoesNotGainReturn()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Class VisualBasicClass
   Public Shared ReadOnly Iterator Property SomeObjects As IEnumerable(Of Object())
     Get
@@ -635,7 +635,7 @@ internal static partial class TestClass
         [Fact]
         public async Task TestProperty()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Public Property Test As Integer
 
@@ -694,7 +694,7 @@ internal partial class TestClass
          [Fact]
         public async Task TestParameterizedProperty()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Public Property FirstName As String
     Public Property LastName As String
@@ -752,7 +752,7 @@ internal partial class TestClass
         [Fact]
         public async Task TestParameterizedPropertyAndGenericInvocationAndEnumEdgeCases()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Class ParameterizedPropertiesAndEnumTest
     Public Enum MyEnum
         First
@@ -826,7 +826,7 @@ public partial class ParameterizedPropertiesAndEnumTest
         [Fact]
         public async Task PropertyWithMissingTypeDeclaration()//TODO Check object is the inferred type
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class MissingPropertyType
                 ReadOnly Property Max
                     Get
@@ -851,7 +851,7 @@ internal partial class MissingPropertyType
         [Fact]
         public async Task TestReadWriteOnlyInterfaceProperty()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Interface Foo
     ReadOnly Property P1() As String
     WriteOnly Property P2() As String
@@ -934,8 +934,7 @@ internal partial class TestClass
         [Fact]
         public async Task TestEventWithNoDeclaredTypeOrHandlers()
         {
-            //Can't auto-test comments when extra lines (delegate) get added
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Class TestEventWithNoType
     Public Event OnCakeChange
 
@@ -959,8 +958,7 @@ public partial class TestEventWithNoType
         [Fact]
         public async Task TestModuleHandlesWithEvents()
         {
-            // Too much auto-generated code to auto-test comments
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class MyEventClass
     Public Event TestEvent()
 
@@ -1064,7 +1062,7 @@ internal static partial class Module1
         [Fact]
         public async Task TestWithEventsWithoutInitializer()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class MyEventClass
     Public Event TestEvent()
 End Class
@@ -1119,8 +1117,7 @@ internal partial class Class1
         [Fact]
         public async Task TestClassHandlesWithEvents()
         {
-            // Too much auto-generated code to auto-test comments
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
                 @"Class MyEventClass
     Public Event TestEvent()
 
@@ -1250,8 +1247,7 @@ internal partial class Class1
         [Fact]
         public async Task TestPartialClassHandlesWithEvents()
         {
-            // Too much auto-generated code to auto-test comments
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
                 @"Class MyEventClass
     Public Event TestEvent()
 
@@ -1487,7 +1483,7 @@ internal partial class TestClass2 : TestClass1
         [Fact]
         public async Task TestNarrowingWideningConversionOperator()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class MyInt
+            await TestConversionVisualBasicToCSharp(@"Public Class MyInt
     Public Shared Narrowing Operator CType(i As Integer) As MyInt
         Return New MyInt()
     End Operator
@@ -1514,7 +1510,7 @@ public partial class MyInt
         public async Task OperatorOverloads()
         {
             // Note a couple map to the same thing in C# so occasionally the result won't compile. The user can manually decide what to do in such scenarios.
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class AcmeClass
+            await TestConversionVisualBasicToCSharp(@"Public Class AcmeClass
     Public Shared Operator +(i As Integer, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
@@ -1701,7 +1697,7 @@ internal partial class TestClass
         [Fact]
         public async Task FieldWithAttribute()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     <ThreadStatic>
     Private Shared First As Integer
 End Class", @"using System;
@@ -1782,8 +1778,7 @@ internal partial class TestClass
         [Fact]
         public async Task PartialClass()
         {
-            // Can't auto test comments when there are already manual comments used
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Partial Class TestClass
     Private Sub DoNothing()
         Console.WriteLine(""Hello"")
@@ -1918,8 +1913,8 @@ internal partial class MyClassC
 
         [Fact]
         public async Task TestIndexer()
-        {   // BUG: Comments aren't properly transferred to the property statement because the line ends in a square bracket
-            await TestConversionVisualBasicToCSharpWithoutComments(
+        {
+            await TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Private _Items As Integer()
 
@@ -1994,7 +1989,7 @@ internal partial class TestClass
         [Fact]
         public async Task TestWriteOnlyProperties()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Interface TestInterface
     WriteOnly Property Items As Integer()
 End Interface", @"
@@ -2029,7 +2024,7 @@ public partial class SomeClass
         [Fact]
         public async Task TestSetWithNamedParameterProperties()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Private _Items As Integer()
     Property Items As Integer()
@@ -2063,8 +2058,7 @@ internal partial class TestClass
         [Fact]
         public async Task TestAsyncMethods()
         {
-            //Bug: Whitespace wrapping is wrong when comments present
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"    Class AsyncCode
         Public Sub NotAsync()
             Dim a1 = Async Function() 3

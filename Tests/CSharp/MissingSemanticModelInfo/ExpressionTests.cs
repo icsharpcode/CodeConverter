@@ -30,7 +30,7 @@ internal partial class TestClass
         [Fact]
         public async Task InvokeMethodWithUnknownReturnType()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Foo()
         Bar(Nothing)
     End Sub
@@ -57,8 +57,7 @@ public partial class Class1
         [Fact]
         public async Task ForNextMutatingMissingField()
         {
-            // Comment from "Next" gets pushed up to previous line
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Foo()
         For Me.Index = 0 To 10
 
@@ -79,8 +78,7 @@ public partial class Class1
         [Fact]
         public async Task OutParameterNonCompilingType()
         {
-            // Can't autotest comments due to dummy "anInstance" variable added
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class OutParameterWithMissingType
+            await TestConversionVisualBasicToCSharp(@"Public Class OutParameterWithMissingType
     Private Shared Sub AddToDict(ByVal pDict As Dictionary(Of Integer, MissingType), ByVal pKey As Integer)
         Dim anInstance As MissingType = Nothing
         If Not pDict.TryGetValue(pKey, anInstance) Then
@@ -129,8 +127,7 @@ public partial class OutParameterWithNonCompilingType
         [Fact]
         public async Task EnumSwitchAndValWithUnusedMissingType()
         {
-            // BUG: Stop comments appearing before colon in case statement
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class EnumAndValTest
+            await TestConversionVisualBasicToCSharp(@"Public Class EnumAndValTest
     Public Enum PositionEnum As Integer
         None = 0
         LeftTop = 1

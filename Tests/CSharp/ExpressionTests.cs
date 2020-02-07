@@ -13,7 +13,7 @@ namespace CodeConverter.Tests.CSharp
         [Fact]
         public async Task OmitsConversionForEnumBinaryExpression()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Friend Enum RankEnum As SByte
+            await TestConversionVisualBasicToCSharp(@"Friend Enum RankEnum As SByte
     First = 1
     Second = 2
 End Enum
@@ -43,7 +43,7 @@ public partial class TestClass
         [Fact]
         public async Task MyClassExpr()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Public Class TestClass
     Sub TestMethod()
         MyClass.Val = 6
     End Sub
@@ -64,8 +64,7 @@ public partial class TestClass
         [Fact]
         public async Task MultilineString()
         {
-            // Don't auto-test comments, otherwise it tries to put a comment in the middle of the string, which obviously isn't a valid place for it
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim x = ""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!""
@@ -87,8 +86,7 @@ World!"";
         [Fact]
         public async Task Quotes()
         {
-            // Don't auto-test comments, otherwise it tries to put a comment in the middle of the string, which obviously isn't a valid place for it
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Shared Function GetTextFeedInput(pStream As String, pTitle As String, pText As String) As String
         Return ""{"" & AccessKey() & "",""""streamName"""": """""" & pStream & """""",""""point"""": ["" & GetTitleTextPair(pTitle, pText) & ""]}""
     End Function
@@ -245,7 +243,7 @@ public partial class VisualBasicClass
         [Fact]
         public async Task RefArgumentRValue()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Private Property C1 As Class1
     Private _c2 As Class1
     Private _o1 As Object
@@ -295,7 +293,7 @@ public partial class Class1
         [Fact]
         public async Task RefArgumentRValue2()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Foo()
         Dim x = True
         Bar(x = True)
@@ -416,7 +414,7 @@ public partial class Class1
         [Fact]
         public async Task RefArgumentUsing()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Data.SqlClient
+            await TestConversionVisualBasicToCSharp(@"Imports System.Data.SqlClient
 
 Public Class Class1
     Sub Foo()
@@ -449,7 +447,7 @@ public partial class Class1
         [Fact]
         public async Task RefArgumentPropertyInitializer()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Private _p1 As Class1 = Foo(New Class1)
     Public Shared Function Foo(ByRef c1 As Class1) As Class1
         Return c1
@@ -475,7 +473,7 @@ public partial class Class1
         [Fact]
         public async Task MethodCallWithImplicitConversion()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Foo()
         Bar(True)
         Me.Bar(""4"")
@@ -506,7 +504,7 @@ public partial class Class1
         [Fact]
         public async Task IntToEnumArg()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Foo(ByVal arg As TriState)
     End Sub
 
@@ -532,7 +530,7 @@ public partial class Class1
         [Fact]
         public async Task EnumToIntCast()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class MyTest
+            await TestConversionVisualBasicToCSharp(@"Public Class MyTest
     Public Enum TestEnum As Integer
         Test1 = 0
         Test2 = 1
@@ -564,7 +562,7 @@ public partial class MyTest
         [Fact]
         public async Task FlagsEnum()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"<Flags()> Public Enum FilePermissions As Integer
+            await TestConversionVisualBasicToCSharp(@"<Flags()> Public Enum FilePermissions As Integer
     None = 0
     Create = 1
     Read = 2
@@ -595,7 +593,7 @@ public partial class MyTest
         [Fact]
         public async Task EnumSwitch()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Enum E
         A
     End Enum
@@ -647,7 +645,7 @@ public partial class Class1
         [Fact]
         public async Task DuplicateCaseDiscarded()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Imports System
+            await TestConversionVisualBasicToCSharp(@"Imports System
     Friend Module Module1
     Sub Main()
         Select Case 1
@@ -687,7 +685,7 @@ internal static partial class Module1
         [Fact]
         public async Task MethodCallWithoutParens()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Foo()
         Dim w = Bar
         Dim x = Me.Bar
@@ -798,8 +796,7 @@ public partial class A
         [Fact]
         public async Task IndexerWithParameter()
         {
-            //BUG Semicolon ends up on newline after comment instead of before it
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Data
+            await TestConversionVisualBasicToCSharp(@"Imports System.Data
 
 Public Class A
     Public Function ReadDataSet(myData As DataSet) As String
@@ -1023,7 +1020,7 @@ public partial class Class1
         [Fact]
         public async Task EnumNullableConversion()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Main()
         Dim x = DayOfWeek.Monday
         Foo(x)
@@ -1051,8 +1048,7 @@ public partial class Class1
         [Fact]
         public async Task UninitializedVariable()
         {
-            //TODO: Fix comment to be ported to top of property rather than bottom
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub New()
         Dim needsInitialization As Integer
         Dim notUsed As Integer
@@ -1177,7 +1173,7 @@ internal partial class TestClass
         [Fact]
         public async Task StringCompare()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Foo()
         Dim s1 As String = Nothing
         Dim s2 As String = """"
@@ -1236,7 +1232,7 @@ public partial class Class1
         [Fact]
         public async Task StringCompareText()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Option Compare Text
+            await TestConversionVisualBasicToCSharp(@"Option Compare Text
 Public Class Class1
     Sub Foo()
         Dim s1 As String = Nothing
@@ -1343,7 +1339,7 @@ internal partial class TestClass
         [Fact]
         public async Task ImplicitConversions()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim x As Double = 1
         Dim y As Decimal = 2
@@ -1472,8 +1468,7 @@ internal partial class TestClass
         [Fact]
         public async Task NullableInteger()
         {
-            //BUG: Line comments after "else" aren't converted
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Public Function Bar(value As String) As Integer?
         Dim result As Integer
         If Integer.TryParse(value, result) Then
@@ -1835,7 +1830,7 @@ internal partial class TestClass
         [Fact]
         public async Task CollectionInitializers()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub DoStuff(a As Object)
     End Sub
     Private Sub TestMethod()
@@ -1960,7 +1955,7 @@ internal partial class TestClass
         [Fact]
         public async Task LambdaBodyExpression()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim test As Func(Of Integer, Integer) = Function(a) a * 2
         Dim test2 As Func(Of Integer, Integer, Double) = Function(a, b)
@@ -1993,7 +1988,7 @@ internal partial class TestClass
             // * Operators::ConditionalCompareObjectGreater(object, object, bool)
             // * Operators::MultiplyObject(object, object)
             // * Operators::ModObject(object, object)
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim test = Function(a) a * 2
         Dim test2 = Function(a, b)
@@ -2021,8 +2016,7 @@ internal partial class TestClass
         [Fact]
         public async Task SingleLineLambdaWithStatementBody()
         {
-            //Bug: Comments after action definition are lost
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 1
         Dim simpleAssignmentAction As System.Action = Sub() x = 1
@@ -2131,7 +2125,7 @@ internal partial class TestClass
         [Fact]
         public async Task NameQualifyingHandlesInheritance()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClassBase
+            await TestConversionVisualBasicToCSharp(@"Class TestClassBase
     Sub DoStuff()
     End Sub
 End Class
@@ -2178,8 +2172,7 @@ internal partial class TestClass
         [Fact]
         public async Task ValueCapitalisation()
         {
-            //TODO: Fix comment to be ported to top of property rather than bottom
-            await TestConversionVisualBasicToCSharpWithoutComments(@"public Enum TestState
+            await TestConversionVisualBasicToCSharp(@"public Enum TestState
 one
 two
 end enum
@@ -2227,7 +2220,7 @@ public partial class test
         [Fact]
         public async Task ConstLiteralConversionIssue329()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
                 @"Module Module1
     Const a As Boolean = 1
     Const b As Char = ChrW(1)
@@ -2274,7 +2267,7 @@ internal static partial class Module1
         [Fact]
         public async Task StringInterpolationWithConditionalOperator()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
                 @"Public Function GetString(yourBoolean as Boolean) As String
     Return $""You {if (yourBoolean, ""do"", ""do not"")} have a true value""
 End Function",
@@ -2287,7 +2280,7 @@ End Function",
         [Fact]
         public async Task SelectCaseIssue361()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
                 @"Module Module1
     Enum E
         A = 1
@@ -2327,7 +2320,7 @@ internal static partial class Module1
         [Fact]
         public async Task Tuple()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
                 @"Public Function GetString(yourBoolean as Boolean) As Boolean
     Return 1 <> 1 OrElse if (yourBoolean, True, False)
 End Function",
@@ -2340,7 +2333,7 @@ End Function",
         [Fact]
         public async Task UseEventBackingField()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
                 @"Public Class Foo
     Public Event Bar As EventHandler(Of EventArgs)
 
@@ -2415,7 +2408,7 @@ namespace InnerNamespace
         [Fact]
         public async Task DateTimeToDateAndTime()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Foo()
         Dim x = DateAdd(""m"", 5, Now)
     End Sub
@@ -2433,7 +2426,7 @@ public partial class Class1
         [Fact]
         public async Task BaseFinalizeRemoved()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Protected Overrides Sub Finalize()
         MyBase.Finalize()
     End Sub
@@ -2449,7 +2442,7 @@ public partial class Class1
         [Fact]
         public async Task GlobalNameIssue375()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Module Module1
+            await TestConversionVisualBasicToCSharp(@"Module Module1
     Sub Main()
         Dim x = Microsoft.VisualBasic.Timer
     End Sub
@@ -2467,7 +2460,7 @@ internal static partial class Module1
         [Fact]
         public async Task TernaryConversionIssue363()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Module Module1
+            await TestConversionVisualBasicToCSharp(@"Module Module1
     Sub Main()
         Dim x As Short = If(True, CShort(50), 100S)
     End Sub
@@ -2486,7 +2479,7 @@ internal static partial class Module1
         [Fact]
         public async Task MemberAccessCasing()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Bar()
 
     End Sub
@@ -2513,7 +2506,7 @@ public partial class Class1
         [Fact]
         public async Task XmlMemberAccess()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Private Sub LoadValues(ByVal strPlainKey As String)
         Dim xmlFile As XDocument = XDocument.Parse(strPlainKey)
         Dim objActivationInfo As XElement = xmlFile.<ActivationKey>.First
@@ -2534,8 +2527,7 @@ public partial class Class1
         [Fact]
         public async Task TestGenericMethodGroupGainsBrackets()
         {
-            //BUG: Comment after New With is lost
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
                 @"Public Enum TheType
     Tree
 End Enum
@@ -2579,8 +2571,7 @@ public partial class MoreParsing
         [Fact]
         public async Task GenericMethodCalledWithAnonymousType()
         {
-            //BUG: Comment after New With is lost
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
                 @"Public Class MoreParsing
     Sub DoGet()
         Dim anon = New With {
@@ -2615,7 +2606,7 @@ public partial class MoreParsing
         [Fact]
         public async Task AliasedImportsWithTypePromotionIssue401()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
                 @"Imports System.IO
 Imports SIO = System.IO
 Imports Microsoft.VisualBasic

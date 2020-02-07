@@ -63,7 +63,7 @@ End Sub",
         [Fact()]
         public async Task Linq3()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class Product
+            await TestConversionVisualBasicToCSharp(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -116,7 +116,7 @@ internal partial class Test
         [Fact]
         public async Task Linq4()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class Product
+            await TestConversionVisualBasicToCSharp(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -210,8 +210,7 @@ End Sub", @"private static void LinqSub()
         [Fact]
         public async Task LinqNoFroms()
         {
-            //BUG: The expression changes shape so can't auto-test comments, but they're definitely wrong
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class VisualBasicClass
+            await TestConversionVisualBasicToCSharp(@"Public Class VisualBasicClass
     Public Shared Sub X(objs As List(Of Object))
         Dim MaxObj As Integer = Aggregate o In objs Into Max(o.GetHashCode())
         Dim CountWhereObj As Integer = Aggregate o In objs Where o.GetHashCode() > 3 Into Count()
@@ -286,8 +285,7 @@ End Sub", @"private static void ASub()
         [Fact()]
         public async Task LinqGroupByTwoThingsAnonymously()
         {
-            //Can't auto-test comments when newlines get inserted
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Foo()
         Dim xs As New List(Of String)
         Dim y = From x In xs Group By x.Length, x.Count() Into Group
@@ -310,8 +308,7 @@ public partial class Class1
         [Fact]
         public async Task LinqGroupByAnonymous()
         {
-            //Very hard to automated test comments on such a complicated query
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Runtime.CompilerServices
+            await TestConversionVisualBasicToCSharp(@"Imports System.Runtime.CompilerServices
 
 Public Class AccountEntry
     Public Property LookupAccountEntryTypeId As Object

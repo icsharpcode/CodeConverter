@@ -40,7 +40,7 @@ namespace Test
         [Fact]
         public async Task TestGenericInheritanceInGlobalNamespace()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class A(Of T)
+            await TestConversionVisualBasicToCSharp(@"Class A(Of T)
 End Class
 Class B
     Inherits A(Of String)
@@ -108,7 +108,7 @@ namespace Test.@class
         [Fact]
         public async Task TestMixedCaseNamespace()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace [Aaa]
+            await TestConversionVisualBasicToCSharp(@"Namespace [Aaa]
     Friend Class A
         Shared Sub Foo()
         End Sub
@@ -437,8 +437,7 @@ internal partial class test : InvalidDataException
         [Fact]
         public async Task ClassInheritsClassWithNoParenthesesOnBaseCall()
         {
-            // Moving where the base call appears confuses the auto comment tester
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class DataSet1
+            await TestConversionVisualBasicToCSharp(@"Public Class DataSet1
     Inherits Global.System.Data.DataSet
     Public Sub New()
         MyBase.New
@@ -527,7 +526,7 @@ public partial class MyTestClass
         [Fact]
         public async Task EnumConversion()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Enum ESByte As SByte
+            await TestConversionVisualBasicToCSharp(@"Enum ESByte As SByte
     M1 = 0
 End Enum
 Enum EByte As Byte
@@ -833,7 +832,7 @@ internal static partial class Module1
         [Fact]
         public async Task NewConstraintLast()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Interface Foo
+            await TestConversionVisualBasicToCSharp(@"Public Interface Foo
 End Interface
 
 Public Class Bar(Of x As {New, Foo})
@@ -852,7 +851,7 @@ public partial class Bar<x> where x : Foo, new()
         [Fact]
         public async Task MyClassVirtualCallMethod()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class A
+            await TestConversionVisualBasicToCSharp(@"Public Class A
     Overridable Function F1() As Integer
         Return 1
     End Function
@@ -888,7 +887,7 @@ public abstract int F2();
         [Fact]
         public async Task MyClassVirtualCallProperty()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class A
+            await TestConversionVisualBasicToCSharp(@"Public Class A
     Overridable Property P1() As Integer = 1
     MustOverride Property P2() As Integer
     Public Sub TestMethod()

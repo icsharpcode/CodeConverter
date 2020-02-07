@@ -31,7 +31,7 @@ internal partial class Class1
         [Fact]
         public async Task CDate()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Class Class1
     Sub Foo()
         Dim x = CDate(""2019-09-04"")

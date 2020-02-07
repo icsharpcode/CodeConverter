@@ -32,8 +32,7 @@ internal partial class TestClass
         [Fact]
         public async Task TestCustomEvent()
         {
-            // Can't be automatically tested for comments since an extra method is generated
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
                 @"Class TestClass45
     Private Event backingField As EventHandler
 
