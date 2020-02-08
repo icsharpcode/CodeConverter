@@ -103,10 +103,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 ? sourceAndConverted.Select(sd => sd.Converted)
                 : PrependRootNamespace(sourceAndConverted, SyntaxFactory.IdentifierName(options.RootNamespace));
 
-            var usings = await importsClauses.GroupBy(c => c.ToString()).Select(g => g.First())
-                .SelectAsync(async c => (UsingDirectiveSyntax) await c.AcceptAsync(TriviaConvertingDeclarationVisitor, c.SyntaxTree == _semanticModel.SyntaxTree));
+            var usings = await importsClauses
+                .SelectAsync(async c => (UsingDirectiveSyntax)await c.AcceptAsync(TriviaConvertingDeclarationVisitor, c.SyntaxTree == _semanticModel.SyntaxTree));
             var usingDirectiveSyntax = usings
                 .Concat(_extraUsingDirectives.Select(u => SyntaxFactory.UsingDirective(SyntaxFactory.ParseName(u))))
+                .OrderByDescending(IsSystemUsing).ThenBy(u => u.Name.ToString().Replace("global::", "")).ThenByDescending(HasSourceMapAnnotations)
                 .GroupBy(u => (Name: u.Name.ToString(), Alias: u.Alias))
                 .Select(g => g.First());
 
@@ -116,6 +117,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                 attributes,
                 SyntaxFactory.List(convertedMembers)
             );
+        }
+
+        private static bool IsSystemUsing(UsingDirectiveSyntax u)
+        {
+            return u.Name.ToString().StartsWith("System") || u.Name.ToString().StartsWith("global::System");
+        }
+
+        private static bool HasSourceMapAnnotations(UsingDirectiveSyntax c)
+        {
+            return c.HasAnnotations(new[] { AnnotationConstants.SourceStartLineAnnotationKind, AnnotationConstants.SourceEndLineAnnotationKind });
         }
 
         private IReadOnlyCollection<MemberDeclarationSyntax> PrependRootNamespace(

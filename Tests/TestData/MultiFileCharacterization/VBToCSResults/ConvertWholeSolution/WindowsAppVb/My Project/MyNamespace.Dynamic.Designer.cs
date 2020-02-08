@@ -1,6 +1,6 @@
 using System;
-using System.Diagnostics;
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace WindowsAppVb.My
 {

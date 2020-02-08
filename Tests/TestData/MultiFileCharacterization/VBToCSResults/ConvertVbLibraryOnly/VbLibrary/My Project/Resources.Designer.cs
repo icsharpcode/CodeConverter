@@ -8,8 +8,8 @@
 // </auto-generated>
 // ------------------------------------------------------------------------------
 
-using Microsoft.VisualBasic;
 using System.Diagnostics;
+using Microsoft.VisualBasic;
 
 namespace VbLibrary.My.Resources
 {
