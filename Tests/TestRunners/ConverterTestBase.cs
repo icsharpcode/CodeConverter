@@ -81,7 +81,7 @@ namespace CodeConverter.Tests.TestRunners
 
         private static string GetSourceAndConverted(string sourceLinesWithComments, string convertedCode)
         {
-            return "\r\n-------------------\r\nConverted:\r\n" + convertedCode + "\r\n\r\nSource:\r\n" + sourceLinesWithComments;
+            return OurAssert.LineSplitter + "Converted:\r\n" + convertedCode + OurAssert.LineSplitter + "Source:\r\n" + sourceLinesWithComments;
         }
 
         private static string AddSurroundingMethodBlock(string expectedVisualBasicCode, bool expectSurroundingBlock)
@@ -152,7 +152,7 @@ End Sub";
             OurAssert.EqualIgnoringNewlines(expectedConversion, actualConversion, () =>
             {
                 StringBuilder sb = OurAssert.DescribeStringDiff(expectedConversion, actualConversion);
-                sb.AppendLine();
+                sb.AppendLine(OurAssert.LineSplitter);
                 sb.AppendLine("source:");
                 sb.AppendLine(originalSource);
                 if (RecharacterizeByWritingExpectedOverActual) TestFileRewriter.UpdateFiles(expectedConversion, actualConversion);

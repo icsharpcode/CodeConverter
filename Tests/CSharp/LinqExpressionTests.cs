@@ -308,7 +308,7 @@ public partial class Class1
         [Fact]
         public async Task LinqGroupByAnonymous()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System.Runtime.CompilerServices
+            await TestConversionVisualBasicToCSharp(@"Imports System.Runtime.CompilerServices ' Removed by simplifier
 
 Public Class AccountEntry
     Public Property LookupAccountEntryTypeId As Object

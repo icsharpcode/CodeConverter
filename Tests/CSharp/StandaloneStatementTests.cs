@@ -116,7 +116,7 @@ namespace nam
         [Fact]
         public async Task SingleUnusedUsingAliasTidiedAway()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports tr = System.IO.TextReader", "");
+            await TestConversionVisualBasicToCSharp(@"Imports tr = System.IO.TextReader ' Removed by simplifier", "");
         }
 
         [Fact]

@@ -617,7 +617,7 @@ internal static partial class TestClass
         public async Task TestExtensionMethodWithExistingImport()
         {
             await TestConversionVisualBasicToCSharp(
-@"Imports System.Runtime.CompilerServices
+@"Imports System.Runtime.CompilerServices ' Removed by simplifier
 
 Module TestClass
     <Extension()>

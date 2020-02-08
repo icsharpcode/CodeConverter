@@ -169,7 +169,7 @@ internal partial class TestClass
         [Fact]
         public async Task DictionaryIndexingIssue362()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System
+            await TestConversionVisualBasicToCSharp(@"Imports System ' Removed by simplifier
 Imports System.Collections.Generic
 Imports System.Linq
 
@@ -2070,7 +2070,7 @@ internal partial class TestClass
         [Fact]
         public async Task PartiallyQualifiedName()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System.Collections
+            await TestConversionVisualBasicToCSharp(@"Imports System.Collections ' Removed by simplifier
 Class TestClass
     Public Sub TestMethod(dir As String)
         IO.Path.Combine(dir, ""file.txt"")
@@ -2609,7 +2609,7 @@ public partial class MoreParsing
             await TestConversionVisualBasicToCSharp(
                 @"Imports System.IO
 Imports SIO = System.IO
-Imports Microsoft.VisualBasic
+Imports Microsoft.VisualBasic ' Removed by simplifier
 Imports VB = Microsoft.VisualBasic
 
 Public Class Test
