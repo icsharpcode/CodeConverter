@@ -851,34 +851,41 @@ namespace ICSharpCode.CodeConverter.Util
             if (triviaToConvert.Any() && triviaToConvert.First().Language == LanguageNames.CSharp) {
                 return CSharpToVBCodeConverter.Util.RecursiveTriviaConverter.ConvertTopLevel(triviaToConvert).Where(x => x != default(SyntaxTrivia));
             }
-            return triviaToConvert.Select(ConvertVBTrivia).Where(x => x != default(SyntaxTrivia));
+            return triviaToConvert.SelectMany(ConvertVBTrivia).Where(x => x != default(SyntaxTrivia));
         }
 
-        private static SyntaxTrivia ConvertVBTrivia(SyntaxTrivia t)
+        private static IEnumerable<SyntaxTrivia> ConvertVBTrivia(SyntaxTrivia t)
         {
-            if (t.IsKind(VBSyntaxKind.CommentTrivia))
-                return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.SingleLineCommentTrivia, $"// {t.GetCommentText()}");
+            if (t.IsKind(VBSyntaxKind.CommentTrivia)) {
+                yield return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.SingleLineCommentTrivia, $"// {t.GetCommentText()}");
+                yield return SyntaxFactory.ElasticCarriageReturnLineFeed;
+                yield break;
+            }
             if (t.IsKind(VBSyntaxKind.DocumentationCommentTrivia)) {
                 var previousWhitespace = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None).ToString();
                 var commentTextLines = t.GetCommentText().Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
                 var outputCommentText = "/// " + String.Join($"\r\n{previousWhitespace}/// ", commentTextLines) + Environment.NewLine;
-                return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.SingleLineCommentTrivia, outputCommentText); //It's always single line...even when it has multiple lines
+                yield return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.SingleLineCommentTrivia, outputCommentText); //It's always single line...even when it has multiple lines
+                yield return SyntaxFactory.ElasticCarriageReturnLineFeed;
+                yield break;
             }
 
             if (t.IsKind(VBSyntaxKind.WhitespaceTrivia)) {
-                return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.WhitespaceTrivia, t.ToString());
+                yield return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.WhitespaceTrivia, t.ToString());
+                yield break;
             }
 
             if (t.IsKind(VBSyntaxKind.EndOfLineTrivia)) {
                 // Mapping one to one here leads to newlines appearing where the natural line-end was in VB.
                 // e.g. ToString\r\n()
                 // Because C Sharp needs those brackets. Handling each possible case of this is far more effort than it's worth.
-                return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.EndOfLineTrivia, t.ToString());
+                yield return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.EndOfLineTrivia, t.ToString());
+                yield break;
             }
 
             //Each of these would need its own method to recreate for C# with the right structure probably so let's just warn about them for now.
             var convertedKind = t.GetCSKind();
-            return convertedKind.HasValue
+            yield return convertedKind.HasValue
                 ? SyntaxFactory.Comment($"/* TODO ERROR: Skipped {convertedKind.Value} */")
                 : default(SyntaxTrivia);
         }
