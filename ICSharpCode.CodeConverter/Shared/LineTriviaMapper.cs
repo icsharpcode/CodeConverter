@@ -12,16 +12,18 @@ namespace ICSharpCode.CodeConverter.Shared
         private SyntaxNode _target;
         private readonly SyntaxNode _source;
         private readonly TextLineCollection _sourceLines;
+        private readonly TextLineCollection _targetLines;
         private readonly IReadOnlyDictionary<int, TextLine> _targetLeadingTextLineFromSourceLine;
         private readonly IReadOnlyDictionary<int, TextLine> _targetTrailingTextLineFromSourceLine;
         private readonly List<SyntaxTriviaList> _leadingTriviaCarriedOver = new List<SyntaxTriviaList>();
         private readonly List<SyntaxTriviaList> _trailingTriviaCarriedOver = new List<SyntaxTriviaList>();
         private readonly Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>> Leading, List<IReadOnlyCollection<SyntaxTrivia>> Trailing)> _targetTokenToTrivia = new Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>>, List<IReadOnlyCollection<SyntaxTrivia>>)>();
 
-        public LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, SyntaxNode target, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
+        public LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, SyntaxNode target, TextLineCollection targetLines, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
         {
             _source = source;
             _sourceLines = sourceLines;
+            _targetLines = targetLines;
             _target = target;
             _targetLeadingTextLineFromSourceLine = targetLeadingTextLineFromSourceLine;
             _targetTrailingTextLineFromSourceLine = targetTrailingTextLineFromSourceLine;
@@ -37,18 +39,18 @@ namespace ICSharpCode.CodeConverter.Shared
         public static SyntaxNode MapSourceTriviaToTarget<TSource, TTarget>(TSource source, TTarget target)
             where TSource : SyntaxNode, ICompilationUnitSyntax where TTarget : SyntaxNode, ICompilationUnitSyntax
         {
-            var originalTargetLines = target.GetText().Lines;
+            var targetLines = target.GetText().Lines;
 
             var targetNodesBySourceStartLine = target.GetAnnotatedNodesAndTokens(AnnotationConstants.SourceStartLineAnnotationKind)
                 .ToLookup(n => n.GetAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).Select(a => int.Parse(a.Data)).Min())
-                .ToDictionary(g => g.Key, g => originalTargetLines.GetLineFromPosition(g.Min(x => x.Span.Start)));
+                .ToDictionary(g => g.Key, g => targetLines.GetLineFromPosition(g.Min(x => x.Span.Start)));
 
             var targetNodesBySourceEndLine = target.GetAnnotatedNodesAndTokens(AnnotationConstants.SourceEndLineAnnotationKind)
                 .ToLookup(n => n.GetAnnotations(AnnotationConstants.SourceEndLineAnnotationKind).Select(a => int.Parse(a.Data)).Max())
-                .ToDictionary(g => g.Key, g => originalTargetLines.GetLineFromPosition(g.Max(x => x.Span.End)));
+                .ToDictionary(g => g.Key, g => targetLines.GetLineFromPosition(g.Max(x => x.Span.End)));
 
             var sourceLines = source.GetText().Lines;
-            var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, target, targetNodesBySourceStartLine, targetNodesBySourceEndLine);
+            var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, target, targetLines, targetNodesBySourceStartLine, targetNodesBySourceEndLine);
 
             return lineTriviaMapper.GetTargetWithSourceTrivia();
         }
@@ -110,8 +112,7 @@ namespace ICSharpCode.CodeConverter.Shared
             }
 
             if (_trailingTriviaCarriedOver.Any()) {
-                var targetLine = GetTargetLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
-                if (targetLine == default) targetLine = GetTargetLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
+                var targetLine = GetTargetLine(sourceLineIndex, false);
                 if (targetLine != default) {
                     var originalToReplace = targetLine.GetTrailingForLine(_target);
                     if (originalToReplace != null) {
@@ -133,8 +134,7 @@ namespace ICSharpCode.CodeConverter.Shared
             }
 
             if (_leadingTriviaCarriedOver.Any()) {
-                var targetLine = GetTargetLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
-                if (targetLine == default) targetLine = GetTargetLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
+                var targetLine = GetTargetLine(sourceLineIndex, true);
                 if (targetLine != default) {
                     var originalToReplace = targetLine.GetLeadingForLine(_target);
                     if (originalToReplace != default) {
@@ -147,10 +147,17 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        private TextLine GetTargetLine(IReadOnlyDictionary<int, TextLine> sourceToTargetLine, int sourceLineIndex)
+        private TextLine GetTargetLine(int sourceLineIndex, bool isLeading)
         {
-            if (sourceToTargetLine.TryGetValue(sourceLineIndex, out var targetLine)) return targetLine;
-            return default;
+            var exactCollection = isLeading ? _targetLeadingTextLineFromSourceLine : _targetTrailingTextLineFromSourceLine;
+            if (exactCollection.TryGetValue(sourceLineIndex, out var targetLine)) return targetLine;
+
+            var approxCollection = isLeading ? _targetTrailingTextLineFromSourceLine : _targetLeadingTextLineFromSourceLine;
+            var offset = isLeading ? -1 : 1;
+            if (!approxCollection.TryGetValue(sourceLineIndex + offset, out var nearbyLine)) return default;
+
+            var approxLineNumber = nearbyLine.LineNumber - offset;
+            return 0 <= approxLineNumber && approxLineNumber < _targetLines.Count ? _targetLines[approxLineNumber] : default;
         }
 
         private (List<IReadOnlyCollection<SyntaxTrivia>> Leading, List<IReadOnlyCollection<SyntaxTrivia>> Trailing) GetTargetTriviaCollection(SyntaxToken toReplace)
