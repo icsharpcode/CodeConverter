@@ -87,7 +87,9 @@ namespace ICSharpCode.CodeConverter.Shared
                 var lastIndexToKeep = trivia.Value.Trailing.FindIndex(tl => tl.Any(t => t.IsEndOfLine()));
                 var moveToLeadingTrivia = trivia.Value.Trailing.Skip(lastIndexToKeep + 1).ToList();
                 if (moveToLeadingTrivia.Any()) {
-                    var nextTrivia = GetTargetTriviaCollection(trivia.Key.GetNextToken(true));
+                    var toReplace = trivia.Key.GetNextToken(true);
+                    var nextTrivia = GetTargetTriviaCollection(toReplace);
+                    if (!nextTrivia.Leading.Any()) nextTrivia.Leading.Add(toReplace.LeadingTrivia);
                     nextTrivia.Leading.InsertRange(0, moveToLeadingTrivia);
                     trivia.Value.Trailing.RemoveRange(lastIndexToKeep + 1, moveToLeadingTrivia.Count);
                 }
@@ -151,13 +153,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var exactCollection = isLeading ? _targetLeadingTextLineFromSourceLine : _targetTrailingTextLineFromSourceLine;
             if (exactCollection.TryGetValue(sourceLineIndex, out var targetLine)) return targetLine;
-
-            var approxCollection = isLeading ? _targetTrailingTextLineFromSourceLine : _targetLeadingTextLineFromSourceLine;
-            var offset = isLeading ? -1 : 1;
-            if (!approxCollection.TryGetValue(sourceLineIndex + offset, out var nearbyLine)) return default;
-
-            var approxLineNumber = nearbyLine.LineNumber - offset;
-            return 0 <= approxLineNumber && approxLineNumber < _targetLines.Count ? _targetLines[approxLineNumber] : default;
+            return default;
         }
 
         private (List<IReadOnlyCollection<SyntaxTrivia>> Leading, List<IReadOnlyCollection<SyntaxTrivia>> Trailing) GetTargetTriviaCollection(SyntaxToken toReplace)

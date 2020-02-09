@@ -858,7 +858,6 @@ namespace ICSharpCode.CodeConverter.Util
         {
             if (t.IsKind(VBSyntaxKind.CommentTrivia)) {
                 yield return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.SingleLineCommentTrivia, $"// {t.GetCommentText()}");
-                yield return SyntaxFactory.ElasticCarriageReturnLineFeed;
                 yield break;
             }
             if (t.IsKind(VBSyntaxKind.DocumentationCommentTrivia)) {
@@ -866,7 +865,6 @@ namespace ICSharpCode.CodeConverter.Util
                 var commentTextLines = t.GetCommentText().Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
                 var outputCommentText = "/// " + String.Join($"\r\n{previousWhitespace}/// ", commentTextLines) + Environment.NewLine;
                 yield return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.SingleLineCommentTrivia, outputCommentText); //It's always single line...even when it has multiple lines
-                yield return SyntaxFactory.ElasticCarriageReturnLineFeed;
                 yield break;
             }
 
