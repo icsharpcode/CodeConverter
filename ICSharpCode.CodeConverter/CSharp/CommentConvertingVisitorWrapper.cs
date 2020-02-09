@@ -43,12 +43,27 @@ namespace ICSharpCode.CodeConverter.CSharp
             try {
                 var converted = (T)await _wrappedVisitor.Visit(vbNode);
                 return addSourceMapping && _syntaxTree == vbNode.SyntaxTree
-                    ? vbNode.CopyAnnotationsTo(converted).WithVbSourceMappingFrom(vbNode)
+                    ? WithSourceMapping(vbNode, converted)
                     : converted.WithoutSourceMapping();
             } catch (Exception e) {
                 var dummyStatement = (T)(object)CS.SyntaxFactory.EmptyStatement();
                 return dummyStatement.WithCsTrailingErrorComment((VBasic.VisualBasicSyntaxNode)vbNode, e);
             }
+        }
+
+        /// <remarks>
+        /// If lots of special cases, move to wrapping the wrappedVisitor in another visitor, but I'd rather use a simple switch here initially.
+        /// </remarks>
+        private static T WithSourceMapping<T>(SyntaxNode vbNode, T converted) where T : CS.CSharpSyntaxNode
+        {
+            switch (vbNode) {
+                case VBSyntax.CompilationUnitSyntax vbCus when converted is CSSyntax.CompilationUnitSyntax csCus:
+                    converted = (T)(object)csCus.WithEndOfFileToken(
+                        csCus.EndOfFileToken.WithSourceMappingFrom(vbCus.EndOfFileToken)
+                     );
+                    break;
+            }
+            return vbNode.CopyAnnotationsTo(converted).WithVbSourceMappingFrom(vbNode);
         }
     }
 }
