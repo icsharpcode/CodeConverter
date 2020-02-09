@@ -62,7 +62,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csCompilation = csCompilation;
             _csSyntaxGenerator = csSyntaxGenerator;
             _visualBasicEqualityComparison = new VisualBasicEqualityComparison(_semanticModel, _extraUsingDirectives);
-            TriviaConvertingDeclarationVisitor = new CommentConvertingVisitorWrapper(this);
+            TriviaConvertingDeclarationVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
             var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator, _visualBasicEqualityComparison);
             CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, csCompilation);
             _additionalInitializers = new AdditionalInitializers();
@@ -755,7 +755,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitPropertyBlock(VBSyntax.PropertyBlockSyntax node)
         {
-            return await node.PropertyStatement.AcceptAsync(TriviaConvertingDeclarationVisitor);
+            return await node.PropertyStatement.AcceptAsync(TriviaConvertingDeclarationVisitor, false);
         }
 
         public override async Task<CSharpSyntaxNode> VisitAccessorBlock(VBSyntax.AccessorBlockSyntax node)
@@ -834,7 +834,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitMethodBlock(VBSyntax.MethodBlockSyntax node)
         {
-            var methodBlock = (BaseMethodDeclarationSyntax) await node.SubOrFunctionStatement.AcceptAsync(TriviaConvertingDeclarationVisitor);
+            var methodBlock = (BaseMethodDeclarationSyntax) await node.SubOrFunctionStatement.AcceptAsync(TriviaConvertingDeclarationVisitor, false);
 
             var declaredSymbol = ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
             if (!declaredSymbol.CanHaveMethodBody()) {
@@ -1069,7 +1069,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitOperatorBlock(VBSyntax.OperatorBlockSyntax node)
         {
-            return await node.BlockStatement.AcceptAsync(TriviaConvertingDeclarationVisitor);
+            return await node.BlockStatement.AcceptAsync(TriviaConvertingDeclarationVisitor, false);
         }
 
         public override async Task<CSharpSyntaxNode> VisitOperatorStatement(VBSyntax.OperatorStatementSyntax node)

@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.VisualBasic;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
@@ -14,45 +16,39 @@ namespace ICSharpCode.CodeConverter.CSharp
     internal class CommentConvertingVisitorWrapper
     {
         private readonly VBasic.VisualBasicSyntaxVisitor<Task<CS.CSharpSyntaxNode>> _wrappedVisitor;
+        private readonly SyntaxTree _syntaxTree;
 
-        public CommentConvertingVisitorWrapper(VBasic.VisualBasicSyntaxVisitor<Task<CS.CSharpSyntaxNode>> wrappedVisitor)
+        public CommentConvertingVisitorWrapper(VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>> wrappedVisitor, SyntaxTree syntaxTree)
         {
             _wrappedVisitor = wrappedVisitor;
+            _syntaxTree = syntaxTree;
         }
 
-        public async Task<T> Accept<T>(SyntaxNode node, bool addSourceMapping) where T : CS.CSharpSyntaxNode
+        public async Task<T> Accept<T>(SyntaxNode vbNode, bool addSourceMapping) where T : CS.CSharpSyntaxNode
         {
-            return await ConvertHandled<T>(node, addSourceMapping);
+            return await ConvertHandled<T>(vbNode, addSourceMapping);
         }
 
-        public async Task<SeparatedSyntaxList<TOut>> Accept<TIn, TOut>(SeparatedSyntaxList<TIn> nodes, bool addSourceMapping) where TIn : VBasic.VisualBasicSyntaxNode where TOut : CS.CSharpSyntaxNode
+        public async Task<SeparatedSyntaxList<TOut>> Accept<TIn, TOut>(SeparatedSyntaxList<TIn> vbNodes, bool addSourceMapping) where TIn : VBasic.VisualBasicSyntaxNode where TOut : CS.CSharpSyntaxNode
         {
-            var convertedNodes = await nodes.SelectAsync(n => ConvertHandled<TOut>(n, addSourceMapping));
-            var convertedSeparators = nodes.GetSeparators().Select(s => 
+            var convertedNodes = await vbNodes.SelectAsync(n => ConvertHandled<TOut>(n, addSourceMapping));
+            var convertedSeparators = vbNodes.GetSeparators().Select(s => 
                 CS.SyntaxFactory.Token(CS.SyntaxKind.CommaToken).WithConvertedTrailingTriviaFrom(s)
             );
             return CS.SyntaxFactory.SeparatedList(convertedNodes, convertedSeparators);
         }
 
-        private async Task<T> ConvertHandled<T>(SyntaxNode node, bool addSourceMapping) where T : CS.CSharpSyntaxNode
+        private async Task<T> ConvertHandled<T>(SyntaxNode vbNode, bool addSourceMapping) where T : CS.CSharpSyntaxNode
         {
             try {
-                var converted = (T) await Convert(node);
-                return addSourceMapping ? node.CopyAnnotationsTo(converted).WithVbSourceMappingFrom(node)
+                var converted = (T)await _wrappedVisitor.Visit(vbNode);
+                return addSourceMapping && _syntaxTree == vbNode.SyntaxTree
+                    ? vbNode.CopyAnnotationsTo(converted).WithVbSourceMappingFrom(vbNode)
                     : converted.WithoutSourceMapping();
             } catch (Exception e) {
                 var dummyStatement = (T)(object)CS.SyntaxFactory.EmptyStatement();
-                return dummyStatement.WithCsTrailingErrorComment((VBasic.VisualBasicSyntaxNode)node, e);
+                return dummyStatement.WithCsTrailingErrorComment((VBasic.VisualBasicSyntaxNode)vbNode, e);
             }
-        }
-
-        /// <remarks>
-        /// If lots of special cases, move to wrapping the wrappedVisitor in another visitor, but I'd rather use a simple switch here initially.
-        /// </remarks>
-        private async Task<CS.CSharpSyntaxNode> Convert(SyntaxNode vbNode)
-        {
-            var converted = await _wrappedVisitor.Visit(vbNode);
-            return converted;
         }
     }
 }
