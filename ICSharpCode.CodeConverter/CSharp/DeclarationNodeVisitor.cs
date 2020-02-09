@@ -955,9 +955,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (accessedThroughMyClass)
                 {
                     var identifierName = "MyClass" + csIdentifier.ValueText;
-                    var arrowClause = SyntaxFactory.ArrowExpressionClause(
-                        SyntaxFactory.ParseExpression($"this.{identifierName}();\n")
-                    );
+                    var arrowClause = SyntaxFactory.ArrowExpressionClause(SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(identifierName)));
                     var realDecl = SyntaxFactory.MethodDeclaration(
                         attributes,
                         convertedModifiers,
@@ -967,7 +965,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                         (ParameterListSyntax) await node.ParameterList.AcceptAsync(_triviaConvertingExpressionVisitor, false) ?? SyntaxFactory.ParameterList(),
                         constraints,
                         null,
-                        arrowClause
+                        arrowClause,
+                        SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SemicolonToken)
                     );
 
                     var declNode = (VBSyntax.StatementSyntax)node.Parent;
