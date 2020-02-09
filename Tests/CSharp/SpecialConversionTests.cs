@@ -46,7 +46,7 @@ internal partial class TestClass
         RaiseEvent(ByVal sender As Object, ByVal e As System.EventArgs)
             Console.WriteLine(""Event Raised"")
         End RaiseEvent
-    End Event
+    End Event ' RaiseEvent moves outside this block
 
     Public Sub RaiseCustomEvent()
         RaiseEvent MyEvent(Me, EventArgs.Empty)
@@ -68,7 +68,7 @@ internal partial class TestClass45
         {
             backingField -= value;
         }
-    }
+    } // RaiseEvent moves outside this block
 
     void OnMyEvent(object sender, EventArgs e)
     {

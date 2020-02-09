@@ -200,8 +200,8 @@ namespace NotNestedWithinRoot
         public async Task RootNamespaceOnlyAppliedToUnqualifiedMembers()
         {
             await TestConversionVisualBasicToCSharp(@"
-Class AClassInRootNamespace
-End Class
+Class AClassInRootNamespace ' Becomes nested - 1
+End Class ' Becomes nested - 2
 
 Namespace Global.NotNestedWithinRoot
     Class AClassInANamespace
@@ -222,9 +222,9 @@ namespace NotNestedWithinRoot
 
 namespace TheRootNamespace
 {
-    internal partial class AClassInRootNamespace
+    internal partial class AClassInRootNamespace // Becomes nested - 1
     {
-    }
+    } // Becomes nested - 2
 
     namespace NestedWithinRoot
     {
