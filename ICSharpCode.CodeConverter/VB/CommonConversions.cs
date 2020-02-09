@@ -264,7 +264,7 @@ namespace ICSharpCode.CodeConverter.VB
                 default:
                     throw new NotSupportedException();
             }
-            return SyntaxFactory.AccessorBlock(blockKind, stmt, body, endStmt).WithSourceMappingFrom(node);
+            return SyntaxFactory.AccessorBlock(blockKind, stmt, body, endStmt).WithCsSourceMappingFrom(node);
         }
 
         private static SyntaxToken GetVbPropertyBackingFieldName(CSS.BasePropertyDeclarationSyntax parent)

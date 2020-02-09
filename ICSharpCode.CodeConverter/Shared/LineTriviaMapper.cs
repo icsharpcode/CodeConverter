@@ -115,6 +115,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             if (_trailingTriviaCarriedOver.Any()) {
                 var targetLine = GetTargetLine(sourceLineIndex, false);
+                if (targetLine == default) targetLine = GetTargetLine(sourceLineIndex, true);
                 if (targetLine != default) {
                     var originalToReplace = targetLine.GetTrailingForLine(_target);
                     if (originalToReplace != null) {

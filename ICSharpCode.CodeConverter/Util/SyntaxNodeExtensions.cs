@@ -222,7 +222,21 @@ namespace ICSharpCode.CodeConverter.Util
             return semanticModel.GetDeclaredSymbol(typeBlockSyntax);
         }
 
-        public static SyntaxList<T> WithSourceMappingFrom<T>(this SyntaxList<T> converted, SyntaxNode node) where T : SyntaxNode
+        public static SyntaxList<T> WithVbSourceMappingFrom<T>(this SyntaxList<T> converted, SyntaxNode node) where T : CSharpSyntaxNode
+        {
+            if (converted.Count != 1) return WithSourceMappingFrom(converted, node);
+            var single = converted.Single();
+            return converted.Replace(single, single.WithVbSourceMappingFrom(node));
+        }
+
+        public static SyntaxList<T> WithCsSourceMappingFrom<T>(this SyntaxList<T> converted, SyntaxNode node) where T : VisualBasicSyntaxNode
+        {
+            if (converted.Count != 1) return WithSourceMappingFrom(converted, node);
+            var single = converted.Single();
+            return converted.Replace(single, single.WithCsSourceMappingFrom(node));
+        }
+
+        private static SyntaxList<T> WithSourceMappingFrom<T>(this SyntaxList<T> converted, SyntaxNode node) where T : SyntaxNode
         {
             if (!converted.Any()) return converted;
             var origLinespan = node.SyntaxTree.GetLineSpan(node.Span);
@@ -232,13 +246,31 @@ namespace ICSharpCode.CodeConverter.Util
             return converted.Replace(last, last.WithSourceEndLineAnnotation(origLinespan));
         }
 
-        public static T WithSourceMappingFrom<T>(this T converted, SyntaxNodeOrToken fromSource) where T : SyntaxNode
+        public static T WithVbSourceMappingFrom<T>(this T converted, SyntaxNodeOrToken fromSource) where T : CSharpSyntaxNode
         {
             if (converted == null) return null;
-            var startLinespan = fromSource.SyntaxTree.GetLineSpan(fromSource.Span);
-            return converted
-                .WithSourceStartLineAnnotation(startLinespan)
-                .WithSourceEndLineAnnotation(startLinespan);
+            var lastCsConvertedToken = converted.GetLastToken();
+            if (lastCsConvertedToken.IsKind(CSSyntaxKind.CloseBraceToken) && IsBlockParent(converted, lastCsConvertedToken) && fromSource.AsNode()?.ChildNodes().LastOrDefault() is VisualBasicSyntaxNode lastVbSourceNode) {
+                converted = converted.ReplaceToken(lastCsConvertedToken, lastCsConvertedToken.WithSourceMappingFrom(lastVbSourceNode));
+            }
+            return converted.WithSourceMappingFrom(fromSource);
+        }
+
+        public static T WithCsSourceMappingFrom<T>(this T converted, SyntaxNodeOrToken fromSource) where T : VisualBasicSyntaxNode
+        {
+            if (converted == null) return null;
+            var lastCsSourceToken = fromSource.AsNode()?.GetLastToken();
+            if (lastCsSourceToken?.IsKind(CSSyntaxKind.CloseBraceToken) == true && IsBlockParent(fromSource.AsNode(), lastCsSourceToken.Value) && converted.ChildNodes().LastOrDefault() is VisualBasicSyntaxNode lastVbConvertedNode) {
+                converted = converted.ReplaceNode(lastVbConvertedNode, lastVbConvertedNode.WithSourceMappingFrom(lastCsSourceToken.Value));
+            }
+            return converted.WithSourceMappingFrom(fromSource);
+        }
+
+        private static T WithSourceMappingFrom<T>(this T converted, SyntaxNodeOrToken fromSource) where T : SyntaxNode
+        {
+            if (converted == null) return null;
+            var linespan = fromSource.SyntaxTree.GetLineSpan(fromSource.Span);
+            return converted.WithSourceStartLineAnnotation(linespan).WithSourceEndLineAnnotation(linespan);
         }
 
         public static T WithSourceStartLineAnnotation<T>(this T node, FileLinePositionSpan sourcePosition) where T : SyntaxNode
@@ -259,6 +291,11 @@ namespace ICSharpCode.CodeConverter.Util
             return converted.ReplaceNodes(converted.DescendantNodes(), (o, r) =>
                 r.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind)
             );
+        }
+
+        private static bool IsBlockParent(SyntaxNode converted, SyntaxToken lastCsConvertedToken)
+        {
+            return lastCsConvertedToken.Parent == converted || lastCsConvertedToken.Parent is BlockSyntax b && b.Parent == converted;
         }
 
         /// <summary>

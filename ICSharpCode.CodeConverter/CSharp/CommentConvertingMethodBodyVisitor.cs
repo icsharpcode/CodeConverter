@@ -30,7 +30,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             try {
                 var converted = await _wrappedVisitor.Visit(node);
-                return converted.WithSourceMappingFrom(node);
+                return converted.WithVbSourceMappingFrom(node);
             } catch (Exception e) {
                 var withTrailingErrorComment = SyntaxFactory.EmptyStatement()
                     .WithCsTrailingErrorComment<CSSyntax.StatementSyntax>((VisualBasicSyntaxNode)node, e);

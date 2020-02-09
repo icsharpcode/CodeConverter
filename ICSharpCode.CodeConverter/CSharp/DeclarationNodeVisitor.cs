@@ -964,7 +964,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         returnType,
                         null, CommonConversions.ConvertIdentifier(node.Identifier),
                         typeParameters,
-                        (ParameterListSyntax) await node.ParameterList.AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList(),
+                        (ParameterListSyntax) await node.ParameterList.AcceptAsync(_triviaConvertingExpressionVisitor, false) ?? SyntaxFactory.ParameterList(),
                         constraints,
                         null,
                         arrowClause

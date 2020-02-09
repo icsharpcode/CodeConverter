@@ -27,7 +27,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             try {
                 var converted = _wrappedVisitor.Visit(node);
-                return addSourceMapping ? node.CopyAnnotationsTo(converted).WithSourceMappingFrom(node)
+                return addSourceMapping ? node.CopyAnnotationsTo(converted).WithCsSourceMappingFrom(node)
                     : converted.WithoutSourceMapping();
             } catch (Exception e) {
                 var dummyStatement = SyntaxFactory.EmptyStatement();

@@ -38,7 +38,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             try {
                 var converted = (T) await Convert(node);
-                return addSourceMapping ? node.CopyAnnotationsTo(converted).WithSourceMappingFrom(node)
+                return addSourceMapping ? node.CopyAnnotationsTo(converted).WithVbSourceMappingFrom(node)
                     : converted.WithoutSourceMapping();
             } catch (Exception e) {
                 var dummyStatement = (T)(object)CS.SyntaxFactory.EmptyStatement();

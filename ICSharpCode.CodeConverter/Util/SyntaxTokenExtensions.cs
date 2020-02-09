@@ -1061,12 +1061,11 @@ namespace ICSharpCode.CodeConverter.Util
                    || isConstructor && token.IsKind(SyntaxKind.StaticKeyword);
         }
 
-        public static SyntaxToken WithSourceMappingFrom(this SyntaxToken converted, SyntaxToken fromToken)
+        public static SyntaxToken WithSourceMappingFrom(this SyntaxToken converted, SyntaxNodeOrToken fromToken)
         {
             var origLinespan = fromToken.SyntaxTree.GetLineSpan(fromToken.Span);
-            return fromToken.CopyAnnotationsTo(converted)
-                .WithSourceStartLineAnnotation(origLinespan)
-                .WithSourceEndLineAnnotation(origLinespan);
+            if (fromToken.IsToken) converted = fromToken.AsToken().CopyAnnotationsTo(converted);
+            return converted.WithSourceStartLineAnnotation(origLinespan).WithSourceEndLineAnnotation(origLinespan);
         }
 
         public static SyntaxToken WithSourceStartLineAnnotation(this SyntaxToken node, FileLinePositionSpan sourcePosition)
