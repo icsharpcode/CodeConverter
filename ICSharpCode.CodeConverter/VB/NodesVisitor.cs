@@ -74,7 +74,7 @@ namespace ICSharpCode.CodeConverter.VB
             _semanticModel = semanticModel;
             _vbViewOfCsSymbols = vbViewOfCsSymbols;
             _vbSyntaxGenerator = vbSyntaxGenerator;
-            TriviaConvertingVisitor = new CommentConvertingVisitorWrapper<VisualBasicSyntaxNode>(new CommentConvertingNodesVisitor(this));
+            TriviaConvertingVisitor = new CommentConvertingVisitorWrapper<VisualBasicSyntaxNode>(this);
             _commonConversions = new CommonConversions(semanticModel, vbSyntaxGenerator, TriviaConvertingVisitor);
             _cSharpHelperMethodDefinition = new CSharpHelperMethodDefinition();
         }
