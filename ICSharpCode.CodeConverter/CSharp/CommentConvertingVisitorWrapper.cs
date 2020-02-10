@@ -32,8 +32,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         public async Task<SeparatedSyntaxList<TOut>> Accept<TIn, TOut>(SeparatedSyntaxList<TIn> vbNodes, bool addSourceMapping) where TIn : VBasic.VisualBasicSyntaxNode where TOut : CS.CSharpSyntaxNode
         {
             var convertedNodes = await vbNodes.SelectAsync(n => ConvertHandled<TOut>(n, addSourceMapping));
-            var convertedSeparators = vbNodes.GetSeparators().Select(s => 
-                CS.SyntaxFactory.Token(CS.SyntaxKind.CommaToken).WithConvertedTrailingTriviaFrom(s)
+            var convertedSeparators = vbNodes.GetSeparators().Select(s =>
+                CS.SyntaxFactory.Token(CS.SyntaxKind.CommaToken)
+                    .WithConvertedTrailingTriviaFrom(s, TriviaKinds.FormattingOnly)
+                    .WithSourceMappingFrom(s)
             );
             return CS.SyntaxFactory.SeparatedList(convertedNodes, convertedSeparators);
         }

@@ -48,11 +48,9 @@ using VBCommonConversions = ICSharpCode.CodeConverter.VB.CommonConversions;
 
 namespace ICSharpCode.CodeConverter.Util
 {
-#if NR6
-    public
-#endif
-    internal static partial class SyntaxNodeExtensions
+    internal static class SyntaxNodeExtensions
     {
+
         public static IEnumerable<SyntaxNode> GetAncestors(this SyntaxNode node)
         {
             var current = node.Parent;
@@ -855,21 +853,22 @@ namespace ICSharpCode.CodeConverter.Util
             return node.WithLeadingTrivia(convertedTrivia);
         }
 
-        public static T WithConvertedTrailingTriviaFrom<T>(this T node, SyntaxToken fromToken) where T : SyntaxNode
+        public static T WithConvertedTrailingTriviaFrom<T>(this T node, SyntaxToken fromToken, TriviaKinds triviaKinds = null) where T : SyntaxNode
         {
             var lastConvertedToken = node.GetLastToken();
-            return node.ReplaceToken(lastConvertedToken, lastConvertedToken.WithConvertedTrailingTriviaFrom(fromToken));
+            return node.ReplaceToken(lastConvertedToken, lastConvertedToken.WithConvertedTrailingTriviaFrom(fromToken, triviaKinds));
         }
 
-        public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
+        public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode, TriviaKinds triviaKinds = null)
         {
-            return node.WithConvertedTrailingTriviaFrom(otherNode?.GetLastToken());
+            return node.WithConvertedTrailingTriviaFrom(otherNode?.GetLastToken(), triviaKinds);
         }
 
-        public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxToken? otherToken)
+        public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxToken? otherToken, TriviaKinds triviaKinds = null)
         {
+            triviaKinds = triviaKinds ?? TriviaKinds.All;
             if (!otherToken.HasValue || !otherToken.Value.HasTrailingTrivia) return node;
-            var convertedTrivia = ConvertTrivia(otherToken.Value.TrailingTrivia);
+            var convertedTrivia = ConvertTrivia(otherToken.Value.TrailingTrivia.Where(triviaKinds.ShouldAccept).ToArray());
             return node.WithTrailingTrivia(node.ImportantTrailingTrivia().Concat(convertedTrivia));
         }
 
