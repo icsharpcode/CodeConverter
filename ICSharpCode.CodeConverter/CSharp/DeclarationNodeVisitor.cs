@@ -609,7 +609,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     break;
                 case VBSyntax.AsNewClauseSyntax c:
                     initializer = SyntaxFactory.EqualsValueClause((ExpressionSyntax)await c.NewExpression.AcceptAsync(_triviaConvertingExpressionVisitor));
-                    vbType = VBasic.SyntaxExtensions.Type(c.NewExpression.WithoutTrivia()); // We'll end up visiting this twice so avoid trivia this time
+                    vbType = VBasic.SyntaxExtensions.Type(c.NewExpression);
                     break;
                 case null:
                     vbType = null;
@@ -618,7 +618,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     throw new NotImplementedException($"{node.AsClause.GetType().FullName} not implemented!");
             }
 
-            var rawType = (TypeSyntax) await vbType.AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ObjectKeyword));
+            var rawType = (TypeSyntax) await vbType.AcceptAsync(_triviaConvertingExpressionVisitor)
+                ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ObjectKeyword));
 
             AccessorListSyntax accessors = null;
             if (node.Parent is VBSyntax.PropertyBlockSyntax propertyBlock) {
