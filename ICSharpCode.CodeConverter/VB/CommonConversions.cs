@@ -525,7 +525,8 @@ namespace ICSharpCode.CodeConverter.VB
                     idText = "Item";
                     break;
             }
-            return Identifier(idText, keywordRequiresEscaping).WithSourceMappingFrom(id);
+            var identifier = Identifier(idText, keywordRequiresEscaping);
+            return id.SyntaxTree == _semanticModel.SyntaxTree ? identifier.WithSourceMappingFrom(id) : identifier;
         }
 
         private string AdjustIfEventIdentifier(SyntaxToken id, CS.CSharpSyntaxNode parent)

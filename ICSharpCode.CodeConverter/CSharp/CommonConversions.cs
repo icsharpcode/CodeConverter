@@ -269,9 +269,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                         text = "_" + text;
                     }
                 }
+                return CsEscapedIdentifier(text).WithSourceMappingFrom(id);
             }
 
-            return CsEscapedIdentifier(text).WithSourceMappingFrom(id);
+            return CsEscapedIdentifier(text);
         }
 
         /// <summary>
