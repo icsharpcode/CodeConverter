@@ -1077,5 +1077,10 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return node.WithAdditionalAnnotations(AnnotationConstants.SourceEndLine(sourcePosition));
         }
+
+        public static SyntaxToken WithoutSourceMapping(this SyntaxToken token)
+        {
+            return token.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind);
+        }
     }
 }

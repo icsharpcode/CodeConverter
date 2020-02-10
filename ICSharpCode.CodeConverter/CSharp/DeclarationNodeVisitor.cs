@@ -768,26 +768,28 @@ namespace ICSharpCode.CodeConverter.CSharp
             var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
             var attributes = await CommonConversions.ConvertAttributes(node.AccessorStatement.AttributeLists);
             var modifiers = CommonConversions.ConvertModifiers(node, node.AccessorStatement.Modifiers, TokenContext.Local);
-            string potentialMethodId = null;
-            var containingProperty = node.GetAncestor<VBSyntax.PropertyBlockSyntax>()?.PropertyStatement;
+            string potentialMethodId;
+            var ancestoryPropertyBlock = node.GetAncestor<VBSyntax.PropertyBlockSyntax>();
+            var containingPropertyStmt = ancestoryPropertyBlock?.PropertyStatement;
+            var isFirst = ancestoryPropertyBlock?.Accessors.FirstOrDefault() == node;
             switch (node.Kind()) {
                 case VBasic.SyntaxKind.GetAccessorBlock:
                     blockKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind.GetAccessorDeclaration;
-                    potentialMethodId = $"get_{(containingProperty.Identifier.Text)}";
+                    potentialMethodId = $"get_{(containingPropertyStmt.Identifier.Text)}";
 
-                    if (containingProperty.AsClause is VBSyntax.SimpleAsClauseSyntax getAsClause &&
+                    if (containingPropertyStmt.AsClause is VBSyntax.SimpleAsClauseSyntax getAsClause &&
                         await ShouldConvertAsParameterizedProperty()) {
-                        var method = await CreateMethodDeclarationSyntax(containingProperty?.ParameterList);
-                        return method.WithReturnType((TypeSyntax) await getAsClause.Type.AcceptAsync(_triviaConvertingExpressionVisitor));
+                        var method = await CreateMethodDeclarationSyntax(containingPropertyStmt?.ParameterList);
+                        return method.WithReturnType((TypeSyntax) await getAsClause.Type.AcceptAsync(_triviaConvertingExpressionVisitor, isFirst));
                     }
                     break;
                 case VBasic.SyntaxKind.SetAccessorBlock:
                     blockKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind.SetAccessorDeclaration;
-                    potentialMethodId = $"set_{(containingProperty.Identifier.Text)}";
+                    potentialMethodId = $"set_{(containingPropertyStmt.Identifier.Text)}";
 
-                    if (containingProperty.AsClause is VBSyntax.SimpleAsClauseSyntax setAsClause && await ShouldConvertAsParameterizedProperty()) {
-                        var setMethod = await CreateMethodDeclarationSyntax(containingProperty?.ParameterList);
-                        var valueParameterType = (TypeSyntax) await setAsClause.Type.AcceptAsync(_triviaConvertingExpressionVisitor);
+                    if (containingPropertyStmt.AsClause is VBSyntax.SimpleAsClauseSyntax setAsClause && await ShouldConvertAsParameterizedProperty()) {
+                        var setMethod = await CreateMethodDeclarationSyntax(containingPropertyStmt?.ParameterList);
+                        var valueParameterType = (TypeSyntax) await setAsClause.Type.AcceptAsync(_triviaConvertingExpressionVisitor, isFirst);
                         return setMethod.AddParameterListParameters(SyntaxFactory.Parameter(SyntaxFactory.Identifier("value")).WithType(valueParameterType));
                     }
                     break;
@@ -810,7 +812,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             async Task<bool> ShouldConvertAsParameterizedProperty()
             {
-                if (containingProperty.ParameterList?.Parameters.Any() == true && !CommonConversions.IsDefaultIndexer(containingProperty)) {
+                if (containingPropertyStmt.ParameterList?.Parameters.Any() == true && !CommonConversions.IsDefaultIndexer(containingPropertyStmt)) {
                     return true;
                 }
 
@@ -819,7 +821,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             async Task<MethodDeclarationSyntax> CreateMethodDeclarationSyntax(VBSyntax.ParameterListSyntax containingPropParameterList)
             {
-                var parameterListSyntax = await containingPropParameterList.AcceptAsync(_triviaConvertingExpressionVisitor);
+                var parameterListSyntax = await containingPropParameterList.AcceptAsync(_triviaConvertingExpressionVisitor, isFirst);
                 MethodDeclarationSyntax methodDeclarationSyntax = SyntaxFactory.MethodDeclaration(attributes, modifiers,
                     SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VoidKeyword)), null,
                     SyntaxFactory.Identifier(potentialMethodId), null,
@@ -1123,7 +1125,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var methodBodyVisitor = CreateMethodBodyVisitor(node);
             return SyntaxFactory.ConstructorDeclaration(
                 SyntaxFactory.List(attributes),
-                modifiers, CommonConversions.ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier),
+                modifiers, 
+                CommonConversions.ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier).WithoutSourceMapping(), //TODO Use semantic model for this name
                 (ParameterListSyntax) await block.ParameterList.AcceptAsync(_triviaConvertingExpressionVisitor),
                 ctorCall,
                 SyntaxFactory.Block(await statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor)))

@@ -609,7 +609,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 stmts = stmts.Add(stmt);
                 reusableExpr = SyntaxFactory.IdentifierName(varName);
             } else {
-                reusableExpr = expr.WithoutTrivia().WithoutAnnotations();
+                reusableExpr = expr.WithoutSourceMapping();
             }
 
             return (reusableExpr, stmts);

@@ -284,7 +284,7 @@ namespace ICSharpCode.CodeConverter.Util
         public static T WithoutSourceMapping<T>(this T converted) where T : SyntaxNode
         {
             converted = converted.ReplaceTokens(converted.DescendantTokens(), (o, r) =>
-                r.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind)
+                r.WithoutSourceMapping()
             );
             return converted.ReplaceNodes(converted.DescendantNodes(), (o, r) =>
                 r.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind)
