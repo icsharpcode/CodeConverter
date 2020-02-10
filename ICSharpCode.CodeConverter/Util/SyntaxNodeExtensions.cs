@@ -248,7 +248,7 @@ namespace ICSharpCode.CodeConverter.Util
         {
             if (converted == null) return null;
             var lastCsConvertedToken = converted.GetLastToken();
-            if (lastCsConvertedToken.IsKind(CSSyntaxKind.CloseBraceToken) && IsBlockParent(converted, lastCsConvertedToken) && fromSource.AsNode()?.ChildNodes().LastOrDefault() is VisualBasicSyntaxNode lastVbSourceNode) {
+            if (lastCsConvertedToken.IsKind(CSSyntaxKind.CloseBraceToken) && IsBlockParent(converted, lastCsConvertedToken) && fromSource.AsNode()?.ChildNodes().LastOrDefault() is EndBlockStatementSyntax lastVbSourceNode) {
                 converted = converted.ReplaceToken(lastCsConvertedToken, lastCsConvertedToken.WithSourceMappingFrom(lastVbSourceNode));
             }
             return converted.WithSourceMappingFrom(fromSource);
@@ -258,7 +258,7 @@ namespace ICSharpCode.CodeConverter.Util
         {
             if (converted == null) return null;
             var lastCsSourceToken = fromSource.AsNode()?.GetLastToken();
-            if (lastCsSourceToken?.IsKind(CSSyntaxKind.CloseBraceToken) == true && IsBlockParent(fromSource.AsNode(), lastCsSourceToken.Value) && converted.ChildNodes().LastOrDefault() is VisualBasicSyntaxNode lastVbConvertedNode) {
+            if (lastCsSourceToken?.IsKind(CSSyntaxKind.CloseBraceToken) == true && IsBlockParent(fromSource.AsNode(), lastCsSourceToken.Value) && converted.ChildNodes().LastOrDefault() is EndBlockStatementSyntax lastVbConvertedNode) {
                 converted = converted.ReplaceNode(lastVbConvertedNode, lastVbConvertedNode.WithSourceMappingFrom(lastCsSourceToken.Value));
             }
             return converted.WithSourceMappingFrom(fromSource);
