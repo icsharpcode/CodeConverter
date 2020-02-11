@@ -417,7 +417,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (node.ElseBlock != null) {
                 var elseBlock = SyntaxFactory.Block(await ConvertStatements(node.ElseBlock.Statements));
-                elseClause = SyntaxFactory.ElseClause(elseBlock);// so that you get a neat "else if" at the end
+                // so that you get a neat "else if" at the end
+                elseClause = SyntaxFactory.ElseClause(elseBlock)
+                    .WithVbSourceMappingFrom(node.ElseBlock); //Special case where explicit mapping is needed since there are no other visited symbols around, else block is the wrong shape to visit
             }
 
             foreach (var elseIf in node.ElseIfBlocks.Reverse()) {
