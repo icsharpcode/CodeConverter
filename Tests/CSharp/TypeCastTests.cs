@@ -31,7 +31,7 @@ internal partial class Class1
         [Fact]
         public async Task CDate()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Class Class1
     Sub Foo()
         Dim x = CDate(""2019-09-04"")
@@ -109,9 +109,7 @@ internal partial class Class1
     {
         var x = new ArrayList();
         x.Add(""a"");
-
         var xs = new string[2];
-
         xs[0] = Conversions.ToString(x[0]);
     }
 }" + Environment.NewLine);
@@ -234,7 +232,8 @@ internal partial class Class1
         Dim o As Object = 5L
     End Sub
 End Class",
-@"internal partial class Class1
+@"
+internal partial class Class1
 {
     private void Test()
     {
@@ -252,7 +251,8 @@ End Class",
         Dim o As Object = 5F
     End Sub
 End Class",
-@"internal partial class Class1
+@"
+internal partial class Class1
 {
     private void Test()
     {
@@ -269,7 +269,8 @@ End Class",
     Private Sub Test()
         Dim o As Object = 5.0D
     End Sub
-End Class" + Environment.NewLine, @"internal partial class Class1
+End Class" + Environment.NewLine, @"
+internal partial class Class1
 {
     private void Test()
     {
@@ -314,7 +315,8 @@ End Sub
     Private Function QuoteSplit(ByVal text As String) As String()
         Return text.Split("""""""")
     End Function
-End Class", @"internal partial class CharTestClass
+End Class", @"
+internal partial class CharTestClass
 {
     private string[] QuoteSplit(string text)
     {

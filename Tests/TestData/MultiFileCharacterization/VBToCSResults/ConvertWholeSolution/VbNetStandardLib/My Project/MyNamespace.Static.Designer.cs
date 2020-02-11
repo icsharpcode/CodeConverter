@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
-using Microsoft.VisualBasic;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
+using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
 
 namespace Microsoft.VisualBasic
@@ -18,6 +18,9 @@ namespace Microsoft.VisualBasic
     internal sealed class Embedded : Attribute
     {
     }
+
+    // Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
+
 }
 
 namespace Microsoft.VisualBasic
@@ -33,28 +36,34 @@ namespace Microsoft.VisualBasic
             private EmbeddedOperators()
             {
             }
+
             public static int CompareString(string Left, string Right, bool TextCompare)
             {
                 if (Left == Right)
                 {
                     return 0;
                 }
+
                 if (Left == null)
                 {
                     if (Right.Length == 0)
                     {
                         return 0;
                     }
+
                     return -1;
                 }
+
                 if (Right == null)
                 {
                     if (Left.Length == 0)
                     {
                         return 0;
                     }
+
                     return 1;
                 }
+
                 int Result;
                 if (TextCompare)
                 {
@@ -65,6 +74,7 @@ namespace Microsoft.VisualBasic
                 {
                     Result = string.CompareOrdinal(Left, Right);
                 }
+
                 if (Result == 0)
                 {
                     return 0;
@@ -79,6 +89,7 @@ namespace Microsoft.VisualBasic
                 }
             }
         }
+
         [Embedded()]
         [DebuggerNonUserCode()]
         [System.Runtime.CompilerServices.CompilerGenerated()]
@@ -88,6 +99,7 @@ namespace Microsoft.VisualBasic
             private Conversions()
             {
             }
+
             private static object GetEnumValue(object Value)
             {
                 var underlyingType = Enum.GetUnderlyingType(Value.GetType());
@@ -128,12 +140,14 @@ namespace Microsoft.VisualBasic
                     throw new InvalidCastException();
                 }
             }
+
             public static bool ToBoolean(string Value)
             {
                 if (Value == null)
                 {
                     Value = "";
                 }
+
                 try
                 {
                     var loc = GetCultureInfo();
@@ -145,11 +159,13 @@ namespace Microsoft.VisualBasic
                     {
                         return true;
                     }
+
                     var i64Value = default(long);
                     if (IsHexOrOctValue(Value, ref i64Value))
                     {
                         return ToBoolean(i64Value);
                     }
+
                     return ToBoolean(ParseDouble(Value));
                 }
                 catch (FormatException e)
@@ -157,16 +173,19 @@ namespace Microsoft.VisualBasic
                     throw new InvalidCastException(e.Message, e);
                 }
             }
+
             public static bool ToBoolean(object Value)
             {
                 if (Value == null)
                 {
                     return false;
                 }
+
                 if (Value is Enum)
                 {
                     Value = GetEnumValue(Value);
                 }
+
                 if (Value is bool)
                 {
                     return ToBoolean((bool)Value);
@@ -219,14 +238,17 @@ namespace Microsoft.VisualBasic
                 {
                     return ToBoolean((string)Value);
                 }
+
                 throw new InvalidCastException();
             }
+
             public static byte ToByte(string Value)
             {
                 if (Value == null)
                 {
                     return 0;
                 }
+
                 try
                 {
                     var i64Value = default(long);
@@ -234,6 +256,7 @@ namespace Microsoft.VisualBasic
                     {
                         return ToByte(i64Value);
                     }
+
                     return ToByte(ParseDouble(Value));
                 }
                 catch (FormatException e)
@@ -241,16 +264,19 @@ namespace Microsoft.VisualBasic
                     throw new InvalidCastException(e.Message, e);
                 }
             }
+
             public static byte ToByte(object Value)
             {
                 if (Value == null)
                 {
                     return 0;
                 }
+
                 if (Value is Enum)
                 {
                     Value = GetEnumValue(Value);
                 }
+
                 if (Value is bool)
                 {
                     return ToByte((bool)Value);
@@ -303,8 +329,10 @@ namespace Microsoft.VisualBasic
                 {
                     return ToByte((string)Value);
                 }
+
                 throw new InvalidCastException();
             }
+
             [CLSCompliant(false)]
             public static sbyte ToSByte(string Value)
             {
@@ -312,6 +340,7 @@ namespace Microsoft.VisualBasic
                 {
                     return 0;
                 }
+
                 try
                 {
                     var i64Value = default(long);
@@ -319,6 +348,7 @@ namespace Microsoft.VisualBasic
                     {
                         return ToSByte(i64Value);
                     }
+
                     return ToSByte(ParseDouble(Value));
                 }
                 catch (FormatException e)
@@ -326,6 +356,7 @@ namespace Microsoft.VisualBasic
                     throw new InvalidCastException(e.Message, e);
                 }
             }
+
             [CLSCompliant(false)]
             public static sbyte ToSByte(object Value)
             {
@@ -333,10 +364,12 @@ namespace Microsoft.VisualBasic
                 {
                     return 0;
                 }
+
                 if (Value is Enum)
                 {
                     Value = GetEnumValue(Value);
                 }
+
                 if (Value is bool)
                 {
                     return ToSByte((bool)Value);
@@ -389,14 +422,17 @@ namespace Microsoft.VisualBasic
                 {
                     return ToSByte((string)Value);
                 }
+
                 throw new InvalidCastException();
             }
+
             public static short ToShort(string Value)
             {
                 if (Value == null)
                 {
                     return 0;
                 }
+
                 try
                 {
                     var i64Value = default(long);
@@ -404,6 +440,7 @@ namespace Microsoft.VisualBasic
                     {
                         return ToShort(i64Value);
                     }
+
                     return ToShort(ParseDouble(Value));
                 }
                 catch (FormatException e)
@@ -411,16 +448,19 @@ namespace Microsoft.VisualBasic
                     throw new InvalidCastException(e.Message, e);
                 }
             }
+
             public static short ToShort(object Value)
             {
                 if (Value == null)
                 {
                     return 0;
                 }
+
                 if (Value is Enum)
                 {
                     Value = GetEnumValue(Value);
                 }
+
                 if (Value is bool)
                 {
                     return ToShort((bool)Value);
@@ -473,8 +513,10 @@ namespace Microsoft.VisualBasic
                 {
                     return ToShort((string)Value);
                 }
+
                 throw new InvalidCastException();
             }
+
             [CLSCompliant(false)]
             public static ushort ToUShort(string Value)
             {
@@ -482,6 +524,7 @@ namespace Microsoft.VisualBasic
                 {
                     return 0;
                 }
+
                 try
                 {
                     var i64Value = default(long);
@@ -489,6 +532,7 @@ namespace Microsoft.VisualBasic
                     {
                         return ToUShort(i64Value);
                     }
+
                     return ToUShort(ParseDouble(Value));
                 }
                 catch (FormatException e)
@@ -496,6 +540,7 @@ namespace Microsoft.VisualBasic
                     throw new InvalidCastException(e.Message, e);
                 }
             }
+
             [CLSCompliant(false)]
             public static ushort ToUShort(object Value)
             {
@@ -503,10 +548,12 @@ namespace Microsoft.VisualBasic
                 {
                     return 0;
                 }
+
                 if (Value is Enum)
                 {
                     Value = GetEnumValue(Value);
                 }
+
                 if (Value is bool)
                 {
                     return ToUShort((bool)Value);
@@ -559,14 +606,17 @@ namespace Microsoft.VisualBasic
                 {
                     return ToUShort((string)Value);
                 }
+
                 throw new InvalidCastException();
             }
+
             public static int ToInteger(string Value)
             {
                 if (Value == null)
                 {
                     return 0;
                 }
+
                 try
                 {
                     var i64Value = default(long);
@@ -574,6 +624,7 @@ namespace Microsoft.VisualBasic
                     {
                         return ToInteger(i64Value);
                     }
+
                     return ToInteger(ParseDouble(Value));
                 }
                 catch (FormatException e)
@@ -581,16 +632,19 @@ namespace Microsoft.VisualBasic
                     throw new InvalidCastException(e.Message, e);
                 }
             }
+
             public static int ToInteger(object Value)
             {
                 if (Value == null)
                 {
                     return 0;
                 }
+
                 if (Value is Enum)
                 {
                     Value = GetEnumValue(Value);
                 }
+
                 if (Value is bool)
                 {
                     return ToInteger((bool)Value);
@@ -643,8 +697,10 @@ namespace Microsoft.VisualBasic
                 {
                     return ToInteger((string)Value);
                 }
+
                 throw new InvalidCastException();
             }
+
             [CLSCompliant(false)]
             public static uint ToUInteger(string Value)
             {
@@ -652,6 +708,7 @@ namespace Microsoft.VisualBasic
                 {
                     return 0;
                 }
+
                 try
                 {
                     var i64Value = default(long);
@@ -659,6 +716,7 @@ namespace Microsoft.VisualBasic
                     {
                         return ToUInteger(i64Value);
                     }
+
                     return ToUInteger(ParseDouble(Value));
                 }
                 catch (FormatException e)
@@ -666,6 +724,7 @@ namespace Microsoft.VisualBasic
                     throw new InvalidCastException(e.Message, e);
                 }
             }
+
             [CLSCompliant(false)]
             public static uint ToUInteger(object Value)
             {
@@ -673,10 +732,12 @@ namespace Microsoft.VisualBasic
                 {
                     return 0;
                 }
+
                 if (Value is Enum)
                 {
                     Value = GetEnumValue(Value);
                 }
+
                 if (Value is bool)
                 {
                     return ToUInteger((bool)Value);
@@ -729,14 +790,17 @@ namespace Microsoft.VisualBasic
                 {
                     return ToUInteger((string)Value);
                 }
+
                 throw new InvalidCastException();
             }
+
             public static long ToLong(string Value)
             {
                 if (Value == null)
                 {
                     return 0;
                 }
+
                 try
                 {
                     var i64Value = default(long);
@@ -744,6 +808,7 @@ namespace Microsoft.VisualBasic
                     {
                         return ToLong(i64Value);
                     }
+
                     return ToLong(ParseDecimal(Value, null));
                 }
                 catch (FormatException e)
@@ -751,16 +816,19 @@ namespace Microsoft.VisualBasic
                     throw new InvalidCastException(e.Message, e);
                 }
             }
+
             public static long ToLong(object Value)
             {
                 if (Value == null)
                 {
                     return 0;
                 }
+
                 if (Value is Enum)
                 {
                     Value = GetEnumValue(Value);
                 }
+
                 if (Value is bool)
                 {
                     return ToLong((bool)Value);
@@ -813,8 +881,10 @@ namespace Microsoft.VisualBasic
                 {
                     return ToLong((string)Value);
                 }
+
                 throw new InvalidCastException();
             }
+
             [CLSCompliant(false)]
             public static ulong ToULong(string Value)
             {
@@ -822,6 +892,7 @@ namespace Microsoft.VisualBasic
                 {
                     return 0;
                 }
+
                 try
                 {
                     var ui64Value = default(ulong);
@@ -829,6 +900,7 @@ namespace Microsoft.VisualBasic
                     {
                         return ToULong(ui64Value);
                     }
+
                     return ToULong(ParseDecimal(Value, null));
                 }
                 catch (FormatException e)
@@ -836,6 +908,7 @@ namespace Microsoft.VisualBasic
                     throw new InvalidCastException(e.Message, e);
                 }
             }
+
             [CLSCompliant(false)]
             public static ulong ToULong(object Value)
             {
@@ -843,10 +916,12 @@ namespace Microsoft.VisualBasic
                 {
                     return 0;
                 }
+
                 if (Value is Enum)
                 {
                     Value = GetEnumValue(Value);
                 }
+
                 if (Value is bool)
                 {
                     return ToULong((bool)Value);
@@ -899,8 +974,10 @@ namespace Microsoft.VisualBasic
                 {
                     return ToULong((string)Value);
                 }
+
                 throw new InvalidCastException();
             }
+
             public static decimal ToDecimal(bool Value)
             {
                 if (Value)
@@ -912,12 +989,14 @@ namespace Microsoft.VisualBasic
                     return 0M;
                 }
             }
+
             public static decimal ToDecimal(string Value)
             {
                 if (Value == null)
                 {
                     return 0M;
                 }
+
                 try
                 {
                     var i64Value = default(long);
@@ -925,6 +1004,7 @@ namespace Microsoft.VisualBasic
                     {
                         return ToDecimal(i64Value);
                     }
+
                     return ParseDecimal(Value, null);
                 }
                 catch (OverflowException e1)
@@ -936,16 +1016,19 @@ namespace Microsoft.VisualBasic
                     throw new InvalidCastException(e2.Message, e2);
                 }
             }
+
             public static decimal ToDecimal(object Value)
             {
                 if (Value == null)
                 {
                     return 0M;
                 }
+
                 if (Value is Enum)
                 {
                     Value = GetEnumValue(Value);
                 }
+
                 if (Value is bool)
                 {
                     return ToDecimal((bool)Value);
@@ -998,8 +1081,10 @@ namespace Microsoft.VisualBasic
                 {
                     return ToDecimal((string)Value);
                 }
+
                 throw new InvalidCastException();
             }
+
             private static decimal ParseDecimal(string Value, System.Globalization.NumberFormatInfo NumberFormat)
             {
                 System.Globalization.NumberFormatInfo NormalizedNumberFormat;
@@ -1008,6 +1093,7 @@ namespace Microsoft.VisualBasic
                 {
                     NumberFormat = culture.NumberFormat;
                 }
+
                 NormalizedNumberFormat = GetNormalizedNumberFormat(NumberFormat);
                 const System.Globalization.NumberStyles flags = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingSign | System.Globalization.NumberStyles.AllowParentheses | System.Globalization.NumberStyles.AllowTrailingWhite | System.Globalization.NumberStyles.AllowCurrencySymbol;
                 Value = ToHalfwidthNumbers(Value, culture);
@@ -1024,6 +1110,7 @@ namespace Microsoft.VisualBasic
                     throw Ex;
                 }
             }
+
             private static System.Globalization.NumberFormatInfo GetNormalizedNumberFormat(System.Globalization.NumberFormatInfo InNumberFormat)
             {
                 System.Globalization.NumberFormatInfo OutNumberFormat;
@@ -1031,6 +1118,7 @@ namespace Microsoft.VisualBasic
                 {
                     return InNumberFormat;
                 }
+
                 if (!(InNumberFormat.CurrencyDecimalSeparator == null) && !(InNumberFormat.NumberDecimalSeparator == null) && InNumberFormat.CurrencyDecimalSeparator.Length == InNumberFormat.NumberDecimalSeparator.Length && !(InNumberFormat.CurrencyGroupSeparator == null) && !(InNumberFormat.NumberGroupSeparator == null) && InNumberFormat.CurrencyGroupSeparator.Length == InNumberFormat.NumberGroupSeparator.Length)
                 {
                     int i;
@@ -1047,24 +1135,26 @@ namespace Microsoft.VisualBasic
                         if (InNumberFormat.CurrencyGroupSeparator[i] != InNumberFormat.NumberGroupSeparator[i])
                             goto MisMatch;
                     }
+
                     return InNumberFormat;
                 }
 
             MisMatch:
                 ;
                 OutNumberFormat = (System.Globalization.NumberFormatInfo)InNumberFormat.Clone();
-                OutNumberFormat
-.CurrencyDecimalSeparator = OutNumberFormat.NumberDecimalSeparator;
+                OutNumberFormat.CurrencyDecimalSeparator = OutNumberFormat.NumberDecimalSeparator;
                 OutNumberFormat.CurrencyGroupSeparator = OutNumberFormat.NumberGroupSeparator;
                 OutNumberFormat.CurrencyDecimalDigits = OutNumberFormat.NumberDecimalDigits;
                 return OutNumberFormat;
             }
+
             public static float ToSingle(string Value)
             {
                 if (Value == null)
                 {
                     return 0;
                 }
+
                 try
                 {
                     var i64Value = default(long);
@@ -1072,11 +1162,13 @@ namespace Microsoft.VisualBasic
                     {
                         return ToSingle(i64Value);
                     }
+
                     double Result = ParseDouble(Value);
                     if ((Result < float.MinValue || Result > float.MaxValue) && !double.IsInfinity(Result))
                     {
                         throw new OverflowException();
                     }
+
                     return ToSingle(Result);
                 }
                 catch (FormatException e)
@@ -1084,16 +1176,19 @@ namespace Microsoft.VisualBasic
                     throw new InvalidCastException(e.Message, e);
                 }
             }
+
             public static float ToSingle(object Value)
             {
                 if (Value == null)
                 {
                     return 0;
                 }
+
                 if (Value is Enum)
                 {
                     Value = GetEnumValue(Value);
                 }
+
                 if (Value is bool)
                 {
                     return ToSingle((bool)Value);
@@ -1146,14 +1241,17 @@ namespace Microsoft.VisualBasic
                 {
                     return ToSingle((string)Value);
                 }
+
                 throw new InvalidCastException();
             }
+
             public static double ToDouble(string Value)
             {
                 if (Value == null)
                 {
                     return 0;
                 }
+
                 try
                 {
                     var i64Value = default(long);
@@ -1161,6 +1259,7 @@ namespace Microsoft.VisualBasic
                     {
                         return ToDouble(i64Value);
                     }
+
                     return ParseDouble(Value);
                 }
                 catch (FormatException e)
@@ -1168,16 +1267,19 @@ namespace Microsoft.VisualBasic
                     throw new InvalidCastException(e.Message, e);
                 }
             }
+
             public static double ToDouble(object Value)
             {
                 if (Value == null)
                 {
                     return 0;
                 }
+
                 if (Value is Enum)
                 {
                     Value = GetEnumValue(Value);
                 }
+
                 if (Value is bool)
                 {
                     return ToDouble((bool)Value);
@@ -1230,8 +1332,10 @@ namespace Microsoft.VisualBasic
                 {
                     return ToDouble((string)Value);
                 }
+
                 throw new InvalidCastException();
             }
+
             private static double ParseDouble(string Value)
             {
                 System.Globalization.NumberFormatInfo NormalizedNumberFormat;
@@ -1253,6 +1357,7 @@ namespace Microsoft.VisualBasic
                     throw Ex;
                 }
             }
+
             public static DateTime ToDate(string Value)
             {
                 DateTime ParsedDate;
@@ -1268,12 +1373,14 @@ namespace Microsoft.VisualBasic
                     throw new InvalidCastException();
                 }
             }
+
             public static DateTime ToDate(object Value)
             {
                 if (Value == null)
                 {
                     return default(DateTime);
                 }
+
                 if (Value is DateTime)
                 {
                     return ToDate((DateTime)Value);
@@ -1282,22 +1389,27 @@ namespace Microsoft.VisualBasic
                 {
                     return ToDate((string)Value);
                 }
+
                 throw new InvalidCastException();
             }
+
             public static char ToChar(string Value)
             {
                 if (Value == null || Value.Length == 0)
                 {
                     return Convert.ToChar(0 & 0xFFFF);
                 }
+
                 return Value[0];
             }
+
             public static char ToChar(object Value)
             {
                 if (Value == null)
                 {
                     return Convert.ToChar(0 & 0xFFFF);
                 }
+
                 if (Value is char)
                 {
                     return ToChar((char)Value);
@@ -1306,22 +1418,27 @@ namespace Microsoft.VisualBasic
                 {
                     return ToChar((string)Value);
                 }
+
                 throw new InvalidCastException();
             }
+
             public static char[] ToCharArrayRankOne(string Value)
             {
                 if (Value == null)
                 {
                     Value = "";
                 }
+
                 return Value.ToCharArray();
             }
+
             public static char[] ToCharArrayRankOne(object Value)
             {
                 if (Value == null)
                 {
                     return "".ToCharArray();
                 }
+
                 char[] ArrayValue = Value as char[];
                 if (ArrayValue != null && ArrayValue.Rank == 1)
                 {
@@ -1331,38 +1448,47 @@ namespace Microsoft.VisualBasic
                 {
                     return ((string)Value).ToCharArray();
                 }
+
                 throw new InvalidCastException();
             }
+
             public static new string ToString(short Value)
             {
                 return Value.ToString();
             }
+
             public static new string ToString(int Value)
             {
                 return Value.ToString();
             }
+
             [CLSCompliant(false)]
             public static new string ToString(uint Value)
             {
                 return Value.ToString();
             }
+
             public static new string ToString(long Value)
             {
                 return Value.ToString();
             }
+
             [CLSCompliant(false)]
             public static new string ToString(ulong Value)
             {
                 return Value.ToString();
             }
+
             public static new string ToString(float Value)
             {
                 return Value.ToString();
             }
+
             public static new string ToString(double Value)
             {
                 return Value.ToString("G");
             }
+
             public static new string ToString(DateTime Value)
             {
                 long TimeTicks = Value.TimeOfDay.Ticks;
@@ -1379,10 +1505,12 @@ namespace Microsoft.VisualBasic
                     return Value.ToString("G");
                 }
             }
+
             public static new string ToString(decimal Value)
             {
                 return Value.ToString("G");
             }
+
             public static new string ToString(object Value)
             {
                 if (Value == null)
@@ -1397,10 +1525,12 @@ namespace Microsoft.VisualBasic
                         return StringValue;
                     }
                 }
+
                 if (Value is Enum)
                 {
                     Value = GetEnumValue(Value);
                 }
+
                 if (Value is bool)
                 {
                     return ToString((bool)Value);
@@ -1465,8 +1595,10 @@ namespace Microsoft.VisualBasic
                         return new string(CharArray);
                     }
                 }
+
                 throw new InvalidCastException();
             }
+
             public static new string ToString(bool Value)
             {
                 if (Value)
@@ -1478,22 +1610,27 @@ namespace Microsoft.VisualBasic
                     return bool.FalseString;
                 }
             }
+
             public static new string ToString(byte Value)
             {
                 return Value.ToString();
             }
+
             public static new string ToString(char Value)
             {
                 return Value.ToString();
             }
+
             internal static System.Globalization.CultureInfo GetCultureInfo()
             {
                 return System.Globalization.CultureInfo.CurrentCulture;
             }
+
             internal static string ToHalfwidthNumbers(string s, System.Globalization.CultureInfo culture)
             {
                 return s;
             }
+
             internal static bool IsHexOrOctValue(string Value, ref long i64Value)
             {
                 char ch;
@@ -1508,12 +1645,15 @@ namespace Microsoft.VisualBasic
                     {
                         goto GetSpecialValue;
                     }
+
                     if (ch != Strings.ChrW(32) && ch != Strings.ChrW(0x3000))
                     {
                         return false;
                     }
+
                     FirstNonspace += 1;
                 }
+
                 return false;
             GetSpecialValue:
                 ;
@@ -1531,8 +1671,10 @@ namespace Microsoft.VisualBasic
                 {
                     throw new FormatException();
                 }
+
                 return true;
             }
+
             internal static bool IsHexOrOctValue(string Value, ref ulong ui64Value)
             {
                 char ch;
@@ -1547,12 +1689,15 @@ namespace Microsoft.VisualBasic
                     {
                         goto GetSpecialValue;
                     }
+
                     if (ch != Strings.ChrW(32) && ch != Strings.ChrW(0x3000))
                     {
                         return false;
                     }
+
                     FirstNonspace += 1;
                 }
+
                 return false;
             GetSpecialValue:
                 ;
@@ -1570,14 +1715,17 @@ namespace Microsoft.VisualBasic
                 {
                     throw new FormatException();
                 }
+
                 return true;
             }
+
             public static T ToGenericParameter<T>(object Value)
             {
                 if (Value == null)
                 {
                     return default(T);
                 }
+
                 var reflectedType = typeof(T);
                 if (Equals(reflectedType, typeof(bool)))
                 {
@@ -1645,6 +1793,7 @@ namespace Microsoft.VisualBasic
                 }
             }
         }
+
         [Embedded()]
         [DebuggerNonUserCode()]
         [System.Runtime.CompilerServices.CompilerGenerated()]
@@ -1654,16 +1803,20 @@ namespace Microsoft.VisualBasic
             private ProjectData()
             {
             }
+
             public static void SetProjectError(Exception ex)
             {
             }
+
             public static void SetProjectError(Exception ex, int lErl)
             {
             }
+
             public static void ClearProjectError()
             {
             }
         }
+
         [Embedded()]
         [DebuggerNonUserCode()]
         [System.Runtime.CompilerServices.CompilerGenerated()]
@@ -1673,22 +1826,26 @@ namespace Microsoft.VisualBasic
             private Utils()
             {
             }
+
             public static Array CopyArray(Array arySrc, Array aryDest)
             {
                 if (arySrc == null)
                 {
                     return aryDest;
                 }
+
                 int lLength;
                 lLength = arySrc.Length;
                 if (lLength == 0)
                 {
                     return aryDest;
                 }
+
                 if (aryDest.Rank != arySrc.Rank)
                 {
                     throw new InvalidCastException();
                 }
+
                 int iDim;
                 var loopTo = aryDest.Rank - 2;
                 for (iDim = 0; iDim <= loopTo; iDim++)
@@ -1698,10 +1855,12 @@ namespace Microsoft.VisualBasic
                         throw new ArrayTypeMismatchException();
                     }
                 }
+
                 if (lLength > aryDest.Length)
                 {
                     lLength = aryDest.Length;
                 }
+
                 if (arySrc.Rank > 1)
                 {
                     int LastRank = arySrc.Rank;
@@ -1711,6 +1870,7 @@ namespace Microsoft.VisualBasic
                     {
                         return aryDest;
                     }
+
                     int lenCopy = lenSrcLastRank > lenDestLastRank ? lenDestLastRank : lenSrcLastRank;
                     int i;
                     var loopTo1 = arySrc.Length / lenSrcLastRank - 1;
@@ -1721,9 +1881,11 @@ namespace Microsoft.VisualBasic
                 {
                     Array.Copy(arySrc, aryDest, lLength);
                 }
+
                 return aryDest;
             }
         }
+
         [Embedded()]
         [DebuggerNonUserCode()]
         [System.Runtime.CompilerServices.CompilerGenerated()]
@@ -1743,6 +1905,7 @@ namespace Microsoft.VisualBasic
                         return count >= limit;
                     }
                 }
+
                 public static bool ForNextCheckR8(double count, double limit, double StepValue)
                 {
                     if (StepValue >= 0)
@@ -1754,6 +1917,7 @@ namespace Microsoft.VisualBasic
                         return count >= limit;
                     }
                 }
+
                 public static bool ForNextCheckDec(decimal count, decimal limit, decimal StepValue)
                 {
                     if (StepValue >= 0)
@@ -1767,6 +1931,7 @@ namespace Microsoft.VisualBasic
                 }
             }
         }
+
         [Embedded()]
         [DebuggerNonUserCode()]
         [System.Runtime.CompilerServices.CompilerGenerated()]
@@ -1775,6 +1940,7 @@ namespace Microsoft.VisualBasic
         {
             public short State;
         }
+
         [Embedded()]
         [DebuggerNonUserCode()]
         [System.Runtime.CompilerServices.CompilerGenerated()]
@@ -1785,6 +1951,7 @@ namespace Microsoft.VisualBasic
             {
             }
         }
+
         [Embedded()]
         [AttributeUsage(AttributeTargets.Class, Inherited = false)]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -1792,6 +1959,7 @@ namespace Microsoft.VisualBasic
         internal sealed class StandardModuleAttribute : Attribute
         {
         }
+
         [Embedded()]
         [AttributeUsage(AttributeTargets.Class, Inherited = false)]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -1799,6 +1967,7 @@ namespace Microsoft.VisualBasic
         internal sealed class DesignerGeneratedAttribute : Attribute
         {
         }
+
         [Embedded()]
         [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -1806,6 +1975,7 @@ namespace Microsoft.VisualBasic
         internal sealed class OptionCompareAttribute : Attribute
         {
         }
+
         [Embedded()]
         [AttributeUsage(AttributeTargets.Class, Inherited = false)]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -1814,6 +1984,7 @@ namespace Microsoft.VisualBasic
         {
         }
     }
+
     [Embedded()]
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -1821,6 +1992,7 @@ namespace Microsoft.VisualBasic
     internal sealed class HideModuleNameAttribute : Attribute
     {
     }
+
     [Embedded()]
     [DebuggerNonUserCode()]
     [System.Runtime.CompilerServices.CompilerGenerated()]
@@ -1833,21 +2005,26 @@ namespace Microsoft.VisualBasic
             {
                 throw new ArgumentException();
             }
+
             return Convert.ToChar(CharCode & 0xFFFF);
         }
+
         public static int AscW(string String)
         {
             if (String == null || String.Length == 0)
             {
                 throw new ArgumentException();
             }
+
             return AscW(String[0]);
         }
+
         public static int AscW(char String)
         {
             return AscW(String);
         }
     }
+
     [Embedded()]
     [DebuggerNonUserCode()]
     [System.Runtime.CompilerServices.CompilerGenerated()]
@@ -1885,6 +2062,7 @@ namespace VbNetStandardLib
             private InternalXmlHelper()
             {
             }
+
             public static string get_Value(IEnumerable<XElement> source)
             {
                 foreach (XElement item in source)
@@ -1900,6 +2078,7 @@ namespace VbNetStandardLib
                     break;
                 }
             }
+
             public static string get_AttributeValue(IEnumerable<XElement> source, XName name)
             {
                 foreach (XElement item in source)
@@ -1915,6 +2094,7 @@ namespace VbNetStandardLib
                     break;
                 }
             }
+
             public static string get_AttributeValue(XElement source, XName name)
             {
                 return Conversions.ToString(source.Attribute(name));
@@ -1924,6 +2104,7 @@ namespace VbNetStandardLib
             {
                 source.SetAttributeValue(name, value);
             }
+
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static XAttribute CreateAttribute(XName name, object value)
             {
@@ -1931,8 +2112,10 @@ namespace VbNetStandardLib
                 {
                     return null;
                 }
+
                 return new XAttribute(name, value);
             }
+
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static XAttribute CreateNamespaceAttribute(XName name, XNamespace ns)
             {
@@ -1940,6 +2123,7 @@ namespace VbNetStandardLib
                 a.AddAnnotation(ns);
                 return a;
             }
+
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static object RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, object obj)
             {
@@ -1959,8 +2143,10 @@ namespace VbNetStandardLib
                         }
                     }
                 }
+
                 return obj;
             }
+
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static IEnumerable RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, IEnumerable obj)
             {
@@ -1976,8 +2162,10 @@ namespace VbNetStandardLib
                         return obj.Cast<object>().Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessObject);
                     }
                 }
+
                 return obj;
             }
+
             [DebuggerNonUserCode()]
             [System.Runtime.CompilerServices.CompilerGenerated()]
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -1986,6 +2174,7 @@ namespace VbNetStandardLib
                 private readonly string[] m_inScopePrefixes;
                 private readonly XNamespace[] m_inScopeNs;
                 private readonly List<XAttribute> m_attributes;
+
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 internal RemoveNamespaceAttributesClosure(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes)
                 {
@@ -1993,11 +2182,13 @@ namespace VbNetStandardLib
                     m_inScopeNs = inScopeNs;
                     m_attributes = attributes;
                 }
+
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 internal XElement ProcessXElement(XElement elem)
                 {
                     return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
                 }
+
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 internal object ProcessObject(object obj)
                 {
@@ -2012,28 +2203,25 @@ namespace VbNetStandardLib
                     }
                 }
             }
+
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static XElement RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, XElement e)
             {
                 if (e != null)
                 {
                     var a = e.FirstAttribute;
-
                     while (a != null)
                     {
                         var nextA = a.NextAttribute;
-
                         if (a.IsNamespaceDeclaration)
                         {
                             var ns = a.Annotation<XNamespace>();
                             string prefix = a.Name.LocalName;
-
                             if (ns != null)
                             {
                                 if (inScopePrefixes != null && inScopeNs != null)
                                 {
                                     int lastIndex = inScopePrefixes.Length - 1;
-
                                     for (int i = 0, loopTo = lastIndex; i <= loopTo; i++)
                                     {
                                         string currentInScopePrefix = inScopePrefixes[i];
@@ -2098,6 +2286,7 @@ namespace VbNetStandardLib
                         a = nextA;
                     }
                 }
+
                 return e;
             }
         }

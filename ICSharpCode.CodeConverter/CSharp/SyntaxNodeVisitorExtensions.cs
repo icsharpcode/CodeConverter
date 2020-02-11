@@ -5,37 +5,27 @@ using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using CS = Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class SyntaxNodeVisitorExtensions
     {
-        public static async Task<T> AcceptAsync<T>(this SyntaxNode node, CommentConvertingVisitorWrapper<T> visitorWrapper) where T: SyntaxNode
+        public static Task<CSharpSyntaxNode> AcceptAsync(this SyntaxNode node, CommentConvertingVisitorWrapper visitorWrapper, SourceTriviaMapKind sourceTriviaMap = SourceTriviaMapKind.All)
         {
-            if (node == null) return default(T);
-            return await visitorWrapper.Visit(node);
+            return AcceptAsync<CSharpSyntaxNode>(node, visitorWrapper, sourceTriviaMap);
         }
-        public static async Task<CSharpSyntaxNode> AcceptAsync(this SyntaxNode node, CommentConvertingNodesVisitor visitorWrapper)
+
+        public static async Task<TOut> AcceptAsync<TOut>(this SyntaxNode node, CommentConvertingVisitorWrapper visitorWrapper, SourceTriviaMapKind sourceTriviaMap = SourceTriviaMapKind.All) where TOut : CSharpSyntaxNode
         {
             if (node == null) return null;
-            return await visitorWrapper.Visit(node);
+            return await visitorWrapper.Accept<TOut>(node, sourceTriviaMap);
         }
 
-        public static async Task<T[]> AcceptAsync<T>(this IEnumerable<SyntaxNode> nodes, CommentConvertingVisitorWrapper<T> visitorWrapper) where T : SyntaxNode
+        public static async Task<SeparatedSyntaxList<TOut>> AcceptSeparatedListAsync<TIn, TOut>(this SeparatedSyntaxList<TIn> nodes, CommentConvertingVisitorWrapper visitorWrapper, SourceTriviaMapKind sourceTriviaMap = SourceTriviaMapKind.All) where TIn: VisualBasicSyntaxNode where TOut : CSharpSyntaxNode
         {
-            if (nodes == null) return default;
-            return await nodes.SelectAsync(n => n.AcceptAsync(visitorWrapper));
-        }
-
-        public static async Task<CSharpSyntaxNode[]> AcceptAsync(this IEnumerable<SyntaxNode> nodes, CommentConvertingNodesVisitor visitorWrapper)
-        {
-            return await nodes.SelectAsync(n => n.AcceptAsync(visitorWrapper));
-        }
-
-        public static async Task<TSpecific[]> AcceptAsync<TGeneral, TSpecific>(this IEnumerable<SyntaxNode> nodes, CommentConvertingVisitorWrapper<TGeneral> visitorWrapper) where TGeneral : SyntaxNode where TSpecific : TGeneral
-        {
-            if (nodes == null) return default;
-            return await nodes.SelectAsync(async n => (TSpecific) await n.AcceptAsync(visitorWrapper));
+            return await visitorWrapper.Accept<TIn, TOut>(nodes, sourceTriviaMap);
         }
     }
 }

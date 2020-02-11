@@ -13,15 +13,15 @@ namespace CodeConverter.Tests.CSharp
         [Fact]
         public async Task RootNamespaceIsExplicit()
         {
-            // Auto comment testing not used since it can't handle the added namespace
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class AClassInRootNamespace
+            await TestConversionVisualBasicToCSharp(@"Class AClassInRootNamespace
 End Class
 
 Namespace NestedWithinRoot
     Class AClassInANamespace
     End Class
 End Namespace",
-                @"namespace TheRootNamespace
+                @"
+namespace TheRootNamespace
 {
     internal partial class AClassInRootNamespace
     {
@@ -39,10 +39,10 @@ End Namespace",
         [Fact]
         public async Task RootNamespaceIsExplicitWithSingleClass()
         {
-            // Auto comment testing not used since it can't handle the added namespace
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class AClassInRootNamespace
+            await TestConversionVisualBasicToCSharp(@"Class AClassInRootNamespace
 End Class",
-                @"namespace TheRootNamespace
+                @"
+namespace TheRootNamespace
 {
     internal partial class AClassInRootNamespace
     {
@@ -53,11 +53,12 @@ End Class",
         [Fact]
         public async Task RootNamespaceIsAddedToExistingNamespace()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace A.B
+            await TestConversionVisualBasicToCSharp(@"Namespace A.B
     Public Class Class1
     End Class
 End Namespace",
-                @"namespace TheRootNamespace.A.B
+                @"
+namespace TheRootNamespace.A.B
 {
     public partial class Class1
     {
@@ -68,7 +69,7 @@ End Namespace",
         [Fact]
         public async Task RootNamespaceIsAddedToExistingNamespaceWithDeclarationCasing()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace AAA.AAaB.AaA
+            await TestConversionVisualBasicToCSharp(@"Namespace AAA.AAaB.AaA
     Public Class Class1
     End Class
 End Namespace
@@ -77,7 +78,8 @@ Namespace Aaa.aAAb.aAa
     Public Class Class2
     End Class
 End Namespace",
-                @"namespace TheRootNamespace.AAA.AAaB.AaA
+                @"
+namespace TheRootNamespace.AAA.AAaB.AaA
 {
     public partial class Class1
     {
@@ -95,13 +97,14 @@ namespace TheRootNamespace.Aaa.aAAb.aAa
         [Fact]
         public async Task NestedNamespacesRemainRelative()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace A.B
+            await TestConversionVisualBasicToCSharp(@"Namespace A.B
     Namespace C
         Public Class Class1
         End Class
     End Namespace
 End Namespace",
-                @"namespace TheRootNamespace.A.B
+                @"
+namespace TheRootNamespace.A.B
 {
     namespace C
     {
@@ -115,7 +118,7 @@ End Namespace",
         [Fact]
         public async Task NestedNamespaceWithRootClassRemainRelative()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace A.B
+            await TestConversionVisualBasicToCSharp(@"Namespace A.B
     Namespace C
         Public Class Class1
         End Class
@@ -124,7 +127,8 @@ End Namespace
 
 Public Class RootClass
 End Class",
-                @"namespace TheRootNamespace
+                @"
+namespace TheRootNamespace
 {
     namespace A.B
     {
@@ -145,11 +149,12 @@ End Class",
         [Fact]
         public async Task RootNamespaceIsNotAddedToExistingGlobalNamespace()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace Global.A.B
+            await TestConversionVisualBasicToCSharp(@"Namespace Global.A.B
     Public Class Class1
     End Class
 End Namespace",
-                @"namespace A.B
+                @"
+namespace A.B
 {
     public partial class Class1
     {
@@ -160,8 +165,7 @@ End Namespace",
         [Fact]
         public async Task RootNamespaceIsExplicitForSingleNamespace()
         {
-            // Auto comment testing not used since it can't handle the added namespace
-            await TestConversionVisualBasicToCSharpWithoutComments(@"
+            await TestConversionVisualBasicToCSharp(@"
 Namespace NestedWithinRoot
     Class AClassInANamespace
     End Class
@@ -178,8 +182,7 @@ namespace TheRootNamespace.NestedWithinRoot
         [Fact]
         public async Task RootNamespaceNotAppliedToFullyQualifiedNamespace()
         {
-            // Auto comment testing not used since it can't handle the added namespace
-            await TestConversionVisualBasicToCSharpWithoutComments(@"
+            await TestConversionVisualBasicToCSharp(@"
 Namespace Global.NotNestedWithinRoot
     Class AClassInANamespace
     End Class
@@ -196,10 +199,9 @@ namespace NotNestedWithinRoot
         [Fact]
         public async Task RootNamespaceOnlyAppliedToUnqualifiedMembers()
         {
-            // Auto comment testing not used since it can't handle the added namespace
-            await TestConversionVisualBasicToCSharpWithoutComments(@"
-Class AClassInRootNamespace
-End Class
+            await TestConversionVisualBasicToCSharp(@"
+Class AClassInRootNamespace ' Becomes nested - 1
+End Class ' Becomes nested - 2
 
 Namespace Global.NotNestedWithinRoot
     Class AClassInANamespace
@@ -211,7 +213,6 @@ Namespace NestedWithinRoot
     End Class
 End Namespace",
                 @"
-
 namespace NotNestedWithinRoot
 {
     internal partial class AClassInANamespace
@@ -221,9 +222,9 @@ namespace NotNestedWithinRoot
 
 namespace TheRootNamespace
 {
-    internal partial class AClassInRootNamespace
+    internal partial class AClassInRootNamespace // Becomes nested - 1
     {
-    }
+    } // Becomes nested - 2
 
     namespace NestedWithinRoot
     {

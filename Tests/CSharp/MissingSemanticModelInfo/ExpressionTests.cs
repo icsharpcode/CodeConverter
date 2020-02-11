@@ -16,9 +16,11 @@ Public Property SomeProperty As System.Some.UnknownType
     Private Sub TestMethod()
         Dim value = SomeProperty(0)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public System.Some.UnknownType SomeProperty { get; set; }
+
     private void TestMethod()
     {
         var value = SomeProperty[0];
@@ -28,7 +30,7 @@ End Class", @"internal partial class TestClass
         [Fact]
         public async Task InvokeMethodWithUnknownReturnType()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Foo()
         Bar(Nothing)
     End Sub
@@ -37,7 +39,8 @@ End Class", @"internal partial class TestClass
         Return x
     End Function
 
-End Class", @"public partial class Class1
+End Class", @"
+public partial class Class1
 {
     public void Foo()
     {
@@ -54,14 +57,14 @@ End Class", @"public partial class Class1
         [Fact]
         public async Task ForNextMutatingMissingField()
         {
-            // Comment from "Next" gets pushed up to previous line
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Foo()
         For Me.Index = 0 To 10
 
         Next
     End Sub
-End Class", @"public partial class Class1
+End Class", @"
+public partial class Class1
 {
     public void Foo()
     {
@@ -75,8 +78,7 @@ End Class", @"public partial class Class1
         [Fact]
         public async Task OutParameterNonCompilingType()
         {
-            // Can't autotest comments due to dummy "anInstance" variable added
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class OutParameterWithMissingType
+            await TestConversionVisualBasicToCSharp(@"Public Class OutParameterWithMissingType
     Private Shared Sub AddToDict(ByVal pDict As Dictionary(Of Integer, MissingType), ByVal pKey As Integer)
         Dim anInstance As MissingType = Nothing
         If Not pDict.TryGetValue(pKey, anInstance) Then
@@ -125,8 +127,7 @@ public partial class OutParameterWithNonCompilingType
         [Fact]
         public async Task EnumSwitchAndValWithUnusedMissingType()
         {
-            // BUG: Stop comments appearing before colon in case statement
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class EnumAndValTest
+            await TestConversionVisualBasicToCSharp(@"Public Class EnumAndValTest
     Public Enum PositionEnum As Integer
         None = 0
         LeftTop = 1
@@ -202,8 +203,10 @@ public partial class EnumAndValTest
                     break;
                 }
         }
+
         return tPos;
     }
+
     public string PositionEnumStringFromConstant(PositionEnum pS)
     {
         string tS;
@@ -227,6 +230,7 @@ public partial class EnumAndValTest
                     break;
                 }
         }
+
         return tS;
     }
 }");
@@ -240,9 +244,11 @@ public partial class EnumAndValTest
     private sub TestMethod()
         Dim a = DefaultDate(1, 2, 3).Blawer(1, 2, 3)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private System.SomeUnknownType DefaultDate { get; set; }
+
     private void TestMethod()
     {
         var a = DefaultDate[1, 2, 3].Blawer(1, 2, 3);

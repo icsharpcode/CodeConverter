@@ -8,8 +8,8 @@
 // </auto-generated>
 // ------------------------------------------------------------------------------
 
-using Microsoft.VisualBasic;
 using System.Diagnostics;
+using Microsoft.VisualBasic;
 
 namespace VbLibrary.My.Resources
 {
@@ -28,7 +28,6 @@ namespace VbLibrary.My.Resources
     internal static class Resources
     {
         private static System.Resources.ResourceManager resourceMan;
-
         private static System.Globalization.CultureInfo resourceCulture;
 
         /// <summary>
@@ -44,6 +43,7 @@ namespace VbLibrary.My.Resources
                     var temp = new System.Resources.ResourceManager("EmptyVb.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
+
                 return resourceMan;
             }
         }
@@ -59,6 +59,7 @@ namespace VbLibrary.My.Resources
             {
                 return resourceCulture;
             }
+
             set
             {
                 resourceCulture = value;
@@ -66,4 +67,3 @@ namespace VbLibrary.My.Resources
         }
     }
 }
-

@@ -17,7 +17,8 @@ namespace CodeConverter.Tests.CSharp
     Const answer As Integer = 42
     Private value As Integer = 10
     ReadOnly v As Integer = 15
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private const int answer = 42;
     private int value = 10;
@@ -31,7 +32,8 @@ End Class", @"internal partial class TestClass
             await TestConversionVisualBasicToCSharp(
 @"Module TestModule
     Const answer As Integer = 42
-End Module", @"internal static partial class TestModule
+End Module", @"
+internal static partial class TestModule
 {
     private const int answer = 42;
 }");
@@ -40,10 +42,11 @@ End Module", @"internal static partial class TestModule
         [Fact]
         public async Task TestConstructorVisibility()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class Class1
+            await TestConversionVisualBasicToCSharp(@"Class Class1
     Sub New(x As Boolean)
     End Sub
-End Class", @"internal partial class Class1
+End Class", @"
+internal partial class Class1
 {
     public Class1(bool x)
     {
@@ -59,7 +62,8 @@ End Class", @"internal partial class Class1
     Sub New()
         Dim someValue As Integer = 0
     End Sub
-End Module", @"internal static partial class Module1
+End Module", @"
+internal static partial class Module1
 {
     static Module1()
     {
@@ -82,6 +86,7 @@ End Class", @"using System;
 internal partial class TestClass
 {
     private const int someConstField = 42;
+
     public void TestMethod()
     {
         const DateTimeKind someConst = DateTimeKind.Local;
@@ -112,6 +117,7 @@ internal partial class TestClass
     }
 
     private object EnumVariable = TestEnum.Test1;" /* VB doesn't infer the type like you'd think, it just uses object */ + @"
+
     public void AMethod()
     {
         int t1 = Conversions.ToInteger(EnumVariable);" /* VB compiler uses Conversions rather than any plainer casting */ + @"
@@ -150,7 +156,7 @@ internal partial class TestClass
         [Fact]
         public async Task TestMethodAssignmentReturn()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class Class1
     Function TestMethod(x As Integer) As Integer
         If x = 1 Then
@@ -162,7 +168,8 @@ internal partial class TestClass
             TestMethod = TestMethod(1)
         End If
     End Function
-End Class", @"internal partial class Class1
+End Class", @"
+internal partial class Class1
 {
     public int TestMethod(int x)
     {
@@ -189,7 +196,7 @@ End Class", @"internal partial class Class1
         [Fact]
         public async Task TestPropertyAssignmentReturn()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Class Class1
     Public ReadOnly Property Foo() As String
         Get
@@ -226,6 +233,7 @@ public partial class Class1
             return FooRet;
         }
     }
+
     public string X
     {
         get
@@ -237,7 +245,9 @@ public partial class Class1
             return XRet;
         }
     }
+
     public string _y;
+
     public string Y
     {
         set
@@ -258,7 +268,7 @@ public partial class Class1
         [Fact]
         public async Task TestMethodAssignmentReturn293()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Class Class1
     Public Event MyEvent As EventHandler
     Protected Overrides Function Foo() As String
@@ -271,6 +281,7 @@ End Class", @"using System;
 public partial class Class1
 {
     public event EventHandler MyEvent;
+
     protected override string Foo()
     {
         string FooRet = default(string);
@@ -285,7 +296,7 @@ public partial class Class1
         [Fact]
         public async Task TestMethodAssignmentAdditionReturn()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class Class1
     Function TestMethod(x As Integer) As Integer
         If x = 1 Then
@@ -297,7 +308,8 @@ public partial class Class1
             TestMethod *= TestMethod(1)
         End If
     End Function
-End Class", @"internal partial class Class1
+End Class", @"
+internal partial class Class1
 {
     public int TestMethod(int x)
     {
@@ -324,12 +336,13 @@ End Class", @"internal partial class Class1
         [Fact]
         public async Task TestMethodMissingReturn()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class Class1
     Function TestMethod() As Integer
 
     End Function
-End Class", @"internal partial class Class1
+End Class", @"
+internal partial class Class1
 {
     public int TestMethod()
     {
@@ -341,7 +354,7 @@ End Class", @"internal partial class Class1
         [Fact]
         public async Task TestGetIteratorDoesNotGainReturn()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Class VisualBasicClass
   Public Shared ReadOnly Iterator Property SomeObjects As IEnumerable(Of Object())
     Get
@@ -375,7 +388,8 @@ public partial class VisualBasicClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     /// <summary>Xml doc</summary>
     public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
@@ -418,7 +432,8 @@ internal partial class TestClass
     Public Function TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) As Integer
         Return 0
     End Function
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public int TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
@@ -440,7 +455,8 @@ End Class", @"internal partial class TestClass
         Dim firstCharacter = Text.Substring(0, 1).ToUpper()
         Return firstCharacter + Text.Substring(1)
     End Function
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private object TurnFirstToUp(string Text)
     {
@@ -479,7 +495,8 @@ internal partial class TestClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public static void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
@@ -498,7 +515,8 @@ End Class", @"internal partial class TestClass
             await TestConversionVisualBasicToCSharp(
 @"MustInherit Class TestClass
     Public MustOverride Sub TestMethod()
-End Class", @"internal abstract partial class TestClass
+End Class", @"
+internal abstract partial class TestClass
 {
     public abstract void TestMethod();
 }");
@@ -514,7 +532,8 @@ End Class", @"internal abstract partial class TestClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public sealed void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
         where T : class, new()
@@ -581,7 +600,8 @@ internal partial class TestSubclass : TestClass
     <System.Runtime.CompilerServices.Extension()>
     Sub TestMethod2Parameters(ByVal str As String, other As String)
     End Sub
-End Module", @"internal static partial class TestClass
+End Module", @"
+internal static partial class TestClass
 {
     public static void TestMethod(this string str)
     {
@@ -597,7 +617,7 @@ End Module", @"internal static partial class TestClass
         public async Task TestExtensionMethodWithExistingImport()
         {
             await TestConversionVisualBasicToCSharp(
-@"Imports System.Runtime.CompilerServices
+@"Imports System.Runtime.CompilerServices ' Removed by simplifier
 
 Module TestClass
     <Extension()>
@@ -615,7 +635,7 @@ internal static partial class TestClass
         [Fact]
         public async Task TestProperty()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Public Property Test As Integer
 
@@ -637,7 +657,8 @@ internal static partial class TestClass
             Me.m_test3 = value
         End Set
     End Property
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public int Test { get; set; }
 
@@ -659,6 +680,7 @@ End Class", @"internal partial class TestClass
                 return default(int);
             return m_test3;
         }
+
         set
         {
             if (7 == int.Parse(""7""))
@@ -672,7 +694,7 @@ End Class", @"internal partial class TestClass
          [Fact]
         public async Task TestParameterizedProperty()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Public Property FirstName As String
     Public Property LastName As String
@@ -695,7 +717,8 @@ End Class", @"internal partial class TestClass
         FullName(False, True) = ""hello""
         Return FullName(False, True)
     End Function
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public string FirstName { get; set; }
     public string LastName { get; set; }
@@ -723,13 +746,13 @@ End Class", @"internal partial class TestClass
         set_FullName(false, true, ""hello"");
         return get_FullName(false, true);
     }
-}");
+}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
         }
 
         [Fact]
         public async Task TestParameterizedPropertyAndGenericInvocationAndEnumEdgeCases()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Class ParameterizedPropertiesAndEnumTest
     Public Enum MyEnum
         First
@@ -775,14 +798,12 @@ public partial class ParameterizedPropertiesAndEnumTest
     {
     }
 
-
     public void ReturnWhatever(MyEnum m)
     {
         var enumerableThing = Enumerable.Empty<string>();
         switch (m)
         {
-            case (MyEnum)(-1
-           ):
+            case (MyEnum)(-1):
                 {
                     return;
                 }
@@ -799,13 +820,13 @@ public partial class ParameterizedPropertiesAndEnumTest
                 }
         }
     }
-}");
+}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
         }
 
         [Fact]
         public async Task PropertyWithMissingTypeDeclaration()//TODO Check object is the inferred type
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class MissingPropertyType
                 ReadOnly Property Max
                     Get
@@ -813,7 +834,8 @@ public partial class ParameterizedPropertiesAndEnumTest
                         Return mx
                     End Get
                 End Property
-End Class", @"internal partial class MissingPropertyType
+End Class", @"
+internal partial class MissingPropertyType
 {
     public object Max
     {
@@ -829,11 +851,12 @@ End Class", @"internal partial class MissingPropertyType
         [Fact]
         public async Task TestReadWriteOnlyInterfaceProperty()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Interface Foo
     ReadOnly Property P1() As String
     WriteOnly Property P2() As String
-End Interface", @"public partial interface Foo
+End Interface", @"
+public partial interface Foo
 {
     string P1 { get; }
     string P2 { set; }
@@ -847,7 +870,8 @@ End Interface", @"public partial interface Foo
 @"Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
     Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
     End Sub
-End Class", @"internal partial class TestClass<T, T2, T3>
+End Class", @"
+internal partial class TestClass<T, T2, T3>
     where T : class, new()
     where T2 : struct
 {
@@ -884,7 +908,8 @@ End Sub", @"static SurroundingClass()
 @"Class TestClass
     Protected Overrides Sub Finalize()
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     ~TestClass()
     {
@@ -909,15 +934,15 @@ internal partial class TestClass
         [Fact]
         public async Task TestEventWithNoDeclaredTypeOrHandlers()
         {
-            //Can't auto-test comments when extra lines (delegate) get added
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Class TestEventWithNoType
     Public Event OnCakeChange
 
     Public Sub RaisingFlour()
         RaiseEvent OnCakeChange
     End Sub
-End Class", @"public partial class TestEventWithNoType
+End Class", @"
+public partial class TestEventWithNoType
 {
     public event OnCakeChangeEventHandler OnCakeChange;
 
@@ -933,8 +958,7 @@ End Class", @"public partial class TestEventWithNoType
         [Fact]
         public async Task TestModuleHandlesWithEvents()
         {
-            // Too much auto-generated code to auto-test comments
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class MyEventClass
     Public Event TestEvent()
 
@@ -1038,7 +1062,7 @@ internal static partial class Module1
         [Fact]
         public async Task TestWithEventsWithoutInitializer()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class MyEventClass
     Public Event TestEvent()
 End Class
@@ -1093,8 +1117,7 @@ internal partial class Class1
         [Fact]
         public async Task TestClassHandlesWithEvents()
         {
-            // Too much auto-generated code to auto-test comments
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
                 @"Class MyEventClass
     Public Event TestEvent()
 
@@ -1152,6 +1175,7 @@ internal partial class Class1
     {
         NonSharedEventClassInstance = new MyEventClass();
     }
+
     private static MyEventClass _SharedEventClassInstance;
 
     private static MyEventClass SharedEventClassInstance
@@ -1217,14 +1241,13 @@ internal partial class Class1
     public void PrintTestMessage3()
     {
     }
-}");
+}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
         }
 
         [Fact]
         public async Task TestPartialClassHandlesWithEvents()
         {
-            // Too much auto-generated code to auto-test comments
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
                 @"Class MyEventClass
     Public Event TestEvent()
 
@@ -1280,6 +1303,7 @@ public partial class Class1
         EventClassInstance = new MyEventClass();
         EventClassInstance2 = new MyEventClass();
     }
+
     private MyEventClass _EventClassInstance, _EventClassInstance2;
 
     private MyEventClass EventClassInstance
@@ -1346,7 +1370,7 @@ public partial class Class1
     public void PrintTestMessage3()
     {
     }
-}");
+}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
         }
 
         [Fact]
@@ -1356,7 +1380,8 @@ public partial class Class1
     Private Shared Property First As Integer
 
     Private Second As Integer = _First
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private static int First { get; set; }
 
@@ -1413,7 +1438,8 @@ Friend Class TestClass2
     Public Overloads Sub CreateVirtualInstance(o As Object)
     End Sub
 End Class",
-@"internal abstract partial class TestClass1
+@"
+internal abstract partial class TestClass1
 {
     public static void CreateStatic()
     {
@@ -1457,7 +1483,7 @@ internal partial class TestClass2 : TestClass1
         [Fact]
         public async Task TestNarrowingWideningConversionOperator()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class MyInt
+            await TestConversionVisualBasicToCSharp(@"Public Class MyInt
     Public Shared Narrowing Operator CType(i As Integer) As MyInt
         Return New MyInt()
     End Operator
@@ -1465,12 +1491,14 @@ internal partial class TestClass2 : TestClass1
         Return 1
     End Operator
 End Class"
-                , @"public partial class MyInt
+                , @"
+public partial class MyInt
 {
     public static explicit operator MyInt(int i)
     {
         return new MyInt();
     }
+
     public static implicit operator int(MyInt myInt)
     {
         return 1;
@@ -1482,7 +1510,7 @@ End Class"
         public async Task OperatorOverloads()
         {
             // Note a couple map to the same thing in C# so occasionally the result won't compile. The user can manually decide what to do in such scenarios.
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class AcmeClass
+            await TestConversionVisualBasicToCSharp(@"Public Class AcmeClass
     Public Shared Operator +(i As Integer, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
@@ -1537,76 +1565,94 @@ End Class"
     Public Shared Operator Or(s As String, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-End Class", @"public partial class AcmeClass
+End Class", @"
+public partial class AcmeClass
 {
     public static AcmeClass operator +(int i, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator +(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator -(int i, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator !(AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator *(int i, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator /(int i, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator /(int i, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator %(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator <<(AcmeClass ac, int i)
     {
         return ac;
     }
+
     public static AcmeClass operator >>(AcmeClass ac, int i)
     {
         return ac;
     }
+
     public static AcmeClass operator ==(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator !=(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator <(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator >(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator <=(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator >=(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator &(string s, AcmeClass ac)
     {
         return ac;
     }
+
     public static AcmeClass operator |(string s, AcmeClass ac)
     {
         return ac;
@@ -1651,7 +1697,7 @@ internal partial class TestClass
         [Fact]
         public async Task FieldWithAttribute()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class TestClass
+            await TestConversionVisualBasicToCSharp(@"Class TestClass
     <ThreadStatic>
     Private Shared First As Integer
 End Class", @"using System;
@@ -1669,7 +1715,8 @@ internal partial class TestClass
             await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub SomeBools(ParamArray anyName As Boolean())
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void SomeBools(params bool[] anyName)
     {
@@ -1683,7 +1730,8 @@ End Class", @"internal partial class TestClass
             await TestConversionVisualBasicToCSharp(@"Class TestClass
     Private Sub SomeBools(ParamArray bool As Boolean())
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private void SomeBools(params bool[] @bool)
     {
@@ -1700,7 +1748,8 @@ End Class", @"internal partial class TestClass
         Dim moreStrs() As String
     End Sub
 End Class",
-@"internal partial class TestClass
+@"
+internal partial class TestClass
 {
     public void DoNothing(string[] strs)
     {
@@ -1717,7 +1766,8 @@ End Class",
     Public Sub DoNothing(obj, objs())
     End Sub
 End Class",
-@"internal partial class TestClass
+@"
+internal partial class TestClass
 {
     public void DoNothing(object obj, object[] objs)
     {
@@ -1728,8 +1778,7 @@ End Class",
         [Fact]
         public async Task PartialClass()
         {
-            // Can't auto test comments when there are already manual comments used
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Public Partial Class TestClass
     Private Sub DoNothing()
         Console.WriteLine(""Hello"")
@@ -1779,7 +1828,8 @@ Class MyClassC
         ClA.MA()
         ClA.ClassB.MB()
     End Sub
-End Class", @"internal partial class ClA
+End Class", @"
+internal partial class ClA
 {
     public static void MA()
     {
@@ -1831,7 +1881,8 @@ Class MyClassC
         ClA.MA()
         ClA.ClassB.MB()
     End Sub
-End Class", @"internal partial class ClA
+End Class", @"
+internal partial class ClA
 {
     public static void MA()
     {
@@ -1862,8 +1913,8 @@ internal partial class MyClassC
 
         [Fact]
         public async Task TestIndexer()
-        {   // BUG: Comments aren't properly transferred to the property statement because the line ends in a square bracket
-            await TestConversionVisualBasicToCSharpWithoutComments(
+        {
+            await TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Private _Items As Integer()
 
@@ -1892,7 +1943,8 @@ internal partial class MyClassC
             Me.m_test3 = value
         End Set
     End Property
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private int[] _Items;
 
@@ -1902,6 +1954,7 @@ End Class", @"internal partial class TestClass
         {
             return _Items[index];
         }
+
         set
         {
             _Items[index] = value;
@@ -1924,6 +1977,7 @@ End Class", @"internal partial class TestClass
         {
             return m_test3;
         }
+
         set
         {
             m_test3 = value;
@@ -1935,10 +1989,11 @@ End Class", @"internal partial class TestClass
         [Fact]
         public async Task TestWriteOnlyProperties()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Interface TestInterface
     WriteOnly Property Items As Integer()
-End Interface", @"internal partial interface TestInterface
+End Interface", @"
+internal partial interface TestInterface
 {
     int[] Items { set; }
 }");
@@ -1954,7 +2009,8 @@ End Interface", @"internal partial interface TestInterface
     Public Sub SetValue(value1 As Integer, value2 As Integer)
         _SomeValue = value1 + value2
     End Sub
-End Class", @"public partial class SomeClass
+End Class", @"
+public partial class SomeClass
 {
     public int SomeValue { get; private set; }
 
@@ -1968,7 +2024,7 @@ End Class", @"public partial class SomeClass
         [Fact]
         public async Task TestSetWithNamedParameterProperties()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"Class TestClass
     Private _Items As Integer()
     Property Items As Integer()
@@ -1979,15 +2035,18 @@ End Class", @"public partial class SomeClass
             _Items = v
         End Set
     End Property
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private int[] _Items;
+
     public int[] Items
     {
         get
         {
             return _Items;
         }
+
         set
         {
             _Items = value;
@@ -1999,8 +2058,7 @@ End Class", @"internal partial class TestClass
         [Fact]
         public async Task TestAsyncMethods()
         {
-            //Bug: Whitespace wrapping is wrong when comments present
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
 @"    Class AsyncCode
         Public Sub NotAsync()
             Dim a1 = Async Function() 3
@@ -2026,8 +2084,11 @@ internal partial class AsyncCode
     public void NotAsync()
     {
         async Task<int> a1() => 3;
+
         async Task<int> a2() => await Task.FromResult(3);
+
         async void a3() => await Task.CompletedTask;
+
         async void a4() => await Task.CompletedTask;
     }
 
@@ -2035,6 +2096,7 @@ internal partial class AsyncCode
     {
         return await Task.FromResult(3);
     }
+
     public async void AsyncSub()
     {
         await Task.CompletedTask;

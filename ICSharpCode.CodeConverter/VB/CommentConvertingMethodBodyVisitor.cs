@@ -26,7 +26,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             try {
                 var converted = _wrappedVisitor.Visit(node);
-                return converted.WithSourceMappingFrom(node);
+                return converted.WithCsSourceMappingFrom(node);
             } catch (Exception e) {
                 var dummyStatement = VBasic.SyntaxFactory.EmptyStatement();
                 var withVbTrailingErrorComment = dummyStatement.WithVbTrailingErrorComment<VBSyntax.StatementSyntax>((CS.CSharpSyntaxNode) node, e);

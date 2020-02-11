@@ -32,8 +32,7 @@ internal partial class TestClass
         [Fact]
         public async Task TestCustomEvent()
         {
-            // Can't be automatically tested for comments since an extra method is generated
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharp(
                 @"Class TestClass45
     Private Event backingField As EventHandler
 
@@ -47,7 +46,7 @@ internal partial class TestClass
         RaiseEvent(ByVal sender As Object, ByVal e As System.EventArgs)
             Console.WriteLine(""Event Raised"")
         End RaiseEvent
-    End Event
+    End Event ' RaiseEvent moves outside this block
 
     Public Sub RaiseCustomEvent()
         RaiseEvent MyEvent(Me, EventArgs.Empty)
@@ -64,11 +63,13 @@ internal partial class TestClass45
         {
             backingField += value;
         }
+
         remove
         {
             backingField -= value;
         }
-    }
+    } // RaiseEvent moves outside this block
+
     void OnMyEvent(object sender, EventArgs e)
     {
         Console.WriteLine(""Event Raised"");
@@ -87,7 +88,8 @@ internal partial class TestClass45
         await TestConversionVisualBasicToCSharp(
         @"Class Test
     Public CR As Integer = &HD * &B1
-End Class", @"internal partial class Test
+End Class", @"
+internal partial class Test
 {
     public int CR = 0xD * 0b1;
 }");
@@ -104,7 +106,8 @@ End Class", @"internal partial class Test
     Public Test4 as Integer = &H7D
     Public Test5 as Integer = &H7E
     Public Test6 as Integer = &H7F
-End Class", @"public partial class Issue483
+End Class", @"
+public partial class Issue483
 {
     public int Test1 = 0x7A;
     public int Test2 = 0x7B;

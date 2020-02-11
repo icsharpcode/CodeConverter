@@ -51,11 +51,9 @@ End Sub",
                        group n by n % 5 into g
                        let __groupByKey1__ = g.Key
                        select new { Remainder = __groupByKey1__, Numbers = g };
-
     foreach (var g in numberGroups)
     {
         Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"");
-
         foreach (var n in g.Numbers)
             Console.WriteLine(n);
     }
@@ -65,7 +63,7 @@ End Sub",
         [Fact()]
         public async Task Linq3()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class Product
+            await TestConversionVisualBasicToCSharp(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -109,7 +107,6 @@ internal partial class Test
         var q = from c in categories
                 join p in products on c equals p.Category
                 select new { Category = c, p.ProductName };
-
         foreach (var v in q)
             Console.WriteLine($""{v.ProductName}: {v.Category}"");
     }
@@ -119,7 +116,7 @@ internal partial class Test
         [Fact]
         public async Task Linq4()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class Product
+            await TestConversionVisualBasicToCSharp(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -165,11 +162,9 @@ internal partial class Test
         var q = from c in categories
                 join p in products on c equals p.Category into ps
                 select new { Category = c, Products = ps };
-
         foreach (var v in q)
         {
             Console.WriteLine(v.Category + "":"");
-
             foreach (var p in v.Products)
                 Console.WriteLine(""   "" + p.ProductName);
         }
@@ -215,8 +210,7 @@ End Sub", @"private static void LinqSub()
         [Fact]
         public async Task LinqNoFroms()
         {
-            //BUG: The expression changes shape so can't auto-test comments, but they're definitely wrong
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class VisualBasicClass
+            await TestConversionVisualBasicToCSharp(@"Public Class VisualBasicClass
     Public Shared Sub X(objs As List(Of Object))
         Dim MaxObj As Integer = Aggregate o In objs Into Max(o.GetHashCode())
         Dim CountWhereObj As Integer = Aggregate o In objs Where o.GetHashCode() > 3 Into Count()
@@ -251,13 +245,7 @@ public partial class VisualBasicClass
 End Function", @"private static IEnumerable<string> FindPicFilePath()
 {
     var words = new[] { ""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away"" };
-
-    return words
-.Skip(1)
-.SkipWhile(word => word.Length >= 1)
-.TakeWhile(word => word.Length < 5)
-.Take(2)
-.Distinct();
+    return words.Skip(1).SkipWhile(word => word.Length >= 1).TakeWhile(word => word.Length < 5).Take(2).Distinct();
 }");
         }
 
@@ -297,8 +285,7 @@ End Sub", @"private static void ASub()
         [Fact()]
         public async Task LinqGroupByTwoThingsAnonymously()
         {
-            //Can't auto-test comments when newlines get inserted
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharp(@"Public Class Class1
     Sub Foo()
         Dim xs As New List(Of String)
         Dim y = From x In xs Group By x.Length, x.Count() Into Group
@@ -321,8 +308,7 @@ public partial class Class1
         [Fact]
         public async Task LinqGroupByAnonymous()
         {
-            //Very hard to automated test comments on such a complicated query
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Imports System.Runtime.CompilerServices
+            await TestConversionVisualBasicToCSharp(@"Imports System.Runtime.CompilerServices ' Removed by simplifier
 
 Public Class AccountEntry
     Public Property LookupAccountEntryTypeId As Object

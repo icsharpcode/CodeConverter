@@ -40,7 +40,7 @@ namespace CodeConverter.Tests.TestRunners
     /// https://xunit.net/docs/shared-context
     /// </remarks>
     [CollectionDefinition(Collection)]
-    public class MultiFileTestFixture : ICollectionFixture<MultiFileTestFixture>, IDisposable
+    public sealed class MultiFileTestFixture : ICollectionFixture<MultiFileTestFixture>, IDisposable
     {
         public const string Collection = "Uses MSBuild";
         /// <summary>

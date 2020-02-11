@@ -1,3 +1,4 @@
+
 namespace VbLibrary
 {
     internal enum AnEnum

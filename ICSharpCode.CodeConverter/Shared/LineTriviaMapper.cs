@@ -9,19 +9,23 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     internal class LineTriviaMapper
     {
-        private SyntaxNode _target;
+
+        private static readonly string[] _kinds = new[] { AnnotationConstants.SourceStartLineAnnotationKind, AnnotationConstants.SourceEndLineAnnotationKind };
+        private readonly SyntaxNode _target;
         private readonly SyntaxNode _source;
         private readonly TextLineCollection _sourceLines;
+        private readonly TextLineCollection _targetLines;
         private readonly IReadOnlyDictionary<int, TextLine> _targetLeadingTextLineFromSourceLine;
         private readonly IReadOnlyDictionary<int, TextLine> _targetTrailingTextLineFromSourceLine;
         private readonly List<SyntaxTriviaList> _leadingTriviaCarriedOver = new List<SyntaxTriviaList>();
         private readonly List<SyntaxTriviaList> _trailingTriviaCarriedOver = new List<SyntaxTriviaList>();
         private readonly Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>> Leading, List<IReadOnlyCollection<SyntaxTrivia>> Trailing)> _targetTokenToTrivia = new Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>>, List<IReadOnlyCollection<SyntaxTrivia>>)>();
 
-        public LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, SyntaxNode target, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
+        public LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, SyntaxNode target, TextLineCollection targetLines, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
         {
             _source = source;
             _sourceLines = sourceLines;
+            _targetLines = targetLines;
             _target = target;
             _targetLeadingTextLineFromSourceLine = targetLeadingTextLineFromSourceLine;
             _targetTrailingTextLineFromSourceLine = targetTrailingTextLineFromSourceLine;
@@ -37,20 +41,32 @@ namespace ICSharpCode.CodeConverter.Shared
         public static SyntaxNode MapSourceTriviaToTarget<TSource, TTarget>(TSource source, TTarget target)
             where TSource : SyntaxNode, ICompilationUnitSyntax where TTarget : SyntaxNode, ICompilationUnitSyntax
         {
-            var originalTargetLines = target.GetText().Lines;
+            var targetLines = target.GetText().Lines;
 
-            var targetNodesBySourceStartLine = target.GetAnnotatedNodesAndTokens(AnnotationConstants.SourceStartLineAnnotationKind)
-                .ToLookup(n => n.GetAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).Select(a => int.Parse(a.Data)).Min())
-                .ToDictionary(g => g.Key, g => originalTargetLines.GetLineFromPosition(g.Min(x => x.Span.Start)));
+            var nodesBySourceLine = GetNodesBySourceLine(target);
 
-            var targetNodesBySourceEndLine = target.GetAnnotatedNodesAndTokens(AnnotationConstants.SourceEndLineAnnotationKind)
-                .ToLookup(n => n.GetAnnotations(AnnotationConstants.SourceEndLineAnnotationKind).Select(a => int.Parse(a.Data)).Max())
-                .ToDictionary(g => g.Key, g => originalTargetLines.GetLineFromPosition(g.Max(x => x.Span.End)));
+            var targetNodesBySourceStartLine = nodesBySourceLine
+                .ToDictionary(g => g.Key, g => targetLines.GetLineFromPosition(g.Min(GetPosition)));
+
+            var targetNodesBySourceEndLine = nodesBySourceLine
+                .ToDictionary(g => g.Key, g => targetLines.GetLineFromPosition(g.Max(GetPosition)));
 
             var sourceLines = source.GetText().Lines;
-            var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, target, targetNodesBySourceStartLine, targetNodesBySourceEndLine);
+            var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, target, targetLines, targetNodesBySourceStartLine, targetNodesBySourceEndLine);
 
             return lineTriviaMapper.GetTargetWithSourceTrivia();
+        }
+
+        private static int GetPosition((SyntaxNodeOrToken Node, int SourceLineIndex, string Kind) n)
+        {
+            return n.Kind == AnnotationConstants.SourceStartLineAnnotationKind ? n.Node.SpanStart : n.Node.Span.End;
+        }
+
+        private static ILookup<int, (SyntaxNodeOrToken Node, int SourceLineIndex, string Kind)> GetNodesBySourceLine(SyntaxNode target)
+        {
+            return target.GetAnnotatedNodesAndTokens(_kinds).SelectMany(n =>
+                n.GetAnnotations(_kinds).Select(a => (Node: n, SourceLineIndex: int.Parse(a.Data), Kind: a.Kind))
+            ).ToLookup(n => n.SourceLineIndex, n => n);
         }
 
         /// <remarks>
@@ -85,7 +101,9 @@ namespace ICSharpCode.CodeConverter.Shared
                 var lastIndexToKeep = trivia.Value.Trailing.FindIndex(tl => tl.Any(t => t.IsEndOfLine()));
                 var moveToLeadingTrivia = trivia.Value.Trailing.Skip(lastIndexToKeep + 1).ToList();
                 if (moveToLeadingTrivia.Any()) {
-                    var nextTrivia = GetTargetTriviaCollection(trivia.Key.GetNextToken(true));
+                    var toReplace = trivia.Key.GetNextToken(true);
+                    var nextTrivia = GetTargetTriviaCollection(toReplace);
+                    if (!nextTrivia.Leading.Any()) nextTrivia.Leading.Add(toReplace.LeadingTrivia);
                     nextTrivia.Leading.InsertRange(0, moveToLeadingTrivia);
                     trivia.Value.Trailing.RemoveRange(lastIndexToKeep + 1, moveToLeadingTrivia.Count);
                 }
@@ -95,8 +113,9 @@ namespace ICSharpCode.CodeConverter.Shared
         private SyntaxToken AttachMappedTrivia(SyntaxToken original, SyntaxToken rewritten)
         {
             var trivia = _targetTokenToTrivia[original];
-            return rewritten.WithLeadingTrivia(trivia.Leading.SelectMany(tl => tl))
-                .WithTrailingTrivia(trivia.Trailing.SelectMany(tl => tl));
+            if (trivia.Leading.Any()) rewritten = rewritten.WithLeadingTrivia(trivia.Leading.SelectMany(tl => tl));
+            if (trivia.Trailing.Any()) rewritten = rewritten.WithTrailingTrivia(trivia.Trailing.SelectMany(tl => tl));
+            return rewritten;
         }
 
         private void MapTrailing(int sourceLineIndex)
@@ -109,8 +128,7 @@ namespace ICSharpCode.CodeConverter.Shared
             }
 
             if (_trailingTriviaCarriedOver.Any()) {
-                var targetLine = GetTargetLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
-                if (targetLine == default) targetLine = GetTargetLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
+                var targetLine = GetTargetLine(sourceLineIndex, false);
                 if (targetLine != default) {
                     var originalToReplace = targetLine.GetTrailingForLine(_target);
                     if (originalToReplace != null) {
@@ -132,8 +150,7 @@ namespace ICSharpCode.CodeConverter.Shared
             }
 
             if (_leadingTriviaCarriedOver.Any()) {
-                var targetLine = GetTargetLine(_targetLeadingTextLineFromSourceLine, sourceLineIndex);
-                if (targetLine == default) targetLine = GetTargetLine(_targetTrailingTextLineFromSourceLine, sourceLineIndex);
+                var targetLine = GetTargetLine(sourceLineIndex, true);
                 if (targetLine != default) {
                     var originalToReplace = targetLine.GetLeadingForLine(_target);
                     if (originalToReplace != default) {
@@ -146,9 +163,10 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        private TextLine GetTargetLine(IReadOnlyDictionary<int, TextLine> sourceToTargetLine, int sourceLineIndex)
+        private TextLine GetTargetLine(int sourceLineIndex, bool isLeading)
         {
-            if (sourceToTargetLine.TryGetValue(sourceLineIndex, out var targetLine)) return targetLine;
+            var exactCollection = isLeading ? _targetLeadingTextLineFromSourceLine : _targetTrailingTextLineFromSourceLine;
+            if (exactCollection.TryGetValue(sourceLineIndex, out var targetLine)) return targetLine;
             return default;
         }
 

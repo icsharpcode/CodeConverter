@@ -11,7 +11,8 @@ namespace CodeConverter.Tests.CSharp
         public async Task TestNamespace()
         {
             await TestConversionVisualBasicToCSharp(@"Namespace Test
-End Namespace", @"namespace Test
+End Namespace", @"
+namespace Test
 {
 }");
         }
@@ -20,7 +21,8 @@ End Namespace", @"namespace Test
         public async Task TestLongNamespace()
         {
             await TestConversionVisualBasicToCSharp(@"Namespace Test1.Test2.Test3
-End Namespace", @"namespace Test1.Test2.Test3
+End Namespace", @"
+namespace Test1.Test2.Test3
 {
 }");
         }
@@ -29,7 +31,8 @@ End Namespace", @"namespace Test1.Test2.Test3
         public async Task TestGlobalNamespace()
         {
             await TestConversionVisualBasicToCSharp(@"Namespace Global.Test
-End Namespace", @"namespace Test
+End Namespace", @"
+namespace Test
 {
 }");
         }
@@ -37,12 +40,13 @@ End Namespace", @"namespace Test
         [Fact]
         public async Task TestGenericInheritanceInGlobalNamespace()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Class A(Of T)
+            await TestConversionVisualBasicToCSharp(@"Class A(Of T)
 End Class
 Class B
     Inherits A(Of String)
 End Class
-", @"internal partial class A<T>
+", @"
+internal partial class A<T>
 {
 }
 
@@ -92,7 +96,8 @@ public partial class Test
             await TestConversionVisualBasicToCSharp(@"Namespace Test.[class]
     Class TestClass(Of T)
     End Class
-End Namespace", @"namespace Test.@class
+End Namespace", @"
+namespace Test.@class
 {
     internal partial class TestClass<T>
     {
@@ -103,7 +108,7 @@ End Namespace", @"namespace Test.@class
         [Fact]
         public async Task TestMixedCaseNamespace()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Namespace [Aaa]
+            await TestConversionVisualBasicToCSharp(@"Namespace [Aaa]
     Friend Class A
         Shared Sub Foo()
         End Sub
@@ -151,7 +156,8 @@ Friend Module C
         aaa.b.bar()
         Aaa.B.Bar()
     End Sub
-End Module", @"namespace Aaa
+End Module", @"
+namespace Aaa
 {
     internal partial class A
     {
@@ -163,6 +169,7 @@ End Module", @"namespace Aaa
     internal partial class Z
     {
     }
+
     internal partial class Z
     {
     }
@@ -170,13 +177,16 @@ End Module", @"namespace Aaa
     internal abstract partial class Base
     {
         public abstract void UPPER();
+
         public abstract bool FOO { get; set; }
     }
+
     internal partial class NotBase : Base
     {
         public override void UPPER()
         {
         }
+
         public override bool FOO { get; set; }
     }
 }
@@ -224,7 +234,8 @@ internal static partial class C
         Private Sub Test2()
         End Sub
     End Module
-End Namespace", @"namespace Test.@class
+End Namespace", @"
+namespace Test.@class
 {
     internal static partial class TestClass
     {
@@ -245,7 +256,8 @@ End Namespace", @"namespace Test.@class
             await TestConversionVisualBasicToCSharp(@"Namespace Test.[class]
     MustInherit Class TestClass
     End Class
-End Namespace", @"namespace Test.@class
+End Namespace", @"
+namespace Test.@class
 {
     internal abstract partial class TestClass
     {
@@ -259,7 +271,8 @@ End Namespace", @"namespace Test.@class
             await TestConversionVisualBasicToCSharp(@"Namespace Test.[class]
     NotInheritable Class TestClass
     End Class
-End Namespace", @"namespace Test.@class
+End Namespace", @"
+namespace Test.@class
 {
     internal sealed partial class TestClass
     {
@@ -292,7 +305,8 @@ internal partial interface ITest : IDisposable
     ArgumentOutOfRange_NeedNonNegNum
     ArgumentOutOfRange_NeedNonNegNumRequired
     Arg_ArrayPlusOffTooSmall
-End Enum", @"internal enum ExceptionResource
+End Enum", @"
+internal enum ExceptionResource
 {
     Argument_ImplementIComparable,
     ArgumentOutOfRange_NeedNonNegNum,
@@ -423,14 +437,14 @@ internal partial class test : InvalidDataException
         [Fact]
         public async Task ClassInheritsClassWithNoParenthesesOnBaseCall()
         {
-            // Moving where the base call appears confuses the auto comment tester
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class DataSet1
+            await TestConversionVisualBasicToCSharp(@"Public Class DataSet1
     Inherits Global.System.Data.DataSet
     Public Sub New()
         MyBase.New
     End Sub
 End Class",
-                @"public partial class DataSet1 : System.Data.DataSet
+                @"
+public partial class DataSet1 : System.Data.DataSet
 {
     public DataSet1() : base()
     {
@@ -446,16 +460,17 @@ End Class",
     ''' <summary>
     ''' Returns empty
     ''' </summary>
-    Private Function MyFunc() As String
+    Private Function MyFunc3() As String
         Return """"
     End Function
 End Class",
-                @"public partial class MyTestClass
+                @"
+public partial class MyTestClass
 {
     /// <summary>
     /// Returns empty
     /// </summary>
-    private string MyFunc()
+    private string MyFunc3()
     {
         return """";
     }
@@ -466,19 +481,20 @@ End Class",
         public async Task MultilineCommentRootOfFile()
         {
             await TestConversionVisualBasicToCSharp(@"''' <summary>
-''' Returns empty
+''' Class xml doc
 ''' </summary>
 Public Class MyTestClass
-    Private Function MyFunc() As String
+    Private Function MyFunc4() As String
         Return """"
     End Function
 End Class",
                 @"/// <summary>
-/// Returns empty
+/// Class xml doc
 /// </summary>
+
 public partial class MyTestClass
 {
-    private string MyFunc()
+    private string MyFunc4()
     {
         return """";
     }
@@ -489,19 +505,19 @@ public partial class MyTestClass
         public async Task MultilineCommentRootOfFileLeadingSpaces()
         {
             await TestConversionVisualBasicToCSharp(@"    ''' <summary>
-    ''' Returns empty
+    ''' Class xml doc with leading spaces
     ''' </summary>
 Public Class MyTestClass
-    Private Function MyFunc() As String
+    Private Function MyFunc5() As String
         Return """"
     End Function
 End Class",
                 @"    /// <summary>
-    /// Returns empty
+    /// Class xml doc with leading spaces
     /// </summary>
 public partial class MyTestClass
 {
-    private string MyFunc()
+    private string MyFunc5()
     {
         return """";
     }
@@ -510,7 +526,7 @@ public partial class MyTestClass
         [Fact]
         public async Task EnumConversion()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Enum ESByte As SByte
+            await TestConversionVisualBasicToCSharp(@"Enum ESByte As SByte
     M1 = 0
 End Enum
 Enum EByte As Byte
@@ -816,13 +832,14 @@ internal static partial class Module1
         [Fact]
         public async Task NewConstraintLast()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Interface Foo
+            await TestConversionVisualBasicToCSharp(@"Public Interface Foo
 End Interface
 
 Public Class Bar(Of x As {New, Foo})
 
 End Class",
-                @"public partial interface Foo
+                @"
+public partial interface Foo
 {
 }
 
@@ -834,8 +851,8 @@ public partial class Bar<x> where x : Foo, new()
         [Fact]
         public async Task MyClassVirtualCallMethod()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class A
-    Overridable Function F1() As Integer
+            await TestConversionVisualBasicToCSharp(@"Public Class A
+    Overridable Function F1() As Integer ' Becomes delegating method
         Return 1
     End Function
     MustOverride Function F2() As Integer
@@ -846,15 +863,17 @@ public partial class Bar<x> where x : Foo, new()
         Dim z = Me.F2()
     End Sub
 End Class",
-                @"public partial class A
+                @"
+public partial class A
 {
     public int MyClassF1()
     {
         return 1;
     }
 
-    public virtual int F1() => MyClassF1();
+    public virtual int F1() => MyClassF1(); // Becomes delegating method
     public abstract int F2();
+
     public void TestMethod()
     {
         int w = MyClassF1();
@@ -868,7 +887,7 @@ End Class",
         [Fact]
         public async Task MyClassVirtualCallProperty()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class A
+            await TestConversionVisualBasicToCSharp(@"Public Class A
     Overridable Property P1() As Integer = 1
     MustOverride Property P2() As Integer
     Public Sub TestMethod()
@@ -878,7 +897,8 @@ End Class",
         Dim z = Me.P2
     End Sub
 End Class",
-                @"public partial class A
+                @"
+public partial class A
 {
     public int MyClassP1 { get; set; } = 1;
 
@@ -896,6 +916,7 @@ End Class",
     }
 
     public abstract int P2 { get; set; }
+
     public void TestMethod()
     {
         int w = MyClassP1;

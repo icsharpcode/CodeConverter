@@ -17,63 +17,29 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     public class CommentConvertingNodesVisitor : VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
     {
-        public TriviaConverter TriviaConverter { get; }
         private readonly VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>> _wrappedVisitor;
 
-        public CommentConvertingNodesVisitor(VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>> wrappedVisitor, TriviaConverter triviaConverter)
+        public CommentConvertingNodesVisitor(VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>> wrappedVisitor)
         {
-            TriviaConverter = triviaConverter;
             this._wrappedVisitor = wrappedVisitor;
         }
         public override async Task<CSharpSyntaxNode> DefaultVisit(SyntaxNode node)
         {
-            return TriviaConverter.PortConvertedTrivia(node, await _wrappedVisitor.Visit(node));
+            return await DefaultVisitInner(node);
         }
 
-        public override async Task<CSharpSyntaxNode> VisitModuleBlock(VbSyntax.ModuleBlockSyntax node)
+        private async Task<CSharpSyntaxNode> DefaultVisitInner(SyntaxNode node)
         {
-            return await WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
-        }
-
-        public override async Task<CSharpSyntaxNode> VisitStructureBlock(VbSyntax.StructureBlockSyntax node)
-        {
-            return await WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
-        }
-
-        public override async Task<CSharpSyntaxNode> VisitInterfaceBlock(VbSyntax.InterfaceBlockSyntax node)
-        {
-            return await WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
-        }
-
-        public override async Task<CSharpSyntaxNode> VisitClassBlock(VbSyntax.ClassBlockSyntax node)
-        {
-            return await WithPortedTrivia<VbSyntax.TypeBlockSyntax, CsSyntax.BaseTypeDeclarationSyntax>(node, WithTypeBlockTrivia);
+            return await _wrappedVisitor.Visit(node);
         }
 
         public override async Task<CSharpSyntaxNode> VisitCompilationUnit(VbSyntax.CompilationUnitSyntax node)
         {
-            var cSharpSyntaxNode = (CsSyntax.CompilationUnitSyntax) await base.VisitCompilationUnit(node);
-            cSharpSyntaxNode = cSharpSyntaxNode.WithEndOfFileToken(
-                cSharpSyntaxNode.EndOfFileToken.WithConvertedLeadingTriviaFrom(node.EndOfFileToken));
-
-            return TriviaConverter.IsAllTriviaConverted()
-                ? cSharpSyntaxNode
-                : cSharpSyntaxNode.WithAppendedTrailingTrivia(SyntaxFactory.Comment("/* Some trivia (e.g. comments) could not be converted */"));
-        }
-
-        private async Task<TDest> WithPortedTrivia<TSource, TDest>(SyntaxNode node, Func<TSource, TDest, TDest> portExtraTrivia) where TSource : SyntaxNode where TDest : CSharpSyntaxNode
-        {
-            var cSharpSyntaxNode = portExtraTrivia((TSource)node, (TDest) await _wrappedVisitor.Visit(node));
-            return TriviaConverter.PortConvertedTrivia(node, cSharpSyntaxNode);
-        }
-
-        private CsSyntax.BaseTypeDeclarationSyntax WithTypeBlockTrivia(VbSyntax.TypeBlockSyntax sourceNode, CsSyntax.BaseTypeDeclarationSyntax destNode)
-        {
-            var beforeOpenBrace = destNode.OpenBraceToken.GetPreviousToken();
-            var withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.BlockStatement, beforeOpenBrace);
-            withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.Inherits, withAnnotation);
-            withAnnotation = TriviaConverter.WithDelegateToParentAnnotation(sourceNode.Implements, withAnnotation);
-            return destNode.ReplaceToken(beforeOpenBrace, withAnnotation);
+            var convertedNode = (CsSyntax.CompilationUnitSyntax)await DefaultVisitInner(node);
+            // Special case where we need to map manually because it's a special zero-width token that just has leading trivia that isn't at the start of the line necessarily
+            return convertedNode.WithEndOfFileToken(
+                convertedNode.EndOfFileToken.WithSourceMappingFrom(node.EndOfFileToken)
+            );
         }
     }
 }

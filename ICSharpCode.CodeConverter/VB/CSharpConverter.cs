@@ -20,7 +20,7 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.VB
 {
-    internal class CSharpConverter
+    internal static class CSharpConverter
     {
         public static async Task<SyntaxNode> ConvertCompilationTree(Document document,
             VisualBasicCompilation vbViewOfCsSymbols, Project vbReferenceProject)
@@ -36,12 +36,14 @@ namespace ICSharpCode.CodeConverter.VB
             var numberOfLines = tree.GetLineSpan(root.FullSpan).EndLinePosition.Line;
 
             var visualBasicSyntaxVisitor = new NodesVisitor(document, (CS.CSharpCompilation)compilation, semanticModel, vbViewOfCsSymbols, vbSyntaxGenerator, numberOfLines);
-            var converted = root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
+            var converted = (VBSyntax.CompilationUnitSyntax)root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
 
-            var formattedConverted = (VBSyntax.CompilationUnitSyntax) Formatter.Format(converted, document.Project.Solution.Workspace);
-
-
-            return LineTriviaMapper.MapSourceTriviaToTarget(root, formattedConverted);
+            try {
+                converted = (VBSyntax.CompilationUnitSyntax)Formatter.Format(converted, document.Project.Solution.Workspace);
+                return LineTriviaMapper.MapSourceTriviaToTarget(root, converted);
+            } catch (Exception) { //TODO log
+                return converted;
+            }
         }
 
         private static string NullRootError(Document document)

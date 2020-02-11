@@ -1,6 +1,5 @@
 // Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
-using Microsoft.VisualBasic;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,6 +7,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
+using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
 
 namespace Microsoft.VisualBasic
@@ -35,14 +35,19 @@ namespace VbLibrary
         /* TODO ERROR: Skipped IfDirectiveTrivia */
         [System.CodeDom.Compiler.GeneratedCode("MyTemplate", "11.0.0.0")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+
+        /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped ElifDirectiveTrivia */
         internal partial class MyApplication : Microsoft.VisualBasic.ApplicationServices.ConsoleApplicationBase
         {
+            /* TODO ERROR: Skipped EndIfDirectiveTrivia */
         }
 
         /* TODO ERROR: Skipped EndIfDirectiveTrivia */
         /* TODO ERROR: Skipped IfDirectiveTrivia */
         [System.CodeDom.Compiler.GeneratedCode("MyTemplate", "11.0.0.0")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+
+        /* TODO ERROR: Skipped IfDirectiveTrivia */
         internal partial class MyComputer : Microsoft.VisualBasic.Devices.Computer
         {
             /* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
@@ -81,6 +86,7 @@ namespace VbLibrary
                     return m_AppObjectProvider.GetInstance;
                 }
             }
+
             private readonly static ThreadSafeObjectProvider<MyApplication> m_AppObjectProvider = new ThreadSafeObjectProvider<MyApplication>();
             /* TODO ERROR: Skipped EndIfDirectiveTrivia */
             /* TODO ERROR: Skipped IfDirectiveTrivia */
@@ -93,6 +99,7 @@ namespace VbLibrary
                     return m_UserObjectProvider.GetInstance;
                 }
             }
+
             private readonly static ThreadSafeObjectProvider<Microsoft.VisualBasic.ApplicationServices.User> m_UserObjectProvider = new ThreadSafeObjectProvider<Microsoft.VisualBasic.ApplicationServices.User>();
             /* TODO ERROR: Skipped ElifDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
             /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
@@ -117,18 +124,21 @@ namespace VbLibrary
                 {
                     return base.Equals(o);
                 }
+
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 [DebuggerHidden()]
                 public override int GetHashCode()
                 {
                     return base.GetHashCode();
                 }
+
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 [DebuggerHidden()]
                 internal new Type GetType()
                 {
                     return typeof(MyWebServices);
                 }
+
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 [DebuggerHidden()]
                 public override string ToString()
@@ -179,6 +189,7 @@ namespace VbLibrary
                             m_ThreadStaticValue = new T();
                         return m_ThreadStaticValue;
                     }
+                    /* TODO ERROR: Skipped EndIfDirectiveTrivia */
                 }
 
                 [DebuggerHidden()]
@@ -191,6 +202,7 @@ namespace VbLibrary
                 [System.Runtime.CompilerServices.CompilerGenerated()]
                 [ThreadStatic()]
                 private static T m_ThreadStaticValue;
+                /* TODO ERROR: Skipped EndIfDirectiveTrivia */
             }
         }
     }
@@ -210,6 +222,7 @@ namespace VbLibrary
             private InternalXmlHelper()
             {
             }
+
             public static string get_Value(IEnumerable<XElement> source)
             {
                 foreach (XElement item in source)
@@ -225,6 +238,7 @@ namespace VbLibrary
                     break;
                 }
             }
+
             public static string get_AttributeValue(IEnumerable<XElement> source, XName name)
             {
                 foreach (XElement item in source)
@@ -240,6 +254,7 @@ namespace VbLibrary
                     break;
                 }
             }
+
             public static string get_AttributeValue(XElement source, XName name)
             {
                 return Conversions.ToString(source.Attribute(name));
@@ -249,6 +264,7 @@ namespace VbLibrary
             {
                 source.SetAttributeValue(name, value);
             }
+
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static XAttribute CreateAttribute(XName name, object value)
             {
@@ -256,8 +272,10 @@ namespace VbLibrary
                 {
                     return null;
                 }
+
                 return new XAttribute(name, value);
             }
+
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static XAttribute CreateNamespaceAttribute(XName name, XNamespace ns)
             {
@@ -265,6 +283,7 @@ namespace VbLibrary
                 a.AddAnnotation(ns);
                 return a;
             }
+
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static object RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, object obj)
             {
@@ -284,8 +303,10 @@ namespace VbLibrary
                         }
                     }
                 }
+
                 return obj;
             }
+
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static IEnumerable RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, IEnumerable obj)
             {
@@ -301,8 +322,10 @@ namespace VbLibrary
                         return obj.Cast<object>().Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessObject);
                     }
                 }
+
                 return obj;
             }
+
             [DebuggerNonUserCode()]
             [System.Runtime.CompilerServices.CompilerGenerated()]
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -311,6 +334,7 @@ namespace VbLibrary
                 private readonly string[] m_inScopePrefixes;
                 private readonly XNamespace[] m_inScopeNs;
                 private readonly List<XAttribute> m_attributes;
+
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 internal RemoveNamespaceAttributesClosure(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes)
                 {
@@ -318,11 +342,13 @@ namespace VbLibrary
                     m_inScopeNs = inScopeNs;
                     m_attributes = attributes;
                 }
+
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 internal XElement ProcessXElement(XElement elem)
                 {
                     return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
                 }
+
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 internal object ProcessObject(object obj)
                 {
@@ -337,28 +363,25 @@ namespace VbLibrary
                     }
                 }
             }
+
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static XElement RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, XElement e)
             {
                 if (e != null)
                 {
                     var a = e.FirstAttribute;
-
                     while (a != null)
                     {
                         var nextA = a.NextAttribute;
-
                         if (a.IsNamespaceDeclaration)
                         {
                             var ns = a.Annotation<XNamespace>();
                             string prefix = a.Name.LocalName;
-
                             if (ns != null)
                             {
                                 if (inScopePrefixes != null && inScopeNs != null)
                                 {
                                     int lastIndex = inScopePrefixes.Length - 1;
-
                                     for (int i = 0, loopTo = lastIndex; i <= loopTo; i++)
                                     {
                                         string currentInScopePrefix = inScopePrefixes[i];
@@ -423,8 +446,12 @@ namespace VbLibrary
                         a = nextA;
                     }
                 }
+
                 return e;
             }
         }
+
+        // Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
+
     }
 }

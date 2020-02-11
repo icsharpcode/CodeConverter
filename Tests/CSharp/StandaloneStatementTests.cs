@@ -87,7 +87,8 @@ obj = null;",
             await TestConversionVisualBasicToCSharp(
 @"Public Class Test
 End Class",
-@"public partial class Test
+@"
+public partial class Test
 {
 }");
         }
@@ -106,7 +107,8 @@ End Class",
             await TestConversionVisualBasicToCSharp(
 @"Namespace nam
 End Namespace",
-@"namespace nam
+@"
+namespace nam
 {
 }");
         }
@@ -114,7 +116,7 @@ End Namespace",
         [Fact]
         public async Task SingleUnusedUsingAliasTidiedAway()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports tr = System.IO.TextReader", "");
+            await TestConversionVisualBasicToCSharp(@"Imports tr = System.IO.TextReader ' Removed by simplifier", "");
         }
 
         [Fact]

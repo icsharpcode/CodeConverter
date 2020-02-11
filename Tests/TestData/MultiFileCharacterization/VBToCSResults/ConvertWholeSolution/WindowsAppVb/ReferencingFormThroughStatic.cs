@@ -1,3 +1,4 @@
+
 namespace WindowsAppVb
 {
     public static class ReferencingFormThroughStatic
@@ -14,6 +15,7 @@ namespace WindowsAppVb
             {
                 return My.MyProject.Forms.WinformsDesignerTest.Text;
             }
+
             return "";
         }
     }
