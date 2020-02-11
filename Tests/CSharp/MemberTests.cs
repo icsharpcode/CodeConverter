@@ -746,7 +746,7 @@ internal partial class TestClass
         set_FullName(false, true, ""hello"");
         return get_FullName(false, true);
     }
-}");
+}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
         }
 
         [Fact]
@@ -820,7 +820,7 @@ public partial class ParameterizedPropertiesAndEnumTest
                 }
         }
     }
-}");
+}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
         }
 
         [Fact]
@@ -1241,7 +1241,7 @@ internal partial class Class1
     public void PrintTestMessage3()
     {
     }
-}");
+}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
         }
 
         [Fact]
@@ -1370,7 +1370,7 @@ public partial class Class1
     public void PrintTestMessage3()
     {
     }
-}");
+}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
         }
 
         [Fact]
