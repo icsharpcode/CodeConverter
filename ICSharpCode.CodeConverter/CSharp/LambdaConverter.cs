@@ -33,11 +33,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             BlockSyntax block = null;
             ExpressionSyntax expressionBody = null;
             ArrowExpressionClauseSyntax arrow = null;
-            if (convertedStatements.TryUnpackSingleStatement(out StatementSyntax singleStatement) &&
-                singleStatement.TryUnpackSingleExpressionFromStatement(out expressionBody)) {
+            if (!convertedStatements.TryUnpackSingleStatement(out StatementSyntax singleStatement)) {
+                convertedStatements = convertedStatements.Select(l => l.WithTrailingTrivia(SyntaxFactory.ElasticCarriageReturnLineFeed)).ToList();
+                block = SyntaxFactory.Block(convertedStatements);
+            } else if (singleStatement.TryUnpackSingleExpressionFromStatement(out expressionBody)) {
                 arrow = SyntaxFactory.ArrowExpressionClause(expressionBody);
             } else {
-                block = SyntaxFactory.Block(convertedStatements);
+                block = SyntaxFactory.Block(singleStatement);
             }
 
             var functionStatement = await ConvertToFunctionDeclarationOrNull(vbNode, param, block, arrow);
@@ -53,7 +55,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             } else {
                 lambda = SyntaxFactory.ParenthesizedLambdaExpression(param, body);
             }
-
             return lambda;
         }
 

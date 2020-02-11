@@ -1973,7 +1973,12 @@ internal partial class TestClass
     private void TestMethod()
     {
         Func<int, int> test = a => a * 2;
-        Func<int, int, double> test2 = (a, b) => { if (b > 0) return a / (double)b; return 0; };
+        Func<int, int, double> test2 = (a, b) =>
+        {
+            if (b > 0)
+                return a / (double)b;
+            return 0;
+        };
         Func<int, int, int> test3 = (a, b) => a % b;
         test(3);
     }
@@ -2006,7 +2011,12 @@ internal partial class TestClass
     private void TestMethod()
     {
         object test(object a) => a * 2;
-        object test2(object a, object b) { if (Conversions.ToBoolean(b > 0)) return a / b; return 0; };
+        object test2(object a, object b)
+        {
+            if (Conversions.ToBoolean(b > 0))
+                return a / b;
+            return 0;
+        };
         object test3(object a, object b) => a % b;
         test(3);
     }
