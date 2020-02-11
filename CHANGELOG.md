@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [7.7.0] - 2020-02-11
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Cast foreach collection to IEnumerable if needed or unknown
 * Fix ordering bug converting redim bounds without preserve for 2d arrays
 * Exit Property should become return [#497](https://github.com/icsharpcode/CodeConverter/issues/497)
@@ -24,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Add omitted argument lists on conditional expressions
 * Winforms initialization improvements
 * Convert VbMyResourcesResXFileCodeGenerator resource generator type in project file
+* Improved comment conversion [#518](https://github.com/icsharpcode/CodeConverter/pull/518)
 
 ### C# -> VB
 
@@ -40,6 +53,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Add call AscW method to convert Char to numeric types
 * Remove erroneous backing fields' generation in root classes
 * Add TryCast expression for convering to generic types
+* Comments are now converted
+* Some preprocessor directives are partially converted [#517](https://github.com/icsharpcode/CodeConverter/pull/517)
 
 ## [7.6.0] - 2020-01-11
 
