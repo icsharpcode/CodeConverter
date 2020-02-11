@@ -104,7 +104,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : PrependRootNamespace(sourceAndConverted, SyntaxFactory.IdentifierName(options.RootNamespace));
 
             var usings = await importsClauses
-                .SelectAsync(async c => (UsingDirectiveSyntax)await c.AcceptAsync(TriviaConvertingDeclarationVisitor, c.SyntaxTree == _semanticModel.SyntaxTree));
+                .SelectAsync(async c => (UsingDirectiveSyntax)await c.AcceptAsync(TriviaConvertingDeclarationVisitor));
             var usingDirectiveSyntax = usings
                 .Concat(_extraUsingDirectives.Select(u => SyntaxFactory.UsingDirective(SyntaxFactory.ParseName(u))))
                 .OrderByDescending(IsSystemUsing).ThenBy(u => u.Name.ToString().Replace("global::", "")).ThenByDescending(HasSourceMapAnnotations)
@@ -756,7 +756,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitPropertyBlock(VBSyntax.PropertyBlockSyntax node)
         {
-            return await node.PropertyStatement.AcceptAsync(TriviaConvertingDeclarationVisitor, false);
+            return await node.PropertyStatement.AcceptAsync(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.SubNodesOnly);
         }
 
         public override async Task<CSharpSyntaxNode> VisitAccessorBlock(VBSyntax.AccessorBlockSyntax node)
@@ -771,7 +771,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             string potentialMethodId;
             var ancestoryPropertyBlock = node.GetAncestor<VBSyntax.PropertyBlockSyntax>();
             var containingPropertyStmt = ancestoryPropertyBlock?.PropertyStatement;
-            var isFirst = ancestoryPropertyBlock?.Accessors.FirstOrDefault() == node;
+            var sourceMap = ancestoryPropertyBlock?.Accessors.FirstOrDefault() == node ? SourceTriviaMapKind.All : SourceTriviaMapKind.None;
             switch (node.Kind()) {
                 case VBasic.SyntaxKind.GetAccessorBlock:
                     blockKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind.GetAccessorDeclaration;
@@ -780,7 +780,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     if (containingPropertyStmt.AsClause is VBSyntax.SimpleAsClauseSyntax getAsClause &&
                         await ShouldConvertAsParameterizedProperty()) {
                         var method = await CreateMethodDeclarationSyntax(containingPropertyStmt?.ParameterList);
-                        return method.WithReturnType((TypeSyntax) await getAsClause.Type.AcceptAsync(_triviaConvertingExpressionVisitor, isFirst));
+                        return method.WithReturnType((TypeSyntax) await getAsClause.Type.AcceptAsync(_triviaConvertingExpressionVisitor, sourceMap));
                     }
                     break;
                 case VBasic.SyntaxKind.SetAccessorBlock:
@@ -789,7 +789,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     if (containingPropertyStmt.AsClause is VBSyntax.SimpleAsClauseSyntax setAsClause && await ShouldConvertAsParameterizedProperty()) {
                         var setMethod = await CreateMethodDeclarationSyntax(containingPropertyStmt?.ParameterList);
-                        var valueParameterType = (TypeSyntax) await setAsClause.Type.AcceptAsync(_triviaConvertingExpressionVisitor, isFirst);
+                        var valueParameterType = (TypeSyntax) await setAsClause.Type.AcceptAsync(_triviaConvertingExpressionVisitor, sourceMap);
                         return setMethod.AddParameterListParameters(SyntaxFactory.Parameter(SyntaxFactory.Identifier("value")).WithType(valueParameterType));
                     }
                     break;
@@ -821,7 +821,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             async Task<MethodDeclarationSyntax> CreateMethodDeclarationSyntax(VBSyntax.ParameterListSyntax containingPropParameterList)
             {
-                var parameterListSyntax = await containingPropParameterList.AcceptAsync(_triviaConvertingExpressionVisitor, isFirst);
+                var parameterListSyntax = await containingPropParameterList.AcceptAsync(_triviaConvertingExpressionVisitor, sourceMap);
                 MethodDeclarationSyntax methodDeclarationSyntax = SyntaxFactory.MethodDeclaration(attributes, modifiers,
                     SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VoidKeyword)), null,
                     SyntaxFactory.Identifier(potentialMethodId), null,
@@ -837,7 +837,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitMethodBlock(VBSyntax.MethodBlockSyntax node)
         {
-            var methodBlock = (BaseMethodDeclarationSyntax) await node.SubOrFunctionStatement.AcceptAsync(TriviaConvertingDeclarationVisitor, false);
+            var methodBlock = (BaseMethodDeclarationSyntax) await node.SubOrFunctionStatement.AcceptAsync(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.SubNodesOnly);
 
             var declaredSymbol = ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
             if (!declaredSymbol.CanHaveMethodBody()) {
@@ -965,7 +965,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         returnType,
                         null, CommonConversions.ConvertIdentifier(node.Identifier),
                         typeParameters,
-                        (ParameterListSyntax) await node.ParameterList.AcceptAsync(_triviaConvertingExpressionVisitor, false) ?? SyntaxFactory.ParameterList(),
+                        (ParameterListSyntax) await node.ParameterList.AcceptAsync(_triviaConvertingExpressionVisitor, SourceTriviaMapKind.None) ?? SyntaxFactory.ParameterList(),
                         constraints,
                         null,
                         arrowClause,
@@ -1071,7 +1071,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitOperatorBlock(VBSyntax.OperatorBlockSyntax node)
         {
-            return await node.BlockStatement.AcceptAsync(TriviaConvertingDeclarationVisitor, false);
+            return await node.BlockStatement.AcceptAsync(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.SubNodesOnly);
         }
 
         public override async Task<CSharpSyntaxNode> VisitOperatorStatement(VBSyntax.OperatorStatementSyntax node)

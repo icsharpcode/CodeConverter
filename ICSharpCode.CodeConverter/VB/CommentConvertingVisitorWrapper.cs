@@ -41,7 +41,7 @@ namespace ICSharpCode.CodeConverter.VB
                     break;
                 case CsSyntax.CompilationUnitSyntax csCus when converted is VbSyntax.CompilationUnitSyntax vbCus:
                     converted = (T) (object) vbCus.WithEndOfFileToken(
-                        vbCus.EndOfFileToken.WithSourceMappingFrom(csCus.EndOfFileToken)
+                        vbCus.EndOfFileToken.WithConvertedLeadingTriviaFrom(csCus.EndOfFileToken).WithSourceMappingFrom(csCus.EndOfFileToken)
                      );
                     break;
 

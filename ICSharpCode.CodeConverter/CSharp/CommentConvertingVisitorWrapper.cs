@@ -24,14 +24,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             _syntaxTree = syntaxTree;
         }
 
-        public async Task<T> Accept<T>(SyntaxNode vbNode, bool addSourceMapping) where T : CS.CSharpSyntaxNode
+        public async Task<T> Accept<T>(SyntaxNode vbNode, SourceTriviaMapKind sourceTriviaMap) where T : CS.CSharpSyntaxNode
         {
-            return await ConvertHandled<T>(vbNode, addSourceMapping);
+            return await ConvertHandled<T>(vbNode, sourceTriviaMap);
         }
 
-        public async Task<SeparatedSyntaxList<TOut>> Accept<TIn, TOut>(SeparatedSyntaxList<TIn> vbNodes, bool addSourceMapping) where TIn : VBasic.VisualBasicSyntaxNode where TOut : CS.CSharpSyntaxNode
+        public async Task<SeparatedSyntaxList<TOut>> Accept<TIn, TOut>(SeparatedSyntaxList<TIn> vbNodes, SourceTriviaMapKind sourceTriviaMap) where TIn : VBasic.VisualBasicSyntaxNode where TOut : CS.CSharpSyntaxNode
         {
-            var convertedNodes = await vbNodes.SelectAsync(n => ConvertHandled<TOut>(n, addSourceMapping));
+            var convertedNodes = await vbNodes.SelectAsync(n => ConvertHandled<TOut>(n, sourceTriviaMap));
             var convertedSeparators = vbNodes.GetSeparators().Select(s =>
                 CS.SyntaxFactory.Token(CS.SyntaxKind.CommaToken)
                     .WithConvertedTrailingTriviaFrom(s, TriviaKinds.FormattingOnly)
@@ -40,13 +40,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             return CS.SyntaxFactory.SeparatedList(convertedNodes, convertedSeparators);
         }
 
-        private async Task<T> ConvertHandled<T>(SyntaxNode vbNode, bool addSourceMapping) where T : CS.CSharpSyntaxNode
+        private async Task<T> ConvertHandled<T>(SyntaxNode vbNode, SourceTriviaMapKind sourceTriviaMap) where T : CS.CSharpSyntaxNode
         {
             try {
                 var converted = (T)await _wrappedVisitor.Visit(vbNode);
-                return addSourceMapping && _syntaxTree == vbNode.SyntaxTree
-                    ? WithSourceMapping(vbNode, converted)
-                    : converted.WithoutSourceMapping();
+                return sourceTriviaMap == SourceTriviaMapKind.None || _syntaxTree != vbNode.SyntaxTree
+                    ? converted.WithoutSourceMapping()
+                    : sourceTriviaMap == SourceTriviaMapKind.SubNodesOnly
+                        ? converted
+                        : WithSourceMapping(vbNode, converted);
             } catch (Exception e) {
                 var dummyStatement = (T)(object)CS.SyntaxFactory.EmptyStatement();
                 return dummyStatement.WithCsTrailingErrorComment((VBasic.VisualBasicSyntaxNode)vbNode, e);
@@ -61,7 +63,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             switch (vbNode) {
                 case VBSyntax.CompilationUnitSyntax vbCus when converted is CSSyntax.CompilationUnitSyntax csCus:
                     converted = (T)(object)csCus.WithEndOfFileToken(
-                        csCus.EndOfFileToken.WithSourceMappingFrom(vbCus.EndOfFileToken)
+                        csCus.EndOfFileToken.WithConvertedLeadingTriviaFrom(vbCus.EndOfFileToken).WithSourceMappingFrom(vbCus.EndOfFileToken)
                      );
                     break;
             }

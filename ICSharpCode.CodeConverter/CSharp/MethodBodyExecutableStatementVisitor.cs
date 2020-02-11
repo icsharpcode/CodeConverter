@@ -200,7 +200,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (!preserve) return SingleStatement(newArrayAssignment);
 
             var lastIdentifierText = node.Expression.DescendantNodesAndSelf().OfType<VBSyntax.IdentifierNameSyntax>().Last().Identifier.Text;
-            var (oldTargetExpression, stmts) = await GetReusableExpression(node.Expression, "old" + lastIdentifierText.ToPascalCase(), true);
+            var (oldTargetExpression, stmts, _) = await GetExpressionWithoutSideEffects(node.Expression, "old" + lastIdentifierText.ToPascalCase(), true);
             var arrayCopyIfNotNull = CreateConditionalArrayCopy(node, (IdentifierNameSyntax) oldTargetExpression, csTargetArrayExpression, convertedBounds);
 
             return stmts.AddRange(new StatementSyntax[] {newArrayAssignment, arrayCopyIfNotNull});
@@ -548,8 +548,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<SyntaxList<StatementSyntax>> VisitSelectBlock(VBSyntax.SelectBlockSyntax node)
         {
             var vbExpr = node.SelectStatement.Expression;
-            var (reusableExpr, stmts) = await GetReusableExpression(vbExpr, "switchExpr");
-
+            var (csExpr, stmts, csExprWithSourceMapping) = await GetExpressionWithoutSideEffects(vbExpr, "switchExpr");
             var usedConstantValues = new HashSet<object>();
             var sections = new List<SwitchSectionSyntax>();
             foreach (var block in node.CaseBlocks) {
@@ -574,11 +573,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                         labels.Add(SyntaxFactory.DefaultSwitchLabel());
                     } else if (c is VBSyntax.RelationalCaseClauseSyntax relational) {
                         var operatorKind = VBasic.VisualBasicExtensions.Kind(relational);
-                        var cSharpSyntaxNode = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(TokenContext.Local), reusableExpr, (ExpressionSyntax)await relational.Value.AcceptAsync(_expressionVisitor));
-                        labels.Add(WrapInCasePatternSwitchLabelSyntax(node, cSharpSyntaxNode, treatAsBoolean: true));
+                        var binaryExp = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(TokenContext.Local), csExpr, (ExpressionSyntax)await relational.Value.AcceptAsync(_expressionVisitor));
+                        labels.Add(WrapInCasePatternSwitchLabelSyntax(node, binaryExp, treatAsBoolean: true));
                     } else if (c is VBSyntax.RangeCaseClauseSyntax range) {
-                        var lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, (ExpressionSyntax)await range.LowerBound.AcceptAsync(_expressionVisitor), reusableExpr);
-                        var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, reusableExpr, (ExpressionSyntax)await range.UpperBound.AcceptAsync(_expressionVisitor));
+                        var lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, (ExpressionSyntax)await range.LowerBound.AcceptAsync(_expressionVisitor), csExpr);
+                        var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, csExpr, (ExpressionSyntax)await range.UpperBound.AcceptAsync(_expressionVisitor));
                         var withinBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LogicalAndExpression, lowerBoundCheck, upperBoundCheck);
                         labels.Add(WrapInCasePatternSwitchLabelSyntax(node, withinBounds, treatAsBoolean: true));
                     } else throw new NotSupportedException(c.Kind().ToString());
@@ -593,26 +592,29 @@ namespace ICSharpCode.CodeConverter.CSharp
                 sections.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), list));
             }
 
-            var switchStatementSyntax = ValidSyntaxFactory.SwitchStatement(reusableExpr, sections);
+            var switchStatementSyntax = ValidSyntaxFactory.SwitchStatement(csExprWithSourceMapping, sections);
             return stmts.Add(switchStatementSyntax);
         }
 
-        private async Task<(ExpressionSyntax, SyntaxList<StatementSyntax>)> GetReusableExpression(VBSyntax.ExpressionSyntax vbExpr, string variableNameBase, bool forceVariable = false)
+        private async Task<(ExpressionSyntax Reusable, SyntaxList<StatementSyntax> Statements, ExpressionSyntax SingleUse)> GetExpressionWithoutSideEffects(VBSyntax.ExpressionSyntax vbExpr, string variableNameBase, bool forceVariable = false)
         {
             var expr = (ExpressionSyntax)await vbExpr.AcceptAsync(_expressionVisitor);
             SyntaxList<StatementSyntax> stmts = SyntaxFactory.List<StatementSyntax>();
-            ExpressionSyntax reusableExpr;
+            ExpressionSyntax exprWithoutSideEffects;
+            ExpressionSyntax reusableExprWithoutSideEffects;
             if (forceVariable || !await CanEvaluateMultipleTimesAsync(vbExpr)) {
                 var contextNode = vbExpr.GetAncestor<VBSyntax.MethodBlockBaseSyntax>() ?? (VBasic.VisualBasicSyntaxNode) vbExpr.Parent;
                 var varName = GetUniqueVariableNameInScope(contextNode, variableNameBase);
                 var stmt = CreateLocalVariableDeclarationAndAssignment(varName, expr);
                 stmts = stmts.Add(stmt);
-                reusableExpr = SyntaxFactory.IdentifierName(varName);
+                exprWithoutSideEffects = SyntaxFactory.IdentifierName(varName);
+                reusableExprWithoutSideEffects = exprWithoutSideEffects;
             } else {
-                reusableExpr = expr.WithoutSourceMapping();
+                exprWithoutSideEffects = expr;
+                reusableExprWithoutSideEffects = expr.WithoutSourceMapping();
             }
 
-            return (reusableExpr, stmts);
+            return (reusableExprWithoutSideEffects, stmts, exprWithoutSideEffects);
         }
 
         private async Task<bool> CanEvaluateMultipleTimesAsync(VBSyntax.ExpressionSyntax vbExpr)
@@ -626,7 +628,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return await CommonConversions.Document.Project.Solution.IsNeverWritten(_semanticModel.GetSymbolInfo(ns).Symbol, allowedLocation);
         }
 
-        private CasePatternSwitchLabelSyntax WrapInCasePatternSwitchLabelSyntax(VBSyntax.SelectBlockSyntax node, ExpressionSyntax cSharpSyntaxNode, bool treatAsBoolean = false)
+        private CasePatternSwitchLabelSyntax WrapInCasePatternSwitchLabelSyntax(VBSyntax.SelectBlockSyntax node, ExpressionSyntax expression, bool treatAsBoolean = false)
         {
             var typeInfo = _semanticModel.GetTypeInfo(node.SelectStatement.Expression);
 
@@ -639,17 +641,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
                 patternMatch = SyntaxFactory.DeclarationPattern(
                     SyntaxFactory.ParseTypeName("var"), SyntaxFactory.SingleVariableDesignation(varName));
-                cSharpSyntaxNode = SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, SyntaxFactory.IdentifierName(varName), cSharpSyntaxNode);
+                expression = SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, SyntaxFactory.IdentifierName(varName), expression);
             }
 
             var casePatternSwitchLabelSyntax = SyntaxFactory.CasePatternSwitchLabel(patternMatch,
-                SyntaxFactory.WhenClause(cSharpSyntaxNode), SyntaxFactory.Token(SyntaxKind.ColonToken));
+                SyntaxFactory.WhenClause(expression), SyntaxFactory.Token(SyntaxKind.ColonToken));
             return casePatternSwitchLabelSyntax;
         }
 
         public override async Task<SyntaxList<StatementSyntax>> VisitWithBlock(VBSyntax.WithBlockSyntax node)
         {
-            var (lhsExpression, prefixDeclarations) = await GetReusableExpression(node.WithStatement.Expression, "withBlock");
+            var (lhsExpression, prefixDeclarations, _) = await GetExpressionWithoutSideEffects(node.WithStatement.Expression, "withBlock");
 
             _withBlockLhs.Push(lhsExpression);
             try {

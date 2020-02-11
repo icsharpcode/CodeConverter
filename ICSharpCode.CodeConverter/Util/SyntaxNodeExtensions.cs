@@ -287,8 +287,13 @@ namespace ICSharpCode.CodeConverter.Util
                 r.WithoutSourceMapping()
             );
             return converted.ReplaceNodes(converted.DescendantNodes(), (o, r) =>
-                r.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind)
-            );
+                WithoutSourceMappingNonRecursive(r)
+            ).WithoutSourceMappingNonRecursive();
+        }
+
+        private static T WithoutSourceMappingNonRecursive<T>(this T node) where T : SyntaxNode
+        {
+            return node.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind);
         }
 
         private static bool IsBlockParent(SyntaxNode converted, SyntaxToken lastCsConvertedToken)
