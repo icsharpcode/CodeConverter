@@ -30,10 +30,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             var semanticModel = compilation.GetSemanticModel(tree, true);
             var visualBasicSyntaxVisitor = new
                 DeclarationNodeVisitor(document, compilation, semanticModel, csharpViewOfVbSymbols, csSyntaxGenerator);
-            var converted = await root.AcceptAsync(visualBasicSyntaxVisitor.TriviaConvertingDeclarationVisitor);
+            var converted = (CSS.CompilationUnitSyntax)await root.AcceptAsync(visualBasicSyntaxVisitor.TriviaConvertingDeclarationVisitor);
 
-            var formattedConverted = (CSS.CompilationUnitSyntax) Formatter.Format(converted, document.Project.Solution.Workspace);
-            return LineTriviaMapper.MapSourceTriviaToTarget(root, formattedConverted);
+            try {
+                converted = (CSS.CompilationUnitSyntax)Formatter.Format(converted, document.Project.Solution.Workspace);
+                return LineTriviaMapper.MapSourceTriviaToTarget(root, converted);
+            } catch (Exception) { //TODO log
+                return converted;
+            }
         }
 
         private static string NullRootError(Document document)

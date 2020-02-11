@@ -889,10 +889,14 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static IEnumerable<SyntaxTrivia> ConvertTrivia(this IReadOnlyCollection<SyntaxTrivia> triviaToConvert)
         {
-            if (triviaToConvert.Any() && triviaToConvert.First().Language == LanguageNames.CSharp) {
-                return CSharpToVBCodeConverter.Util.RecursiveTriviaConverter.ConvertTopLevel(triviaToConvert).Where(x => x != default(SyntaxTrivia));
+            try {
+                if (triviaToConvert.Any() && triviaToConvert.First().Language == LanguageNames.CSharp) {
+                    return CSharpToVBCodeConverter.Util.RecursiveTriviaConverter.ConvertTopLevel(triviaToConvert).Where(x => x != default(SyntaxTrivia));
+                }
+                return triviaToConvert.SelectMany(ConvertVBTrivia).Where(x => x != default(SyntaxTrivia));
+            } catch (Exception) {
+                return Enumerable.Empty<SyntaxTrivia>(); //TODO Log this somewhere, or write enough tests to be really confident it won't throw
             }
-            return triviaToConvert.SelectMany(ConvertVBTrivia).Where(x => x != default(SyntaxTrivia));
         }
 
         private static IEnumerable<SyntaxTrivia> ConvertVBTrivia(SyntaxTrivia t)
