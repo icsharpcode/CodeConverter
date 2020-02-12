@@ -536,5 +536,18 @@ End Class");
     Public Event PropertyChanged As System.ComponentModel.PropertyChangedEventHandler Implements System.ComponentModel.INotifyPropertyChanged.PropertyChanged
 End Class", conversion: EmptyNamespaceOptionStrictOff);
         }
+        [Fact]
+        public async Task PartialClass_OmitedModifier() {
+            await TestConversionCSharpToVisualBasic(
+@"public partial class Entities {
+}
+partial class Entities {
+}",
+@"Public Partial Class Entities
+End Class
+
+Partial Class Entities
+End Class");
+        }
     }
 }

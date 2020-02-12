@@ -406,7 +406,8 @@ namespace ICSharpCode.CodeConverter.VB
 
 
         private static IEnumerable<SyntaxToken> ConvertModifiersCore(IReadOnlyCollection<SyntaxToken> modifiers, TokenContext context, bool isConstructor) {
-            var needsExplicitVisibility = context != TokenContext.Local
+            var needsExplicitVisibility = !(modifiers.Any(x => x.IsKind(CS.SyntaxKind.PartialKeyword)) && context == TokenContext.Global)
+                && context != TokenContext.Local
                 && context != TokenContext.MemberInInterface
                 && context != TokenContext.MemberInProperty
                 && !modifiers.Any(x => x.IsCsVisibility(true, isConstructor)); //TODO Don't always treat as variable or const, pass in more context to detect this
