@@ -846,7 +846,7 @@ namespace ICSharpCode.CodeConverter.VB
                     )
                 );
             } else {
-                return CommonConversions.Literal(node.Token.Value, node.Token.Text);
+                return _commonConversions.Literal(node.Token.Value, node.Token.Text);
             }
         }
 
@@ -915,7 +915,7 @@ namespace ICSharpCode.CodeConverter.VB
                 return SyntaxFactory.AssignmentStatement(
                     kind,
                     (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor),
-                    SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), CommonConversions.Literal(1)
+                    SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), _commonConversions.Literal(1)
                 );
             }
             if (kind == SyntaxKind.AddAssignmentStatement || kind == SyntaxKind.SubtractAssignmentStatement) {
@@ -925,11 +925,14 @@ namespace ICSharpCode.CodeConverter.VB
                 else
                     operatorName = "Decrement";
                 return SyntaxFactory.InvocationExpression(
-                    SyntaxFactory.ParseName(nameof(System) + "." + nameof(System.Threading) + "." + nameof(System.Threading.Interlocked) + "." + operatorName),
+                    SyntaxFactory.ParseName(GetQualifiedName(nameof(System), nameof(System.Threading), nameof(System.Threading.Interlocked), operatorName)),
                     ExpressionSyntaxExtensions.CreateArgList((ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor))
                 );
             }
             return SyntaxFactory.UnaryExpression(kind, SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor));
+        }
+        private static string GetQualifiedName(params string[] names) {
+            return names.Aggregate((seed, current) => seed + '.' + current);
         }
 
         public override VisualBasicSyntaxNode VisitAssignmentExpression(CSS.AssignmentExpressionSyntax node)
@@ -1003,7 +1006,7 @@ namespace ICSharpCode.CodeConverter.VB
             if (IsReturnValueDiscarded(node)) {
                 return SyntaxFactory.AssignmentStatement(CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local),
                     (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor),
-                    SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), CommonConversions.Literal(1)
+                    SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), _commonConversions.Literal(1)
                 );
             } else {
                 string operatorName, minMax;
@@ -1018,13 +1021,13 @@ namespace ICSharpCode.CodeConverter.VB
                     op = SyntaxKind.AddExpression;
                 }
                 return SyntaxFactory.InvocationExpression(
-                    SyntaxFactory.ParseName(nameof(Math) + "." + minMax),
+                    SyntaxFactory.ParseName(GetQualifiedName(nameof(System), nameof(Math), minMax)),
                     new ExpressionSyntax[] {
                                 SyntaxFactory.InvocationExpression(
-                                    SyntaxFactory.ParseName("System.Threading.Interlocked." + operatorName),
+                                    SyntaxFactory.ParseName(GetQualifiedName(nameof(System), nameof(System.Threading), nameof(System.Threading.Interlocked), operatorName)),
                                     ExpressionSyntaxExtensions.CreateArgList((ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor))
                                 ),
-                            SyntaxFactory.BinaryExpression(op, (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor), SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(op)), CommonConversions.Literal(1))
+                            SyntaxFactory.BinaryExpression(op, (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor), SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(op)), _commonConversions.Literal(1))
                     }.CreateArgList()
                 );
             }
@@ -1262,7 +1265,7 @@ namespace ICSharpCode.CodeConverter.VB
             var expr = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
             Func<SyntaxKind, VisualBasicSyntaxNode> toNumber = kind => {
                 if (sourceType?.SpecialType == SpecialType.System_Char)
-                    return SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(nameof(Strings.AscW)), ExpressionSyntaxExtensions.CreateArgList(expr));
+                    return SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(GetQualifiedName(nameof(Microsoft), nameof(Microsoft.VisualBasic), nameof(Microsoft.VisualBasic.Strings.AscW))), ExpressionSyntaxExtensions.CreateArgList(expr));
                 return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(kind), expr);
             };
             switch (destType.SpecialType) {
@@ -1272,7 +1275,7 @@ namespace ICSharpCode.CodeConverter.VB
                     return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CBoolKeyword), expr);
                 case SpecialType.System_Char:
                     return sourceType?.IsNumericType() == true
-                        ? (VisualBasicSyntaxNode)SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(nameof(Strings.ChrW)), ExpressionSyntaxExtensions.CreateArgList(expr))
+                        ? (VisualBasicSyntaxNode)SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(GetQualifiedName(nameof(Microsoft), nameof(Microsoft.VisualBasic), nameof(Microsoft.VisualBasic.Strings.ChrW))), ExpressionSyntaxExtensions.CreateArgList(expr))
                         : SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CCharKeyword), expr);
                 case SpecialType.System_SByte:
                     return toNumber(SyntaxKind.CSByteKeyword);

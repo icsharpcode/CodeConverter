@@ -38,19 +38,19 @@ End Class");
         public async Task TestSimplePostIncrementAssign()
         {
             await TestConversionCSharpToVisualBasic(
-                @"class TestClass
-{
+@"class TestClass{
     void TestMethod()
     {
         int a = 5, b;
         b = a++;
     }
-}", @"Friend Class TestClass
+}",
+@"Friend Class TestClass
     Private Sub TestMethod()
         Dim b As Integer, a As Integer = 5
-        b = Math.Min(Threading.Interlocked.Increment(a), a - 1)
+        b = System.Math.Min(System.Threading.Interlocked.Increment(a), a - 1)
     End Sub
-End Class");
+End Class", conversion: EmptyNamespaceOptionStrictOff);
         }
 
         [Fact]
@@ -538,6 +538,22 @@ End Class");
         End Property
     End Class
 End Namespace");
+        }
+        [Fact]
+        public async Task ConstantsShouldBeQualified() {
+            await TestConversionCSharpToVisualBasic(
+@"public class TestClass {
+    public void Method() {
+        string vbLf = ""\n""
+        string vbCrLf = ""\r\n"";
+    }
+}",
+@"Public Class TestClass
+    Public Sub Method()
+        Dim vbLf As String = Microsoft.VisualBasic.vbLf
+        Dim vbCrLf As String = Microsoft.VisualBasic.vbCrLf
+    End Sub
+End Class", conversion: EmptyNamespaceOptionStrictOff);
         }
     }
 }

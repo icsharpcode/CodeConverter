@@ -281,7 +281,7 @@ namespace ICSharpCode.CodeConverter.VB
             } else {
                 var stmts = SyntaxFactory.List(convertedStatements)
                     .AddRange(node.Incrementors.Select(ConvertSingleExpression));
-                var condition = node.Condition == null ? CommonConversions.Literal(true) : (ExpressionSyntax)node.Condition.Accept(_nodesVisitor);
+                var condition = node.Condition == null ? _commonConversions.Literal(true) : (ExpressionSyntax)node.Condition.Accept(_nodesVisitor);
                 block = SyntaxFactory.WhileBlock(
                     SyntaxFactory.WhileStatement(condition),
                     stmts
@@ -344,13 +344,13 @@ namespace ICSharpCode.CodeConverter.VB
                 if (condition.IsKind(CS.SyntaxKind.GreaterThanOrEqualExpression))
                     end = (ExpressionSyntax)condition.Right.Accept(_nodesVisitor);
                 else if (condition.IsKind(CS.SyntaxKind.GreaterThanExpression))
-                    end = SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression, (ExpressionSyntax)condition.Right.Accept(_nodesVisitor), SyntaxFactory.Token(SyntaxKind.PlusToken), CommonConversions.Literal(1));
+                    end = SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression, (ExpressionSyntax)condition.Right.Accept(_nodesVisitor), SyntaxFactory.Token(SyntaxKind.PlusToken), _commonConversions.Literal(1));
                 else return false;
             } else {
                 if (condition.IsKind(CS.SyntaxKind.LessThanOrEqualExpression))
                     end = (ExpressionSyntax)condition.Right.Accept(_nodesVisitor);
                 else if (condition.IsKind(CS.SyntaxKind.LessThanExpression))
-                    end = SyntaxFactory.BinaryExpression(SyntaxKind.SubtractExpression, (ExpressionSyntax)condition.Right.Accept(_nodesVisitor), SyntaxFactory.Token(SyntaxKind.MinusToken), CommonConversions.Literal(1));
+                    end = SyntaxFactory.BinaryExpression(SyntaxKind.SubtractExpression, (ExpressionSyntax)condition.Right.Accept(_nodesVisitor), SyntaxFactory.Token(SyntaxKind.MinusToken), _commonConversions.Literal(1));
                 else return false;
             }
 
@@ -379,7 +379,7 @@ namespace ICSharpCode.CodeConverter.VB
             }
 
             blockWithoutStatements = SyntaxFactory.ForBlock(
-                SyntaxFactory.ForStatement(variable, start, end, step == 1 ? null : SyntaxFactory.ForStepClause(CommonConversions.Literal(step))),
+                SyntaxFactory.ForStatement(variable, start, end, step == 1 ? null : SyntaxFactory.ForStepClause(_commonConversions.Literal(step))),
                 SyntaxFactory.List<StatementSyntax>(),
                 SyntaxFactory.NextStatement()
             );

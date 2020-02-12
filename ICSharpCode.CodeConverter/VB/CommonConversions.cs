@@ -567,22 +567,21 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
 
-        public static ExpressionSyntax Literal(object o, string valueText = null) => GetLiteralExpression(o, valueText);
+        public ExpressionSyntax Literal(object o, string valueText = null) => GetLiteralExpression(o, valueText, VbSyntaxGenerator);
 
-        internal static ExpressionSyntax GetLiteralExpression(object value, string valueText = null)
+        internal static ExpressionSyntax GetLiteralExpression(object value, string valueText, SyntaxGenerator generator)
         {
             if (value is char)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal((char)value));
+                return (ExpressionSyntax)generator.LiteralExpression((char)value);
 
             if (value is string)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal((string)value));
+                return (ExpressionSyntax)generator.LiteralExpression((string)value);
 
             if (value == null)
-                return SyntaxFactory.NothingLiteralExpression(SyntaxFactory.Token(SyntaxKind.NothingKeyword));
+                return (ExpressionSyntax)generator.NullLiteralExpression();
 
             if (value is bool)
-                return (bool)value ? SyntaxFactory.TrueLiteralExpression(SyntaxFactory.Token(SyntaxKind.TrueKeyword)) : SyntaxFactory.FalseLiteralExpression(SyntaxFactory.Token(SyntaxKind.FalseKeyword));
-
+                return (ExpressionSyntax)((bool)value ? generator.TrueLiteralExpression() : generator.FalseLiteralExpression());
 
             valueText = valueText != null ? ConvertNumericLiteralValueText(valueText) : value.ToString();
 

@@ -145,14 +145,12 @@ End Sub
         public async Task CastConstantNumberToCharacter()
         {
             await TestConversionCSharpToVisualBasic(
-                @"void Test()
-{
+@"void Test() {
     char CR = (char)0xD;
-}
-", @"Private Sub Test()
-    Dim CR As Char = ChrW(&HD)
-End Sub
-");
+}",
+@"Private Sub Test()
+    Dim CR As Char = Microsoft.VisualBasic.ChrW(&HD)
+End Sub", conversion: EmptyNamespaceOptionStrictOff);
         }
         [Fact]
         public async Task CastCharacterToNumber() {
@@ -160,13 +158,11 @@ End Sub
 @"void Test() {
     byte a = (byte)'A';
     decimal b = (byte)'B';
-}
-",
+}",
 @"Private Sub Test()
-    Dim a As Byte = AscW(""A""c)
-    Dim b As Decimal = AscW(""B""c)
-End Sub
-");
+    Dim a As Byte = Microsoft.VisualBasic.AscW(""A""c)
+    Dim b As Decimal = Microsoft.VisualBasic.AscW(""B""c)
+End Sub", conversion: EmptyNamespaceOptionStrictOff);
         }
         [Fact(Skip="Many code generation")]
         public async Task CastCharacterIncrement() {
