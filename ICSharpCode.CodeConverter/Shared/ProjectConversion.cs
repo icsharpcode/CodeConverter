@@ -170,6 +170,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         /// <summary>
         /// Use this to stop the library exiting the process without telling us.
+        /// https://github.com/dotnet/roslyn/issues/41724
         /// </summary>
         /// <remarks>
         /// The simplification code in particular is quite buggy, scattered with "throw ExceptionUtilities.Unreachable" with no particular reasoning for why the code wouldn't be reachable.
