@@ -629,7 +629,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var allowedLocation = Location.Create(ns.SyntaxTree, TextSpan.FromBounds(ns.GetAncestor<VBSyntax.MethodBlockBaseSyntax>().SpanStart, ns.Span.End));
             var symbol = _semanticModel.GetSymbolInfo(ns).Symbol;
             //Perf optimization: Looking across the whole solution is expensive, so assume non-local symbols are written somewhere
-            return symbol is ILocalSymbol && await CommonConversions.Document.Project.Solution.IsNeverWritten(symbol, allowedLocation);
+            return symbol.MatchesKind(SymbolKind.Parameter, SymbolKind.Local) && await CommonConversions.Document.Project.Solution.IsNeverWritten(symbol, allowedLocation);
         }
 
         private CasePatternSwitchLabelSyntax WrapInCasePatternSwitchLabelSyntax(VBSyntax.SelectBlockSyntax node, ExpressionSyntax expression, bool treatAsBoolean = false)

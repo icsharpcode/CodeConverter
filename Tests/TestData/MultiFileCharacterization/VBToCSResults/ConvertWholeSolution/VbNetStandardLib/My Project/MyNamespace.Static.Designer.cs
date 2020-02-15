@@ -1142,9 +1142,13 @@ namespace Microsoft.VisualBasic
             MisMatch:
                 ;
                 OutNumberFormat = (System.Globalization.NumberFormatInfo)InNumberFormat.Clone();
-                OutNumberFormat.CurrencyDecimalSeparator = OutNumberFormat.NumberDecimalSeparator;
-                OutNumberFormat.CurrencyGroupSeparator = OutNumberFormat.NumberGroupSeparator;
-                OutNumberFormat.CurrencyDecimalDigits = OutNumberFormat.NumberDecimalDigits;
+                {
+                    var withBlock = OutNumberFormat;
+                    withBlock.CurrencyDecimalSeparator = withBlock.NumberDecimalSeparator;
+                    withBlock.CurrencyGroupSeparator = withBlock.NumberGroupSeparator;
+                    withBlock.CurrencyDecimalDigits = withBlock.NumberDecimalDigits;
+                }
+
                 return OutNumberFormat;
             }
 
