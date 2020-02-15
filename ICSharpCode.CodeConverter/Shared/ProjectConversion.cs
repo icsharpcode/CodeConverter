@@ -36,7 +36,7 @@ namespace ICSharpCode.CodeConverter.Shared
             _returnSelectedNode = returnSelectedNode;
         }
 
-        public static async Task<ConversionResult> ConvertText<TLanguageConversion>(string text, TextConversionOptions conversionOptions) where TLanguageConversion : ILanguageConversion, new()
+        public static async Task<ConversionResult> ConvertText<TLanguageConversion>(string text, TextConversionOptions conversionOptions, IProgress<ConversionProgress> progress = null) where TLanguageConversion : ILanguageConversion, new()
         {
             await new SynchronizationContextRemover();
 
@@ -45,11 +45,11 @@ namespace ICSharpCode.CodeConverter.Shared
             if (textSpan.HasValue) conversionOptions.SelectedTextSpan = textSpan.Value;
             using (var workspace = new AdhocWorkspace()) {
                 var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, conversionOptions.References);
-                return await ConvertSingle<TLanguageConversion>(document, conversionOptions);
+                return await ConvertSingle<TLanguageConversion>(document, conversionOptions, progress);
             }
         }
 
-        public static async Task<ConversionResult> ConvertSingle<TLanguageConversion>(Document document, SingleConversionOptions conversionOptions) where TLanguageConversion : ILanguageConversion, new()
+        public static async Task<ConversionResult> ConvertSingle<TLanguageConversion>(Document document, SingleConversionOptions conversionOptions, IProgress<ConversionProgress> progress = null) where TLanguageConversion : ILanguageConversion, new()
         {
             await new SynchronizationContextRemover();
 
@@ -65,7 +65,7 @@ namespace ICSharpCode.CodeConverter.Shared
             document = projectContentsConverter.Project.GetDocument(document.Id);
 
             var conversion = new ProjectConversion(projectContentsConverter, new[] { document }, languageConversion, returnSelectedNode);
-            var conversionResults = (await ConvertProjectContents(conversion, new Progress<ConversionProgress>())).ToList();
+            var conversionResults = (await ConvertProjectContents(conversion, progress ?? new Progress<ConversionProgress>())).ToList();
             var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
                              ?? conversionResults.First();
             codeResult.Exceptions = conversionResults.SelectMany(x => x.Exceptions).ToArray();
@@ -207,7 +207,7 @@ namespace ICSharpCode.CodeConverter.Shared
             if (firstPassResult.document != null) {
                 progress.Report(firstPassResult.Path);
                 var (convertedNode, errors) = await SingleSecondPassHandled(firstPassResult.document);
-                return (firstPassResult.Path, convertedNode, firstPassResult.Errors.Concat(errors).ToArray());
+                return (firstPassResult.Path, convertedNode, firstPassResult.Errors.Concat(errors).Union(GetErrorsFromAnnotations(convertedNode)).ToArray());
             }
 
             return (firstPassResult.Path, null, firstPassResult.Errors);
@@ -236,7 +236,8 @@ namespace ICSharpCode.CodeConverter.Shared
                 errors = new[] {e.ToString()};
             }
 
-            return (selectedNode ?? await convertedDocument.GetSyntaxRootAsync(), errors);
+            var convertedNode = selectedNode ?? await convertedDocument.GetSyntaxRootAsync();
+            return (convertedNode, errors);
         }
 
         private async Task<string> GetProjectWarnings(Project source, (string Path, SyntaxNode Node, string[] Errors)[] converted)
@@ -254,15 +255,20 @@ namespace ICSharpCode.CodeConverter.Shared
             progress.Report(treeFilePath);
             try {
                 var convertedNode = await _projectContentsConverter.SingleFirstPass(document);
-                var errorAnnotations = convertedNode.GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
-                string[] errors = errorAnnotations.Select(a => a.Data).ToArray();
+                string[] errors = GetErrorsFromAnnotations(convertedNode);
 
                 return (treeFilePath, convertedNode, errors);
-            }
-            catch (Exception e)
+            } catch (Exception e)
             {
                 return (treeFilePath, null, new[]{e.ToString()});
             }
+        }
+
+        private static string[] GetErrorsFromAnnotations(SyntaxNode convertedNode)
+        {
+            var errorAnnotations = convertedNode.GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
+            string[] errors = errorAnnotations.Select(a => a.Data).ToArray();
+            return errors;
         }
 
         private static async Task<Document> WithAnnotatedSelection(Document document, TextSpan selected)

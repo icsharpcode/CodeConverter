@@ -230,10 +230,10 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             }
             var document = _visualStudioWorkspace.CurrentSolution.GetDocument(documentId);
             var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
-            return await ProjectConversion.ConvertSingle<TLanguageConversion>(document, new SingleConversionOptions {SelectedTextSpan = selectedTextSpan});
+            return await ProjectConversion.ConvertSingle<TLanguageConversion>(document, new SingleConversionOptions {SelectedTextSpan = selectedTextSpan}, CreateOutputWindowProgress());
         }
 
-        private static async Task<ConversionResult> ConvertTextOnlyAsync<TLanguageConversion>(string documentPath, Span selected)
+        private async Task<ConversionResult> ConvertTextOnlyAsync<TLanguageConversion>(string documentPath, Span selected)
             where TLanguageConversion : ILanguageConversion, new()
         {
             var documentText = File.ReadAllText(documentPath);
@@ -242,7 +242,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                 documentText = documentText.Substring(selected.Start, selected.Length);
             }
 
-            var convertTextOnly = await ProjectConversion.ConvertText<TLanguageConversion>(documentText, new TextConversionOptions(DefaultReferences.NetStandard2));
+            var convertTextOnly = await ProjectConversion.ConvertText<TLanguageConversion>(documentText, new TextConversionOptions(DefaultReferences.NetStandard2), CreateOutputWindowProgress());
             convertTextOnly.SourcePathOrNull = documentPath;
             return convertTextOnly;
         }
@@ -263,11 +263,16 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             await TaskScheduler.Default;
 
-            var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects, progress: new Progress<ConversionProgress>(s => {
-                _outputWindow.WriteToOutputWindowAsync(FormatForOutputWindow(s)).ForgetNoThrow();
-            }));
+            var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects, progress: CreateOutputWindowProgress());
 
             return await solutionConverter.Convert();
+        }
+
+        private Progress<ConversionProgress> CreateOutputWindowProgress()
+        {
+            return new Progress<ConversionProgress>(s => {
+                _outputWindow.WriteToOutputWindowAsync(FormatForOutputWindow(s)).ForgetNoThrow();
+            });
         }
 
         private static string FormatForOutputWindow(ConversionProgress s)
