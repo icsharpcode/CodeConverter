@@ -409,24 +409,21 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
 
-        private static IEnumerable<SyntaxToken> ConvertModifiersCore(IReadOnlyCollection<SyntaxToken> modifiers,
-            TokenContext context, bool isConstructor)
-        {
-            if (context != TokenContext.Local && context != TokenContext.MemberInInterface && context != TokenContext.MemberInProperty) {
-                bool visibility = false;
-                foreach (var token in modifiers) {
-                    if (token.IsCsVisibility(true, isConstructor)) { //TODO Don't always treat as variable or const, pass in more context to detect this
-                        visibility = true;
-                        break;
-                    }
-                }
-                if (!visibility)
-                    yield return CSharpDefaultVisibility(context);
-            }
-            foreach (var token in modifiers.Where(m => !IgnoreInContext(m, context))) {
-                var m = ConvertModifier(token, context);
-                if (m.HasValue) yield return m.Value;
-            }
+        private static IEnumerable<SyntaxToken> ConvertModifiersCore(IReadOnlyCollection<SyntaxToken> modifiers, TokenContext context, bool isConstructor) {
+            var needsExplicitVisibility = !(modifiers.Any(x => x.IsKind(CS.SyntaxKind.PartialKeyword)) && context == TokenContext.Global)
+                && context != TokenContext.Local
+                && context != TokenContext.MemberInInterface
+                && context != TokenContext.MemberInProperty
+                && !modifiers.Any(x => x.IsCsVisibility(true, isConstructor)); //TODO Don't always treat as variable or const, pass in more context to detect this
+            var vbModifiers = modifiers
+                .Where(m => !IgnoreInContext(m, context))
+                .Select(x => ConvertModifier(x, context))
+                .Where(x => x.HasValue)
+                .Select(x => x.Value)
+                .ToList();
+            if(needsExplicitVisibility)
+                vbModifiers.Insert(vbModifiers.FirstOrDefault().IsKind(SyntaxKind.PartialKeyword) ? 1 : 0, CSharpDefaultVisibility(context));
+            return vbModifiers;
         }
 
         private static bool IgnoreInContext(SyntaxToken m, TokenContext context)
@@ -576,22 +573,21 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
 
-        public static ExpressionSyntax Literal(object o, string valueText = null) => GetLiteralExpression(o, valueText);
+        public ExpressionSyntax Literal(object o, string valueText = null) => GetLiteralExpression(o, valueText, VbSyntaxGenerator);
 
-        internal static ExpressionSyntax GetLiteralExpression(object value, string valueText = null)
+        internal static ExpressionSyntax GetLiteralExpression(object value, string valueText, SyntaxGenerator generator)
         {
             if (value is char)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal((char)value));
+                return (ExpressionSyntax)generator.LiteralExpression((char)value);
 
             if (value is string)
-                return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal((string)value));
+                return (ExpressionSyntax)generator.LiteralExpression((string)value);
 
             if (value == null)
-                return SyntaxFactory.NothingLiteralExpression(SyntaxFactory.Token(SyntaxKind.NothingKeyword));
+                return (ExpressionSyntax)generator.NullLiteralExpression();
 
             if (value is bool)
-                return (bool)value ? SyntaxFactory.TrueLiteralExpression(SyntaxFactory.Token(SyntaxKind.TrueKeyword)) : SyntaxFactory.FalseLiteralExpression(SyntaxFactory.Token(SyntaxKind.FalseKeyword));
-
+                return (ExpressionSyntax)((bool)value ? generator.TrueLiteralExpression() : generator.FalseLiteralExpression());
 
             valueText = valueText != null ? ConvertNumericLiteralValueText(valueText) : value.ToString();
 
