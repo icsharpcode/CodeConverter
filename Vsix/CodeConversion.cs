@@ -68,7 +68,7 @@ namespace CodeConverter.VsExtension
             if ((await GetOptions()).CopyResultToClipboardForSingleDocument) {
                 await SetClipboardTextOnUiThreadAsync(conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString());
                 await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + "Conversion result copied to clipboard.");
-                await VisualStudioInteraction.ShowMessageBoxAsync(_serviceProvider, "Conversion result copied to clipboard.", conversionResult.GetExceptionsAsString(), false);
+                await VisualStudioInteraction.ShowMessageBoxAsync(_serviceProvider, "Conversion result copied to clipboard.", $"Conversion result copied to clipboard. {conversionResult.GetExceptionsAsString()}", false);
             }
 
         }
