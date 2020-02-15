@@ -19,14 +19,20 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static async Task<bool> ContainsWriteUsagesFor(Solution solution, ISymbol symbol, Location outsideLocation = null)
         {
             var references = await SymbolFinder.FindReferencesAsync(symbol, solution);
-            var operationsReferencing = await references.SelectMany(r => r.Locations).SelectAsync(async l => {
-                if (l.Location.SourceTree == outsideLocation?.SourceTree && l.Location.SourceSpan.OverlapsWith(outsideLocation.SourceSpan)) return null;
-                var semanticModel = await l.Document.GetSemanticModelAsync();
-                var syntaxRoot = await l.Document.GetSyntaxRootAsync();
-                var syntaxNode = syntaxRoot.FindNode(l.Location.SourceSpan);
-                return semanticModel.GetOperation(syntaxNode);
+            var operationsReferencing = references.SelectMany(r => r.Locations).GroupBy(l => (Doc: l.Document, Tree: l.Location.SourceTree)).Select(async g => {
+                var document = g.Key.Doc;
+                var locations = g.Where(l => l.Location.SourceTree != outsideLocation?.SourceTree || !l.Location.SourceSpan.OverlapsWith(outsideLocation.SourceSpan)).ToArray();
+                if (locations.Length == 0) return Enumerable.Empty<IOperation>();
+
+                var semanticModel = await document.GetSemanticModelAsync();
+                var syntaxRoot = await document.GetSyntaxRootAsync();
+                return g.Select(l => syntaxRoot.FindNode(l.Location.SourceSpan))
+                        .Select(syntaxNode => semanticModel.GetOperation(syntaxNode));
             });
-            if (operationsReferencing.Any(IsWriteUsage)) return true;
+            foreach (var documentUsages in operationsReferencing) {
+                var usages = await documentUsages;
+                if (usages.Any(IsWriteUsage)) return true;
+            }
             return false;
         }
 
