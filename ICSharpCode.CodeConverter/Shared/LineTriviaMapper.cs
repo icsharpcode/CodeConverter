@@ -21,7 +21,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly List<SyntaxTriviaList> _trailingTriviaCarriedOver = new List<SyntaxTriviaList>();
         private readonly Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>> Leading, List<IReadOnlyCollection<SyntaxTrivia>> Trailing)> _targetTokenToTrivia = new Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>>, List<IReadOnlyCollection<SyntaxTrivia>>)>();
 
-        public LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, SyntaxNode target, TextLineCollection targetLines, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
+        private LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, SyntaxNode target, TextLineCollection targetLines, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
         {
             _source = source;
             _sourceLines = sourceLines;
@@ -69,10 +69,6 @@ namespace ICSharpCode.CodeConverter.Shared
             ).ToLookup(n => n.SourceLineIndex, n => n);
         }
 
-        /// <remarks>
-        /// Possible future improvements:
-        /// * Performance: Probably faster to find tokens starting from position of last replaced token rather than from the root node each time
-        /// </remarks>
         private SyntaxNode GetTargetWithSourceTrivia()
         {
             // Reverse iterate to ensure trivia never ends up after the place it came from (consider #if directive or opening brace of method)
