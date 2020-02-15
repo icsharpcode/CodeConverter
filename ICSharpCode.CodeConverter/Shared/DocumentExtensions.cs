@@ -51,11 +51,10 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             //Roslyn bug: empty argument list gets removed and changes behaviour: https://github.com/dotnet/roslyn/issues/40442
             // (Also null Expression blows up even though that's how conditional invocation on an IdentifierName happens)
-            if (n is VBSyntax.InvocationExpressionSyntax ies && (!ies.ArgumentList.Arguments.Any() || ies.Expression == null)
-                || n is VBSyntax.TryCastExpressionSyntax) return true;
-            // Roslyn bug: Tries to simplify to "InferredFieldInitializerSyntax" which cannot be placed within an ObjectCreationExpression https://github.com/icsharpcode/CodeConverter/issues/484
-            if (n is VBSyntax.ObjectCreationExpressionSyntax) return false;
-            return false;
+            return n is VBSyntax.InvocationExpressionSyntax ies && (!ies.ArgumentList.Arguments.Any() || ies.Expression == null)
+                || n is VBSyntax.TryCastExpressionSyntax
+                // Roslyn bug: Tries to simplify to "InferredFieldInitializerSyntax" which cannot be placed within an ObjectCreationExpression https://github.com/icsharpcode/CodeConverter/issues/484
+                || n is VBSyntax.ObjectCreationExpressionSyntax;
         }
 
         private static bool CsWouldBeSimplifiedIncorrectly(SyntaxNode n)
