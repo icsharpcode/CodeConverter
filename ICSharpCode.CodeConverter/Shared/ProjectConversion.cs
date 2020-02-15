@@ -156,9 +156,42 @@ namespace ICSharpCode.CodeConverter.Shared
         private async Task<(string Path, SyntaxNode Node, string[] Errors)[]> Convert(
             IProgress<ConversionProgress> progress)
         {
-            var firstPassResults = await ExecutePhase(_documentsToConvert, FirstPass, progress, "Phase 1 of 2:");
-            var (proj1, docs1) = await _projectContentsConverter.GetConvertedProject(firstPassResults);
-            return await ExecutePhase(proj1.GetDocuments(docs1), SecondPass, progress, "Phase 2 of 2:");
+            var originalErrorHandler = ExchangeFatalErrorHandler(e =>
+                progress.Report(new ConversionProgress($"https://github.com/dotnet/roslyn threw an exception: {e}"))
+            );
+            try {
+                var firstPassResults = await ExecutePhase(_documentsToConvert, FirstPass, progress, "Phase 1 of 2:");
+                var (proj1, docs1) = await _projectContentsConverter.GetConvertedProject(firstPassResults);
+                return await ExecutePhase(proj1.GetDocuments(docs1), SecondPass, progress, "Phase 2 of 2:");
+            } finally {
+                ExchangeFatalErrorHandler(originalErrorHandler);
+            }
+        }
+
+        /// <summary>
+        /// Use this to stop the library exiting the process without telling us.
+        /// </summary>
+        /// <remarks>
+        /// The simplification code in particular is quite buggy, scattered with "throw ExceptionUtilities.Unreachable" with no particular reasoning for why the code wouldn't be reachable.
+        /// It then uses FatalError.ReportUnlessCanceled rather than FatalError.ReportWithoutCrashUnlessCanceled causing fatal crashes with Environment.FailFast
+        /// While this presumably allows them to get good low-level debugging info from the windows error reports caused, it just means that people come to this project complaining about VS crashes.
+        /// See https://github.com/icsharpcode/CodeConverter/issues/521 and https://github.com/icsharpcode/CodeConverter/issues/484
+        /// There are other ways to find these bugs - just run the expander/reducer on a couple of whole open source projects and the bugs will pile up.
+        /// </remarks>
+        private static Action<Exception> ExchangeFatalErrorHandler(Action<Exception> errorHandler)
+        {
+            if (errorHandler == null) return null;
+            try {
+                var fataErrorType = Type.GetType("Microsoft.CodeAnalysis.FatalError, Microsoft.CodeAnalysis");
+                var fatalHandlerField = fataErrorType.GetField("s_fatalHandler");
+                var originalHandler = (Action<Exception>)fatalHandlerField.GetValue(null);
+                if (originalHandler != null) {
+                    fatalHandlerField.SetValue(null, errorHandler);
+                }
+                return originalHandler;
+            } catch (Exception) {
+                return null;
+            }
         }
 
         private async Task<(string Path, SyntaxNode Node, string[] Errors)[]> ExecutePhase<T>(IEnumerable<T> parameters, Func<T, Progress<string>, Task<(string treeFilePath, SyntaxNode convertedDoc,
