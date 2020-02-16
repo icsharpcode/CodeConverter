@@ -14,14 +14,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         public List<(ExpressionSyntax Field, SyntaxKind AssignmentKind, ExpressionSyntax Initializer)> AdditionalInstanceInitializers { get; } = new List<(ExpressionSyntax, SyntaxKind, ExpressionSyntax)>();
 
         public IReadOnlyCollection<MemberDeclarationSyntax> WithAdditionalInitializers(ITypeSymbol parentType,
-            List<MemberDeclarationSyntax> convertedMembers, SyntaxToken parentTypeName, bool shouldAddTypeWideInitToThisPart)
+            List<MemberDeclarationSyntax> convertedMembers, SyntaxToken parentTypeName, bool shouldAddTypeWideInitToThisPart, bool requiresInitializeComponent)
         {
             var constructorsInAllParts = parentType?.GetMembers().OfType<IMethodSymbol>().Where(m => m.IsConstructor()).ToList();
             var hasInstanceConstructors = constructorsInAllParts?.Any(c => !c.IsStatic && !c.IsImplicitlyDeclared) == true;
             var hasStaticConstructors = constructorsInAllParts?.Any(c => c.IsStatic) == true;
-            var requiresInitializeComponent = !hasInstanceConstructors &&
-                // These constructors are implicitly declared
-                parentType.GetBaseTypes().Any(t => t.ContainingNamespace.GetFullMetadataName() == "System.Windows.Forms" && (t.Name == "Form" || t.Name == "UserControl"));
             var rootConstructors = convertedMembers.OfType<ConstructorDeclarationSyntax>()
                 .Where(cds => !cds.Initializer.IsKind(SyntaxKind.ThisConstructorInitializer))
                 .ToLookup(cds => cds.IsInStaticCsContext());
@@ -38,7 +35,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxToken convertIdentifier, IReadOnlyCollection<(ExpressionSyntax Field, SyntaxKind AssignmentKind, ExpressionSyntax Initializer)> additionalInitializers,
             SyntaxTokenList modifiers, IEnumerable<ConstructorDeclarationSyntax> constructorsEnumerable, bool addConstructor, bool addedConstructorRequiresInitializeComponent)
         {
-            if (!additionalInitializers.Any()) return convertedMembers;
+            if (!additionalInitializers.Any() && (!addConstructor || !addedConstructorRequiresInitializeComponent)) return convertedMembers;
             var constructors = new HashSet<ConstructorDeclarationSyntax>(constructorsEnumerable);
             convertedMembers = convertedMembers.Except(constructors).ToList();
             if (addConstructor) {

@@ -19,6 +19,7 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using SyntaxToken = Microsoft.CodeAnalysis.SyntaxToken;
 using Microsoft.CodeAnalysis.VisualBasic;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -196,25 +197,21 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         #region Namespace Members
 
-        private async Task<IEnumerable<MemberDeclarationSyntax>> ConvertMembers(SyntaxList<VBSyntax.StatementSyntax> members)
+        private async Task<IEnumerable<MemberDeclarationSyntax>> ConvertMembers(VBSyntax.TypeBlockSyntax parentType)
         {
-            var parentType = members.FirstOrDefault()?.GetAncestor<VBSyntax.TypeBlockSyntax>();
+            var members = parentType.Members;
             _methodsWithHandles.Initialize(GetMethodWithHandles(parentType));
             if (_methodsWithHandles.Any()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
 
             var directlyConvertedMembers = await GetDirectlyConvertMembers();
-            if (parentType == null) {
-                return directlyConvertedMembers;
-            }
 
-            var typeSymbol = (ITypeSymbol)ModelExtensions.GetDeclaredSymbol(_semanticModel, parentType);
-            var syntaxToAddTypeWideInit = typeSymbol.DeclaringSyntaxReferences.FirstOrDefault(l => l.SyntaxTree.FilePath?.IsGeneratedFile() == false)
-                ?? typeSymbol.DeclaringSyntaxReferences.First();
-            var shouldAddTypeWideInitToThisPart = syntaxToAddTypeWideInit.Span == parentType.Span;
+            var namedTypeSymbol = _semanticModel.GetDeclaredSymbol(parentType);
+            bool shouldAddTypeWideInitToThisPart = ShouldAddTypeWideInitToThisPart(parentType, namedTypeSymbol);
             if (shouldAddTypeWideInitToThisPart) {
-                _additionalInitializers.AdditionalInstanceInitializers.AddRange(_methodsWithHandles.GetConstructorEventAssignments());
+                    _additionalInitializers.AdditionalInstanceInitializers.AddRange(_methodsWithHandles.GetConstructorEventAssignments());
             }
-            return _additionalInitializers.WithAdditionalInitializers(typeSymbol, directlyConvertedMembers.ToList(), CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier), shouldAddTypeWideInitToThisPart);
+            var requiresInitializeComponent = namedTypeSymbol.IsDesignerGeneratedTypeWithInitializeComponent(_compilation);
+            return _additionalInitializers.WithAdditionalInitializers(namedTypeSymbol, directlyConvertedMembers.ToList(), CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier), shouldAddTypeWideInitToThisPart, requiresInitializeComponent);
 
             async Task<IEnumerable<MemberDeclarationSyntax>> GetDirectlyConvertMembers()
             {
@@ -222,6 +219,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                     new[]{await ConvertMember(member)}.Concat(GetAdditionalDeclarations(member)));
 
             }
+        }
+
+        private bool ShouldAddTypeWideInitToThisPart(VBSyntax.TypeBlockSyntax typeSyntax, INamedTypeSymbol namedTypeSybol)
+        {
+            return  namedTypeSybol.DeclaringSyntaxReferences
+                .OrderByDescending(l => l.SyntaxTree.FilePath?.IsGeneratedFile() == false)
+                .First().Span.OverlapsWith(typeSyntax.Span);
         }
 
         private MemberDeclarationSyntax[] GetAdditionalDeclarations(VBSyntax.StatementSyntax member)
@@ -272,7 +276,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 parameters,
                 await ConvertInheritsAndImplements(node.Inherits, node.Implements),
                 constraints,
-                SyntaxFactory.List(await ConvertMembers(node.Members))
+                SyntaxFactory.List(await ConvertMembers(node))
             );
         }
 
@@ -290,7 +294,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var stmt = node.ModuleStatement;
             var attributes = await CommonConversions.ConvertAttributes(stmt.AttributeLists);
-            var members = SyntaxFactory.List(await ConvertMembers(node.Members));
+            var members = SyntaxFactory.List(await ConvertMembers(node));
             var (parameters, constraints) = await SplitTypeParameters(stmt.TypeParameterList);
 
             return SyntaxFactory.ClassDeclaration(
@@ -307,7 +311,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var stmt = node.StructureStatement;
             var attributes = await CommonConversions.ConvertAttributes(stmt.AttributeLists);
-            var members = SyntaxFactory.List(await ConvertMembers(node.Members));
+            var members = SyntaxFactory.List(await ConvertMembers(node));
 
             var (parameters, constraints) = await SplitTypeParameters(stmt.TypeParameterList);
 
@@ -324,7 +328,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var stmt = node.InterfaceStatement;
             var attributes = await CommonConversions.ConvertAttributes(stmt.AttributeLists);
-            var members = SyntaxFactory.List(await ConvertMembers(node.Members));
+            var members = SyntaxFactory.List(await ConvertMembers(node));
 
             var (parameters, constraints) = await SplitTypeParameters(stmt.TypeParameterList);
 
