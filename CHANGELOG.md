@@ -21,7 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Stop Roslyn from silently crashing Visual Studio during conversion [#521](https://github.com/icsharpcode/CodeConverter/issues/521)
 
 ### VB -> C#
-
+* Performance improvement on big solutions
 
 ### C# -> VB
 
