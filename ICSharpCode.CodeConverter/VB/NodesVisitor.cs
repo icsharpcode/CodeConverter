@@ -911,13 +911,13 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitPrefixUnaryExpression(CSS.PrefixUnaryExpressionSyntax node)
         {
             var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
-            if (IsReturnValueDiscarded(node)) {
-                return SyntaxFactory.AssignmentStatement(
-                    kind,
-                    (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor),
-                    SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), _commonConversions.Literal(1)
-                );
-            }
+            //if (IsReturnValueDiscarded(node)) {
+            //    return SyntaxFactory.AssignmentStatement(
+            //        kind,
+            //        (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor),
+            //        SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), _commonConversions.Literal(1)
+            //    );
+            //}
             if (kind == SyntaxKind.AddAssignmentStatement || kind == SyntaxKind.SubtractAssignmentStatement) {
                 string operatorName;
                 if (kind == SyntaxKind.AddAssignmentStatement)

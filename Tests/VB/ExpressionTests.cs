@@ -868,5 +868,19 @@ Public Class TestClass
     End Sub
 End Class");
         }
+        [Fact]
+        public async Task PrefixUnaryExpression_SingleLineFunction() {
+            await TestConversionCSharpToVisualBasic(
+@"public class TestClass {
+    public TestClass() {
+        System.Func<string, bool> func = o => !string.IsNullOrEmpty(""test"");
+    }
+}",
+@"Public Class TestClass
+    Public Sub New()
+        Dim func As Func(Of String, Boolean) = Function(o) Not String.IsNullOrEmpty(""test"")
+    End Sub
+End Class");
+        }
     }
 }
