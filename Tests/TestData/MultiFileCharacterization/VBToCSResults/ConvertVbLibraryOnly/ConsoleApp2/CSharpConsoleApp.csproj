@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AnotherSharedNamespaceClass.cs" />
     <Compile Include="ユニコードのプログラム.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

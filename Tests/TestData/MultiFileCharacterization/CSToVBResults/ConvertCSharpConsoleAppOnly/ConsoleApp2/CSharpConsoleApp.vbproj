@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AnotherSharedNamespaceClass.vb" />
     <Compile Include="ユニコードのプログラム.vb" />
     <Compile Include="Properties\AssemblyInfo.vb" />
   </ItemGroup>
