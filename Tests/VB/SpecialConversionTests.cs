@@ -519,6 +519,39 @@ Public Class TestClass
 End Class");
         }
         [Fact]
+        public async Task CaseConflict_FieldAndInterfaceProperty() {
+            await TestConversionCSharpToVisualBasic(
+@"using System;
+public interface IInterface {
+    int Prop { get; set; }
+}
+public class TestClass : IInterface {
+    int prop;
+    int IInterface.Prop {
+        get { return prop; }
+        set { prop = value;}
+    }
+}",
+@"Public Interface IInterface
+    Property Prop As Integer
+End Interface
+
+Public Class TestClass
+    Implements IInterface
+
+    Private f_Prop As Integer
+
+    Private Property Prop As Integer Implements IInterface.Prop
+        Get
+            Return f_Prop
+        End Get
+        Set(ByVal value As Integer)
+            f_Prop = value
+        End Set
+    End Property
+End Class");
+        }
+        [Fact]
         public async Task CaseConflict_ForeignNamespace() {
             await TestConversionCSharpToVisualBasic(
 @"namespace System {

@@ -44,12 +44,19 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
         private static IEnumerable<(ISymbol Original, string NewName)> GetUniqueNamesForSymbolSet(IEnumerable<ISymbol> symbols) {
-            var membersByCaseInsensitiveName = symbols.ToLookup(m => m.Name, m => m, StringComparer.OrdinalIgnoreCase);
+            var membersByCaseInsensitiveName = symbols.ToLookup(m => GetName(m), m => m, StringComparer.OrdinalIgnoreCase);
             var names = new HashSet<string>(membersByCaseInsensitiveName.Select(ms => ms.Key),
                 StringComparer.OrdinalIgnoreCase);
             var symbolsWithNewNames = membersByCaseInsensitiveName.Where(ms => ms.Count() > 1)
                 .SelectMany(symbolGroup => GetSymbolsWithNewNames(symbolGroup.ToArray(), names));
             return symbolsWithNewNames;
+        }
+        private static string GetName(ISymbol m) {
+            if (m.CanBeReferencedByName)
+                return m.Name;
+            if (m.ExplicitInterfaceImplementations().Any())
+                return m.Name.Split('.').Last();
+            return m.Name;
         }
 
         private static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(IReadOnlyCollection<ISymbol> symbolGroup, HashSet<string> names)
@@ -68,7 +75,7 @@ namespace ICSharpCode.CodeConverter.VB
             bool specialSymbolUsingName)
         {
             var methodsByCaseInsensitiveSignature = methodSymbols
-                .ToLookup(m => (m.Name.ToLowerInvariant(), m.GetParameterSignature()))
+                .ToLookup(m => (GetName(m).ToLowerInvariant(), m.GetParameterSignature()))
                 .Where(g => g.Count() > 1)
                 .SelectMany(clashingMethodGroup =>
                 {
@@ -90,7 +97,7 @@ namespace ICSharpCode.CodeConverter.VB
         private static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(
             IEnumerable<ISymbol> toRename, Func<string, bool> canUse, bool canKeepOne)
         {
-            var symbolsWithNewNames = toRename.OrderByDescending(x => x.DeclaredAccessibility).ThenByDescending(x => x.Kind == SymbolKind.Parameter).Skip(canKeepOne ? 1 :0).Select(tr =>
+            var symbolsWithNewNames = toRename.OrderByDescending(x => x.DeclaredAccessibility).ThenByDescending(x => x.Kind == SymbolKind.Parameter || x.Kind == SymbolKind.Property).Skip(canKeepOne ? 1 :0).Select(tr =>
             {
                 string newName = NameGenerator.GenerateUniqueName(GetBaseName(tr), canUse);
                 return (Original: tr, NewName: newName);
@@ -116,7 +123,8 @@ namespace ICSharpCode.CodeConverter.VB
         private static string GetBaseName(ISymbol declaration)
         {
             string prefix = declaration.Kind.ToString().ToLowerInvariant()[0] + "_";
-            return prefix + declaration.Name.Substring(0, 1).ToUpperInvariant() + declaration.Name.Substring(1);
+            string name = GetName(declaration);
+            return prefix + name.Substring(0, 1).ToUpperInvariant() + name.Substring(1);
         }
     }
 }
