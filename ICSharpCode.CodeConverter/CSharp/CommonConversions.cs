@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
@@ -251,18 +250,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var idSymbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol ?? _semanticModel.GetDeclaredSymbol(id.Parent);
                 if (idSymbol != null && !String.IsNullOrWhiteSpace(idSymbol.Name)) {
                     text = WithDeclarationCasing(id, idSymbol, text);
-
+                    var normalizedText = text.WithHalfWidthLatinCharacters();
                     if (idSymbol.IsConstructor() && isAttribute) {
                         text = idSymbol.ContainingType.Name;
-                        if (text.EndsWith("Attribute", StringComparison.OrdinalIgnoreCase))
+                        if (normalizedText.EndsWith("Attribute", StringComparison.OrdinalIgnoreCase))
                             text = text.Remove(text.Length - "Attribute".Length);
-                    } else if (idSymbol.IsKind(SymbolKind.Parameter) && idSymbol.ContainingSymbol.IsAccessorPropertySet() && ((idSymbol.IsImplicitlyDeclared && idSymbol.Name == "Value") || idSymbol.Equals(idSymbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared)))) {
+                    } else if (idSymbol.IsKind(SymbolKind.Parameter) && idSymbol.ContainingSymbol.IsAccessorWithValueInCsharp() && ((idSymbol.IsImplicitlyDeclared && idSymbol.Name.WithHalfWidthLatinCharacters().Equals("value", StringComparison.OrdinalIgnoreCase)) || idSymbol.Equals(idSymbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared)))) {
                         // The case above is basically that if the symbol is a parameter, and the corresponding definition is a property set definition
                         // AND the first explicitly declared parameter is this symbol, we need to replace it with value.
                         text = "value";
-                    } else if (text.StartsWith("_", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol propertyFieldSymbol && propertyFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
+                    } else if (normalizedText.StartsWith("_", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol propertyFieldSymbol && propertyFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
                         text = propertyFieldSymbol.AssociatedSymbol.Name;
-                    } else if (text.EndsWith("Event", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol eventFieldSymbol && eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
+                    } else if (normalizedText.EndsWith("Event", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol eventFieldSymbol && eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
                         text = eventFieldSymbol.AssociatedSymbol.Name;
                     } else if (MustInlinePropertyWithEventsAccess(id.Parent, idSymbol)) {
                         // For C# Winforms designer, we need to use direct field access (and inline any event handlers)
@@ -270,6 +269,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
                 return CsEscapedIdentifier(text).WithSourceMappingFrom(id);
+            } else {
+                text = text.WithHalfWidthLatinCharacters();
             }
 
             return CsEscapedIdentifier(text);
@@ -287,7 +288,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool isDeclaration = baseSymbol.Locations.Any(l => l.SourceSpan == id.Span);
             bool isPartial = baseSymbol.IsPartialClassDefinition() || baseSymbol.IsPartialMethodDefinition() ||
                              baseSymbol.IsPartialMethodImplementation();
-            if (isPartial || (!isDeclaration && text.Equals(baseSymbol.Name, StringComparison.OrdinalIgnoreCase)))
+            if (isPartial || (!isDeclaration && text.WithHalfWidthLatinCharacters().Equals(baseSymbol.Name, StringComparison.OrdinalIgnoreCase)))
             {
                 text = baseSymbol.Name;
             }

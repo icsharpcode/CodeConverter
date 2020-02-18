@@ -164,6 +164,12 @@ namespace ICSharpCode.CodeConverter.Util
             return accessorSymbol != null && accessorSymbol.MethodKind == MethodKind.PropertySet;
         }
 
+        public static bool IsAccessorWithValueInCsharp(this ISymbol symbol)
+        {
+            return symbol is IMethodSymbol ms &&
+                new[] { MethodKind.PropertySet, MethodKind.EventAdd, MethodKind.EventRemove }.Contains(ms.MethodKind);
+        }
+
         public static bool IsPublic(this ISymbol symbol)
         {
             return symbol.DeclaredAccessibility == Accessibility.Public;

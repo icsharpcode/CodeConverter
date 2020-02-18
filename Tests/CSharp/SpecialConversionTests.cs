@@ -83,6 +83,59 @@ internal partial class TestClass45
         }
 
         [Fact]
+        public async Task TestFullWidthCharacterCustomEvent()
+        {
+            await TestConversionVisualBasicToCSharp(
+                @"Ｃｌａｓｓ　ＴｅｓｔＣｌａｓｓ４５
+　　　　Ｐｒｉｖａｔｅ　Ｅｖｅｎｔ　ｂａｃｋｉｎｇＦｉｅｌｄ　Ａｓ　EventHandler
+
+　　　　Ｐｕｂｌｉｃ　Ｃｕｓｔｏｍ　Ｅｖｅｎｔ　ＭｙＥｖｅｎｔ　Ａｓ　EventHandler
+　　　　　　　　ＡｄｄＨａｎｄｌｅｒ（ＢｙＶａｌ　ｖａｌｕｅ　Ａｓ　EventHandler）
+　　　　　　　　　　　　ＡｄｄＨａｎｄｌｅｒ　Ｍｅ．ｂａｃｋｉｎｇＦｉｅｌｄ，　ｖａｌｕｅ
+　　　　　　　　Ｅｎｄ　ＡｄｄＨａｎｄｌｅｒ
+　　　　　　　　ＲｅｍｏｖｅＨａｎｄｌｅｒ（ＢｙＶａｌ　ｖａｌｕｅ　Ａｓ　EventHandler）
+　　　　　　　　　　　　ＲｅｍｏｖｅＨａｎｄｌｅｒ　Ｍｅ．ｂａｃｋｉｎｇＦｉｅｌｄ，　ｖａｌｕｅ
+　　　　　　　　Ｅｎｄ　ＲｅｍｏｖｅＨａｎｄｌｅｒ
+　　　　　　　　ＲａｉｓｅＥｖｅｎｔ（ＢｙＶａｌ　ｓｅｎｄｅｒ　Ａｓ　Ｏｂｊｅｃｔ，　ＢｙＶａｌ　ｅ　Ａｓ　System.EventArgs）
+　　　　　　　　　　　　Console．WriteLine（”Ｅｖｅｎｔ　Ｒａｉｓｅｄ”）
+　　　　　　　　Ｅｎｄ　ＲａｉｓｅＥｖｅｎｔ
+　　　　Ｅｎｄ　Ｅｖｅｎｔ　’　ＲａｉｓｅＥｖｅｎｔ　ｍｏｖｅｓ　ｏｕｔｓｉｄｅ　ｔｈｉｓ　ｂｌｏｃｋ 'Workaround test code not noticing ’ symbol
+
+　　　　Ｐｕｂｌｉｃ　Ｓｕｂ　ＲａｉｓｅＣｕｓｔｏｍＥｖｅｎｔ（）
+　　　　　　　　ＲａｉｓｅＥｖｅｎｔ　ＭｙＥｖｅｎｔ（Ｍｅ，　EventArgs.Empty）
+　　　　Ｅｎｄ　Ｓｕｂ
+Ｅｎｄ　Ｃｌａｓｓ", @"using System;
+
+internal partial class ＴｅｓｔＣｌａｓｓ４５
+{
+    private event EventHandler ｂａｃｋｉｎｇＦｉｅｌｄ;
+
+    public event EventHandler ＭｙＥｖｅｎｔ
+    {
+        add
+        {
+            ｂａｃｋｉｎｇＦｉｅｌｄ += value;
+        }
+
+        remove
+        {
+            ｂａｃｋｉｎｇＦｉｅｌｄ -= value;
+        }
+    }　// ＲａｉｓｅＥｖｅｎｔ　ｍｏｖｅｓ　ｏｕｔｓｉｄｅ　ｔｈｉｓ　ｂｌｏｃｋ 'Workaround test code not noticing ’ symbol
+
+    void OnＭｙＥｖｅｎｔ(object ｓｅｎｄｅｒ, EventArgs ｅ)
+    {
+        Console.WriteLine(""Ｅｖｅｎｔ　Ｒａｉｓｅｄ"");
+    }
+
+    public void ＲａｉｓｅＣｕｓｔｏｍＥｖｅｎｔ()
+    {
+        OnＭｙＥｖｅｎｔ(this, EventArgs.Empty);
+    }
+}");
+        }
+
+        [Fact]
         public async Task HexAndBinaryLiterals()
         {
         await TestConversionVisualBasicToCSharp(

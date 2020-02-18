@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -507,7 +508,7 @@ namespace ICSharpCode.CodeConverter.VB
         public SyntaxToken ConvertIdentifier(SyntaxToken id)
         {
             var parent = (CS.CSharpSyntaxNode)id.Parent;
-            var idText = AdjustIfEventIdentifier(id, parent);
+            var idText = AdjustIfEventIdentifier(id.ValueText, parent);
             // Underscore is a special character in VB lexer which continues lines - not sure where to find the whole set of other similar tokens if any
             // Rather than a complicated contextual rename, just add an extra dash to all identifiers and hope this method is consistently used
             bool keywordRequiresEscaping = id.IsKind(CSSyntaxKind.IdentifierToken) && KeywordRequiresEscaping(id);
@@ -523,21 +524,21 @@ namespace ICSharpCode.CodeConverter.VB
             return id.SyntaxTree == _semanticModel.SyntaxTree ? identifier.WithSourceMappingFrom(id) : identifier;
         }
 
-        private string AdjustIfEventIdentifier(SyntaxToken id, CS.CSharpSyntaxNode parent)
+        private string AdjustIfEventIdentifier(string valueText, CS.CSharpSyntaxNode parent)
         {
             var symbol = GetSymbol(parent) as IEventSymbol;
-            bool isKind = symbol.IsKind(SymbolKind.Event);
-            if (!isKind) {
-                return id.ValueText;
+            bool isEvent = symbol.IsKind(SymbolKind.Event);
+            if (!isEvent) {
+                return valueText;
             }
 
             var operation = _semanticModel.GetAncestorOperationOrNull<IEventReferenceOperation>(parent);
             if (operation == null || !operation.Event.Equals(symbol) || operation.Parent is IEventAssignmentOperation ||
                 operation.Parent is IRaiseEventOperation || operation.Parent is IInvocationOperation ||
                 operation.Parent is IConditionalAccessOperation cao && cao.WhenNotNull is IInvocationOperation) {
-                return id.ValueText;
+                return valueText;
             } else {
-                return id.ValueText + "Event";
+                return valueText + "Event";
             }
         }
 

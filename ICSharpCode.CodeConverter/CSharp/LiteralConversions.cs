@@ -93,6 +93,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static string Unquote(string quotedText)
         {
+            quotedText = quotedText.Replace('”', '"');
             int firstQuoteIndex = quotedText.IndexOf("\"");
             int lastQuoteIndex = quotedText.LastIndexOf("\"");
             var unquoted = quotedText.Substring(firstQuoteIndex + 1, lastQuoteIndex - firstQuoteIndex - 1);
