@@ -8,6 +8,12 @@ namespace WindowsAppVb
     [Microsoft.VisualBasic.CompilerServices.DesignerGenerated()]
     public partial class WinformsDesignerTest : Form
     {
+        public WinformsDesignerTest()
+        {
+            base.Load += WinformsDesignerTest_EnsureSelfEventsWork;
+            this.SizeChanged += WinformsDesignerTest_EnsureSelfEventsWork;
+            InitializeComponent();
+        }
 
         // Form overrides dispose to clean up the component list.
         [DebuggerNonUserCode()]
