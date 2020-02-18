@@ -39,7 +39,9 @@ namespace ICSharpCode.CodeConverter.VB
         {
             if (!(containerSymbol is ITypeSymbol)) return Enumerable.Empty<IEnumerable<ISymbol>>();
 
-            var semanticModels = containerSymbol.Locations.Select(loc => loc.SourceTree).Distinct().Select(sourceTree => compilation.GetSemanticModel(sourceTree, true));
+            var semanticModels = containerSymbol.Locations.Select(loc => loc.SourceTree).Distinct()
+                .Where(sourceTree => compilation.ContainsSyntaxTree(sourceTree))
+                .Select(sourceTree => compilation.GetSemanticModel(sourceTree, true));
             return semanticModels.SelectMany(semanticModel => members.SelectMany(m => semanticModel.GetCsSymbolsPerScope(m)));
         }
 
