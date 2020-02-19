@@ -223,9 +223,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private bool ShouldAddTypeWideInitToThisPart(VBSyntax.TypeBlockSyntax typeSyntax, INamedTypeSymbol namedTypeSybol)
         {
-            return  namedTypeSybol.DeclaringSyntaxReferences
-                .OrderByDescending(l => l.SyntaxTree.FilePath?.IsGeneratedFile() == false)
+            return namedTypeSybol.DeclaringSyntaxReferences
+                .OrderByDescending(l => l.SyntaxTree.FilePath?.IsGeneratedFile() == false).ThenBy(l => l.GetSyntax() is VBSyntax.TypeBlockSyntax tbs && HasAttribute(tbs, "DesignerGenerated"))
                 .First().Span.OverlapsWith(typeSyntax.Span);
+        }
+
+        private static bool HasAttribute(VBSyntax.TypeBlockSyntax tbs, string attributeName)
+        {
+            return tbs.BlockStatement.AttributeLists.Any(list => list.Attributes.Any(a => a.Name.GetText().ToString().Contains(attributeName)));
         }
 
         private MemberDeclarationSyntax[] GetAdditionalDeclarations(VBSyntax.StatementSyntax member)
@@ -560,38 +565,42 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (parentType == null || !(this._semanticModel.GetDeclaredSymbol((global::Microsoft.CodeAnalysis.SyntaxNode)parentType) is ITypeSymbol containingType)) return new List<MethodWithHandles>();
 
             var methodWithHandleses = containingType.GetMembers().OfType<IMethodSymbol>()
-                .Where(m => VBasic.VisualBasicExtensions.HandledEvents(m).Any())
+                .Where(m => HandledEvents(m).Any())
                 .Select(m => {
-                    var csPropIds = VBasic.VisualBasicExtensions.HandledEvents(m)
-                        .Where(p => p.HandlesKind == VBasic.HandledEventKind.WithEvents)
-                        .Select(p => (SyntaxFactory.Identifier(GetCSharpIdentifierText(p)), SyntaxFactory.Identifier(p.EventSymbol.Name)))
+                    var ids = HandledEvents(m)
+                        .Select(p => (SyntaxFactory.Identifier(GetCSharpIdentifierText(p.EventContainer)), CommonConversions.ConvertIdentifier(p.EventMember.Identifier)))
                         .ToList();
-                    var csFormIds = VBasic.VisualBasicExtensions.HandledEvents(m)
-                        .Where(p => p.HandlesKind != VBasic.HandledEventKind.WithEvents)
-                        .Select(p => (SyntaxFactory.Identifier(GetCSharpIdentifierText(p)), SyntaxFactory.Identifier(p.EventSymbol.Name)))
-                        .ToList();
+                    var csFormIds = ids.Where(id => id.Item1.Text == "this" || id.Item1.Text == "base").ToList();
+                    var csPropIds = ids.Except(csFormIds).ToList();
                     if (!csPropIds.Any() && !csFormIds.Any()) return null;
                     var csMethodId = SyntaxFactory.Identifier(m.Name);
                     return new MethodWithHandles(csMethodId, csPropIds, csFormIds);
-                }).Where(x => x != null)
-                .ToList();
+                }).Where(x => x != null).ToList();
             return methodWithHandleses;
 
-            string GetCSharpIdentifierText(VBasic.HandledEvent p)
+            string GetCSharpIdentifierText(VBSyntax.EventContainerSyntax p)
             {
-                switch (p.HandlesKind) {
+                switch (p) {
                     //For me, trying to use "MyClass" in a Handles expression is a syntax error. Events aren't overridable anyway so I'm not sure how this would get used.
-                    case VBasic.HandledEventKind.MyClass:
-                    case VBasic.HandledEventKind.Me:
-                        return "this";
-                    case VBasic.HandledEventKind.MyBase:
+                    case VBSyntax.KeywordEventContainerSyntax kecs when kecs.Keyword.IsKind(VBasic.SyntaxKind.MyBaseKeyword):
                         return "base";
-                    case VBasic.HandledEventKind.WithEvents:
-                        return p.EventContainer.Name;
+                    case VBSyntax.KeywordEventContainerSyntax _:
+                        return "this";
                     default:
-                        throw new ArgumentOutOfRangeException();
+                        return CommonConversions.CsEscapedIdentifier(p.GetText().ToString()).Text;
                 }
             }
+        }
+
+        /// <summary>
+        /// VBasic.VisualBasicExtensions.HandledEvents(m) seems to optimize away some events, so just detect from syntax
+        /// </summary>
+        private static List<(VBSyntax.EventContainerSyntax EventContainer, VBSyntax.IdentifierNameSyntax EventMember)> HandledEvents(IMethodSymbol m)
+        {
+            return m.DeclaringSyntaxReferences.Select(r => r.GetSyntax()).OfType<VBSyntax.MethodStatementSyntax>()
+                .Where(mbb => mbb.HandlesClause?.Events.Any() == true)
+                .SelectMany(mbb => mbb.HandlesClause.Events.Select(e => (e.EventContainer, e.EventMember)))
+                .ToList();
         }
 
         public override async Task<CSharpSyntaxNode> VisitPropertyStatement(VBSyntax.PropertyStatementSyntax node)
