@@ -112,8 +112,8 @@ namespace ICSharpCode.CodeConverter.VB
                 project = solution.GetProject(project.Id);
                 var compilation = await project.GetCompilationAsync();
                 ISymbol currentDeclaration = SymbolFinder.FindSimilarSymbols(originalSymbol, compilation).FirstOrDefault();
-                if (currentDeclaration == null) break; //Must have already renamed this symbol for a different reason
-
+                if (currentDeclaration == null)
+                    continue; //Must have already renamed this symbol for a different reason
                 solution = await Renamer.RenameSymbolAsync(solution, currentDeclaration, newName, solution.Workspace.Options);
             }
 
