@@ -1230,8 +1230,7 @@ namespace ICSharpCode.CodeConverter.VB
 
             var isReferenceComparison = node.Left.IsKind(CS.SyntaxKind.NullLiteralExpression) ||
                                         node.Right.IsKind(CS.SyntaxKind.NullLiteralExpression) ||
-                                        leftType.IsReferenceType ||
-                                        rightType.IsReferenceType;
+                                        leftType.IsReferenceType && rightType.IsReferenceType && (leftType.SpecialType != SpecialType.System_String || rightType.SpecialType != SpecialType.System_String);
 
             if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.EqualsEqualsToken) && isReferenceComparison) {
                 return SyntaxFactory.IsExpression(vbLeft, vbRight);
