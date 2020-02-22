@@ -56,12 +56,12 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(IReadOnlyCollection<ISymbol> symbolGroup, HashSet<string> names)
         {
-            var methodSymbols = symbolGroup.OfType<IMethodSymbol>().Where(s => s.IsDefinedInSource()).ToArray();
-            var cannotRename = symbolGroup.Where(s => !s.IsDefinedInSource() || s.IsIndexer()).ToArray();
-            var specialSymbolUsingName = cannotRename.Any();
+            var canRename = symbolGroup.Where(s => s.IsDefinedInSource() && s.CanBeReferencedByName).ToArray();
+            var specialSymbolUsingName = canRename.Length < symbolGroup.Count;
+            var methodSymbols = canRename.OfType<IMethodSymbol>().ToArray();
             var canKeepOneNormalMemberName = !specialSymbolUsingName && !methodSymbols.Any();
-            symbolGroup = symbolGroup.Except(cannotRename).Except(methodSymbols).ToArray();
-            (ISymbol Original, string NewName)[] methodsWithNewNames = GetMethodSymbolsWithNewNames(methodSymbols, names, specialSymbolUsingName);
+            symbolGroup = canRename.Except(methodSymbols).ToArray();
+            (ISymbol Original, string NewName)[] methodsWithNewNames = GetMethodSymbolsWithNewNames(methodSymbols.ToArray(), names, specialSymbolUsingName);
             return GetSymbolsWithNewNames(symbolGroup, names.Add, canKeepOneNormalMemberName).Concat(methodsWithNewNames);
         }
 
