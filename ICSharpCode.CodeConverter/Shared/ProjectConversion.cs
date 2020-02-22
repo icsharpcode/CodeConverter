@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
@@ -169,14 +170,19 @@ namespace ICSharpCode.CodeConverter.Shared
         private async static Task<T> StopRoslynCrashingAsync<T>(Func<Task<T>> func, IProgress<ConversionProgress> progress) {
             await new SynchronizationContextRemover();
 
-            var originalErrorHandler = ExchangeFatalErrorHandler(e =>
-                progress.Report(new ConversionProgress($"https://github.com/dotnet/roslyn threw an exception: {e}"))
-            );
+            var FirstHandlerContainingType = (typeof(Compilation).GetTypeInfo().Assembly, "Microsoft.CodeAnalysis.FatalError");
+            var SecondHandlerContainingType = (typeof(WorkspaceDiagnostic).GetTypeInfo().Assembly, "Microsoft.CodeAnalysis.ErrorReporting.FatalError");
+
+            var codeAnalysisErrorHandler = ExchangeFatalErrorHandler(LogError, FirstHandlerContainingType);
+            var codeAnalysisErrorReportingErrorHandler = ExchangeFatalErrorHandler(LogError, SecondHandlerContainingType);
             try {
                 return await func();
             } finally {
-                ExchangeFatalErrorHandler(originalErrorHandler);
+                ExchangeFatalErrorHandler(codeAnalysisErrorHandler, FirstHandlerContainingType);
+                ExchangeFatalErrorHandler(codeAnalysisErrorReportingErrorHandler, SecondHandlerContainingType);
             }
+
+            void LogError(object e) => progress.Report(new ConversionProgress($"https://github.com/dotnet/roslyn threw an exception: {e}"));
         }
 
         /// <summary>
@@ -190,11 +196,11 @@ namespace ICSharpCode.CodeConverter.Shared
         /// See https://github.com/icsharpcode/CodeConverter/issues/521 and https://github.com/icsharpcode/CodeConverter/issues/484
         /// There are other ways to find these bugs - just run the expander/reducer on a couple of whole open source projects and the bugs will pile up.
         /// </remarks>
-        private static Action<Exception> ExchangeFatalErrorHandler(Action<Exception> errorHandler)
+        private static Action<Exception> ExchangeFatalErrorHandler(Action<Exception> errorHandler, (Assembly assembly, string containingType) container)
         {
             if (errorHandler == null) return null;
             try {
-                var fataErrorType = Type.GetType("Microsoft.CodeAnalysis.FatalError, Microsoft.CodeAnalysis");
+                var fataErrorType = container.assembly.GetType(container.containingType);
                 var fatalHandlerField = fataErrorType.GetField("s_fatalHandler");
                 var originalHandler = (Action<Exception>)fatalHandlerField.GetValue(null);
                 if (originalHandler != null) {
