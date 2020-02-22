@@ -99,9 +99,18 @@ namespace ICSharpCode.CodeConverter.Shared
             );
         }
 
+        public static ConversionResult ConvertProjectFile(Project project,
+            ILanguageConversion languageConversion,
+            params (string Find, string Replace, bool FirstOnly)[] textReplacements)
+        {
+            return new FileInfo(project.FilePath).ConversionResultFromReplacements(textReplacements,
+                languageConversion.PostTransformProjectFile);
+        }
+
         private static (string Find, string Replace, bool FirstOnly) ChangeLanguageVersionRegex(string languageVersion) {
             return (Find: new Regex(@"<\s*LangVersion>(\d|\D)*</LangVersion\s*>").ToString(), Replace: $"<LangVersion>{languageVersion}</LangVersion>", FirstOnly: true);
         }
+
         private static (string Find, string Replace, bool FirstOnly) ChangeRootNamespaceRegex(string rootNamespace) {
             return (Find: new Regex(@"<\s*RootNamespace>(\d|\D)*</RootNamespace\s*>").ToString(), Replace: $"<RootNamespace>{rootNamespace}</RootNamespace>", FirstOnly: true);
         }
@@ -125,14 +134,6 @@ namespace ICSharpCode.CodeConverter.Shared
             var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, languageConversion);
 
             return await ConvertProjectContents(projectConversion, progress);
-        }
-
-        public static ConversionResult ConvertProjectFile(Project project,
-            ILanguageConversion languageConversion,
-            params (string Find, string Replace, bool FirstOnly)[] textReplacements)
-        {
-            return new FileInfo(project.FilePath).ConversionResultFromReplacements(textReplacements,
-                languageConversion.PostTransformProjectFile);
         }
 
         private static async Task<IEnumerable<ConversionResult>> ConvertProjectContents(
