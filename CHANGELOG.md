@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Vsix
 
+* Exclude project file from conversion result if it hasn't changed
+* Further efforts to stop the roslyn library crashing Visual Studio
 
 ### VB -> C#
 
@@ -14,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### C# -> VB
 
+* Avoid incorrectly renaming symbols
 
 ## [7.8.0] - 2020-02-15
 
