@@ -335,9 +335,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             if (!(declaredSymbol is IMethodSymbol methodSymbol)) return null;
             if (declaredSymbol.IsOverride ) return false;
-            var parameterSignature = methodSymbol.GetParameterSignature();
+            var methodSignature = methodSymbol.GetUnqualifiedMethodSignature(true);
             return declaredSymbol.ContainingType.FollowProperty(s => s.BaseType).Skip(1).Any(t => t.GetMembers()
-                .Any(s => s.Name == declaredSymbol.Name && s is IMethodSymbol m && m.GetParameterSignature() == parameterSignature));
+                .Any(s => s.Name == declaredSymbol.Name && s is IMethodSymbol m && m.GetUnqualifiedMethodSignature(true) == methodSignature));
         }
 
         private static bool ContextHasIdenticalDefaults(TokenContext context, TokenContext[] contextsWithIdenticalDefaults, ISymbol declaredSymbol)
