@@ -12,7 +12,8 @@ namespace ICSharpCode.CodeConverter.Shared
             postReplacementTransform = postReplacementTransform ?? (s => s);
             var newProjectText = File.ReadAllText(filePath.FullName);
             newProjectText = newProjectText.Replace(replacements);
-            return new ConversionResult(postReplacementTransform(newProjectText)) {SourcePathOrNull = filePath.FullName};
+            string withReplacements = postReplacementTransform(newProjectText);
+            return new ConversionResult(withReplacements) { SourcePathOrNull = filePath.FullName, IsIdentity = newProjectText == withReplacements};
         }
 
         public static string Replace(this string originalText, IEnumerable<(string Find, string Replace, bool FirstOnly)> replacements)

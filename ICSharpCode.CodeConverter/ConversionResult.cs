@@ -14,6 +14,7 @@ namespace ICSharpCode.CodeConverter
         public bool Success { get; private set; }
         public string ConvertedCode { get; private set; }
         public IReadOnlyList<string> Exceptions { get; internal set; }
+        internal bool IsIdentity { get; set; }
 
         public string SourcePathOrNull {
             get => _sourcePathOrNull;
