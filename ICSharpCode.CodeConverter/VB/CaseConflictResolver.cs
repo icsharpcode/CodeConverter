@@ -30,12 +30,12 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(INamespaceOrTypeSymbol containerSymbol, Compilation compilation)
         {
-            var members = containerSymbol.GetMembers();
+            var members = containerSymbol.GetMembers().Where(m => m.Locations.Any(loc => compilation.ContainsSyntaxTree(loc.SourceTree))).ToArray();
             var symbolSets = GetLocalSymbolSets(containerSymbol, compilation, members).Concat(members.AsEnumerable().Yield());
             return symbolSets.SelectMany(GetUniqueNamesForSymbolSet);
         }
 
-        public static IEnumerable<IEnumerable<ISymbol>> GetLocalSymbolSets(INamespaceOrTypeSymbol containerSymbol, Compilation compilation, System.Collections.Immutable.ImmutableArray<ISymbol> members)
+        public static IEnumerable<IEnumerable<ISymbol>> GetLocalSymbolSets(INamespaceOrTypeSymbol containerSymbol, Compilation compilation, IReadOnlyCollection<ISymbol> members)
         {
             if (!(containerSymbol is ITypeSymbol)) return Enumerable.Empty<IEnumerable<ISymbol>>();
 
