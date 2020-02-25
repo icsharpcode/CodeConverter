@@ -67,7 +67,7 @@ namespace ICSharpCode.CodeConverter.Shared
             document = projectContentsConverter.Project.GetDocument(document.Id);
 
             var conversion = new ProjectConversion(projectContentsConverter, new[] { document }, languageConversion, returnSelectedNode);
-            var conversionResults = await ConvertProjectContents(conversion, progress ?? new Progress<ConversionProgress>()).ToArrayAsync();
+            var conversionResults = await conversion.Convert(progress).ToArrayAsync();
             var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
                              ?? conversionResults.First();
             codeResult.Exceptions = conversionResults.SelectMany(x => x.Exceptions).ToArray();
@@ -153,43 +153,48 @@ namespace ICSharpCode.CodeConverter.Shared
 
             var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, languageConversion);
 
-            var results = ConvertProjectContents(projectConversion, progress);
+            var results = projectConversion.Convert(progress);
             await foreach (var result in results) yield return result;
         }
 
-        private static IAsyncEnumerable<ConversionResult> ConvertProjectContents(
-            ProjectConversion projectConversion, IProgress<ConversionProgress> progress)
-        {
-            var pathNodePairs = projectConversion.Convert(progress);
-            return pathNodePairs.Select(pathNodePair => new ConversionResult(pathNodePair.Node?.ToFullString()) { SourcePathOrNull = pathNodePair.Path, Exceptions = pathNodePair.Errors.ToList() });
-        }
 
-        private async IAsyncEnumerable<(string Path, SyntaxNode Node, string[] Errors)> Convert(IProgress<ConversionProgress> progress)
+        private async IAsyncEnumerable<ConversionResult> Convert(IProgress<ConversionProgress> progress)
         {
-            var firstPassResults = ExecutePhase(_documentsToConvert, FirstPass, progress, "Phase 1 of 2:");
+            var phaseProgress = StartPhase(progress, "Phase 1 of 2:");
+            var firstPassResults = _documentsToConvert.ParallelSelectAsync(d => FirstPass(d, phaseProgress), Env.MaxDop);
             var (proj1, docs1) = await _projectContentsConverter.GetConvertedProject(await firstPassResults.ToArrayAsync());
 
             var warnings = await GetProjectWarnings(_projectContentsConverter.Project, proj1);
             if (warnings != null) {
                 var warningPath = Path.Combine(proj1.GetDirectoryPath(), "ConversionWarnings.txt");
-                yield return (warningPath, null, new[] { warnings });
+                yield return new ConversionResult() { SourcePathOrNull = warningPath, Exceptions = new[] { warnings } };
             }
-            var secondPassResults = ExecutePhase(proj1.GetDocuments(docs1), SecondPass, progress, "Phase 2 of 2:");
-            await foreach (var result in secondPassResults) yield return result;
+
+            phaseProgress = StartPhase(progress, "Phase 2 of 2:");
+            var secondPassResults = proj1.GetDocuments(docs1).ParallelSelectAsync(d => SecondPass(d, phaseProgress), Env.MaxDop);
+            await foreach (var result in secondPassResults) {
+                yield return new ConversionResult(result.Wip?.ToFullString()) { SourcePathOrNull = result.Path, Exceptions = result.Errors.ToList() };
+            };
         }
 
-        private IAsyncEnumerable<(string Path, SyntaxNode Node, string[] Errors)> ExecutePhase<T>(IEnumerable<T> parameters, Func<T, Progress<string>, Task<(string Path, SyntaxNode Node, string[] Errors)>> executePass, IProgress<ConversionProgress> progress, string phaseTitle)
+        private IAsyncEnumerable<WipFileConversion<TResult>> ExecutePhase<T, TResult>(IEnumerable<T> parameters, Func<T, Progress<string>, Task<WipFileConversion<TResult>>> executePass, IProgress<ConversionProgress> progress, string phaseTitle)
+        {
+            var phaseProgress = StartPhase(progress, phaseTitle);
+            return parameters.ParallelSelectAsync(d => executePass(d, phaseProgress), Env.MaxDop);
+        }
+
+        private static Progress<string> StartPhase(IProgress<ConversionProgress> progress, string phaseTitle)
         {
             progress.Report(new ConversionProgress(phaseTitle));
             var strProgress = new Progress<string>(m => progress.Report(new ConversionProgress(m, 1)));
-            return parameters.ParallelSelectAsync(d => executePass(d, strProgress), Env.MaxDop);
+            return strProgress;
         }
 
-        private async Task<(string Path, SyntaxNode Node, string[] Errors)> SecondPass((string Path, Document document, string[] Errors) firstPassResult, IProgress<string> progress)
+        private async Task<WipFileConversion<SyntaxNode>> SecondPass(WipFileConversion<Document> firstPassResult, IProgress<string> progress)
         {
-            if (firstPassResult.document != null) {
-                progress.Report(firstPassResult.Path);
-                var (convertedNode, errors) = await SingleSecondPassHandled(firstPassResult.document);
+            if (firstPassResult.Wip != null) {
+                LogProgress(firstPassResult, "Simplifying", progress);
+                var (convertedNode, errors) = await SingleSecondPassHandled(firstPassResult.Wip);
                 return (firstPassResult.Path, convertedNode, firstPassResult.Errors.Concat(errors).Union(GetErrorsFromAnnotations(convertedNode)).ToArray());
             }
 
@@ -232,7 +237,7 @@ namespace ICSharpCode.CodeConverter.Shared
             return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(convertedCompilation, "target");
         }
 
-        private async Task<(string Path, SyntaxNode Node, string[] Errors)> FirstPass(Document document, IProgress<string> progress)
+        private async Task<WipFileConversion<SyntaxNode>> FirstPass(Document document, IProgress<string> progress)
         {
             var treeFilePath = document.FilePath ?? "";
             progress.Report(treeFilePath);
@@ -276,6 +281,30 @@ namespace ICSharpCode.CodeConverter.Shared
             }
 
             return selectedNode ?? resultNode;
+        }
+
+        private void LogProgress(WipFileConversion<Document> convertedFile, string action, IProgress<string> progress)
+        {
+            var indentedException = string.Join(Environment.NewLine, convertedFile.Errors)
+                .Replace(Environment.NewLine, Environment.NewLine + "    ").TrimEnd();
+            var relativePath = PathRelativeToSolutionDir(convertedFile.Path ?? "unknown");
+
+            var containsErrors = !string.IsNullOrWhiteSpace(indentedException);
+            string output;
+            if (convertedFile.Wip == null) {
+                output = $"Failed {action.ToLower()} {relativePath}:{Environment.NewLine}    {indentedException}";
+            } else if (containsErrors) {
+                output = $"Error {action.ToLower()} {relativePath}:{Environment.NewLine}    {indentedException}";
+            } else {
+                output = $"{action} {relativePath}";
+            }
+
+            progress.Report(output);
+        }
+
+        private string PathRelativeToSolutionDir(string path)
+        {
+            return path.Replace(this._projectContentsConverter.Project.Solution.GetDirectoryPath() + Path.DirectorySeparatorChar, "");
         }
 
         private static async Task<IDisposable> RoslynEntryPoint(IProgress<ConversionProgress> progress)

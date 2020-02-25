@@ -56,8 +56,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             return await VisualBasicConverter.ConvertCompilationTree(document, _csharpViewOfVbSymbols, _csharpReferenceProject);
         }
 
-        public async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
-            GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults)
+        public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)>
+            GetConvertedProject(WipFileConversion<SyntaxNode>[] firstPassResults)
         {
             var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults);
             return (await project.RenameMergedNamespaces(), docIds);

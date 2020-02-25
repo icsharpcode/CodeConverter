@@ -58,8 +58,8 @@ namespace ICSharpCode.CodeConverter.VB
             return await CSharpConverter.ConvertCompilationTree(document, _vbViewOfCsSymbols, _vbReferenceProject);
         }
 
-        public async Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
-            GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults)
+        public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)>
+            GetConvertedProject(WipFileConversion<SyntaxNode>[] firstPassResults)
         {
             return _convertedVbProject.WithDocuments(firstPassResults);
         }

@@ -52,7 +52,7 @@ namespace CodeConverter.VsExtension
         public async Task PerformProjectConversionAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects) where TLanguageConversion : ILanguageConversion, new()
         {
             await _joinableTaskFactory.RunAsync(async () => {
-                var convertedFiles = ConvertProjectUnhandledAsync<TLanguageConversion>(selectedProjects);
+                var convertedFiles = ConvertProjectUnhandled<TLanguageConversion>(selectedProjects);
                 await WriteConvertedFilesAndShowSummaryAsync(convertedFiles);
             });
         }
@@ -97,7 +97,11 @@ namespace CodeConverter.VsExtension
                     continue;
                 }
 
-                LogProgressAsync(convertedFile, errors).ForgetNoThrow();
+                var exceptionsAsString = convertedFile.GetExceptionsAsString();
+                if (!string.IsNullOrWhiteSpace(exceptionsAsString)) {
+                    errors.Add(exceptionsAsString);
+                }
+
                 if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode)) continue;
 
                 files.Add(convertedFile.TargetPathOrNull);
@@ -162,30 +166,6 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             return string.Equals(convertedFile.SourcePathOrNull, convertedFile.TargetPathOrNull, StringComparison.OrdinalIgnoreCase);
         }
 
-        private async Task LogProgressAsync(ConversionResult convertedFile, List<string> errors)
-        {
-            var exceptionsAsString = convertedFile.GetExceptionsAsString();
-            var indentedException = exceptionsAsString.Replace(Environment.NewLine, Environment.NewLine + "    ").TrimEnd();
-            var targetPathRelativeToSolutionDir = PathRelativeToSolutionDir(convertedFile.TargetPathOrNull ?? "unknown");
-            string output = $"* {targetPathRelativeToSolutionDir}";
-            var containsErrors = !string.IsNullOrWhiteSpace(exceptionsAsString);
-
-            if (containsErrors) {
-                errors.Add(exceptionsAsString);
-            }
-
-            if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode))
-            {
-                var sourcePathRelativeToSolutionDir = PathRelativeToSolutionDir(convertedFile.SourcePathOrNull ?? "unknown");
-                output = $"* Failure processing {sourcePathRelativeToSolutionDir}{Environment.NewLine}    {indentedException}";
-            }
-            else if (containsErrors){
-                output += $" contains errors{Environment.NewLine}    {indentedException}";
-            }
-
-            await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + output);
-        }
-
         private string PathRelativeToSolutionDir(string path)
         {
             return path.Replace(SolutionDir, "")
@@ -247,7 +227,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             return convertTextOnly;
         }
 
-        private async IAsyncEnumerable<ConversionResult> ConvertProjectUnhandledAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects)
+        private async IAsyncEnumerable<ConversionResult> ConvertProjectUnhandled<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects)
             where TLanguageConversion : ILanguageConversion, new()
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();

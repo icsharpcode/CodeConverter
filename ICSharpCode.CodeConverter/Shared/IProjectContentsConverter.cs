@@ -12,7 +12,7 @@ namespace ICSharpCode.CodeConverter.Shared
         Project Project { get; }
         Task<SyntaxNode> SingleFirstPass(Document document);
 
-        Task<(Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)>
-            GetConvertedProject((string Path, SyntaxNode Node, string[] Errors)[] firstPassResults);
+        Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)>
+            GetConvertedProject(WipFileConversion<SyntaxNode>[] firstPassResults);
     }
 }
