@@ -40,40 +40,38 @@ namespace ICSharpCode.CodeConverter.Shared
         public static async Task<ConversionResult> ConvertText<TLanguageConversion>(string text, TextConversionOptions conversionOptions, IProgress<ConversionProgress> progress = null) where TLanguageConversion : ILanguageConversion, new()
         {
             progress = progress ?? new Progress<ConversionProgress>();
-            using (var roslynEntryPoint = await RoslynEntryPoint(progress)) {
-                var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
-                var syntaxTree = languageConversion.MakeFullCompilationUnit(text, out var textSpan);
-                if (textSpan.HasValue) conversionOptions.SelectedTextSpan = textSpan.Value;
-                using (var workspace = new AdhocWorkspace()) {
-                    var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, conversionOptions.References);
-                    return await ConvertSingle<TLanguageConversion>(document, conversionOptions, progress);
-                }
-            }
+            using var roslynEntryPoint = await RoslynEntryPoint(progress);
+
+            var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
+            var syntaxTree = languageConversion.MakeFullCompilationUnit(text, out var textSpan);
+            if (textSpan.HasValue) conversionOptions.SelectedTextSpan = textSpan.Value;
+            using var workspace = new AdhocWorkspace();
+            var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, conversionOptions.References);
+            return await ConvertSingle<TLanguageConversion>(document, conversionOptions, progress);
         }
 
         public static async Task<ConversionResult> ConvertSingle<TLanguageConversion>(Document document, SingleConversionOptions conversionOptions, IProgress<ConversionProgress> progress = null) where TLanguageConversion : ILanguageConversion, new()
         {
             progress = progress ?? new Progress<ConversionProgress>();
-            using (var roslynEntryPoint = await RoslynEntryPoint(progress)) {
+            using var roslynEntryPoint = await RoslynEntryPoint(progress);
 
-                var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
+            var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
 
-                bool returnSelectedNode = conversionOptions.SelectedTextSpan.Length > 0;
-                if (returnSelectedNode) {
-                    document = await WithAnnotatedSelection(document, conversionOptions.SelectedTextSpan);
-                }
-
-                var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(document.Project);
-
-                document = projectContentsConverter.Project.GetDocument(document.Id);
-
-                var conversion = new ProjectConversion(projectContentsConverter, new[] { document }, languageConversion, returnSelectedNode);
-                var conversionResults = await ConvertProjectContents(conversion, progress ?? new Progress<ConversionProgress>()).ToArrayAsync();
-                var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
-                                 ?? conversionResults.First();
-                codeResult.Exceptions = conversionResults.SelectMany(x => x.Exceptions).ToArray();
-                return codeResult;
+            bool returnSelectedNode = conversionOptions.SelectedTextSpan.Length > 0;
+            if (returnSelectedNode) {
+                document = await WithAnnotatedSelection(document, conversionOptions.SelectedTextSpan);
             }
+
+            var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(document.Project);
+
+            document = projectContentsConverter.Project.GetDocument(document.Id);
+
+            var conversion = new ProjectConversion(projectContentsConverter, new[] { document }, languageConversion, returnSelectedNode);
+            var conversionResults = await ConvertProjectContents(conversion, progress ?? new Progress<ConversionProgress>()).ToArrayAsync();
+            var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
+                             ?? conversionResults.First();
+            codeResult.Exceptions = conversionResults.SelectMany(x => x.Exceptions).ToArray();
+            return codeResult;
         }
 
         public static async IAsyncEnumerable<ConversionResult> ConvertProject(Project project,
@@ -81,14 +79,14 @@ namespace ICSharpCode.CodeConverter.Shared
             params (string Find, string Replace, bool FirstOnly)[] replacements)
         {
             progress = progress ?? new Progress<ConversionProgress>();
-            using (var roslynEntryPoint = await RoslynEntryPoint(progress)) {
-                var sourceFilePathsWithoutExtension = project.Documents.Select(f => f.FilePath).ToImmutableHashSet();
-                var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(project);
-                project = projectContentsConverter.Project;
-                var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress);
-                var results = WithProjectFile(projectContentsConverter, languageConversion, sourceFilePathsWithoutExtension, convertProjectContents, replacements);
-                await foreach (var result in results) yield return result;
-            }
+            using var roslynEntryPoint = await RoslynEntryPoint(progress);
+
+            var sourceFilePathsWithoutExtension = project.Documents.Select(f => f.FilePath).ToImmutableHashSet();
+            var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(project);
+            project = projectContentsConverter.Project;
+            var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress);
+            var results = WithProjectFile(projectContentsConverter, languageConversion, sourceFilePathsWithoutExtension, convertProjectContents, replacements);
+            await foreach (var result in results) yield return result;
         }
 
         /// <remarks>Perf: Keep lazy so that we don't keep all files in memory at once</remarks>
