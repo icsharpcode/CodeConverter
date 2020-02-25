@@ -53,7 +53,7 @@ namespace CodeConverter.VsExtension
         {
             await _joinableTaskFactory.RunAsync(async () => {
                 var convertedFiles = ConvertProjectUnhandledAsync<TLanguageConversion>(selectedProjects);
-                await WriteConvertedFilesAndShowSummaryAsync(await convertedFiles);
+                await WriteConvertedFilesAndShowSummaryAsync(convertedFiles);
             });
         }
 
@@ -61,7 +61,7 @@ namespace CodeConverter.VsExtension
         {
             var conversionResult = await _joinableTaskFactory.RunAsync(async () => {
                 var result = await ConvertDocumentUnhandledAsync<TLanguageConversion>(documentFilePath, selected);
-                await WriteConvertedFilesAndShowSummaryAsync(new[] { result });
+                await WriteConvertedFilesAndShowSummaryAsync(new[] { result }.ToAsyncEnumerable());
                 return result;
             });
 
@@ -80,7 +80,7 @@ namespace CodeConverter.VsExtension
             await TaskScheduler.Default;
         }
 
-        private async Task WriteConvertedFilesAndShowSummaryAsync(IEnumerable<ConversionResult> convertedFiles)
+        private async Task WriteConvertedFilesAndShowSummaryAsync(IAsyncEnumerable<ConversionResult> convertedFiles)
         {
             await _outputWindow.WriteToOutputWindowAsync(Intro, true, true);
 
@@ -89,7 +89,7 @@ namespace CodeConverter.VsExtension
             var errors = new List<string>();
             string longestFilePath = null;
             var longestFileLength = -1;
-            foreach (var convertedFile in convertedFiles) {
+            await foreach (var convertedFile in convertedFiles) {
                 if (convertedFile.SourcePathOrNull == null) continue;
 
                 if (WillOverwriteSource(convertedFile)) {
@@ -247,7 +247,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             return convertTextOnly;
         }
 
-        private async Task<IEnumerable<ConversionResult>> ConvertProjectUnhandledAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects)
+        private async IAsyncEnumerable<ConversionResult> ConvertProjectUnhandledAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects)
             where TLanguageConversion : ILanguageConversion, new()
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -265,7 +265,8 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
 
             var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects, progress: CreateOutputWindowProgress());
 
-            return await solutionConverter.Convert();
+            var results = solutionConverter.Convert();
+            await foreach(var result in results) yield return result;
         }
 
         private Progress<ConversionProgress> CreateOutputWindowProgress()

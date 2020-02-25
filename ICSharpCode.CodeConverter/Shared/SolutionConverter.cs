@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Shared
@@ -42,27 +41,25 @@ namespace ICSharpCode.CodeConverter.Shared
             _languageConversion = languageConversion;
         }
 
-        public async Task<IEnumerable<ConversionResult>> Convert()
+        public IAsyncEnumerable<ConversionResult> Convert()
         {
             var projectsToUpdateReferencesOnly = _projectsToConvert.First().Solution.Projects.Except(_projectsToConvert);
-            var projectContents = await ConvertProjects();
-            return projectContents.SelectMany(x => x)
-                .Concat(UpdateProjectReferences(projectsToUpdateReferencesOnly))
-                .Concat(new[] { ConvertSolutionFile() });
+            return ConvertProjects()
+                .Concat(UpdateProjectReferences(projectsToUpdateReferencesOnly).Concat(ConvertSolutionFile().Yield()).ToAsyncEnumerable());
         }
 
-        private Task<IEnumerable<ConversionResult>[]> ConvertProjects()
+        private IAsyncEnumerable<ConversionResult> ConvertProjects()
         {
             var projectFileReplacementRegexes = _languageConversion.GetProjectFileReplacementRegexes().Concat(_languageConversion.GetProjectTypeGuidMappings())
                 .Select(m => (m.Item1, m.Item2, false));
-            return _projectsToConvert.SelectAsync(project => ConvertProject(projectFileReplacementRegexes, project));
+            return _projectsToConvert.ToAsyncEnumerable().SelectMany(project => ConvertProject(projectFileReplacementRegexes, project));
         }
 
-        private async Task<IEnumerable<ConversionResult>> ConvertProject(IEnumerable<(string Find, string Replace, bool FirstOnly)> projectFileReplacementRegexes, Project project)
+        private IAsyncEnumerable<ConversionResult> ConvertProject(IEnumerable<(string Find, string Replace, bool FirstOnly)> projectFileReplacementRegexes, Project project)
         {
             var replacements = _projectReferenceReplacements.Concat(projectFileReplacementRegexes).ToArray();
             _progress.Report(new ConversionProgress($"Converting {project.Name}..."));
-            return await ProjectConversion.ConvertProject(project, _languageConversion, _progress, replacements);
+            return ProjectConversion.ConvertProject(project, _languageConversion, _progress, replacements);
         }
 
         private IEnumerable<ConversionResult> UpdateProjectReferences(IEnumerable<Project> projectsToUpdateReferencesOnly)
