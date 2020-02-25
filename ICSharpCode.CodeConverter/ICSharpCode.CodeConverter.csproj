@@ -40,6 +40,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.VisualBasic" Version="10.3.0" />
     <PackageReference Include="System.Globalization.Extensions" Version="4.3.0" />
+    <PackageReference Include="System.Linq.Async" Version="4.0.0" />
   </ItemGroup>
   <!-- The InternalVisibleTo fails when building with signing -->
   <ItemGroup Condition="'$(SignAssembly)'=='True'">
