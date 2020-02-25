@@ -20,8 +20,8 @@ namespace ICSharpCode.CodeConverter.Shared
         /// </remarks>
         public static IDisposable Create(Action<Exception> logError)
         {
-            var FirstHandlerContainingType = (typeof(Compilation).GetTypeInfo().Assembly, "Microsoft.CodeAnalysis.FatalError");
-            var SecondHandlerContainingType = (typeof(WorkspaceDiagnostic).GetTypeInfo().Assembly, "Microsoft.CodeAnalysis.ErrorReporting.FatalError");
+            var FirstHandlerContainingType = (typeof(Compilation).Assembly, "Microsoft.CodeAnalysis.FatalError");
+            var SecondHandlerContainingType = (typeof(WorkspaceDiagnostic).Assembly, "Microsoft.CodeAnalysis.ErrorReporting.FatalError");
 
             var codeAnalysisErrorHandler = ExchangeFatalErrorHandler(logError, FirstHandlerContainingType);
             var codeAnalysisErrorReportingErrorHandler = ExchangeFatalErrorHandler(logError, SecondHandlerContainingType);
@@ -36,7 +36,7 @@ namespace ICSharpCode.CodeConverter.Shared
             if (errorHandler == null) return null;
             try {
                 var fataErrorType = container.assembly.GetType(container.containingType);
-                var fatalHandlerField = fataErrorType.GetField("s_fatalHandler");
+                var fatalHandlerField = fataErrorType.GetField("s_fatalHandler", BindingFlags.NonPublic | BindingFlags.Static);
                 var originalHandler = (Action<Exception>)fatalHandlerField.GetValue(null);
                 if (originalHandler != null) {
                     fatalHandlerField.SetValue(null, errorHandler);
