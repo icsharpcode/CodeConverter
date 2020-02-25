@@ -169,6 +169,7 @@
     </Compile>
     <Compile Include="ConvertVBToCSCommand.cs" />
     <Compile Include="OutputWindow.cs" />
+    <Compile Include="Cancellation.cs" />
     <Compile Include="REConverterPackage.cs" />
     <Compile Include="ServiceProviderExtensions.cs" />
     <Compile Include="SolutionProjectExtensions.cs" />

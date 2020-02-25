@@ -32,16 +32,18 @@ namespace CodeConverter.VsExtension
         public static readonly string ConverterTitle = "Code converter";
         private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine;
         private readonly OutputWindow _outputWindow;
+        private readonly Cancellation _packageCancellation;
+
         private string SolutionDir => Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
 
         public static async Task<CodeConversion> CreateAsync(REConverterPackage serviceProvider, VisualStudioWorkspace visualStudioWorkspace, Func<Task<ConverterOptionsPage>> getOptions)
         {
-            return new CodeConversion(serviceProvider, serviceProvider.JoinableTaskFactory, visualStudioWorkspace,
+            return new CodeConversion(serviceProvider, serviceProvider.JoinableTaskFactory, serviceProvider.PackageCancellation, visualStudioWorkspace,
                 getOptions, await OutputWindow.CreateAsync());
         }
 
         public CodeConversion(IAsyncServiceProvider serviceProvider,
-            JoinableTaskFactory joinableTaskFactory, VisualStudioWorkspace visualStudioWorkspace,
+            JoinableTaskFactory joinableTaskFactory, Cancellation packageCancellation, VisualStudioWorkspace visualStudioWorkspace,
             Func<Task<ConverterOptionsPage>> getOptions, OutputWindow outputWindow)
         {
             GetOptions = getOptions;
@@ -49,6 +51,7 @@ namespace CodeConverter.VsExtension
             _joinableTaskFactory = joinableTaskFactory;
             _visualStudioWorkspace = visualStudioWorkspace;
             _outputWindow = outputWindow;
+            _packageCancellation = packageCancellation;
         }
 
         public async Task PerformProjectConversionAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects, CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
@@ -59,7 +62,9 @@ namespace CodeConverter.VsExtension
                     await WriteConvertedFilesAndShowSummaryAsync(convertedFiles);
                 });
             } catch (OperationCanceledException) {
-                await _outputWindow.WriteToOutputWindowAsync("Conversion cancelled", forceShow: true);
+                if (!_packageCancellation.CancelAll.IsCancellationRequested) {
+                    await _outputWindow.WriteToOutputWindowAsync("Previous conversion cancelled", forceShow: true);
+                }
             }
         }
 
@@ -78,7 +83,9 @@ namespace CodeConverter.VsExtension
                     await VisualStudioInteraction.ShowMessageBoxAsync(_serviceProvider, "Conversion result copied to clipboard.", $"Conversion result copied to clipboard. {conversionResult.GetExceptionsAsString()}", false);
                 }
             } catch (OperationCanceledException) {
-                await _outputWindow.WriteToOutputWindowAsync("Conversion cancelled", forceShow: true);
+                if (!_packageCancellation.CancelAll.IsCancellationRequested) {
+                    await _outputWindow.WriteToOutputWindowAsync("Previous conversion cancelled", forceShow: true);
+                }
             }
         }
 

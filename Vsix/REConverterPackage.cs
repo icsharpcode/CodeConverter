@@ -81,14 +81,8 @@ namespace CodeConverter.VsExtension
         public const string CsSolutionMenuVisibilityGuid = "cbe34396-af03-49ab-8945-3611a641abf6";
         public const string VbSolutionMenuVisibilityGuid = "3332e9e5-019c-4e93-b75a-2499f6f1cec6";
         public const string ConvertableSolutionMenuVisibilityGuid = "8e7192d0-28b7-4fe7-8d84-82c1db98d459";
-        private static CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
-        public static CancellationTokenSource ResetCancellation()
-        {
-            _cancellationTokenSource.Cancel();
-            _cancellationTokenSource.Dispose();
-            return _cancellationTokenSource = new CancellationTokenSource();
-        }
+        internal Cancellation PackageCancellation { get; } = new Cancellation();
 
         /// <summary>
         /// Initializes a new instance of package class.
@@ -151,7 +145,7 @@ namespace CodeConverter.VsExtension
             var codeConversion = await CodeConversion.CreateAsync(this, visualStudioWorkspace, this.GetDialogPageAsync<ConverterOptionsPage>);
             ConvertCSToVBCommand.Initialize(this, oleMenuCommandService, codeConversion);
             ConvertVBToCSCommand.Initialize(this, oleMenuCommandService, codeConversion);
-
+            VisualStudioInteraction.Initialize(PackageCancellation);
             await TaskScheduler.Default;
             await base.InitializeAsync(cancellationToken, progress);
         }
@@ -177,12 +171,12 @@ namespace CodeConverter.VsExtension
 
         internal OleMenuCommandWithBlockingStatus CreateCommand(Func<CancellationToken, Task> callbackAsync, CommandID menuCommandId)
         {
-            return new OleMenuCommandWithBlockingStatus(JoinableTaskFactory, callbackAsync, menuCommandId);
+            return new OleMenuCommandWithBlockingStatus(JoinableTaskFactory, PackageCancellation, callbackAsync, menuCommandId);
         }
 
         protected override void Dispose(bool disposing)
         {
-            ResetCancellation();
+            PackageCancellation.Dispose();
             base.Dispose(disposing);
         }
     }

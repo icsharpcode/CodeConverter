@@ -13,14 +13,14 @@ namespace CodeConverter.VsExtension
         private readonly JoinableTaskFactory _joinableTaskFactory;
         private readonly OleMenuCommand _command;
 
-        public OleMenuCommandWithBlockingStatus(JoinableTaskFactory joinableTaskFactory, Func<CancellationToken, Task> callbackAsync, CommandID menuCommandId)
+        public OleMenuCommandWithBlockingStatus(JoinableTaskFactory joinableTaskFactory, Cancellation _packageCancellation, Func<CancellationToken, Task> callbackAsync, CommandID menuCommandId)
         {
             _joinableTaskFactory = joinableTaskFactory;
             _command = new OleMenuCommand(Execute, menuCommandId);
 
             void Execute(object sender, EventArgs eventArgs)
             {
-                var cancellationTokenSource = REConverterPackage.ResetCancellation();
+                var cancellationTokenSource = _packageCancellation.ResetCommandCancellation();
 
                 async Task ExecuteAsync()
                 {

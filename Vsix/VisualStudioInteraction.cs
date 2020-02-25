@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using EnvDTE;
@@ -34,9 +35,15 @@ namespace CodeConverter.VsExtension
         /// <remarks>All calls and usages must from from the main thread</remarks>>
         internal static DTE2 Dte => m_Dte ?? (m_Dte = Package.GetGlobalService(typeof(DTE)) as DTE2);
 
+        private static CancellationToken CancelAllToken;
+        internal static void Initialize(Cancellation packageCancellation)
+        {
+            CancelAllToken = packageCancellation.CancelAll;
+        }
+
         public static async Task<string> GetSingleSelectedItemPathOrDefaultAsync()
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
             var selectedItem = await GetSingleSelectedItemOrDefaultAsync();
             var itemPath = selectedItem?.ItemPath;
             await TaskScheduler.Default;
@@ -45,7 +52,7 @@ namespace CodeConverter.VsExtension
 
         public static async Task<Window> OpenFileAsync(FileInfo fileInfo)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
             var window = Dte.ItemOperations.OpenFile(fileInfo.FullName, Constants.vsViewKindTextView);
             await TaskScheduler.Default;
             return window;
@@ -53,13 +60,13 @@ namespace CodeConverter.VsExtension
 
         public static async Task SelectAllAsync(this Window window)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
             ((TextSelection)window.Document.Selection).SelectAll();
             await TaskScheduler.Default;
         }
         public static async Task<IReadOnlyCollection<Project>> GetSelectedProjectsAsync(string projectExtension)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
 
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             var projects = GetSelectedSolutionExplorerItems<Solution>().SelectMany(s => s.GetAllProjects())
@@ -74,7 +81,7 @@ namespace CodeConverter.VsExtension
 
         public static async Task<ITextDocument> GetTextDocumentAsync(this IWpfTextViewHost viewHost)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
             viewHost.TextView.TextDataModel.DocumentBuffer.Properties.TryGetProperty(typeof(ITextDocument), out ITextDocument textDocument);
             await TaskScheduler.Default;
             return textDocument;
@@ -82,16 +89,18 @@ namespace CodeConverter.VsExtension
 
         public static async Task ShowExceptionAsync(IAsyncServiceProvider serviceProvider, string title, Exception ex)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
-            MessageBox.Show($"An error has occured during conversion: {ex}",
-                title, MessageBoxButton.OK, MessageBoxImage.Error);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+            if (!CancelAllToken.IsCancellationRequested) {
+                MessageBox.Show($"An error has occured during conversion: {ex}",
+                    title, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         /// <returns>true iff the user answers "OK"</returns>
         public static async Task<bool> ShowMessageBoxAsync(IAsyncServiceProvider serviceProvider, string title, string msg, bool showCancelButton, bool defaultOk = true)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+            if (CancelAllToken.IsCancellationRequested) return false;
             var userAnswer = MessageBox.Show(msg, title,
                 showCancelButton ? MessageBoxButton.OKCancel : MessageBoxButton.OK,
                 MessageBoxImage.Information,
@@ -101,7 +110,7 @@ namespace CodeConverter.VsExtension
 
         public static async Task WriteStatusBarTextAsync(IAsyncServiceProvider serviceProvider, string text)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
             var statusBar = await serviceProvider.GetServiceAsync<SVsStatusbar, IVsStatusbar>();
             if (statusBar == null)
                 return;
@@ -119,7 +128,7 @@ namespace CodeConverter.VsExtension
         public static async Task<Span?> GetFirstSelectedSpanInCurrentViewAsync(IAsyncServiceProvider serviceProvider,
             Func<string, bool> predicate, bool mustHaveFocus)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
             var span = await FirstSelectedSpanInCurrentViewPrivateAsync(serviceProvider, predicate, mustHaveFocus);
             await TaskScheduler.Default;
             return span;
@@ -128,7 +137,7 @@ namespace CodeConverter.VsExtension
         public static async Task<(string FilePath, Span? Selection)> GetCurrentFilenameAndSelectionAsync(
             IAsyncServiceProvider asyncServiceProvider, Func<string, bool> predicate, bool mustHaveFocus)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
 
             var span = await GetFirstSelectedSpanInCurrentViewAsync(asyncServiceProvider, predicate, mustHaveFocus);
             var currentViewHostAsync =
@@ -144,7 +153,7 @@ namespace CodeConverter.VsExtension
 
         private static async Task<VsDocument> GetSingleSelectedItemOrDefaultAsync()
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
             var monitorSelection = Package.GetGlobalService(typeof(SVsShellMonitorSelection)) as IVsMonitorSelection;
             var solution = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
 
@@ -192,7 +201,7 @@ namespace CodeConverter.VsExtension
 
         private static async Task<IWpfTextViewHost> GetCurrentViewHostAsync(IAsyncServiceProvider serviceProvider, bool mustHaveFocus)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
             var txtMgr = await serviceProvider.GetServiceAsync<SVsTextManager, IVsTextManager>();
             if (txtMgr == null) {
                 return null;
