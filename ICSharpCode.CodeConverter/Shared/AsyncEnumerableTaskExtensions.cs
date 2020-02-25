@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,9 +18,9 @@ namespace ICSharpCode.CodeConverter.Shared
         }
 
         public static async IAsyncEnumerable<TResult> ParallelSelectAsync<TArg, TResult>(this IEnumerable<TArg> source,
-            Func<TArg, Task<TResult>> selector, byte maxDop)
+            Func<TArg, Task<TResult>> selector, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            foreach (var item in source.AsParallel().WithDegreeOfParallelism(maxDop)) {
+            foreach (var item in source.AsParallel().WithDegreeOfParallelism(Env.MaxDop).WithCancellation(cancellationToken)) {
                 yield return await selector(item);
             }
         }

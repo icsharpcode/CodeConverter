@@ -150,7 +150,7 @@ namespace CodeConverter.Tests.TestRunners
                 var c = await x.GetCompilationAsync();
                 return new[]{CompilationWarnings.WarningsForCompilation(c, c.AssemblyName)}.Concat(
                     valueDiagnostics.Where(d => d.Kind > WorkspaceDiagnosticKind.Warning).Select(d => d.Message));
-            }, Env.MaxDop).ToArrayAsync();
+            }, default).ToArrayAsync();
             var errorString = string.Join("\r\n", errors.SelectMany(w => w).Where(w => w != null));
             Assert.True(errorString == "", errorString);
         }

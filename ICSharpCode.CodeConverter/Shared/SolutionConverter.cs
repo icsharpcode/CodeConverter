@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 
@@ -16,22 +17,24 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly List<(string Find, string Replace, bool FirstOnly)> _projectReferenceReplacements;
         private readonly IProgress<ConversionProgress> _progress;
         private readonly ILanguageConversion _languageConversion;
+        private readonly CancellationToken _cancellationToken;
 
         public static SolutionConverter CreateFor<TLanguageConversion>(IReadOnlyCollection<Project> projectsToConvert,
             ConversionOptions conversionOptions = default,
-            IProgress<ConversionProgress> progress = null) where TLanguageConversion : ILanguageConversion, new()
+            IProgress<ConversionProgress> progress = null,
+            CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
         {
             var conversion = new TLanguageConversion {ConversionOptions = conversionOptions ?? new ConversionOptions() };
             var solutionFilePath = projectsToConvert.First().Solution.FilePath;
             var sourceSolutionContents = File.ReadAllText(solutionFilePath);
             var projectReferenceReplacements = GetProjectReferenceReplacements(projectsToConvert, sourceSolutionContents);
-            return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, progress ?? new Progress<ConversionProgress>(), conversion);
+            return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, progress ?? new Progress<ConversionProgress>(), cancellationToken, conversion);
         }
 
         private SolutionConverter(string solutionFilePath,
             string sourceSolutionContents, IReadOnlyCollection<Project> projectsToConvert,
             List<(string Find, string Replace, bool FirstOnly)> projectReferenceReplacements, IProgress<ConversionProgress> showProgressMessage,
-            ILanguageConversion languageConversion)
+            CancellationToken cancellationToken, ILanguageConversion languageConversion)
         {
             _solutionFilePath = solutionFilePath;
             _sourceSolutionContents = sourceSolutionContents;
@@ -39,6 +42,7 @@ namespace ICSharpCode.CodeConverter.Shared
             _projectReferenceReplacements = projectReferenceReplacements;
             _progress = showProgressMessage;
             _languageConversion = languageConversion;
+            _cancellationToken = cancellationToken;
         }
 
         public IAsyncEnumerable<ConversionResult> Convert()
@@ -59,7 +63,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var replacements = _projectReferenceReplacements.Concat(projectFileReplacementRegexes).ToArray();
             _progress.Report(new ConversionProgress($"Converting {project.Name}..."));
-            return ProjectConversion.ConvertProject(project, _languageConversion, _progress, replacements);
+            return ProjectConversion.ConvertProject(project, _languageConversion, _progress, _cancellationToken, replacements);
         }
 
         private IEnumerable<ConversionResult> UpdateProjectReferences(IEnumerable<Project> projectsToUpdateReferencesOnly)

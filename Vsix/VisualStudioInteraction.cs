@@ -29,8 +29,10 @@ namespace CodeConverter.VsExtension
     /// </remarks>
     internal static class VisualStudioInteraction
     {
+        private static DTE2 m_Dte;
+
         /// <remarks>All calls and usages must from from the main thread</remarks>>
-        internal static DTE2 Dte => Package.GetGlobalService(typeof(DTE)) as DTE2;
+        internal static DTE2 Dte => m_Dte ?? (m_Dte = Package.GetGlobalService(typeof(DTE)) as DTE2);
 
         public static async Task<string> GetSingleSelectedItemPathOrDefaultAsync()
         {

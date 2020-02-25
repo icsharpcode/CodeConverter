@@ -6,6 +6,7 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     internal static class RoslynCrashPreventer
     {
+        private static object _exchangeLock = new object();
 
         /// <summary>
         /// Use this to stop the library exiting the process without telling us.
@@ -31,17 +32,19 @@ namespace ICSharpCode.CodeConverter.Shared
             });
         }
 
-        private static Action<Exception> ExchangeFatalErrorHandler(Action<Exception> errorHandler, (Assembly assembly, string containingType) container)
+        private static Action<Exception> ExchangeFatalErrorHandler(Action<Exception> errorHandler, (Assembly assembly, string containingType) container, Action<Exception> errorHanderToReplace = null)
         {
             if (errorHandler == null) return null;
             try {
                 var fataErrorType = container.assembly.GetType(container.containingType);
                 var fatalHandlerField = fataErrorType.GetField("s_fatalHandler", BindingFlags.NonPublic | BindingFlags.Static);
-                var originalHandler = (Action<Exception>)fatalHandlerField.GetValue(null);
-                if (originalHandler != null) {
-                    fatalHandlerField.SetValue(null, errorHandler);
+                lock (_exchangeLock) {
+                    var originalHandler = (Action<Exception>)fatalHandlerField.GetValue(null);
+                    if (originalHandler != null && errorHanderToReplace == null || originalHandler == errorHanderToReplace) {
+                        fatalHandlerField.SetValue(null, errorHandler);
+                    }
+                    return originalHandler;
                 }
-                return originalHandler;
             } catch (Exception) {
                 return null;
             }

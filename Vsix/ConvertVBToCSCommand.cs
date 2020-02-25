@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using EnvDTE;
 using ICSharpCode.CodeConverter.CSharp;
@@ -152,37 +153,37 @@ namespace CodeConverter.VsExtension
             }
         }
 
-        private async Task CodeEditorMenuItemCallbackAsync(object sender, EventArgs e)
+        private async Task CodeEditorMenuItemCallbackAsync(CancellationToken cancellationToken)
         {
             var (filePath, selection) = await VisualStudioInteraction.GetCurrentFilenameAndSelectionAsync(ServiceProvider, CodeConversion.IsVBFileName, false);
             if (filePath != null && selection != null) {
-                await ConvertDocumentAsync(filePath, selection.Value);
+                await ConvertDocumentAsync(filePath, selection.Value, cancellationToken);
             }
         }
 
-        private async Task ProjectItemMenuItemCallbackAsync(object sender, EventArgs e)
+        private async Task ProjectItemMenuItemCallbackAsync(CancellationToken cancellationToken)
         {
             string itemPath = await VisualStudioInteraction.GetSingleSelectedItemPathOrDefaultAsync();
-            await ConvertDocumentAsync(itemPath, new Span(0, 0));
+            await ConvertDocumentAsync(itemPath, new Span(0, 0), cancellationToken);
         }
 
-        private async Task SolutionOrProjectMenuItemCallbackAsync(object sender, EventArgs e)
+        private async Task SolutionOrProjectMenuItemCallbackAsync(CancellationToken cancellationToken)
         {
             try {
                 var projects = VisualStudioInteraction.GetSelectedProjectsAsync(ProjectExtension);
-                await _codeConversion.PerformProjectConversionAsync<VBToCSConversion>(await projects);
+                await _codeConversion.PerformProjectConversionAsync<VBToCSConversion>(await projects, cancellationToken);
             } catch (Exception ex) {
                 await VisualStudioInteraction.ShowExceptionAsync(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }
         }
 
-        private async Task ConvertDocumentAsync(string documentPath, Span selected)
+        private async Task ConvertDocumentAsync(string documentPath, Span selected, CancellationToken cancellationToken)
         {
             if (documentPath == null || !CodeConversion.IsVBFileName(documentPath))
                 return;
 
             try {
-                await _codeConversion.PerformDocumentConversionAsync<VBToCSConversion>(documentPath, selected);
+                await _codeConversion.PerformDocumentConversionAsync<VBToCSConversion>(documentPath, selected, cancellationToken);
             } catch (Exception ex) {
                 await VisualStudioInteraction.ShowExceptionAsync(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }

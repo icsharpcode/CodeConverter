@@ -81,6 +81,14 @@ namespace CodeConverter.VsExtension
         public const string CsSolutionMenuVisibilityGuid = "cbe34396-af03-49ab-8945-3611a641abf6";
         public const string VbSolutionMenuVisibilityGuid = "3332e9e5-019c-4e93-b75a-2499f6f1cec6";
         public const string ConvertableSolutionMenuVisibilityGuid = "8e7192d0-28b7-4fe7-8d84-82c1db98d459";
+        private static CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+
+        public static CancellationTokenSource ResetCancellation()
+        {
+            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource.Dispose();
+            return _cancellationTokenSource = new CancellationTokenSource();
+        }
 
         /// <summary>
         /// Initializes a new instance of package class.
@@ -167,9 +175,15 @@ namespace CodeConverter.VsExtension
             }
         }
 
-        internal OleMenuCommandWithBlockingStatus CreateCommand(Func<object, EventArgs, Task> callbackAsync, CommandID menuCommandId)
+        internal OleMenuCommandWithBlockingStatus CreateCommand(Func<CancellationToken, Task> callbackAsync, CommandID menuCommandId)
         {
             return new OleMenuCommandWithBlockingStatus(JoinableTaskFactory, callbackAsync, menuCommandId);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            ResetCancellation();
+            base.Dispose(disposing);
         }
     }
 }

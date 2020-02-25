@@ -4,7 +4,9 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
@@ -27,17 +29,19 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly bool _returnSelectedNode;
         private static readonly string[] BannedPaths = new[] { ".AssemblyAttributes.", "\\bin\\", "\\obj\\" };
         private readonly IProjectContentsConverter _projectContentsConverter;
+        private readonly CancellationToken _cancellationToken;
 
         private ProjectConversion(IProjectContentsConverter projectContentsConverter, IEnumerable<Document> documentsToConvert,
-            ILanguageConversion languageConversion, bool returnSelectedNode = false)
+            ILanguageConversion languageConversion, CancellationToken cancellationToken, bool returnSelectedNode = false)
         {
             _projectContentsConverter = projectContentsConverter;
             _languageConversion = languageConversion;
             _documentsToConvert = documentsToConvert.ToList();
             _returnSelectedNode = returnSelectedNode;
+            _cancellationToken = cancellationToken;
         }
 
-        public static async Task<ConversionResult> ConvertText<TLanguageConversion>(string text, TextConversionOptions conversionOptions, IProgress<ConversionProgress> progress = null) where TLanguageConversion : ILanguageConversion, new()
+        public static async Task<ConversionResult> ConvertText<TLanguageConversion>(string text, TextConversionOptions conversionOptions, IProgress<ConversionProgress> progress = null, CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
         {
             progress = progress ?? new Progress<ConversionProgress>();
             using var roslynEntryPoint = await RoslynEntryPoint(progress);
@@ -47,10 +51,10 @@ namespace ICSharpCode.CodeConverter.Shared
             if (textSpan.HasValue) conversionOptions.SelectedTextSpan = textSpan.Value;
             using var workspace = new AdhocWorkspace();
             var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, conversionOptions.References);
-            return await ConvertSingle<TLanguageConversion>(document, conversionOptions, progress);
+            return await ConvertSingle<TLanguageConversion>(document, conversionOptions, progress, cancellationToken);
         }
 
-        public static async Task<ConversionResult> ConvertSingle<TLanguageConversion>(Document document, SingleConversionOptions conversionOptions, IProgress<ConversionProgress> progress = null) where TLanguageConversion : ILanguageConversion, new()
+        public static async Task<ConversionResult> ConvertSingle<TLanguageConversion>(Document document, SingleConversionOptions conversionOptions, IProgress<ConversionProgress> progress = null, CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
         {
             progress = progress ?? new Progress<ConversionProgress>();
             using var roslynEntryPoint = await RoslynEntryPoint(progress);
@@ -66,7 +70,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             document = projectContentsConverter.Project.GetDocument(document.Id);
 
-            var conversion = new ProjectConversion(projectContentsConverter, new[] { document }, languageConversion, returnSelectedNode);
+            var conversion = new ProjectConversion(projectContentsConverter, new[] { document }, languageConversion, cancellationToken, returnSelectedNode);
             var conversionResults = await conversion.Convert(progress).ToArrayAsync();
             var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
                              ?? conversionResults.First();
@@ -75,7 +79,7 @@ namespace ICSharpCode.CodeConverter.Shared
         }
 
         public static async IAsyncEnumerable<ConversionResult> ConvertProject(Project project,
-            ILanguageConversion languageConversion, IProgress<ConversionProgress> progress,
+            ILanguageConversion languageConversion, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken cancellationToken,
             params (string Find, string Replace, bool FirstOnly)[] replacements)
         {
             progress = progress ?? new Progress<ConversionProgress>();
@@ -84,7 +88,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var sourceFilePathsWithoutExtension = project.Documents.Select(f => f.FilePath).ToImmutableHashSet();
             var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(project);
             project = projectContentsConverter.Project;
-            var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress);
+            var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress, cancellationToken);
             var results = WithProjectFile(projectContentsConverter, languageConversion, sourceFilePathsWithoutExtension, convertProjectContents, replacements);
             await foreach (var result in results) yield return result;
         }
@@ -142,7 +146,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private static async IAsyncEnumerable<ConversionResult> ConvertProjectContents(
             IProjectContentsConverter projectContentsConverter, ILanguageConversion languageConversion,
-            IProgress<ConversionProgress> progress)
+            IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var documentsWithLengths = await projectContentsConverter.Project.Documents
                 .Where(d => !BannedPaths.Any(d.FilePath.Contains))
@@ -151,7 +155,7 @@ namespace ICSharpCode.CodeConverter.Shared
             //Perf heuristic: Decrease memory pressure on the simplification phase by converting large files first https://github.com/icsharpcode/CodeConverter/issues/524#issuecomment-590301594
             var documentsToConvert = documentsWithLengths.OrderByDescending(d => d.Length).Select(d => d.Doc);
 
-            var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, languageConversion);
+            var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, languageConversion, cancellationToken);
 
             var results = projectConversion.Convert(progress);
             await foreach (var result in results) yield return result;
@@ -161,7 +165,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private async IAsyncEnumerable<ConversionResult> Convert(IProgress<ConversionProgress> progress)
         {
             var phaseProgress = StartPhase(progress, "Phase 1 of 2:");
-            var firstPassResults = _documentsToConvert.ParallelSelectAsync(d => FirstPass(d, phaseProgress), Env.MaxDop);
+            var firstPassResults = _documentsToConvert.ParallelSelectAsync(d => FirstPass(d, phaseProgress), _cancellationToken);
             var (proj1, docs1) = await _projectContentsConverter.GetConvertedProject(await firstPassResults.ToArrayAsync());
 
             var warnings = await GetProjectWarnings(_projectContentsConverter.Project, proj1);
@@ -171,16 +175,10 @@ namespace ICSharpCode.CodeConverter.Shared
             }
 
             phaseProgress = StartPhase(progress, "Phase 2 of 2:");
-            var secondPassResults = proj1.GetDocuments(docs1).ParallelSelectAsync(d => SecondPass(d, phaseProgress), Env.MaxDop);
+            var secondPassResults = proj1.GetDocuments(docs1).ParallelSelectAsync(d => SecondPass(d, phaseProgress), _cancellationToken);
             await foreach (var result in secondPassResults) {
                 yield return new ConversionResult(result.Wip?.ToFullString()) { SourcePathOrNull = result.Path, Exceptions = result.Errors.ToList() };
             };
-        }
-
-        private IAsyncEnumerable<WipFileConversion<TResult>> ExecutePhase<T, TResult>(IEnumerable<T> parameters, Func<T, Progress<string>, Task<WipFileConversion<TResult>>> executePass, IProgress<ConversionProgress> progress, string phaseTitle)
-        {
-            var phaseProgress = StartPhase(progress, phaseTitle);
-            return parameters.ParallelSelectAsync(d => executePass(d, phaseProgress), Env.MaxDop);
         }
 
         private static Progress<string> StartPhase(IProgress<ConversionProgress> progress, string phaseTitle)
