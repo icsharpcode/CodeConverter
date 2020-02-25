@@ -12,6 +12,10 @@ namespace ConsoleApp2
             {
                 // Here's a comment
                 Console.WriteLine(-1);
+                var class1 = new CSharpNetStandardLib.Class1();
+                class1.MethodOnlyDifferingInTypeParameterCount();
+                class1.MethodOnlyDifferingInTypeParameterCount<object>();
+                class1.MethodOnlyDifferingInTypeParameterCount<object, string>();
             }
         }
 

@@ -7,12 +7,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Vsix
 
+* Exclude project file from conversion result if it hasn't changed
+* Further efforts to stop the roslyn library crashing Visual Studio
 
 ### VB -> C#
 
+* More consistently add constructor for DesignerGenerated attribute
 
 ### C# -> VB
 
+* Avoid incorrectly renaming symbols
+
+## [7.8.0] - 2020-02-15
+
+### Vsix
+
+* Stop Roslyn from silently crashing Visual Studio during conversion [#521](https://github.com/icsharpcode/CodeConverter/issues/521)
+
+### VB -> C#
+* Performance improvement on big solutions
+
+### C# -> VB
+
+* Partial class/method improvements
+* Avoid ambiguity in some generated method calls
 
 ## [7.7.0] - 2020-02-11
 

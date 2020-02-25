@@ -74,7 +74,7 @@ namespace ICSharpCode.CodeConverter.Shared
                         new FileInfo(project.FilePath).ConversionResultFromReplacements(_projectReferenceReplacements);
                     withReferencesReplaced.TargetPathOrNull = withReferencesReplaced.SourcePathOrNull;
                     return withReferencesReplaced;
-                });
+                }).Where(c => !c.IsIdentity);
         }
 
         private static List<(string Find, string Replace, bool FirstOnly)> GetProjectReferenceReplacements(IReadOnlyCollection<Project> projectsToConvert,

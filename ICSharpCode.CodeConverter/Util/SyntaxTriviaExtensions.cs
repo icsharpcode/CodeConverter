@@ -184,7 +184,7 @@ namespace ICSharpCode.CodeConverter.Util
 
                 return commentText.TrimStart(null);
             } else if (trivia.IsKind(VBasic.SyntaxKind.CommentTrivia)) {
-                if (commentText.StartsWith("'")) {
+                if (commentText.StartsWith("'") || commentText.StartsWith("’")) {
                     commentText = commentText.Substring(1);
                 }
 

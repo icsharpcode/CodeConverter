@@ -33,6 +33,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var converted = (CSS.CompilationUnitSyntax)await root.AcceptAsync(visualBasicSyntaxVisitor.TriviaConvertingDeclarationVisitor);
 
             try {
+                // This call is very expensive for large documents. Should look for a more performant version, e.g. Is NormalizeWhitespace good enough?
                 converted = (CSS.CompilationUnitSyntax)Formatter.Format(converted, document.Project.Solution.Workspace);
                 return LineTriviaMapper.MapSourceTriviaToTarget(root, converted);
             } catch (Exception) { //TODO log

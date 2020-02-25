@@ -18,7 +18,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VbLibrary", "VbLibrary\VbLi
 EndProject
 Project("{778DAE3C-4631-46EA-AA77-85C1314464D9}") = "VbNetStandardLib", "VbNetStandardLib\VbNetStandardLib.vbproj", "{FBFBE639-A532-408A-960D-288E05FEEB0E}"
 EndProject
-Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "ConsoleApp4", "ConsoleApp4\ConsoleApp4.vbproj", "{68361F37-56E9-4B49-AFF3-F1AF9938A97F}"
+Project("{778DAE3C-4631-46EA-AA77-85C1314464D9}") = "ConsoleApp4", "ConsoleApp4\ConsoleApp4.vbproj", "{68361F37-56E9-4B49-AFF3-F1AF9938A97F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpNetStandardLib", "CSharpNetStandardLib\CSharpNetStandardLib.csproj", "{4DE39D59-19C6-4E1E-910C-5EA8BA55348B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -50,6 +52,10 @@ Global
 		{68361F37-56E9-4B49-AFF3-F1AF9938A97F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{68361F37-56E9-4B49-AFF3-F1AF9938A97F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{68361F37-56E9-4B49-AFF3-F1AF9938A97F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4DE39D59-19C6-4E1E-910C-5EA8BA55348B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DE39D59-19C6-4E1E-910C-5EA8BA55348B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DE39D59-19C6-4E1E-910C-5EA8BA55348B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DE39D59-19C6-4E1E-910C-5EA8BA55348B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

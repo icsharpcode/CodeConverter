@@ -45,11 +45,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AnotherSharedNamespaceClass.vb" />
     <Compile Include="ユニコードのプログラム.vb" />
     <Compile Include="Properties\AssemblyInfo.vb" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CSharpNetStandardLib\CSharpNetStandardLib.csproj">
+      <Project>{4de39d59-19c6-4e1e-910c-5ea8ba55348b}</Project>
+      <Name>CSharpNetStandardLib</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
 </Project>

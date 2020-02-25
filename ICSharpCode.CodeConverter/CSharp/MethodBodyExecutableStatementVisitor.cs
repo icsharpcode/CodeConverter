@@ -627,7 +627,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<bool> IsNeverMutatedAsync(VBSyntax.NameSyntax ns)
         {
             var allowedLocation = Location.Create(ns.SyntaxTree, TextSpan.FromBounds(ns.GetAncestor<VBSyntax.MethodBlockBaseSyntax>().SpanStart, ns.Span.End));
-            return await CommonConversions.Document.Project.Solution.IsNeverWritten(_semanticModel.GetSymbolInfo(ns).Symbol, allowedLocation);
+            var symbol = _semanticModel.GetSymbolInfo(ns).Symbol;
+            //Perf optimization: Looking across the whole solution is expensive, so assume non-local symbols are written somewhere
+            return symbol.MatchesKind(SymbolKind.Parameter, SymbolKind.Local) && await CommonConversions.Document.Project.Solution.IsNeverWritten(symbol, allowedLocation);
         }
 
         private CasePatternSwitchLabelSyntax WrapInCasePatternSwitchLabelSyntax(VBSyntax.SelectBlockSyntax node, ExpressionSyntax expression, bool treatAsBoolean = false)

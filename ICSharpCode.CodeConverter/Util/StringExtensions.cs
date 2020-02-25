@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -461,6 +462,11 @@ namespace ICSharpCode.CodeConverter.Util
         public static string ReplaceEnd(this string originalContainingReplacement, KeyValuePair<string, string> replacement)
         {
             return originalContainingReplacement.Substring(0, originalContainingReplacement.Length - replacement.Key.Length) + replacement.Value;
+        }
+
+        public static string WithHalfWidthLatinCharacters(this string str)
+        {
+            return str.Normalize(NormalizationForm.FormKD);
         }
     }
 

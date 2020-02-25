@@ -30,16 +30,18 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(INamespaceOrTypeSymbol containerSymbol, Compilation compilation)
         {
-            var members = containerSymbol.GetMembers();
+            var members = containerSymbol.GetMembers().Where(m => m.Locations.Any(loc => compilation.ContainsSyntaxTree(loc.SourceTree))).ToArray();
             var symbolSets = GetLocalSymbolSets(containerSymbol, compilation, members).Concat(members.AsEnumerable().Yield());
             return symbolSets.SelectMany(GetUniqueNamesForSymbolSet);
         }
 
-        public static IEnumerable<IEnumerable<ISymbol>> GetLocalSymbolSets(INamespaceOrTypeSymbol containerSymbol, Compilation compilation, System.Collections.Immutable.ImmutableArray<ISymbol> members)
+        public static IEnumerable<IEnumerable<ISymbol>> GetLocalSymbolSets(INamespaceOrTypeSymbol containerSymbol, Compilation compilation, IReadOnlyCollection<ISymbol> members)
         {
             if (!(containerSymbol is ITypeSymbol)) return Enumerable.Empty<IEnumerable<ISymbol>>();
 
-            var semanticModels = containerSymbol.Locations.Select(loc => loc.SourceTree).Distinct().Select(sourceTree => compilation.GetSemanticModel(sourceTree, true));
+            var semanticModels = containerSymbol.Locations.Select(loc => loc.SourceTree).Distinct()
+                .Where(sourceTree => compilation.ContainsSyntaxTree(sourceTree))
+                .Select(sourceTree => compilation.GetSemanticModel(sourceTree, true));
             return semanticModels.SelectMany(semanticModel => members.SelectMany(m => semanticModel.GetCsSymbolsPerScope(m)));
         }
 
@@ -61,12 +63,12 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(IReadOnlyCollection<ISymbol> symbolGroup, HashSet<string> names)
         {
-            var methodSymbols = symbolGroup.OfType<IMethodSymbol>().Where(s => s.IsDefinedInSource()).ToArray();
-            var cannotRename = symbolGroup.Where(s => !s.IsDefinedInSource() || s.IsIndexer()).ToArray();
-            var specialSymbolUsingName = cannotRename.Any();
+            var canRename = symbolGroup.Where(s => s.IsDefinedInSource() && s.CanBeReferencedByName).ToArray();
+            var specialSymbolUsingName = canRename.Length < symbolGroup.Count;
+            var methodSymbols = canRename.OfType<IMethodSymbol>().ToArray();
             var canKeepOneNormalMemberName = !specialSymbolUsingName && !methodSymbols.Any();
-            symbolGroup = symbolGroup.Except(cannotRename).Except(methodSymbols).ToArray();
-            (ISymbol Original, string NewName)[] methodsWithNewNames = GetMethodSymbolsWithNewNames(methodSymbols, names, specialSymbolUsingName);
+            symbolGroup = canRename.Except(methodSymbols).ToArray();
+            (ISymbol Original, string NewName)[] methodsWithNewNames = GetMethodSymbolsWithNewNames(methodSymbols.ToArray(), names, specialSymbolUsingName);
             return GetSymbolsWithNewNames(symbolGroup, names.Add, canKeepOneNormalMemberName).Concat(methodsWithNewNames);
         }
 
@@ -75,7 +77,7 @@ namespace ICSharpCode.CodeConverter.VB
             bool specialSymbolUsingName)
         {
             var methodsByCaseInsensitiveSignature = methodSymbols
-                .ToLookup(m => (GetName(m).ToLowerInvariant(), m.GetParameterSignature()))
+                .ToLookup(m => m.GetUnqualifiedMethodSignature(false))
                 .Where(g => g.Count() > 1)
                 .SelectMany(clashingMethodGroup =>
                 {
