@@ -22,7 +22,7 @@ namespace ICSharpCode.CodeConverter
 
         private static IEnumerable<PortableExecutableReference> GetRefs(IReadOnlyCollection<Type> types)
         {
-            return types.Select(type => MetadataReference.CreateFromFile(type.GetAssemblyLocation()));
+            return types.Select(type => MetadataReference.CreateFromFile(type.Assembly.Location));
         }
 
         public string Text { get; private set; }
