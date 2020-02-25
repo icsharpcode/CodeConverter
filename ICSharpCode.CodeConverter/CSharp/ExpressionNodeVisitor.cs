@@ -880,7 +880,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csParamSymbol = CommonConversions.GetDeclaredCsOriginalSymbolOrNull(node) as IParameterSymbol;
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Local);
             if (csParamSymbol?.RefKind == RefKind.Out || node.AttributeLists.Any(CommonConversions.HasOutAttribute)) {
-                modifiers = modifiers.Replace(SyntaxFactory.Token(SyntaxKind.RefKeyword), SyntaxFactory.Token(SyntaxKind.OutKeyword));
+                modifiers = SyntaxFactory.TokenList(modifiers
+                    .Where(m => !m.IsKind(SyntaxKind.RefKeyword))
+                    .Concat(SyntaxFactory.Token(SyntaxKind.OutKeyword).Yield())
+                );
             }
 
             EqualsValueClauseSyntax @default = null;
