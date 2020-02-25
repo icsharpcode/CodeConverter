@@ -94,13 +94,19 @@ namespace ICSharpCode.CodeConverter.VB
             var members = SyntaxFactory.List(node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor)));
 
             //TODO Add Usings from compilationoptions
-            var importsStatementSyntaxes = SyntaxFactory.List(_importsToConvert.Select(import => (ImportsStatementSyntax) import.Accept(TriviaConvertingVisitor)).Concat(_extraImports.Select(Import)));
+            var importsStatementSyntaxes = SyntaxFactory.List(TidyImportsList(_importsToConvert).Select(import => (ImportsStatementSyntax) import.Accept(TriviaConvertingVisitor)).Concat(_extraImports.Select(Import)));
             return SyntaxFactory.CompilationUnit(
                 SyntaxFactory.List<OptionStatementSyntax>(),
                 importsStatementSyntaxes,
                 attributes,
                 members
             );
+        }
+        private IEnumerable<CSS.UsingDirectiveSyntax> TidyImportsList(IEnumerable<CSS.UsingDirectiveSyntax> usings)
+        {
+            return usings
+                .GroupBy(x => x.ToString())
+                .Select(g => g.First());
         }
 
         private static ImportsStatementSyntax Import(string import)

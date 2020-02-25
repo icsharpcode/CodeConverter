@@ -245,7 +245,7 @@ End Structure");
         [Fact]
         public async Task GlobalImportsStatement()
         {
-               await TestConversionCSharpToVisualBasic(@"using MyAlias = global::System.Runtime.Remoting.Metadata.W3cXsd2001;
+               await AssertConvertedCodeResultEquals<CSToVBWithoutSimplifierConversion>(@"using MyAlias = global::System.Runtime.Remoting.Metadata.W3cXsd2001;
 using SO = global::System.Runtime.Remoting.Metadata.SoapOption;
 
 class ThisUri
@@ -253,12 +253,12 @@ class ThisUri
     private MyAlias.SoapAnyUri s;
     private SO so;
 }",
-                   @"Imports MyAlias = System.Runtime.Remoting.Metadata.W3cXsd2001
+@"Imports MyAlias = System.Runtime.Remoting.Metadata.W3cXsd2001
 Imports SO = System.Runtime.Remoting.Metadata.SoapOption
 
 Friend Class ThisUri
-    Private s As MyAlias.SoapAnyUri
-    Private so As SO
+    Private s As System.Runtime.Remoting.Metadata.W3cXsd2001.SoapAnyUri
+    Private so As System.Runtime.Remoting.Metadata.SoapOption
 End Class");
         }
 
@@ -288,6 +288,18 @@ Namespace System
         Public Property [Property] As Hashtable
     End Class
 End Namespace", conversion: EmptyNamespaceOptionStrictOff);
+        }
+        [Fact]
+        public async Task Namespace_Duplicates() {
+            await AssertConvertedCodeResultEquals<CSToVBWithoutSimplifierConversion>(
+@"using System.Linq;
+namespace System {
+    using Linq;
+}",
+@"Imports System.Linq
+
+Namespace System
+End Namespace");
         }
 
         [Fact]

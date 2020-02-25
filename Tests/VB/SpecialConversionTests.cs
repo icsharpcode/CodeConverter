@@ -521,8 +521,7 @@ End Class");
         [Fact]
         public async Task CaseConflict_FieldAndInterfaceProperty() {
             await TestConversionCSharpToVisualBasic(
-@"using System;
-public interface IInterface {
+@"public interface IInterface {
     int Prop { get; set; }
 }
 public class TestClass : IInterface {
