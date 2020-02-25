@@ -72,7 +72,7 @@ End Namespace");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim result As Boolean = If(str Is """", True, False)
+        Dim result As Boolean = If(str = """", True, False)
     End Sub
 End Class");
         }
@@ -170,7 +170,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim result As Boolean = If(str Is """", CSharpImpl.__Throw(Of Boolean)(New Exception(""empty"")), False)
+        Dim result As Boolean = If(str = """", CSharpImpl.__Throw(Of Boolean)(New Exception(""empty"")), False)
     End Sub
 
     Private Class CSharpImpl
@@ -826,7 +826,7 @@ End Sub");
 
     Public Sub New()
         AddHandler PropertyChanged, Sub(o, e)
-                                        If e.PropertyName Is ""AnyProperty"" Then
+                                        If e.PropertyName = ""AnyProperty"" Then
                                             Add(""changed"")
                                         Else
                                             RemoveAt(0)
@@ -863,6 +863,75 @@ Public Class TestClass
 
     Public Sub New()
         Dim str As String = create(Me)
+    End Sub
+End Class");
+        }
+        [Fact]
+        public async Task PrefixUnaryExpression_SingleLineFunction() {
+            await TestConversionCSharpToVisualBasic(
+@"public class TestClass {
+    public TestClass() {
+        System.Func<string, bool> func = o => !string.IsNullOrEmpty(""test"");
+    }
+}",
+@"Public Class TestClass
+    Public Sub New()
+        Dim func As Func(Of String, Boolean) = Function(o) Not String.IsNullOrEmpty(""test"")
+    End Sub
+End Class");
+        }
+        [Fact]
+        public async Task EqualsExpression() {
+            await TestConversionCSharpToVisualBasic(
+@"public class TestClass {
+    public TestClass() {
+        int i = 0;
+        int j = 0;
+        string s1 = ""string1"";
+        string s2 = ""string2"";
+        object object1 = s1;
+        object object2 = s2;
+        if(i == j)
+            DoSomething();
+        if(i == s2)
+            DoSomething();
+        if(i == object1)
+            DoSomething();
+        if(s1 == j)
+            DoSomething();
+        if(s1 == s2)
+            DoSomething();
+        if(s1 == object2)
+            DoSomething();
+        if(object1 == j)
+            DoSomething();
+        if(object1 == s2)
+            DoSomething();
+        if(object1 == object2)
+            DoSomething();
+    }
+    public void DoSomething() { }
+}",
+@"Public Class TestClass
+    Public Sub New()
+        Dim i As Integer = 0
+        Dim j As Integer = 0
+        Dim s1 As String = ""string1""
+        Dim s2 As String = ""string2""
+        Dim object1 As Object = s1
+        Dim object2 As Object = s2
+        If i = j Then DoSomething()
+        If i = s2 Then DoSomething()
+        If i = object1 Then DoSomething()
+        If s1 = j Then DoSomething()
+        If s1 = s2 Then DoSomething()
+        If s1 Is object2 Then DoSomething()
+        If object1 = j Then DoSomething()
+        If object1 Is s2 Then DoSomething()
+        If object1 Is object2 Then DoSomething()
+    End Sub
+
+    Public Sub DoSomething()
     End Sub
 End Class");
         }

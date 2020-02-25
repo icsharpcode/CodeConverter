@@ -894,13 +894,13 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitPrefixUnaryExpression(CSS.PrefixUnaryExpressionSyntax node)
         {
             var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
-            if (IsReturnValueDiscarded(node)) {
-                return SyntaxFactory.AssignmentStatement(
-                    kind,
-                    (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor),
-                    SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), _commonConversions.Literal(1)
-                );
-            }
+            //if (IsReturnValueDiscarded(node)) {
+            //    return SyntaxFactory.AssignmentStatement(
+            //        kind,
+            //        (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor),
+            //        SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(kind)), _commonConversions.Literal(1)
+            //    );
+            //}
             if (kind == SyntaxKind.AddAssignmentStatement || kind == SyntaxKind.SubtractAssignmentStatement) {
                 string operatorName;
                 if (kind == SyntaxKind.AddAssignmentStatement)
@@ -1213,8 +1213,7 @@ namespace ICSharpCode.CodeConverter.VB
 
             var isReferenceComparison = node.Left.IsKind(CS.SyntaxKind.NullLiteralExpression) ||
                                         node.Right.IsKind(CS.SyntaxKind.NullLiteralExpression) ||
-                                        leftType.IsReferenceType ||
-                                        rightType.IsReferenceType;
+                                        leftType.IsReferenceType && rightType.IsReferenceType && (leftType.SpecialType != SpecialType.System_String || rightType.SpecialType != SpecialType.System_String);
 
             if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.EqualsEqualsToken) && isReferenceComparison) {
                 return SyntaxFactory.IsExpression(vbLeft, vbRight);
