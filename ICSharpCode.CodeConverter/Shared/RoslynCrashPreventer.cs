@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
@@ -7,19 +6,6 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     internal static class RoslynCrashPreventer
     {
-        public static IDisposable Create(Action<Exception> logError)
-        {
-            var FirstHandlerContainingType = (typeof(Compilation).GetTypeInfo().Assembly, "Microsoft.CodeAnalysis.FatalError");
-            var SecondHandlerContainingType = (typeof(WorkspaceDiagnostic).GetTypeInfo().Assembly, "Microsoft.CodeAnalysis.ErrorReporting.FatalError");
-
-            var codeAnalysisErrorHandler = ExchangeFatalErrorHandler(logError, FirstHandlerContainingType);
-            var codeAnalysisErrorReportingErrorHandler = ExchangeFatalErrorHandler(logError, SecondHandlerContainingType);
-            return new ActionDisposable(() => {
-                ExchangeFatalErrorHandler(codeAnalysisErrorHandler, FirstHandlerContainingType);
-                ExchangeFatalErrorHandler(codeAnalysisErrorReportingErrorHandler, SecondHandlerContainingType);
-            });
-
-        }
 
         /// <summary>
         /// Use this to stop the library exiting the process without telling us.
@@ -32,6 +18,19 @@ namespace ICSharpCode.CodeConverter.Shared
         /// See https://github.com/icsharpcode/CodeConverter/issues/521 and https://github.com/icsharpcode/CodeConverter/issues/484
         /// There are other ways to find these bugs - just run the expander/reducer on a couple of whole open source projects and the bugs will pile up.
         /// </remarks>
+        public static IDisposable Create(Action<Exception> logError)
+        {
+            var FirstHandlerContainingType = (typeof(Compilation).GetTypeInfo().Assembly, "Microsoft.CodeAnalysis.FatalError");
+            var SecondHandlerContainingType = (typeof(WorkspaceDiagnostic).GetTypeInfo().Assembly, "Microsoft.CodeAnalysis.ErrorReporting.FatalError");
+
+            var codeAnalysisErrorHandler = ExchangeFatalErrorHandler(logError, FirstHandlerContainingType);
+            var codeAnalysisErrorReportingErrorHandler = ExchangeFatalErrorHandler(logError, SecondHandlerContainingType);
+            return new ActionDisposable(() => {
+                ExchangeFatalErrorHandler(codeAnalysisErrorHandler, FirstHandlerContainingType);
+                ExchangeFatalErrorHandler(codeAnalysisErrorReportingErrorHandler, SecondHandlerContainingType);
+            });
+        }
+
         private static Action<Exception> ExchangeFatalErrorHandler(Action<Exception> errorHandler, (Assembly assembly, string containingType) container)
         {
             if (errorHandler == null) return null;
@@ -46,18 +45,6 @@ namespace ICSharpCode.CodeConverter.Shared
             } catch (Exception) {
                 return null;
             }
-        }
-
-        private sealed class ActionDisposable : IDisposable
-        {
-            private readonly Action _onDispose;
-
-            public ActionDisposable(Action onDispose)
-            {
-                _onDispose = onDispose;
-            }
-
-            public void Dispose() => _onDispose();
         }
     }
 }
