@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### API
 
 * IEnumerable<Task<ConversionResult>> becomes IAsyncEnumerable<ConversionResult>
+* Upgraded target framework from netstandard 1.3 to netstandard 2.0
 
 ### Vsix
 
