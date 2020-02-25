@@ -9,6 +9,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class ProjectExtensions
     {
+        private static char[] DirSeparators = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
+
         public static Project CreateReferenceOnlyProjectFromAnyOptions(this Project project, CompilationOptions baseOptions)
         {
             var options = baseOptions.WithMetadataImportOptionsAll();
@@ -41,7 +43,24 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static string GetDirectoryPath(this Project proj)
         {
             string projectFilePath = proj.FilePath;
-            return projectFilePath != null ? Path.GetDirectoryName(projectFilePath) : null;
+            if (projectFilePath != null) {
+                return Path.GetDirectoryName(projectFilePath);
+            }
+
+            // Find a directory for projects that don't have a projectfile (e.g. websites)
+            var solutionFilePath = proj.Solution.FilePath;
+            if (solutionFilePath != null) {
+                var solutionPath = Path.GetDirectoryName(solutionFilePath);
+                return proj.Documents
+                    .Where(d => d.FilePath != null && d.FilePath.StartsWith(solutionPath))
+                    .Select(d => d.FilePath.Replace(solutionPath, "").TrimStart(DirSeparators))
+                    .Where(p => p.IndexOfAny(DirSeparators) > -1)
+                    .Select(p => p.Split(DirSeparators).First())
+                    .OrderByDescending(p => p.Contains(proj.AssemblyName))
+                    .FirstOrDefault() ?? solutionPath;
+            }
+
+            return Directory.GetCurrentDirectory(); // For consumers calling the library with an entirely in-memory model.
         }
 
         public static (Project project, List<(string Path, DocumentId DocId, string[] Errors)> firstPassDocIds)

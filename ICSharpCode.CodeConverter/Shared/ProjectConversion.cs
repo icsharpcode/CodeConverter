@@ -86,23 +86,33 @@ namespace ICSharpCode.CodeConverter.Shared
                 var sourceFilePathsWithoutExtension = project.Documents.Select(f => f.FilePath).ToImmutableHashSet();
                 var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(project);
                 project = projectContentsConverter.Project;
-                var convertProjectContents = (await ConvertProjectContents(projectContentsConverter, languageConversion, progress)).ToArray();
-                var projectPath = Path.GetFullPath(project.GetDirectoryPath());
-                string[] relativeFilePathsToAdd =
-                    convertProjectContents.Select(r => r.SourcePathOrNull).Where(p => !sourceFilePathsWithoutExtension.Contains(p))
-                        .Select(p => PathConverter.TogglePathExtension(Path.GetFullPath(p)).Replace(projectPath + "\\", ""))
-                        .OrderBy(x => x).ToArray();
+                var convertProjectContents = (await ConvertProjectContents(projectContentsConverter, languageConversion, progress));
+                return WithProjectFile(projectContentsConverter, languageConversion, sourceFilePathsWithoutExtension, convertProjectContents, replacements);
+            }, progress);
+        }
 
-                var replacementSpecs = replacements.Concat(new[] {
-                    AddCompiledItemsRegexFromRelativePaths(relativeFilePathsToAdd),
+        /// <remarks>Perf: Keep lazy so that we don't keep all files in memory at once</remarks>
+        private static IEnumerable<ConversionResult> WithProjectFile(IProjectContentsConverter projectContentsConverter, ILanguageConversion languageConversion, ImmutableHashSet<string> originalSourcePaths, IEnumerable<ConversionResult> convertProjectContents, (string Find, string Replace, bool FirstOnly)[] replacements)
+        {
+            var project = projectContentsConverter.Project;
+            var projectDir = project.GetDirectoryPath();
+            var addedTargetFiles = new List<string>();
+
+            foreach (var conversionResult in convertProjectContents) {
+                yield return conversionResult;
+                if (!originalSourcePaths.Contains(conversionResult.SourcePathOrNull)) {
+                    var relativePath = Path.GetFullPath(conversionResult.TargetPathOrNull).Replace(projectDir + Path.DirectorySeparatorChar, "");
+                    addedTargetFiles.Add(relativePath);
+                }
+            }
+
+            var replacementSpecs = replacements.Concat(new[] {
+                    AddCompiledItemsRegexFromRelativePaths(addedTargetFiles),
                     ChangeRootNamespaceRegex(projectContentsConverter.RootNamespace),
                     ChangeLanguageVersionRegex(projectContentsConverter.LanguageVersion)
                 }).ToArray();
 
-                return convertProjectContents.Concat(new[]
-                    {ConvertProjectFile(project, languageConversion, replacementSpecs)}
-                );
-            }, progress);
+            yield return ConvertProjectFile(project, languageConversion, replacementSpecs);
         }
 
         public static ConversionResult ConvertProjectFile(Project project,
@@ -122,11 +132,11 @@ namespace ICSharpCode.CodeConverter.Shared
         }
 
         private static (string Find, string Replace, bool FirstOnly) AddCompiledItemsRegexFromRelativePaths(
-            string[] relativeFilePathsToAdd)
+            IEnumerable<string> relativeFilePathsToAdd)
         {
             var addFilesRegex = new Regex(@"(\s*<\s*Compile\s*Include\s*=\s*"".*\.(vb|cs)"")");
             var addedFiles = string.Join("",
-                relativeFilePathsToAdd.Select(f => $@"{Environment.NewLine}    <Compile Include=""{f}"" />"));
+                relativeFilePathsToAdd.OrderBy(x => x).Select(f => $@"{Environment.NewLine}    <Compile Include=""{f}"" />"));
             var addFilesRegexSpec = (Find: addFilesRegex.ToString(), Replace: addedFiles + @"$1", FirstOnly: true);
             return addFilesRegexSpec;
         }
@@ -136,9 +146,14 @@ namespace ICSharpCode.CodeConverter.Shared
             IProjectContentsConverter projectContentsConverter, ILanguageConversion languageConversion,
             IProgress<ConversionProgress> progress)
         {
-            var documentsToConvert = projectContentsConverter.Project.Documents.Where(d => !BannedPaths.Any(d.FilePath.Contains));
-            var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, languageConversion);
+            var documentsWithLengths = await projectContentsConverter.Project.Documents
+                .Where(d => !BannedPaths.Any(d.FilePath.Contains))
+                .SelectAsync(async d => (Doc: d, Length: (await d.GetTextAsync()).Length));
 
+            //Perf heuristic: Decrease memory pressure on the simplification phase by converting large files first https://github.com/icsharpcode/CodeConverter/issues/524#issuecomment-590301594
+            var documentsToConvert = documentsWithLengths.OrderByDescending(d => d.Length).Select(d => d.Doc);
+
+            var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, languageConversion);
             return await ConvertProjectContents(projectConversion, progress);
         }
 
@@ -150,8 +165,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             var warnings = await projectConversion.GetProjectWarnings(projectConversion._projectContentsConverter.Project, pathNodePairs);
             if (warnings != null) {
-                string projectDir = projectConversion._projectContentsConverter.Project.GetDirectoryPath()
-                                    ?? projectConversion._projectContentsConverter.Project.AssemblyName;
+                string projectDir = projectConversion._projectContentsConverter.Project.GetDirectoryPath();
                 var warningPath = Path.Combine(projectDir, "ConversionWarnings.txt");
                 results = results.Concat(new[] { new ConversionResult { SourcePathOrNull = warningPath, Exceptions = new[] { warnings } } });
             }
@@ -159,8 +173,7 @@ namespace ICSharpCode.CodeConverter.Shared
             return results;
         }
 
-        private async Task<(string Path, SyntaxNode Node, string[] Errors)[]> Convert(
-            IProgress<ConversionProgress> progress)
+        private async Task<(string Path, SyntaxNode Node, string[] Errors)[]> Convert(IProgress<ConversionProgress> progress)
         {
             var firstPassResults = await ExecutePhase(_documentsToConvert, FirstPass, progress, "Phase 1 of 2:");
             var (proj1, docs1) = await _projectContentsConverter.GetConvertedProject(firstPassResults);
