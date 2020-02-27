@@ -29,7 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### C# -> VB
 
 * Avoid incorrectly renaming symbols
-* Prevent "SyntaxTree is not part of the compilation" error
+* Prevent "SyntaxTree is not part of the compilation" error [#527](https://github.com/icsharpcode/CodeConverter/issues/527)
 
 ## [7.8.0] - 2020-02-15
 
