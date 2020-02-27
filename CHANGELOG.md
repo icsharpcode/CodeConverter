@@ -7,6 +7,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Vsix
 
+
+### VB -> C#
+
+
+### C# -> VB
+
+
+## [7.9.0] - 2020-02-27
+
+
+### Vsix
+
 * Exclude project file from conversion result if it hasn't changed
 * Further efforts to stop the roslyn library crashing Visual Studio
 
@@ -17,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### C# -> VB
 
 * Avoid incorrectly renaming symbols
+* Prevent "SyntaxTree is not part of the compilation" error
 
 ## [7.8.0] - 2020-02-15
 
