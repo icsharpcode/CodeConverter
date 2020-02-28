@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29721.120
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ICSharpCode.CodeConverter", "ICSharpCode.CodeConverter\ICSharpCode.CodeConverter.csproj", "{7EA075C6-6406-445C-AB77-6C47AFF88D58}"
 EndProject
@@ -15,6 +15,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeConverter.Web", "CodeConverter.Web\CodeConverter.Web.csproj", "{08A20D4F-6310-43BB-B339-6317ACF3B52E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "Benchmarks\Benchmarks.csproj", "{12A9B86B-789C-4AC1-AF74-2E524EC0F5B0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,6 +40,10 @@ Global
 		{08A20D4F-6310-43BB-B339-6317ACF3B52E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{08A20D4F-6310-43BB-B339-6317ACF3B52E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{08A20D4F-6310-43BB-B339-6317ACF3B52E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12A9B86B-789C-4AC1-AF74-2E524EC0F5B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12A9B86B-789C-4AC1-AF74-2E524EC0F5B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12A9B86B-789C-4AC1-AF74-2E524EC0F5B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12A9B86B-789C-4AC1-AF74-2E524EC0F5B0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
