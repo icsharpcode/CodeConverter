@@ -146,11 +146,11 @@ namespace CodeConverter.Tests.TestRunners
         private static async Task AssertMSBuildIsWorkingAndProjectsValid(
             ImmutableList<WorkspaceDiagnostic> valueDiagnostics, IEnumerable<Project> projectsToConvert)
         {
-            var errors = await projectsToConvert.ParallelSelectAsync(async x => {
+            var errors = await projectsToConvert.ParallelSelectAwait(async x => {
                 var c = await x.GetCompilationAsync();
                 return new[]{CompilationWarnings.WarningsForCompilation(c, c.AssemblyName)}.Concat(
                     valueDiagnostics.Where(d => d.Kind > WorkspaceDiagnosticKind.Warning).Select(d => d.Message));
-            }, default).ToArrayAsync();
+            }, Env.MaxDop, default).ToArrayAsync();
             var errorString = string.Join("\r\n", errors.SelectMany(w => w).Where(w => w != null));
             Assert.True(errorString == "", errorString);
         }

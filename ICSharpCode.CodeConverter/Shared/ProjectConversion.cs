@@ -165,7 +165,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private async IAsyncEnumerable<ConversionResult> Convert(IProgress<ConversionProgress> progress)
         {
             var phaseProgress = StartPhase(progress, "Phase 1 of 2:");
-            var firstPassResults = _documentsToConvert.ParallelSelectAsync(d => FirstPass(d, phaseProgress), _cancellationToken);
+            var firstPassResults = _documentsToConvert.ParallelSelectAwait(d => FirstPass(d, phaseProgress), Env.MaxDop, _cancellationToken);
             var (proj1, docs1) = await _projectContentsConverter.GetConvertedProject(await firstPassResults.ToArrayAsync());
 
             var warnings = await GetProjectWarnings(_projectContentsConverter.Project, proj1);
@@ -175,7 +175,7 @@ namespace ICSharpCode.CodeConverter.Shared
             }
 
             phaseProgress = StartPhase(progress, "Phase 2 of 2:");
-            var secondPassResults = proj1.GetDocuments(docs1).ParallelSelectAsync(d => SecondPass(d, phaseProgress), _cancellationToken);
+            var secondPassResults = proj1.GetDocuments(docs1).ParallelSelectAwait(d => SecondPass(d, phaseProgress), Env.MaxDop, _cancellationToken);
             await foreach (var result in secondPassResults) {
                 yield return new ConversionResult(result.Wip?.ToFullString()) { SourcePathOrNull = result.Path, Exceptions = result.Errors.ToList() };
             };

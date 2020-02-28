@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
@@ -17,11 +18,44 @@ namespace ICSharpCode.CodeConverter.Shared
             return selectAsync.SelectMany(x => x).ToArray();
         }
 
-        public static async IAsyncEnumerable<TResult> ParallelSelectAsync<TArg, TResult>(this IEnumerable<TArg> source,
-            Func<TArg, Task<TResult>> selector, [EnumeratorCancellation] CancellationToken cancellationToken)
+        /// <summary>High throughput parallel lazy-ish method</summary>
+        /// <remarks>
+        /// Inspired by https://stackoverflow.com/a/58564740/1128762
+        /// </remarks>
+        public static async IAsyncEnumerable<TResult> ParallelSelectAwait<TArg, TResult>(this IEnumerable<TArg> source,
+            Func<TArg, Task<TResult>> selector, int maxDop, [EnumeratorCancellation] CancellationToken token = default)
         {
-            foreach (var item in source.AsParallel().WithDegreeOfParallelism(Env.MaxDop).WithCancellation(cancellationToken)) {
-                yield return await selector(item);
+            var processor = new TransformBlock<TArg, TResult>(selector, new ExecutionDataflowBlockOptions {
+                MaxDegreeOfParallelism = maxDop,
+                BoundedCapacity = (maxDop * 5) / 4,
+                CancellationToken = token
+            });
+
+            foreach (var item in source) {
+                while (!processor.Post(item)) {
+                    yield return await WaitNextResultAsync();
+                }
+                if (processor.TryReceive(out var result)) {
+                    yield return result;
+                }
+            }
+            processor.Complete();
+
+            while (await processor.OutputAvailableAsync(token)) {
+                yield return Receive();
+            }
+
+            async Task<TResult> WaitNextResultAsync()
+            {
+                if (!await processor.OutputAvailableAsync()) throw new InvalidOperationException("No output available after posting output and waiting");
+                return Receive();
+            }
+
+            TResult Receive()
+            {
+                if (!processor.TryReceive(out var result)) throw new InvalidOperationException("Nothing received even though output available");
+                token.ThrowIfCancellationRequested();
+                return result;
             }
         }
 
