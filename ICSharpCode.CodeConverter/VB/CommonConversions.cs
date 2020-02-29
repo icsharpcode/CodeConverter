@@ -31,6 +31,7 @@ using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using TypeSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax;
 using VariableDeclaratorSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax;
 using YieldStatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.YieldStatementSyntax;
+using ICSharpCode.CodeConverter.CSharp;
 
 namespace ICSharpCode.CodeConverter.VB
 {
@@ -505,7 +506,7 @@ namespace ICSharpCode.CodeConverter.VB
             return SyntaxFactory.ModifiedIdentifier(ConvertIdentifier(v.Identifier));
         }
 
-        public SyntaxToken ConvertIdentifier(SyntaxToken id)
+        public SyntaxToken ConvertIdentifier(SyntaxToken id, SourceTriviaMapKind sourceTriviaMapKind = SourceTriviaMapKind.All)
         {
             var parent = (CS.CSharpSyntaxNode)id.Parent;
             var idText = AdjustIfEventIdentifier(id.ValueText, parent);
@@ -521,7 +522,7 @@ namespace ICSharpCode.CodeConverter.VB
                     break;
             }
             var identifier = Identifier(idText, keywordRequiresEscaping);
-            return id.SyntaxTree == _semanticModel.SyntaxTree ? identifier.WithSourceMappingFrom(id) : identifier;
+            return id.SyntaxTree == _semanticModel.SyntaxTree && sourceTriviaMapKind != SourceTriviaMapKind.None ? identifier.WithSourceMappingFrom(id) : identifier;
         }
 
         private string AdjustIfEventIdentifier(string valueText, CS.CSharpSyntaxNode parent)
