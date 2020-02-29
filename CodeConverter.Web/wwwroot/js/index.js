@@ -32,20 +32,19 @@ var app = new Vue({
             this.errorMessageOnResponse = "";
             this.showErrors = false;
 
-            var xhttp = new XMLHttpRequest();
             var capturedObj = this;
+            axios.post('/api/converter/', {
+                code: this.inputCode,
+                requestedConversion: this.requestedConversion
+            })
+            .then(function (response) {
+                capturedObj.converterCallInflight = false;
+                if (200 === response.status) {
+                    capturedObj.convertedCode = response.data.convertedCode;
 
-            xhttp.onreadystatechange = function () {
-                if (this.readyState === 4) {
-                    capturedObj.converterCallInflight = false;
-                }
-                if (this.readyState === 4 && this.status === 200) {
-                    var response = JSON.parse(this.responseText);
-                    capturedObj.convertedCode = response.convertedCode;
-
-                    if (!response.conversionOk) {
+                    if (!response.data.conversionOk) {
                         capturedObj.showErrors = true;
-                        capturedObj.errorMessageOnResponse = response.errorMessage;
+                        capturedObj.errorMessageOnResponse = response.data.errorMessage;
                     }
 
                     setTimeout(function () {
@@ -54,12 +53,28 @@ var app = new Vue({
                         output.select();
                     });
                 }
-            };
-            xhttp.open("POST", "/api/converter/", true);
-            xhttp.setRequestHeader("Content-Type", "application/json");
+            })
+            .catch(function (error) {
+                capturedObj.converterCallInflight = false;
 
-            var data = JSON.stringify({ code: this.inputCode, requestedConversion: this.requestedConversion });
-            xhttp.send(data);
+                // Copied verbatim from https://github.com/axios/axios for debugging purposes only
+                if (error.response) {
+                    // The request was made and the server responded with a status code
+                    // that falls out of the range of 2xx
+                    console.log(error.response.data);
+                    console.log(error.response.status);
+                    console.log(error.response.headers);
+                } else if (error.request) {
+                    // The request was made but no response was received
+                    // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+                    // http.ClientRequest in node.js
+                    console.log(error.request);
+                } else {
+                    // Something happened in setting up the request that triggered an Error
+                    console.log('Error', error.message);
+                }
+                console.log(error.config);
+            });
         },
         setDefaultInput: function () {
             if (!this.inputCode || this.inputCode === defaultVbInput || this.inputCode === defaultCsInput) {
