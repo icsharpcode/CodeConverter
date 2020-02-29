@@ -568,7 +568,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Where(m => HandledEvents(m).Any())
                 .Select(m => {
                     var ids = HandledEvents(m)
-                        .Select(p => (SyntaxFactory.Identifier(GetCSharpIdentifierText(p.EventContainer)), CommonConversions.ConvertIdentifier(p.EventMember.Identifier)))
+                        .Select(p => (SyntaxFactory.Identifier(GetCSharpIdentifierText(p.EventContainer)), CommonConversions.ConvertIdentifier(p.EventMember.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None)))
                         .ToList();
                     var csFormIds = ids.Where(id => id.Item1.Text == "this" || id.Item1.Text == "base").ToList();
                     var csPropIds = ids.Except(csFormIds).ToList();

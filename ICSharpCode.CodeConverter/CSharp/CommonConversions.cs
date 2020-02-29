@@ -242,7 +242,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public ExpressionSyntax Literal(object o, string textForUser = null) => LiteralConversions.GetLiteralExpression(o, textForUser);
 
-        public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false)
+        public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false, SourceTriviaMapKind sourceTriviaMapKind = SourceTriviaMapKind.All)
         {
             string text = id.ValueText;
 
@@ -268,7 +268,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                         text = "_" + text;
                     }
                 }
-                return CsEscapedIdentifier(text).WithSourceMappingFrom(id);
+                var csId = CsEscapedIdentifier(text);
+                return sourceTriviaMapKind != SourceTriviaMapKind.None ? csId : csId.WithSourceMappingFrom(id);
             } else {
                 text = text.WithHalfWidthLatinCharacters();
             }
