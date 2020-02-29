@@ -3,7 +3,6 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>ICSharpCode.CodeConverter</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter</RootNamespace>
-    <PackageTargetFallback>portable-net45+win8</PackageTargetFallback>
     <Company>ICSharpCode</Company>
     <Description>Convert VB.NET to/from C#
 * Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
