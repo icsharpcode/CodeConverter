@@ -84,11 +84,16 @@ namespace CodeConverter.VsExtension
 
         internal Cancellation PackageCancellation { get; } = new Cancellation();
 
+        private readonly AssemblyName _thisAssemblyName;
+        private readonly AssemblyName[] _ourAssemblyNames;
         /// <summary>
         /// Initializes a new instance of package class.
         /// </summary>
         public REConverterPackage()
         {
+            var thisAssembly = GetType().Assembly;
+            _thisAssemblyName = thisAssembly.GetName();
+            _ourAssemblyNames = new[] { _thisAssemblyName }.Concat(thisAssembly.GetReferencedAssemblies().Where(a => a.Name.StartsWith("ICSharpCode"))).ToArray();
             AppDomain.CurrentDomain.AssemblyResolve += LoadWithoutVersionForOurDependencies;
             // Inside this method you can place any initialization code that does not require
             // any Visual Studio service because at this point the package object is created but
@@ -122,13 +127,13 @@ namespace CodeConverter.VsExtension
 
         private bool IsThisExtensionRequestingAssembly()
         {
-            return GetPossibleRequestingAssemblies().Contains(GetType().Assembly);
+            return GetPossibleRequestingAssemblies().Any(requesting => _ourAssemblyNames.Any(assemblyName => Equals(requesting, assemblyName)));
         }
 
-        private IEnumerable<Assembly> GetPossibleRequestingAssemblies()
+        private IEnumerable<AssemblyName> GetPossibleRequestingAssemblies()
         {
             return new StackTrace().GetFrames().Select(f => f.GetMethod().DeclaringType?.Assembly)
-                .SkipWhile(a => a == GetType().Assembly);
+                .Select(a => a.GetName()).SkipWhile(a => Equals(a, _thisAssemblyName));
         }
 
         /// <summary>
