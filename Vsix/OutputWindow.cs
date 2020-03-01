@@ -50,7 +50,7 @@ namespace CodeConverter.VsExtension
             _outputPane = outputPaneAsync;
 
             _solutionEvents = VisualStudioInteraction.Dte.Events.SolutionEvents;
-            _solutionEvents.Opened += OnSolutionOpened;
+            _solutionEvents.Opened += () => OnSolutionOpenedAsync().Forget();
         }
 
         public async Task ClearAsync()
@@ -85,9 +85,7 @@ namespace CodeConverter.VsExtension
             _outputPane.Activate();
         }
 
-#pragma warning disable VSTHRD100 // Avoid async void methods - fire and forget event handler
-        private async void OnSolutionOpened()
-#pragma warning restore VSTHRD100 // Avoid async void methods
+        private async Task OnSolutionOpenedAsync()
         {
             if (_hasOutputSinceSolutionOpened) await ForceShowOutputPaneAsync();
             _hasOutputSinceSolutionOpened = false;
