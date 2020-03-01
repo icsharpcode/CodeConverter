@@ -11,44 +11,6 @@ namespace ICSharpCode.CodeConverter.Util
 #endif
     internal static class SymbolExtensions
     {
-        /// <summary>
-        /// Returns true if the symbol wasn't tagged with
-        /// [System.ComponentModel.BrowsableAttribute (false)]
-        /// </summary>
-        /// <returns><c>true</c> if is designer browsable the specified symbol; otherwise, <c>false</c>.</returns>
-        /// <param name="symbol">Symbol.</param>
-        public static bool IsDesignerBrowsable(this ISymbol symbol)
-        {
-            if (symbol == null)
-                throw new ArgumentNullException("symbol");
-            var browsableState = symbol.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.Name == "BrowsableAttribute" && attr.AttributeClass.ContainingNamespace.MetadataName == "System.ComponentModel");
-            if (browsableState != null && browsableState.ConstructorArguments.Length == 1) {
-                try {
-                    return (bool)browsableState.ConstructorArguments[0].Value;
-                } catch {
-                }
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// Returns the component category.
-        /// [System.ComponentModel.CategoryAttribute (CATEGORY)]
-        /// </summary>
-        /// <param name="symbol">Symbol.</param>
-        public static string GetComponentCategory(this ISymbol symbol)
-        {
-            if (symbol == null)
-                throw new ArgumentNullException("symbol");
-            var browsableState = symbol.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.Name == "CategoryAttribute" && attr.AttributeClass.ContainingNamespace.MetadataName == "System.ComponentModel");
-            if (browsableState != null && browsableState.ConstructorArguments.Length == 1) {
-                try {
-                    return (string)browsableState.ConstructorArguments[0].Value;
-                } catch {
-                }
-            }
-            return null;
-        }
 
         public static ImmutableArray<IParameterSymbol> GetParameters(this ISymbol symbol)
         {
@@ -66,27 +28,6 @@ namespace ICSharpCode.CodeConverter.Util
             return ImmutableArray<IParameterSymbol>.Empty;
         }
 
-        public static ImmutableArray<ITypeParameterSymbol> GetTypeParameters(this ISymbol symbol)
-        {
-            if (symbol == null)
-                throw new ArgumentNullException("symbol");
-            var type = symbol as INamedTypeSymbol;
-            if (type != null)
-                return type.TypeParameters;
-            var method = symbol as IMethodSymbol;
-            if (method != null)
-                return method.TypeParameters;
-            return ImmutableArray<ITypeParameterSymbol>.Empty;
-        }
-
-        public static bool IsAnyConstructor(this ISymbol symbol)
-        {
-            if (symbol == null)
-                throw new ArgumentNullException("symbol");
-            var method = symbol as IMethodSymbol;
-            return method != null && (method.MethodKind == MethodKind.Constructor || method.MethodKind == MethodKind.StaticConstructor);
-        }
-
         public static bool IsConstructor(this ISymbol symbol)
         {
             if (symbol == null)
@@ -99,13 +40,6 @@ namespace ICSharpCode.CodeConverter.Util
             if (symbol == null)
                 throw new ArgumentNullException("symbol");
             return symbol is IMethodSymbol && ((IMethodSymbol)symbol).MethodKind == MethodKind.StaticConstructor;
-        }
-
-        public static bool IsDestructor(this ISymbol symbol)
-        {
-            if (symbol == null)
-                throw new ArgumentNullException("symbol");
-            return symbol is IMethodSymbol && ((IMethodSymbol)symbol).MethodKind == MethodKind.Destructor;
         }
 
         public static bool IsDelegateType(this ISymbol symbol)
@@ -158,21 +92,10 @@ namespace ICSharpCode.CodeConverter.Util
                     accessorSymbol.MethodKind == MethodKind.EventRemove || accessorSymbol.MethodKind == MethodKind.EventAdd);
         }
 
-        public static bool IsAccessorPropertySet(this ISymbol symbol)
-        {
-            var accessorSymbol = symbol as IMethodSymbol;
-            return accessorSymbol != null && accessorSymbol.MethodKind == MethodKind.PropertySet;
-        }
-
         public static bool IsAccessorWithValueInCsharp(this ISymbol symbol)
         {
             return symbol is IMethodSymbol ms &&
                 new[] { MethodKind.PropertySet, MethodKind.EventAdd, MethodKind.EventRemove }.Contains(ms.MethodKind);
-        }
-
-        public static bool IsPublic(this ISymbol symbol)
-        {
-            return symbol.DeclaredAccessibility == Accessibility.Public;
         }
 
         public static bool IsErrorType(this ISymbol symbol)
@@ -180,16 +103,6 @@ namespace ICSharpCode.CodeConverter.Util
             return
                 symbol is ITypeSymbol &&
                 ((ITypeSymbol)symbol).TypeKind == TypeKind.Error;
-        }
-
-        public static bool IsIndexer(this ISymbol symbol)
-        {
-            return (symbol as IPropertySymbol)?.IsIndexer == true;
-        }
-
-        public static bool IsUserDefinedOperator(this ISymbol symbol)
-        {
-            return (symbol as IMethodSymbol)?.MethodKind == MethodKind.UserDefinedOperator;
         }
 
         public static SymbolVisibility GetResultantVisibility(this ISymbol symbol)
@@ -273,56 +186,6 @@ namespace ICSharpCode.CodeConverter.Util
                 (IMethodSymbol method) => method.ExplicitInterfaceImplementations.As<ISymbol>(),
                 (IPropertySymbol property) => property.ExplicitInterfaceImplementations.As<ISymbol>(),
                 _ => ImmutableArray.Create<ISymbol>());
-        }
-
-        public static bool IsOverridable(this ISymbol symbol)
-        {
-            return
-                symbol != null &&
-                symbol.ContainingType != null &&
-                symbol.ContainingType.TypeKind == TypeKind.Class &&
-                (symbol.IsVirtual || symbol.IsAbstract || symbol.IsOverride) &&
-                !symbol.IsSealed;
-        }
-
-        public static bool IsImplementable(this ISymbol symbol)
-        {
-            if (symbol != null &&
-                symbol.ContainingType != null &&
-                symbol.ContainingType.TypeKind == TypeKind.Interface) {
-                if (symbol.Kind == SymbolKind.Event) {
-                    return true;
-                }
-
-                if (symbol.Kind == SymbolKind.Property) {
-                    return true;
-                }
-
-                if (symbol.Kind == SymbolKind.Method && ((IMethodSymbol)symbol).MethodKind == MethodKind.Ordinary) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public static INamedTypeSymbol GetContainingTypeOrThis(this ISymbol symbol)
-        {
-            if (symbol is INamedTypeSymbol) {
-                return (INamedTypeSymbol)symbol;
-            }
-
-            return symbol.ContainingType;
-        }
-
-        public static bool IsPointerType(this ISymbol symbol)
-        {
-            return symbol is IPointerTypeSymbol;
-        }
-
-        public static bool IsModuleType(this ISymbol symbol)
-        {
-            return (symbol as ITypeSymbol)?.IsModuleType() == true;
         }
 
         public static bool IsInterfaceType(this ISymbol symbol)
@@ -450,39 +313,6 @@ namespace ICSharpCode.CodeConverter.Util
                 default:
                     return 0;
             }
-        }
-
-        public static ISymbol GetOriginalUnreducedDefinition(this ISymbol symbol)
-        {
-            if (symbol.IsReducedExtension()) {
-                // note: ReducedFrom is only a method definition and includes no type arguments.
-                symbol = ((IMethodSymbol)symbol).GetConstructedReducedFrom();
-            }
-
-            if (symbol.IsFunctionValue()) {
-                var method = symbol.ContainingSymbol as IMethodSymbol;
-                if (method != null) {
-                    symbol = method;
-
-                    if (method.AssociatedSymbol != null) {
-                        symbol = method.AssociatedSymbol;
-                    }
-                }
-            }
-
-            if (symbol.IsNormalAnonymousType() || symbol.IsAnonymousTypeProperty()) {
-                return symbol;
-            }
-
-            var parameter = symbol as IParameterSymbol;
-            if (parameter != null) {
-                var method = parameter.ContainingSymbol as IMethodSymbol;
-                if (method?.IsReducedExtension() == true) {
-                    symbol = method.GetConstructedReducedFrom().Parameters[parameter.Ordinal + 1];
-                }
-            }
-
-            return symbol?.OriginalDefinition;
         }
 
         public static bool IsFunctionValue(this ISymbol symbol)
