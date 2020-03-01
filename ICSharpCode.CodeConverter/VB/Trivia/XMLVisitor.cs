@@ -305,11 +305,11 @@ namespace CSharpToVBCodeConverter.DestVisualBasic
                     EndTag = EndTag.WithoutLeadingTrivia();
                 }
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
 
             }
@@ -336,11 +336,11 @@ namespace CSharpToVBCodeConverter.DestVisualBasic
                 var ListOfAttributes = GatherAttributes(node.Attributes);
                 return VBFactory.XmlEmptyElement(Name, ListOfAttributes);
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return VBFactory.XmlText(node.GetText().ToString());
             }
