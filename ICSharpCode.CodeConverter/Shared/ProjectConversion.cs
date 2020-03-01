@@ -66,7 +66,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 document = await WithAnnotatedSelection(document, conversionOptions.SelectedTextSpan);
             }
 
-            var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(document.Project);
+            var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(document.Project, progress, cancellationToken);
 
             document = projectContentsConverter.Project.GetDocument(document.Id);
 
@@ -86,7 +86,7 @@ namespace ICSharpCode.CodeConverter.Shared
             using var roslynEntryPoint = await RoslynEntryPoint(progress);
 
             var sourceFilePathsWithoutExtension = project.Documents.Select(f => f.FilePath).ToImmutableHashSet();
-            var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(project);
+            var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(project, progress, cancellationToken);
             project = projectContentsConverter.Project;
             var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress, cancellationToken);
             var results = WithProjectFile(projectContentsConverter, languageConversion, sourceFilePathsWithoutExtension, convertProjectContents, replacements);

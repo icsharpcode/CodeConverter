@@ -18,6 +18,7 @@ using Microsoft.CodeAnalysis.VisualBasic;
 using Conversion = Microsoft.CodeAnalysis.CSharp.Conversion;
 using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using LanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
+using System.Threading;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -29,12 +30,17 @@ namespace ICSharpCode.CodeConverter.CSharp
         private const string UnresolvedNamespaceDiagnosticId = "CS0246";
 
         private VBToCSProjectContentsConverter _vbToCsProjectContentsConverter;
+        private IProgress<ConversionProgress> _progress;
+        private CancellationToken _cancellationToken;
+
         public ConversionOptions ConversionOptions { get; set; }
 
 
-        public async Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project)
+        public async Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
-            _vbToCsProjectContentsConverter = new VBToCSProjectContentsConverter(ConversionOptions);
+            _progress = progress;
+            _cancellationToken = cancellationToken;
+            _vbToCsProjectContentsConverter = new VBToCSProjectContentsConverter(ConversionOptions, progress, cancellationToken);
             await _vbToCsProjectContentsConverter.InitializeSourceAsync(project);
             return _vbToCsProjectContentsConverter;
         }
@@ -144,7 +150,7 @@ End Class";
 
         public async Task<Document> SingleSecondPass(Document doc)
         {
-            return await doc.SimplifyStatements<CSSyntax.UsingDirectiveSyntax, CSSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId);
+            return await doc.SimplifyStatements<CSSyntax.UsingDirectiveSyntax, CSSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId, _cancellationToken);
         }
 
         public SyntaxTree CreateTree(string text)

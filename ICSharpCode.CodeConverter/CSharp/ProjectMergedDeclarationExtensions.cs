@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.Options;
 using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
+using System.Threading;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -22,12 +23,12 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// </remarks>
     internal static class ProjectMergedDeclarationExtensions
     {
-        public static async Task<Project> WithRenamedMergedMyNamespace(this Project vbProject)
+        public static async Task<Project> WithRenamedMergedMyNamespace(this Project vbProject, CancellationToken cancellationToken)
         {
             string name = "MyNamespace";
             var projectDir = Path.Combine(vbProject.GetDirectoryPath(), "My Project");
 
-            var compilation = await vbProject.GetCompilationAsync();
+            var compilation = await vbProject.GetCompilationAsync(cancellationToken);
             string embeddedSourceText = (await GetAllEmbeddedSourceText(compilation));
             string generatedSourceText = (await GetDynamicallyGeneratedSourceText(compilation));
 
@@ -114,27 +115,29 @@ End Namespace";
                 .Replace("Namespace My", $"Namespace {Constants.MergedMyNamespace}");
         }
 
-        public static async Task<Project> RenameMergedNamespaces(this Project project)
+        public static async Task<Project> RenameMergedNamespaces(this Project project, CancellationToken cancellationToken)
         {
-            project = await RenamePrefix(project, Constants.MergedMyNamespace, "My", SymbolFilter.Namespace);
-            project = await RenamePrefix(project, Constants.MergedMsVbNamespace, "VisualBasic", SymbolFilter.Namespace);
-            project = await RenamePrefix(project, Constants.MergedMyMemberPrefix, "", SymbolFilter.Member);
+            project = await RenamePrefix(project, Constants.MergedMyNamespace, "My", SymbolFilter.Namespace, cancellationToken);
+            project = await RenamePrefix(project, Constants.MergedMsVbNamespace, "VisualBasic", SymbolFilter.Namespace, cancellationToken);
+            project = await RenamePrefix(project, Constants.MergedMyMemberPrefix, "", SymbolFilter.Member, cancellationToken);
             return project;
         }
 
-        private static async Task<Project> RenamePrefix(Project project, string oldNamePrefix, string newNamePrefix, SymbolFilter symbolFilter)
+        private static async Task<Project> RenamePrefix(Project project, string oldNamePrefix, string newNamePrefix, SymbolFilter symbolFilter, CancellationToken cancellationToken)
         {
-            for (var symbolToRename = await GetFirstSymbolStartingWith(project, oldNamePrefix, symbolFilter); symbolToRename != null; symbolToRename = await GetFirstSymbolStartingWith(project, oldNamePrefix, symbolFilter))
+            for (var symbolToRename = await GetFirstSymbolStartingWith(project, oldNamePrefix, symbolFilter, cancellationToken);
+                symbolToRename != null;
+                symbolToRename = await GetFirstSymbolStartingWith(project, oldNamePrefix, symbolFilter, cancellationToken))
             {
-                var renamedSolution = await Renamer.RenameSymbolAsync(project.Solution, symbolToRename, symbolToRename.Name.Replace(oldNamePrefix, newNamePrefix), default(OptionSet));
+                var renamedSolution = await Renamer.RenameSymbolAsync(project.Solution, symbolToRename, symbolToRename.Name.Replace(oldNamePrefix, newNamePrefix), default(OptionSet), cancellationToken);
                 project = renamedSolution.GetProject(project.Id);
             }
             return project;
         }
 
-        private static async Task<ISymbol> GetFirstSymbolStartingWith(Project project, string symbolPrefix, SymbolFilter symbolFilter)
+        private static async Task<ISymbol> GetFirstSymbolStartingWith(Project project, string symbolPrefix, SymbolFilter symbolFilter, CancellationToken cancellationToken)
         {
-            var compilation = await project.GetCompilationAsync();
+            var compilation = await project.GetCompilationAsync(cancellationToken);
             return compilation.GetSymbolsWithName(s => s.StartsWith(symbolPrefix), symbolFilter).FirstOrDefault();
         }
     }

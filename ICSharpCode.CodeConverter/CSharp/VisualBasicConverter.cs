@@ -10,20 +10,21 @@ using Microsoft.CodeAnalysis.Simplification;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Threading;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class VisualBasicConverter
     {
         public static async Task<SyntaxNode> ConvertCompilationTree(Document document,
-            CSharpCompilation csharpViewOfVbSymbols, Project csharpReferenceProject)
+            CSharpCompilation csharpViewOfVbSymbols, Project csharpReferenceProject, CancellationToken cancellationToken)
         {
-            document = await document.WithExpandedRootAsync();
-            var root = await document.GetSyntaxRootAsync() as VBSyntax.CompilationUnitSyntax ??
+            document = await document.WithExpandedRootAsync(cancellationToken);
+            var root = await document.GetSyntaxRootAsync(cancellationToken) as VBSyntax.CompilationUnitSyntax ??
                        throw new InvalidOperationException(NullRootError(document));
 
-            var compilation = await document.Project.GetCompilationAsync();
-            var tree = await document.GetSyntaxTreeAsync();
+            var compilation = await document.Project.GetCompilationAsync(cancellationToken);
+            var tree = await document.GetSyntaxTreeAsync(cancellationToken);
 
 
             var csSyntaxGenerator = SyntaxGenerator.GetGenerator(csharpReferenceProject);
@@ -34,7 +35,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             try {
                 // This call is very expensive for large documents. Should look for a more performant version, e.g. Is NormalizeWhitespace good enough?
-                converted = (CSS.CompilationUnitSyntax)Formatter.Format(converted, document.Project.Solution.Workspace);
+                converted = (CSS.CompilationUnitSyntax)Formatter.Format(converted, document.Project.Solution.Workspace, cancellationToken: cancellationToken);
                 return LineTriviaMapper.MapSourceTriviaToTarget(root, converted);
             } catch (Exception) { //TODO log
                 return converted;

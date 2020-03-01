@@ -6,6 +6,8 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
+using System;
+using System.Threading;
 
 namespace ICSharpCode.CodeConverter.VB
 {
@@ -20,9 +22,13 @@ namespace ICSharpCode.CodeConverter.VB
         private Project _convertedVbProject;
         private VisualBasicCompilation _vbViewOfCsSymbols;
         private Project _vbReferenceProject;
+        private readonly IProgress<ConversionProgress> _progress;
+        private readonly CancellationToken _cancellationToken;
 
-        public CSToVBProjectContentsConverter(ConversionOptions conversionOptions)
+        public CSToVBProjectContentsConverter(ConversionOptions conversionOptions, IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
+            _progress = progress;
+            _cancellationToken = cancellationToken;
             var vbCompilationOptions =
                 (VisualBasicCompilationOptions)conversionOptions.TargetCompilationOptionsOverride ??
                 VisualBasicCompiler.CreateCompilationOptions(conversionOptions.RootNamespaceOverride);
@@ -49,13 +55,13 @@ namespace ICSharpCode.CodeConverter.VB
             _sourceCsProject = project;
             _convertedVbProject = project.ToProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
             _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(_vbCompilationOptions);
-            _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync();
+            _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync(_cancellationToken);
             Project = project;
         }
 
         public async Task<SyntaxNode> SingleFirstPass(Document document)
         {
-            return await CSharpConverter.ConvertCompilationTree(document, _vbViewOfCsSymbols, _vbReferenceProject);
+            return await CSharpConverter.ConvertCompilationTree(document, _vbViewOfCsSymbols, _vbReferenceProject, _cancellationToken);
         }
 
         public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)>

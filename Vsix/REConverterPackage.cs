@@ -140,7 +140,7 @@ namespace CodeConverter.VsExtension
             var oleMenuCommandService = await this.GetServiceAsync<IMenuCommandService, OleMenuCommandService>();
             var componentModel = await this.GetServiceAsync<SComponentModel, IComponentModel>();
 
-            await JoinableTaskFactory.SwitchToMainThreadAsync();
+            await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             var visualStudioWorkspace = componentModel.GetService<VisualStudioWorkspace>();
             var codeConversion = await CodeConversion.CreateAsync(this, visualStudioWorkspace, this.GetDialogPageAsync<ConverterOptionsPage>);
             ConvertCSToVBCommand.Initialize(this, oleMenuCommandService, codeConversion);

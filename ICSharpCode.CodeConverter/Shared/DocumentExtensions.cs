@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
@@ -17,7 +18,7 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     internal static class DocumentExtensions
     {
-        public static async Task<Document> SimplifyStatements<TUsingDirectiveSyntax, TExpressionSyntax>(this Document convertedDocument, string unresolvedTypeDiagnosticId)
+        public static async Task<Document> SimplifyStatements<TUsingDirectiveSyntax, TExpressionSyntax>(this Document convertedDocument, string unresolvedTypeDiagnosticId, CancellationToken cancellationToken)
         where TUsingDirectiveSyntax : SyntaxNode where TExpressionSyntax : SyntaxNode
         {
             Func<SyntaxNode, bool> wouldBeSimplifiedIncorrectly =
@@ -43,7 +44,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 rewritten.WithAdditionalAnnotations(Simplifier.Annotation)
             );
 
-            var document = await convertedDocument.WithReducedRootAsync(newRoot);
+            var document = await convertedDocument.WithReducedRootAsync(newRoot, cancellationToken);
             return document;
         }
 
@@ -62,25 +63,25 @@ namespace ICSharpCode.CodeConverter.Shared
             return false;
         }
 
-        public static async Task<Document> WithExpandedRootAsync(this Document document)
+        public static async Task<Document> WithExpandedRootAsync(this Document document, CancellationToken cancellationToken)
         {
             if (document.Project.Language == LanguageNames.VisualBasic) {
-                document = await ExpandAsync(document, VbNameExpander.Instance);
+                document = await ExpandAsync(document, VbNameExpander.Instance, cancellationToken);
             } else {
-                document = await ExpandAsync(document, CsExpander.Instance);
+                document = await ExpandAsync(document, CsExpander.Instance, cancellationToken);
             }
 
             return document;
         }
 
-        private static async Task<Document> ExpandAsync(Document document, ISyntaxExpander expander)
+        private static async Task<Document> ExpandAsync(Document document, ISyntaxExpander expander, CancellationToken cancellationToken)
         {
-            var semanticModel = await document.GetSemanticModelAsync();
+            var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
             var workspace = document.Project.Solution.Workspace;
-            var root = await document.GetSyntaxRootAsync();
+            var root = await document.GetSyntaxRootAsync(cancellationToken);
             try {
                 var newRoot = root.ReplaceNodes(root.DescendantNodes(n => expander.ShouldExpandWithinNode(n, root, semanticModel)).Where(n => expander.ShouldExpandNode(n, root, semanticModel)),
-                    (node, rewrittenNode) => TryExpandNode(expander, node, root, semanticModel, workspace)
+                    (node, rewrittenNode) => TryExpandNode(expander, node, root, semanticModel, workspace, cancellationToken)
                 );
                 return document.WithSyntaxRoot(newRoot);
             } catch (Exception ex) {
@@ -89,8 +90,9 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        private static SyntaxNode TryExpandNode(ISyntaxExpander expander, SyntaxNode node, SyntaxNode root, SemanticModel semanticModel, Workspace workspace)
+        private static SyntaxNode TryExpandNode(ISyntaxExpander expander, SyntaxNode node, SyntaxNode root, SemanticModel semanticModel, Workspace workspace, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             try {
                 return expander.ExpandNode(node, root, semanticModel, workspace);
             } catch (Exception ex) {
@@ -99,14 +101,14 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        private static async Task<Document> WithReducedRootAsync(this Document doc, SyntaxNode syntaxRoot = null)
+        private static async Task<Document> WithReducedRootAsync(this Document doc, SyntaxNode syntaxRoot, CancellationToken cancellationToken)
         {
-            var root = syntaxRoot ?? await doc.GetSyntaxRootAsync();
+            var root = syntaxRoot ?? await doc.GetSyntaxRootAsync(cancellationToken);
             var withSyntaxRoot = doc.WithSyntaxRoot(root);
             try {
-                var options = await doc.GetOptionsAsync();
+                var options = await doc.GetOptionsAsync(cancellationToken);
                 var newOptions = doc.Project.Language == LanguageNames.VisualBasic ? GetVBOptions(options) : GetCSOptions(options);
-                return await Simplifier.ReduceAsync(withSyntaxRoot, newOptions);
+                return await Simplifier.ReduceAsync(withSyntaxRoot, newOptions, cancellationToken: cancellationToken);
             } catch (Exception ex) {
                 var warningText = "Conversion warning: Qualified name reduction failed for this file. " + ex;
                 return doc.WithSyntaxRoot(WithWarningAnnotation(root, warningText));

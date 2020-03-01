@@ -14,6 +14,7 @@ using VBSyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using System.Threading;
 
 namespace ICSharpCode.CodeConverter.VB
 {
@@ -26,16 +27,20 @@ namespace ICSharpCode.CodeConverter.VB
 
         private CSToVBProjectContentsConverter _csToVbProjectContentsConverter;
         public ConversionOptions ConversionOptions { get; set; }
+        private IProgress<ConversionProgress> _progress;
+        private CancellationToken _cancellationToken;
 
-        public async Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project)
+        public async Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
-            _csToVbProjectContentsConverter = new CSToVBProjectContentsConverter(ConversionOptions);
+            _progress = progress;
+            _cancellationToken = cancellationToken;
+            _csToVbProjectContentsConverter = new CSToVBProjectContentsConverter(ConversionOptions, progress, cancellationToken);
             await _csToVbProjectContentsConverter.InitializeSourceAsync(project);
             return _csToVbProjectContentsConverter;
         }
         public async Task<Document> SingleSecondPass(Document doc)
         {
-            return await doc.SimplifyStatements<VBSyntax.ImportsStatementSyntax, VBSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId);
+            return await doc.SimplifyStatements<VBSyntax.ImportsStatementSyntax, VBSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId, _cancellationToken);
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,

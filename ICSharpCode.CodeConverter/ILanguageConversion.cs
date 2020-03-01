@@ -2,6 +2,8 @@
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
+using System.Threading;
+using System;
 
 namespace ICSharpCode.CodeConverter
 {
@@ -22,7 +24,7 @@ namespace ICSharpCode.CodeConverter
         string TargetLanguage { get; }
         ConversionOptions ConversionOptions { get; set; }
 
-        Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project);
+        Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken);
         string PostTransformProjectFile(string xml);
 
         Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
