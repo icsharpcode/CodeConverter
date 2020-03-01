@@ -37,9 +37,8 @@ Currently, the VB -> C# conversion quality is higher than the C# -> VB conversio
 1. Ensure you have [.NET Core SDK 3.1+](https://dotnet.microsoft.com/download/dotnet-core/3.1)
 2. Open the solution in Visual Studio 2017+
 3. To run the website, set CodeConverter.Web as the startup project
-4. To run the Visual Studio extension, set Vsix as the startup project and in the project properties, set:
-  * "Start external program" to `C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\devenv.exe`
-  * "Command line arguments" to `/rootsuffix Roslyn`
+4. To run the Visual Studio extension, set Vsix as the startup project
+   * A new instance of Visual Studio will open with the extension installed
 
 ##  History
 This was previously part of [Refactoring Essentials](https://github.com/icsharpcode/RefactoringEssentials). However, because of the way analyzers are tied to Visual Studio and Roslyn versions
