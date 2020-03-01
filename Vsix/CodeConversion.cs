@@ -59,7 +59,7 @@ namespace CodeConverter.VsExtension
                 });
             } catch (OperationCanceledException) {
                 if (!_packageCancellation.CancelAll.IsCancellationRequested) {
-                    await _outputWindow.WriteToOutputWindowAsync("Previous conversion cancelled", forceShow: true);
+                    await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + "Previous conversion cancelled", forceShow: true);
                 }
             }
         }
@@ -80,7 +80,7 @@ namespace CodeConverter.VsExtension
                 }
             } catch (OperationCanceledException) {
                 if (!_packageCancellation.CancelAll.IsCancellationRequested) {
-                    await _outputWindow.WriteToOutputWindowAsync("Previous conversion cancelled", forceShow: true);
+                    await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + "Previous conversion cancelled", forceShow: true);
                 }
             }
         }
@@ -160,17 +160,20 @@ namespace CodeConverter.VsExtension
 
         }
 
-        private Task<bool> UserHasConfirmedOverwriteAsync(List<string> files, List<string> errors, IReadOnlyCollection<string> pathsToOverwrite)
+        private async Task<bool> UserHasConfirmedOverwriteAsync(List<string> files, List<string> errors, IReadOnlyCollection<string> pathsToOverwrite)
         {
             var maxExamples = 30; // Avoid a huge unreadable dialog going off the screen
             var exampleText = pathsToOverwrite.Count > maxExamples ? $". First {maxExamples} examples" : "";
-            return VisualStudioInteraction.ShowMessageBoxAsync(_serviceProvider,
+            await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + "Awaiting user confirmation for overwrite....", forceShow: true);
+            bool shouldOverwrite = await VisualStudioInteraction.ShowMessageBoxAsync(_serviceProvider,
                 "Overwrite solution and referencing projects?",
                 $@"The current solution file and any referencing projects will be overwritten to reference the new project(s){exampleText}:
 * {string.Join(Environment.NewLine + "* ", pathsToOverwrite.Take(maxExamples))}
 
 The old contents will be copied to 'currentFilename.bak'.
 Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors.Count);
+            await _outputWindow.WriteToOutputWindowAsync(shouldOverwrite ? "confirmed" : "declined");
+            return shouldOverwrite;
         }
 
         private static bool WillOverwriteSource(ConversionResult convertedFile)
