@@ -1,16 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.Design;
-using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-using EnvDTE;
-using ICSharpCode.CodeConverter.CSharp;
+using System.Threading;
 using ICSharpCode.CodeConverter.VB;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Threading;
 using OleMenuCommand = Microsoft.VisualStudio.Shell.OleMenuCommand;
 using OleMenuCommandService = Microsoft.VisualStudio.Shell.OleMenuCommandService;
 using Task = System.Threading.Tasks.Task;
@@ -37,7 +31,7 @@ namespace CodeConverter.VsExtension
         /// <summary>
         /// VS Package that provides this command, not null.
         /// </summary>
-        private readonly REConverterPackage _package;
+        private readonly CodeConverterPackage _package;
 
         private readonly CodeConversion _codeConversion;
 
@@ -61,7 +55,7 @@ namespace CodeConverter.VsExtension
         /// <remarks>
         /// Must be called from UI thread
         /// </remarks>
-        public static void Initialize(REConverterPackage package, OleMenuCommandService menuCommandService, CodeConversion codeConversion)
+        public static void Initialize(CodeConverterPackage package, OleMenuCommandService menuCommandService, CodeConversion codeConversion)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             Instance = new ConvertCSToVBCommand(package, codeConversion, menuCommandService);
@@ -75,7 +69,7 @@ namespace CodeConverter.VsExtension
         /// <param name="codeConversion"></param>
         /// <param name="commandService"></param>
         /// <remarks>Must be called on the UI thread due to VS 2017's implementation of AddCommand which calls GetService</remarks>
-        private ConvertCSToVBCommand(REConverterPackage package, CodeConversion codeConversion, OleMenuCommandService commandService)
+        private ConvertCSToVBCommand(CodeConverterPackage package, CodeConversion codeConversion, OleMenuCommandService commandService)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             this._package = package ?? throw new ArgumentNullException(nameof(package));
@@ -153,37 +147,37 @@ namespace CodeConverter.VsExtension
             }
         }
 
-        private async Task CodeEditorMenuItemCallbackAsync(object sender, EventArgs e)
+        private async Task CodeEditorMenuItemCallbackAsync(CancellationToken cancellationToken)
         {
             var (filePath, selection) = await VisualStudioInteraction.GetCurrentFilenameAndSelectionAsync(ServiceProvider, CodeConversion.IsCSFileName, false);
             if (filePath != null && selection != null) {
-                await ConvertDocumentAsync(filePath, selection.Value);
+                await ConvertDocumentAsync(filePath, selection.Value, cancellationToken);
             }
         }
 
-        private async Task ProjectItemMenuItemCallbackAsync(object sender, EventArgs e)
+        private async Task ProjectItemMenuItemCallbackAsync(CancellationToken cancellationToken)
         {
             string itemPath = await VisualStudioInteraction.GetSingleSelectedItemPathOrDefaultAsync();
-            await ConvertDocumentAsync(itemPath, new Span(0, 0));
+            await ConvertDocumentAsync(itemPath, new Span(0, 0), cancellationToken);
         }
 
-        private async Task SolutionOrProjectMenuItemCallbackAsync(object sender, EventArgs e)
+        private async Task SolutionOrProjectMenuItemCallbackAsync(CancellationToken cancellationToken)
         {
             try {
                 var projects = VisualStudioInteraction.GetSelectedProjectsAsync(ProjectExtension);
-                await _codeConversion.PerformProjectConversionAsync<CSToVBConversion>(await projects);
+                await _codeConversion.ConvertProjectsAsync<CSToVBConversion>(await projects, cancellationToken);
             } catch (Exception ex) {
                 await VisualStudioInteraction.ShowExceptionAsync(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }
         }
 
-        private async Task ConvertDocumentAsync(string documentPath, Span selected)
+        private async Task ConvertDocumentAsync(string documentPath, Span selected, CancellationToken cancellationToken)
         {
             if (documentPath == null || !CodeConversion.IsCSFileName(documentPath))
                 return;
 
             try {
-                await _codeConversion.PerformDocumentConversionAsync<CSToVBConversion>(documentPath, selected);
+                await _codeConversion.ConvertDocumentAsync<CSToVBConversion>(documentPath, selected, cancellationToken);
             } catch (Exception ex) {
                 await VisualStudioInteraction.ShowExceptionAsync(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }

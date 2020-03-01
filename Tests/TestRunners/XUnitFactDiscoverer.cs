@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using CodeConverter.Tests.CSharp;
 using Xunit;
 
 namespace CodeConverter.Tests.TestRunners

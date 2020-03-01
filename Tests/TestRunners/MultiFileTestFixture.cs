@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -91,7 +89,7 @@ namespace CodeConverter.Tests.TestRunners
                 : LanguageNames.CSharp;
 
             var projectsToConvert = (await _solution.GetValueAsync()).Projects.Where(p => p.Language == languageNameToConvert && shouldConvertProject(p)).ToArray();
-            var conversionResults = (await SolutionConverter.CreateFor<TLanguageConversion>(projectsToConvert).Convert()).ToDictionary(c => c.TargetPathOrNull, StringComparer.OrdinalIgnoreCase);
+            var conversionResults = await SolutionConverter.CreateFor<TLanguageConversion>(projectsToConvert).Convert().ToDictionaryAsync(c => c.TargetPathOrNull, StringComparer.OrdinalIgnoreCase);
             var expectedResultDirectory = GetExpectedResultDirectory<TLanguageConversion>(expectedResultsDirectory);
 
             try {
@@ -146,11 +144,11 @@ namespace CodeConverter.Tests.TestRunners
         private static async Task AssertMSBuildIsWorkingAndProjectsValid(
             ImmutableList<WorkspaceDiagnostic> valueDiagnostics, IEnumerable<Project> projectsToConvert)
         {
-            var errors = await projectsToConvert.ParallelSelectAsync(async x => {
+            var errors = await projectsToConvert.ParallelSelectAwait(async x => {
                 var c = await x.GetCompilationAsync();
                 return new[]{CompilationWarnings.WarningsForCompilation(c, c.AssemblyName)}.Concat(
                     valueDiagnostics.Where(d => d.Kind > WorkspaceDiagnosticKind.Warning).Select(d => d.Message));
-            }, Env.MaxDop);
+            }, Env.MaxDop, default).ToArrayAsync();
             var errorString = string.Join("\r\n", errors.SelectMany(w => w).Where(w => w != null));
             Assert.True(errorString == "", errorString);
         }

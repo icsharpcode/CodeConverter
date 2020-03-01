@@ -4,6 +4,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+* Decrease horrendousness of performance for large projects containing large files
+
+### API
+
+* IEnumerable<Task<ConversionResult>> becomes IAsyncEnumerable<ConversionResult>
+* Upgraded target framework from netstandard 1.3 to netstandard 2.0
+* Introduced cancellation token
 
 ### Vsix
 
@@ -21,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 * Exclude project file from conversion result if it hasn't changed
 * Further efforts to stop the roslyn library crashing Visual Studio
+* Conversion tasks are now cancellable
 
 ### VB -> C#
 
@@ -30,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 * Avoid incorrectly renaming symbols
 * Prevent "SyntaxTree is not part of the compilation" error [#527](https://github.com/icsharpcode/CodeConverter/issues/527)
+* Avoid incorrectly renaming symbols (#524)[https://github.com/icsharpcode/CodeConverter/issues/524]
 
 ## [7.8.0] - 2020-02-15
 
