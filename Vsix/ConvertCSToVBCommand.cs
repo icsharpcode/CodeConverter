@@ -38,7 +38,7 @@ namespace CodeConverter.VsExtension
         /// <summary>
         /// VS Package that provides this command, not null.
         /// </summary>
-        private readonly REConverterPackage _package;
+        private readonly CodeConverterPackage _package;
 
         private readonly CodeConversion _codeConversion;
 
@@ -62,7 +62,7 @@ namespace CodeConverter.VsExtension
         /// <remarks>
         /// Must be called from UI thread
         /// </remarks>
-        public static void Initialize(REConverterPackage package, OleMenuCommandService menuCommandService, CodeConversion codeConversion)
+        public static void Initialize(CodeConverterPackage package, OleMenuCommandService menuCommandService, CodeConversion codeConversion)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             Instance = new ConvertCSToVBCommand(package, codeConversion, menuCommandService);
@@ -76,7 +76,7 @@ namespace CodeConverter.VsExtension
         /// <param name="codeConversion"></param>
         /// <param name="commandService"></param>
         /// <remarks>Must be called on the UI thread due to VS 2017's implementation of AddCommand which calls GetService</remarks>
-        private ConvertCSToVBCommand(REConverterPackage package, CodeConversion codeConversion, OleMenuCommandService commandService)
+        private ConvertCSToVBCommand(CodeConverterPackage package, CodeConversion codeConversion, OleMenuCommandService commandService)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             this._package = package ?? throw new ArgumentNullException(nameof(package));

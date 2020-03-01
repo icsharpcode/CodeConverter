@@ -36,7 +36,7 @@ namespace CodeConverter.VsExtension
 
         private string SolutionDir => Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
 
-        public static async Task<CodeConversion> CreateAsync(REConverterPackage serviceProvider, VisualStudioWorkspace visualStudioWorkspace, Func<Task<ConverterOptionsPage>> getOptions)
+        public static async Task<CodeConversion> CreateAsync(CodeConverterPackage serviceProvider, VisualStudioWorkspace visualStudioWorkspace, Func<Task<ConverterOptionsPage>> getOptions)
         {
             return new CodeConversion(serviceProvider, serviceProvider.JoinableTaskFactory, serviceProvider.PackageCancellation, visualStudioWorkspace,
                 getOptions, await OutputWindow.CreateAsync());

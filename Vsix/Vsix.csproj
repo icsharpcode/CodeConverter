@@ -105,7 +105,7 @@
     <Compile Include="ConvertVBToCSCommand.cs" />
     <Compile Include="OutputWindow.cs" />
     <Compile Include="Cancellation.cs" />
-    <Compile Include="REConverterPackage.cs" />
+    <Compile Include="CodeConverterPackage.cs" />
     <Compile Include="ServiceProviderExtensions.cs" />
     <Compile Include="SolutionProjectExtensions.cs" />
     <Compile Include="TaskExtensions.cs" />

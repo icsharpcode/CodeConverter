@@ -65,7 +65,7 @@ namespace CodeConverter.VsExtension
         expression: "HasVbproj", termNames: new[] { "HasVbproj" },
         termValues: new[] { "SolutionHasProjectCapability:VB" })]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
-    public sealed class REConverterPackage : AsyncPackage
+    public sealed class CodeConverterPackage : AsyncPackage
     {
         /// <summary>
         /// ConvertCSToVBCommandPackage GUID string.
@@ -89,7 +89,7 @@ namespace CodeConverter.VsExtension
         /// <summary>
         /// Initializes a new instance of package class.
         /// </summary>
-        public REConverterPackage()
+        public CodeConverterPackage()
         {
             var thisAssembly = GetType().Assembly;
             _thisAssemblyName = thisAssembly.GetName();
