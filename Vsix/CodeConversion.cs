@@ -98,7 +98,7 @@ namespace CodeConverter.VsExtension
 
         private async Task WriteConvertedFilesAndShowSummaryAsync(IAsyncEnumerable<ConversionResult> convertedFiles)
         {
-            await _outputWindow.WriteToOutputWindowAsync(Intro, true, true);
+            await _outputWindow.WriteToOutputWindowAsync(Intro, forceShow: true);
 
             var files = new List<string>();
             var filesToOverwrite = new List<ConversionResult>();
@@ -247,10 +247,9 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             where TLanguageConversion : ILanguageConversion, new()
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            var projectDesc = selectedProjects.Count == 1
-                ? selectedProjects.Single().Name
-                : selectedProjects.Count + " projects";
-            await _outputWindow.WriteToOutputWindowAsync($"Converting {projectDesc}...", true, true);
+            if (selectedProjects.Count > 1) {
+                await _outputWindow.WriteToOutputWindowAsync($"Converting {selectedProjects.Count} projects...", true, true);
+            }
 
             var projectsByPath =
                 _visualStudioWorkspace.CurrentSolution.Projects.ToLookup(p => p.FilePath, p => p);
