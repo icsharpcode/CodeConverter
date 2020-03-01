@@ -171,7 +171,7 @@ namespace CodeConverter.VsExtension
         {
             try {
                 var projects = VisualStudioInteraction.GetSelectedProjectsAsync(ProjectExtension);
-                await _codeConversion.PerformProjectConversionAsync<VBToCSConversion>(await projects, cancellationToken);
+                await _codeConversion.ConvertProjectsAsync<VBToCSConversion>(await projects, cancellationToken);
             } catch (Exception ex) {
                 await VisualStudioInteraction.ShowExceptionAsync(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }
@@ -183,7 +183,7 @@ namespace CodeConverter.VsExtension
                 return;
 
             try {
-                await _codeConversion.PerformDocumentConversionAsync<VBToCSConversion>(documentPath, selected, cancellationToken);
+                await _codeConversion.ConvertDocumentAsync<VBToCSConversion>(documentPath, selected, cancellationToken);
             } catch (Exception ex) {
                 await VisualStudioInteraction.ShowExceptionAsync(ServiceProvider, CodeConversion.ConverterTitle, ex);
             }

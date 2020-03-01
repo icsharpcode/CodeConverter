@@ -54,7 +54,7 @@ namespace CodeConverter.VsExtension
             _packageCancellation = packageCancellation;
         }
 
-        public async Task PerformProjectConversionAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects, CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
+        public async Task ConvertProjectsAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects, CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
         {
             try {
                 await _joinableTaskFactory.RunAsync(async () => {
@@ -68,7 +68,7 @@ namespace CodeConverter.VsExtension
             }
         }
 
-        public async Task PerformDocumentConversionAsync<TLanguageConversion>(string documentFilePath, Span selected, CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
+        public async Task ConvertDocumentAsync<TLanguageConversion>(string documentFilePath, Span selected, CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
         {
             try {
                 var conversionResult = await _joinableTaskFactory.RunAsync(async () => {

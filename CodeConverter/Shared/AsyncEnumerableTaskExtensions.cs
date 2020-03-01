@@ -33,7 +33,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             foreach (var item in source) {
                 while (!processor.Post(item)) {
-                    yield return await WaitNextResultAsync();
+                    yield return await ReceiveAsync();
                 }
                 if (processor.TryReceive(out var result)) {
                     yield return result;
@@ -45,16 +45,16 @@ namespace ICSharpCode.CodeConverter.Shared
                 yield return Receive();
             }
 
-            async Task<TResult> WaitNextResultAsync()
+            async Task<TResult> ReceiveAsync()
             {
-                if (!await processor.OutputAvailableAsync()) throw new InvalidOperationException("No output available after posting output and waiting");
+                if (!await processor.OutputAvailableAsync() && !token.IsCancellationRequested) throw new InvalidOperationException("No output available after posting output and waiting");
                 return Receive();
             }
 
             TResult Receive()
             {
-                if (!processor.TryReceive(out var result)) throw new InvalidOperationException("Nothing received even though output available");
                 token.ThrowIfCancellationRequested();
+                if (!processor.TryReceive(out var result)) throw new InvalidOperationException("Nothing received even though output available");
                 return result;
             }
         }
