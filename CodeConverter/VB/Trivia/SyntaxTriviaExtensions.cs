@@ -1,13 +1,7 @@
-﻿using Microsoft.VisualBasic;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using VB = Microsoft.CodeAnalysis.VisualBasic;
-using VBFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
-using VBS = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using ICSharpCode.CodeConverter.Util;
 
 namespace CSharpToVBCodeConverter.Util

@@ -3,21 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
-using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.Operations;
-using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.CodeAnalysis.VisualBasic;
-using Conversion = Microsoft.CodeAnalysis.CSharp.Conversion;
 using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
-using LanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 using System.Threading;
 
 namespace ICSharpCode.CodeConverter.CSharp

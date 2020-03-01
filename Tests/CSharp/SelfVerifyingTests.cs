@@ -2,7 +2,6 @@
 using System.Linq;
 using ICSharpCode.CodeConverter.CSharp;
 using Xunit;
-using CodeConverter.Tests.Compilation;
 using System.IO;
 using System.Threading.Tasks;
 using CodeConverter.Tests.TestRunners;

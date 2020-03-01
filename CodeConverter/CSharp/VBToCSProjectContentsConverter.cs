@@ -3,11 +3,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
-using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
-using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using LanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 using System;
 

@@ -1,5 +1,4 @@
 ﻿using System.Linq;
-using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;

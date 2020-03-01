@@ -1,17 +1,10 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Shared;
+﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using VbSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CsSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
-using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
-using SyntaxNodeExtensions = ICSharpCode.CodeConverter.Util.SyntaxNodeExtensions;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {

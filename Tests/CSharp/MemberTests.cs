@@ -1,8 +1,6 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.CSharp;
-using ICSharpCode.CodeConverter.Shared;
 using Xunit;
 
 namespace CodeConverter.Tests.CSharp

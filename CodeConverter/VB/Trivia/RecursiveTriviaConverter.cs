@@ -9,7 +9,6 @@ using CS = Microsoft.CodeAnalysis.CSharp;
 using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 using VB = Microsoft.CodeAnalysis.VisualBasic;
 using VBFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
-using VisualBasicSyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 using VBS = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.VisualBasic.CompilerServices;
 using CSharpToVBCodeConverter.DestVisualBasic;

@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using CodeConverter.Tests.Compilation;
 using ICSharpCode.CodeConverter;
-using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
-using Microsoft.CodeAnalysis;
 using Microsoft.VisualStudio.Threading;
 using Xunit;
 using Xunit.Sdk;
