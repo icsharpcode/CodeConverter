@@ -2,8 +2,8 @@
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
     <OutputType>Library</OutputType>
-    <AssemblyName>CodeConverter.Tests</AssemblyName>
-    <RootNamespace>CodeConverter.Tests</RootNamespace>
+    <AssemblyName>ICsharpCode.CodeConverter.Tests</AssemblyName>
+    <RootNamespace>ICsharpCode.CodeConverter.Tests</RootNamespace>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <LangVersion>8.0</LangVersion>
     <NoWarn>$(NoWarn);1998</NoWarn>
@@ -23,12 +23,12 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ICSharpCode.CodeConverter\ICSharpCode.CodeConverter.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\ICSharpCode.CodeConverter\Shared\DefaultReferences.cs" Link="DefaultReferences.cs" />
+    <Compile Include="..\CodeConverter\Shared\DefaultReferences.cs" Link="DefaultReferences.cs" />
     <Compile Remove="TestData\**\*.*" />
     <None Include="TestData\**\*.*" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CodeConverter\CodeConverter.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Web" />

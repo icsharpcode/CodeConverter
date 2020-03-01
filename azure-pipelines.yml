@@ -34,7 +34,7 @@ steps:
 - task: Assembly-Info-NetCore@2
   inputs:
     Path: '$(Build.SourcesDirectory)'
-    FileNames: '**/ICSharpCode.CodeConverter.csproj'
+    FileNames: '**/CodeConverter.csproj'
     InsertAttributes: false
     FileEncoding: 'auto'
     WriteBOM: false
@@ -57,7 +57,7 @@ steps:
 - task: DotNetCoreCLI@2
   inputs:
     command: 'pack'
-    packagesToPack: '**/ICSharpCode.CodeConverter.csproj'
+    packagesToPack: '**/CodeConverter.csproj'
     versioningScheme: 'off'
 
 - task: CopyFiles@2
@@ -65,7 +65,7 @@ steps:
   inputs:
     contents: |
       **\ICSharpCode.CodeConverter.*.nupkg
-      **\CodeConverter.VsExtension.vsix
+      **\ICSharpCode.CodeConverter.VsExtension.vsix
     targetFolder: $(Build.ArtifactStagingDirectory)
 
 - task: PublishPipelineArtifact@0

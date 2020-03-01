@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\ICSharpCode.CodeConverter\Shared\DefaultReferences.cs" Link="DefaultReferences.cs" />
+    <Compile Include="..\CodeConverter\Shared\DefaultReferences.cs" Link="DefaultReferences.cs" />
   </ItemGroup>
 
 
@@ -27,11 +27,6 @@
 
 
   <ItemGroup>
-    <ProjectReference Include="..\ICSharpCode.CodeConverter\ICSharpCode.CodeConverter.csproj" />
-  </ItemGroup>
-
-
-  <ItemGroup>
     <Content Update="wwwroot\css\site.css">
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
@@ -40,6 +35,11 @@
 
   <ItemGroup>
     <Folder Include="wwwroot\Content\" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodeConverter\CodeConverter.csproj" />
   </ItemGroup>
 
 </Project>
