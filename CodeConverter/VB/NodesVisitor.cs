@@ -331,7 +331,7 @@ namespace ICSharpCode.CodeConverter.VB
                     SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node), true),
                     (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor)
                 ),
-                SyntaxFactory.List(initializer.Concat(_commonConversions.ConvertBody(node.Body, node.ExpressionBody)))
+                SyntaxFactory.List(initializer.Concat(_commonConversions.ConvertBody(node.Body, node.ExpressionBody, false)))
             );
         }
 
@@ -405,7 +405,7 @@ namespace ICSharpCode.CodeConverter.VB
                     SyntaxFactory.Identifier("Finalize"), null,
                     (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor),
                     null, null, null
-                ), _commonConversions.ConvertBody(node.Body, node.ExpressionBody)
+                ), _commonConversions.ConvertBody(node.Body, node.ExpressionBody, false)
             );
         }
 
@@ -413,7 +413,9 @@ namespace ICSharpCode.CodeConverter.VB
         {
             var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, TriviaConvertingVisitor, _commonConversions);
             bool requiresBody = node.Body != null || node.ExpressionBody != null || node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword, CS.SyntaxKind.PartialKeyword));
-            var block = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
+            var methodInfo = _semanticModel.GetDeclaredSymbol(node);
+            bool isVoidSub = methodInfo?.GetReturnType()?.SpecialType == SpecialType.System_Void;
+            var block = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, !isVoidSub, isIteratorState);
             var id = _commonConversions.ConvertIdentifier(node.Identifier);
             var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor)));
             var parameterList = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor);
@@ -425,13 +427,12 @@ namespace ICSharpCode.CodeConverter.VB
                 if (!((CS.CSharpSyntaxTree)node.SyntaxTree).HasUsingDirective("System.Runtime.CompilerServices"))
                     _extraImports.Add(nameof(System) + "." + nameof(System.Runtime) + "." + nameof(System.Runtime.CompilerServices));
             }
-            var methodInfo = _semanticModel.GetDeclaredSymbol(node);
             var needsOverloads = methodInfo?.ContainingType?.GetMembers(methodInfo.Name).Except(methodInfo.Yield()).Any(m => m.IsOverride);
             if (needsOverloads == true) {
                 modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.OverloadsKeyword));
             }
             var implementsClause = methodInfo == null ? null : CreateImplementsClauseSyntaxOrNull(methodInfo, id);
-            if (methodInfo?.GetReturnType()?.SpecialType == SpecialType.System_Void) {
+            if (isVoidSub) {
                 var stmt = SyntaxFactory.SubStatement(
                     attributes,
                     modifiers,
@@ -680,7 +681,7 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitOperatorDeclaration(CSS.OperatorDeclarationSyntax node)
         {
             ConvertAndSplitAttributes(node.AttributeLists, out var attributes, out var returnAttributes);
-            var body = _commonConversions.ConvertBody(node.Body, node.ExpressionBody);
+            var body = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, true);
             var parameterList = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor);
             var firstParam = node.ParameterList?.Parameters.FirstOrDefault()
                              ?? throw new NotSupportedException("Operator overloads with no parameters aren't supported");
