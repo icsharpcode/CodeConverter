@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
@@ -191,8 +192,8 @@ End Sub";
             return baseConversion.CanBeContainedByMethod(node);
         }
 
-        async Task<IProjectContentsConverter> ILanguageConversion.CreateProjectContentsConverter(Project project) {
-            return await baseConversion.CreateProjectContentsConverter(project);
+        async Task<IProjectContentsConverter> ILanguageConversion.CreateProjectContentsConverter(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken) {
+            return await baseConversion.CreateProjectContentsConverter(project, progress, cancellationToken);
         }
 
         Document ILanguageConversion.CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree, IEnumerable<MetadataReference> references) {
