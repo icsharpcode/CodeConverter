@@ -1,8 +1,6 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.CSharp;
-using ICSharpCode.CodeConverter.Shared;
 using Xunit;
 
 namespace CodeConverter.Tests.CSharp
@@ -972,7 +970,7 @@ Module Module1
 
     Sub PrintTestMessage2() Handles EventClassInstance.TestEvent, EventClassInstance2.TestEvent
     End Sub
-
+    ' Comment bug: This comment moves due to the Handles transformation
     Sub PrintTestMessage3() Handles EventClassInstance.TestEvent
     End Sub
 End Module", @"using System.Runtime.CompilerServices;
@@ -1013,6 +1011,7 @@ internal static partial class Module1
             if (_EventClassInstance != null)
             {
                 _EventClassInstance.TestEvent -= PrintTestMessage2;
+                // Comment bug: This comment moves due to the Handles transformation
                 _EventClassInstance.TestEvent -= PrintTestMessage3;
             }
 
@@ -1371,6 +1370,93 @@ public partial class Class1
     {
     }
 }", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
+        }
+
+        [Fact]
+        public async Task TestInitializeComponentAddsEventHandlers()
+        {
+            await TestConversionVisualBasicToCSharp(@"Imports Microsoft.VisualBasic.CompilerServices
+
+<DesignerGenerated>
+Partial Public Class TestHandlesAdded
+
+    Sub InitializeComponent()
+        '
+        'POW_btnV2DBM
+        '
+        Me.POW_btnV2DBM.Location = New System.Drawing.Point(207, 15)
+        Me.POW_btnV2DBM.Name = ""POW_btnV2DBM""
+        Me.POW_btnV2DBM.Size = New System.Drawing.Size(42, 23)
+        Me.POW_btnV2DBM.TabIndex = 3
+        Me.POW_btnV2DBM.Text = "">>""
+        Me.POW_btnV2DBM.UseVisualStyleBackColor = True
+    End Sub
+
+End Class
+
+Partial Public Class TestHandlesAdded
+    Dim WithEvents POW_btnV2DBM As Button
+
+    Public Sub POW_btnV2DBM_Click() Handles POW_btnV2DBM.Click
+
+    End Sub
+End Class", @"using System.Runtime.CompilerServices;
+using Microsoft.VisualBasic.CompilerServices;
+
+[DesignerGenerated]
+public partial class TestHandlesAdded
+{
+    public TestHandlesAdded()
+    {
+        InitializeComponent();
+    }
+
+    public void InitializeComponent()
+    {
+        // 
+        // POW_btnV2DBM
+        // 
+        _POW_btnV2DBM.Location = new System.Drawing.Point(207, 15);
+        _POW_btnV2DBM.Name = ""POW_btnV2DBM"";
+        _POW_btnV2DBM.Size = new System.Drawing.Size(42, 23);
+        _POW_btnV2DBM.TabIndex = 3;
+        _POW_btnV2DBM.Text = "">>"";
+        _POW_btnV2DBM.UseVisualStyleBackColor = true;
+    }
+}
+
+public partial class TestHandlesAdded
+{
+    private Button _POW_btnV2DBM;
+
+    private Button POW_btnV2DBM
+    {
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        get
+        {
+            return _POW_btnV2DBM;
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        set
+        {
+            if (_POW_btnV2DBM != null)
+            {
+                _POW_btnV2DBM.Click -= POW_btnV2DBM_Click;
+            }
+
+            _POW_btnV2DBM = value;
+            if (_POW_btnV2DBM != null)
+            {
+                _POW_btnV2DBM.Click += POW_btnV2DBM_Click;
+            }
+        }
+    }
+
+    public void POW_btnV2DBM_Click()
+    {
+    }
+}");
         }
 
         [Fact]

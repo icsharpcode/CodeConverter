@@ -1,8 +1,4 @@
-﻿using System;
-using System.Data;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using CodeConverter.Tests.TestRunners;
 using Xunit;
 

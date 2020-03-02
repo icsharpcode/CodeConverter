@@ -1,5 +1,5 @@
 ﻿platform: Any CPU
-version: 7.8.{build}
+version: 7.9.0.{build}
 configuration: Debug
 image: Visual Studio 2019
 
@@ -11,7 +11,7 @@ build:
 
 test:
   assemblies:
-    - 'Tests\bin\%configuration%\CodeConverter.Tests.dll'
+    - 'Tests\bin\%configuration%\ICSharpCode.CodeConverter.Tests.dll'
 
 artifacts:
-  - path: 'Vsix\bin\%configuration%\CodeConverter.VsExtension.vsix'
+  - path: 'Vsix\bin\%configuration%\ICSharpCode.CodeConverter.VsExtension.vsix'

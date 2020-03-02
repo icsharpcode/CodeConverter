@@ -1,9 +1,6 @@
 ﻿using System.Threading.Tasks;
 using CodeConverter.Tests.TestRunners;
-using ICSharpCode.CodeConverter;
-using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
-using Microsoft.CodeAnalysis;
 using Xunit;
 
 namespace CodeConverter.Tests.VB

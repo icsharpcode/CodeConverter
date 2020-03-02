@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -852,7 +851,7 @@ public partial class Bar<x> where x : Foo, new()
         public async Task MyClassVirtualCallMethod()
         {
             await TestConversionVisualBasicToCSharp(@"Public Class A
-    Overridable Function F1() As Integer ' Becomes delegating method
+    Overridable Function F1() As Integer
         Return 1
     End Function
     MustOverride Function F2() As Integer
@@ -871,7 +870,7 @@ public partial class A
         return 1;
     }
 
-    public virtual int F1() => MyClassF1(); // Becomes delegating method
+    public virtual int F1() => MyClassF1();
     public abstract int F2();
 
     public void TestMethod()

@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>ICSharpCode.CodeConverter</AssemblyName>
+    <RootNamespace>ICSharpCode.CodeConverter</RootNamespace>
+    <Company>ICSharpCode</Company>
+    <Description>Convert VB.NET to/from C#
+* Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
+* Actively developed: User feedback helps us continuously strive for a more accurate conversion.
+* Completely free and open source: Check out [GitHub](https://github.com/icsharpcode/CodeConverter#code-converter-).</Description>
+    <Product>Code Converter for C# to/from VB.NET</Product>
+    <Copyright>Copyright (c) 2017-2020 AlphaSierraPapa for the CodeConverter team</Copyright>
+    <AssemblyVersion>7.9.0.0</AssemblyVersion>
+    <FileVersion>7.9.0.0</FileVersion>
+    <Version>7.9.0</Version>
+    <PackageId>ICSharpCode.CodeConverter</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/icsharpcode/CodeConverter/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/icsharpcode/CodeConverter/</RepositoryUrl>
+    <PackageTags>Convert Converter Conversion C# CSharp CS VB VB.NET Visual Basic Code Free Roslyn Tool</PackageTags>
+    <PackageReleaseNotes>See https://github.com/icsharpcode/CodeConverter/blob/master/CHANGELOG.md </PackageReleaseNotes>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <LangVersion>8.0</LangVersion>
+    <NoWarn>$(NoWarn);1998</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Shared\DefaultReferences.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Shared\DefaultReferences.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="2.8.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="2.8.2" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualBasic" Version="10.3.0" />
+    <PackageReference Include="System.Globalization.Extensions" Version="4.3.0" />
+    <PackageReference Include="System.Linq.Async" Version="4.0.0" />
+    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.6.0" />
+  </ItemGroup>
+  <!-- The InternalVisibleTo fails when building with signing -->
+  <ItemGroup Condition="'$(SignAssembly)'=='True'">
+    <Compile Remove="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+</Project>

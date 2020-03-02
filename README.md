@@ -5,7 +5,7 @@ Convert code from VB.NET to C# and vice versa via Roslyn using a [Visual Studio 
 ## Visual Studio Extension
 Adds context menu items to convert projects/files between VB.NET and C#. See the [wiki documentation](https://github.com/icsharpcode/CodeConverter/wiki) for help using it.
 
-Download from [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter) (Requires VS 2017 ~15.5+)
+Download from [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter) (Requires VS 2017 15.7+)
 
 * Flexible: Convert a small selection, or a whole solution in one go, in either direction.
 * Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
@@ -24,7 +24,7 @@ Let us know what needs improving. If you want to get involved in writing the cod
 Currently, the VB -> C# conversion quality is higher than the C# -> VB conversion quality. This is due to demand of people raising issues and supply of developers willing to fix them. But we're very happy to support developers who want to contribute to either conversion direction.
 
 ## Other ways to use the converter
-* Artifact vsix from latest "nightly" developer builds (potentially less stable and must be uninstalled to update): https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_build/latest?definitionId=2&branchName=master&status=succeeded
+* VSIX inside artifact drop from latest CI builds (potentially less stable): https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_build/latest?definitionId=2&branchName=master&status=succeeded
 
 * Online snippet converter: [https://codeconverter.icsharpcode.net/](https://codeconverter.icsharpcode.net/) (less accurate due to lack of project context)
 
@@ -37,9 +37,8 @@ Currently, the VB -> C# conversion quality is higher than the C# -> VB conversio
 1. Ensure you have [.NET Core SDK 3.1+](https://dotnet.microsoft.com/download/dotnet-core/3.1)
 2. Open the solution in Visual Studio 2017+
 3. To run the website, set CodeConverter.Web as the startup project
-4. To run the Visual Studio extension, set Vsix as the startup project and in the project properties, set:
-  * "Start external program" to `C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\devenv.exe`
-  * "Command line arguments" to `/rootsuffix Roslyn`
+4. To run the Visual Studio extension, set Vsix as the startup project
+   * A new instance of Visual Studio will open with the extension installed
 
 ##  History
 This was previously part of [Refactoring Essentials](https://github.com/icsharpcode/RefactoringEssentials). However, because of the way analyzers are tied to Visual Studio and Roslyn versions
