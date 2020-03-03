@@ -50,9 +50,6 @@ namespace CodeConverter.Util
     /// Defines unicode new lines according to  Unicode Technical Report #13
     /// http://www.unicode.org/standard/reports/tr13/tr13-5.html
     /// </summary>
-#if NR6
-    public
-#endif
     internal static class NewLine
     {
         /// <summary>

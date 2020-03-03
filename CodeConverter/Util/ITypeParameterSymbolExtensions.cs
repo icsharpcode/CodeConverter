@@ -3,9 +3,6 @@ using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Util
 {
-#if NR6
-    public
-#endif
     internal static class ITypeParameterSymbolExtensions
     {
         public static INamedTypeSymbol GetNamedTypeSymbolConstraint(this ITypeParameterSymbol typeParameter)

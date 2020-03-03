@@ -6,12 +6,8 @@ using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Util
 {
-#if NR6
-    public
-#endif
     internal static class TypeExtensions
     {
-        #region GetDelegateInvokeMethod
         /// <summary>
         /// Gets the invoke method for a delegate type.
         /// </summary>
@@ -26,29 +22,6 @@ namespace ICSharpCode.CodeConverter.Util
                 return type.GetMembers("Invoke").OfType<IMethodSymbol>().FirstOrDefault(m => m.MethodKind == MethodKind.DelegateInvoke);
             return null;
         }
-        #endregion
-
-        /// <summary>
-        /// Returns true if the type is public and was tagged with
-        /// [System.ComponentModel.ToolboxItem (true)]
-        /// </summary>
-        /// <returns><c>true</c> if is designer browsable the specified symbol; otherwise, <c>false</c>.</returns>
-        /// <param name="symbol">Symbol.</param>
-        public static bool IsToolboxItem(this ITypeSymbol symbol)
-        {
-            if (symbol == null)
-                throw new ArgumentNullException("symbol");
-            if (symbol.DeclaredAccessibility != Accessibility.Public)
-                return false;
-            var toolboxItemAttr = symbol.GetAttributes().FirstOrDefault(attr => attr.AttributeClass.Name == "ToolboxItemAttribute" && attr.AttributeClass.ContainingNamespace.MetadataName == "System.ComponentModel");
-            if (toolboxItemAttr != null && toolboxItemAttr.ConstructorArguments.Length == 1) {
-                try {
-                    return (bool)toolboxItemAttr.ConstructorArguments[0].Value;
-                } catch {
-                }
-            }
-            return false;
-        }
 
         public static bool IsNullableType(this ITypeSymbol type)
         {
@@ -61,21 +34,6 @@ namespace ICSharpCode.CodeConverter.Util
             if (!IsNullableType(type))
                 return null;
             return ((INamedTypeSymbol)type).TypeArguments[0];
-        }
-
-        /// <summary>
-        /// Gets all base classes.
-        /// </summary>
-        /// <returns>The all base classes.</returns>
-        /// <param name="type">Type.</param>
-        public static IEnumerable<INamedTypeSymbol> GetAllBaseClasses(this INamedTypeSymbol type, bool includeSuperType = false)
-        {
-            if (!includeSuperType)
-                type = type.BaseType;
-            while (type != null) {
-                yield return type;
-                type = type.BaseType;
-            }
         }
 
         /// <summary>
@@ -96,46 +54,6 @@ namespace ICSharpCode.CodeConverter.Util
             foreach (var inter in type.AllInterfaces) {
                 yield return inter;
             }
-        }
-
-        /// <summary>
-        /// Determines if derived from baseType. Includes itself and all base classes, but does not include interfaces.
-        /// </summary>
-        /// <returns><c>true</c> if is derived from class the specified type baseType; otherwise, <c>false</c>.</returns>
-        /// <param name="type">Type.</param>
-        /// <param name="baseType">Base type.</param>
-        public static bool IsDerivedFromClass(this INamedTypeSymbol type, INamedTypeSymbol baseType)
-        {
-            //NR5 is returning true also for same type
-            for (; type != null; type = type.BaseType) {
-                if (type == baseType) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Determines if derived from baseType. Includes itself, all base classes and all interfaces.
-        /// </summary>
-        /// <returns><c>true</c> if is derived from the specified type baseType; otherwise, <c>false</c>.</returns>
-        /// <param name="type">Type.</param>
-        /// <param name="baseType">Base type.</param>
-        public static bool IsDerivedFromClassOrInterface(this INamedTypeSymbol type, INamedTypeSymbol baseType)
-        {
-            //NR5 is returning true also for same type
-            for (; type != null; type = type.BaseType) {
-                if (type == baseType) {
-                    return true;
-                }
-            }
-            //And interfaces
-            foreach (var inter in type.AllInterfaces) {
-                if (inter == baseType) {
-                    return true;
-                }
-            }
-            return false;
         }
 
         /// <summary>
