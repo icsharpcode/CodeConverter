@@ -118,5 +118,12 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return sequence.Any(predicate);
         }
+
+        public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> items)
+        {
+            foreach (var item in items) {
+                collection.Add(item);
+            }
+        }
     }
 }

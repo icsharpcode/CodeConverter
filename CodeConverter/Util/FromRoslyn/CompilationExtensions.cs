@@ -9,5 +9,8 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
         /// </remarks>
         public static INamedTypeSymbol DesignerGeneratedAttributeType(this Compilation compilation)
             => compilation.GetTypeByMetadataName("Microsoft.VisualBasic.CompilerServices.DesignerGeneratedAttribute");
+
+        public static INamedTypeSymbol ExpressionOfTType(this Compilation compilation)
+            => compilation.GetTypeByMetadataName("System.Linq.Expressions.Expression`1");
     }
 }
