@@ -40,11 +40,11 @@ namespace WindowsAppVb
 
         public void Init()
         {
-            MouseEventHandler noArgs = this.WinformsDesignerTest_MouseClick;
+            MouseEventHandler noArgs = (_, __) => WinformsDesignerTest_MouseClick();
             MouseClick += noArgs;
-            MouseClick += this.WinformsDesignerTest_MouseClick;
+            MouseClick += (_, __) => WinformsDesignerTest_MouseClick();
             MouseClick -= noArgs;
-            MouseClick -= this.WinformsDesignerTest_MouseClick; // Generates a VB warning because it has no effect
+            MouseClick -= (_, __) => WinformsDesignerTest_MouseClick(); // Generates a VB warning because it has no effect
         }
 
         public void Init_Advanced(MouseEventHandler paramToHandle)
