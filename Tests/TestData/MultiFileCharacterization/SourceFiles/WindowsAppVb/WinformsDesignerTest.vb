@@ -15,4 +15,22 @@
     Private Sub WinformsDesignerTest_EnsureSelfEventsWork(sender As Object, e As EventArgs) Handles MyBase.Load, Me.SizeChanged
 
     End Sub
+
+    Private Sub WinformsDesignerTest_MouseClick() Handles Me.MouseClick
+
+    End Sub
+
+    Public Sub Init()
+        Dim noArgs As MouseEventHandler = AddressOf WinformsDesignerTest_MouseClick
+        AddHandler Me.MouseClick, noArgs
+        AddHandler Me.MouseClick, AddressOf WinformsDesignerTest_MouseClick
+        RemoveHandler Me.MouseClick, noArgs
+        RemoveHandler Me.MouseClick, AddressOf WinformsDesignerTest_MouseClick ' Generates a VB warning because it has no effect
+    End Sub
+
+    Public Sub Init_Advanced(paramToHandle As MouseEventHandler)
+        Init()
+        AddHandler Me.MouseClick, paramToHandle
+        WinformsDesignerTest_MouseClick()
+    End Sub
 End Class
