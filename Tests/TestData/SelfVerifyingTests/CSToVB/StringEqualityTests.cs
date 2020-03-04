@@ -10,10 +10,17 @@ public class StringEqualityTests
     private char[] emptyCharArray = new char[0];
 
     [Fact]
-    public void NullEmptyStringEqualsOperator() => Assert.False(nullString == emptyString);
+    public void NonInternStringsEqualsOperator() {
+        string a = "10";
+        string b = 10.ToString(); //strings created in runtime are not interned
+        Assert.True(a == b);
+    }
 
     [Fact]
-    public void NullEmptyStringNotEqualsOperator() => Assert.True(nullString != emptyString);
+    public void NullEmptyStringEqualsOperator() => Assert.False((emptyString != null && nullString != null) && emptyString == nullString); //null == string.Empty in VB
+
+    [Fact]
+    public void NullEmptyStringNotEqualsOperator() => Assert.True((emptyString == null && nullString != null) || (emptyString != null && nullString == null)); //null == string.Empty in VB
 
     [Fact]
     public void NullEmptyObjectEqualsOperator() => Assert.False(nullObject == emptyString);
