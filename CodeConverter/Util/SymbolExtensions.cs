@@ -188,11 +188,6 @@ namespace ICSharpCode.CodeConverter.Util
                 _ => ImmutableArray.Create<ISymbol>());
         }
 
-        public static bool IsInterfaceType(this ISymbol symbol)
-        {
-            return (symbol as ITypeSymbol)?.IsInterfaceType() == true;
-        }
-
         public static bool IsArrayType(this ISymbol symbol)
         {
             return symbol?.Kind == SymbolKind.ArrayType;
