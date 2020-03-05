@@ -1203,14 +1203,23 @@ namespace ICSharpCode.CodeConverter.VB
             var leftType = _semanticModel.GetTypeInfo(node.Left).ConvertedType;
             var rightType = _semanticModel.GetTypeInfo(node.Right).ConvertedType;
 
+            bool isEquals = SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.EqualsEqualsToken);
+            bool isNotEquals = SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.ExclamationEqualsToken);
+
+            if (leftType.SpecialType == SpecialType.System_String && rightType.SpecialType == SpecialType.System_String && (isEquals || isNotEquals)) {
+                var opEquality = SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(nameof(Equals)), ExpressionSyntaxExtensions.CreateArgList(vbLeft, vbRight));
+                return isNotEquals ? (ExpressionSyntax)SyntaxFactory.NotExpression(opEquality) : opEquality;
+            }
+
             var isReferenceComparison = node.Left.IsKind(CS.SyntaxKind.NullLiteralExpression) ||
                                         node.Right.IsKind(CS.SyntaxKind.NullLiteralExpression) ||
-                                        leftType.IsReferenceType && rightType.IsReferenceType && (leftType.SpecialType != SpecialType.System_String || rightType.SpecialType != SpecialType.System_String);
+                                        leftType.IsReferenceType && rightType.IsReferenceType;
 
-            if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.EqualsEqualsToken) && isReferenceComparison) {
+            if (isEquals && isReferenceComparison) {
                 return SyntaxFactory.IsExpression(vbLeft, vbRight);
             }
-            if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.ExclamationEqualsToken) && isReferenceComparison) {
+
+            if (isNotEquals && isReferenceComparison) {
                 return SyntaxFactory.IsNotExpression(vbLeft, vbRight);
             }
 

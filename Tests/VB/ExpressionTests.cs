@@ -72,7 +72,7 @@ End Namespace");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim result As Boolean = If(str = """", True, False)
+        Dim result As Boolean = If(Equals(str, """"), True, False)
     End Sub
 End Class");
         }
@@ -170,7 +170,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim result As Boolean = If(str = """", CSharpImpl.__Throw(Of Boolean)(New Exception(""empty"")), False)
+        Dim result As Boolean = If(Equals(str, """"), CSharpImpl.__Throw(Of Boolean)(New Exception(""empty"")), False)
     End Sub
 
     Private Class CSharpImpl
@@ -826,7 +826,7 @@ End Sub");
 
     Public Sub New()
         AddHandler PropertyChanged, Sub(o, e)
-                                        If e.PropertyName = ""AnyProperty"" Then
+                                        If Equals(e.PropertyName, ""AnyProperty"") Then
                                             Add(""changed"")
                                         Else
                                             RemoveAt(0)
@@ -924,7 +924,7 @@ End Class");
         If i = s2 Then DoSomething()
         If i = object1 Then DoSomething()
         If s1 = j Then DoSomething()
-        If s1 = s2 Then DoSomething()
+        If Equals(s1, s2) Then DoSomething()
         If s1 Is object2 Then DoSomething()
         If object1 = j Then DoSomething()
         If object1 Is s2 Then DoSomething()
