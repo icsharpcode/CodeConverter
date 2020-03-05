@@ -604,18 +604,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var typeInfo = _semanticModel.GetTypeInfo(node);
             if (_semanticModel.GetSymbolInfo(node.Operand).Symbol is IMethodSymbol ms && typeInfo.Type is INamedTypeSymbol nt && !ms.CompatibleSignatureToDelegate(nt)) {
-                var names = nt.DelegateInvokeMethod.Parameters.Select((p, i) =>
-                    new string(Enumerable.Repeat('_', i + 1).ToArray())
-                ).ToArray();
-                var parameters = CreateParameterList(names.Select(n => CommonConversions.CsSyntaxGenerator.LambdaParameter(n)));
-                return SyntaxFactory.ParenthesizedLambdaExpression(parameters, SyntaxFactory.InvocationExpression(expr));
+                int count = nt.DelegateInvokeMethod.Parameters.Count();
+                return CommonConversions.ThrowawayParameters(expr, count);
             }
             return expr;
-        }
-
-        private static ParameterListSyntax CreateParameterList(IEnumerable<SyntaxNode> ps)
-        {
-            return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(ps));
         }
 
         public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax node)

@@ -564,7 +564,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Where(m => HandledEvents(m).Any())
                 .Select(m => {
                     var ids = HandledEvents(m)
-                        .Select(p => (SyntaxFactory.Identifier(GetCSharpIdentifierText(p.EventContainer)), CommonConversions.ConvertIdentifier(p.EventMember.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None)))
+                        .Select(p => (SyntaxFactory.Identifier(GetCSharpIdentifierText(p.EventContainer)), CommonConversions.ConvertIdentifier(p.EventMember.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None), p.ParametersToDiscard))
                         .ToList();
                     var csFormIds = ids.Where(id => id.Item1.Text == "this" || id.Item1.Text == "base").ToList();
                     var csPropIds = ids.Except(csFormIds).ToList();
@@ -591,12 +591,25 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <summary>
         /// VBasic.VisualBasicExtensions.HandledEvents(m) seems to optimize away some events, so just detect from syntax
         /// </summary>
-        private static List<(VBSyntax.EventContainerSyntax EventContainer, VBSyntax.IdentifierNameSyntax EventMember)> HandledEvents(IMethodSymbol m)
+        private List<(VBSyntax.EventContainerSyntax EventContainer, VBSyntax.IdentifierNameSyntax EventMember, int ParametersToDiscard)> HandledEvents(IMethodSymbol m)
         {
             return m.DeclaringSyntaxReferences.Select(r => r.GetSyntax()).OfType<VBSyntax.MethodStatementSyntax>()
                 .Where(mbb => mbb.HandlesClause?.Events.Any() == true)
-                .SelectMany(mbb => mbb.HandlesClause.Events.Select(e => (e.EventContainer, e.EventMember)))
+                .SelectMany(mbb => HandledEvent(mbb))
                 .ToList();
+        }
+
+        private IEnumerable<(VBSyntax.EventContainerSyntax EventContainer, VBSyntax.IdentifierNameSyntax EventMember, int ParametersToDiscard)> HandledEvent(VBSyntax.MethodStatementSyntax mbb)
+        {
+            var mayRequireDiscardedParameters = !mbb.ParameterList.Parameters.Any();
+            //TODO: PERF: Get group by syntax tree and get semantic model once in case it doesn't get succesfully cached
+            var semanticModel = mbb.SyntaxTree == _semanticModel.SyntaxTree ? _semanticModel : _compilation.GetSemanticModel(mbb.SyntaxTree, ignoreAccessibility: true);
+            return mbb.HandlesClause.Events.Select(e => {
+                var toDiscard = mayRequireDiscardedParameters && semanticModel.GetSymbolInfo(e.EventMember).Symbol?.GetSymbolType() is INamedTypeSymbol nts ? nts.DelegateInvokeMethod.GetParameters().Count() : 0;
+                var symbol = semanticModel.GetSymbolInfo(e.EventMember);
+                var symbolParameters = symbol.Symbol?.GetParameters();
+                return (e.EventContainer, e.EventMember, toDiscard);
+            });
         }
 
         public override async Task<CSharpSyntaxNode> VisitPropertyStatement(VBSyntax.PropertyStatementSyntax node)

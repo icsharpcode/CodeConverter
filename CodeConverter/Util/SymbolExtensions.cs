@@ -452,6 +452,11 @@ namespace ICSharpCode.CodeConverter.Util
                 return parameterSymbol.Type;
             }
 
+            var eventSymnol = symbol as IEventSymbol;
+            if (eventSymnol != null) {
+                return eventSymnol.Type;
+            }
+
             var aliasSymbol = symbol as IAliasSymbol;
             if (aliasSymbol != null) {
                 return aliasSymbol.Target as ITypeSymbol;
