@@ -10,17 +10,19 @@ public class StringEqualityTests
     private char[] emptyCharArray = new char[0];
 
     [Fact]
-    public void NonInternStringsEqualsOperator() {
-        string a = "10";
-        string b = 10.ToString(); //strings created in runtime are not interned
-        Assert.True(a == b);
-    }
+    public void NonInternStringsEqualsOperator() => Assert.True("10" == 10.ToString());
 
     [Fact]
-    public void NullEmptyStringEqualsOperator() => Assert.False((emptyString != null && nullString != null) && emptyString == nullString); //null == string.Empty in VB
+    public void NullEmptyStringEqualsOperator() => Assert.False(nullString == emptyString);
 
     [Fact]
-    public void NullEmptyStringNotEqualsOperator() => Assert.True((emptyString == null && nullString != null) || (emptyString != null && nullString == null)); //null == string.Empty in VB
+    public void NullEmptyStringNotEqualsOperator() => Assert.True(nullString != emptyString);
+
+    [Fact]
+    public void VbStyleNullEmptyStringEqualsOperator() => Assert.False((emptyString != null && nullString != null) && emptyString == nullString); //null == string.Empty in VB
+
+    [Fact]
+    public void VbStyleNullEmptyStringNotEqualsOperator() => Assert.True((emptyString == null && nullString != null) || (emptyString != null && nullString == null)); //null == string.Empty in VB
 
     [Fact]
     public void NullEmptyObjectEqualsOperator() => Assert.False(nullObject == emptyString);
