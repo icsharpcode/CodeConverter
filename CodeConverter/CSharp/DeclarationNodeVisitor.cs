@@ -605,7 +605,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             //TODO: PERF: Get group by syntax tree and get semantic model once in case it doesn't get succesfully cached
             var semanticModel = mbb.SyntaxTree == _semanticModel.SyntaxTree ? _semanticModel : _compilation.GetSemanticModel(mbb.SyntaxTree, ignoreAccessibility: true);
             return mbb.HandlesClause.Events.Select(e => {
-                var toDiscard = mayRequireDiscardedParameters && semanticModel.GetSymbolInfo(e.EventMember).Symbol?.GetSymbolType() is INamedTypeSymbol nts ? nts.DelegateInvokeMethod.GetParameters().Count() : 0;
+                var toDiscard = mayRequireDiscardedParameters ? semanticModel.GetSymbolInfo(e.EventMember).Symbol?.GetSymbolType().GetDelegateInvokeMethod()?.GetParameters().Count() ?? 0 : 0;
                 var symbol = semanticModel.GetSymbolInfo(e.EventMember);
                 var symbolParameters = symbol.Symbol?.GetParameters();
                 return (e.EventContainer, e.EventMember, toDiscard);

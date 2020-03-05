@@ -18,8 +18,8 @@ namespace ICSharpCode.CodeConverter.Util
         {
             if (type == null)
                 throw new ArgumentNullException("type");
-            if (type.TypeKind == TypeKind.Delegate)
-                return type.GetMembers("Invoke").OfType<IMethodSymbol>().FirstOrDefault(m => m.MethodKind == MethodKind.DelegateInvoke);
+            if (type.TypeKind == TypeKind.Delegate && type is INamedTypeSymbol namedType)
+                return namedType.DelegateInvokeMethod;
             return null;
         }
 

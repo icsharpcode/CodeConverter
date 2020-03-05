@@ -284,7 +284,7 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitDelegateDeclaration(CSS.DelegateDeclarationSyntax node)
         {
             var id = _commonConversions.ConvertIdentifier(node.Identifier);
-            var methodInfo = (INamedTypeSymbol) _semanticModel.GetDeclaredSymbol(node);
+            var methodInfo = _semanticModel.GetDeclaredSymbol(node) as INamedTypeSymbol;
             if (methodInfo?.DelegateInvokeMethod.GetReturnType()?.SpecialType == SpecialType.System_Void) {
                 return SyntaxFactory.DelegateSubStatement(
                     SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CommonConversions.ConvertModifiers(node.Modifiers),
