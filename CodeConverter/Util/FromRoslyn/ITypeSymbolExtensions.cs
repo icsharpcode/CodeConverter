@@ -363,13 +363,13 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
             return false;
         }
 
-        public static bool CanSupportCollectionInitializer(this ITypeSymbol typeSymbol, ISymbol? within = null)
+        public static bool CanSupportCollectionInitializer(this ITypeSymbol typeSymbol, ISymbol within)
         {
             return
                 typeSymbol.AllInterfaces.Any(i => i.SpecialType == SpecialType.System_Collections_IEnumerable) &&
                 typeSymbol.GetBaseTypesAndThis()
                     .Union(typeSymbol.GetOriginalInterfacesAndTheirBaseInterfaces())
-                    .SelectAccessibleMembers<IMethodSymbol>(WellKnownMemberNames.CollectionInitializerAddMethodName, within ?? typeSymbol)
+                    .SelectAccessibleMembers<IMethodSymbol>(WellKnownMemberNames.CollectionInitializerAddMethodName, within)
                     .OfType<IMethodSymbol>()
                     .Any(m => m.Parameters.Any());
         }

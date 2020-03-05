@@ -1351,7 +1351,8 @@ namespace ICSharpCode.CodeConverter.VB
                 var collectionInitializerSyntax = SyntaxFactory.CollectionInitializer(
                     SyntaxFactory.SeparatedList(expressions.OfType<ExpressionSyntax>())
                 );
-                var isObjectCollection = _semanticModel.GetTypeInfo(node.Parent).Type?.CanSupportCollectionInitializer() == true;
+
+                var isObjectCollection = _semanticModel.GetTypeInfo(node.Parent).Type?.CanSupportCollectionInitializer(_semanticModel.GetEnclosingSymbol<INamedTypeSymbol>(node.SpanStart, default)) == true;
 
                 return isObjectCollection ? (VisualBasicSyntaxNode) SyntaxFactory.ObjectCollectionInitializer(collectionInitializerSyntax) : collectionInitializerSyntax;
             }
