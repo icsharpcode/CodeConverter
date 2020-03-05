@@ -1258,7 +1258,7 @@ End Class", conversion: EmptyNamespaceOptionStrictOff);
     Public Property Email As String
 
     Protected Overloads Function Equals(ByVal other As MailEmployee) As Boolean
-        Return Email Is other.Email
+        Return Equals(Email, other.Email)
     End Function
 
     Public Overrides Function Equals(ByVal obj As Object) As Boolean

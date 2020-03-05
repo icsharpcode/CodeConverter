@@ -46,7 +46,7 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
         public SyntaxList<StatementSyntax> ConvertBody(CSS.BlockSyntax body,
-            CSS.ArrowExpressionClauseSyntax expressionBody, MethodBodyExecutableStatementVisitor iteratorState = null)
+            CSS.ArrowExpressionClauseSyntax expressionBody, bool hasReturnType, MethodBodyExecutableStatementVisitor iteratorState = null)
         {
             if (body != null) {
                 return ConvertStatements(body.Statements, iteratorState);
@@ -55,7 +55,8 @@ namespace ICSharpCode.CodeConverter.VB
             if (expressionBody != null) {
                 var convertedBody = expressionBody.Expression.Accept(_nodesVisitor);
                 if (convertedBody is ExpressionSyntax convertedBodyExpression) {
-                    convertedBody = SyntaxFactory.ReturnStatement(convertedBodyExpression);
+                    convertedBody = hasReturnType ? (ExecutableStatementSyntax)SyntaxFactory.ReturnStatement(convertedBodyExpression)
+                        : SyntaxFactory.ExpressionStatement(convertedBodyExpression);
                 }
 
                 return SyntaxFactory.SingletonList((StatementSyntax)convertedBody);
@@ -206,15 +207,16 @@ namespace ICSharpCode.CodeConverter.VB
             EndBlockStatementSyntax endStmt;
             SyntaxList<StatementSyntax> body;
             isIterator = false;
+            var accesorKind = CSharpExtensions.Kind(node);
             var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, _nodesVisitor, this);
-            body = ConvertBody(node.Body, node.ExpressionBody, isIteratorState);
+            body = ConvertBody(node.Body, node.ExpressionBody, accesorKind == CSSyntaxKind.GetAccessorDeclaration, isIteratorState);
             isIterator = isIteratorState.IsIterator;
             var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(_nodesVisitor)));
             var modifiers = ConvertModifiers(node.Modifiers, TokenContext.Local);
             var parent = (CSS.BasePropertyDeclarationSyntax)node.Parent.Parent;
             Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterSyntax valueParam;
 
-            switch (CSharpExtensions.Kind(node)) {
+            switch (accesorKind) {
                 case CSSyntaxKind.GetAccessorDeclaration:
                     blockKind = SyntaxKind.GetAccessorBlock;
                     stmt = SyntaxFactory.GetAccessorStatement(attributes, modifiers, null);
