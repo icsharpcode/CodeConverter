@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
+    [System.Diagnostics.DebuggerStepThrough]
     internal static class SyntaxNodeVisitorExtensions
     {
         public static Task<CSharpSyntaxNode> AcceptAsync(this SyntaxNode node, CommentConvertingVisitorWrapper visitorWrapper, SourceTriviaMapKind sourceTriviaMap = SourceTriviaMapKind.All)

@@ -4,6 +4,7 @@ using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 namespace ICSharpCode.CodeConverter.VB
 {
 
+    [System.Diagnostics.DebuggerStepThrough]
     internal static class SyntaxNodeVisitorExtensions
     {
         public static T Accept<T>(this SyntaxNode node, CommentConvertingVisitorWrapper<T> visitorWrapper, bool addSourceMapping = true) where T : VBasic.VisualBasicSyntaxNode
