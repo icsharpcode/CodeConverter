@@ -19,10 +19,10 @@ public class StringEqualityTests
     public void NullEmptyStringNotEqualsOperator() => Assert.True(nullString != emptyString);
 
     [Fact]
-    public void VbStyleNullEmptyStringEqualsOperator() => Assert.False((emptyString != null && nullString != null) && emptyString == nullString); //null == string.Empty in VB
+    public void NullLiteralEmptyStringNotEqualsOperator() => Assert.True(null != emptyString);
 
     [Fact]
-    public void VbStyleNullEmptyStringNotEqualsOperator() => Assert.True((emptyString == null && nullString != null) || (emptyString != null && nullString == null)); //null == string.Empty in VB
+    public void NullStringNullLiteralNotEqualsOperator() => Assert.False(nullString != null);
 
     [Fact]
     public void NullEmptyObjectEqualsOperator() => Assert.False(nullObject == emptyString);
