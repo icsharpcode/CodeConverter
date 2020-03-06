@@ -10,6 +10,7 @@ using SyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 namespace ICSharpCode.CodeConverter.VB
 {
 
+    [System.Diagnostics.DebuggerStepThrough]
     internal class CommentConvertingVisitorWrapper<T> where T : VisualBasicSyntaxNode
     {
         private readonly CSharpSyntaxVisitor<T> _wrappedVisitor;

@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -615,6 +616,20 @@ namespace ICSharpCode.CodeConverter.CSharp
             var symbolToFind = symbol is IMethodSymbol m ? m.ConstructedFrom : symbol;
             var similarSymbol = SymbolFinder.FindSimilarSymbols(symbolToFind, _csCompilation).FirstOrDefault();
             return similarSymbol;
+        }
+
+        public static ExpressionSyntax ThrowawayParameters(ExpressionSyntax invocable, int paramCount)
+        {
+            var names = Enumerable.Range(1, paramCount).Select<int, string>(i =>
+                                            new string(Enumerable.Repeat('_', i).ToArray())
+                                        ).ToArray();
+            var parameters = CreateParameterList(names.Select(n => SyntaxFactory.Parameter(SyntaxFactory.Identifier(n))));
+            return SyntaxFactory.ParenthesizedLambdaExpression(parameters, SyntaxFactory.InvocationExpression(invocable));
+        }
+
+        public static CSSyntax.ParameterListSyntax CreateParameterList(IEnumerable<SyntaxNode> ps)
+        {
+            return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(ps));
         }
     }
 }

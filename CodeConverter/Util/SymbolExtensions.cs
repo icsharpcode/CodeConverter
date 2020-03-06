@@ -188,11 +188,6 @@ namespace ICSharpCode.CodeConverter.Util
                 _ => ImmutableArray.Create<ISymbol>());
         }
 
-        public static bool IsInterfaceType(this ISymbol symbol)
-        {
-            return (symbol as ITypeSymbol)?.IsInterfaceType() == true;
-        }
-
         public static bool IsArrayType(this ISymbol symbol)
         {
             return symbol?.Kind == SymbolKind.ArrayType;
@@ -450,6 +445,11 @@ namespace ICSharpCode.CodeConverter.Util
             var parameterSymbol = symbol as IParameterSymbol;
             if (parameterSymbol != null) {
                 return parameterSymbol.Type;
+            }
+
+            var eventSymnol = symbol as IEventSymbol;
+            if (eventSymnol != null) {
+                return eventSymnol.Type;
             }
 
             var aliasSymbol = symbol as IAliasSymbol;

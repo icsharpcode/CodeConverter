@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.VisualBasic;
@@ -289,7 +290,7 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitDelegateDeclaration(CSS.DelegateDeclarationSyntax node)
         {
             var id = _commonConversions.ConvertIdentifier(node.Identifier);
-            var methodInfo = (INamedTypeSymbol) _semanticModel.GetDeclaredSymbol(node);
+            var methodInfo = _semanticModel.GetDeclaredSymbol(node) as INamedTypeSymbol;
             if (methodInfo?.DelegateInvokeMethod.GetReturnType()?.SpecialType == SpecialType.System_Void) {
                 return SyntaxFactory.DelegateSubStatement(
                     SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CommonConversions.ConvertModifiers(node.Modifiers),
@@ -1358,7 +1359,8 @@ namespace ICSharpCode.CodeConverter.VB
                 var collectionInitializerSyntax = SyntaxFactory.CollectionInitializer(
                     SyntaxFactory.SeparatedList(expressions.OfType<ExpressionSyntax>())
                 );
-                var isObjectCollection = _semanticModel.GetTypeInfo(node.Parent).Type?.CanSupportCollectionInitializer() == true;
+
+                var isObjectCollection = node.IsParentKind(CS.SyntaxKind.ObjectCreationExpression) && _semanticModel.GetTypeInfo(node.Parent).Type?.CanSupportCollectionInitializer(_semanticModel.GetEnclosingSymbol<INamedTypeSymbol>(node.SpanStart, default)) == true;
 
                 return isObjectCollection ? (VisualBasicSyntaxNode) SyntaxFactory.ObjectCollectionInitializer(collectionInitializerSyntax) : collectionInitializerSyntax;
             }

@@ -13,6 +13,7 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
+    [System.Diagnostics.DebuggerStepThrough]
     internal class CommentConvertingVisitorWrapper
     {
         private readonly VBasic.VisualBasicSyntaxVisitor<Task<CS.CSharpSyntaxNode>> _wrappedVisitor;

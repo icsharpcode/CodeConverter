@@ -1,4 +1,5 @@
 using System;
+using System.Windows.Forms;
 
 namespace WindowsAppVb
 {
@@ -8,6 +9,7 @@ namespace WindowsAppVb
         {
             base.Load += WinformsDesignerTest_EnsureSelfEventsWork;
             this.SizeChanged += WinformsDesignerTest_EnsureSelfEventsWork;
+            this.MouseClick += (_, __) => WinformsDesignerTest_MouseClick();
             InitializeComponent();
         }
 
@@ -30,6 +32,26 @@ namespace WindowsAppVb
 
         private void WinformsDesignerTest_EnsureSelfEventsWork(object sender, EventArgs e)
         {
+        }
+
+        private void WinformsDesignerTest_MouseClick()
+        {
+        }
+
+        public void Init()
+        {
+            MouseEventHandler noArgs = (_, __) => WinformsDesignerTest_MouseClick();
+            MouseClick += noArgs;
+            MouseClick += (_, __) => WinformsDesignerTest_MouseClick();
+            MouseClick -= noArgs;
+            MouseClick -= (_, __) => WinformsDesignerTest_MouseClick(); // Generates a VB warning because it has no effect
+        }
+
+        public void Init_Advanced(MouseEventHandler paramToHandle)
+        {
+            Init();
+            MouseClick += paramToHandle;
+            WinformsDesignerTest_MouseClick();
         }
     }
 }

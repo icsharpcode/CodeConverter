@@ -8,6 +8,7 @@ using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
+    [System.Diagnostics.DebuggerStepThrough]
     public class CommentConvertingMethodBodyVisitor : VisualBasicSyntaxVisitor<Task<SyntaxList<CSSyntax.StatementSyntax>>>
     {
         private readonly VisualBasicSyntaxVisitor<Task<SyntaxList<CSSyntax.StatementSyntax>>> _wrappedVisitor;

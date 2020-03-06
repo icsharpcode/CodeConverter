@@ -28,6 +28,7 @@ using TypeSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax;
 using VariableDeclaratorSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax;
 using YieldStatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.YieldStatementSyntax;
 using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 
 namespace ICSharpCode.CodeConverter.VB
 {
@@ -383,7 +384,7 @@ namespace ICSharpCode.CodeConverter.VB
                 case CSSyntaxKind.ClassDeclaration:
                     var classOrInterface = type.BaseList?.Types.FirstOrDefault()?.Type;
                     if (classOrInterface == null) return;
-                    var classOrInterfaceSymbol = ModelExtensions.GetSymbolInfo(_semanticModel, classOrInterface).Symbol;
+                    var classOrInterfaceSymbol = ModelExtensions.GetSymbolInfo(_semanticModel, classOrInterface).Symbol as ITypeSymbol;
                     if (classOrInterfaceSymbol?.IsInterfaceType() == true) {
                         arr = type.BaseList?.Types.Select(t => (TypeSyntax)t.Type.Accept(_nodesVisitor)).ToArray();
                         if (arr.Length > 0)

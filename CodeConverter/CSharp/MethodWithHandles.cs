@@ -12,12 +12,12 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private IdentifierNameSyntax _methodId;
         public SyntaxToken MethodCSharpId { get; }
-        public List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName)> HandledPropertyEventCSharpIds { get; }
-        public List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName)> HandledClassEventCSharpIds { get; }
+        public List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName, int ParametersToDiscard)> HandledPropertyEventCSharpIds { get; }
+        public List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName, int ParametersToDiscard)> HandledClassEventCSharpIds { get; }
 
         public MethodWithHandles(SyntaxToken methodCSharpId,
-            List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName)> handledPropertyEventCSharpIds,
-            List<(SyntaxToken, SyntaxToken)> handledClassEventCSharpIds)
+            List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName, int ParametersToDiscard)> handledPropertyEventCSharpIds,
+            List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName, int ParametersToDiscard)> handledClassEventCSharpIds)
         {
             MethodCSharpId = methodCSharpId;
             HandledPropertyEventCSharpIds = handledPropertyEventCSharpIds;
@@ -107,17 +107,17 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         private StatementSyntax CreateHandlesUpdater(IdentifierNameSyntax eventSource,
-            (SyntaxToken EventContainerName, SyntaxToken EventSymbolName) e,
+            (SyntaxToken EventContainerName, SyntaxToken EventSymbolName, int ParametersToDiscard) e,
             SyntaxKind assignmentExpressionKind)
         {
             var handledFieldMember = MemberAccess(eventSource, e);
             return SyntaxFactory.ExpressionStatement(
                 SyntaxFactory.AssignmentExpression(assignmentExpressionKind,
                     handledFieldMember,
-                    _methodId));
+                    Invocable(_methodId, e.ParametersToDiscard)));
         }
 
-        private static MemberAccessExpressionSyntax MemberAccess(IdentifierNameSyntax eventSource, (SyntaxToken EventContainerName, SyntaxToken EventSymbolName) e)
+        private static ExpressionSyntax MemberAccess(IdentifierNameSyntax eventSource, (SyntaxToken EventContainerName, SyntaxToken EventSymbolName, int ParametersToDiscard) e)
         {
             return SyntaxFactory.MemberAccessExpression(
                             SyntaxKind.SimpleMemberAccessExpression,
@@ -127,9 +127,16 @@ namespace ICSharpCode.CodeConverter.CSharp
         public IEnumerable<(ExpressionSyntax EventField, SyntaxKind AssignmentKind, ExpressionSyntax HandlerId)> GetPreInitializeComponentEventHandlers()
         {
             return HandledClassEventCSharpIds.Select(e =>
-                ((ExpressionSyntax) MemberAccess(SyntaxFactory.IdentifierName(e.EventContainerName), e), SyntaxKind.AddAssignmentExpression, (ExpressionSyntax)_methodId));
+                (MemberAccess(SyntaxFactory.IdentifierName(e.EventContainerName), e), SyntaxKind.AddAssignmentExpression, Invocable(_methodId, e.ParametersToDiscard))
+            );
         }
 
+        private ExpressionSyntax Invocable(IdentifierNameSyntax methodId, int parametersToDiscard)
+        {
+            return parametersToDiscard > 0
+                ? CommonConversions.ThrowawayParameters(methodId, parametersToDiscard)
+                : methodId;
+        }
 
         private static StatementSyntax IfFieldNotNull(IdentifierNameSyntax fieldIdSyntax, IEnumerable<StatementSyntax> statements)
         {

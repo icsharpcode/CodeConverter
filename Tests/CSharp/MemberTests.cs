@@ -283,7 +283,7 @@ public partial class Class1
     protected override string Foo()
     {
         string FooRet = default(string);
-        MyEvent += this.Foo;
+        MyEvent += (_, __) => Foo();
         FooRet = FooRet + """";
         FooRet += nameof(Foo);
         return FooRet;

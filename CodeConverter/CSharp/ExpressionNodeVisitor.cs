@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -581,8 +582,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitUnaryExpression(VBasic.Syntax.UnaryExpressionSyntax node)
         {
             var expr = (ExpressionSyntax) await node.Operand.AcceptAsync(TriviaConvertingExpressionVisitor);
-            if (node.IsKind(VBasic.SyntaxKind.AddressOfExpression))
-                return expr;
+            if (node.IsKind(VBasic.SyntaxKind.AddressOfExpression)) {
+                return ConvertAddressOf(node, expr);
+            }
             var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
             SyntaxKind csTokenKind = CSharpUtil.GetExpressionOperatorTokenKind(kind);
             if (csTokenKind == SyntaxKind.LogicalNotExpression) {
@@ -596,6 +598,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxFactory.Token(csTokenKind),
                 expr.AddParensIfRequired()
             );
+        }
+
+        private CSharpSyntaxNode ConvertAddressOf(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr)
+        {
+            var typeInfo = _semanticModel.GetTypeInfo(node);
+            if (_semanticModel.GetSymbolInfo(node.Operand).Symbol is IMethodSymbol ms && typeInfo.Type is INamedTypeSymbol nt && !ms.CompatibleSignatureToDelegate(nt)) {
+                int count = nt.DelegateInvokeMethod.Parameters.Count();
+                return CommonConversions.ThrowawayParameters(expr, count);
+            }
+            return expr;
         }
 
         public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax node)

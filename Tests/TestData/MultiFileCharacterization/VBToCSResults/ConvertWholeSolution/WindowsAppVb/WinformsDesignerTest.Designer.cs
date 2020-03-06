@@ -12,6 +12,7 @@ namespace WindowsAppVb
         {
             base.Load += WinformsDesignerTest_EnsureSelfEventsWork;
             this.SizeChanged += WinformsDesignerTest_EnsureSelfEventsWork;
+            this.MouseClick += (_, __) => WinformsDesignerTest_MouseClick();
             InitializeComponent();
         }
 
