@@ -1352,7 +1352,7 @@ namespace ICSharpCode.CodeConverter.VB
                     SyntaxFactory.SeparatedList(expressions.OfType<ExpressionSyntax>())
                 );
 
-                var isObjectCollection = _semanticModel.GetTypeInfo(node.Parent).Type?.CanSupportCollectionInitializer(_semanticModel.GetEnclosingSymbol<INamedTypeSymbol>(node.SpanStart, default)) == true;
+                var isObjectCollection = node.IsParentKind(CS.SyntaxKind.ObjectCreationExpression) && _semanticModel.GetTypeInfo(node.Parent).Type?.CanSupportCollectionInitializer(_semanticModel.GetEnclosingSymbol<INamedTypeSymbol>(node.SpanStart, default)) == true;
 
                 return isObjectCollection ? (VisualBasicSyntaxNode) SyntaxFactory.ObjectCollectionInitializer(collectionInitializerSyntax) : collectionInitializerSyntax;
             }
