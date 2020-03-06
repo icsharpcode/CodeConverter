@@ -53,6 +53,7 @@ steps:
   inputs:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+    codeCoverageEnabled: True
 
 - task: DotNetCoreCLI@2
   inputs:
