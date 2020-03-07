@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Convert "{}" to "Array.Empty<T>()" [#495](https://github.com/icsharpcode/CodeConverter/issues/495)
 * Convert inferred anonymous member names without duplicating name [#480](https://github.com/icsharpcode/CodeConverter/issues/480)
 * Convert "!" operator to element access [#479](https://github.com/icsharpcode/CodeConverter/issues/479)
+* Fix async method default return statements [#478](https://github.com/icsharpcode/CodeConverter/issues/478)
 
 ### C# -> VB
 

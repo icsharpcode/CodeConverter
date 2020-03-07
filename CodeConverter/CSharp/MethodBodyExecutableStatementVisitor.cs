@@ -13,6 +13,7 @@ using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -348,12 +349,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var enclosingMethodInfo = await typeContainer.TypeSwitch(
                         async (VBSyntax.LambdaExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).Symbol,
                         async (VBSyntax.MethodBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e),
-                        async (VBSyntax.AccessorBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e));
+                        async (VBSyntax.AccessorBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e)) as IMethodSymbol;
 
                     if (IsIterator) return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
 
-                    ExpressionSyntax expr = HasReturnVariable ? (ExpressionSyntax)ReturnVariable : SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
-                    return SingleStatement(SyntaxFactory.ReturnStatement(expr));
+                    if (!enclosingMethodInfo.ReturnsVoidOrAsyncTask()) {
+                        ExpressionSyntax expr = HasReturnVariable ? (ExpressionSyntax)ReturnVariable : SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
+                        return SingleStatement(SyntaxFactory.ReturnStatement(expr));
+                    }
+
+                    return SingleStatement(SyntaxFactory.ReturnStatement());
                 default:
                     return SingleStatement(SyntaxFactory.BreakStatement());
             }

@@ -877,7 +877,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         private BlockSyntax WithImplicitReturnStatements(VBSyntax.MethodBlockBaseSyntax node, BlockSyntax convertedStatements,
             IdentifierNameSyntax csReturnVariableOrNull)
         {
-            if (!node.AllowsImplicitReturn()) return convertedStatements;
+            if (!node.MustReturn()) return convertedStatements;
+            if (_semanticModel.GetDeclaredSymbol(node) is IMethodSymbol ms && ms.ReturnsVoidOrAsyncTask()) {
+                return convertedStatements;
+            }
+
 
             var preBodyStatements = new List<StatementSyntax>();
             var postBodyStatements = new List<StatementSyntax>();

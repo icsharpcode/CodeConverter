@@ -1011,7 +1011,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (sym != null && sym.Kind == SymbolKind.Local) {
                 var vbMethodBlock = node.Ancestors().OfType<VBasic.Syntax.MethodBlockBaseSyntax>().FirstOrDefault();
                 if (vbMethodBlock != null &&
-                    vbMethodBlock.AllowsImplicitReturn() &&
+                    vbMethodBlock.MustReturn() &&
                     !node.Parent.IsKind(VBasic.SyntaxKind.NameOfExpression) &&
                     node.Identifier.ValueText.Equals(CommonConversions.GetMethodBlockBaseIdentifierForImplicitReturn(vbMethodBlock).ValueText, StringComparison.OrdinalIgnoreCase)) {
                     var retVar = CommonConversions.GetRetVariableNameOrNull(vbMethodBlock);

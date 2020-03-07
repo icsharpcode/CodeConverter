@@ -538,7 +538,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public CSSyntax.IdentifierNameSyntax GetRetVariableNameOrNull(VBSyntax.MethodBlockBaseSyntax node)
         {
-            if (!node.AllowsImplicitReturn()) return null;
+            if (!node.MustReturn()) return null;
+            if (_semanticModel.GetDeclaredSymbol(node) is IMethodSymbol ms && ms.ReturnsVoidOrAsyncTask()) {
+                return null;
+            }
+            
 
             bool assignsToMethodNameVariable = false;
 

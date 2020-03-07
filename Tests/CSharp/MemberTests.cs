@@ -2192,6 +2192,73 @@ internal partial class AsyncCode
         }
 
         [Fact]
+        public async Task TestAsyncMethodsWithNoReturn()
+        {
+            await TestConversionVisualBasicToCSharp(
+@"Friend Partial Module TaskExtensions
+    <Extension()>
+    Async Function [Then](Of T)(ByVal task As Task, ByVal f As Func(Of Task(Of T))) As Task(Of T)
+        Await task
+        Return Await f()
+    End Function
+
+    <Extension()>
+    Async Function [Then](ByVal task As Task, ByVal f As Func(Of Task)) As Task
+        Await task
+        Await f()
+    End Function
+
+    <Extension()>
+    Async Function [Then](Of T, U)(ByVal task As Task(Of T), ByVal f As Func(Of T, Task(Of U))) As Task(Of U)
+        Return Await f(Await task)
+    End Function
+
+    <Extension()>
+    Async Function [Then](Of T)(ByVal task As Task(Of T), ByVal f As Func(Of T, Task)) As Task
+        Await f(Await task)
+    End Function
+
+    <Extension()>
+    Async Function [ThenExit](Of T)(ByVal task As Task(Of T), ByVal f As Func(Of T, Task)) As Task
+        Await f(Await task)
+        Exit Function
+    End Function
+End Module", @"using System;
+using System.Threading.Tasks;
+
+internal static partial class TaskExtensions
+{
+    public async static Task<T> Then<T>(this Task task, Func<Task<T>> f)
+    {
+        await task;
+        return await f();
+    }
+
+    public async static Task Then(this Task task, Func<Task> f)
+    {
+        await task;
+        await f();
+    }
+
+    public async static Task<U> Then<T, U>(this Task<T> task, Func<T, Task<U>> f)
+    {
+        return await f(await task);
+    }
+
+    public async static Task Then<T>(this Task<T> task, Func<T, Task> f)
+    {
+        await f(await task);
+    }
+
+    public async static Task ThenExit<T>(this Task<T> task, Func<T, Task> f)
+    {
+        await f(await task);
+        return;
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestExternDllImport()
         {
             await TestConversionVisualBasicToCSharp(
