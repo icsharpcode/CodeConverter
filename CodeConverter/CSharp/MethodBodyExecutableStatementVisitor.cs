@@ -410,14 +410,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             var condition = (ExpressionSyntax) await node.IfStatement.Condition.AcceptAsync(_expressionVisitor);
             condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.IfStatement.Condition, condition, forceTargetType: _vbBooleanTypeSymbol);
             var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
-            ElseClauseSyntax elseClause = null;
 
-            if (node.ElseBlock != null) {
-                var elseBlock = SyntaxFactory.Block(await ConvertStatements(node.ElseBlock.Statements));
-                // so that you get a neat "else if" at the end
-                elseClause = SyntaxFactory.ElseClause(elseBlock)
-                    .WithVbSourceMappingFrom(node.ElseBlock); //Special case where explicit mapping is needed since there are no other visited symbols around, else block is the wrong shape to visit
-            }
+            var elseClause = await ConvertElseClause(node.ElseBlock);
+            elseClause = elseClause.WithVbSourceMappingFrom(node.ElseBlock); //Special case where explicit mapping is needed since block becomes clause so cannot be easily visited
 
             foreach (var elseIf in node.ElseIfBlocks.Reverse()) {
                 var elseBlock = SyntaxFactory.Block(await ConvertStatements(elseIf.Statements));
@@ -428,6 +423,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return SingleStatement(SyntaxFactory.IfStatement(condition, block, elseClause));
+        }
+
+        private async Task<ElseClauseSyntax> ConvertElseClause(VBSyntax.ElseBlockSyntax elseBlock)
+        {
+            if (elseBlock == null) return null;
+
+            var csStatements = await ConvertStatements(elseBlock.Statements);
+            if (csStatements.TryUnpackSingleStatement(out var stmt) && stmt.IsKind(SyntaxKind.IfStatement)) {
+                // so that you get a neat "else if" at the end
+                return SyntaxFactory.ElseClause(stmt);
+            } else {
+                return SyntaxFactory.ElseClause(SyntaxFactory.Block(csStatements));
+            }
         }
 
         private async Task<StatementSyntax[]> ConvertStatements(SyntaxList<VBSyntax.StatementSyntax> statementSyntaxs)
@@ -441,7 +449,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<SyntaxList<StatementSyntax>> VisitForBlock(VBSyntax.ForBlockSyntax node)
         {
             var stmt = node.ForStatement;
-            ExpressionSyntax startValue = (ExpressionSyntax) await stmt.FromValue.AcceptAsync(_expressionVisitor);
+            var startValue = (ExpressionSyntax) await stmt.FromValue.AcceptAsync(_expressionVisitor);
             VariableDeclarationSyntax declaration = null;
             ExpressionSyntax id;
             var controlVarOp = _semanticModel.GetOperation(stmt.ControlVariable) as IVariableDeclaratorOperation;
@@ -524,7 +532,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
-            ExpressionSyntax csExpression = (ExpressionSyntax)await stmt.Expression.AcceptAsync(_expressionVisitor);
+            var csExpression = (ExpressionSyntax)await stmt.Expression.AcceptAsync(_expressionVisitor);
             return SingleStatement(SyntaxFactory.ForEachStatement(
                 type,
                 id,

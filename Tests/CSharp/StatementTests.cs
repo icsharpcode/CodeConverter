@@ -1251,12 +1251,9 @@ internal partial class TestClass
                     return c;
                 }
             }
-            else
+            else if ((w[c].ToString() ?? """") == (needle ?? """"))
             {
-                if ((w[c].ToString() ?? """") == (needle ?? """"))
-                {
-                    return c;
-                }
+                return c;
             }
         }
 

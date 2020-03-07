@@ -16,8 +16,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
+
 * Convert "Handles" in some previously missed cases [#530](https://github.com/icsharpcode/CodeConverter/pull/530)
 * Wrap event handlers in lambda where needed [#474](https://github.com/icsharpcode/CodeConverter/pull/474)
+* Streamline trailing else if
 
 ### C# -> VB
 
