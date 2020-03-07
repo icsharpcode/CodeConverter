@@ -815,6 +815,25 @@ public partial class A
         }
 
         [Fact]
+        public async Task EmptyArrayExpression()
+        {
+            await TestConversionVisualBasicToCSharp(@"
+Public Class Issue495
+    Public Function Empty() As Integer()
+        Return {}
+    End Function
+End Class", @"using System;
+
+public partial class Issue495
+{
+    public int[] Empty()
+    {
+        return Array.Empty<int>();
+    }
+}");
+        }
+
+        [Fact]
         public async Task MethodCallArrayIndexerBrackets()
         {
             await TestConversionVisualBasicToCSharp(@"Public Class A

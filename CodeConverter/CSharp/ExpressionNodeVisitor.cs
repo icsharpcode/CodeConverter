@@ -497,12 +497,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             var isExplicitCollectionInitializer = node.Parent is VBasic.Syntax.ObjectCollectionInitializerSyntax
                                                   || node.Parent is VBasic.Syntax.CollectionInitializerSyntax
                                                   || node.Parent is VBasic.Syntax.ArrayCreationExpressionSyntax;
-            var initializerType = isExplicitCollectionInitializer ? SyntaxKind.CollectionInitializerExpression : SyntaxKind.ArrayInitializerExpression;
+            var initializerKind = isExplicitCollectionInitializer ? SyntaxKind.CollectionInitializerExpression : SyntaxKind.ArrayInitializerExpression;
             var initializers = (await node.Initializers.SelectAsync(i => i.AcceptAsync(TriviaConvertingExpressionVisitor))).Cast<ExpressionSyntax>();
-            var initializer = SyntaxFactory.InitializerExpression(initializerType, SyntaxFactory.SeparatedList(initializers));
-            return isExplicitCollectionInitializer
-                ? initializer
-                : (CSharpSyntaxNode)SyntaxFactory.ImplicitArrayCreationExpression(initializer);
+            var initializer = SyntaxFactory.InitializerExpression(initializerKind, SyntaxFactory.SeparatedList(initializers));
+            if (isExplicitCollectionInitializer) return initializer;
+            
+            if (!initializers.Any() && _semanticModel.GetTypeInfo(node).ConvertedType is IArrayTypeSymbol arrayType) {
+
+                var arrayTypeArgs = SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList(CommonConversions.GetTypeSyntax(arrayType.ElementType)));
+                var arrayEmpty = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                    SyntaxFactory.IdentifierName(nameof(Array)), SyntaxFactory.GenericName(nameof(Array.Empty)).WithTypeArgumentList(arrayTypeArgs));
+                return SyntaxFactory.InvocationExpression(arrayEmpty);
+            }
+            return SyntaxFactory.ImplicitArrayCreationExpression(initializer);
         }
 
         public override async Task<CSharpSyntaxNode> VisitQueryExpression(VBasic.Syntax.QueryExpressionSyntax node)
