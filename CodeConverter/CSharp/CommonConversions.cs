@@ -631,5 +631,18 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(ps));
         }
+
+        public static CSSyntax.BinaryExpressionSyntax IsNotDefault(ExpressionSyntax otherArgument)
+        {
+            return SyntaxFactory.BinaryExpression(CSSyntaxKind.IsExpression, otherArgument, SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.ObjectKeyword)));
+        }
+
+        public static CSSyntax.BinaryExpressionSyntax IsDefault(ExpressionSyntax otherArgument, bool isDefinitelyReferenceType = false)
+        {
+            if (isDefinitelyReferenceType) {
+                return SyntaxFactory.BinaryExpression(CSSyntaxKind.IsExpression, otherArgument, SyntaxFactory.LiteralExpression(CSSyntaxKind.NullLiteralExpression));
+            }
+            return SyntaxFactory.BinaryExpression(CSSyntaxKind.EqualsExpression, otherArgument, SyntaxFactory.LiteralExpression(CSSyntaxKind.DefaultLiteralExpression));
+        }
     }
 }

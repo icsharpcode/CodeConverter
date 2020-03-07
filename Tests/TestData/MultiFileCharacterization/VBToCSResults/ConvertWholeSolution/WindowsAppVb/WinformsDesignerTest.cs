@@ -24,7 +24,7 @@ namespace WindowsAppVb
             {
                 My.MyProject.Forms.WinformsDesignerTest.Text = formConstructedText;
             }
-            else if (My.MyProject.Forms.m_WinformsDesignerTest != default && My.MyProject.Forms.m_WinformsDesignerTest != default)
+            else if (My.MyProject.Forms.m_WinformsDesignerTest is object && My.MyProject.Forms.m_WinformsDesignerTest is object)
             {
                 My.MyProject.Forms.WinformsDesignerTest = null;
             }

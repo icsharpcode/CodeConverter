@@ -621,8 +621,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Left);
                 }
                 if (otherArgument != null) {
-                    return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, otherArgument,
-                        SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression));
+                    var isDefinitelyReferenceType = _semanticModel.GetTypeInfo(otherArgument).ConvertedType?.IsReferenceType == true;
+                    return CommonConversions.IsDefault(otherArgument, isDefinitelyReferenceType);
                 }
             }
 
@@ -635,7 +635,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Left);
                 }
                 if (otherArgument != null) {
-                    return SyntaxFactory.BinaryExpression(SyntaxKind.NotEqualsExpression, otherArgument, SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression));
+                    return CommonConversions.IsNotDefault(otherArgument);
                 }
             }
 

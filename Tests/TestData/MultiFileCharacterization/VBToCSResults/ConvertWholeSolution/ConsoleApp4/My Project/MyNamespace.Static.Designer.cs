@@ -106,7 +106,7 @@ namespace ConsoleApp4
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static object RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, object obj)
             {
-                if (obj != default)
+                if (obj is object)
                 {
                     XElement elem = obj as XElement;
                     if (!(elem == default))
@@ -116,7 +116,7 @@ namespace ConsoleApp4
                     else
                     {
                         IEnumerable elems = obj as IEnumerable;
-                        if (elems != default)
+                        if (elems is object)
                         {
                             return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elems);
                         }
@@ -129,10 +129,10 @@ namespace ConsoleApp4
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static IEnumerable RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, IEnumerable obj)
             {
-                if (obj != default)
+                if (obj is object)
                 {
                     IEnumerable<XElement> elems = obj as IEnumerable<XElement>;
-                    if (elems != default)
+                    if (elems is object)
                     {
                         return elems.Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessXElement);
                     }
@@ -172,7 +172,7 @@ namespace ConsoleApp4
                 internal object ProcessObject(object obj)
                 {
                     XElement elem = obj as XElement;
-                    if (elem != default)
+                    if (elem is object)
                     {
                         return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
                     }
@@ -186,19 +186,19 @@ namespace ConsoleApp4
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static XElement RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, XElement e)
             {
-                if (e != default)
+                if (e is object)
                 {
                     var a = e.FirstAttribute;
-                    while (a != default)
+                    while (a is object)
                     {
                         var nextA = a.NextAttribute;
                         if (a.IsNamespaceDeclaration)
                         {
                             var ns = a.Annotation<XNamespace>();
                             string prefix = a.Name.LocalName;
-                            if (ns != default)
+                            if (ns is object)
                             {
-                                if (inScopePrefixes != default && inScopeNs != default)
+                                if (inScopePrefixes is object && inScopeNs is object)
                                 {
                                     int lastIndex = inScopePrefixes.Length - 1;
                                     for (int i = 0, loopTo = lastIndex; i <= loopTo; i++)
@@ -220,12 +220,12 @@ namespace ConsoleApp4
                                     }
                                 }
 
-                                if (a != default)
+                                if (a is object)
                                 {
                                     // Prefix is not in scope 
                                     // Now check whether it's going to be in scope because it is in the attributes list 
 
-                                    if (attributes != default)
+                                    if (attributes is object)
                                     {
                                         int lastIndex = attributes.Count - 1;
                                         for (int i = 0, loopTo1 = lastIndex; i <= loopTo1; i++)
@@ -233,7 +233,7 @@ namespace ConsoleApp4
                                             var currentA = attributes[i];
                                             string currentInScopePrefix = currentA.Name.LocalName;
                                             var currentInScopeNs = currentA.Annotation<XNamespace>();
-                                            if (currentInScopeNs != default)
+                                            if (currentInScopeNs is object)
                                             {
                                                 if (prefix.Equals(currentInScopePrefix))
                                                 {
@@ -251,7 +251,7 @@ namespace ConsoleApp4
                                         }
                                     }
 
-                                    if (a != default)
+                                    if (a is object)
                                     {
                                         // Prefix is definitely not in scope  
                                         a.Remove();
