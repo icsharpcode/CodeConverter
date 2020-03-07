@@ -78,31 +78,6 @@ namespace CSharpToVBCodeConverter.Util
             return CommentTriviaBody;
         }
 
-        internal T With<T>(T node, IEnumerable<SyntaxTrivia> leadingTrivia, IEnumerable<SyntaxTrivia> trailingTrivia) where T : SyntaxNode
-        {
-            return node.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(trailingTrivia);
-        }
-
-        internal IEnumerable<TNode> GetAncestors<TNode>(SyntaxNode node) where TNode : SyntaxNode
-        {
-            var current = node.Parent;
-            while (current != null) {
-                if (current is TNode) {
-                    yield return (TNode)current;
-                }
-
-                current = current is IStructuredTriviaSyntax ? ((IStructuredTriviaSyntax)current).ParentTrivia.Token.Parent : current.Parent;
-            }
-        }
-
-        internal bool ParentHasSameTrailingTrivia(SyntaxNode otherNode)
-        {
-            if (otherNode.Parent == null) {
-                return false;
-            }
-            return otherNode.Parent.GetLastToken() == otherNode.GetLastToken();
-        }
-
         internal T WithAppendedTriviaFromEndOfDirectiveToken<T>(T node, SyntaxToken Token) where T : SyntaxNode
         {
             var NewTrailingTrivia = new List<SyntaxTrivia>();
@@ -114,46 +89,6 @@ namespace CSharpToVBCodeConverter.Util
             }
 
             return WithTrailingEOL(node.WithAppendedTrailingTrivia(NewTrailingTrivia));
-        }
-
-        internal T WithPrependedLeadingTrivia<T>(T node, SyntaxTriviaList trivia) where T : SyntaxNode
-        {
-            if (trivia.Count == 0) {
-                return node;
-            }
-            if (trivia.Last().IsKind(VB.SyntaxKind.CommentTrivia)) {
-                trivia = trivia.Add(global::VisualBasicSyntaxFactory.VBEOLTrivia);
-            }
-            return node.WithLeadingTrivia(trivia.Concat(node.GetLeadingTrivia()));
-        }
-
-        internal T WithPrependedLeadingTrivia<T>(T node, IEnumerable<SyntaxTrivia> trivia) where T : SyntaxNode
-        {
-            if (trivia == null) {
-                return node;
-            }
-            return node.WithPrependedLeadingTrivia(trivia.ToSyntaxTriviaList());
-        }
-
-        internal T WithRestructuredingEOLTrivia<T>(T node) where T : SyntaxNode
-        {
-            if (!node.HasTrailingTrivia) {
-                return node;
-            }
-
-            var NodeTrailingTrivia = node.GetTrailingTrivia();
-            if (NodeTrailingTrivia.ContainsEOLTrivia()) {
-                var NewTriviaList = new List<SyntaxTrivia>();
-                foreach (SyntaxTrivia Trivia in NodeTrailingTrivia) {
-                    if (Trivia.IsKind(VB.SyntaxKind.EndOfLineTrivia)) {
-                        continue;
-                    }
-                    NewTriviaList.Add(Trivia);
-                }
-                return node.WithTrailingTrivia(NewTriviaList);
-            } else {
-                return node;
-            }
         }
 
         /// <summary>

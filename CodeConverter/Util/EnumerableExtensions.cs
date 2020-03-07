@@ -6,9 +6,6 @@ using System.Linq;
 
 namespace ICSharpCode.CodeConverter.Util
 {
-#if NR6
-    public
-#endif
     internal static partial class EnumerableExtensions
     {
         public static IEnumerable<T> Do<T>(this IEnumerable<T> source, Action<T> action)
@@ -95,18 +92,6 @@ namespace ICSharpCode.CodeConverter.Util
         public static bool IsEmpty<T>(this IReadOnlyCollection<T> source)
         {
             return source.Count == 0;
-        }
-
-        private static readonly Func<object, bool> s_notNullTest = x => x != null;
-
-        public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T> source)
-            where T : class
-        {
-            if (source == null) {
-                return SpecializedCollections.EmptyEnumerable<T>();
-            }
-
-            return source.Where((Func<T, bool>)s_notNullTest);
         }
 
         public static IEnumerable<T> Yield<T>(this T singleElement)

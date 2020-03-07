@@ -34,13 +34,6 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
             return symbol.ToDisplayString(s_shortNameFormat);
         }
 
-        public static IEnumerable<IPropertySymbol> GetIndexers(this INamespaceOrTypeSymbol? symbol)
-        {
-            return symbol == null
-                ? SpecializedCollections.EmptyEnumerable<IPropertySymbol>()
-                : symbol.GetMembers(WellKnownMemberNames.Indexer).OfType<IPropertySymbol>().Where(p => p.IsIndexer);
-        }
-
         public static IReadOnlyList<string> GetNameParts(this INamespaceOrTypeSymbol symbol)
             => s_namespaceOrTypeToNameMap.GetValue(symbol, s_getNamePartsCallBack);
 

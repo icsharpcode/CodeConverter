@@ -4,9 +4,6 @@ using System.Collections.Generic;
 
 namespace ICSharpCode.CodeConverter.Util
 {
-#if NR6
-    public
-#endif
     internal static partial class SpecializedCollections
     {
         public static readonly byte[] EmptyBytes = EmptyArray<byte>();
