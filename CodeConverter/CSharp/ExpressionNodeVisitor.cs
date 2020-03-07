@@ -359,9 +359,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (left == null) {
                 if (IsSubPartOfConditionalAccess(node)) {
                     return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
-                        : AddEmptyArgumentListIfImplicit(node, (ExpressionSyntax)SyntaxFactory.MemberBindingExpression(simpleNameSyntax));
+                        : AddEmptyArgumentListIfImplicit(node, SyntaxFactory.MemberBindingExpression(simpleNameSyntax));
                 }
                 left = _withBlockLhs.Peek();
+            }
+
+            if (node.IsKind(VBasic.SyntaxKind.DictionaryAccessExpression)) {
+                var args = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(CommonConversions.Literal(node.Name.Identifier.ValueText)));
+                var bracketedArgumentListSyntax = SyntaxFactory.BracketedArgumentList(args);
+                return SyntaxFactory.ElementAccessExpression(left, bracketedArgumentListSyntax);
             }
 
             if (node.Expression.IsKind(VBasic.SyntaxKind.GlobalName)) {

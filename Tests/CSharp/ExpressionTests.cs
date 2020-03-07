@@ -2616,6 +2616,51 @@ public partial class MoreParsing
         }
 
         [Fact]
+        public async Task ExclamationPointOperator()
+        {
+            await TestConversionVisualBasicToCSharp(
+                @"Public Class Issue479
+  Default Public ReadOnly Property index(ByVal s As String) As Integer
+    Get
+      Return 32768 + AscW(s)
+    End Get
+  End Property
+End Class
+
+Public Class TestIssue479
+  Public Sub compareAccess()
+    Dim hD As Issue479 = New Issue479()
+    System.Console.WriteLine(""Traditional access returns "" & hD.index(""X"") & vbCrLf & 
+      ""Default property access returns "" & hD(""X"") & vbCrLf &
+      ""Dictionary access returns "" & hD!X)
+  End Sub
+End Class",
+                @"using System;
+using Microsoft.VisualBasic;
+using Microsoft.VisualBasic.CompilerServices;
+
+public partial class Issue479
+{
+    public int this[string s]
+    {
+        get
+        {
+            return 32768 + Strings.AscW(s);
+        }
+    }
+}
+
+public partial class TestIssue479
+{
+    public void compareAccess()
+    {
+        var hD = new Issue479();
+        Console.WriteLine(""Traditional access returns "" + Conversions.ToString(hD[""X""]) + Constants.vbCrLf + ""Default property access returns "" + Conversions.ToString(hD[""X""]) + Constants.vbCrLf + ""Dictionary access returns "" + Conversions.ToString(hD[""X""]));
+    }
+}");
+        }
+
+        [Fact]
         public async Task GenericMethodCalledWithAnonymousType()
         {
             await TestConversionVisualBasicToCSharp(
