@@ -1827,6 +1827,28 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task ObjectInitializerWithInferredName()
+        {
+            await TestConversionVisualBasicToCSharp(@"Class Issue480
+    Public Foo As Integer
+
+    Sub Test()
+        Dim x = New With {Foo}
+    End Sub
+
+End Class", @"
+internal partial class Issue480
+{
+    public int Foo;
+
+    public void Test()
+    {
+        var x = new { Foo };
+    }
+}");
+        }
+
+        [Fact]
         public async Task ObjectInitializerExpression2()
         {
             await TestConversionVisualBasicToCSharp(@"Class TestClass

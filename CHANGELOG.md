@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Streamline trailing else if
 * Use less error-prone, more performant null/default comparisons
 * Convert "{}" to "Array.Empty<T>()" [#495](https://github.com/icsharpcode/CodeConverter/issues/495)
+* Convert inferred anonymous member names without duplicating name [#480](https://github.com/icsharpcode/CodeConverter/issues/480)
 
 ### C# -> VB
 

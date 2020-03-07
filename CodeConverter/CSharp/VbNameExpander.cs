@@ -65,12 +65,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             return symbol?.IsStatic == true || IsMyBaseBug(node, symbol, root, semanticModel) || IsTypePromotion(node, symbol, root, semanticModel);
         }
 
-        /// <summary>
-        /// Workaround roslyn bug where it will try to expand something even when the parent node cannot contain the type of the expanded node
-        /// </summary>
         private static bool NameCanBeExpanded(SyntaxNode node)
         {
-            return !(node.Parent is NameColonEqualsSyntax || node.Parent is NamedFieldInitializerSyntax);
+            // Workaround roslyn bug where it will try to expand something even when the parent node cannot contain the type of the expanded node
+            if (node.Parent is NameColonEqualsSyntax || node.Parent is NamedFieldInitializerSyntax) return false;
+            // Workaround roslyn bug where it duplicates the inferred name
+            if (node.Parent is InferredFieldInitializerSyntax) return false;
+            return true;
         }
 
         /// <returns>True iff calling Expand would qualify with MyBase when the symbol isn't in the base type
