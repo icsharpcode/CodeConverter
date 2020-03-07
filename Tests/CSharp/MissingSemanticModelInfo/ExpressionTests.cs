@@ -272,7 +272,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        if (MyEvent != null)
+        if (MyEvent != default)
             MyEvent[this, EventArgs.Empty];
     }
 }");

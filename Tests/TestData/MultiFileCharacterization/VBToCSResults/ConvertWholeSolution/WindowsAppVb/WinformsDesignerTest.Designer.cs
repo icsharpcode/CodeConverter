@@ -22,7 +22,7 @@ namespace WindowsAppVb
         {
             try
             {
-                if (disposing && components != null)
+                if (disposing && components != default)
                 {
                     components.Dispose();
                 }

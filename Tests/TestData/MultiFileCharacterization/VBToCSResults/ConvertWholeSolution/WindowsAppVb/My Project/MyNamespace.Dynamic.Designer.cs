@@ -25,7 +25,7 @@ namespace WindowsAppVb.My
                 {
                     if (value == m_WinformsDesignerTest)
                         return;
-                    if (value != null)
+                    if (value != default)
                         throw new ArgumentException("Property can only be set to Nothing");
                     Dispose__Instance__(ref m_WinformsDesignerTest);
                 }

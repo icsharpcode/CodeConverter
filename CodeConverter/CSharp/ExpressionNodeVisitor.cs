@@ -622,7 +622,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
                 if (otherArgument != null) {
                     return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, otherArgument,
-                        SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression));
+                        SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression));
                 }
             }
 
@@ -635,7 +635,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Left);
                 }
                 if (otherArgument != null) {
-                    return SyntaxFactory.BinaryExpression(SyntaxKind.NotEqualsExpression, otherArgument, SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression));
+                    return SyntaxFactory.BinaryExpression(SyntaxKind.NotEqualsExpression, otherArgument, SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression));
                 }
             }
 
@@ -1198,10 +1198,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                         return null;
                     }
 
-                    var nullLiteral = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression)
-                        .WithTrailingTrivia(
-                            SyntaxFactory.Comment("/* Conversion error: Set to default value for this argument */"));
-                    return SyntaxFactory.Argument(nullLiteral);
+                    var defaultLiteral = SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
+                    return SyntaxFactory.Argument(defaultLiteral);
                 }
 
                 var argumentSyntax = (ArgumentSyntax) await a.AcceptAsync(TriviaConvertingExpressionVisitor);

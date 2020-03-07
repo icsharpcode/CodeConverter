@@ -149,7 +149,7 @@ namespace VbLibrary
                 [DebuggerHidden()]
                 private static T Create__Instance__<T>(T instance) where T : new()
                 {
-                    if (instance == null)
+                    if (instance == default)
                     {
                         return new T();
                     }
@@ -185,7 +185,7 @@ namespace VbLibrary
                     [DebuggerHidden()]
                     get
                     {
-                        if (m_ThreadStaticValue == null)
+                        if (m_ThreadStaticValue == default)
                             m_ThreadStaticValue = new T();
                         return m_ThreadStaticValue;
                     }
@@ -268,7 +268,7 @@ namespace VbLibrary
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static XAttribute CreateAttribute(XName name, object value)
             {
-                if (value == null)
+                if (value == default)
                 {
                     return null;
                 }
@@ -287,17 +287,17 @@ namespace VbLibrary
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static object RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, object obj)
             {
-                if (obj != null)
+                if (obj != default)
                 {
                     XElement elem = obj as XElement;
-                    if (!(elem == null))
+                    if (!(elem == default))
                     {
                         return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elem);
                     }
                     else
                     {
                         IEnumerable elems = obj as IEnumerable;
-                        if (elems != null)
+                        if (elems != default)
                         {
                             return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elems);
                         }
@@ -310,10 +310,10 @@ namespace VbLibrary
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static IEnumerable RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, IEnumerable obj)
             {
-                if (obj != null)
+                if (obj != default)
                 {
                     IEnumerable<XElement> elems = obj as IEnumerable<XElement>;
-                    if (elems != null)
+                    if (elems != default)
                     {
                         return elems.Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessXElement);
                     }
@@ -353,7 +353,7 @@ namespace VbLibrary
                 internal object ProcessObject(object obj)
                 {
                     XElement elem = obj as XElement;
-                    if (elem != null)
+                    if (elem != default)
                     {
                         return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
                     }
@@ -367,19 +367,19 @@ namespace VbLibrary
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static XElement RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, XElement e)
             {
-                if (e != null)
+                if (e != default)
                 {
                     var a = e.FirstAttribute;
-                    while (a != null)
+                    while (a != default)
                     {
                         var nextA = a.NextAttribute;
                         if (a.IsNamespaceDeclaration)
                         {
                             var ns = a.Annotation<XNamespace>();
                             string prefix = a.Name.LocalName;
-                            if (ns != null)
+                            if (ns != default)
                             {
-                                if (inScopePrefixes != null && inScopeNs != null)
+                                if (inScopePrefixes != default && inScopeNs != default)
                                 {
                                     int lastIndex = inScopePrefixes.Length - 1;
                                     for (int i = 0, loopTo = lastIndex; i <= loopTo; i++)
@@ -401,12 +401,12 @@ namespace VbLibrary
                                     }
                                 }
 
-                                if (a != null)
+                                if (a != default)
                                 {
                                     // Prefix is not in scope 
                                     // Now check whether it's going to be in scope because it is in the attributes list 
 
-                                    if (attributes != null)
+                                    if (attributes != default)
                                     {
                                         int lastIndex = attributes.Count - 1;
                                         for (int i = 0, loopTo1 = lastIndex; i <= loopTo1; i++)
@@ -414,7 +414,7 @@ namespace VbLibrary
                                             var currentA = attributes[i];
                                             string currentInScopePrefix = currentA.Name.LocalName;
                                             var currentInScopeNs = currentA.Annotation<XNamespace>();
-                                            if (currentInScopeNs != null)
+                                            if (currentInScopeNs != default)
                                             {
                                                 if (prefix.Equals(currentInScopePrefix))
                                                 {
@@ -432,7 +432,7 @@ namespace VbLibrary
                                         }
                                     }
 
-                                    if (a != null)
+                                    if (a != default)
                                     {
                                         // Prefix is definitely not in scope  
                                         a.Remove();

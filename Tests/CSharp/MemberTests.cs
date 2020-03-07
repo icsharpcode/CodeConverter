@@ -675,7 +675,7 @@ internal partial class TestClass
         get
         {
             if (7 == int.Parse(""7""))
-                return default(int);
+                return default;
             return m_test3;
         }
 

@@ -610,14 +610,14 @@ internal partial class TestClass
 {
     private object FuncReturningNull()
     {
-        int zeroLambda(object y) => default(int);
-        return null;
+        int zeroLambda(object y) => default;
+        return default;
     }
 
     private int FuncReturningZero()
     {
-        object nullLambda(object y) => null;
-        return default(int);
+        object nullLambda(object y) => default;
+        return default;
     }
 
     private int FuncReturningAssignedValue()
@@ -1542,7 +1542,7 @@ internal partial class TestClass
 {
     private void TestMethod(object nullObject)
     {
-        if (nullObject == null)
+        if (nullObject == default)
             throw new ArgumentNullException(nameof(nullObject));
         lock (nullObject)
             Console.WriteLine(nullObject);
@@ -1741,7 +1741,7 @@ internal partial class TestClass
 {
     private void TestMethod(object nullObject)
     {
-        if (nullObject == null)
+        if (nullObject == default)
             throw new ArgumentNullException(nameof(nullObject));
     }
 }");

@@ -44,7 +44,7 @@ namespace Microsoft.VisualBasic
                     return 0;
                 }
 
-                if (Left == null)
+                if (Left == default)
                 {
                     if (Right.Length == 0)
                     {
@@ -54,7 +54,7 @@ namespace Microsoft.VisualBasic
                     return -1;
                 }
 
-                if (Right == null)
+                if (Right == default)
                 {
                     if (Left.Length == 0)
                     {
@@ -143,7 +143,7 @@ namespace Microsoft.VisualBasic
 
             public static bool ToBoolean(string Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     Value = "";
                 }
@@ -176,7 +176,7 @@ namespace Microsoft.VisualBasic
 
             public static bool ToBoolean(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return false;
                 }
@@ -244,7 +244,7 @@ namespace Microsoft.VisualBasic
 
             public static byte ToByte(string Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -267,7 +267,7 @@ namespace Microsoft.VisualBasic
 
             public static byte ToByte(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -336,7 +336,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static sbyte ToSByte(string Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -360,7 +360,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static sbyte ToSByte(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -428,7 +428,7 @@ namespace Microsoft.VisualBasic
 
             public static short ToShort(string Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -451,7 +451,7 @@ namespace Microsoft.VisualBasic
 
             public static short ToShort(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -520,7 +520,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static ushort ToUShort(string Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -544,7 +544,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static ushort ToUShort(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -612,7 +612,7 @@ namespace Microsoft.VisualBasic
 
             public static int ToInteger(string Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -635,7 +635,7 @@ namespace Microsoft.VisualBasic
 
             public static int ToInteger(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -704,7 +704,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static uint ToUInteger(string Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -728,7 +728,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static uint ToUInteger(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -796,7 +796,7 @@ namespace Microsoft.VisualBasic
 
             public static long ToLong(string Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -819,7 +819,7 @@ namespace Microsoft.VisualBasic
 
             public static long ToLong(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -888,7 +888,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static ulong ToULong(string Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -912,7 +912,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static ulong ToULong(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -992,7 +992,7 @@ namespace Microsoft.VisualBasic
 
             public static decimal ToDecimal(string Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0M;
                 }
@@ -1019,7 +1019,7 @@ namespace Microsoft.VisualBasic
 
             public static decimal ToDecimal(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0M;
                 }
@@ -1089,7 +1089,7 @@ namespace Microsoft.VisualBasic
             {
                 System.Globalization.NumberFormatInfo NormalizedNumberFormat;
                 var culture = GetCultureInfo();
-                if (NumberFormat == null)
+                if (NumberFormat == default)
                 {
                     NumberFormat = culture.NumberFormat;
                 }
@@ -1114,12 +1114,12 @@ namespace Microsoft.VisualBasic
             private static System.Globalization.NumberFormatInfo GetNormalizedNumberFormat(System.Globalization.NumberFormatInfo InNumberFormat)
             {
                 System.Globalization.NumberFormatInfo OutNumberFormat;
-                if (!(InNumberFormat.CurrencyDecimalSeparator == null) && !(InNumberFormat.NumberDecimalSeparator == null) && !(InNumberFormat.CurrencyGroupSeparator == null) && !(InNumberFormat.NumberGroupSeparator == null) && InNumberFormat.CurrencyDecimalSeparator.Length == 1 && InNumberFormat.NumberDecimalSeparator.Length == 1 && InNumberFormat.CurrencyGroupSeparator.Length == 1 && InNumberFormat.NumberGroupSeparator.Length == 1 && InNumberFormat.CurrencyDecimalSeparator[0] == InNumberFormat.NumberDecimalSeparator[0] && InNumberFormat.CurrencyGroupSeparator[0] == InNumberFormat.NumberGroupSeparator[0] && InNumberFormat.CurrencyDecimalDigits == InNumberFormat.NumberDecimalDigits)
+                if (!(InNumberFormat.CurrencyDecimalSeparator == default) && !(InNumberFormat.NumberDecimalSeparator == default) && !(InNumberFormat.CurrencyGroupSeparator == default) && !(InNumberFormat.NumberGroupSeparator == default) && InNumberFormat.CurrencyDecimalSeparator.Length == 1 && InNumberFormat.NumberDecimalSeparator.Length == 1 && InNumberFormat.CurrencyGroupSeparator.Length == 1 && InNumberFormat.NumberGroupSeparator.Length == 1 && InNumberFormat.CurrencyDecimalSeparator[0] == InNumberFormat.NumberDecimalSeparator[0] && InNumberFormat.CurrencyGroupSeparator[0] == InNumberFormat.NumberGroupSeparator[0] && InNumberFormat.CurrencyDecimalDigits == InNumberFormat.NumberDecimalDigits)
                 {
                     return InNumberFormat;
                 }
 
-                if (!(InNumberFormat.CurrencyDecimalSeparator == null) && !(InNumberFormat.NumberDecimalSeparator == null) && InNumberFormat.CurrencyDecimalSeparator.Length == InNumberFormat.NumberDecimalSeparator.Length && !(InNumberFormat.CurrencyGroupSeparator == null) && !(InNumberFormat.NumberGroupSeparator == null) && InNumberFormat.CurrencyGroupSeparator.Length == InNumberFormat.NumberGroupSeparator.Length)
+                if (!(InNumberFormat.CurrencyDecimalSeparator == default) && !(InNumberFormat.NumberDecimalSeparator == default) && InNumberFormat.CurrencyDecimalSeparator.Length == InNumberFormat.NumberDecimalSeparator.Length && !(InNumberFormat.CurrencyGroupSeparator == default) && !(InNumberFormat.NumberGroupSeparator == default) && InNumberFormat.CurrencyGroupSeparator.Length == InNumberFormat.NumberGroupSeparator.Length)
                 {
                     int i;
                     var loopTo = InNumberFormat.CurrencyDecimalSeparator.Length - 1;
@@ -1154,7 +1154,7 @@ namespace Microsoft.VisualBasic
 
             public static float ToSingle(string Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -1183,7 +1183,7 @@ namespace Microsoft.VisualBasic
 
             public static float ToSingle(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -1251,7 +1251,7 @@ namespace Microsoft.VisualBasic
 
             public static double ToDouble(string Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -1274,7 +1274,7 @@ namespace Microsoft.VisualBasic
 
             public static double ToDouble(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return 0;
                 }
@@ -1380,7 +1380,7 @@ namespace Microsoft.VisualBasic
 
             public static DateTime ToDate(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return default(DateTime);
                 }
@@ -1399,7 +1399,7 @@ namespace Microsoft.VisualBasic
 
             public static char ToChar(string Value)
             {
-                if (Value == null || Value.Length == 0)
+                if (Value == default || Value.Length == 0)
                 {
                     return Convert.ToChar(0 & 0xFFFF);
                 }
@@ -1409,7 +1409,7 @@ namespace Microsoft.VisualBasic
 
             public static char ToChar(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return Convert.ToChar(0 & 0xFFFF);
                 }
@@ -1428,7 +1428,7 @@ namespace Microsoft.VisualBasic
 
             public static char[] ToCharArrayRankOne(string Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     Value = "";
                 }
@@ -1438,13 +1438,13 @@ namespace Microsoft.VisualBasic
 
             public static char[] ToCharArrayRankOne(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return "".ToCharArray();
                 }
 
                 char[] ArrayValue = Value as char[];
-                if (ArrayValue != null && ArrayValue.Rank == 1)
+                if (ArrayValue != default && ArrayValue.Rank == 1)
                 {
                     return ArrayValue;
                 }
@@ -1517,14 +1517,14 @@ namespace Microsoft.VisualBasic
 
             public static new string ToString(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return null;
                 }
                 else
                 {
                     string StringValue = Value as string;
-                    if (StringValue != null)
+                    if (StringValue != default)
                     {
                         return StringValue;
                     }
@@ -1594,7 +1594,7 @@ namespace Microsoft.VisualBasic
                 else
                 {
                     char[] CharArray = Value as char[];
-                    if (CharArray != null)
+                    if (CharArray != default)
                     {
                         return new string(CharArray);
                     }
@@ -1725,7 +1725,7 @@ namespace Microsoft.VisualBasic
 
             public static T ToGenericParameter<T>(object Value)
             {
-                if (Value == null)
+                if (Value == default)
                 {
                     return default(T);
                 }
@@ -1833,7 +1833,7 @@ namespace Microsoft.VisualBasic
 
             public static Array CopyArray(Array arySrc, Array aryDest)
             {
-                if (arySrc == null)
+                if (arySrc == default)
                 {
                     return aryDest;
                 }
@@ -2015,7 +2015,7 @@ namespace Microsoft.VisualBasic
 
         public static int AscW(string String)
         {
-            if (String == null || String.Length == 0)
+            if (String == default || String.Length == 0)
             {
                 throw new ArgumentException();
             }
@@ -2112,7 +2112,7 @@ namespace VbNetStandardLib
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static XAttribute CreateAttribute(XName name, object value)
             {
-                if (value == null)
+                if (value == default)
                 {
                     return null;
                 }
@@ -2131,17 +2131,17 @@ namespace VbNetStandardLib
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static object RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, object obj)
             {
-                if (obj != null)
+                if (obj != default)
                 {
                     XElement elem = obj as XElement;
-                    if (!(elem == null))
+                    if (!(elem == default))
                     {
                         return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elem);
                     }
                     else
                     {
                         IEnumerable elems = obj as IEnumerable;
-                        if (elems != null)
+                        if (elems != default)
                         {
                             return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elems);
                         }
@@ -2154,10 +2154,10 @@ namespace VbNetStandardLib
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static IEnumerable RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, IEnumerable obj)
             {
-                if (obj != null)
+                if (obj != default)
                 {
                     IEnumerable<XElement> elems = obj as IEnumerable<XElement>;
-                    if (elems != null)
+                    if (elems != default)
                     {
                         return elems.Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessXElement);
                     }
@@ -2197,7 +2197,7 @@ namespace VbNetStandardLib
                 internal object ProcessObject(object obj)
                 {
                     XElement elem = obj as XElement;
-                    if (elem != null)
+                    if (elem != default)
                     {
                         return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
                     }
@@ -2211,19 +2211,19 @@ namespace VbNetStandardLib
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public static XElement RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, XElement e)
             {
-                if (e != null)
+                if (e != default)
                 {
                     var a = e.FirstAttribute;
-                    while (a != null)
+                    while (a != default)
                     {
                         var nextA = a.NextAttribute;
                         if (a.IsNamespaceDeclaration)
                         {
                             var ns = a.Annotation<XNamespace>();
                             string prefix = a.Name.LocalName;
-                            if (ns != null)
+                            if (ns != default)
                             {
-                                if (inScopePrefixes != null && inScopeNs != null)
+                                if (inScopePrefixes != default && inScopeNs != default)
                                 {
                                     int lastIndex = inScopePrefixes.Length - 1;
                                     for (int i = 0, loopTo = lastIndex; i <= loopTo; i++)
@@ -2245,12 +2245,12 @@ namespace VbNetStandardLib
                                     }
                                 }
 
-                                if (a != null)
+                                if (a != default)
                                 {
                                     // Prefix is not in scope 
                                     // Now check whether it's going to be in scope because it is in the attributes list 
 
-                                    if (attributes != null)
+                                    if (attributes != default)
                                     {
                                         int lastIndex = attributes.Count - 1;
                                         for (int i = 0, loopTo1 = lastIndex; i <= loopTo1; i++)
@@ -2258,7 +2258,7 @@ namespace VbNetStandardLib
                                             var currentA = attributes[i];
                                             string currentInScopePrefix = currentA.Name.LocalName;
                                             var currentInScopeNs = currentA.Annotation<XNamespace>();
-                                            if (currentInScopeNs != null)
+                                            if (currentInScopeNs != default)
                                             {
                                                 if (prefix.Equals(currentInScopePrefix))
                                                 {
@@ -2276,7 +2276,7 @@ namespace VbNetStandardLib
                                         }
                                     }
 
-                                    if (a != null)
+                                    if (a != default)
                                     {
                                         // Prefix is definitely not in scope  
                                         a.Remove();

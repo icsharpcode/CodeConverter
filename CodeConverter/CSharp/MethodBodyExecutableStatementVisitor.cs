@@ -350,20 +350,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                         async (VBSyntax.LambdaExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).Symbol,
                         async (VBSyntax.MethodBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e),
                         async (VBSyntax.AccessorBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e));
-                    var info = enclosingMethodInfo?.GetReturnType();
-                    ExpressionSyntax expr;
-                    if (HasReturnVariable)
-                        expr = ReturnVariable;
-                    else if (info == null)
-                        expr = null;
-                    else if (IsIterator)
-                        return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
-                    else if (info.IsReferenceType)
-                        expr = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
-                    else if (info.CanBeReferencedByName)
-                        expr = SyntaxFactory.DefaultExpression(CommonConversions.GetTypeSyntax(info));
-                    else
-                        throw new NotSupportedException();
+
+                    if (IsIterator) return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
+
+                    ExpressionSyntax expr = HasReturnVariable ? (ExpressionSyntax)ReturnVariable : SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
                     return SingleStatement(SyntaxFactory.ReturnStatement(expr));
                 default:
                     return SingleStatement(SyntaxFactory.BreakStatement());

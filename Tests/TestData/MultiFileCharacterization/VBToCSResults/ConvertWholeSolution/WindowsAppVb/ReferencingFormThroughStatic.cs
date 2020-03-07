@@ -11,7 +11,7 @@ namespace WindowsAppVb
                 withBlock.Capacity = 4;
             }
 
-            if (My.MyProject.Forms.m_WinformsDesignerTest != null && My.MyProject.Forms.WinformsDesignerTest.Text != null)
+            if (My.MyProject.Forms.m_WinformsDesignerTest != default && My.MyProject.Forms.WinformsDesignerTest.Text != default)
             {
                 return My.MyProject.Forms.WinformsDesignerTest.Text;
             }

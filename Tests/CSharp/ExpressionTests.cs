@@ -392,7 +392,7 @@ public partial class Class1
     public int Bar2(ref Class1 c1)
     {
         var argc1 = this;
-        if (c1 != null && Strings.Len(Bar3(ref argc1)) != 0)
+        if (c1 != default && Strings.Len(Bar3(ref argc1)) != 0)
         {
             return 1;
         }
@@ -1212,7 +1212,7 @@ public partial class Class1
             throw new Exception();
         }
 
-        if (s1 == null)
+        if (s1 == default)
         {
             // 
         }
@@ -1273,7 +1273,7 @@ public partial class Class1
             throw new Exception();
         }
 
-        if (s1 == null)
+        if (s1 == default)
         {
             // 
         }
@@ -2360,7 +2360,7 @@ public partial class Foo
 
     protected void OnBar(EventArgs e)
     {
-        if (Bar == null)
+        if (Bar == default)
         {
             Debug.WriteLine(""No subscriber"");
         }
