@@ -11,6 +11,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Locator" Version="1.2.6" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.4.0" />
+    <!-- ReSharper NUnit runner throws exception without this, probably contains a conflicting version somewhere -->
+    <PackageReference Include="Microsoft.CodeAnalysis.Features" Version="3.4.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="3.4.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="3.4.0" />
     <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.4.43" />
