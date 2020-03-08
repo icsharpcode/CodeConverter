@@ -13,7 +13,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public SyntaxTree CreateTree(string text)
         {
-            return SyntaxFactory.ParseSyntaxTree(text, encoding: Encoding.UTF8);
+            return SyntaxFactory.ParseSyntaxTree(text, ParseOptions, encoding: Encoding.UTF8);
         }
 
         public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
@@ -36,5 +36,7 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary);
         }
+
+        public static CSharpParseOptions ParseOptions { get; } = new CSharpParseOptions(LanguageVersion.Latest);
     }
 }

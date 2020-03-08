@@ -24,7 +24,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public SyntaxTree CreateTree(string text)
         {
-            return SyntaxFactory.ParseSyntaxTree(text, encoding: Encoding.UTF8);
+            return SyntaxFactory.ParseSyntaxTree(text, ParseOptions, encoding: Encoding.UTF8);
         }
 
         public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
@@ -75,5 +75,7 @@ namespace ICSharpCode.CodeConverter.Util
                 .WithRootNamespace(rootNamespace);
             return compilationOptions;
         }
+
+        public static VisualBasicParseOptions ParseOptions { get; } = new VisualBasicParseOptions(LanguageVersion.Latest);
     }
 }

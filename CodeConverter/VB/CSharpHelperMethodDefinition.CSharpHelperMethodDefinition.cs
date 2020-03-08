@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -26,6 +27,8 @@ End Function";
 Shared Function {ThrowMethodName}(Of T)(ByVal e As Exception) As T
     Throw e
 End Function";
+
+        private static ICompiler _compiler = new VisualBasicCompiler();
 
         public bool AddThrowMethod { get; set; }
         public bool AddInlineAssignMethod { get; set; }
@@ -54,7 +57,7 @@ End Function";
 
         private StatementSyntax Parse(string methodDefinition)
         {
-            return SyntaxFactory.ParseSyntaxTree(methodDefinition)
+            return _compiler.CreateTree(methodDefinition)
                 .GetRoot().ChildNodes().Single().NormalizeWhitespace() as StatementSyntax;
         }
     }
