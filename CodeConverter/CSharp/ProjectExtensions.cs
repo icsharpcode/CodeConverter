@@ -71,7 +71,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (firstPassResult.Wip != null)
                 {
                     docId = DocumentId.CreateNewId(project.Id);
-                    var solution = project.Solution.AddDocument(docId, firstPassResult.Path, firstPassResult.Wip.ToFullString(),
+                    var solution = project.Solution.AddDocument(docId, firstPassResult.Path, firstPassResult.Wip,
                         filePath: firstPassResult.Path);
                     project = solution.GetProject(project.Id);
                 }
