@@ -38,7 +38,7 @@ namespace ICSharpCode.CodeConverter.VB
             }
 
             _vbCompilationOptions = vbCompilationOptions;
-            _vbParseOptions = VisualBasicParseOptions.Default;
+            _vbParseOptions = VisualBasicCompiler.ParseOptions;
             RootNamespace = conversionOptions.RootNamespaceOverride;
         }
 
