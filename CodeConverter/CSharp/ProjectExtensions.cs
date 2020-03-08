@@ -46,7 +46,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return Path.GetDirectoryName(projectFilePath);
             }
 
-            string solutionPath = GetDirectoryPath(proj);
+            string solutionPath = GetDirectoryPath(proj.Solution);
             return proj.Documents
                 .Where(d => d.FilePath != null && d.FilePath.StartsWith(solutionPath))
                 .Select(d => d.FilePath.Replace(solutionPath, "").TrimStart(DirSeparators))
