@@ -144,8 +144,8 @@ internal partial class TestClass
         where T2 : struct
     {
         argument = null;
-        argument2 = default(T2);
-        argument3 = default(T3);
+        argument2 = default;
+        argument3 = default;
         Console.WriteLine(Enumerable.Empty<string>());
     }
 }");
@@ -171,7 +171,7 @@ internal partial class Class1
 {
     public int TestMethod(int x)
     {
-        int TestMethodRet = default(int);
+        int TestMethodRet = default;
         if (x == 1)
         {
             TestMethodRet = 1;
@@ -226,7 +226,7 @@ public partial class Class1
     {
         get
         {
-            string FooRet = default(string);
+            string FooRet = default;
             FooRet = """";
             return FooRet;
         }
@@ -236,7 +236,7 @@ public partial class Class1
     {
         get
         {
-            string XRet = default(string);
+            string XRet = default;
             XRet = Conversions.ToString(4);
             XRet = Conversions.ToString(Conversions.ToDouble(XRet) * 2);
             string y = ""random variable to check it isn't just using the value of the last statement"";
@@ -282,7 +282,7 @@ public partial class Class1
 
     protected override string Foo()
     {
-        string FooRet = default(string);
+        string FooRet = default;
         MyEvent += (_, __) => Foo();
         FooRet = FooRet + """";
         FooRet += nameof(Foo);
@@ -311,7 +311,7 @@ internal partial class Class1
 {
     public int TestMethod(int x)
     {
-        int TestMethodRet = default(int);
+        int TestMethodRet = default;
         if (x == 1)
         {
             TestMethodRet += 1;
@@ -344,7 +344,7 @@ internal partial class Class1
 {
     public int TestMethod()
     {
-        return default(int);
+        return default;
     }
 }");
         }
@@ -395,8 +395,8 @@ internal partial class TestClass
         where T2 : struct
     {
         argument = null;
-        argument2 = default(T2);
-        argument3 = default(T3);
+        argument2 = default;
+        argument3 = default;
     }
 }");
         }
@@ -501,8 +501,8 @@ internal partial class TestClass
         where T2 : struct
     {
         argument = null;
-        argument2 = default(T2);
-        argument3 = default(T3);
+        argument2 = default;
+        argument3 = default;
     }
 }");
         }
@@ -538,8 +538,8 @@ internal partial class TestClass
         where T2 : struct
     {
         argument = null;
-        argument2 = default(T2);
-        argument3 = default(T3);
+        argument2 = default;
+        argument3 = default;
     }
 }");
         }

@@ -1363,7 +1363,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value == default)
                 {
-                    return default(DateTime);
+                    return default;
                 }
 
                 if (Value is DateTime)
@@ -1708,7 +1708,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value == default)
                 {
-                    return default(T);
+                    return default;
                 }
 
                 var reflectedType = typeof(T);

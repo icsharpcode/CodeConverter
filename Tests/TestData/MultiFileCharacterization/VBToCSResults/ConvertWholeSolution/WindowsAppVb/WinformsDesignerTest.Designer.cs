@@ -83,7 +83,7 @@ namespace WindowsAppVb
 
         public static bool TestSub(ref bool IsDefault = false)
         {
-            return default(bool);
+            return default;
         }
 
         private Button _Button1;

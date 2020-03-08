@@ -381,7 +381,7 @@ public partial class Class1
 
     public void Foo5()
     {
-        bool argb = default(bool);
+        bool argb = default;
         Bar(ref argb);
     }
 
@@ -741,7 +741,7 @@ End Class", @"using System;
 
 internal partial class TestClass
 {
-    private DateTime DefaultDate = default(DateTime);
+    private DateTime DefaultDate = default;
 }");
         }
 
@@ -1504,7 +1504,7 @@ internal partial class TestClass
         }
         else
         {
-            return default(int?);
+            return default;
         }
     }
 }");
@@ -1527,9 +1527,9 @@ internal partial class TestClass
     public void Bar()
     {
         int number;
-        number = default(int);
+        number = default;
         DateTime dat;
-        dat = default(DateTime);
+        dat = default;
     }
 }");
         }
@@ -2701,7 +2701,7 @@ public partial class MoreParsing
             await TestConversionVisualBasicToCSharp(
                 @"Imports System.IO
 Imports SIO = System.IO
-Imports Microsoft.VisualBasic ' Removed by simplifier
+Imports Microsoft.VisualBasic
 Imports VB = Microsoft.VisualBasic
 
 Public Class Test
@@ -2721,6 +2721,7 @@ End Class",
                 @"using System;
 using System.IO;
 using SIO = System.IO;
+using Microsoft.VisualBasic;
 using VB = Microsoft.VisualBasic;
 
 public partial class Test
@@ -2729,8 +2730,8 @@ public partial class Test
     private Delegate aliased2 = new SIO.ErrorEventHandler(OnError);
 
     // Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
-    private string Tr = nameof(SIO.TextReader);
-    private string Strings = nameof(VB.VBCodeProvider);
+    private string Tr = nameof(TextReader);
+    private string Strings = nameof(VBCodeProvider);
 
     public partial class ErrorEventHandler
     {

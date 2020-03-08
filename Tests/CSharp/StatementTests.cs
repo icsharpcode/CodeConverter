@@ -622,7 +622,7 @@ internal partial class TestClass
 
     private int FuncReturningAssignedValue()
     {
-        int FuncReturningAssignedValueRet = default(int);
+        int FuncReturningAssignedValueRet = default;
         void aSub(object y) { return; };
         FuncReturningAssignedValueRet = 3;
         return FuncReturningAssignedValueRet;
@@ -1087,7 +1087,7 @@ internal partial class Test
 {
     private void TestMethod()
     {
-        DateTime x = default(DateTime), y = default(DateTime);
+        DateTime x = default, y = default;
         Console.WriteLine(x);
         Console.WriteLine(y);
     }
@@ -1566,7 +1566,7 @@ internal partial class TestClass
 {
     private void TestMethod(int end)
     {
-        int[] b = default(int[]), s = default(int[]);
+        int[] b = default, s = default;
         for (int i = 0, loopTo = end; i <= loopTo; i++)
             b[i] = s[i];
     }
@@ -1641,7 +1641,7 @@ internal partial class TestClass
 {
     private void TestMethod(int end)
     {
-        int[] b = default(int[]), s = default(int[]);
+        int[] b = default, s = default;
         for (int i = 0, loopTo = end - 1; i <= loopTo; i++)
             b[i] = s[i];
     }
