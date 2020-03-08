@@ -107,8 +107,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .OrderByDescending(IsSystemUsing).ThenBy(u => u.Name.ToString().Replace("global::", "")).ThenByDescending(HasSourceMapAnnotations)
                 .GroupBy(u => (Name: u.Name.ToString(), Alias: u.Alias))
                 .Select(g => g.First());
-            var compilationUnit = ((CompilationUnitSyntax)_csSyntaxGenerator.CompilationUnit(usingDirectiveSyntax)).WithAttributeLists(attributes).WithMembers(SyntaxFactory.List(convertedMembers));
-            return (CSharpSyntaxNode)await SyntaxFactory.ParseSyntaxTree(compilationUnit.NormalizeWhitespace().ToFullString(), CSharpCompiler.ParseOptions).GetRootAsync();
+
+            return SyntaxFactory.CompilationUnit(
+                SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
+                SyntaxFactory.List(usingDirectiveSyntax),
+                attributes,
+                SyntaxFactory.List(convertedMembers)
+            );
         }
 
         private static bool IsSystemUsing(UsingDirectiveSyntax u)
