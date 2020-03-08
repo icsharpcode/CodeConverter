@@ -173,15 +173,15 @@ internal partial class Test
         [Fact]
         public async Task Linq5()
         {
-            await TestConversionVisualBasicToCSharp(@"Private Shared Function FindPicFilePath(picId As String) As String
+            await TestConversionVisualBasicToCSharp(@"Private Shared Function FindPicFilePath(AList As List(Of FileInfo), picId As String) As String
     For Each FileInfo As FileInfo In From FileInfo1 In AList Where FileInfo1.Name.Substring(0, 6) = picId
         Return FileInfo.FullName
     Next
     Return String.Empty
-End Function", @"private static string FindPicFilePath(string picId)
+End Function", @"private static string FindPicFilePath(List<FileInfo> AList, string picId)
 {
     foreach (FileInfo FileInfo in from FileInfo1 in AList
-                                  where FileInfo1.Name.Substring(0, 6) == picId
+                                  where (FileInfo1.Name.Substring(0, 6) ?? """") == (picId ?? """")
                                   select FileInfo1)
         return FileInfo.FullName;
     return string.Empty;

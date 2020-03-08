@@ -499,14 +499,14 @@ public partial class TestClass
         public async Task Redim2dArray()
         {
             await TestConversionVisualBasicToCSharp(@"Friend Class Program
-    Private My2darray As Integer()()
+    Private Shared My2darray As Integer()()
     Public Shared Sub Main(ByVal args As String())
         ReDim Me.My2darray(6)
     End Sub
 End Class", @"
 internal partial class Program
 {
-    private int[][] My2darray;
+    private static int[][] My2darray;
 
     public static void Main(string[] args)
     {
@@ -637,7 +637,7 @@ internal partial class TestClass
     Private Sub TestMethod()
         With New System.Text.StringBuilder
             .Capacity = 20
-            ?.Length = 0
+            ?.Append(0)
         End With
     End Sub
 End Class", @"using System.Text;
@@ -649,7 +649,7 @@ internal partial class TestClass
         {
             var withBlock = new StringBuilder();
             withBlock.Capacity = 20;
-            withBlock?.Length = 0;
+            withBlock?.Append(0);
         }
     }
 }");
@@ -1299,17 +1299,18 @@ internal partial class TestClass
         public async Task UntilStatement()
         {
             await TestConversionVisualBasicToCSharp(@"Class TestClass
-    Private Sub TestMethod()
+    Private Sub TestMethod(rand As Random)
         Dim charIndex As Integer
         ' allow only digits and letters
         Do
             charIndex = rand.Next(48, 123)
         Loop Until (charIndex >= 48 AndAlso charIndex <= 57) OrElse (charIndex >= 65 AndAlso charIndex <= 90) OrElse (charIndex >= 97 AndAlso charIndex <= 122)
     End Sub
-End Class", @"
+End Class", @"using System;
+
 internal partial class TestClass
 {
-    private void TestMethod()
+    private void TestMethod(Random rand)
     {
         int charIndex;
         // allow only digits and letters
