@@ -22,7 +22,11 @@ End Namespace");
             await TestConversionCSharpToVisualBasic(
                 @"[assembly: CLSCompliant(true)]",
                 @"
-<Assembly: CLSCompliant(True)>");
+<Assembly: CLSCompliant(True)>
+
+2 source compilation errors:
+CS0246: The type or namespace name 'CLSCompliantAttribute' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'CLSCompliant' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -196,7 +200,12 @@ End Enum");
     Implements IDisposable
 
     Protected MustOverride Sub Test()
-End Class");
+End Class
+
+1 source compilation errors:
+CS0535: 'ClassA' does not implement interface member 'IDisposable.Dispose()'
+1 target compilation errors:
+BC30149: Class 'ClassA' must implement 'Sub Dispose()' for interface 'IDisposable'.");
 
             await TestConversionCSharpToVisualBasic(
                 @"abstract class ClassA : System.EventArgs, System.IDisposable
@@ -222,7 +231,12 @@ End Class");
 
     Private Sub Test()
     End Sub
-End Structure");
+End Structure
+
+1 source compilation errors:
+CS0535: 'MyType' does not implement interface member 'IComparable<MyType>.CompareTo(MyType)'
+1 target compilation errors:
+BC30149: Structure 'MyType' must implement 'Function CompareTo(other As MyType) As Integer' for interface 'IComparable(Of MyType)'.");
         }
 
         [Fact]
@@ -269,7 +283,10 @@ End Class");
                 @"Imports SomeNamespace
 
 Namespace test
-End Namespace");
+End Namespace
+
+1 source compilation errors:
+CS0246: The type or namespace name 'SomeNamespace' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -363,7 +380,10 @@ End Class
 Public Interface iDisplay
     Property Name As String
     Sub DisplayName()
-End Interface");
+End Interface
+
+1 source compilation errors:
+CS0106: The modifier 'private' is not valid for this item");
         }
 
         [Fact]
@@ -403,7 +423,12 @@ End Interface");
             await TestConversionCSharpToVisualBasic("class test : System.IComparable { }",
                 @"Friend Class test
     Implements IComparable
-End Class");
+End Class
+
+1 source compilation errors:
+CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object)'
+1 target compilation errors:
+BC30149: Class 'test' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.");
         }
 
         [Fact]
@@ -414,7 +439,17 @@ End Class");
 
 Friend Class test
     Inherits InvalidDataException
-End Class");
+End Class
+
+1 source compilation errors:
+CS0509: 'test': cannot derive from sealed type 'InvalidDataException'
+1 target compilation errors:
+BC30299: 'test' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
+
+1 source compilation errors:
+CS0509: 'test': cannot derive from sealed type 'InvalidDataException'
+1 target compilation errors:
+BC30299: 'test' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.");
         }
 
         [Fact]
@@ -423,7 +458,12 @@ End Class");
             await TestConversionCSharpToVisualBasic("class test : System.IO.InvalidDataException { }",
                 @"Friend Class test
     Inherits InvalidDataException
-End Class");
+End Class
+
+1 source compilation errors:
+CS0509: 'test': cannot derive from sealed type 'InvalidDataException'
+1 target compilation errors:
+BC30299: 'test' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.");
         }
 
         [Fact]
@@ -520,7 +560,10 @@ Public Class TestClass
 
     Public Sub Method(ByVal list As List(Of String)) Implements ITestInterface(Of String).Method
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS0246: The type or namespace name 'List<>' could not be found (are you missing a using directive or an assembly reference?)");
         }
         [Fact]
         public async Task ImplementsEvent() {

@@ -30,7 +30,10 @@ namespace CodeConverter.Tests.VB
             Return value
         End Function
     End Class
-End Class");
+End Class
+
+1 target compilation errors:
+BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -233,7 +236,14 @@ End Class");
     Private Sub TestMethod()
         If FullImage IsNot Nothing Then DrawImage()
     End Sub
-End Class", expectCompilationErrors: true);
+End Class
+
+2 source compilation errors:
+CS0103: The name 'FullImage' does not exist in the current context
+CS0103: The name 'DrawImage' does not exist in the current context
+2 target compilation errors:
+BC30451: 'FullImage' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'DrawImage' is not declared. It may be inaccessible due to its protection level.", expectCompilationErrors: true);
             // regression test:
             await TestConversionCSharpToVisualBasic(
                 @"class TestClass
@@ -374,7 +384,12 @@ End Class");
                 @"Private Sub Test()
     Dim l_AB As Object = 5
     Dim Ab As Integer = CInt(o)
-End Sub");
+End Sub
+
+1 source compilation errors:
+CS0103: The name 'o' does not exist in the current context
+1 target compilation errors:
+BC30451: 'o' is not declared. It may be inaccessible due to its protection level.");
         }
         [Fact]
         public async Task CaseConflict_LocalWithLocalInMethod() {
@@ -386,7 +401,12 @@ End Sub");
                 @"Private Sub Test()
     Dim l_Test1 As Object = 5
     Dim l_TesT As Integer = CInt(o)
-End Sub");
+End Sub
+
+1 source compilation errors:
+CS0103: The name 'o' does not exist in the current context
+1 target compilation errors:
+BC30451: 'o' is not declared. It may be inaccessible due to its protection level.");
         }
         [Fact]
         public async Task CaseConflict_LocalWithLocalInProperty() {
@@ -404,7 +424,13 @@ End Sub");
         Dim l_TesT As Integer = CInt(o)
         Return l_Test1
     End Get
-End Property");
+End Property
+
+2 source compilation errors:
+CS0103: The name 'o' does not exist in the current context
+CS0266: Cannot implicitly convert type 'object' to 'int'. An explicit conversion exists (are you missing a cast?)
+1 target compilation errors:
+BC30451: 'o' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -444,7 +470,14 @@ End Property");
             f_Test?(sender, e)
         End RaiseEvent
     End Event
-End Class");
+End Class
+
+1 source compilation errors:
+CS0103: The name 'o' does not exist in the current context
+3 target compilation errors:
+BC36637: The '?' character cannot be used here.
+BC30451: 'o' is not declared. It may be inaccessible due to its protection level.
+BC30451: '[Delegate]' is not declared. It may be inaccessible due to its protection level.");
         }
         [Fact]
         public async Task CaseConflict_LocalWithArgumentMethod() {
@@ -485,7 +518,10 @@ End Function");
 
     Private Sub SetValue(ByVal value As Integer)
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS1002: ; expected");
         }
         [Fact]
         public async Task NonConflictingArgument_Event() {
@@ -515,7 +551,11 @@ Public Class TestClass
             f_Value?(sender, e)
         End RaiseEvent
     End Event
-End Class");
+End Class
+
+2 target compilation errors:
+BC36637: The '?' character cannot be used here.
+BC30451: '[Delegate]' is not declared. It may be inaccessible due to its protection level.");
         }
         [Fact]
         public async Task CaseConflict_FieldAndInterfaceProperty() {
@@ -584,7 +624,10 @@ End Namespace");
         Dim vbLf As String = Microsoft.VisualBasic.vbLf
         Dim vbCrLf As String = Microsoft.VisualBasic.vbCrLf
     End Sub
-End Class", conversion: EmptyNamespaceOptionStrictOff);
+End Class
+
+1 source compilation errors:
+CS1002: ; expected", conversion: EmptyNamespaceOptionStrictOff);
         }
     }
 }

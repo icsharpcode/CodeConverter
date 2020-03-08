@@ -58,7 +58,10 @@ namespace global::InnerNamespace
             Return a & b & c & d & e & f
         End Function
     End Class
-End Namespace");
+End Namespace
+
+1 source compilation errors:
+CS7000: Unexpected use of an aliased name");
         }
 
         [Fact]
@@ -133,7 +136,10 @@ End Class");
             Return value
         End Function
     End Class
-End Class");
+End Class
+
+1 target compilation errors:
+BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -179,7 +185,12 @@ End Class");
             Throw e
         End Function
     End Class
-End Class");
+End Class
+
+1 source compilation errors:
+CS0246: The type or namespace name 'Exception' could not be found (are you missing a using directive or an assembly reference?)
+1 target compilation errors:
+BC30451: 'CSharpImpl.__Throw' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -213,7 +224,10 @@ End Class");
     Private Sub TestMethod(ByVal str As String)
         Console.WriteLine(If(str, ""<null>""))
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS0103: The name 'Console' does not exist in the current context");
         }
         [Fact]
         public async Task CoalescingExpression_Assignment()
@@ -249,7 +263,10 @@ End Class");
     Private Function CreateProperty() As String
         Return """"
     End Function
-End Class");
+End Class
+
+1 source compilation errors:
+CS0149: Method name expected");
         }
 
         [Fact]
@@ -271,7 +288,10 @@ End Class");
         Console.WriteLine(""Test"" & length)
         Console.ReadKey()
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
@@ -287,7 +307,14 @@ End Class");
     Private Sub TestMethod(ByVal str As String)
         Dispatcher.Invoke(New Action(Function() Console.WriteLine(1)))
     End Sub
-End Class");
+End Class
+
+2 source compilation errors:
+CS0103: The name 'Dispatcher' does not exist in the current context
+CS0246: The type or namespace name 'Action' could not be found (are you missing a using directive or an assembly reference?)
+2 target compilation errors:
+BC30451: 'Dispatcher' is not declared. It may be inaccessible due to its protection level.
+BC30491: Expression does not produce a value.");
         }
 
         [Fact]
@@ -351,7 +378,13 @@ End Class");
         Console.ReadKey()
         Dim redirectUri As String = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri
     End Sub
-End Class");
+End Class
+
+2 source compilation errors:
+CS0103: The name 'Console' does not exist in the current context
+CS0103: The name 'context' does not exist in the current context
+1 target compilation errors:
+BC30451: 'context' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -505,7 +538,11 @@ End Function");
 }", @"Public Interface ILanguageConversion
     Function GetProjectTypeGuidMappings() As IReadOnlyCollection(Of (String, String))
     Function GetProjectFileReplacementRegexes() As IEnumerable(Of (String, String))
-End Interface");
+End Interface
+
+2 source compilation errors:
+CS0246: The type or namespace name 'IReadOnlyCollection<>' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'IEnumerable<>' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -566,7 +603,11 @@ End Namespace");
         Dim test = Function(ByVal a As Integer) a * 2
         test(3)
     End Sub
-End Class");
+End Class
+
+2 source compilation errors:
+CS1002: ; expected
+CS0246: The type or namespace name 'Action<>' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -613,7 +654,11 @@ End Module");
         Dim test3 = Function(a, b) a Mod b
         test(3)
     End Sub
-End Class");
+End Class
+
+2 source compilation errors:
+CS1002: ; expected
+CS0815: Cannot assign lambda expression to an implicitly-typed variable");
         }
 
         [Fact]
@@ -640,7 +685,12 @@ End Class");
         Dim result As Integer = Await SomeAsyncMethod()
         Console.WriteLine(result)
     End Sub
-End Class");
+End Class
+
+3 source compilation errors:
+CS0246: The type or namespace name 'Task<>' could not be found (are you missing a using directive or an assembly reference?)
+CS0103: The name 'Task' does not exist in the current context
+CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
@@ -664,7 +714,11 @@ End Class");
     For Each n In res
         Console.WriteLine(n)
     Next
-End Sub");
+End Sub
+
+2 source compilation errors:
+CS1935: Could not find an implementation of the query pattern for source type 'int[]'.  'Where' not found.  Are you missing a reference to 'System.Core.dll' or a using directive for 'System.Linq'?
+CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
@@ -705,7 +759,11 @@ End Sub");
             Console.WriteLine(n)
         Next
     Next
-End Sub");
+End Sub
+
+2 source compilation errors:
+CS1935: Could not find an implementation of the query pattern for source type 'int[]'.  'GroupBy' not found.  Are you missing a reference to 'System.Core.dll' or a using directive for 'System.Linq'?
+CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
@@ -758,7 +816,14 @@ Friend Class Test
             Console.WriteLine($""{v.ProductName}: {v.Category}"")
         Next
     End Sub
-End Class");
+End Class
+
+3 source compilation errors:
+CS0103: The name 'GetProductList' does not exist in the current context
+CS1935: Could not find an implementation of the query pattern for source type 'string[]'.  'Join' not found.  Are you missing a reference to 'System.Core.dll' or a using directive for 'System.Linq'?
+CS0103: The name 'Console' does not exist in the current context
+1 target compilation errors:
+BC30451: 'GetProductList' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -806,7 +871,16 @@ End Class");
             Console.WriteLine(""   "" & p.ProductName)
         Next
     Next
-End Sub");
+End Sub
+
+3 source compilation errors:
+CS0103: The name 'GetProductList' does not exist in the current context
+CS1935: Could not find an implementation of the query pattern for source type 'string[]'.  'GroupJoin' not found.  Are you missing a reference to 'System.Core.dll' or a using directive for 'System.Linq'?
+CS0103: The name 'Console' does not exist in the current context
+3 target compilation errors:
+BC30451: 'GetProductList' is not declared. It may be inaccessible due to its protection level.
+BC36593: Expression of type '?' is not queryable. Make sure you are not missing an assembly reference and/or namespace import for the LINQ provider.
+BC32023: Expression is of type '?', which is not a collection type.");
         }
         [Fact]
         public async Task MultilineSubExpressionWithSingleStatement() {
@@ -933,7 +1007,13 @@ End Class");
 
     Public Sub DoSomething()
     End Sub
-End Class");
+End Class
+
+4 source compilation errors:
+CS0019: Operator '==' cannot be applied to operands of type 'int' and 'string'
+CS0019: Operator '==' cannot be applied to operands of type 'int' and 'object'
+CS0019: Operator '==' cannot be applied to operands of type 'string' and 'int'
+CS0019: Operator '==' cannot be applied to operands of type 'object' and 'int'");
         }
     }
 }
