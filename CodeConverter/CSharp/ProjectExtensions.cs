@@ -70,10 +70,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 DocumentId docId = null;
                 if (firstPassResult.Wip != null)
                 {
-                    var document = project.AddDocument(firstPassResult.Path, firstPassResult.Wip,
+                    docId = DocumentId.CreateNewId(project.Id);
+                    var solution = project.Solution.AddDocument(docId, firstPassResult.Path, firstPassResult.Wip.ToFullString(),
                         filePath: firstPassResult.Path);
-                    project = document.Project;
-                    docId = document.Id;
+                    project = solution.GetProject(project.Id);
                 }
 
                 return WipFileConversion.Create(firstPassResult.Path, docId, firstPassResult.Errors);
