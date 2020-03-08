@@ -86,7 +86,11 @@ public partial class Test
         {
             await TestConversionVisualBasicToCSharp(
                 @"Imports UnrecognizedNamespace",
-                @"using UnrecognizedNamespace;");
+                @"using UnrecognizedNamespace;
+
+
+1 target compilation errors:
+CS0246: The type or namespace name 'UnrecognizedNamespace' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -367,7 +371,11 @@ internal partial struct MyType : IComparable<MyType>
     private void Test()
     {
     }
-}");
+}
+1 source compilation errors:
+BC30149: Structure 'MyType' must implement 'Function CompareTo(other As MyType) As Integer' for interface 'IComparable(Of MyType)'.
+1 target compilation errors:
+CS0535: 'MyType' does not implement interface member 'IComparable<MyType>.CompareTo(MyType)'");
         }
 
         [Fact]
@@ -397,7 +405,15 @@ End Class",
 
 internal partial class test : IComparable
 {
-}");
+}
+1 source compilation errors:
+BC30149: Class 'test' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.
+1 target compilation errors:
+CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object)'
+1 source compilation errors:
+BC30149: Class 'test' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.
+1 target compilation errors:
+CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object)'");
         }
 
         [Fact]
@@ -410,7 +426,15 @@ End Class",
 
 internal partial class test : IComparable
 {
-}");
+}
+1 source compilation errors:
+BC30149: Class 'test' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.
+1 target compilation errors:
+CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object)'
+1 source compilation errors:
+BC30149: Class 'test' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.
+1 target compilation errors:
+CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object)'");
         }
 
         [Fact]
@@ -425,7 +449,15 @@ End Class",
 
 internal partial class test : InvalidDataException
 {
-}");
+}
+1 source compilation errors:
+BC30299: 'test' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
+1 target compilation errors:
+CS0509: 'test': cannot derive from sealed type 'InvalidDataException'
+1 source compilation errors:
+BC30299: 'test' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
+1 target compilation errors:
+CS0509: 'test': cannot derive from sealed type 'InvalidDataException'");
         }
 
         [Fact]
@@ -438,7 +470,15 @@ End Class",
 
 internal partial class test : InvalidDataException
 {
-}");
+}
+1 source compilation errors:
+BC30299: 'test' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
+1 target compilation errors:
+CS0509: 'test': cannot derive from sealed type 'InvalidDataException'
+1 source compilation errors:
+BC30299: 'test' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
+1 target compilation errors:
+CS0509: 'test': cannot derive from sealed type 'InvalidDataException'");
         }
 
         [Fact]
@@ -888,7 +928,12 @@ public partial class A
         int y = F2();
         int z = F2();
     }
-}");
+}
+2 source compilation errors:
+BC31411: 'A' must be declared 'MustInherit' because it contains methods declared 'MustOverride'.
+BC30614: 'MustOverride' method 'Public MustOverride Function F2() As Integer' cannot be called with 'MyClass'.
+1 target compilation errors:
+CS0513: 'A.F2()' is abstract but it is contained in non-abstract class 'A'");
         }
 
         [Fact]
@@ -931,7 +976,13 @@ public partial class A
         int y = P2;
         int z = P2;
     }
-}");
+}
+2 source compilation errors:
+BC31411: 'A' must be declared 'MustInherit' because it contains methods declared 'MustOverride'.
+BC30614: 'MustOverride' method 'Public MustOverride Property P2 As Integer' cannot be called with 'MyClass'.
+2 target compilation errors:
+CS0513: 'A.P2.get' is abstract but it is contained in non-abstract class 'A'
+CS0513: 'A.P2.set' is abstract but it is contained in non-abstract class 'A'");
         }
     }
 }

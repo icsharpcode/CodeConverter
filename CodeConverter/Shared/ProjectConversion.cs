@@ -19,23 +19,19 @@ namespace ICSharpCode.CodeConverter.Shared
     {
         private readonly IReadOnlyCollection<Document> _documentsToConvert;
         private readonly ILanguageConversion _languageConversion;
-        private readonly bool _showCompilationErrors =
-#if DEBUG && ShowCompilationErrors
-            true;
-#else
-            false;
-#endif
+        private readonly bool _showCompilationErrors;
         private readonly bool _returnSelectedNode;
         private static readonly string[] BannedPaths = new[] { ".AssemblyAttributes.", "\\bin\\", "\\obj\\" };
         private readonly IProjectContentsConverter _projectContentsConverter;
         private readonly CancellationToken _cancellationToken;
 
         private ProjectConversion(IProjectContentsConverter projectContentsConverter, IEnumerable<Document> documentsToConvert,
-            ILanguageConversion languageConversion, CancellationToken cancellationToken, bool returnSelectedNode = false)
+            ILanguageConversion languageConversion, CancellationToken cancellationToken, bool showCompilationErrors, bool returnSelectedNode = false)
         {
             _projectContentsConverter = projectContentsConverter;
             _languageConversion = languageConversion;
             _documentsToConvert = documentsToConvert.ToList();
+            _showCompilationErrors = showCompilationErrors;
             _returnSelectedNode = returnSelectedNode;
             _cancellationToken = cancellationToken;
         }
@@ -69,7 +65,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             document = projectContentsConverter.Project.GetDocument(document.Id);
 
-            var conversion = new ProjectConversion(projectContentsConverter, new[] { document }, languageConversion, cancellationToken, returnSelectedNode);
+            var conversion = new ProjectConversion(projectContentsConverter, new[] { document }, languageConversion, cancellationToken, conversionOptions.ShowCompilationErrors, returnSelectedNode);
             var conversionResults = await conversion.Convert(progress).ToArrayAsync();
             var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
                              ?? conversionResults.First();
@@ -154,7 +150,7 @@ namespace ICSharpCode.CodeConverter.Shared
             //Perf heuristic: Decrease memory pressure on the simplification phase by converting large files first https://github.com/icsharpcode/CodeConverter/issues/524#issuecomment-590301594
             var documentsToConvert = documentsWithLengths.OrderByDescending(d => d.Length).Select(d => d.Doc);
 
-            var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, languageConversion, cancellationToken);
+            var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, languageConversion, cancellationToken, false);
 
             var results = projectConversion.Convert(progress);
             await foreach (var result in results) yield return result;

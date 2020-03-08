@@ -260,7 +260,9 @@ public partial class Class1
             }
         }
     }
-}");
+}
+1 target compilation errors:
+CS0103: The name 'string' does not exist in the current context");
         }
 
         [Fact]
@@ -288,7 +290,11 @@ public partial class Class1
         FooRet += nameof(Foo);
         return FooRet;
     }
-}");
+}
+1 source compilation errors:
+BC30284: function 'Foo' cannot be declared 'Overrides' because it does not override a function in a base class.
+1 target compilation errors:
+CS0115: 'Class1.Foo()': no suitable method found to override");
         }
 
         [Fact]
@@ -439,7 +445,9 @@ internal partial class TestClass
     {
         return 0;
     }
-}");
+}
+1 target compilation errors:
+CS0177: The out parameter 'argument' must be assigned to before control leaves the current method");
         }
 
         [Fact]
@@ -541,7 +549,11 @@ internal partial class TestClass
         argument2 = default;
         argument3 = default;
     }
-}");
+}
+1 source compilation errors:
+BC31088: 'NotOverridable' cannot be specified for methods that do not override another method.
+1 target compilation errors:
+CS0238: 'TestClass.TestMethod<T, T2, T3>(out T, ref T2, T3)' cannot be sealed because it is not an override");
         }
 
         [Fact]
@@ -686,7 +698,9 @@ internal partial class TestClass
             m_test3 = value;
         }
     }
-}");
+}
+1 source compilation errors:
+BC30124: Property without a 'ReadOnly' or 'WriteOnly' specifier must provide both a 'Get' and a 'Set'.");
         }
 
          [Fact]
@@ -876,7 +890,9 @@ internal partial class TestClass<T, T2, T3>
     public TestClass(out T argument, ref T2 argument2, T3 argument3)
     {
     }
-}");
+}
+1 target compilation errors:
+CS0177: The out parameter 'argument' must be assigned to before control leaves the current method");
         }
 
         [Fact]
@@ -950,7 +966,9 @@ public partial class TestEventWithNoType
     {
         OnCakeChange?.Invoke();
     }
-}");
+}
+1 target compilation errors:
+CS1547: Keyword 'void' cannot be used in this context");
         }
 
         [Fact]
@@ -1055,7 +1073,9 @@ internal static partial class Module1
     public static void PrintTestMessage3()
     {
     }
-}");
+}
+1 target compilation errors:
+CS1547: Keyword 'void' cannot be used in this context");
         }
 
         [Fact]
@@ -1110,6 +1130,8 @@ internal partial class Class1
     {
     }
 }
+1 target compilation errors:
+CS1547: Keyword 'void' cannot be used in this context
 ");
         }
 
@@ -1240,7 +1262,9 @@ internal partial class Class1
     public void PrintTestMessage3()
     {
     }
-}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
+}
+1 target compilation errors:
+CS1547: Keyword 'void' cannot be used in this context", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
         }
 
         [Fact]
@@ -1369,7 +1393,9 @@ public partial class Class1
     public void PrintTestMessage3()
     {
     }
-}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
+}
+1 target compilation errors:
+CS1547: Keyword 'void' cannot be used in this context", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
         }
 
         [Fact]
@@ -1456,7 +1482,16 @@ public partial class TestHandlesAdded
     public void POW_btnV2DBM_Click()
     {
     }
-}");
+}
+4 source compilation errors:
+BC30002: Type 'Button' is not defined.
+BC30590: Event 'Click' cannot be found.
+BC30002: Type 'System.Drawing.Point' is not defined.
+BC30002: Type 'System.Drawing.Size' is not defined.
+3 target compilation errors:
+CS0246: The type or namespace name 'Button' could not be found (are you missing a using directive or an assembly reference?)
+CS0234: The type or namespace name 'Point' does not exist in the namespace 'System.Drawing' (are you missing an assembly reference?)
+CS0234: The type or namespace name 'Size' does not exist in the namespace 'System.Drawing' (are you missing an assembly reference?)");
         }
 
         [Fact]
@@ -1487,7 +1522,9 @@ internal partial class TestClass
 {
     private List<string> First { get; private set; } = new List<string>();
     private int Second { get; set; } = 0;
-}");
+}
+1 target compilation errors:
+CS0273: The accessibility modifier of the 'TestClass.First.set' accessor must be more restrictive than the property or indexer 'TestClass.First'");
         }
 
         [Fact]
@@ -1743,7 +1780,9 @@ public partial class AcmeClass
     {
         return ac;
     }
-}");
+}
+1 target compilation errors:
+CS0111: Type 'AcmeClass' already defines a member called 'op_Division' with the same parameter types");
         }
 
         [Fact]// The stack trace displayed will change from time to time. Feel free to update this characterization test appropriately.
@@ -2265,7 +2304,12 @@ internal static partial class TaskExtensions
                 @"<DllImport(""kernel32.dll"", SetLastError:=True)>
 Private Shared Function OpenProcess(ByVal dwDesiredAccess As AccessMask, ByVal bInheritHandle As Boolean, ByVal dwProcessId As UInteger) As IntPtr
 End Function", @"[DllImport(""kernel32.dll"", SetLastError = true)]
-private static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);");
+private static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
+
+1 source compilation errors:
+BC30002: Type 'AccessMask' is not defined.
+1 target compilation errors:
+CS0246: The type or namespace name 'AccessMask' could not be found (are you missing a using directive or an assembly reference?)");
         }
     }
 }

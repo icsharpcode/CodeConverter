@@ -159,7 +159,9 @@ internal partial class TestClass
         bool rslt2 = !true;
         bool rslt3 = !(true is bool);
     }
-}");
+}
+1 source compilation errors:
+BC30021: 'TypeOf ... Is' requires its left operand to have a reference type, but this operand has the value type 'Boolean'.");
         }
 
         [Fact]
@@ -208,7 +210,10 @@ internal partial class TestClass
         var rslt = DateTime.Parse(""1900-01-01"");
         var rslt2 = DateTime.Parse(""2002-08-13 12:14:00"");
     }
-}");
+}
+2 source compilation errors:
+BC30183: Keyword is not valid as an identifier.
+BC32024: Default values cannot be supplied for parameters that are not declared 'Optional'.");
         }
 
         [Fact]
@@ -404,7 +409,13 @@ public partial class Class1
     {
         return """";
     }
-}");
+}
+2 source compilation errors:
+BC30647: 'Return' statement in a Sub or a Set cannot return a value.
+BC30491: Expression does not produce a value.
+2 target compilation errors:
+CS0127: Since 'Class1.Foo2()' returns void, a return keyword must not be followed by an object expression
+CS0029: Cannot implicitly convert type 'void' to 'bool'");
         }
 
         [Fact]
@@ -676,7 +687,9 @@ internal static partial class Module1
                 }
         }
     }
-}");
+}
+1 target compilation errors:
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
         }
         [Fact]
         public async Task MethodCallWithoutParens()
@@ -786,7 +799,9 @@ public partial class A
         var dict = new Dictionary<string, string>() { { ""a"", ""AAA"" }, { ""b"", ""bbb"" } };
         string v = dict?[""a""];
     }
-}");
+}
+1 target compilation errors:
+CS7036: There is no argument given that corresponds to the required formal parameter 'value' of 'Dictionary<string, string>.Add(string, string)'");
         }
 
         [Fact]
@@ -1241,7 +1256,9 @@ public partial class Class1
             // 
         }
     }
-}");
+}
+1 target compilation errors:
+CS0103: The name 'string' does not exist in the current context");
         }
 
         [Fact]
@@ -1302,7 +1319,9 @@ public partial class Class1
             // 
         }
     }
-}");
+}
+1 target compilation errors:
+CS0103: The name 'string' does not exist in the current context");
         }
 
         [Fact]
@@ -1406,7 +1425,9 @@ internal partial class TestClass
         int z = 8;
         z /= (double)3;
     }
-}");
+}
+1 target compilation errors:
+CS0266: Cannot implicitly convert type 'double' to 'int'. An explicit conversion exists (are you missing a cast?)");
         }
 
         [Fact]
@@ -1587,7 +1608,9 @@ internal partial class TestClass
     {
         bool result = string.IsNullOrEmpty(str) ? true : false;
     }
-}");
+}
+1 target compilation errors:
+CS0103: The name 'string' does not exist in the current context");
         }
 
         [Fact]
@@ -1621,7 +1644,9 @@ internal partial class TestClass
     {
         bool result = !(string.IsNullOrEmpty(str) ? true : false);
     }
-}");
+}
+1 target compilation errors:
+CS0103: The name 'string' does not exist in the current context");
         }
 
         [Fact]
@@ -1638,7 +1663,9 @@ internal partial class TestClass
     {
         int result = 5 - (string.IsNullOrEmpty(str) ? 1 : 2);
     }
-}");
+}
+1 target compilation errors:
+CS0103: The name 'string' does not exist in the current context");
         }
 
         [Fact]
@@ -1889,7 +1916,9 @@ internal partial class TestClass
         var intList = new List<int>() { 1 };
         var dict = new Dictionary<int, int>() { { 1, 2 }, { 3, 4 } };
     }
-}");
+}
+1 target compilation errors:
+CS7036: There is no argument given that corresponds to the required formal parameter 'value' of 'Dictionary<int, int>.Add(int, int)'");
         }
 
         [Fact]
@@ -1966,7 +1995,12 @@ public partial class ActualController : BaseController
     {
         Request.StatusCode = 200;
     }
-}");
+}
+2 source compilation errors:
+BC30183: Keyword is not valid as an identifier.
+BC30002: Type 'HttpRequest' is not defined.
+1 target compilation errors:
+CS0246: The type or namespace name 'HttpRequest' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -2057,7 +2091,12 @@ internal partial class TestClass
         object test3(object a, object b) => a % b;
         test(3);
     }
-}");
+}
+4 target compilation errors:
+CS0019: Operator '*' cannot be applied to operands of type 'object' and 'int'
+CS0019: Operator '>' cannot be applied to operands of type 'object' and 'int'
+CS0019: Operator '/' cannot be applied to operands of type 'object' and 'object'
+CS0019: Operator '%' cannot be applied to operands of type 'object' and 'object'");
         }
 
         [Fact]
@@ -2612,7 +2651,9 @@ public partial class MoreParsing
     {
         return Enum.GetValues(typeof(TEnum)).Cast<TEnum>().ToDictionary(enumValue => (int)(object)enumValue, enumValue => enumValue.ToString());
     }
-}");
+}
+1 target compilation errors:
+CS0120: An object reference is required for the non-static field, method, or property 'MoreParsing.GetEnumValues<TheType>()'");
         }
 
         [Fact]
@@ -2740,7 +2781,9 @@ public partial class Test
     public static void OnError(object s, ErrorEventArgs e)
     {
     }
-}");
+}
+1 target compilation errors:
+CS8082: Sub-expression cannot be used in an argument to nameof.");
         }
 
     }

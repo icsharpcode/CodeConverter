@@ -29,12 +29,13 @@ namespace CodeConverter.Tests.TestRunners
         public ConverterTestBase(string rootNamespace = null)
         {
             _rootNamespace = rootNamespace;
+            var options = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                                .WithOptionExplicit(true)
+                                .WithOptionCompareText(false)
+                                .WithOptionStrict(OptionStrict.Off)
+                                .WithOptionInfer(true);
             EmptyNamespaceOptionStrictOff = new TextConversionOptions(DefaultReferences.NetStandard2) {
-                RootNamespaceOverride = string.Empty, TargetCompilationOptionsOverride = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                .WithOptionExplicit(true)
-                .WithOptionCompareText(false)
-                .WithOptionStrict(OptionStrict.Off)
-                .WithOptionInfer(true)
+                RootNamespaceOverride = string.Empty, TargetCompilationOptionsOverride = options
             };
         }
 
@@ -121,6 +122,7 @@ End Sub";
         protected async Task<string> Convert<TLanguageConversion>(string inputCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
         {
             var textConversionOptions = conversionOptions ?? new TextConversionOptions(DefaultReferences.NetStandard2) { RootNamespaceOverride = _rootNamespace };
+            textConversionOptions.ShowCompilationErrors = true;
             var conversionResult = await ProjectConversion.ConvertText<TLanguageConversion>(inputCode, textConversionOptions);
             return (conversionResult.ConvertedCode ?? "") + (conversionResult.GetExceptionsAsString() ?? "");
         }

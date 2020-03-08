@@ -192,7 +192,12 @@ public partial class TestFunc
         bool isTrueWithNoStatement(List<string> pList) => pList.All(x => true);
         void write() => Console.WriteLine(1);
     }
-}");
+}
+1 source compilation errors:
+BC30491: Expression does not produce a value.
+2 target compilation errors:
+CS0029: Cannot implicitly convert type 'void' to 'object'
+CS1662: Cannot convert lambda expression to intended delegate type because some of the return types in the block are not implicitly convertible to the delegate return type");
         }
 
         /// <summary>
@@ -291,7 +296,9 @@ internal partial class ContrivedFuncInferenceExample
             return p2.Check(new List<string>());
         }
     }
-}");
+}
+1 target compilation errors:
+CS1660: Cannot convert lambda expression to type 'ContrivedFuncInferenceExample.Blah' because it is not a delegate type");
         }
 
         [Fact]
@@ -513,6 +520,8 @@ internal partial class Program
         My2darray = new int[7][];
     }
 }
+1 source compilation errors:
+BC30043: 'Me' is valid only within an instance method.
 ");
         }
 
@@ -559,7 +568,9 @@ internal partial class TestClass
     {
         Environment.Exit(0);
     }
-}");
+}
+1 source compilation errors:
+BC30615: 'End' statement cannot be used in class library projects.");
         }
 
         [Fact]
@@ -895,7 +906,10 @@ internal partial class TestClass
         // Declare a jagged array
         var sales = new double[12][] { };
     }
-}");
+}
+2 target compilation errors:
+CS8751: Internal error in the C# compiler.
+CS0847: An array initializer of length '12' is expected");
         }
 
         [Fact]
@@ -929,7 +943,9 @@ internal partial class TestClass
     {
         var b = new[] { { 1, 2 }, { 3, 4 } };
     }
-}");
+}
+1 target compilation errors:
+CS8751: Internal error in the C# compiler.");
         }
 
         [Fact]
@@ -946,7 +962,9 @@ internal partial class TestClass
     {
         var b = new int[,] { { 1, 2 }, { 3, 4 } };
     }
-}");
+}
+1 target compilation errors:
+CS8751: Internal error in the C# compiler.");
         }
 
         [Fact]
@@ -973,7 +991,9 @@ internal partial class TestClass
         var e = new int[][,] { };
         var f = new int[0][,] { };
     }
-}");
+}
+1 target compilation errors:
+CS8751: Internal error in the C# compiler.");
         }
 
         [Fact]
@@ -1259,7 +1279,9 @@ internal partial class TestClass
 
         return -1;
     }
-}");
+}
+1 target compilation errors:
+CS0103: The name 'string' does not exist in the current context");
         }
 
         [Fact]
@@ -1472,7 +1494,9 @@ internal partial class TestClass
                 break;
         }
     }
-}");
+}
+1 source compilation errors:
+BC30516: Overload resolution failed because no accessible 'Val' accepts this number of arguments.");
         }
 
         [Fact]
@@ -1570,7 +1594,9 @@ internal partial class TestClass
         for (int i = 0, loopTo = end; i <= loopTo; i++)
             b[i] = s[i];
     }
-}");
+}
+1 source compilation errors:
+BC30183: Keyword is not valid as an identifier.");
         }
 
         [Fact]
@@ -1769,7 +1795,9 @@ internal partial class TestClass
         TestMethod();
         TestMethod();
     }
-}");
+}
+1 target compilation errors:
+CS0149: Method name expected");
         }
 
         [Fact]
@@ -1952,7 +1980,9 @@ public partial class TestClass
                 }
         }
     }
-}");
+}
+1 target compilation errors:
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
         }
 
         [Fact]
