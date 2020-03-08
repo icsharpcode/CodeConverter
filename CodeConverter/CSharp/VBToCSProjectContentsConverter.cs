@@ -38,7 +38,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var cSharpCompilationOptions = CSharpCompiler.CreateCompilationOptions();
             _convertedCsProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, CSharpCompiler.ParseOptions);
-            _csharpReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(cSharpCompilationOptions);
+            _csharpReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(cSharpCompilationOptions, CSharpCompiler.ParseOptions);
             _csharpViewOfVbSymbols = (CSharpCompilation) await _csharpReferenceProject.GetCompilationAsync(_cancellationToken);
             Project = await project.WithRenamedMergedMyNamespace(_cancellationToken);
         }

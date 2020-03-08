@@ -54,7 +54,7 @@ namespace ICSharpCode.CodeConverter.VB
             project = await CaseConflictResolver.RenameClashingSymbols(project);
             _sourceCsProject = project;
             _convertedVbProject = project.ToProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
-            _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(_vbCompilationOptions);
+            _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
             _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync(_cancellationToken);
             Project = project;
         }

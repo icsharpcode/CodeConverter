@@ -10,13 +10,13 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private static char[] DirSeparators = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
-        public static Project CreateReferenceOnlyProjectFromAnyOptions(this Project project, CompilationOptions baseOptions)
+        public static Project CreateReferenceOnlyProjectFromAnyOptions(this Project project, CompilationOptions baseOptions, ParseOptions parseOptions)
         {
             var options = baseOptions.WithMetadataImportOptions(MetadataImportOptions.All);
             var viewerId = ProjectId.CreateNewId();
             var projectReferences = project.ProjectReferences.Concat(new[] {new ProjectReference(project.Id)});
             var viewerProjectInfo = project.ToProjectInfo(viewerId, project.Name + viewerId, options,
-                projectReferences);
+                projectReferences, parseOptions);
             var csharpViewOfVbProject = project.Solution.AddProject(viewerProjectInfo).GetProject(viewerId);
             return csharpViewOfVbProject;
         }
