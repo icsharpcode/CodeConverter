@@ -20,6 +20,7 @@ namespace ICSharpCode.CodeConverter.Util
             var diagnostics = compilation.GetDiagnostics()
                 .Where(d => d.Severity == DiagnosticSeverity.Error)
                 .Select(d => $"{d.Id}: {d.GetMessage()}")
+                .Distinct()
                 .ToList();
             return diagnostics;
         }
