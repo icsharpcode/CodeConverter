@@ -38,13 +38,6 @@ namespace CodeConverter.Tests.TestRunners
             };
         }
 
-        protected static async Task<string> GetConvertedCodeOrErrorString<TLanguageConversion>(string toConvert, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
-        {
-            var conversionResult = await ProjectConversion.ConvertText<TLanguageConversion>(toConvert, conversionOptions ?? new TextConversionOptions(DefaultReferences.NetStandard2));
-            var convertedCode = conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString();
-            return convertedCode;
-        }
-
         public async Task TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, bool expectCompilationErrors = false, TextConversionOptions conversion = null, bool hasLineCommentConversionIssue = false)
         {
             expectedVisualBasicCode = AddSurroundingMethodBlock(expectedVisualBasicCode, expectSurroundingMethodBlock);
@@ -125,17 +118,17 @@ End Sub";
             await AssertConvertedCodeResultEquals<VBToCSConversion>(visualBasicCode, expectedCsharpCode);
         }
 
-        protected async Task AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
-        {
-            string convertedTextFollowedByExceptions = await Convert<TLanguageConversion>(inputCode, conversionOptions);
-            AssertConvertedCodeResultEquals(convertedTextFollowedByExceptions, expectedConvertedCode, inputCode);
-        }
-
-        private async Task<string> Convert<TLanguageConversion>(string inputCode, TextConversionOptions conversionOptions) where TLanguageConversion : ILanguageConversion, new()
+        protected async Task<string> Convert<TLanguageConversion>(string inputCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
         {
             var textConversionOptions = conversionOptions ?? new TextConversionOptions(DefaultReferences.NetStandard2) { RootNamespaceOverride = _rootNamespace };
             var conversionResult = await ProjectConversion.ConvertText<TLanguageConversion>(inputCode, textConversionOptions);
             return (conversionResult.ConvertedCode ?? "") + (conversionResult.GetExceptionsAsString() ?? "");
+        }
+
+        protected async Task AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
+        {
+            string convertedTextFollowedByExceptions = await Convert<TLanguageConversion>(inputCode, conversionOptions);
+            AssertConvertedCodeResultEquals(convertedTextFollowedByExceptions, expectedConvertedCode, inputCode);
         }
 
         private static void AssertConvertedCodeResultEquals(string convertedCodeFollowedByExceptions,

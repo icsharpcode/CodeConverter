@@ -168,8 +168,8 @@ namespace ICSharpCode.CodeConverter.Shared
             var (proj1, docs1) = await _projectContentsConverter.GetConvertedProject(await firstPassResults.ToArrayAsync());
 
             var warnings = await GetProjectWarnings(_projectContentsConverter.Project, proj1);
-            if (warnings != null) {
-                var warningPath = Path.Combine(proj1.GetDirectoryPath(), "ConversionWarnings.txt");
+            if (!string.IsNullOrWhiteSpace(warnings)) {
+                var warningPath = Path.Combine(_projectContentsConverter.Project.GetDirectoryPath(), "ConversionWarnings.txt");
                 yield return new ConversionResult() { SourcePathOrNull = warningPath, Exceptions = new[] { warnings } };
             }
 

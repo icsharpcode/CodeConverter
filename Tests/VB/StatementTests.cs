@@ -577,7 +577,7 @@ End Class");
         [Fact]
         public async Task UnsafeStatementsWithNoVbEquivalentShowErrorInlineCharacterization()
         {
-            string convertedCode = await GetConvertedCodeOrErrorString<CSToVBConversion>(@"class TestClass
+            string convertedCode = await Convert<CSToVBConversion>(@"class TestClass
 {
     void TestMethod()
     {

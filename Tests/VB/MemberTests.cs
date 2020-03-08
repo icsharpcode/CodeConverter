@@ -1226,7 +1226,7 @@ End Class", conversion: EmptyNamespaceOptionStrictOff);
         public async Task InvalidOperatorOverloadsShowErrorInlineCharacterization()
         {
             // No valid conversion to C# - to implement this you'd need to create a new method, and convert all callers to use it.
-            var convertedCode = await GetConvertedCodeOrErrorString<CSToVBConversion>(@"public class AcmeClass
+            var convertedCode = await Convert<CSToVBConversion>(@"public class AcmeClass
 {
     public static AcmeClass operator ++(int i, AcmeClass ac)
     {

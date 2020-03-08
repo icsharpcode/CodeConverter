@@ -1750,7 +1750,7 @@ public partial class AcmeClass
         public async Task OperatorOverloadsWithNoCSharpEquivalentShowErrorInlineCharacterization()
         {
             // No valid conversion to C# - to implement this you'd need to create a new method, and convert all callers to use it.
-            var convertedCode = await GetConvertedCodeOrErrorString<VBToCSConversion>(@"Public Class AcmeClass
+            var convertedCode = await Convert<VBToCSConversion>(@"Public Class AcmeClass
     Public Shared Operator ^(i As Integer, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
