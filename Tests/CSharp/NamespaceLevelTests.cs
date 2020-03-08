@@ -315,31 +315,39 @@ internal enum ExceptionResource
         }
 
         [Fact]
-        public async Task TestClassInheritanceList()
+        public async Task TestClassInheritanceList1()
         {
             await TestConversionVisualBasicToCSharp(
 @"MustInherit Class ClassA
     Implements System.IDisposable
 
     Protected MustOverride Sub Test()
+    Public MustOverride Sub Dispose() Implements IDisposable.Dispose
 End Class", @"using System;
 
 internal abstract partial class ClassA : IDisposable
 {
     protected abstract void Test();
+    public abstract void Dispose();
 }");
+        }
 
+        [Fact]
+        public async Task TestClassInheritanceList2()
+        {
             await TestConversionVisualBasicToCSharp(
 @"MustInherit Class ClassA
     Inherits System.EventArgs
     Implements System.IDisposable
 
     Protected MustOverride Sub Test()
+    Public MustOverride Sub Dispose() Implements IDisposable.Dispose
 End Class", @"using System;
 
 internal abstract partial class ClassA : EventArgs, IDisposable
 {
     protected abstract void Test();
+    public abstract void Dispose();
 }");
         }
 
