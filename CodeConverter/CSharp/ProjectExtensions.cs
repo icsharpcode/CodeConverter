@@ -12,7 +12,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public static Project CreateReferenceOnlyProjectFromAnyOptions(this Project project, CompilationOptions baseOptions)
         {
-            var options = baseOptions.WithMetadataImportOptionsAll();
+            var options = baseOptions.WithMetadataImportOptions(MetadataImportOptions.All);
             var viewerId = ProjectId.CreateNewId();
             var projectReferences = project.ProjectReferences.Concat(new[] {new ProjectReference(project.Id)});
             var viewerProjectInfo = project.ToProjectInfo(viewerId, project.Name + viewerId, options,

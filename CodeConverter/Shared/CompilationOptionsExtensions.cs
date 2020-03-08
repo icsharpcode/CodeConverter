@@ -28,10 +28,5 @@ namespace ICSharpCode.CodeConverter.Shared
                 .WithMetadataReferences(references);
             return project.AddDocument("CodeToConvert", tree.GetRoot(), filePath: Path.Combine(Directory.GetCurrentDirectory(), "TempCodeToConvert.txt"));
         }
-
-        public static CompilationOptions WithMetadataImportOptionsAll(this CompilationOptions baseOptions)
-        {
-            return CachedReflectedDelegates.LazyWithMetadataImportOptions.Value(baseOptions, 2 /*MetadataImportOptions.All*/);
-        }
     }
 }
