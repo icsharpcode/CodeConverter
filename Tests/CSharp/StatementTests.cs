@@ -1114,17 +1114,15 @@ internal partial class Test
 }");
         }
 
-        [Theory]
-        [InlineData("Sub", "", "void")]
-        [InlineData("Function", " As Long", "long")]
-        public async Task DeclareStatement(string vbMethodDecl,string vbType, string csType)
+        [Fact]
+        public async Task DeclareStatementLong()
         {
             // Intentionally uses a type name with a different casing as the loop variable, i.e. "process" to test name resolution
-            await TestConversionVisualBasicToCSharp($@"Imports System.Diagnostics
+            await TestConversionVisualBasicToCSharp(@"Imports System.Diagnostics
 Imports System.Threading
 
 Public Class AcmeClass
-    Private Declare {vbMethodDecl} SetForegroundWindow Lib ""user32"" (ByVal hwnd As Int32){vbType}
+    Private Declare Sub SetForegroundWindow Lib ""user32"" (ByVal hwnd As Int32)
 
     Public Shared Sub Main()
         For Each proc In Process.GetProcesses().Where(Function(p) Not String.IsNullOrEmpty(p.MainWindowTitle))
@@ -1133,25 +1131,65 @@ Public Class AcmeClass
         Next
     End Sub
 End Class"
-                , $@"using System.Diagnostics;
+                , @"using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 
 public partial class AcmeClass
-{{
+{
     [DllImport(""user32"")]
-    private static extern {csType} SetForegroundWindow(int hwnd);
+    private static extern void SetForegroundWindow(int hwnd);
 
     public static void Main()
-    {{
+    {
         foreach (var proc in Process.GetProcesses().Where(p => !string.IsNullOrEmpty(p.MainWindowTitle)))
-        {{
+        {
             SetForegroundWindow(proc.MainWindowHandle.ToInt32());
             Thread.Sleep(1000);
-        }}
-    }}
-}}");
+        }
+    }
+}
+1 target compilation errors:
+CS1547: Keyword 'void' cannot be used in this context");
+        }
+
+        [Fact]
+        public async Task DeclareStatementVoid()
+        {
+            // Intentionally uses a type name with a different casing as the loop variable, i.e. "process" to test name resolution
+            await TestConversionVisualBasicToCSharp($@"Imports System.Diagnostics
+Imports System.Threading
+
+Public Class AcmeClass
+    Private Declare Function SetForegroundWindow Lib ""user32"" (ByVal hwnd As Int32) As Long
+
+    Public Shared Sub Main()
+        For Each proc In Process.GetProcesses().Where(Function(p) Not String.IsNullOrEmpty(p.MainWindowTitle))
+            SetForegroundWindow(proc.MainWindowHandle.ToInt32())
+            Thread.Sleep(1000)
+        Next
+    End Sub
+End Class"
+                , @"using System.Diagnostics;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
+
+public partial class AcmeClass
+{
+    [DllImport(""user32"")]
+    private static extern long SetForegroundWindow(int hwnd);
+
+    public static void Main()
+    {
+        foreach (var proc in Process.GetProcesses().Where(p => !string.IsNullOrEmpty(p.MainWindowTitle)))
+        {
+            SetForegroundWindow(proc.MainWindowHandle.ToInt32());
+            Thread.Sleep(1000);
+        }
+    }
+}");
         }
 
         [Fact]

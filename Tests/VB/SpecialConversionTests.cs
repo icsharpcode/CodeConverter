@@ -52,7 +52,7 @@ BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to it
         Dim b As Integer, a As Integer = 5
         b = System.Math.Min(System.Threading.Interlocked.Increment(a), a - 1)
     End Sub
-End Class", conversion: EmptyNamespaceOptionStrictOff);
+End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
 
         [Fact]
@@ -244,6 +244,14 @@ CS0103: The name 'DrawImage' does not exist in the current context
 2 target compilation errors:
 BC30451: 'FullImage' is not declared. It may be inaccessible due to its protection level.
 BC30451: 'DrawImage' is not declared. It may be inaccessible due to its protection level.", expectCompilationErrors: true);
+        }
+
+        /// <summary>
+        /// Intentionally unknown type used to ensure imperfect compilation errs towards common case
+        /// </summary>
+        [Fact]
+        public async Task IfStatementSimilarToRaiseEventRegressionTest()
+        {
             // regression test:
             await TestConversionCSharpToVisualBasic(
                 @"class TestClass
@@ -256,8 +264,22 @@ BC30451: 'DrawImage' is not declared. It may be inaccessible due to its protecti
     Private Sub TestMethod()
         If FullImage IsNot Nothing Then e.DrawImage()
     End Sub
-End Class", expectCompilationErrors: true);
-            // with braces:
+End Class
+
+2 source compilation errors:
+CS0103: The name 'FullImage' does not exist in the current context
+CS0103: The name 'e' does not exist in the current context
+2 target compilation errors:
+BC30451: 'FullImage' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'e' is not declared. It may be inaccessible due to its protection level.", expectCompilationErrors: true);
+        }
+
+        /// <summary>
+        /// Intentionally unknown type used to ensure imperfect compilation errs towards common case
+        /// </summary>
+        [Fact]
+        public async Task IfStatementSimilarToRaiseEventWithBracesAnother()
+        {
             await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
@@ -271,22 +293,22 @@ End Class", expectCompilationErrors: true);
             DrawImage()
         End If
     End Sub
-End Class", expectCompilationErrors: true);
-            await TestConversionCSharpToVisualBasic(
-                @"class TestClass
-{
-    void TestMethod()
-    {
-        if (FullImage != null) { e.DrawImage(); }
-    }
-}", @"Friend Class TestClass
-    Private Sub TestMethod()
-        If FullImage IsNot Nothing Then
-            e.DrawImage()
-        End If
-    End Sub
-End Class", expectCompilationErrors: true);
-            // another bug related to the IfStatement code:
+End Class
+
+2 source compilation errors:
+CS0103: The name 'FullImage' does not exist in the current context
+CS0103: The name 'DrawImage' does not exist in the current context
+2 target compilation errors:
+BC30451: 'FullImage' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'DrawImage' is not declared. It may be inaccessible due to its protection level.", expectCompilationErrors: true);
+        }
+
+        /// <summary>
+        /// Intentionally unknown type used to ensure imperfect compilation errs towards common case
+        /// </summary>
+        [Fact]
+        public async Task IfStatementSimilarToRaiseEventAnother2()
+        {
             await TestConversionCSharpToVisualBasic(
                 @"class TestClass
 {
@@ -303,7 +325,16 @@ End Class", expectCompilationErrors: true);
             Next
         End If
     End Sub
-End Class", expectCompilationErrors: true);
+End Class
+
+3 source compilation errors:
+CS0103: The name 'Tiles' does not exist in the current context
+CS0246: The type or namespace name 'Tile' could not be found (are you missing a using directive or an assembly reference?)
+CS1061: 'TestClass' does not contain a definition for 'TileTray' and no accessible extension method 'TileTray' accepting a first argument of type 'TestClass' could be found (are you missing a using directive or an assembly reference?)
+3 target compilation errors:
+BC30451: 'Tiles' is not declared. It may be inaccessible due to its protection level.
+BC30002: Type 'Tile' is not defined.
+BC30456: 'TileTray' is not a member of 'TestClass'.", expectCompilationErrors: true);
         }
 
         /// <summary>
@@ -627,7 +658,7 @@ End Namespace");
 End Class
 
 1 source compilation errors:
-CS1002: ; expected", conversion: EmptyNamespaceOptionStrictOff);
+CS1002: ; expected", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
     }
 }

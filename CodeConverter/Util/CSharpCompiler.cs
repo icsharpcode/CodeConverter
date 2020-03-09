@@ -34,7 +34,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static CSharpCompilationOptions CreateCompilationOptions()
         {
-            return new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary);
+            return new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true);
         }
 
         public static CSharpParseOptions ParseOptions { get; } = new CSharpParseOptions(LanguageVersion.Latest);

@@ -2303,16 +2303,7 @@ internal static partial class TaskExtensions
             await TestConversionVisualBasicToCSharp(
                 @"<DllImport(""kernel32.dll"", SetLastError:=True)>
 Private Shared Function OpenProcess(ByVal dwDesiredAccess As AccessMask, ByVal bInheritHandle As Boolean, ByVal dwProcessId As UInteger) As IntPtr
-End Function
-
-5 source compilation errors:
-CS0246: The type or namespace name 'AccessMask' could not be found (are you missing a using directive or an assembly reference?)
-CS0246: The type or namespace name 'IntPtr' could not be found (are you missing a using directive or an assembly reference?)
-CS0246: The type or namespace name 'DllImportAttribute' could not be found (are you missing a using directive or an assembly reference?)
-CS0246: The type or namespace name 'DllImport' could not be found (are you missing a using directive or an assembly reference?)
-CS0246: The type or namespace name 'SetLastError' could not be found (are you missing a using directive or an assembly reference?)
-1 target compilation errors:
-BC30002: Type 'AccessMask' is not defined.", @"[DllImport(""kernel32.dll"", SetLastError = true)]
+End Function", @"[DllImport(""kernel32.dll"", SetLastError = true)]
 private static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
 
 1 source compilation errors:

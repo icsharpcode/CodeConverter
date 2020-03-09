@@ -830,16 +830,6 @@ CS0103: The name 's' does not exist in the current context
 3 target compilation errors:
 BC30451: 'end' is not declared. It may be inaccessible due to its protection level.
 BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
-BC30451: 's' is not declared. It may be inaccessible due to its protection level.
-
-4 source compilation errors:
-CS0103: The name 'i' does not exist in the current context
-CS0103: The name 'end' does not exist in the current context
-CS0103: The name 'b' does not exist in the current context
-CS0103: The name 's' does not exist in the current context
-3 target compilation errors:
-BC30451: 'end' is not declared. It may be inaccessible due to its protection level.
-BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
 BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
         }
 
@@ -861,16 +851,6 @@ BC30451: 's' is not declared. It may be inaccessible due to its protection level
         Next
     End Sub
 End Class
-
-4 source compilation errors:
-CS0103: The name 'i' does not exist in the current context
-CS0103: The name 'end' does not exist in the current context
-CS0103: The name 'b' does not exist in the current context
-CS0103: The name 's' does not exist in the current context
-3 target compilation errors:
-BC30451: 'end' is not declared. It may be inaccessible due to its protection level.
-BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
-BC30451: 's' is not declared. It may be inaccessible due to its protection level.
 
 4 source compilation errors:
 CS0103: The name 'i' does not exist in the current context

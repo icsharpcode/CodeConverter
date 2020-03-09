@@ -409,32 +409,24 @@ internal partial class test : IComparable
 1 source compilation errors:
 BC30149: Class 'test' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.
 1 target compilation errors:
-CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object)'
-1 source compilation errors:
-BC30149: Class 'test' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.
-1 target compilation errors:
 CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object)'");
         }
 
         [Fact]
         public async Task ClassImplementsInterface2()
         {
-            await TestConversionVisualBasicToCSharp(@"Class test
+            await TestConversionVisualBasicToCSharp(@"Class ClassImplementsInterface2
     Implements System.IComparable
 End Class",
                 @"using System;
 
-internal partial class test : IComparable
+internal partial class ClassImplementsInterface2 : IComparable
 {
 }
 1 source compilation errors:
-BC30149: Class 'test' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.
+BC30149: Class 'ClassImplementsInterface2' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.
 1 target compilation errors:
-CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object)'
-1 source compilation errors:
-BC30149: Class 'test' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.
-1 target compilation errors:
-CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object)'");
+CS0535: 'ClassImplementsInterface2' does not implement interface member 'IComparable.CompareTo(object)'");
         }
 
         [Fact]
@@ -442,43 +434,35 @@ CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object
         {
             await TestConversionVisualBasicToCSharp(@"Imports System.IO
 
-Class test
+Class ClassInheritsClass
     Inherits InvalidDataException
 End Class",
                 @"using System.IO;
 
-internal partial class test : InvalidDataException
+internal partial class ClassInheritsClass : InvalidDataException
 {
 }
 1 source compilation errors:
-BC30299: 'test' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
+BC30299: 'ClassInheritsClass' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
 1 target compilation errors:
-CS0509: 'test': cannot derive from sealed type 'InvalidDataException'
-1 source compilation errors:
-BC30299: 'test' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
-1 target compilation errors:
-CS0509: 'test': cannot derive from sealed type 'InvalidDataException'");
+CS0509: 'ClassInheritsClass': cannot derive from sealed type 'InvalidDataException'");
         }
 
         [Fact]
         public async Task ClassInheritsClass2()
         {
-            await TestConversionVisualBasicToCSharp(@"Class test
+            await TestConversionVisualBasicToCSharp(@"Class ClassInheritsClass2
     Inherits System.IO.InvalidDataException
 End Class",
                 @"using System.IO;
 
-internal partial class test : InvalidDataException
+internal partial class ClassInheritsClass2 : InvalidDataException
 {
 }
 1 source compilation errors:
-BC30299: 'test' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
+BC30299: 'ClassInheritsClass2' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
 1 target compilation errors:
-CS0509: 'test': cannot derive from sealed type 'InvalidDataException'
-1 source compilation errors:
-BC30299: 'test' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
-1 target compilation errors:
-CS0509: 'test': cannot derive from sealed type 'InvalidDataException'");
+CS0509: 'ClassInheritsClass2': cannot derive from sealed type 'InvalidDataException'");
         }
 
         [Fact]

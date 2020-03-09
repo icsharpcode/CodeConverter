@@ -138,7 +138,7 @@ End Sub");
 }",
 @"Private Sub Test()
     Dim CR As Char = Microsoft.VisualBasic.ChrW(&HD)
-End Sub", conversion: EmptyNamespaceOptionStrictOff);
+End Sub", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
         [Fact]
         public async Task CastCharacterToNumber() {
@@ -150,7 +150,7 @@ End Sub", conversion: EmptyNamespaceOptionStrictOff);
 @"Private Sub Test()
     Dim a As Byte = Microsoft.VisualBasic.AscW(""A""c)
     Dim b As Decimal = Microsoft.VisualBasic.AscW(""B""c)
-End Sub", conversion: EmptyNamespaceOptionStrictOff);
+End Sub", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
         [Fact(Skip = "Many code generation")]
         public async Task CastCharacterIncrement() {

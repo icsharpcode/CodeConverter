@@ -270,7 +270,7 @@ Friend Class TestSubclass
         TestMethod(3)
         System.Console.WriteLine(""Shadowed implementation"")
     End Sub
-End Class", conversion: EmptyNamespaceOptionStrictOff);
+End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
 
 
@@ -474,7 +474,7 @@ Friend Module TestClass
     <Extension()>
     Public Sub TestMethod2Parameters(ByVal str As String, ByVal __ As Action(Of String))
     End Sub
-End Module", conversion: EmptyNamespaceOptionStrictOff);
+End Module", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
 
         [Fact]
@@ -960,7 +960,16 @@ End Class");
                 @"[DllImport(""kernel32.dll"", SetLastError = true)]
 static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);", @"<DllImport(""kernel32.dll"", SetLastError:=True)>
 Private Shared Function OpenProcess(ByVal dwDesiredAccess As AccessMask, ByVal bInheritHandle As Boolean, ByVal dwProcessId As UInteger) As IntPtr
-End Function");
+End Function
+
+5 source compilation errors:
+CS0246: The type or namespace name 'AccessMask' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'IntPtr' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'DllImportAttribute' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'DllImport' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'SetLastError' could not be found (are you missing a using directive or an assembly reference?)
+1 target compilation errors:
+BC30002: Type 'AccessMask' is not defined.");
         }
 
         [Fact]
@@ -1324,7 +1333,7 @@ End Class");
     Public Function TestMethod(ByVal param1 As System.Type, ByVal param2 As System.Globalization.CultureInfo) As Object
         Return Nothing
     End Function
-End Class", conversion: EmptyNamespaceOptionStrictOff);
+End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
     }
 
         [Fact]// The stack trace displayed will change from time to time. Feel free to update this characterization test appropriately.

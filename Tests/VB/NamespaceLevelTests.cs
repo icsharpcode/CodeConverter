@@ -216,7 +216,12 @@ BC30149: Class 'ClassA' must implement 'Sub Dispose()' for interface 'IDisposabl
     Implements IDisposable
 
     Protected MustOverride Sub Test()
-End Class");
+End Class
+
+1 source compilation errors:
+CS0535: 'ClassA' does not implement interface member 'IDisposable.Dispose()'
+1 target compilation errors:
+BC30149: Class 'ClassA' must implement 'Sub Dispose()' for interface 'IDisposable'.");
         }
 
         [Fact]
@@ -304,7 +309,7 @@ Namespace System
     Public Class TestClass
         Public Property [Property] As Hashtable
     End Class
-End Namespace", conversion: EmptyNamespaceOptionStrictOff);
+End Namespace", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
         [Fact]
         public async Task Namespace_Duplicates() {
@@ -434,36 +439,31 @@ BC30149: Class 'test' must implement 'Function CompareTo(obj As Object) As Integ
         [Fact]
         public async Task ClassInheritsClass()
         {
-            await TestConversionCSharpToVisualBasic("using System.IO; class test : InvalidDataException { }",
+            await TestConversionCSharpToVisualBasic("using System.IO; class ClassInheritsClass : InvalidDataException { }",
                 @"Imports System.IO
 
-Friend Class test
+Friend Class ClassInheritsClass
     Inherits InvalidDataException
 End Class
 
 1 source compilation errors:
-CS0509: 'test': cannot derive from sealed type 'InvalidDataException'
+CS0509: 'ClassInheritsClass': cannot derive from sealed type 'InvalidDataException'
 1 target compilation errors:
-BC30299: 'test' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
-
-1 source compilation errors:
-CS0509: 'test': cannot derive from sealed type 'InvalidDataException'
-1 target compilation errors:
-BC30299: 'test' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.");
+BC30299: 'ClassInheritsClass' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.");
         }
 
         [Fact]
         public async Task ClassInheritsClass2()
         {
-            await TestConversionCSharpToVisualBasic("class test : System.IO.InvalidDataException { }",
-                @"Friend Class test
+            await TestConversionCSharpToVisualBasic("class ClassInheritsClass2 : System.IO.InvalidDataException { }",
+                @"Friend Class ClassInheritsClass2
     Inherits InvalidDataException
 End Class
 
 1 source compilation errors:
-CS0509: 'test': cannot derive from sealed type 'InvalidDataException'
+CS0509: 'ClassInheritsClass2': cannot derive from sealed type 'InvalidDataException'
 1 target compilation errors:
-BC30299: 'test' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.");
+BC30299: 'ClassInheritsClass2' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.");
         }
 
         [Fact]
@@ -590,7 +590,7 @@ End Class");
     Implements System.ComponentModel.INotifyPropertyChanged
 
     Public Event PropertyChanged As System.ComponentModel.PropertyChangedEventHandler Implements System.ComponentModel.INotifyPropertyChanged.PropertyChanged
-End Class", conversion: EmptyNamespaceOptionStrictOff);
+End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
         [Fact]
         public async Task PartialClass_OmitedModifier() {
