@@ -904,12 +904,11 @@ internal partial class TestClass
         var rankSpecifiers2 = new double[2, 2];
 
         // Declare a jagged array
-        var sales = new double[12][] { };
+        var sales = new double[12][];
     }
 }
-2 target compilation errors:
-CS8751: Internal error in the C# compiler.
-CS0847: An array initializer of length '12' is expected");
+1 target compilation errors:
+CS8751: Internal error in the C# compiler.");
         }
 
         [Fact]
@@ -941,7 +940,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = new[] { { 1, 2 }, { 3, 4 } };
+        var b = new[,] { { 1, 2 }, { 3, 4 } };
     }
 }
 1 target compilation errors:
@@ -978,6 +977,7 @@ CS8751: Internal error in the C# compiler.");
         Dim d as Integer(,,) = New Integer(0, 0, 0) {{{1}}}
         Dim e As Integer()(,) = New Integer()(,) {}
         Dim f As Integer()(,) = New Integer(-1)(,) {}
+        Dim g As Integer()(,) = New Integer(0)(,) {}
     End Sub
 End Class", @"
 internal partial class TestClass
@@ -989,7 +989,8 @@ internal partial class TestClass
         var c = new int[,,] { { { 1 } } };
         var d = new int[1, 1, 1] { { { 1 } } };
         var e = new int[][,] { };
-        var f = new int[0][,] { };
+        var f = new int[0][,];
+        var g = new int[1][,];
     }
 }
 1 target compilation errors:
