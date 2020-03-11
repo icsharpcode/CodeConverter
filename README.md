@@ -41,8 +41,7 @@ Currently, the VB -> C# conversion quality is higher than the C# -> VB conversio
    * A new instance of Visual Studio will open with the extension installed
 
 ##  History
-This was previously part of [Refactoring Essentials](https://github.com/icsharpcode/RefactoringEssentials). However, because of the way analyzers are tied to Visual Studio and Roslyn versions
-made it super-hard to co-evolve the code converter bits. That is why we teased the converters out and they are now a self-contained entity.
+A spiritual successor of the code conversion within [SharpDevelop](https://github.com/icsharpcode/SharpDevelop) and later part of [Refactoring Essentials](https://github.com/icsharpcode/RefactoringEssentials), the code converter was separated out to avoid difficulties with different Visual Studio and Rolsyn versions.
 
 ## More screenshots
 <p float="left">
