@@ -106,7 +106,15 @@ End Namespace");
 @"this.DataContext = from task in tasks
     where task.Priority == pri
     select task;",
-                @"Me.DataContext = From task In tasks Where task.Priority Is pri Select task");
+                @"Me.DataContext = From task In tasks Where task.Priority Is pri Select task
+
+2 source compilation errors:
+CS1061: 'SurroundingClass' does not contain a definition for 'DataContext' and no accessible extension method 'DataContext' accepting a first argument of type 'SurroundingClass' could be found (are you missing a using directive or an assembly reference?)
+CS0103: The name 'tasks' does not exist in the current context
+3 target compilation errors:
+BC30456: 'DataContext' is not a member of 'SurroundingClass'.
+BC30451: 'tasks' is not declared. It may be inaccessible due to its protection level.
+BC36610: Name 'pri' is either not declared or not in the current scope.");
         }
     }
 }

@@ -24,7 +24,10 @@ namespace CodeConverter.Tests.VB
             _Text = value
         End Set
     End Property
-End Class");
+End Class
+
+1 target compilation errors:
+BC30451: '_Text' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -48,7 +51,10 @@ End Class");
             End Set
         End Property
     End Class
-End Class");
+End Class
+
+1 target compilation errors:
+BC30451: '_Text' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -79,7 +85,13 @@ End Class");
             _Count = value
         End Set
     End Property
-End Class");
+End Class
+
+1 source compilation errors:
+CS1597: Semicolon after method or accessor block is not valid
+2 target compilation errors:
+BC30451: '_Text' is not declared. It may be inaccessible due to its protection level.
+BC30451: '_Count' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -99,7 +111,10 @@ End Class");
             _Text = value
         End Set
     End Property
-End Module");
+End Module
+
+1 target compilation errors:
+BC30451: '_Text' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -148,7 +163,11 @@ Friend Class TestClass
         argument2 = Nothing '2
         argument3 = Nothing '3
     End Sub
-End Class");
+End Class
+
+2 source compilation errors:
+CS1003: Syntax error, '(' expected
+CS1026: ) expected");
         }
 
         [Fact]
@@ -167,7 +186,12 @@ Friend Class TestClass
     Public Function TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) As Integer
         Return 0
     End Function
-End Class");
+End Class
+
+3 source compilation errors:
+CS1003: Syntax error, '(' expected
+CS1026: ) expected
+CS0177: The out parameter 'argument' must be assigned to before control leaves the current method");
         }
 
         [Fact]
@@ -190,7 +214,11 @@ Friend Class TestClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class");
+End Class
+
+2 source compilation errors:
+CS1003: Syntax error, '(' expected
+CS1026: ) expected");
         }
 
         [Fact]
@@ -242,7 +270,7 @@ Friend Class TestSubclass
         TestMethod(3)
         System.Console.WriteLine(""Shadowed implementation"")
     End Sub
-End Class", conversion: EmptyNamespaceOptionStrictOff);
+End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
 
 
@@ -411,7 +439,14 @@ Friend Class TestClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class");
+End Class
+
+3 source compilation errors:
+CS1003: Syntax error, '(' expected
+CS1026: ) expected
+CS0238: 'TestClass.TestMethod<T, T2, T3>(out T, ref T2, T3)' cannot be sealed because it is not an override
+1 target compilation errors:
+BC31088: 'NotOverridable' cannot be specified for methods that do not override another method.");
         }
 
         [Fact]
@@ -439,7 +474,7 @@ Friend Module TestClass
     <Extension()>
     Public Sub TestMethod2Parameters(ByVal str As String, ByVal __ As Action(Of String))
     End Sub
-End Module", conversion: EmptyNamespaceOptionStrictOff);
+End Module", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
 
         [Fact]
@@ -507,14 +542,14 @@ End Class");
     int test;
     public int Test {
         get { return test; }
-        set { test = value}
+        set { test = value; }
     }
 }
 public class ShouldNotChange {
     int test;
     public int Test1 {
         get { return test; }
-        set { test = value}
+        set { test = value; }
     }
 }
 ",
@@ -613,7 +648,7 @@ End Class");
 
     public int Test {
         get { return test; }
-        set { test = value}
+        set { test = value; }
     }
 }",
                 @"Public Class HasConflictingPropertyAndField
@@ -642,7 +677,7 @@ End Class");
     int test;
     public int Test {
         get { return test; }
-        set { test = value}
+        set { test = value; }
     }
     public int HasConflictingParam(int test) {
         Test = test;
@@ -687,7 +722,7 @@ public partial class HasConflictingPropertyAndField {
             int TEST = 0;
             return test + TEST;
         }
-        set { test = value}
+        set { test = value; }
     }
 }",
                 @"Public Partial Class HasConflictingPropertyAndField
@@ -792,7 +827,10 @@ End Class");
             Throw New Exception()
         End Set
     End Property
-End Class");
+End Class
+
+1 source compilation errors:
+CS0246: The type or namespace name 'Exception' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -807,6 +845,14 @@ End Class");
     <DatabaseGenerated(DatabaseGeneratedOption.None)>
     Private Property value As Integer
 End Class
+
+3 source compilation errors:
+CS0246: The type or namespace name 'DatabaseGeneratedAttribute' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'DatabaseGenerated' could not be found (are you missing a using directive or an assembly reference?)
+CS0103: The name 'DatabaseGeneratedOption' does not exist in the current context
+2 target compilation errors:
+BC30002: Type 'DatabaseGenerated' is not defined.
+BC30451: 'DatabaseGeneratedOption' is not declared. It may be inaccessible due to its protection level.
 ");
         }
 
@@ -821,6 +867,9 @@ internal class Resources
 <Global.System.Runtime.CompilerServices.CompilerGeneratedAttribute()>
 Friend Class Resources
 End Class
+
+1 target compilation errors:
+BC30002: Type 'Global.System.Runtime.CompilerServices.CompilerGeneratedAttribute' is not defined.
 ");
         }
 
@@ -838,7 +887,12 @@ End Class
 Friend Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
     Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
     End Sub
-End Class");
+End Class
+
+3 source compilation errors:
+CS1003: Syntax error, '(' expected
+CS1026: ) expected
+CS0177: The out parameter 'argument' must be assigned to before control leaves the current method");
         }
 
 
@@ -906,7 +960,16 @@ End Class");
                 @"[DllImport(""kernel32.dll"", SetLastError = true)]
 static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);", @"<DllImport(""kernel32.dll"", SetLastError:=True)>
 Private Shared Function OpenProcess(ByVal dwDesiredAccess As AccessMask, ByVal bInheritHandle As Boolean, ByVal dwProcessId As UInteger) As IntPtr
-End Function");
+End Function
+
+5 source compilation errors:
+CS0246: The type or namespace name 'AccessMask' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'IntPtr' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'DllImportAttribute' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'DllImport' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'SetLastError' could not be found (are you missing a using directive or an assembly reference?)
+1 target compilation errors:
+BC30002: Type 'AccessMask' is not defined.");
         }
 
         [Fact]
@@ -918,7 +981,10 @@ End Function");
     public event EventHandler MyEvent;
 }", @"Friend Class TestClass
     Public Event MyEvent As EventHandler
-End Class");
+End Class
+
+1 source compilation errors:
+CS0246: The type or namespace name 'EventHandler' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -961,7 +1027,11 @@ Friend Class TestClass
     Public Sub Reset()
         backingField = Nothing
     End Sub
-End Class");
+End Class
+
+2 target compilation errors:
+BC36637: The '?' character cannot be used here.
+BC30451: '[Delegate]' is not declared. It may be inaccessible due to its protection level.");
         }
         [Fact]
         public async Task TestCustomEvent_TrivialExpression()
@@ -992,7 +1062,11 @@ Friend Class TestClass
             _backingField?(sender, e)
         End RaiseEvent
     End Event
-End Class");
+End Class
+
+2 target compilation errors:
+BC36637: The '?' character cannot be used here.
+BC30451: '[Delegate]' is not declared. It may be inaccessible due to its protection level.");
         }
         [Fact]
         public async Task TestCustomEventUsingFieldEvent() {
@@ -1065,7 +1139,12 @@ End Class
 
 Friend Class OwnerClass
     Implements INotifyPropertyChanged
-End Class");
+End Class
+
+1 source compilation errors:
+CS0535: 'OwnerClass' does not implement interface member 'INotifyPropertyChanged.PropertyChanged'
+1 target compilation errors:
+BC30149: Class 'OwnerClass' must implement 'Event PropertyChanged As PropertyChangedEventHandler' for interface 'INotifyPropertyChanged'.");
         }
         [Fact]
         public async Task TestIndexer()
@@ -1174,7 +1253,39 @@ Friend Class TestClass
         Set(ByVal value As Object)
         End Set
     End Property
-End Class");
+End Class
+
+15 source compilation errors:
+CS1002: ; expected
+CS0535: 'TestClass' does not implement interface member 'IList.Add(object)'
+CS0535: 'TestClass' does not implement interface member 'IList.Contains(object)'
+CS0535: 'TestClass' does not implement interface member 'IList.Clear()'
+CS0535: 'TestClass' does not implement interface member 'IList.IndexOf(object)'
+CS0535: 'TestClass' does not implement interface member 'IList.Insert(int, object)'
+CS0535: 'TestClass' does not implement interface member 'IList.Remove(object)'
+CS0535: 'TestClass' does not implement interface member 'IList.RemoveAt(int)'
+CS0535: 'TestClass' does not implement interface member 'IList.IsReadOnly'
+CS0535: 'TestClass' does not implement interface member 'IList.IsFixedSize'
+CS0535: 'TestClass' does not implement interface member 'ICollection.CopyTo(Array, int)'
+CS0535: 'TestClass' does not implement interface member 'ICollection.Count'
+CS0535: 'TestClass' does not implement interface member 'ICollection.SyncRoot'
+CS0535: 'TestClass' does not implement interface member 'ICollection.IsSynchronized'
+CS0535: 'TestClass' does not implement interface member 'IEnumerable.GetEnumerator()'
+14 target compilation errors:
+BC30149: Class 'TestClass' must implement 'Function Add(value As Object) As Integer' for interface 'IList'.
+BC30149: Class 'TestClass' must implement 'Function Contains(value As Object) As Boolean' for interface 'IList'.
+BC30149: Class 'TestClass' must implement 'Sub Clear()' for interface 'IList'.
+BC30149: Class 'TestClass' must implement 'Function IndexOf(value As Object) As Integer' for interface 'IList'.
+BC30149: Class 'TestClass' must implement 'Sub Insert(index As Integer, value As Object)' for interface 'IList'.
+BC30149: Class 'TestClass' must implement 'Sub Remove(value As Object)' for interface 'IList'.
+BC30149: Class 'TestClass' must implement 'Sub RemoveAt(index As Integer)' for interface 'IList'.
+BC30149: Class 'TestClass' must implement 'ReadOnly Property IsReadOnly As Boolean' for interface 'IList'.
+BC30149: Class 'TestClass' must implement 'ReadOnly Property IsFixedSize As Boolean' for interface 'IList'.
+BC30149: Class 'TestClass' must implement 'Sub CopyTo(array As Array, index As Integer)' for interface 'ICollection'.
+BC30149: Class 'TestClass' must implement 'ReadOnly Property Count As Integer' for interface 'ICollection'.
+BC30149: Class 'TestClass' must implement 'ReadOnly Property SyncRoot As Object' for interface 'ICollection'.
+BC30149: Class 'TestClass' must implement 'ReadOnly Property IsSynchronized As Boolean' for interface 'ICollection'.
+BC30149: Class 'TestClass' must implement 'Function GetEnumerator() As IEnumerator' for interface 'IEnumerable'.");
         }
         [Fact]
         public async Task Indexer_BadCase()
@@ -1193,7 +1304,10 @@ End Class");
         Set(ByVal value As Object)
         End Set
     End Property
-End Class");
+End Class
+
+1 source compilation errors:
+CS0161: 'TestClass.this[int].get': not all code paths return a value");
         }
         [Fact]
         public async Task NameMatchesWithTypeDate() {
@@ -1219,14 +1333,14 @@ End Class");
     Public Function TestMethod(ByVal param1 As System.Type, ByVal param2 As System.Globalization.CultureInfo) As Object
         Return Nothing
     End Function
-End Class", conversion: EmptyNamespaceOptionStrictOff);
+End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
     }
 
         [Fact]// The stack trace displayed will change from time to time. Feel free to update this characterization test appropriately.
         public async Task InvalidOperatorOverloadsShowErrorInlineCharacterization()
         {
             // No valid conversion to C# - to implement this you'd need to create a new method, and convert all callers to use it.
-            var convertedCode = await GetConvertedCodeOrErrorString<CSToVBConversion>(@"public class AcmeClass
+            var convertedCode = await Convert<CSToVBConversion>(@"public class AcmeClass
 {
     public static AcmeClass operator ++(int i, AcmeClass ac)
     {
@@ -1274,7 +1388,10 @@ End Class");
 }",
                 @"Public Interface IParametersProvider
     ReadOnly Property Parameters As IEnumerable(Of Object)
-End Interface");
+End Interface
+
+1 source compilation errors:
+CS0246: The type or namespace name 'IEnumerable<>' could not be found (are you missing a using directive or an assembly reference?)");
         }
         [Fact]
         public async Task Interface_Set() {
@@ -1284,7 +1401,10 @@ End Interface");
 }",
                 @"Public Interface IParametersProvider
     WriteOnly Property Parameters As IEnumerable(Of Object)
-End Interface");
+End Interface
+
+1 source compilation errors:
+CS0246: The type or namespace name 'IEnumerable<>' could not be found (are you missing a using directive or an assembly reference?)");
         }
         [Fact]
         public async Task PartialMethod() {

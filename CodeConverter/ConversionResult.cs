@@ -57,7 +57,7 @@ namespace ICSharpCode.CodeConverter
         public void WriteToFile()
         {
             Directory.CreateDirectory(Path.GetDirectoryName(TargetPathOrNull));
-            File.WriteAllText(TargetPathOrNull, ConvertedCode, Encoding.UTF8);
+            File.WriteAllText(TargetPathOrNull, ConvertedCode ?? GetExceptionsAsString(), Encoding.UTF8);
         }
     }
 }

@@ -10,13 +10,13 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private static char[] DirSeparators = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
-        public static Project CreateReferenceOnlyProjectFromAnyOptions(this Project project, CompilationOptions baseOptions)
+        public static Project CreateReferenceOnlyProjectFromAnyOptions(this Project project, CompilationOptions baseOptions, ParseOptions parseOptions)
         {
-            var options = baseOptions.WithMetadataImportOptionsAll();
+            var options = baseOptions.WithMetadataImportOptions(MetadataImportOptions.All);
             var viewerId = ProjectId.CreateNewId();
             var projectReferences = project.ProjectReferences.Concat(new[] {new ProjectReference(project.Id)});
             var viewerProjectInfo = project.ToProjectInfo(viewerId, project.Name + viewerId, options,
-                projectReferences);
+                projectReferences, parseOptions);
             var csharpViewOfVbProject = project.Solution.AddProject(viewerProjectInfo).GetProject(viewerId);
             return csharpViewOfVbProject;
         }
@@ -70,10 +70,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 DocumentId docId = null;
                 if (firstPassResult.Wip != null)
                 {
-                    var document = project.AddDocument(firstPassResult.Path, firstPassResult.Wip,
+                    docId = DocumentId.CreateNewId(project.Id);
+                    var solution = project.Solution.AddDocument(docId, firstPassResult.Path, firstPassResult.Wip,
                         filePath: firstPassResult.Path);
-                    project = document.Project;
-                    docId = document.Id;
+                    project = solution.GetProject(project.Id);
                 }
 
                 return WipFileConversion.Create(firstPassResult.Path, docId, firstPassResult.Errors);

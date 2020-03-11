@@ -86,7 +86,11 @@ public partial class Test
         {
             await TestConversionVisualBasicToCSharp(
                 @"Imports UnrecognizedNamespace",
-                @"using UnrecognizedNamespace;");
+                @"using UnrecognizedNamespace;
+
+
+1 target compilation errors:
+CS0246: The type or namespace name 'UnrecognizedNamespace' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -315,31 +319,39 @@ internal enum ExceptionResource
         }
 
         [Fact]
-        public async Task TestClassInheritanceList()
+        public async Task TestClassInheritanceList1()
         {
             await TestConversionVisualBasicToCSharp(
 @"MustInherit Class ClassA
     Implements System.IDisposable
 
     Protected MustOverride Sub Test()
+    Public MustOverride Sub Dispose() Implements IDisposable.Dispose
 End Class", @"using System;
 
 internal abstract partial class ClassA : IDisposable
 {
     protected abstract void Test();
+    public abstract void Dispose();
 }");
+        }
 
+        [Fact]
+        public async Task TestClassInheritanceList2()
+        {
             await TestConversionVisualBasicToCSharp(
 @"MustInherit Class ClassA
     Inherits System.EventArgs
     Implements System.IDisposable
 
     Protected MustOverride Sub Test()
+    Public MustOverride Sub Dispose() Implements IDisposable.Dispose
 End Class", @"using System;
 
 internal abstract partial class ClassA : EventArgs, IDisposable
 {
     protected abstract void Test();
+    public abstract void Dispose();
 }");
         }
 
@@ -359,7 +371,11 @@ internal partial struct MyType : IComparable<MyType>
     private void Test()
     {
     }
-}");
+}
+1 source compilation errors:
+BC30149: Structure 'MyType' must implement 'Function CompareTo(other As MyType) As Integer' for interface 'IComparable(Of MyType)'.
+1 target compilation errors:
+CS0535: 'MyType' does not implement interface member 'IComparable<MyType>.CompareTo(MyType)'");
         }
 
         [Fact]
@@ -389,20 +405,28 @@ End Class",
 
 internal partial class test : IComparable
 {
-}");
+}
+1 source compilation errors:
+BC30149: Class 'test' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.
+1 target compilation errors:
+CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object)'");
         }
 
         [Fact]
         public async Task ClassImplementsInterface2()
         {
-            await TestConversionVisualBasicToCSharp(@"Class test
+            await TestConversionVisualBasicToCSharp(@"Class ClassImplementsInterface2
     Implements System.IComparable
 End Class",
                 @"using System;
 
-internal partial class test : IComparable
+internal partial class ClassImplementsInterface2 : IComparable
 {
-}");
+}
+1 source compilation errors:
+BC30149: Class 'ClassImplementsInterface2' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.
+1 target compilation errors:
+CS0535: 'ClassImplementsInterface2' does not implement interface member 'IComparable.CompareTo(object)'");
         }
 
         [Fact]
@@ -410,27 +434,35 @@ internal partial class test : IComparable
         {
             await TestConversionVisualBasicToCSharp(@"Imports System.IO
 
-Class test
+Class ClassInheritsClass
     Inherits InvalidDataException
 End Class",
                 @"using System.IO;
 
-internal partial class test : InvalidDataException
+internal partial class ClassInheritsClass : InvalidDataException
 {
-}");
+}
+1 source compilation errors:
+BC30299: 'ClassInheritsClass' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
+1 target compilation errors:
+CS0509: 'ClassInheritsClass': cannot derive from sealed type 'InvalidDataException'");
         }
 
         [Fact]
         public async Task ClassInheritsClass2()
         {
-            await TestConversionVisualBasicToCSharp(@"Class test
+            await TestConversionVisualBasicToCSharp(@"Class ClassInheritsClass2
     Inherits System.IO.InvalidDataException
 End Class",
                 @"using System.IO;
 
-internal partial class test : InvalidDataException
+internal partial class ClassInheritsClass2 : InvalidDataException
 {
-}");
+}
+1 source compilation errors:
+BC30299: 'ClassInheritsClass2' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
+1 target compilation errors:
+CS0509: 'ClassInheritsClass2': cannot derive from sealed type 'InvalidDataException'");
         }
 
         [Fact]
@@ -880,7 +912,12 @@ public partial class A
         int y = F2();
         int z = F2();
     }
-}");
+}
+2 source compilation errors:
+BC31411: 'A' must be declared 'MustInherit' because it contains methods declared 'MustOverride'.
+BC30614: 'MustOverride' method 'Public MustOverride Function F2() As Integer' cannot be called with 'MyClass'.
+1 target compilation errors:
+CS0513: 'A.F2()' is abstract but it is contained in non-abstract class 'A'");
         }
 
         [Fact]
@@ -923,7 +960,13 @@ public partial class A
         int y = P2;
         int z = P2;
     }
-}");
+}
+2 source compilation errors:
+BC31411: 'A' must be declared 'MustInherit' because it contains methods declared 'MustOverride'.
+BC30614: 'MustOverride' method 'Public MustOverride Property P2 As Integer' cannot be called with 'MyClass'.
+2 target compilation errors:
+CS0513: 'A.P2.get' is abstract but it is contained in non-abstract class 'A'
+CS0513: 'A.P2.set' is abstract but it is contained in non-abstract class 'A'");
         }
     }
 }

@@ -11,7 +11,7 @@ namespace ICSharpCode.CodeConverter.Util
         {
             var targetErrors = GetDiagnostics(finalCompilation);
             return targetErrors.Any()
-                ? $"{targetErrors.Count} {compilationDescription} compilation errors:{Environment.NewLine}{String.Join(Environment.NewLine, targetErrors)}"
+                ? $"{Environment.NewLine}{targetErrors.Count} {compilationDescription} compilation errors:{Environment.NewLine}{String.Join(Environment.NewLine, targetErrors)}"
                 : null;
         }
 
@@ -20,6 +20,7 @@ namespace ICSharpCode.CodeConverter.Util
             var diagnostics = compilation.GetDiagnostics()
                 .Where(d => d.Severity == DiagnosticSeverity.Error)
                 .Select(d => $"{d.Id}: {d.GetMessage()}")
+                .Distinct()
                 .ToList();
             return diagnostics;
         }

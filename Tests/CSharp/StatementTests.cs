@@ -192,7 +192,12 @@ public partial class TestFunc
         bool isTrueWithNoStatement(List<string> pList) => pList.All(x => true);
         void write() => Console.WriteLine(1);
     }
-}");
+}
+1 source compilation errors:
+BC30491: Expression does not produce a value.
+2 target compilation errors:
+CS0029: Cannot implicitly convert type 'void' to 'object'
+CS1662: Cannot convert lambda expression to intended delegate type because some of the return types in the block are not implicitly convertible to the delegate return type");
         }
 
         /// <summary>
@@ -291,7 +296,9 @@ internal partial class ContrivedFuncInferenceExample
             return p2.Check(new List<string>());
         }
     }
-}");
+}
+1 target compilation errors:
+CS1660: Cannot convert lambda expression to type 'ContrivedFuncInferenceExample.Blah' because it is not a delegate type");
         }
 
         [Fact]
@@ -499,20 +506,22 @@ public partial class TestClass
         public async Task Redim2dArray()
         {
             await TestConversionVisualBasicToCSharp(@"Friend Class Program
-    Private My2darray As Integer()()
+    Private Shared My2darray As Integer()()
     Public Shared Sub Main(ByVal args As String())
         ReDim Me.My2darray(6)
     End Sub
 End Class", @"
 internal partial class Program
 {
-    private int[][] My2darray;
+    private static int[][] My2darray;
 
     public static void Main(string[] args)
     {
         My2darray = new int[7][];
     }
 }
+1 source compilation errors:
+BC30043: 'Me' is valid only within an instance method.
 ");
         }
 
@@ -559,7 +568,9 @@ internal partial class TestClass
     {
         Environment.Exit(0);
     }
-}");
+}
+1 source compilation errors:
+BC30615: 'End' statement cannot be used in class library projects.");
         }
 
         [Fact]
@@ -622,7 +633,7 @@ internal partial class TestClass
 
     private int FuncReturningAssignedValue()
     {
-        int FuncReturningAssignedValueRet = default(int);
+        int FuncReturningAssignedValueRet = default;
         void aSub(object y) { return; };
         FuncReturningAssignedValueRet = 3;
         return FuncReturningAssignedValueRet;
@@ -637,7 +648,7 @@ internal partial class TestClass
     Private Sub TestMethod()
         With New System.Text.StringBuilder
             .Capacity = 20
-            ?.Length = 0
+            ?.Append(0)
         End With
     End Sub
 End Class", @"using System.Text;
@@ -649,7 +660,7 @@ internal partial class TestClass
         {
             var withBlock = new StringBuilder();
             withBlock.Capacity = 20;
-            withBlock?.Length = 0;
+            withBlock?.Append(0);
         }
     }
 }");
@@ -893,9 +904,11 @@ internal partial class TestClass
         var rankSpecifiers2 = new double[2, 2];
 
         // Declare a jagged array
-        var sales = new double[12][] { };
+        var sales = new double[12][];
     }
-}");
+}
+1 target compilation errors:
+CS8751: Internal error in the C# compiler.");
         }
 
         [Fact]
@@ -927,9 +940,11 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = new[] { { 1, 2 }, { 3, 4 } };
+        var b = new[,] { { 1, 2 }, { 3, 4 } };
     }
-}");
+}
+1 target compilation errors:
+CS8751: Internal error in the C# compiler.");
         }
 
         [Fact]
@@ -946,7 +961,9 @@ internal partial class TestClass
     {
         var b = new int[,] { { 1, 2 }, { 3, 4 } };
     }
-}");
+}
+1 target compilation errors:
+CS8751: Internal error in the C# compiler.");
         }
 
         [Fact]
@@ -960,6 +977,7 @@ internal partial class TestClass
         Dim d as Integer(,,) = New Integer(0, 0, 0) {{{1}}}
         Dim e As Integer()(,) = New Integer()(,) {}
         Dim f As Integer()(,) = New Integer(-1)(,) {}
+        Dim g As Integer()(,) = New Integer(0)(,) {}
     End Sub
 End Class", @"
 internal partial class TestClass
@@ -971,9 +989,12 @@ internal partial class TestClass
         var c = new int[,,] { { { 1 } } };
         var d = new int[1, 1, 1] { { { 1 } } };
         var e = new int[][,] { };
-        var f = new int[0][,] { };
+        var f = new int[0][,];
+        var g = new int[1][,];
     }
-}");
+}
+1 target compilation errors:
+CS8751: Internal error in the C# compiler.");
         }
 
         [Fact]
@@ -1087,24 +1108,22 @@ internal partial class Test
 {
     private void TestMethod()
     {
-        DateTime x = default(DateTime), y = default(DateTime);
+        DateTime x = default, y = default;
         Console.WriteLine(x);
         Console.WriteLine(y);
     }
 }");
         }
 
-        [Theory]
-        [InlineData("Sub", "", "void")]
-        [InlineData("Function", " As Long", "long")]
-        public async Task DeclareStatement(string vbMethodDecl,string vbType, string csType)
+        [Fact]
+        public async Task DeclareStatementLong()
         {
             // Intentionally uses a type name with a different casing as the loop variable, i.e. "process" to test name resolution
-            await TestConversionVisualBasicToCSharp($@"Imports System.Diagnostics
+            await TestConversionVisualBasicToCSharp(@"Imports System.Diagnostics
 Imports System.Threading
 
 Public Class AcmeClass
-    Private Declare {vbMethodDecl} SetForegroundWindow Lib ""user32"" (ByVal hwnd As Int32){vbType}
+    Private Declare Sub SetForegroundWindow Lib ""user32"" (ByVal hwnd As Int32)
 
     Public Shared Sub Main()
         For Each proc In Process.GetProcesses().Where(Function(p) Not String.IsNullOrEmpty(p.MainWindowTitle))
@@ -1113,25 +1132,65 @@ Public Class AcmeClass
         Next
     End Sub
 End Class"
-                , $@"using System.Diagnostics;
+                , @"using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 
 public partial class AcmeClass
-{{
+{
     [DllImport(""user32"")]
-    private static extern {csType} SetForegroundWindow(int hwnd);
+    private static extern void SetForegroundWindow(int hwnd);
 
     public static void Main()
-    {{
+    {
         foreach (var proc in Process.GetProcesses().Where(p => !string.IsNullOrEmpty(p.MainWindowTitle)))
-        {{
+        {
             SetForegroundWindow(proc.MainWindowHandle.ToInt32());
             Thread.Sleep(1000);
-        }}
-    }}
-}}");
+        }
+    }
+}
+1 target compilation errors:
+CS1547: Keyword 'void' cannot be used in this context");
+        }
+
+        [Fact]
+        public async Task DeclareStatementVoid()
+        {
+            // Intentionally uses a type name with a different casing as the loop variable, i.e. "process" to test name resolution
+            await TestConversionVisualBasicToCSharp($@"Imports System.Diagnostics
+Imports System.Threading
+
+Public Class AcmeClass
+    Private Declare Function SetForegroundWindow Lib ""user32"" (ByVal hwnd As Int32) As Long
+
+    Public Shared Sub Main()
+        For Each proc In Process.GetProcesses().Where(Function(p) Not String.IsNullOrEmpty(p.MainWindowTitle))
+            SetForegroundWindow(proc.MainWindowHandle.ToInt32())
+            Thread.Sleep(1000)
+        Next
+    End Sub
+End Class"
+                , @"using System.Diagnostics;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
+
+public partial class AcmeClass
+{
+    [DllImport(""user32"")]
+    private static extern long SetForegroundWindow(int hwnd);
+
+    public static void Main()
+    {
+        foreach (var proc in Process.GetProcesses().Where(p => !string.IsNullOrEmpty(p.MainWindowTitle)))
+        {
+            SetForegroundWindow(proc.MainWindowHandle.ToInt32());
+            Thread.Sleep(1000);
+        }
+    }
+}");
         }
 
         [Fact]
@@ -1259,7 +1318,9 @@ internal partial class TestClass
 
         return -1;
     }
-}");
+}
+1 target compilation errors:
+CS0103: The name 'string' does not exist in the current context");
         }
 
         [Fact]
@@ -1299,17 +1360,18 @@ internal partial class TestClass
         public async Task UntilStatement()
         {
             await TestConversionVisualBasicToCSharp(@"Class TestClass
-    Private Sub TestMethod()
+    Private Sub TestMethod(rand As Random)
         Dim charIndex As Integer
         ' allow only digits and letters
         Do
             charIndex = rand.Next(48, 123)
         Loop Until (charIndex >= 48 AndAlso charIndex <= 57) OrElse (charIndex >= 65 AndAlso charIndex <= 90) OrElse (charIndex >= 97 AndAlso charIndex <= 122)
     End Sub
-End Class", @"
+End Class", @"using System;
+
 internal partial class TestClass
 {
-    private void TestMethod()
+    private void TestMethod(Random rand)
     {
         int charIndex;
         // allow only digits and letters
@@ -1471,7 +1533,9 @@ internal partial class TestClass
                 break;
         }
     }
-}");
+}
+1 source compilation errors:
+BC30516: Overload resolution failed because no accessible 'Val' accepts this number of arguments.");
         }
 
         [Fact]
@@ -1565,11 +1629,13 @@ internal partial class TestClass
 {
     private void TestMethod(int end)
     {
-        int[] b = default(int[]), s = default(int[]);
+        int[] b = default, s = default;
         for (int i = 0, loopTo = end; i <= loopTo; i++)
             b[i] = s[i];
     }
-}");
+}
+1 source compilation errors:
+BC30183: Keyword is not valid as an identifier.");
         }
 
         [Fact]
@@ -1640,7 +1706,7 @@ internal partial class TestClass
 {
     private void TestMethod(int end)
     {
-        int[] b = default(int[]), s = default(int[]);
+        int[] b = default, s = default;
         for (int i = 0, loopTo = end - 1; i <= loopTo; i++)
             b[i] = s[i];
     }
@@ -1768,7 +1834,9 @@ internal partial class TestClass
         TestMethod();
         TestMethod();
     }
-}");
+}
+1 target compilation errors:
+CS0149: Method name expected");
         }
 
         [Fact]
@@ -1951,7 +2019,9 @@ public partial class TestClass
                 }
         }
     }
-}");
+}
+1 target compilation errors:
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
         }
 
         [Fact]

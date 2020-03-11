@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.Options;
 using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.VisualBasic;
 using System.Threading;
+using System.Collections.Generic;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -26,11 +27,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             var projectDir = Path.Combine(vbProject.GetDirectoryPath(), "My Project");
 
             var compilation = await vbProject.GetCompilationAsync(cancellationToken);
-            string embeddedSourceText = (await GetAllEmbeddedSourceText(compilation));
-            string generatedSourceText = (await GetDynamicallyGeneratedSourceText(compilation));
+            var embeddedSourceTexts = await GetAllEmbeddedSourceText(compilation).Select((r, i) => (Text: r, Suffix: $".Static.{i+1}")).ToArrayAsync();
+            var generatedSourceTexts = (Text: await GetDynamicallyGeneratedSourceText(compilation), Suffix: ".Dynamic").Yield();
 
-            vbProject = WithRenamespacedDocument(name + ".Static", vbProject, embeddedSourceText, projectDir);
-            vbProject = WithRenamespacedDocument(name + ".Dynamic", vbProject, generatedSourceText, projectDir);
+            foreach (var (text, suffix) in embeddedSourceTexts.Concat(generatedSourceTexts)) {
+                vbProject = WithRenamespacedDocument(name + suffix, vbProject, text, projectDir);
+            }
 
             return vbProject;
         }
@@ -41,15 +43,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             return vbProject.AddDocument(baseName, sourceText.Renamespace(), filePath: Path.Combine(myProjectDirPath, baseName + ".Designer.vb")).Project;
         }
 
-        private static async Task<string> GetAllEmbeddedSourceText(Compilation compilation)
+        private static async IAsyncEnumerable<string> GetAllEmbeddedSourceText(Compilation compilation)
         {
             var roots = await compilation.SourceModule.GlobalNamespace.Locations.
                 Where(l => !l.IsInSource).Select(CachedReflectedDelegates.GetEmbeddedSyntaxTree)
                 .SelectAsync(t => t.GetTextAsync());
-            var renamespacesRootTexts =
-                roots.Select(r => r.ToString());
-            var combined = string.Join(Environment.NewLine, renamespacesRootTexts);
-            return combined;
+            foreach (var r in roots) yield return r.ToString();
         }
 
         private static async Task<string> GetDynamicallyGeneratedSourceText(Compilation compilation)
@@ -109,6 +108,7 @@ End Namespace";
         {
             return sourceText
                 .Replace("Namespace Global.Microsoft.VisualBasic", $"Namespace Global.Microsoft.{Constants.MergedMsVbNamespace}")
+                .Replace("Global.Microsoft.VisualBasic.Embedded", $"Global.Microsoft.{Constants.MergedMsVbNamespace}.Embedded")
                 .Replace("Namespace My", $"Namespace {Constants.MergedMyNamespace}");
         }
 

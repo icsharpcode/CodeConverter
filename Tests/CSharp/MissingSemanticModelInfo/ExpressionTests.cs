@@ -25,7 +25,12 @@ internal partial class TestClass
     {
         var value = SomeProperty[0];
     }
-}");
+}
+2 source compilation errors:
+BC30002: Type 'System.Some.UnknownType' is not defined.
+BC32016: 'Public Property SomeProperty As System.Some.UnknownType' has no parameters and its return type cannot be indexed.
+1 target compilation errors:
+CS0234: The type or namespace name 'Some' does not exist in the namespace 'System' (are you missing an assembly reference?)");
         }
         [Fact]
         public async Task InvokeMethodWithUnknownReturnType()
@@ -51,7 +56,11 @@ public partial class Class1
     {
         return x;
     }
-}");
+}
+1 source compilation errors:
+BC30002: Type 'SomeClass' is not defined.
+1 target compilation errors:
+CS0246: The type or namespace name 'SomeClass' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -72,7 +81,11 @@ public partial class Class1
         {
         }
     }
-}");
+}
+1 source compilation errors:
+BC30456: 'Index' is not a member of 'Class1'.
+1 target compilation errors:
+CS1061: 'Class1' does not contain a definition for 'Index' and no accessible extension method 'Index' accepting a first argument of type 'Class1' could be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -122,7 +135,11 @@ public partial class OutParameterWithNonCompilingType
             pDict.Add(pKey, anInstance);
         }
     }
-}");
+}
+1 source compilation errors:
+BC30002: Type 'MissingType' is not defined.
+1 target compilation errors:
+CS0246: The type or namespace name 'MissingType' could not be found (are you missing a using directive or an assembly reference?)");
         }
         [Fact]
         public async Task EnumSwitchAndValWithUnusedMissingType()
@@ -233,7 +250,11 @@ public partial class EnumAndValTest
 
         return tS;
     }
-}");
+}
+1 source compilation errors:
+BC30002: Type 'MissingType' is not defined.
+1 target compilation errors:
+CS0246: The type or namespace name 'MissingType' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -253,7 +274,12 @@ internal partial class TestClass
     {
         var a = DefaultDate[1, 2, 3].Blawer(1, 2, 3);
     }
-}");
+}
+2 source compilation errors:
+BC30002: Type 'System.SomeUnknownType' is not defined.
+BC32016: 'Private Property DefaultDate As System.SomeUnknownType' has no parameters and its return type cannot be indexed.
+1 target compilation errors:
+CS0234: The type or namespace name 'SomeUnknownType' does not exist in the namespace 'System' (are you missing an assembly reference?)");
         }
 
     [Fact]
@@ -275,7 +301,12 @@ internal partial class TestClass
         if (MyEvent is object)
             MyEvent[this, EventArgs.Empty];
     }
-}");
+}
+1 source compilation errors:
+BC30451: 'MyEvent' is not declared. It may be inaccessible due to its protection level.
+2 target compilation errors:
+CS0103: The name 'MyEvent' does not exist in the current context
+CS0201: Only assignment, call, increment, decrement, await, and new object expressions can be used as a statement");
         }
     }
 }

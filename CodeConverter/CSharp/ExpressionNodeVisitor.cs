@@ -447,7 +447,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitNameOfExpression(VBasic.Syntax.NameOfExpressionSyntax node)
         {
-            return SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName("nameof"), SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument((ExpressionSyntax) await node.Argument.AcceptAsync(TriviaConvertingExpressionVisitor)))));
+            return SyntaxFactory.InvocationExpression(NameOf(), SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList<ArgumentSyntax>(SyntaxFactory.Argument((ExpressionSyntax)await node.Argument.AcceptAsync(TriviaConvertingExpressionVisitor)))));
+        }
+
+        private static ExpressionSyntax NameOf()
+        {
+            // Usually it'd be preferable to just construct the Identifier ourselves, but the opportunity to inject parse options lets us control the LanguageVersion which needs to be high enough not to consider nameof an error
+            return SyntaxFactory.ParseExpression("nameof", options: CSharpCompiler.ParseOptions);
         }
 
         public override async Task<CSharpSyntaxNode> VisitEqualsValue(VBasic.Syntax.EqualsValueSyntax node)
@@ -486,10 +492,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var bounds = await CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.RankSpecifiers, node.ArrayBounds);
 
-            var allowInitializer = node.Initializer.Initializers.Any()
-                || node.RankSpecifiers.Any()
-                || node.ArrayBounds == null
-                || (node.Initializer.Initializers.Any() && node.ArrayBounds.Arguments.All(b => b.IsOmitted || _semanticModel.GetConstantValue(b.GetExpression()).HasValue));
+            var allowInitializer = node.ArrayBounds?.Arguments.Any() != true ||
+                node.Initializer.Initializers.Any() && node.ArrayBounds.Arguments.All(b => b.IsOmitted || _semanticModel.GetConstantValue(b.GetExpression()).HasValue);
 
             var initializerToConvert = allowInitializer ? node.Initializer : null;
             return SyntaxFactory.ArrayCreationExpression(
@@ -507,15 +511,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             var initializers = (await node.Initializers.SelectAsync(i => i.AcceptAsync(TriviaConvertingExpressionVisitor))).Cast<ExpressionSyntax>();
             var initializer = SyntaxFactory.InitializerExpression(initializerKind, SyntaxFactory.SeparatedList(initializers));
             if (isExplicitCollectionInitializer) return initializer;
-            
-            if (!initializers.Any() && _semanticModel.GetTypeInfo(node).ConvertedType is IArrayTypeSymbol arrayType) {
+
+            if (!(_semanticModel.GetTypeInfo(node).ConvertedType is IArrayTypeSymbol arrayType)) return SyntaxFactory.ImplicitArrayCreationExpression(initializer);
+
+            if (!initializers.Any()) {
 
                 var arrayTypeArgs = SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList(CommonConversions.GetTypeSyntax(arrayType.ElementType)));
                 var arrayEmpty = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     SyntaxFactory.IdentifierName(nameof(Array)), SyntaxFactory.GenericName(nameof(Array.Empty)).WithTypeArgumentList(arrayTypeArgs));
                 return SyntaxFactory.InvocationExpression(arrayEmpty);
             }
-            return SyntaxFactory.ImplicitArrayCreationExpression(initializer);
+            var commas = Enumerable.Repeat(SyntaxFactory.Token(SyntaxKind.CommaToken), arrayType.Rank - 1);
+            return SyntaxFactory.ImplicitArrayCreationExpression(SyntaxFactory.TokenList(commas), initializer);
         }
 
         public override async Task<CSharpSyntaxNode> VisitQueryExpression(VBasic.Syntax.QueryExpressionSyntax node)

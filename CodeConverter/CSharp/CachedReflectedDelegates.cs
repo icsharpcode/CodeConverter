@@ -19,16 +19,6 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// </remarks>
     internal static class CachedReflectedDelegates
     {
-        /// <summary>
-        /// This method becomes public in CodeAnalysis 3.1 and hence we can be confident it won't disappear.
-        /// Need to use reflection for now until that version is widely enough deployed as taking a dependency would mean everyone needs latest VS version.
-        /// </summary>
-        public static readonly Lazy<Func<CompilationOptions, byte, CompilationOptions>> LazyWithMetadataImportOptions =
-            new Lazy<Func<CompilationOptions, byte, CompilationOptions>>(() => typeof(CompilationOptions)
-                .GetMethod("WithMetadataImportOptions",
-                    BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance)
-                .CreateOpenInstanceDelegateForcingType<CompilationOptions, byte, CompilationOptions>());
-
         public static bool IsMyGroupCollectionProperty(this IPropertySymbol declaredSymbol) =>
             GetCachedReflectedPropertyDelegate(declaredSymbol, "IsMyGroupCollectionProperty", ref _isMyGroupCollectionProperty);
         private static Func<ISymbol, bool> _isMyGroupCollectionProperty;

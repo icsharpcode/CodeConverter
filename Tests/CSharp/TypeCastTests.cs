@@ -35,6 +35,7 @@ internal partial class Class1
 @"Public Class Class1
     Sub Foo()
         Dim x = CDate(""2019-09-04"")
+    End Sub
 End Class", @"using System;
 using Microsoft.VisualBasic.CompilerServices;
 

@@ -167,7 +167,10 @@ End Class");
         Dim b As String
         b = New String(""test"")
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         }
 
         [Fact]
@@ -183,7 +186,10 @@ End Class");
     Private Sub TestMethod()
         Dim b As String = New String(""test"")
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         }
 
         [Fact]
@@ -199,7 +205,10 @@ End Class");
     Private Sub TestMethod()
         Dim b = New String(""test"")
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         }
 
         [Fact]
@@ -247,7 +256,10 @@ End Class");
     Private Sub TestMethod()
         Dim b = {1, 2, 3}
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS0820: Cannot initialize an implicitly-typed variable with an array initializer");
         }
 
         [Fact]
@@ -358,7 +370,10 @@ End Class");
         {1, 2},
         {3, 4}}
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS1002: ; expected");
         }
 
         [Fact]
@@ -539,7 +554,10 @@ End Class");
             Console.WriteLine(x)
         End If
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
@@ -577,7 +595,7 @@ End Class");
         [Fact]
         public async Task UnsafeStatementsWithNoVbEquivalentShowErrorInlineCharacterization()
         {
-            string convertedCode = await GetConvertedCodeOrErrorString<CSToVBConversion>(@"class TestClass
+            string convertedCode = await Convert<CSToVBConversion>(@"class TestClass
 {
     void TestMethod()
     {
@@ -688,7 +706,10 @@ End Class");
             If val = 3 Then Exit For
         Next
     End Sub
-End Class");
+End Class
+
+1 target compilation errors:
+BC30516: Overload resolution failed because no accessible 'Val' accepts this number of arguments.");
         }
 
         [Fact]
@@ -712,7 +733,11 @@ End Class");
             Console.WriteLine(nullObject)
         End SyncLock
     End Sub
-End Class");
+End Class
+
+2 source compilation errors:
+CS0246: The type or namespace name 'ArgumentNullException' could not be found (are you missing a using directive or an assembly reference?)
+CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
@@ -734,7 +759,18 @@ End Class");
             i += 1
         End While
     End Sub
-End Class");
+End Class
+
+4 source compilation errors:
+CS0103: The name 'i' does not exist in the current context
+CS0103: The name 'unknownCondition' does not exist in the current context
+CS0103: The name 'b' does not exist in the current context
+CS0103: The name 's' does not exist in the current context
+4 target compilation errors:
+BC30451: 'i' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'unknownCondition' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
+BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -757,7 +793,16 @@ End Class");
             i += 1 ' Increment moves to bottom of loop
         End While
     End Sub
-End Class");
+End Class
+
+3 source compilation errors:
+CS0103: The name 'unknownCondition' does not exist in the current context
+CS0103: The name 'b' does not exist in the current context
+CS0103: The name 's' does not exist in the current context
+3 target compilation errors:
+BC30451: 'unknownCondition' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
+BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -775,7 +820,17 @@ End Class");
             b(i) = s(i)
         Next
     End Sub
-End Class");
+End Class
+
+4 source compilation errors:
+CS0103: The name 'i' does not exist in the current context
+CS0103: The name 'end' does not exist in the current context
+CS0103: The name 'b' does not exist in the current context
+CS0103: The name 's' does not exist in the current context
+3 target compilation errors:
+BC30451: 'end' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
+BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -795,7 +850,17 @@ End Class");
             b(i) = s(i)
         Next
     End Sub
-End Class");
+End Class
+
+4 source compilation errors:
+CS0103: The name 'i' does not exist in the current context
+CS0103: The name 'end' does not exist in the current context
+CS0103: The name 'b' does not exist in the current context
+CS0103: The name 's' does not exist in the current context
+3 target compilation errors:
+BC30451: 'end' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
+BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -815,7 +880,17 @@ End Class");
             b(i) = s(i)
         Next
     End Sub
-End Class");
+End Class
+
+4 source compilation errors:
+CS0103: The name 'i' does not exist in the current context
+CS0103: The name 'end' does not exist in the current context
+CS0103: The name 'b' does not exist in the current context
+CS0103: The name 's' does not exist in the current context
+3 target compilation errors:
+BC30451: 'end' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
+BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
         }
         [Fact]
         public async Task ForWithDateTimeVariables() {
@@ -899,7 +974,11 @@ End Class");
                                    Next
                                End Sub
     End Sub
-End Class");
+End Class
+
+2 source compilation errors:
+CS0246: The type or namespace name 'IEnumerable<>' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'Action' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -926,7 +1005,17 @@ End Class");
 
         Return originalText
     End Function
-End Class");
+End Class
+
+5 source compilation errors:
+CS0246: The type or namespace name 'IEnumerable<>' could not be found (are you missing a using directive or an assembly reference?)
+CS8130: Cannot infer the type of implicitly-typed deconstruction variable 'oldValue'.
+CS8130: Cannot infer the type of implicitly-typed deconstruction variable 'newValue'.
+CS0103: The name 'Regex' does not exist in the current context
+CS0103: The name 'RegexOptions' does not exist in the current context
+2 target compilation errors:
+BC30451: 'Regex' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'RegexOptions' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
@@ -1007,7 +1096,10 @@ Finish:
         Console.WriteLine(""Press any key to exit."")
         Console.ReadKey()
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
@@ -1024,7 +1116,10 @@ End Class");
     Private Sub TestMethod(ByVal nullObject As Object)
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS0246: The type or namespace name 'ArgumentNullException' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -1151,7 +1246,10 @@ _Select0_CaseDefault:
                 ' Block moves to end - 2
         End Select
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
@@ -1181,7 +1279,10 @@ _Select0_Case5_5:
                 Console.Write(""section 5"")
         End Select
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
@@ -1278,7 +1379,11 @@ End Class");
             Console.WriteLine(""finally"")
         End Try
     End Sub
-End Class");
+End Class
+
+2 source compilation errors:
+CS0103: The name 'Console' does not exist in the current context
+CS0246: The type or namespace name 'Exception' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
@@ -1301,7 +1406,10 @@ End Class");
             Yield i
         Next
     End Function
-End Class");
+End Class
+
+1 source compilation errors:
+CS0246: The type or namespace name 'IEnumerable<>' could not be found (are you missing a using directive or an assembly reference?)");
         }
         [Fact]
         public async Task ObjectCreationExpressionInInvocationExpression() {
