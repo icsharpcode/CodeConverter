@@ -41,6 +41,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### C# -> VB
 
+* Convert PrefixUnaryExpression (Not, minus, etc.) [#533](https://github.com/icsharpcode/CodeConverter/pull/533)
+* Rename more members with case conflicts (e.g. interface members) [#533](https://github.com/icsharpcode/CodeConverter/pull/533)
+* String equality conversion now calls "Equals" to match the C# logic [#533](https://github.com/icsharpcode/CodeConverter/pull/533)
+* Deduplicate imports [#533](https://github.com/icsharpcode/CodeConverter/pull/533)
 * Converts "default" keyword to "Nothing" keyword [#428](https://github.com/icsharpcode/CodeConverter/issues/428)
 
 ## [7.9.0] - 2020-02-27
