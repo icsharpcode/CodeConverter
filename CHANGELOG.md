@@ -4,7 +4,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
-* Decrease horrendousness of performance for large projects containing large files
+
+### Vsix
+
+
+### VB -> C#
+
+
+### C# -> VB
+
+
+## [8.0.0] - 2020-03-11
+
+* Improve performance and feedback for large projects containing large files
 
 ### API
 
@@ -19,12 +31,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 * Convert "Handles" in some previously missed cases [#530](https://github.com/icsharpcode/CodeConverter/pull/530)
 * Wrap event handlers in lambda where needed [#474](https://github.com/icsharpcode/CodeConverter/pull/474)
-* Streamline trailing else if
-* Use less error-prone, more performant null/default comparisons
+* Streamline trailing else if [810de96](https://github.com/icsharpcode/CodeConverter/commit/810de9677e8f8406c512e292297540e35d6c51d9)
+* Use less error-prone, more performant null/default comparisons [4de1978](https://github.com/icsharpcode/CodeConverter/commit/4de19782ef43d8404f6065516d1380a2e00eafdc)
 * Convert "{}" to "Array.Empty<T>()" [#495](https://github.com/icsharpcode/CodeConverter/issues/495)
 * Convert inferred anonymous member names without duplicating name [#480](https://github.com/icsharpcode/CodeConverter/issues/480)
 * Convert "!" operator to element access [#479](https://github.com/icsharpcode/CodeConverter/issues/479)
 * Fix async method default return statements [#478](https://github.com/icsharpcode/CodeConverter/issues/478)
+* Convert multi-dimensional array initializers correctly [#539](https://github.com/icsharpcode/CodeConverter/pull/539)
 
 ### C# -> VB
 
