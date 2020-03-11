@@ -98,7 +98,7 @@ End Sub";
         public async Task TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool expectSurroundingBlock = false, bool missingSemanticInfo = false, bool hasLineCommentConversionIssue = false)
         {
             if (expectSurroundingBlock) expectedCsharpCode = SurroundWithBlock(expectedCsharpCode);
-            var conversionOptions = new TextConversionOptions(DefaultReferences.NetStandard2) { ShowCompilationErrors = !expectSurroundingBlock };
+            var conversionOptions = new TextConversionOptions(DefaultReferences.NetStandard2) { RootNamespaceOverride = _rootNamespace, ShowCompilationErrors = !expectSurroundingBlock };
             await AssertConvertedCodeResultEquals<VBToCSConversion>(visualBasicCode, expectedCsharpCode, conversionOptions);
 
             if (_testVbtoCsCommentsByDefault && !hasLineCommentConversionIssue) {
