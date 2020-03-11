@@ -820,8 +820,10 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitLiteralExpression(CSS.LiteralExpressionSyntax node)
         {
-            // now this looks somehow hacky... is there a better way?
-            if (node.IsKind(CS.SyntaxKind.StringLiteralExpression) && node.Token.Text.StartsWith("@", StringComparison.Ordinal)) {
+            if (node.IsKind(CS.SyntaxKind.DefaultLiteralExpression)) {
+                return VisualBasicSyntaxFactory.NothingExpression;
+                // This looks somehow hacky... is there a better way to check whether it's a verbatim string?
+            } else if (node.IsKind(CS.SyntaxKind.StringLiteralExpression) && node.Token.Text.StartsWith("@", StringComparison.Ordinal)) {
                 return SyntaxFactory.StringLiteralExpression(
                     SyntaxFactory.StringLiteralToken(
                         node.Token.Text.Substring(1),

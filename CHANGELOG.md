@@ -41,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### C# -> VB
 
+* Converts "default" keyword to "Nothing" keyword [#428](https://github.com/icsharpcode/CodeConverter/issues/428)
 
 ## [7.9.0] - 2020-02-27
 

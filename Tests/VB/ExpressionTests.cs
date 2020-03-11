@@ -81,6 +81,30 @@ End Class");
         }
 
         [Fact]
+        public async Task DefaultLiteralExpression()
+        {
+            await TestConversionCSharpToVisualBasic(@"public class DefaultLiteralExpression {
+
+    public bool Foo {
+        get {
+	        return (Bar == default);
+        }
+    }
+
+    public int Bar;
+
+}", @"Public Class DefaultLiteralExpression
+    Public ReadOnly Property Foo As Boolean
+        Get
+            Return Bar = Nothing
+        End Get
+    End Property
+
+    Public Bar As Integer
+End Class");
+        }
+
+        [Fact]
         public async Task IsNullExpression()
         {
             await TestConversionCSharpToVisualBasic(@"public class Test {
