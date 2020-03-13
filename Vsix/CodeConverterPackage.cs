@@ -84,7 +84,7 @@ namespace CodeConverter.VsExtension
         internal Cancellation PackageCancellation { get; } = new Cancellation();
 
         private readonly AssemblyName _thisAssemblyName;
-        private readonly AssemblyName[] _ourAssemblyNames;
+        private readonly HashSet<string> _ourAssemblyNames;
         /// <summary>
         /// Initializes a new instance of package class.
         /// </summary>
@@ -92,7 +92,7 @@ namespace CodeConverter.VsExtension
         {
             var thisAssembly = GetType().Assembly;
             _thisAssemblyName = thisAssembly.GetName();
-            _ourAssemblyNames = new[] { _thisAssemblyName }.Concat(thisAssembly.GetReferencedAssemblies().Where(a => a.Name.StartsWith("ICSharpCode"))).ToArray();
+            _ourAssemblyNames = new HashSet<string>(new[] { _thisAssemblyName }.Concat(thisAssembly.GetReferencedAssemblies().Where(a => a.Name.StartsWith("ICSharpCode"))).Select(a => a.FullName));
             AppDomain.CurrentDomain.AssemblyResolve += LoadWithoutVersionForOurDependencies;
             // Inside this method you can place any initialization code that does not require
             // any Visual Studio service because at this point the package object is created but
@@ -100,6 +100,7 @@ namespace CodeConverter.VsExtension
             // initialization is the Initialize method.
         }
 
+        // System.Threading.Tasks.Dataflow 4.5.24.0 shipped with VS2017 15.9.21+28307.1064 but we want to target 4.6.0.0
         private Assembly LoadWithoutVersionForOurDependencies(object sender, ResolveEventArgs args)
         {
             var requestedAssemblyName = new AssemblyName(args.Name);
@@ -126,7 +127,7 @@ namespace CodeConverter.VsExtension
 
         private bool IsThisExtensionRequestingAssembly()
         {
-            return GetPossibleRequestingAssemblies().Any(requesting => _ourAssemblyNames.Any(assemblyName => Equals(requesting, assemblyName)));
+            return GetPossibleRequestingAssemblies().Any(requesting => _ourAssemblyNames.Contains(requesting.FullName));
         }
 
         private IEnumerable<AssemblyName> GetPossibleRequestingAssemblies()

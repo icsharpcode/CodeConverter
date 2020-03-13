@@ -10,8 +10,8 @@
 * Completely free and open source: Check out [GitHub](https://github.com/icsharpcode/CodeConverter#code-converter-).</Description>
     <Product>Code Converter for C# to/from VB.NET</Product>
     <Copyright>Copyright (c) 2017-2020 AlphaSierraPapa for the CodeConverter team</Copyright>
-    <AssemblyVersion>8.0.0.0</AssemblyVersion>
-    <FileVersion>8.0.0.0</FileVersion>
+    <AssemblyVersion>8.0.1.0</AssemblyVersion>
+    <FileVersion>8.0.1.0</FileVersion>
     <Version>8.0.0</Version>
     <PackageId>ICSharpCode.CodeConverter</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
