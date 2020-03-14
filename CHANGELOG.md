@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Avoid extra newlines in doc comments [#334](https://github.com/icsharpcode/CodeConverter/pull/334)
 
 ### C# -> VB
 

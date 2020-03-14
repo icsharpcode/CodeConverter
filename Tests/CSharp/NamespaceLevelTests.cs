@@ -518,6 +518,12 @@ Public Class MyTestClass
     Private Function MyFunc4() As String
         Return """"
     End Function
+End Class
+
+''' <summary>
+''' Issue334
+''' </summary>
+Friend Class Program
 End Class",
                 @"/// <summary>
 /// Class xml doc
@@ -529,6 +535,13 @@ public partial class MyTestClass
     {
         return """";
     }
+}
+
+/// <summary>
+/// Issue334
+/// </summary>
+internal partial class Program
+{
 }");
         }
 
