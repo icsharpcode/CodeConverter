@@ -1685,6 +1685,7 @@ internal partial class TestClass
     }
 }");
         }
+
         [Fact]
         public async Task OmmittedArgumentInInvocation()
         {
@@ -1712,6 +1713,34 @@ public static partial class MyExtensions
         NewColumn(typeof(MyExtensions));
         NewColumn(null, code: ""otherCode"");
         NewColumn(null, ""fred"");
+    }
+}");
+        }
+
+        [Fact]
+        public async Task OmittedArgumentInCallInvocation()
+        {
+            await TestConversionVisualBasicToCSharp(@"Public Class Issue445MissingParameter
+    Public Sub First(a As String, b As String, c As Integer)
+        Call mySuperFunction(7, , New Object())
+    End Sub
+
+
+    Private Sub mySuperFunction(intSomething As Integer, Optional p As Object = Nothing, Optional optionalSomething As Object = Nothing)
+        Throw New NotImplementedException()
+    End Sub
+End Class", @"using System;
+
+public partial class Issue445MissingParameter
+{
+    public void First(string a, string b, int c)
+    {
+        mySuperFunction(7, optionalSomething: new object());
+    }
+
+    private void mySuperFunction(int intSomething, object p = null, object optionalSomething = null)
+    {
+        throw new NotImplementedException();
     }
 }");
         }
