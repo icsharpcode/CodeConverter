@@ -53,11 +53,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public IEnumerable<(string, string)> GetProjectFileReplacementRegexes()
         {
+            string rootNamespaceDot = _vbToCsProjectContentsConverter.RootNamespace;
+            if (!string.IsNullOrEmpty(rootNamespaceDot)) rootNamespaceDot += ".";
+
             return new[] {
                 ("\\\\Microsoft\\.VisualBasic\\.targets", "\\Microsoft.CSharp.targets"),
                 ("\\.vb\"", ".cs\""),
                 ("\\.vb<", ".cs<"),
-                ("<\\s*Generator\\s*>\\s*VbMyResourcesResXFileCodeGenerator\\s*</\\s*Generator\\s*>", "<Generator>ResXFileCodeGenerator</Generator>")
+                ("<\\s*Generator\\s*>\\s*VbMyResourcesResXFileCodeGenerator\\s*</\\s*Generator\\s*>", "<Generator>ResXFileCodeGenerator</Generator>"),
+                ("(<\\s*CustomToolNamespace\\s*>)(.*</\\s*CustomToolNamespace\\s*>)", $"$1{rootNamespaceDot}$2")
             };
         }
 
