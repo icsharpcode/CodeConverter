@@ -2,7 +2,7 @@
 using CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace CodeConverter.Tests.CSharp
+namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
 {
     public class ExpressionTests : ConverterTestBase
     {
