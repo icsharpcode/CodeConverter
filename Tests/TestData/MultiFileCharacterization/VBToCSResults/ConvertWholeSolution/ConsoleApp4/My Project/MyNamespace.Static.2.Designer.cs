@@ -67,7 +67,7 @@ namespace ConsoleApp4.My
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static XAttribute CreateAttribute(XName name, object value)
         {
-            if (value == default)
+            if (value is null)
             {
                 return null;
             }
@@ -89,7 +89,7 @@ namespace ConsoleApp4.My
             if (obj is object)
             {
                 XElement elem = obj as XElement;
-                if (!(elem == default))
+                if (!(elem is null))
                 {
                     return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elem);
                 }

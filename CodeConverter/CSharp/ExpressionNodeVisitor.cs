@@ -616,7 +616,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.PrefixUnaryExpression(
                 kind,
                 SyntaxFactory.Token(csTokenKind),
-                expr.AddParensIfRequired()
+                expr.AddParens()
             );
         }
 
@@ -641,8 +641,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Left);
                 }
                 if (otherArgument != null) {
-                    var isDefinitelyReferenceType = _semanticModel.GetTypeInfo(otherArgument).ConvertedType?.IsReferenceType == true;
-                    return CommonConversions.IsDefault(otherArgument, isDefinitelyReferenceType);
+                    return CommonConversions.Nothing(otherArgument, node.IsKind(VBasic.SyntaxKind.IsExpression));
                 }
             }
 
@@ -655,7 +654,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Left);
                 }
                 if (otherArgument != null) {
-                    return CommonConversions.IsNotDefault(otherArgument);
+                    return CommonConversions.NotNothing(otherArgument, node.IsKind(VBasic.SyntaxKind.IsNotExpression));
                 }
             }
 

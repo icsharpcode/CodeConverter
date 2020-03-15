@@ -63,7 +63,7 @@ namespace ICSharpCode.CodeConverter.Util
                     return SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
             }
 
-            return SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, condition.AddParensIfRequired());
+            return SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, condition.AddParens());
         }
 
         public static SyntaxKind GetExpressionOperatorTokenKind(SyntaxKind op)
@@ -132,25 +132,11 @@ namespace ICSharpCode.CodeConverter.Util
         /// <summary>
         /// When negating an expression this is required, otherwise you would end up with
         /// a or b -> !a or b
+        /// If they end up being redundant, they get automatically removed by <see cref="DocumentExtensions.SimplifyStatements(Document, string, CancellationToken)"/>
         /// </summary>
-        public static ExpressionSyntax AddParensIfRequired(this ExpressionSyntax expression, bool parenthesesRequiredForUnaryExpressions = false)
+        public static ExpressionSyntax AddParens(this ExpressionSyntax expression)
         {
-            if ((expression is BinaryExpressionSyntax) ||
-                (expression is AssignmentExpressionSyntax) ||
-                (expression is CastExpressionSyntax) ||
-                (expression is ParenthesizedLambdaExpressionSyntax) ||
-                (expression is SimpleLambdaExpressionSyntax) ||
-                (expression is ConditionalExpressionSyntax)) {
-                return SyntaxFactory.ParenthesizedExpression(expression);
-            }
-
-            if (parenthesesRequiredForUnaryExpressions &&
-                ((expression is PostfixUnaryExpressionSyntax) ||
-                (expression is PrefixUnaryExpressionSyntax))) {
-                return SyntaxFactory.ParenthesizedExpression(expression);
-            }
-
-            return expression;
+            return SyntaxFactory.ParenthesizedExpression(expression);
         }
 
         /// <summary>

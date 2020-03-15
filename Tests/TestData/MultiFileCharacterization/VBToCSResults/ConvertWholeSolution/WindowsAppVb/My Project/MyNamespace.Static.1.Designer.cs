@@ -120,7 +120,7 @@ namespace WindowsAppVb.My
             [DebuggerHidden()]
             private static T Create__Instance__<T>(T Instance) where T : Form, new()
             {
-                if (Instance == default || Instance.IsDisposed)
+                if (Instance is null || Instance.IsDisposed)
                 {
                     if (m_FormBeingCreated is object)
                     {
@@ -245,7 +245,7 @@ namespace WindowsAppVb.My
             [DebuggerHidden()]
             private static T Create__Instance__<T>(T instance) where T : new()
             {
-                if (instance == default)
+                if (instance is null)
                 {
                     return new T();
                 }
@@ -281,7 +281,7 @@ namespace WindowsAppVb.My
                 [DebuggerHidden()]
                 get
                 {
-                    if (m_ThreadStaticValue == default)
+                    if (m_ThreadStaticValue is null)
                         m_ThreadStaticValue = new T();
                     return m_ThreadStaticValue;
                 }

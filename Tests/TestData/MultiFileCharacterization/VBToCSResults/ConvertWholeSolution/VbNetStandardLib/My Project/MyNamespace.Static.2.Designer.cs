@@ -25,7 +25,7 @@ namespace Microsoft.VisualBasic
                     return 0;
                 }
 
-                if (Left == default)
+                if (Left is null)
                 {
                     if (Right.Length == 0)
                     {
@@ -35,7 +35,7 @@ namespace Microsoft.VisualBasic
                     return -1;
                 }
 
-                if (Right == default)
+                if (Right is null)
                 {
                     if (Left.Length == 0)
                     {
@@ -124,7 +124,7 @@ namespace Microsoft.VisualBasic
 
             public static bool ToBoolean(string Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     Value = "";
                 }
@@ -157,7 +157,7 @@ namespace Microsoft.VisualBasic
 
             public static bool ToBoolean(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return false;
                 }
@@ -225,7 +225,7 @@ namespace Microsoft.VisualBasic
 
             public static byte ToByte(string Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -248,7 +248,7 @@ namespace Microsoft.VisualBasic
 
             public static byte ToByte(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -317,7 +317,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static sbyte ToSByte(string Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -341,7 +341,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static sbyte ToSByte(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -409,7 +409,7 @@ namespace Microsoft.VisualBasic
 
             public static short ToShort(string Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -432,7 +432,7 @@ namespace Microsoft.VisualBasic
 
             public static short ToShort(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -501,7 +501,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static ushort ToUShort(string Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -525,7 +525,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static ushort ToUShort(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -593,7 +593,7 @@ namespace Microsoft.VisualBasic
 
             public static int ToInteger(string Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -616,7 +616,7 @@ namespace Microsoft.VisualBasic
 
             public static int ToInteger(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -685,7 +685,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static uint ToUInteger(string Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -709,7 +709,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static uint ToUInteger(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -777,7 +777,7 @@ namespace Microsoft.VisualBasic
 
             public static long ToLong(string Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -800,7 +800,7 @@ namespace Microsoft.VisualBasic
 
             public static long ToLong(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -869,7 +869,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static ulong ToULong(string Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -893,7 +893,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static ulong ToULong(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -973,7 +973,7 @@ namespace Microsoft.VisualBasic
 
             public static decimal ToDecimal(string Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0M;
                 }
@@ -1000,7 +1000,7 @@ namespace Microsoft.VisualBasic
 
             public static decimal ToDecimal(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0M;
                 }
@@ -1070,7 +1070,7 @@ namespace Microsoft.VisualBasic
             {
                 System.Globalization.NumberFormatInfo NormalizedNumberFormat;
                 var culture = GetCultureInfo();
-                if (NumberFormat == default)
+                if (NumberFormat is null)
                 {
                     NumberFormat = culture.NumberFormat;
                 }
@@ -1095,12 +1095,12 @@ namespace Microsoft.VisualBasic
             private static System.Globalization.NumberFormatInfo GetNormalizedNumberFormat(System.Globalization.NumberFormatInfo InNumberFormat)
             {
                 System.Globalization.NumberFormatInfo OutNumberFormat;
-                if (!(InNumberFormat.CurrencyDecimalSeparator == default) && !(InNumberFormat.NumberDecimalSeparator == default) && !(InNumberFormat.CurrencyGroupSeparator == default) && !(InNumberFormat.NumberGroupSeparator == default) && InNumberFormat.CurrencyDecimalSeparator.Length == 1 && InNumberFormat.NumberDecimalSeparator.Length == 1 && InNumberFormat.CurrencyGroupSeparator.Length == 1 && InNumberFormat.NumberGroupSeparator.Length == 1 && InNumberFormat.CurrencyDecimalSeparator[0] == InNumberFormat.NumberDecimalSeparator[0] && InNumberFormat.CurrencyGroupSeparator[0] == InNumberFormat.NumberGroupSeparator[0] && InNumberFormat.CurrencyDecimalDigits == InNumberFormat.NumberDecimalDigits)
+                if (!(InNumberFormat.CurrencyDecimalSeparator is null) && !(InNumberFormat.NumberDecimalSeparator is null) && !(InNumberFormat.CurrencyGroupSeparator is null) && !(InNumberFormat.NumberGroupSeparator is null) && InNumberFormat.CurrencyDecimalSeparator.Length == 1 && InNumberFormat.NumberDecimalSeparator.Length == 1 && InNumberFormat.CurrencyGroupSeparator.Length == 1 && InNumberFormat.NumberGroupSeparator.Length == 1 && InNumberFormat.CurrencyDecimalSeparator[0] == InNumberFormat.NumberDecimalSeparator[0] && InNumberFormat.CurrencyGroupSeparator[0] == InNumberFormat.NumberGroupSeparator[0] && InNumberFormat.CurrencyDecimalDigits == InNumberFormat.NumberDecimalDigits)
                 {
                     return InNumberFormat;
                 }
 
-                if (!(InNumberFormat.CurrencyDecimalSeparator == default) && !(InNumberFormat.NumberDecimalSeparator == default) && InNumberFormat.CurrencyDecimalSeparator.Length == InNumberFormat.NumberDecimalSeparator.Length && !(InNumberFormat.CurrencyGroupSeparator == default) && !(InNumberFormat.NumberGroupSeparator == default) && InNumberFormat.CurrencyGroupSeparator.Length == InNumberFormat.NumberGroupSeparator.Length)
+                if (!(InNumberFormat.CurrencyDecimalSeparator is null) && !(InNumberFormat.NumberDecimalSeparator is null) && InNumberFormat.CurrencyDecimalSeparator.Length == InNumberFormat.NumberDecimalSeparator.Length && !(InNumberFormat.CurrencyGroupSeparator is null) && !(InNumberFormat.NumberGroupSeparator is null) && InNumberFormat.CurrencyGroupSeparator.Length == InNumberFormat.NumberGroupSeparator.Length)
                 {
                     int i;
                     var loopTo = InNumberFormat.CurrencyDecimalSeparator.Length - 1;
@@ -1135,7 +1135,7 @@ namespace Microsoft.VisualBasic
 
             public static float ToSingle(string Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -1164,7 +1164,7 @@ namespace Microsoft.VisualBasic
 
             public static float ToSingle(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -1232,7 +1232,7 @@ namespace Microsoft.VisualBasic
 
             public static double ToDouble(string Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -1255,7 +1255,7 @@ namespace Microsoft.VisualBasic
 
             public static double ToDouble(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return 0;
                 }
@@ -1361,7 +1361,7 @@ namespace Microsoft.VisualBasic
 
             public static DateTime ToDate(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return default;
                 }
@@ -1380,7 +1380,7 @@ namespace Microsoft.VisualBasic
 
             public static char ToChar(string Value)
             {
-                if (Value == default || Value.Length == 0)
+                if (Value is null || Value.Length == 0)
                 {
                     return Convert.ToChar(0 & 0xFFFF);
                 }
@@ -1390,7 +1390,7 @@ namespace Microsoft.VisualBasic
 
             public static char ToChar(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return Convert.ToChar(0 & 0xFFFF);
                 }
@@ -1409,7 +1409,7 @@ namespace Microsoft.VisualBasic
 
             public static char[] ToCharArrayRankOne(string Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     Value = "";
                 }
@@ -1419,7 +1419,7 @@ namespace Microsoft.VisualBasic
 
             public static char[] ToCharArrayRankOne(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return "".ToCharArray();
                 }
@@ -1498,7 +1498,7 @@ namespace Microsoft.VisualBasic
 
             public static new string ToString(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return null;
                 }
@@ -1706,7 +1706,7 @@ namespace Microsoft.VisualBasic
 
             public static T ToGenericParameter<T>(object Value)
             {
-                if (Value == default)
+                if (Value is null)
                 {
                     return default;
                 }
@@ -1814,7 +1814,7 @@ namespace Microsoft.VisualBasic
 
             public static Array CopyArray(Array arySrc, Array aryDest)
             {
-                if (arySrc == default)
+                if (arySrc is null)
                 {
                     return aryDest;
                 }
@@ -1996,7 +1996,7 @@ namespace Microsoft.VisualBasic
 
         public static int AscW(string String)
         {
-            if (String == default || String.Length == 0)
+            if (String is null || String.Length == 0)
             {
                 throw new ArgumentException();
             }
