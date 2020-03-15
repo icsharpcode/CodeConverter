@@ -104,16 +104,24 @@ namespace ICSharpCode.CodeConverter.Shared
             var project = projectContentsConverter.Project;
             var projectDir = project.GetDirectoryPath();
             var addedTargetFiles = new List<string>();
+            var sourceToTargetMap = new List<(string, string)>();
+            var projectDirSlash = projectDir + Path.DirectorySeparatorChar;
 
             await foreach (var conversionResult in convertProjectContents) {
                 yield return conversionResult;
+
+                var sourceRelative = Path.GetFullPath(conversionResult.SourcePathOrNull).Replace(projectDirSlash, "");
+                var targetRelative = Path.GetFullPath(conversionResult.TargetPathOrNull).Replace(projectDirSlash, "");
+                sourceToTargetMap.Add((sourceRelative, targetRelative));
+
                 if (!originalSourcePaths.Contains(conversionResult.SourcePathOrNull)) {
-                    var relativePath = Path.GetFullPath(conversionResult.TargetPathOrNull).Replace(projectDir + Path.DirectorySeparatorChar, "");
+                    var relativePath = Path.GetFullPath(conversionResult.TargetPathOrNull).Replace(projectDirSlash, "");
                     addedTargetFiles.Add(relativePath);
                 }
             }
 
-            var languageSpecificReplacements = languageConversion.GetProjectFileReplacementRegexes().Concat(languageConversion.GetProjectTypeGuidMappings())
+            var sourceTargetReplacements = sourceToTargetMap.Select(m => (Regex.Escape(m.Item1), m.Item2));
+            var languageSpecificReplacements = sourceTargetReplacements.Concat(languageConversion.GetProjectFileReplacementRegexes()).Concat(languageConversion.GetProjectTypeGuidMappings())
                 .Select(m => (m.Item1, m.Item2, false));
 
             var replacementSpecs = languageSpecificReplacements.Concat(replacements).Concat(new[] {

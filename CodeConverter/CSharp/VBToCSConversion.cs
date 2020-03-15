@@ -62,7 +62,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 ("\\.vb<", ".cs<"),
                 ("<\\s*Generator\\s*>\\s*VbMyResourcesResXFileCodeGenerator\\s*</\\s*Generator\\s*>", "<Generator>ResXFileCodeGenerator</Generator>"),
                 ("(<\\s*CustomToolNamespace\\s*>)(.*</\\s*CustomToolNamespace\\s*>)", $"$1{rootNamespaceDot}$2"), // <CustomToolNamespace>My.Resources</CustomToolNamespace>
-                (@"(<\s*EmbeddedResource\s*Include\s*=\s*\"")My Project\\([^""]*\.resx""\s*>)", "$1$2") // <EmbeddedResource Include="My Project\Resources.resx">
             };
         }
 
