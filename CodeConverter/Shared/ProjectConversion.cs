@@ -103,7 +103,10 @@ namespace ICSharpCode.CodeConverter.Shared
                 }
             }
 
-            var replacementSpecs = replacements.Concat(new[] {
+            var languageSpecificReplacements = languageConversion.GetProjectFileReplacementRegexes().Concat(languageConversion.GetProjectTypeGuidMappings())
+                .Select(m => (m.Item1, m.Item2, false));
+
+            var replacementSpecs = languageSpecificReplacements.Concat(replacements).Concat(new[] {
                     AddCompiledItemsRegexFromRelativePaths(addedTargetFiles),
                     ChangeRootNamespaceRegex(projectContentsConverter.RootNamespace),
                     ChangeLanguageVersionRegex(projectContentsConverter.LanguageVersion)
