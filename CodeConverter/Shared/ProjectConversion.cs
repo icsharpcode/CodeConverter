@@ -80,17 +80,22 @@ namespace ICSharpCode.CodeConverter.Shared
             progress = progress ?? new Progress<ConversionProgress>();
             using var roslynEntryPoint = await RoslynEntryPoint(progress);
 
-            var sourceFilePathsWithoutExtension = project.Documents.Select(f => f.FilePath).ToImmutableHashSet();
+            var sourceFilePaths = project.Documents.SelectMany(f => GetSourcePaths(f)).ToImmutableHashSet();
             var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(project, progress, cancellationToken);
             project = projectContentsConverter.Project;
             var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress, cancellationToken);
             
-            var results = WithProjectFile(projectContentsConverter, languageConversion, sourceFilePathsWithoutExtension, convertProjectContents, replacements);
-            await foreach (var result in results) yield return result;
 
-            foreach (var result in projectContentsConverter.GetPostProjectFileConversionResults()) {
-                yield return result;
+            var results = WithProjectFile(projectContentsConverter, languageConversion, sourceFilePaths, convertProjectContents, replacements);
+            await foreach (var result in results) yield return result;
+        }
+
+        private static IEnumerable<string> GetSourcePaths(Document f)
+        {
+            if (DesignerWithResx.TryCreate(f.FilePath) is DesignerWithResx d && d.SourceResxPath != d.TargetResxPath) {
+                yield return d.SourceResxPath;
             }
+            yield return f.FilePath;
         }
 
         /// <remarks>Perf: Keep lazy so that we don't keep all files in memory at once</remarks>
@@ -179,22 +184,16 @@ namespace ICSharpCode.CodeConverter.Shared
 
             phaseProgress = StartPhase(progress, "Phase 2 of 2:");
             var secondPassResults = proj1.GetDocuments(docs1).ParallelSelectAwait(d => SecondPass(d, phaseProgress), Env.MaxDop, _cancellationToken);
-            await foreach (var result in secondPassResults) {
-                var conversionResult = new ConversionResult(result.Wip?.ToFullString()) { SourcePathOrNull = result.Path, Exceptions = result.Errors.ToList() };
-                var sourceFile = new FileInfo(result.Path);
-                if (sourceFile.Name.EndsWith(".Designer.vb") && sourceFile.Directory.Name == "My Project") {
-                    string projectDir = sourceFile.Directory.Parent.FullName;
-                    string resxFilename = sourceFile.Name.Replace(".Designer.vb", ".resx");
-                    string oldResxPath = Path.Combine(projectDir, sourceFile.Directory.Name, resxFilename);
-                    if (File.Exists(oldResxPath)) {
-                        string newDesignerPath = Path.Combine(projectDir, sourceFile.Name);
-                        string newResxPath = Path.Combine(sourceFile.Directory.Parent.FullName, resxFilename);
-                        conversionResult.TargetPathOrNull = newDesignerPath;
-                        // Treat source as the designer file so that it doesn't appear to be a "new" file (roslyn just didn't know about it)
-                        yield return new ConversionResult(File.ReadAllText(oldResxPath)) { SourcePathOrNull = result.Path, TargetPathOrNull = newResxPath };
-                    }
-                }
-                yield return conversionResult;
+            await foreach (var result in secondPassResults.SelectMany(CreateConversionResults)) {
+                yield return result;
+            }
+        }
+
+        private async IAsyncEnumerable<ConversionResult> CreateConversionResults(WipFileConversion<SyntaxNode> r)
+        {
+            var initialResult = new ConversionResult(r.Wip?.ToFullString()) { SourcePathOrNull = r.Path, Exceptions = r.Errors.ToList() };
+            foreach (var result in _projectContentsConverter.GetConversionResults(initialResult)) {
+                yield return result;
             }
         }
 

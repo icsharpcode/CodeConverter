@@ -71,9 +71,9 @@ namespace ICSharpCode.CodeConverter.VB
             return _convertedVbProject.WithDocuments(firstPassResults);
         }
 
-        public IEnumerable<ConversionResult> GetPostProjectFileConversionResults()
+        public IEnumerable<ConversionResult> GetConversionResults(ConversionResult result)
         {
-            return Enumerable.Empty<ConversionResult>();
+            yield return result;
         }
     }
 }
