@@ -7,6 +7,7 @@
 ## Types
 
 * Single file characterization tests (e.g. ExpressionTests.cs)
+  * When there are several test files that could accomodate a new test, pick the most specifically named one that covers what you're aiming to test.
 * Multi file characterization tests (e.g. MultiFileSolutionAndProjectTests.cs)
 * Single file self-verifying tests (e.g. EnumTests.vb)
   * These are the only tests where the output is not in the repository.
@@ -17,9 +18,6 @@
 ## Other guidelines
 
 * In general, the source and target of all test cases should compile.
-* To test this, flip the define the "ShowCompilationErrors" compile time constant, or tweak the condition in ProjectConversion that uses it, then run the tests.
-* Some older tests still do not compile, these will be gradually fixed over time using the above method.
-* When testing behaviour specific to non-compiling code (e.g. due to a missing reference), put the test in a subfolder called MissingSemanticModelInfo
-
-
+  * Exception: Things in the MissingSemanticModelInfo folder which specifically test common cases of incomplete input.
+* Some older tests have compile errors in the input or output. These will be gradually fixed over time.
 
