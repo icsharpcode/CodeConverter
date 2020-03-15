@@ -84,7 +84,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(project, progress, cancellationToken);
             project = projectContentsConverter.Project;
             var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress, cancellationToken);
-            
+
 
             var results = WithProjectFile(projectContentsConverter, languageConversion, sourceFilePaths, convertProjectContents, replacements);
             await foreach (var result in results) yield return result;
