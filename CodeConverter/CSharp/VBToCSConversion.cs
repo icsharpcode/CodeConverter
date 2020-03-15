@@ -70,7 +70,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             xml = ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(xml, "cs", "vb");
 
             if (!Regex.IsMatch(xml, @"<Reference\s+Include=""Microsoft.VisualBasic""\s*/>")) {
-                xml = Regex.Replace(xml, @"(<Reference\s+Include=""System""\s*/>)", "<Reference Include=\"Microsoft.VisualBasic\" />\r\n    $1");
+                xml = new Regex(@"(<ItemGroup>)(\s*)").Replace(xml, "$1$2<Reference Include=\"Microsoft.VisualBasic\" />$2", 1);
             }
 
             // TODO Find API to, or parse project file sections to remove "<DefineDebug>true</DefineDebug>" + "<DefineTrace>true</DefineTrace>"
