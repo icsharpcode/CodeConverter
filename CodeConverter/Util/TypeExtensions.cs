@@ -17,7 +17,7 @@ namespace ICSharpCode.CodeConverter.Util
         public static IMethodSymbol GetDelegateInvokeMethod(this ITypeSymbol type)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             if (type.TypeKind == TypeKind.Delegate && type is INamedTypeSymbol namedType)
                 return namedType.DelegateInvokeMethod;
             return null;

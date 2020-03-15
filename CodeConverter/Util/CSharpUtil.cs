@@ -165,7 +165,7 @@ namespace ICSharpCode.CodeConverter.Util
                 case SyntaxKind.LogicalAndExpression:
                     return SyntaxKind.LogicalOrExpression;
             }
-            throw new ArgumentOutOfRangeException("op");
+            throw new ArgumentOutOfRangeException(nameof(op));
         }
 
         /// <summary>
@@ -201,7 +201,7 @@ namespace ICSharpCode.CodeConverter.Util
                 case SyntaxKind.LogicalAndExpression:
                     return SyntaxKind.LogicalOrExpression;
             }
-            throw new ArgumentOutOfRangeException("op");
+            throw new ArgumentOutOfRangeException(nameof(op));
         }
 
         public static bool AreConditionsEqual(ExpressionSyntax cond1, ExpressionSyntax cond2)

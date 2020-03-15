@@ -15,7 +15,7 @@ namespace ICSharpCode.CodeConverter.Util
         public static ImmutableArray<IParameterSymbol> GetParameters(this ISymbol symbol)
         {
             if (symbol == null)
-                throw new ArgumentNullException("symbol");
+                throw new ArgumentNullException(nameof(symbol));
             var method = symbol as IMethodSymbol;
             if (method != null)
                 return method.Parameters;
@@ -31,28 +31,28 @@ namespace ICSharpCode.CodeConverter.Util
         public static bool IsConstructor(this ISymbol symbol)
         {
             if (symbol == null)
-                throw new ArgumentNullException("symbol");
+                throw new ArgumentNullException(nameof(symbol));
             return symbol is IMethodSymbol && ((IMethodSymbol)symbol).MethodKind == MethodKind.Constructor;
         }
 
         public static bool IsStaticConstructor(this ISymbol symbol)
         {
             if (symbol == null)
-                throw new ArgumentNullException("symbol");
+                throw new ArgumentNullException(nameof(symbol));
             return symbol is IMethodSymbol && ((IMethodSymbol)symbol).MethodKind == MethodKind.StaticConstructor;
         }
 
         public static bool IsDelegateType(this ISymbol symbol)
         {
             if (symbol == null)
-                throw new ArgumentNullException("symbol");
+                throw new ArgumentNullException(nameof(symbol));
             return symbol is ITypeSymbol && ((ITypeSymbol)symbol).TypeKind == TypeKind.Delegate;
         }
 
         public static ITypeSymbol GetReturnType(this ISymbol symbol)
         {
             if (symbol == null)
-                throw new ArgumentNullException("symbol");
+                throw new ArgumentNullException(nameof(symbol));
             switch (symbol.Kind) {
                 case SymbolKind.Field:
                     var field = (IFieldSymbol)symbol;
