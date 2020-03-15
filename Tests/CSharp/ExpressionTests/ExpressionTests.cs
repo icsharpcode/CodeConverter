@@ -1532,7 +1532,7 @@ public partial class Foo
 
     protected void OnBar(EventArgs e)
     {
-        if (Bar == default)
+        if (Bar is null)
         {
             Debug.WriteLine(""No subscriber"");
         }

@@ -1095,12 +1095,12 @@ namespace Microsoft.VisualBasic
             private static System.Globalization.NumberFormatInfo GetNormalizedNumberFormat(System.Globalization.NumberFormatInfo InNumberFormat)
             {
                 System.Globalization.NumberFormatInfo OutNumberFormat;
-                if (!(InNumberFormat.CurrencyDecimalSeparator is null) && !(InNumberFormat.NumberDecimalSeparator is null) && !(InNumberFormat.CurrencyGroupSeparator is null) && !(InNumberFormat.NumberGroupSeparator is null) && InNumberFormat.CurrencyDecimalSeparator.Length == 1 && InNumberFormat.NumberDecimalSeparator.Length == 1 && InNumberFormat.CurrencyGroupSeparator.Length == 1 && InNumberFormat.NumberGroupSeparator.Length == 1 && InNumberFormat.CurrencyDecimalSeparator[0] == InNumberFormat.NumberDecimalSeparator[0] && InNumberFormat.CurrencyGroupSeparator[0] == InNumberFormat.NumberGroupSeparator[0] && InNumberFormat.CurrencyDecimalDigits == InNumberFormat.NumberDecimalDigits)
+                if (InNumberFormat.CurrencyDecimalSeparator is object && InNumberFormat.NumberDecimalSeparator is object && InNumberFormat.CurrencyGroupSeparator is object && InNumberFormat.NumberGroupSeparator is object && InNumberFormat.CurrencyDecimalSeparator.Length == 1 && InNumberFormat.NumberDecimalSeparator.Length == 1 && InNumberFormat.CurrencyGroupSeparator.Length == 1 && InNumberFormat.NumberGroupSeparator.Length == 1 && InNumberFormat.CurrencyDecimalSeparator[0] == InNumberFormat.NumberDecimalSeparator[0] && InNumberFormat.CurrencyGroupSeparator[0] == InNumberFormat.NumberGroupSeparator[0] && InNumberFormat.CurrencyDecimalDigits == InNumberFormat.NumberDecimalDigits)
                 {
                     return InNumberFormat;
                 }
 
-                if (!(InNumberFormat.CurrencyDecimalSeparator is null) && !(InNumberFormat.NumberDecimalSeparator is null) && InNumberFormat.CurrencyDecimalSeparator.Length == InNumberFormat.NumberDecimalSeparator.Length && !(InNumberFormat.CurrencyGroupSeparator is null) && !(InNumberFormat.NumberGroupSeparator is null) && InNumberFormat.CurrencyGroupSeparator.Length == InNumberFormat.NumberGroupSeparator.Length)
+                if (InNumberFormat.CurrencyDecimalSeparator is object && InNumberFormat.NumberDecimalSeparator is object && InNumberFormat.CurrencyDecimalSeparator.Length == InNumberFormat.NumberDecimalSeparator.Length && InNumberFormat.CurrencyGroupSeparator is object && InNumberFormat.NumberGroupSeparator is object && InNumberFormat.CurrencyGroupSeparator.Length == InNumberFormat.NumberGroupSeparator.Length)
                 {
                     int i;
                     var loopTo = InNumberFormat.CurrencyDecimalSeparator.Length - 1;

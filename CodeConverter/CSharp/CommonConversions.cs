@@ -636,7 +636,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(ps));
         }
 
-        public static CSSyntax.BinaryExpressionSyntax NotNothing(ExpressionSyntax otherArgument, bool isReferenceType)
+        public static CSSyntax.BinaryExpressionSyntax NotNothingComparison(ExpressionSyntax otherArgument, bool isReferenceType)
         {
             if (isReferenceType) {
                 return SyntaxFactory.BinaryExpression(CSSyntaxKind.IsExpression, otherArgument, SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.ObjectKeyword)));
@@ -644,7 +644,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.BinaryExpression(CSSyntaxKind.NotEqualsExpression, otherArgument, SyntaxFactory.LiteralExpression(CSSyntaxKind.DefaultLiteralExpression));
         }
 
-        public static ExpressionSyntax Nothing(ExpressionSyntax otherArgument, bool isReferenceType)
+        public static ExpressionSyntax NothingComparison(ExpressionSyntax otherArgument, bool isReferenceType)
         {
             if (isReferenceType) {
                 return SyntaxFactory.IsPatternExpression(otherArgument, SyntaxFactory.ConstantPattern(SyntaxFactory.LiteralExpression(CSSyntaxKind.NullLiteralExpression)));

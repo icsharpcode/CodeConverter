@@ -89,7 +89,7 @@ namespace ConsoleApp4.My
             if (obj is object)
             {
                 XElement elem = obj as XElement;
-                if (!(elem is null))
+                if (elem is object)
                 {
                     return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elem);
                 }

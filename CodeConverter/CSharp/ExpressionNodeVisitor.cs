@@ -607,17 +607,30 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
             var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
             SyntaxKind csTokenKind = CSharpUtil.GetExpressionOperatorTokenKind(kind);
-            if (csTokenKind == SyntaxKind.LogicalNotExpression) {
-                expr = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Operand, expr, forceTargetType: _vbBooleanTypeSymbol);
-                if (expr is BinaryExpressionSyntax bes && bes.OperatorToken.IsKind(SyntaxKind.EqualsToken)) {
-                    return bes.WithOperatorToken(SyntaxFactory.Token(SyntaxKind.ExclamationEqualsToken));
-                }
+            if (kind == SyntaxKind.LogicalNotExpression && await NegateAndSimplifyOrNull(node, expr) is ExpressionSyntax simpleNegation) {
+                return AsBool(node, simpleNegation);
             }
             return SyntaxFactory.PrefixUnaryExpression(
                 kind,
                 SyntaxFactory.Token(csTokenKind),
                 expr.AddParens()
             );
+        }
+
+        private ExpressionSyntax AsBool(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr)
+        {
+            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Operand, expr, forceTargetType: _vbBooleanTypeSymbol);
+        }
+
+        private async Task<ExpressionSyntax> NegateAndSimplifyOrNull(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr)
+        {
+            if (await ConvertNothingComparisonOrNull(node.Operand, true) is ExpressionSyntax nothingComparison) {
+                return nothingComparison;
+            } else if (expr is BinaryExpressionSyntax bes && bes.OperatorToken.IsKind(SyntaxKind.EqualsToken)) {
+                return bes.WithOperatorToken(SyntaxFactory.Token(SyntaxKind.ExclamationEqualsToken));
+            }
+
+            return null;
         }
 
         private CSharpSyntaxNode ConvertAddressOf(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr)
@@ -632,31 +645,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax node)
         {
-            if (node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.EqualsExpression)) {
-                ExpressionSyntax otherArgument = null;
-                if (node.Left.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Right);
-                }
-                if (node.Right.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Left);
-                }
-                if (otherArgument != null) {
-                    return CommonConversions.Nothing(otherArgument, node.IsKind(VBasic.SyntaxKind.IsExpression));
-                }
-            }
-
-            if (node.IsKind(VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression)) {
-                ExpressionSyntax otherArgument = null;
-                if (node.Left.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Right);
-                }
-                if (node.Right.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Left);
-                }
-                if (otherArgument != null) {
-                    return CommonConversions.NotNothing(otherArgument, node.IsKind(VBasic.SyntaxKind.IsNotExpression));
-                }
-            }
+            if (await ConvertNothingComparisonOrNull(node) is CSharpSyntaxNode nothingComparison) return nothingComparison;
 
             var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
             var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
@@ -693,7 +682,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                  lhsTypeInfo.Type.IsEnumType() && Equals(lhsTypeInfo.Type, rhsTypeInfo.Type)
                                  && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression);
             lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs);
-            rhs = omitConversion ? rhs: CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+            rhs = omitConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
 
 
             if (node.IsKind(VBasic.SyntaxKind.ExponentiateExpression,
@@ -719,6 +708,25 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var csBinExp = SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
             return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, csBinExp);
+        }
+
+        private async Task<ExpressionSyntax> ConvertNothingComparisonOrNull(VBSyntax.ExpressionSyntax exprNode, bool negateExpression = false)
+        {
+            if (!(exprNode is VBSyntax.BinaryExpressionSyntax node) || !node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression)) {
+                return null;
+            }
+            ExpressionSyntax otherArgument;
+            if (node.Left.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
+                otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Right);
+            } else if (node.Right.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
+                otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArg(node.Left);
+            } else {
+                return null;
+            }
+
+            var isReference = node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.IsNotExpression);
+            var notted = node.IsKind(VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression) || negateExpression;
+            return notted ? CommonConversions.NotNothingComparison(otherArgument, isReference) : CommonConversions.NothingComparison(otherArgument, isReference);
         }
 
         private async Task<CSharpSyntaxNode> ConvertIsOrIsNotExpressionArg(VBSyntax.ExpressionSyntax binaryExpressionArg)

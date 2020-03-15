@@ -217,7 +217,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 ? CreateArrayCopyWithMinOfLengths(sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds.Single())
                 : CreateArrayCopy(originalVbNode, sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds);
 
-            var oldTargetNotEqualToNull = CommonConversions.NotNothing(sourceArrayExpression, true);
+            var oldTargetNotEqualToNull = CommonConversions.NotNothingComparison(sourceArrayExpression, true);
             return SyntaxFactory.IfStatement(oldTargetNotEqualToNull, arrayCopyStatement);
         }
 
