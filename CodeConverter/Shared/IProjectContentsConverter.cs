@@ -11,8 +11,7 @@ namespace ICSharpCode.CodeConverter.Shared
         string RootNamespace { get; }
         Project Project { get; }
         Task<SyntaxNode> SingleFirstPass(Document document);
-
-        Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)>
-            GetConvertedProject(WipFileConversion<SyntaxNode>[] firstPassResults);
+        Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProject(WipFileConversion<SyntaxNode>[] firstPassResults);
+        IEnumerable<ConversionResult> GetPostProjectFileConversionResults();
     }
 }

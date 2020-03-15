@@ -8,6 +8,9 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
 using LanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 using System;
+using System.Xml.Linq;
+using System.IO;
+using System.Linq;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -52,11 +55,48 @@ namespace ICSharpCode.CodeConverter.CSharp
             return await VisualBasicConverter.ConvertCompilationTree(document, _csharpViewOfVbSymbols, _csharpReferenceProject, _cancellationToken);
         }
 
-        public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)>
-            GetConvertedProject(WipFileConversion<SyntaxNode>[] firstPassResults)
+        public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProject(WipFileConversion<SyntaxNode>[] firstPassResults)
         {
             var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults);
             return (await project.RenameMergedNamespaces(_cancellationToken), docIds);
+        }
+
+        public IEnumerable<ConversionResult> GetPostProjectFileConversionResults()
+        {
+            return Enumerable.Empty<ConversionResult>();
+            //const string myProjectSlash = @"My Project\";
+            //var dir = Project.GetDirectoryPath();
+            //return GetResxFiles(Project).Select(r => {
+            //    var path = Path.Combine(dir, r.Resx);
+            //    var withoutMyProj = r.Resx.StartsWith(myProjectSlash) ? Path.Combine(dir, r.Resx.Substring(myProjectSlash.Length)) : path;
+            //    return new ConversionResult(File.ReadAllText(path)) { SourcePathOrNull = path, TargetPathOrNull = withoutMyProj };
+            //});
+        }
+
+        /// <summary>
+        /// From https://stackoverflow.com/a/44142655/1128762
+        /// </summary>
+        private static IEnumerable<(string Resx, string Code)> GetResxFiles(Project project)
+        {
+            const string LAST_GENERATED_TAG = "LastGenOutput";
+            const string RESX_FILE_EXTENSION = ".resx";
+            XDocument xmldoc = XDocument.Load(project.FilePath);
+            var msbuild = XNamespace.Get("http://schemas.microsoft.com/developer/msbuild/2003");
+
+            var resxFiles = new List<string>();
+            foreach (var resource in xmldoc.Descendants(msbuild + "EmbeddedResource")) {
+                string includePath = resource.Attribute("Include").Value;
+
+                var includeExtension = Path.GetExtension(includePath);
+                if (string.Equals(includeExtension, RESX_FILE_EXTENSION, StringComparison.OrdinalIgnoreCase)) {
+                    var outputTag = resource.Elements(msbuild + LAST_GENERATED_TAG).FirstOrDefault();
+
+                    if (outputTag is object) {
+                        yield return (includePath, outputTag.Value);
+                    }
+
+                }
+            }
         }
     }
 }

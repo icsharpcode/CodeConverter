@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
 using System;
 using System.Threading;
+using System.Linq;
 
 namespace ICSharpCode.CodeConverter.VB
 {
@@ -68,6 +69,11 @@ namespace ICSharpCode.CodeConverter.VB
             GetConvertedProject(WipFileConversion<SyntaxNode>[] firstPassResults)
         {
             return _convertedVbProject.WithDocuments(firstPassResults);
+        }
+
+        public IEnumerable<ConversionResult> GetPostProjectFileConversionResults()
+        {
+            return Enumerable.Empty<ConversionResult>();
         }
     }
 }

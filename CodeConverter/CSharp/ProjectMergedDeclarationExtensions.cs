@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.VisualBasic;
 using System.Threading;
 using System.Collections.Generic;
+using System.Xml.Linq;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
