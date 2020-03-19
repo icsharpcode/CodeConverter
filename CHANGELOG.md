@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Improve Winforms designer event experience after conversion [#547](https://github.com/icsharpcode/CodeConverter/issues/547)
 * Don't output solution conversion for in-memory solution file
 * Empty files are no longer skipped [#423](https://github.com/icsharpcode/CodeConverter/issues/423)
-
+* Specify type suffix for decimal and float literals containing decimal point [#548](https://github.com/icsharpcode/CodeConverter/issues/548)
 
 
 ### C# -> VB

@@ -272,7 +272,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (TypeConversionAnalyzer.ConvertStringToCharLiteral(node, convertedType, out char chr)) {
                 return CommonConversions.Literal(chr);
             }
-            return CommonConversions.Literal(node.Token.Value, node.Token.Text);
+            return CommonConversions.Literal(node.Token.Value, node.Token.Text, convertedType);
         }
 
         public override async Task<CSharpSyntaxNode> VisitInterpolation(VBasic.Syntax.InterpolationSyntax node)

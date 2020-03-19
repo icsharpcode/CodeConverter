@@ -6,12 +6,14 @@ using Microsoft.CodeAnalysis.CSharp;
 using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+using Microsoft.CodeAnalysis;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
     internal class LiteralConversions
     {
-        public static ExpressionSyntax GetLiteralExpression(object value, string textForUser = null)
+        public static ExpressionSyntax GetLiteralExpression(object value, string textForUser = null, ITypeSymbol convertedType = null)
         {
             if (value is string valueTextForCompiler) {
                 textForUser = textForUser == null
@@ -26,7 +28,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (value is bool)
                 return SyntaxFactory.LiteralExpression((bool)value ? CSSyntaxKind.TrueLiteralExpression : CSSyntaxKind.FalseLiteralExpression);
 
-            textForUser = textForUser != null ? ConvertNumericLiteralValueText(textForUser, value) : value.ToString();
+            textForUser = ConvertNumericLiteralValueText(textForUser ?? value.ToString(), value, convertedType);
 
             if (value is byte)
                 return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (byte)value));
@@ -105,7 +107,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         ///  https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/data-types/type-characters
         ///  https://stackoverflow.com/a/166762/1128762
         /// </summary>
-        private static string ConvertNumericLiteralValueText(string textForUser, object value)
+        private static string ConvertNumericLiteralValueText(string textForUser, object value, ITypeSymbol convertedTypeOrNull)
         {
             var replacements = new Dictionary<string, string> {
                 {"C", ""},
@@ -134,6 +136,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (longestMatchingReplacement != null) {
                 textForUser = textForUser.ReplaceEnd(longestMatchingReplacement.Value);
+            } else if (textForUser.Contains(".")) {
+                if (convertedTypeOrNull?.SpecialType == SpecialType.System_Single) textForUser += "F";
+                if (convertedTypeOrNull?.SpecialType == SpecialType.System_Decimal) textForUser += "M";
             }
 
             if (textForUser.Length <= 2 || !textForUser.StartsWith("&")) return textForUser;

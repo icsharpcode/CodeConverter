@@ -37,4 +37,19 @@ Public Class ArithmeticTests
         Assert.Equal(-21, Int(e))
         Assert.Equal(-31, Int(f))
     End Sub
+
+    <Fact>
+    Public Sub TestNoCompileErrorWhenAssigningLiterals() 'https://github.com/icsharpcode/CodeConverter/issues/548
+        Dim TestSingle As Single
+        TestSingle = 29.7
+        TestSingle = 29
+        Dim TestDouble As Double
+        TestDouble = 29.7
+        TestDouble = 29
+        Dim TestDecimal As Decimal
+        TestDecimal = 29.7
+        TestDecimal = 29
+        Assert.Equal(TestSingle.ToString(), TestDouble.ToString())
+        Assert.Equal(TestDecimal.ToString(), TestDouble.ToString())
+    End Sub
 End Class
