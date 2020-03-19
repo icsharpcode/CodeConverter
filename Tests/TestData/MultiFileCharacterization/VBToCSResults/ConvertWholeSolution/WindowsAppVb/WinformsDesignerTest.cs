@@ -38,6 +38,14 @@ namespace WindowsAppVb
         {
         }
 
+        private void ButtonMouseClickWithNoArgs()
+        {
+        }
+
+        private void ButtonMouseClickWithNoArgs2()
+        {
+        }
+
         public void Init()
         {
             MouseEventHandler noArgs = (_, __) => WinformsDesignerTest_MouseClick();
@@ -53,5 +61,9 @@ namespace WindowsAppVb
             MouseClick += paramToHandle;
             WinformsDesignerTest_MouseClick();
         }
+
+        private void ButtonMouseClickWithNoArgs(object sender, MouseEventArgs e) => ButtonMouseClickWithNoArgs();
+        private void ButtonMouseClickWithNoArgs2(object sender, MouseEventArgs e) => ButtonMouseClickWithNoArgs2();
+        private void ButtonMouseClickWithNoArgs2(object sender, EventArgs e) => ButtonMouseClickWithNoArgs2();
     }
 }

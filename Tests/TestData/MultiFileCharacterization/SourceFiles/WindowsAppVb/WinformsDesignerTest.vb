@@ -20,6 +20,14 @@
 
     End Sub
 
+    Private Sub ButtonMouseClickWithNoArgs() Handles Button1.MouseClick, Button2.MouseClick
+
+    End Sub
+
+    Private Sub ButtonMouseClickWithNoArgs2() Handles Button1.MouseClick, CheckBox1.CheckedChanged
+
+    End Sub
+
     Public Sub Init()
         Dim noArgs As MouseEventHandler = AddressOf WinformsDesignerTest_MouseClick
         AddHandler Me.MouseClick, noArgs

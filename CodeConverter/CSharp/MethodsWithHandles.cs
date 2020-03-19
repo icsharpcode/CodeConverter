@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -57,6 +58,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         public (ExpressionSyntax EventField, SyntaxKind AssignmentKind, ExpressionSyntax HandlerId)[] GetConstructorEventAssignments()
         {
             return _methodWithHandleses.SelectMany(m => m.GetPreInitializeComponentEventHandlers()).ToArray();
+        }
+
+        internal IEnumerable<MemberDeclarationSyntax> CreateDelegatingMethodsRequiredByInitializeComponent()
+        {
+            return _methodWithHandleses.SelectMany(m => m.CreateDelegatingMethodsRequiredByInitializeComponent())
+                .GroupBy(m => (m.Identifier.Text, string.Join(",", m.ParameterList.Parameters.Select(p => p.Type.ToString()))))
+                .Select(g => g.First());
         }
     }
 }

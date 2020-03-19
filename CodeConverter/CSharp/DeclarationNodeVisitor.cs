@@ -206,7 +206,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (shouldAddTypeWideInitToThisPart) {
                     _additionalInitializers.AdditionalInstanceInitializers.AddRange(_methodsWithHandles.GetConstructorEventAssignments());
             }
+
             var requiresInitializeComponent = namedTypeSymbol.IsDesignerGeneratedTypeWithInitializeComponent(_compilation);
+
+            if (shouldAddTypeWideInitToThisPart && requiresInitializeComponent) {
+                directlyConvertedMembers = directlyConvertedMembers.Concat(_methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
+            }
+
             return _additionalInitializers.WithAdditionalInitializers(namedTypeSymbol, directlyConvertedMembers.ToList(), CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier), shouldAddTypeWideInitToThisPart, requiresInitializeComponent);
 
             async Task<IEnumerable<MemberDeclarationSyntax>> GetDirectlyConvertMembers()
@@ -571,6 +577,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var csPropIds = ids.Except(csFormIds).ToList();
                     if (!csPropIds.Any() && !csFormIds.Any()) return null;
                     var csMethodId = SyntaxFactory.Identifier(m.Name);
+                    var delegatingMethodBaseForHandler = (MethodDeclarationSyntax) _csSyntaxGenerator.MethodDeclaration(m);
                     return new MethodWithHandles(_csSyntaxGenerator, csMethodId, csPropIds, csFormIds);
                 }).Where(x => x != null).ToList();
             return methodWithHandleses;
@@ -607,7 +614,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var semanticModel = mbb.SyntaxTree == _semanticModel.SyntaxTree ? _semanticModel : _compilation.GetSemanticModel(mbb.SyntaxTree, ignoreAccessibility: true);
             return mbb.HandlesClause.Events.Select(e => {
                 var symbol = semanticModel.GetSymbolInfo(e.EventMember).Symbol as IEventSymbol;
-                var toDiscard = mayRequireDiscardedParameters ? symbol?.GetSymbolType().GetDelegateInvokeMethod()?.GetParameters().Count() ?? 0 : 0;
+                var toDiscard = mayRequireDiscardedParameters ? symbol?.Type.GetDelegateInvokeMethod()?.GetParameters().Count() ?? 0 : 0;
                 var symbolParameters = symbol?.GetParameters();
                 return (e.EventContainer, e.EventMember, Event: symbol, toDiscard);
             });

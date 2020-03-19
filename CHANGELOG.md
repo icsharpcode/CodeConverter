@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Comparisons of value/generic types to Nothing now convert to the correct corresponding C# 8 operator
 * Resources are now correctly namespaced after conversion [#540](https://github.com/icsharpcode/CodeConverter/issues/540)
 * LangVersion is now set to "Latest" in csproj [e87fef11](https://github.com/icsharpcode/CodeConverter/commit/e87fef11338b8d136b9f0e2d97fa3e7f6b7d86a6)
-* Winforms designer recognizes events post-conversion [#547](https://github.com/icsharpcode/CodeConverter/issues/547)
+* Improve Winforms designer event experience after conversion [#547](https://github.com/icsharpcode/CodeConverter/issues/547)
 * Don't output solution conversion for in-memory solution file
 
 

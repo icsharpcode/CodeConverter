@@ -38,9 +38,14 @@ namespace WindowsAppVb
         {
             _Button1 = new Button();
             _Button1.Click += new EventHandler(Button1_Click);
-            _Button1.Click += new EventHandler(CheckedChangedOrButtonClicked); // In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
+            _Button1.Click += new EventHandler(CheckedChangedOrButtonClicked);
+            _Button1.MouseClick += new MouseEventHandler(ButtonMouseClickWithNoArgs);
+            _Button1.MouseClick += new MouseEventHandler(ButtonMouseClickWithNoArgs2); // In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
             _CheckBox1 = new CheckBox();
             _CheckBox1.CheckedChanged += new EventHandler(CheckedChangedOrButtonClicked);
+            _CheckBox1.CheckedChanged += new EventHandler(ButtonMouseClickWithNoArgs2);
+            _Button2 = new Button();
+            _Button2.MouseClick += new MouseEventHandler(ButtonMouseClickWithNoArgs);
             SuspendLayout();
             // 
             // Button1
@@ -62,11 +67,21 @@ namespace WindowsAppVb
             _CheckBox1.Text = "CheckBox1";
             _CheckBox1.UseVisualStyleBackColor = true;
             // 
+            // Button2
+            // 
+            _Button2.Location = new Point(95, 110);
+            _Button2.Name = "Button2";
+            _Button2.Size = new Size(75, 23);
+            _Button2.TabIndex = 2;
+            _Button2.Text = "Button2";
+            _Button2.UseVisualStyleBackColor = true;
+            // 
             // WinformsDesignerTest
             // 
-            AutoScaleDimensions = new SizeF(6F, 13F);
+            AutoScaleDimensions = new SizeF(6.0F, 13.0F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(292, 273);
+            Controls.Add(_Button2);
             Controls.Add(_CheckBox1);
             Controls.Add(_Button1);
             Name = "WinformsDesignerTest";
@@ -97,6 +112,8 @@ namespace WindowsAppVb
                 {
                     _Button1.Click -= Button1_Click;
                     _Button1.Click -= CheckedChangedOrButtonClicked;
+                    _Button1.MouseClick -= (_, __) => ButtonMouseClickWithNoArgs();
+                    _Button1.MouseClick -= (_, __) => ButtonMouseClickWithNoArgs2();
                 }
 
                 _Button1 = value;
@@ -104,6 +121,8 @@ namespace WindowsAppVb
                 {
                     _Button1.Click += Button1_Click;
                     _Button1.Click += CheckedChangedOrButtonClicked;
+                    _Button1.MouseClick += (_, __) => ButtonMouseClickWithNoArgs();
+                    _Button1.MouseClick += (_, __) => ButtonMouseClickWithNoArgs2();
                 }
             }
         }
@@ -124,12 +143,40 @@ namespace WindowsAppVb
                 if (_CheckBox1 != null)
                 {
                     _CheckBox1.CheckedChanged -= CheckedChangedOrButtonClicked;
+                    _CheckBox1.CheckedChanged -= (_, __) => ButtonMouseClickWithNoArgs2();
                 }
 
                 _CheckBox1 = value;
                 if (_CheckBox1 != null)
                 {
                     _CheckBox1.CheckedChanged += CheckedChangedOrButtonClicked;
+                    _CheckBox1.CheckedChanged += (_, __) => ButtonMouseClickWithNoArgs2();
+                }
+            }
+        }
+
+        private Button _Button2;
+
+        internal Button Button2
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get
+            {
+                return _Button2;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            set
+            {
+                if (_Button2 != null)
+                {
+                    _Button2.MouseClick -= (_, __) => ButtonMouseClickWithNoArgs();
+                }
+
+                _Button2 = value;
+                if (_Button2 != null)
+                {
+                    _Button2.MouseClick += (_, __) => ButtonMouseClickWithNoArgs();
                 }
             }
         }

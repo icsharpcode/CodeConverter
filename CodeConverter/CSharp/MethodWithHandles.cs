@@ -115,7 +115,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <remarks>
         /// <paramref name="requiresNewDelegate"/> must be set to true if this statement will be within InitializeComponent, otherwise C# Winforms designer won't be able to recognize it.
         /// If a lambda has been generated to discard parameters, the C# Winforms designer will throw an exception when trying to load, but it will wprl at runtime, and it's better than silently losing events on regeneration.
-        /// Future improvement: Generate a private method with the correct parameters, called only by InitializeComponent
         /// </remarks>
         private StatementSyntax CreateHandlesUpdater(IdentifierNameSyntax eventSource,
             (SyntaxToken EventContainerName, SyntaxToken EventSymbolName, IEventSymbol Event, int ParametersToDiscard) e,
@@ -123,13 +122,40 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool requiresNewDelegate)
         {
             var handledFieldMember = MemberAccess(eventSource, e);
-            var invocableRight = Invocable(_methodId, e.ParametersToDiscard);
-            if (requiresNewDelegate && e.Event != null) invocableRight = (ExpressionSyntax)_csSyntaxGenerator.ObjectCreationExpression(e.Event.Type, invocableRight);
+
+            var invocableRight = requiresNewDelegate && e.Event != null ? NewDelegateMethodId(e)
+                : Invocable(_methodId, e.ParametersToDiscard);
+
             return SyntaxFactory.ExpressionStatement(
                 SyntaxFactory.AssignmentExpression(assignmentExpressionKind,
                     handledFieldMember,
                     invocableRight)
             );
+        }
+
+        private ExpressionSyntax NewDelegateMethodId((SyntaxToken EventContainerName, SyntaxToken EventSymbolName, IEventSymbol Event, int ParametersToDiscard) e)
+        {
+            return (ExpressionSyntax)_csSyntaxGenerator.ObjectCreationExpression(e.Event.Type, _methodId);
+        }
+
+        public IEnumerable<MethodDeclarationSyntax> CreateDelegatingMethodsRequiredByInitializeComponent()
+        {
+            return HandledPropertyEventCSharpIds.Where(e => e.ParametersToDiscard > 0 && e.Event?.Type.GetDelegateInvokeMethod() != null)
+                .Select(e => {
+                    var invokeMethod = (MethodDeclarationSyntax)_csSyntaxGenerator.MethodDeclaration(e.Event.Type.GetDelegateInvokeMethod());
+                    return DelegatingMethod(invokeMethod);
+                });
+        }
+
+        /// <remarks>
+        /// If such an overload already exists in the source, this will duplicate it. It seems pretty unlikely though, and probably not worth the effort of renaming.
+        /// </remarks>
+        private MethodDeclarationSyntax DelegatingMethod(MethodDeclarationSyntax invokeMethod)
+        {
+            var body = SyntaxFactory.ArrowExpressionClause(SyntaxFactory.InvocationExpression(_methodId));
+            return invokeMethod.WithIdentifier(_methodId.Identifier)
+                .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PrivateKeyword)))
+                .WithBody(null).WithExpressionBody(body).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken));
         }
 
         private static ExpressionSyntax MemberAccess(IdentifierNameSyntax eventSource, (SyntaxToken EventContainerName, SyntaxToken EventSymbolName, IEventSymbol Event, int ParametersToDiscard) e)
