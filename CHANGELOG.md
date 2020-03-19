@@ -12,7 +12,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 * Avoid extra newlines in doc comments [#334](https://github.com/icsharpcode/CodeConverter/pull/334)
 * Avoid duplicate generated constructors [#543](https://github.com/icsharpcode/CodeConverter/issues/543)
-* Comparisons of value/generic types to Nothing now convert to the correct corresponding C# operator
+* Comparisons of value/generic types to Nothing now convert to the correct corresponding C# 8 operator
+* Resources are now correctly namespaced after conversion [#540](https://github.com/icsharpcode/CodeConverter/issues/540)
+* LangVersion is now set to "Latest" in csproj
 
 ### C# -> VB
 

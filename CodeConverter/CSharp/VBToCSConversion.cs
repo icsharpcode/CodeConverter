@@ -73,6 +73,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 xml = new Regex(@"(<ItemGroup>)(\s*)").Replace(xml, "$1$2<Reference Include=\"Microsoft.VisualBasic\" />$2", 1);
             }
 
+            if (!Regex.IsMatch(xml, @"<\s*LangVersion\s*>")) {
+                xml = new Regex(@"(\s*)(</\s*PropertyGroup\s*>)").Replace(xml, $"$1  <LangVersion>{_vbToCsProjectContentsConverter.LanguageVersion}</LangVersion>$1$2", 1);
+            }
+
             // TODO Find API to, or parse project file sections to remove "<DefineDebug>true</DefineDebug>" + "<DefineTrace>true</DefineTrace>"
             // Then add them to the define constants in the same section, or create one if necessary.
 

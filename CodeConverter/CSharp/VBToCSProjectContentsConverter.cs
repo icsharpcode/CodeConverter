@@ -6,7 +6,7 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
-using LanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
+using LangVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 using System;
 using System.Xml.Linq;
 using System.IO;
@@ -46,7 +46,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             Project = await project.WithRenamedMergedMyNamespace(_cancellationToken);
         }
 
-        string IProjectContentsConverter.LanguageVersion { get { return LanguageVersion.Default.ToDisplayString(); } }
+        public string LanguageVersion { get { return LangVersion.Latest.ToDisplayString(); } }
 
         public Project Project { get; private set; }
 

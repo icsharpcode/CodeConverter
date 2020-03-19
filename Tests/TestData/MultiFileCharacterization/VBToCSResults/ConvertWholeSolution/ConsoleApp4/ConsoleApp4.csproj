@@ -5,6 +5,7 @@
     <RootNamespace>ConsoleApp4</RootNamespace>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <DefaultItemExcludes>$(DefaultItemExcludes);$(ProjectDir)**\*.vb</DefaultItemExcludes>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
 </Project>
