@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [8.0.2] - 2020-03-19
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Avoid extra newlines in doc comments [#334](https://github.com/icsharpcode/CodeConverter/pull/334)
 * Avoid duplicate generated constructors [#543](https://github.com/icsharpcode/CodeConverter/issues/543)
 * Comparisons of value/generic types to Nothing now convert to the correct corresponding C# 8 operator
