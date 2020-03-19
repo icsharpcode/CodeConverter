@@ -159,6 +159,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return postAssignment.Insert(0, SyntaxFactory.ExpressionStatement(assignment));
         }
 
+        /// <remarks>
+        /// <see cref="CommonConversions.ConvertIdentifier"/> ensures we convert the property access to a field access
+        /// </remarks>
         private SyntaxList<StatementSyntax> GetPostAssignmentStatements(VBSyntax.AssignmentStatementSyntax node)
         {
             var potentialPropertySymbol = _semanticModel.GetSymbolInfo(node.Left).ExtractBestMatch();

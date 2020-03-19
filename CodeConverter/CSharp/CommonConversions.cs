@@ -264,7 +264,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     } else if (normalizedText.EndsWith("Event", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol eventFieldSymbol && eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
                         text = eventFieldSymbol.AssociatedSymbol.Name;
                     } else if (MustInlinePropertyWithEventsAccess(id.Parent, idSymbol)) {
-                        // For C# Winforms designer, we need to use direct field access (and inline any event handlers)
+                        // For C# Winforms designer, we need to use direct field access - see other usage of MustInlinePropertyWithEventsAccess
                         text = "_" + text;
                     }
                 }
@@ -297,6 +297,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return text;
         }
 
+        /// <remarks>
+        /// Co-ordinates inlining property events, see <see cref="MethodBodyExecutableStatementVisitor.GetPostAssignmentStatements"/>
+        /// </remarks>
         public static bool MustInlinePropertyWithEventsAccess(SyntaxNode anyNodePossiblyWithinMethod, ISymbol potentialPropertySymbol)
         {
             return InMethodCalledInitializeComponent(anyNodePossiblyWithinMethod) && potentialPropertySymbol is IPropertySymbol prop && prop.IsWithEvents;

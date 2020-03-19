@@ -26,7 +26,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var conversion = new TLanguageConversion {ConversionOptions = conversionOptions ?? new ConversionOptions() };
             var solutionFilePath = projectsToConvert.First().Solution.FilePath;
-            var sourceSolutionContents = File.ReadAllText(solutionFilePath);
+            var sourceSolutionContents = File.Exists(solutionFilePath) ? File.ReadAllText(solutionFilePath) : "";
             var projectReferenceReplacements = GetProjectReferenceReplacements(projectsToConvert, sourceSolutionContents);
             return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, progress ?? new Progress<ConversionProgress>(), cancellationToken, conversion);
         }
@@ -48,8 +48,9 @@ namespace ICSharpCode.CodeConverter.Shared
         public IAsyncEnumerable<ConversionResult> Convert()
         {
             var projectsToUpdateReferencesOnly = _projectsToConvert.First().Solution.Projects.Except(_projectsToConvert);
+            var solutionResult = string.IsNullOrWhiteSpace(_sourceSolutionContents) ? Enumerable.Empty<ConversionResult>() : ConvertSolutionFile().Yield();
             return ConvertProjects()
-                .Concat(UpdateProjectReferences(projectsToUpdateReferencesOnly).Concat(ConvertSolutionFile().Yield()).ToAsyncEnumerable());
+                .Concat(UpdateProjectReferences(projectsToUpdateReferencesOnly).Concat(solutionResult).ToAsyncEnumerable());
         }
 
         private IAsyncEnumerable<ConversionResult> ConvertProjects()

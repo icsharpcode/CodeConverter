@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -36,10 +37,10 @@ namespace WindowsAppVb
         private void InitializeComponent()
         {
             _Button1 = new Button();
-            _Button1.Click += Button1_Click;
-            _Button1.Click += CheckedChangedOrButtonClicked; // In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
+            _Button1.Click += new EventHandler(Button1_Click);
+            _Button1.Click += new EventHandler(CheckedChangedOrButtonClicked); // In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
             _CheckBox1 = new CheckBox();
-            _CheckBox1.CheckedChanged += CheckedChangedOrButtonClicked;
+            _CheckBox1.CheckedChanged += new EventHandler(CheckedChangedOrButtonClicked);
             SuspendLayout();
             // 
             // Button1

@@ -5,24 +5,30 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using ICSharpCode.CodeConverter.Util;
+using System.Diagnostics;
+using Microsoft.CodeAnalysis.Editing;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
     public class MethodWithHandles
     {
         private IdentifierNameSyntax _methodId;
-        public SyntaxToken MethodCSharpId { get; }
-        public List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName, int ParametersToDiscard)> HandledPropertyEventCSharpIds { get; }
-        public List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName, int ParametersToDiscard)> HandledClassEventCSharpIds { get; }
+        private readonly SyntaxGenerator _csSyntaxGenerator;
 
-        public MethodWithHandles(SyntaxToken methodCSharpId,
-            List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName, int ParametersToDiscard)> handledPropertyEventCSharpIds,
-            List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName, int ParametersToDiscard)> handledClassEventCSharpIds)
+        public SyntaxToken MethodCSharpId { get; }
+        public List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName, IEventSymbol Event, int ParametersToDiscard)> HandledPropertyEventCSharpIds { get; }
+        public List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName, IEventSymbol Event, int ParametersToDiscard)> HandledClassEventCSharpIds { get; }
+
+        public MethodWithHandles(SyntaxGenerator csSyntaxGenerator,
+            SyntaxToken methodCSharpId,
+            List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName, IEventSymbol Event, int ParametersToDiscard)> handledPropertyEventCSharpIds,
+            List<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName, IEventSymbol Event, int ParametersToDiscard)> handledClassEventCSharpIds)
         {
             MethodCSharpId = methodCSharpId;
             HandledPropertyEventCSharpIds = handledPropertyEventCSharpIds;
             HandledClassEventCSharpIds = handledClassEventCSharpIds;
             _methodId = SyntaxFactory.IdentifierName(MethodCSharpId);
+            _csSyntaxGenerator = csSyntaxGenerator;
         }
 
         public static IEnumerable<MemberDeclarationSyntax> GetDeclarationsForFieldBackedProperty(
@@ -95,29 +101,38 @@ namespace ICSharpCode.CodeConverter.CSharp
         public IEnumerable<StatementSyntax> GetPostInitializationStatements(string propertyIdentifier,
             IdentifierNameSyntax fieldIdSyntax)
         {
-            return CreateHandlesUpdater(propertyIdentifier, fieldIdSyntax, SyntaxKind.AddAssignmentExpression);
+            return CreateHandlesUpdater(propertyIdentifier, fieldIdSyntax, SyntaxKind.AddAssignmentExpression, true);
         }
 
         private IEnumerable<StatementSyntax> CreateHandlesUpdater(string propertyIdentifier,
-            IdentifierNameSyntax fieldIdSyntax, SyntaxKind assignmentExpressionKind)
+            IdentifierNameSyntax fieldIdSyntax, SyntaxKind assignmentExpressionKind, bool requiresNewDelegate = false)
         {
             return HandledPropertyEventCSharpIds
                 .Where(h => h.EventContainerName.Text == propertyIdentifier)
-                .Select(e => CreateHandlesUpdater(fieldIdSyntax, e, assignmentExpressionKind));
+                .Select(e => CreateHandlesUpdater(fieldIdSyntax, e, assignmentExpressionKind, requiresNewDelegate));
         }
 
+        /// <remarks>
+        /// <paramref name="requiresNewDelegate"/> must be set to true if this statement will be within InitializeComponent, otherwise C# Winforms designer won't be able to recognize it.
+        /// If a lambda has been generated to discard parameters, the C# Winforms designer will throw an exception when trying to load, but it will wprl at runtime, and it's better than silently losing events on regeneration.
+        /// Future improvement: Generate a private method with the correct parameters, called only by InitializeComponent
+        /// </remarks>
         private StatementSyntax CreateHandlesUpdater(IdentifierNameSyntax eventSource,
-            (SyntaxToken EventContainerName, SyntaxToken EventSymbolName, int ParametersToDiscard) e,
-            SyntaxKind assignmentExpressionKind)
+            (SyntaxToken EventContainerName, SyntaxToken EventSymbolName, IEventSymbol Event, int ParametersToDiscard) e,
+            SyntaxKind assignmentExpressionKind,
+            bool requiresNewDelegate)
         {
             var handledFieldMember = MemberAccess(eventSource, e);
+            var invocableRight = Invocable(_methodId, e.ParametersToDiscard);
+            if (requiresNewDelegate && e.Event != null) invocableRight = (ExpressionSyntax)_csSyntaxGenerator.ObjectCreationExpression(e.Event.Type, invocableRight);
             return SyntaxFactory.ExpressionStatement(
                 SyntaxFactory.AssignmentExpression(assignmentExpressionKind,
                     handledFieldMember,
-                    Invocable(_methodId, e.ParametersToDiscard)));
+                    invocableRight)
+            );
         }
 
-        private static ExpressionSyntax MemberAccess(IdentifierNameSyntax eventSource, (SyntaxToken EventContainerName, SyntaxToken EventSymbolName, int ParametersToDiscard) e)
+        private static ExpressionSyntax MemberAccess(IdentifierNameSyntax eventSource, (SyntaxToken EventContainerName, SyntaxToken EventSymbolName, IEventSymbol Event, int ParametersToDiscard) e)
         {
             return SyntaxFactory.MemberAccessExpression(
                             SyntaxKind.SimpleMemberAccessExpression,
