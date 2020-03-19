@@ -53,11 +53,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public IEnumerable<(string, string)> GetProjectFileReplacementRegexes()
         {
+            string rootNamespaceDot = _vbToCsProjectContentsConverter.RootNamespace;
+            if (!string.IsNullOrEmpty(rootNamespaceDot)) rootNamespaceDot += ".";
+
             return new[] {
                 ("\\\\Microsoft\\.VisualBasic\\.targets", "\\Microsoft.CSharp.targets"),
                 ("\\.vb\"", ".cs\""),
                 ("\\.vb<", ".cs<"),
-                ("<\\s*Generator\\s*>\\s*VbMyResourcesResXFileCodeGenerator\\s*</\\s*Generator\\s*>", "<Generator>ResXFileCodeGenerator</Generator>")
+                ("<\\s*Generator\\s*>\\s*VbMyResourcesResXFileCodeGenerator\\s*</\\s*Generator\\s*>", "<Generator>ResXFileCodeGenerator</Generator>"),
+                ("(<\\s*CustomToolNamespace\\s*>)(.*</\\s*CustomToolNamespace\\s*>)", $"$1{rootNamespaceDot}$2"), // <CustomToolNamespace>My.Resources</CustomToolNamespace>
             };
         }
 
@@ -66,7 +70,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             xml = ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(xml, "cs", "vb");
 
             if (!Regex.IsMatch(xml, @"<Reference\s+Include=""Microsoft.VisualBasic""\s*/>")) {
-                xml = Regex.Replace(xml, @"(<Reference\s+Include=""System""\s*/>)", "<Reference Include=\"Microsoft.VisualBasic\" />\r\n    $1");
+                xml = new Regex(@"(<ItemGroup>)(\s*)").Replace(xml, "$1$2<Reference Include=\"Microsoft.VisualBasic\" />$2", 1);
             }
 
             // TODO Find API to, or parse project file sections to remove "<DefineDebug>true</DefineDebug>" + "<DefineTrace>true</DefineTrace>"

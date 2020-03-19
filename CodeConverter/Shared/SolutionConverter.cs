@@ -54,14 +54,12 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private IAsyncEnumerable<ConversionResult> ConvertProjects()
         {
-            var projectFileReplacementRegexes = _languageConversion.GetProjectFileReplacementRegexes().Concat(_languageConversion.GetProjectTypeGuidMappings())
-                .Select(m => (m.Item1, m.Item2, false));
-            return _projectsToConvert.ToAsyncEnumerable().SelectMany(project => ConvertProject(projectFileReplacementRegexes, project));
+            return _projectsToConvert.ToAsyncEnumerable().SelectMany(project => ConvertProject(project));
         }
 
-        private IAsyncEnumerable<ConversionResult> ConvertProject(IEnumerable<(string Find, string Replace, bool FirstOnly)> projectFileReplacementRegexes, Project project)
+        private IAsyncEnumerable<ConversionResult> ConvertProject(Project project)
         {
-            var replacements = _projectReferenceReplacements.Concat(projectFileReplacementRegexes).ToArray();
+            var replacements = _projectReferenceReplacements.ToArray();
             _progress.Report(new ConversionProgress($"Converting {project.Name}..."));
             return ProjectConversion.ConvertProject(project, _languageConversion, _progress, _cancellationToken, replacements);
         }

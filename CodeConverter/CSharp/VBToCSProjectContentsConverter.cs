@@ -8,6 +8,9 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
 using LanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 using System;
+using System.Xml.Linq;
+using System.IO;
+using System.Linq;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -52,11 +55,27 @@ namespace ICSharpCode.CodeConverter.CSharp
             return await VisualBasicConverter.ConvertCompilationTree(document, _csharpViewOfVbSymbols, _csharpReferenceProject, _cancellationToken);
         }
 
-        public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)>
-            GetConvertedProject(WipFileConversion<SyntaxNode>[] firstPassResults)
+        public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProject(WipFileConversion<SyntaxNode>[] firstPassResults)
         {
             var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults);
             return (await project.RenameMergedNamespaces(_cancellationToken), docIds);
+        }
+
+        public IEnumerable<ConversionResult> GetConversionResults(ConversionResult result)
+        {
+            if (DesignerWithResx.TryCreate(result.SourcePathOrNull) is DesignerWithResx d) {
+                result.TargetPathOrNull = d.TargetDesignerPath;
+                if (d.SourceResxPath != d.TargetResxPath) {
+                    yield return new ConversionResult(RebaseResxPaths(d.SourceResxPath)) { SourcePathOrNull = d.SourceResxPath, TargetPathOrNull = d.TargetResxPath };
+                }
+            }
+            yield return result;
+        }
+
+        private static string RebaseResxPaths(string oldResxPath)
+        {
+            var original = File.ReadAllText(oldResxPath);
+            return original.Replace(@"<value>..\", "<value>");
         }
     }
 }

@@ -80,12 +80,22 @@ namespace ICSharpCode.CodeConverter.Shared
             progress = progress ?? new Progress<ConversionProgress>();
             using var roslynEntryPoint = await RoslynEntryPoint(progress);
 
-            var sourceFilePathsWithoutExtension = project.Documents.Select(f => f.FilePath).ToImmutableHashSet();
+            var sourceFilePaths = project.Documents.SelectMany(f => GetSourcePaths(f)).ToImmutableHashSet();
             var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(project, progress, cancellationToken);
             project = projectContentsConverter.Project;
             var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress, cancellationToken);
-            var results = WithProjectFile(projectContentsConverter, languageConversion, sourceFilePathsWithoutExtension, convertProjectContents, replacements);
+
+
+            var results = WithProjectFile(projectContentsConverter, languageConversion, sourceFilePaths, convertProjectContents, replacements);
             await foreach (var result in results) yield return result;
+        }
+
+        private static IEnumerable<string> GetSourcePaths(Document f)
+        {
+            if (DesignerWithResx.TryCreate(f.FilePath) is DesignerWithResx d && d.SourceResxPath != d.TargetResxPath) {
+                yield return d.SourceResxPath;
+            }
+            yield return f.FilePath;
         }
 
         /// <remarks>Perf: Keep lazy so that we don't keep all files in memory at once</remarks>
@@ -94,16 +104,27 @@ namespace ICSharpCode.CodeConverter.Shared
             var project = projectContentsConverter.Project;
             var projectDir = project.GetDirectoryPath();
             var addedTargetFiles = new List<string>();
+            var sourceToTargetMap = new List<(string, string)>();
+            var projectDirSlash = projectDir + Path.DirectorySeparatorChar;
 
             await foreach (var conversionResult in convertProjectContents) {
                 yield return conversionResult;
+
+                var sourceRelative = Path.GetFullPath(conversionResult.SourcePathOrNull).Replace(projectDirSlash, "");
+                var targetRelative = Path.GetFullPath(conversionResult.TargetPathOrNull).Replace(projectDirSlash, "");
+                sourceToTargetMap.Add((sourceRelative, targetRelative));
+
                 if (!originalSourcePaths.Contains(conversionResult.SourcePathOrNull)) {
-                    var relativePath = Path.GetFullPath(conversionResult.TargetPathOrNull).Replace(projectDir + Path.DirectorySeparatorChar, "");
+                    var relativePath = Path.GetFullPath(conversionResult.TargetPathOrNull).Replace(projectDirSlash, "");
                     addedTargetFiles.Add(relativePath);
                 }
             }
 
-            var replacementSpecs = replacements.Concat(new[] {
+            var sourceTargetReplacements = sourceToTargetMap.Select(m => (Regex.Escape(m.Item1), m.Item2));
+            var languageSpecificReplacements = sourceTargetReplacements.Concat(languageConversion.GetProjectFileReplacementRegexes()).Concat(languageConversion.GetProjectTypeGuidMappings())
+                .Select(m => (m.Item1, m.Item2, false));
+
+            var replacementSpecs = languageSpecificReplacements.Concat(replacements).Concat(new[] {
                     AddCompiledItemsRegexFromRelativePaths(addedTargetFiles),
                     ChangeRootNamespaceRegex(projectContentsConverter.RootNamespace),
                     ChangeLanguageVersionRegex(projectContentsConverter.LanguageVersion)
@@ -171,9 +192,17 @@ namespace ICSharpCode.CodeConverter.Shared
 
             phaseProgress = StartPhase(progress, "Phase 2 of 2:");
             var secondPassResults = proj1.GetDocuments(docs1).ParallelSelectAwait(d => SecondPass(d, phaseProgress), Env.MaxDop, _cancellationToken);
-            await foreach (var result in secondPassResults) {
-                yield return new ConversionResult(result.Wip?.ToFullString()) { SourcePathOrNull = result.Path, Exceptions = result.Errors.ToList() };
-            };
+            await foreach (var result in secondPassResults.SelectMany(CreateConversionResults)) {
+                yield return result;
+            }
+        }
+
+        private async IAsyncEnumerable<ConversionResult> CreateConversionResults(WipFileConversion<SyntaxNode> r)
+        {
+            var initialResult = new ConversionResult(r.Wip?.ToFullString()) { SourcePathOrNull = r.Path, Exceptions = r.Errors.ToList() };
+            foreach (var result in _projectContentsConverter.GetConversionResults(initialResult)) {
+                yield return result;
+            }
         }
 
         private static Progress<string> StartPhase(IProgress<ConversionProgress> progress, string phaseTitle)
