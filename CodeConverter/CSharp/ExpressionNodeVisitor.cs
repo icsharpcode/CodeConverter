@@ -263,7 +263,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var convertedType = _semanticModel.GetTypeInfo(node).ConvertedType;
             if (node.Token.Value == null) {
                 if (convertedType == null) {
-                    return CommonConversions.Literal(null); //In future, we'll be able to just say "default" instead of guessing at "null" in this case
+                    return SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
                 }
 
                 return !convertedType.IsReferenceType ? SyntaxFactory.DefaultExpression(CommonConversions.GetTypeSyntax(convertedType)) : CommonConversions.Literal(null);

@@ -49,7 +49,7 @@ public partial class Class1
 {
     public void Foo()
     {
-        Bar(null);
+        Bar(default);
     }
 
     private SomeClass Bar(SomeClass x)
@@ -115,7 +115,7 @@ public partial class OutParameterWithMissingType
 {
     private static void AddToDict(Dictionary<int, MissingType> pDict, int pKey)
     {
-        MissingType anInstance = null;
+        MissingType anInstance = default;
         if (!pDict.TryGetValue(pKey, out anInstance))
         {
             anInstance = new MissingType();
@@ -128,7 +128,7 @@ public partial class OutParameterWithNonCompilingType
 {
     private static void AddToDict(Dictionary<OutParameterWithMissingType, MissingType> pDict, OutParameterWithMissingType pKey)
     {
-        MissingType anInstance = null;
+        MissingType anInstance = default;
         if (!pDict.TryGetValue(pKey, out anInstance))
         {
             anInstance = new MissingType();
