@@ -28,7 +28,7 @@ namespace ICSharpCode.CodeConverter
 
         public ConversionResult(string convertedCode = null)
         {
-            Success = !string.IsNullOrWhiteSpace(convertedCode);
+            Success = convertedCode != null;
             ConvertedCode = convertedCode;
         }
 

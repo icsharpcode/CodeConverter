@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * LangVersion is now set to "Latest" in csproj [e87fef11](https://github.com/icsharpcode/CodeConverter/commit/e87fef11338b8d136b9f0e2d97fa3e7f6b7d86a6)
 * Improve Winforms designer event experience after conversion [#547](https://github.com/icsharpcode/CodeConverter/issues/547)
 * Don't output solution conversion for in-memory solution file
+* Empty files are no longer skipped [#423](https://github.com/icsharpcode/CodeConverter/issues/423)
 
 
 

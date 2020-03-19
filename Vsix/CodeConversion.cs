@@ -114,8 +114,6 @@ namespace CodeConverter.VsExtension
                     errors.Add(exceptionsAsString);
                 }
 
-                if (string.IsNullOrWhiteSpace(convertedFile.ConvertedCode)) continue;
-
                 files.Add(convertedFile.TargetPathOrNull);
 
                 if (convertedFile.ConvertedCode.Length > longestFileLength) {
