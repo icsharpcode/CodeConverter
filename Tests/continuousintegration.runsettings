@@ -16,7 +16,7 @@
             </ModulePaths>
             <Functions>
               <Exclude>
-                <Function>^Fabrikam\.UnitTest\..*</Function>
+                <Function>^ICSharpCode\.CodeConverter\.Util\.FromRoslyn\..*</Function>
                 <Function>^std::.*</Function>
                 <Function>^ATL::.*</Function>
                 <Function>.*::__GetTestMethodInfo.*</Function>
