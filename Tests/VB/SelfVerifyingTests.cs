@@ -5,8 +5,8 @@ using Xunit;
 using System.IO;
 using System.Threading.Tasks;
 using CodeConverter.Tests.TestRunners;
-using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.VB;
+using ICSharpCode.CodeConverter.Shared;
 
 namespace CodeConverter.Tests.VB
 {

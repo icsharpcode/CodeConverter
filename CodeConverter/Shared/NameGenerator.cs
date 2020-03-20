@@ -3,13 +3,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
-namespace ICSharpCode.CodeConverter.Util
+namespace ICSharpCode.CodeConverter.Shared
 {
     internal static class NameGenerator
     {
@@ -154,16 +155,16 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static string GenerateSafeCSharpName(string name)
         {
-            var token = Microsoft.CodeAnalysis.CSharp.SyntaxFactory.ParseToken(name);
-            if (!token.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.IdentifierToken))
+            var token = SyntaxFactory.ParseToken(name);
+            if (!token.IsKind(SyntaxKind.IdentifierToken))
                 return "@" + name;
             return name;
         }
 
         public static string GenerateSafeVBName(string name)
         {
-            var token = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.ParseToken(name);
-            if (!token.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IdentifierToken))
+            var token = VBasic.SyntaxFactory.ParseToken(name);
+            if (!token.IsKind(VBasic.SyntaxKind.IdentifierToken))
                 return "[" + name + "]";
             return name;
         }
@@ -185,9 +186,8 @@ namespace ICSharpCode.CodeConverter.Util
         private static string GenerateUniqueVariableNameInScope(SemanticModel semanticModel, HashSet<string> generatedNames,
             string variableNameBase, List<int> scopeStarts)
         {
-            string uniqueName = NameGenerator.GenerateUniqueName(variableNameBase, string.Empty,
-                n =>
-                {
+            string uniqueName = GenerateUniqueName(variableNameBase, string.Empty,
+                n => {
                     var matchingSymbols =
                         scopeStarts.SelectMany(scopeStart => semanticModel.LookupSymbols(scopeStart, name: n));
                     return !generatedNames.Contains(n) && !matchingSymbols.Any();
@@ -206,7 +206,7 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return node.GetAncestorOrThis<StatementSyntax>()?.DescendantNodesAndSelf()
                 .OfType<StatementSyntax>().Select(n => n.SpanStart).ToList()
-                ?? new List<int>{node.SpanStart};
+                ?? new List<int> { node.SpanStart };
         }
     }
 }

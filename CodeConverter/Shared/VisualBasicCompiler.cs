@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic;
 
-namespace ICSharpCode.CodeConverter.Util
+namespace ICSharpCode.CodeConverter.Shared
 {
-    public class VisualBasicCompiler : ICompiler
+    internal class VisualBasicCompiler : ICompiler
     {
         private static readonly Lazy<VisualBasicCompilation> LazyVisualBasicCompilation = new Lazy<VisualBasicCompilation>(CreateVisualBasicCompilation);
         private readonly string _rootNamespace;
@@ -29,14 +30,14 @@ namespace ICSharpCode.CodeConverter.Util
 
         public Compilation CreateCompilationFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
-            VisualBasicCompilation withReferences = CreateVisualBasicCompilation(references, _rootNamespace);
+            var withReferences = CreateVisualBasicCompilation(references, _rootNamespace);
             return withReferences.AddSyntaxTrees(tree);
         }
 
         public static VisualBasicCompilation CreateVisualBasicCompilation(IEnumerable<MetadataReference> references, string rootNamespace = null)
         {
             var visualBasicCompilation = LazyVisualBasicCompilation.Value;
-            VisualBasicCompilation withReferences = visualBasicCompilation
+            var withReferences = visualBasicCompilation
                 .WithOptions(visualBasicCompilation.Options.WithRootNamespace(rootNamespace))
                 .WithReferences(visualBasicCompilation.References.Concat(references).Distinct());
             return withReferences;
@@ -44,7 +45,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         private static VisualBasicCompilation CreateVisualBasicCompilation()
         {
-            VisualBasicCompilationOptions compilationOptions = CreateCompilationOptions();
+            var compilationOptions = CreateCompilationOptions();
             return VisualBasicCompilation.Create("Conversion")
                 .WithOptions(compilationOptions);
         }

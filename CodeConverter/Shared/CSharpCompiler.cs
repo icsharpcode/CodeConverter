@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace ICSharpCode.CodeConverter.Util
+namespace ICSharpCode.CodeConverter.Shared
 {
-    public class CSharpCompiler : ICompiler
+    internal class CSharpCompiler : ICompiler
     {
         private static readonly Lazy<CSharpCompilation> LazyCSharpCompilation = new Lazy<CSharpCompilation>(CreateCSharpCompilation);
 
