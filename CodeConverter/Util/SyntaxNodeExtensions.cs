@@ -23,7 +23,6 @@ namespace ICSharpCode.CodeConverter.Util
 {
     internal static class SyntaxNodeExtensions
     {
-
         public static IEnumerable<SyntaxNode> GetAncestors(this SyntaxNode node)
         {
             var current = node.Parent;
@@ -551,64 +550,6 @@ namespace ICSharpCode.CodeConverter.Util
             }
 
             return default(SyntaxTokenList);
-        }
-
-        public static SyntaxNode WithModifiers(this SyntaxNode member, SyntaxTokenList modifiers)
-        {
-            if (member != null) {
-                switch (CSharpExtensions.Kind(member)) {
-                    case CSSyntaxKind.EnumDeclaration:
-                        return ((EnumDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.ClassDeclaration:
-                    case CSSyntaxKind.InterfaceDeclaration:
-                    case CSSyntaxKind.StructDeclaration:
-                        return ((TypeDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.DelegateDeclaration:
-                        return ((DelegateDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.FieldDeclaration:
-                        return ((FieldDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.EventFieldDeclaration:
-                        return ((EventFieldDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.ConstructorDeclaration:
-                        return ((ConstructorDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.DestructorDeclaration:
-                        return ((DestructorDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.PropertyDeclaration:
-                        return ((PropertyDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.EventDeclaration:
-                        return ((EventDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.IndexerDeclaration:
-                        return ((IndexerDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.OperatorDeclaration:
-                        return ((OperatorDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.ConversionOperatorDeclaration:
-                        return ((ConversionOperatorDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.MethodDeclaration:
-                        return ((MethodDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.GetAccessorDeclaration:
-                    case CSSyntaxKind.SetAccessorDeclaration:
-                    case CSSyntaxKind.AddAccessorDeclaration:
-                    case CSSyntaxKind.RemoveAccessorDeclaration:
-                        return ((AccessorDeclarationSyntax)member).WithModifiers(modifiers);
-                }
-            }
-
-            return null;
-        }
-
-        public static TypeDeclarationSyntax WithModifiers(
-            this TypeDeclarationSyntax node, SyntaxTokenList modifiers)
-        {
-            switch (node.Kind()) {
-                case CSSyntaxKind.ClassDeclaration:
-                    return ((ClassDeclarationSyntax)node).WithModifiers(modifiers);
-                case CSSyntaxKind.InterfaceDeclaration:
-                    return ((InterfaceDeclarationSyntax)node).WithModifiers(modifiers);
-                case CSSyntaxKind.StructDeclaration:
-                    return ((StructDeclarationSyntax)node).WithModifiers(modifiers);
-            }
-
-            throw new InvalidOperationException();
         }
 
         public static SyntaxTree WithAnnotatedNode(this SyntaxNode root, SyntaxNode selectedNode, string annotationKind, string annotationData = "")
