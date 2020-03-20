@@ -67,8 +67,4 @@
       </DataCollector>
     </DataCollectors>
   </DataCollectionRunSettings>
-  <RunConfiguration>
-    <BatchSize>1000</BatchSize>
-    <ResultsDirectory>d:\a\_temp\TestResults</ResultsDirectory>
-  </RunConfiguration>
 </RunSettings>
