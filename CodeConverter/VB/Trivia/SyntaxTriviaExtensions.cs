@@ -8,17 +8,6 @@ namespace CSharpToVBCodeConverter.Util
 {
     internal static class SyntaxTriviaExtensions
     {
-        public static bool ContainsEOLTrivia(this SyntaxTriviaList TriviaList)
-        {
-            foreach (SyntaxTrivia t in TriviaList)
-            {
-                if (t.IsEndOfLine())
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
 
         public static bool IsCommentOrDirectiveTrivia(this SyntaxTrivia t)
         {
@@ -45,12 +34,6 @@ namespace CSharpToVBCodeConverter.Util
         public static bool IsSingleLineComment(this SyntaxTrivia trivia)
         {
             return trivia.IsKind(CS.SyntaxKind.SingleLineCommentTrivia) || trivia.IsKind(CS.SyntaxKind.SingleLineDocumentationCommentTrivia) || trivia.IsKind(VB.SyntaxKind.CommentTrivia);
-        }
-
-        public static SyntaxTriviaList ToSyntaxTriviaList(this IEnumerable<SyntaxTrivia> l)
-        {
-            var NewSyntaxTriviaList = new SyntaxTriviaList();
-            return NewSyntaxTriviaList.AddRange(l);
         }
     }
 }

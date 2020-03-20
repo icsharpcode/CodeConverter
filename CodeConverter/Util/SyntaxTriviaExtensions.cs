@@ -10,32 +10,8 @@ using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.Util
 {
-#if NR6
-    public
-#endif
     internal static class SyntaxTriviaExtensions
     {
-        /// <summary>
-        /// Look inside a trivia list for a skipped token that contains the given position.
-        /// </summary>
-        private static readonly Func<SyntaxTriviaList, int, SyntaxToken> s_findSkippedTokenBackward =
-            (l, p) => FindTokenHelper.FindSkippedTokenBackward(GetSkippedTokens(l), p);
-
-        /// <summary>
-        /// Look inside a trivia list for a skipped token that contains the given position.
-        /// </summary>
-        public static readonly Func<SyntaxTriviaList, int, SyntaxToken> s_findSkippedTokenForward =
-            (l, p) => FindTokenHelper.FindSkippedTokenForward(GetSkippedTokens(l), p);
-
-        /// <summary>
-        /// return only skipped tokens
-        /// </summary>
-        private static IEnumerable<SyntaxToken> GetSkippedTokens(SyntaxTriviaList list)
-        {
-            return list.Where(trivia => trivia.RawKind == (int)CS.SyntaxKind.SkippedTokensTrivia)
-                .SelectMany(t => ((CSSyntax.SkippedTokensTriviaSyntax)t.GetStructure()).Tokens);
-        }
-
         private static readonly Dictionary<VBasic.SyntaxKind, CS.SyntaxKind> VBToCSSyntaxKinds = new Dictionary<VBasic.SyntaxKind, CS.SyntaxKind> {
             {VBasic.SyntaxKind.SkippedTokensTrivia, CS.SyntaxKind.SkippedTokensTrivia},
             {VBasic.SyntaxKind.DisabledTextTrivia, CS.SyntaxKind.DisabledTextTrivia},
@@ -63,113 +39,6 @@ namespace ICSharpCode.CodeConverter.Util
         public static CS.SyntaxKind? GetCSKind(this SyntaxTrivia t)
         {
             return VBToCSSyntaxKinds.TryGetValue(VBasic.VisualBasicExtensions.Kind(t), out var csKind) ? csKind : (CS.SyntaxKind?)null;
-        }
-        public static VBasic.SyntaxKind? GetVBKind(this SyntaxTrivia t)
-        {
-            return CSToVBSyntaxKinds.TryGetValue(CS.CSharpExtensions.Kind(t), out var vbKind) ? vbKind : (VBasic.SyntaxKind?) null;
-        }
-
-        public static int Width(this SyntaxTrivia trivia)
-        {
-            return trivia.Span.Length;
-        }
-
-        public static int FullWidth(this SyntaxTrivia trivia)
-        {
-            return trivia.FullSpan.Length;
-        }
-
-        public static bool IsElastic(this SyntaxTrivia trivia)
-        {
-            return trivia.HasAnnotation(SyntaxAnnotation.ElasticAnnotation);
-        }
-
-        public static bool MatchesKind(this SyntaxTrivia trivia, CS.SyntaxKind kind)
-        {
-            return CS.CSharpExtensions.Kind(trivia) == kind;
-        }
-
-        public static bool MatchesKind(this SyntaxTrivia trivia, CS.SyntaxKind kind1, CS.SyntaxKind kind2)
-        {
-            var triviaKind = CS.CSharpExtensions.Kind(trivia);
-            return triviaKind == kind1 || triviaKind == kind2;
-        }
-
-        public static bool MatchesKind(this SyntaxTrivia trivia, params CS.SyntaxKind[] kinds)
-        {
-            return kinds.Contains(CS.CSharpExtensions.Kind(trivia));
-        }
-
-        public static bool MatchesKind(this SyntaxTrivia trivia, VBasic.SyntaxKind kind)
-        {
-            return VBasic.VisualBasicExtensions.Kind(trivia) == kind;
-        }
-
-        public static bool MatchesKind(this SyntaxTrivia trivia, VBasic.SyntaxKind kind1, VBasic.SyntaxKind kind2)
-        {
-            var triviaKind = VBasic.VisualBasicExtensions.Kind(trivia);
-            return triviaKind == kind1 || triviaKind == kind2;
-        }
-
-        public static bool MatchesKind(this SyntaxTrivia trivia, params VBasic.SyntaxKind[] kinds)
-        {
-            return kinds.Contains(VBasic.VisualBasicExtensions.Kind(trivia));
-        }
-
-        public static bool IsRegularComment(this SyntaxTrivia trivia)
-        {
-            return trivia.IsSingleLineComment() || trivia.IsMultiLineComment();
-        }
-
-        public static bool IsRegularOrDocComment(this SyntaxTrivia trivia)
-        {
-            return trivia.IsSingleLineComment() || trivia.IsMultiLineComment() || trivia.IsDocComment();
-        }
-
-        public static bool IsSingleLineComment(this SyntaxTrivia trivia)
-        {
-            return CS.CSharpExtensions.Kind(trivia) == CS.SyntaxKind.SingleLineCommentTrivia;
-        }
-
-        public static bool IsMultiLineComment(this SyntaxTrivia trivia)
-        {
-            return CS.CSharpExtensions.Kind(trivia) == CS.SyntaxKind.MultiLineCommentTrivia;
-        }
-
-        public static bool IsCompleteMultiLineComment(this SyntaxTrivia trivia)
-        {
-            if (CS.CSharpExtensions.Kind(trivia) != CS.SyntaxKind.MultiLineCommentTrivia) {
-                return false;
-            }
-
-            var text = trivia.ToFullString();
-            return text.Length >= 4
-                && text[text.Length - 1] == '/'
-                && text[text.Length - 2] == '*';
-        }
-
-        public static bool IsDocComment(this SyntaxTrivia trivia)
-        {
-            return trivia.IsSingleLineDocComment() || trivia.IsMultiLineDocComment();
-        }
-
-        public static bool IsSingleLineDocComment(this SyntaxTrivia trivia)
-        {
-            return CS.CSharpExtensions.Kind(trivia) == CS.SyntaxKind.SingleLineDocumentationCommentTrivia;
-        }
-
-        public static bool IsMultiLineDocComment(this SyntaxTrivia trivia)
-        {
-            return CS.CSharpExtensions.Kind(trivia) == CS.SyntaxKind.MultiLineDocumentationCommentTrivia;
-        }
-
-        public static SyntaxTrivia GetEndOfLine(string lang)
-        {
-            if (lang == LanguageNames.CSharp) {
-                return CS.SyntaxFactory.ElasticCarriageReturnLineFeed;
-            } else {
-                return VBasic.SyntaxFactory.ElasticCarriageReturnLineFeed;
-            }
         }
 
         /// <remarks>Good candidate for unit testing to catch newline issues hidden by the test harness</remarks>
@@ -257,25 +126,6 @@ namespace ICSharpCode.CodeConverter.Util
             throw new NotImplementedException($"Comment cannot be parsed:\r\n'{commentText}'");
         }
 
-        public static string AsString(this IEnumerable<SyntaxTrivia> trivia)
-        {
-            //Contract.ThrowIfNull(trivia);
-
-            if (trivia.Any()) {
-                var sb = new StringBuilder();
-                trivia.Select(t => t.ToFullString()).Do((s) => sb.Append(s));
-                return sb.ToString();
-            } else {
-                return String.Empty;
-            }
-        }
-
-        public static int GetFullWidth(this IEnumerable<SyntaxTrivia> trivia)
-        {
-            //Contract.ThrowIfNull(trivia);
-            return trivia.Sum(t => t.FullWidth());
-        }
-
         public static SyntaxTriviaList AsTrivia(this string s)
         {
             return CS.SyntaxFactory.ParseLeadingTrivia(s ?? String.Empty);
@@ -306,17 +156,5 @@ namespace ICSharpCode.CodeConverter.Util
 
             return syntaxTree.GetRoot(cancellationToken).FindTrivia(span.Start - 1, findInsideTrivia);
         }
-
-#if false
-        public static int Width(this SyntaxTrivia trivia)
-        {
-        return trivia.Span.Length;
-        }
-
-        public static int FullWidth(this SyntaxTrivia trivia)
-        {
-        return trivia.FullSpan.Length;
-        }
-#endif
     }
 }

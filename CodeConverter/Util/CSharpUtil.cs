@@ -169,25 +169,6 @@ namespace ICSharpCode.CodeConverter.Util
         }
 
         /// <summary>
-        /// Returns true, if the specified operator is a relational operator
-        /// </summary>
-        public static bool IsRelationalOperator(SyntaxKind op)
-        {
-            switch (op) {
-                case SyntaxKind.EqualsExpression:
-                case SyntaxKind.NotEqualsExpression:
-                case SyntaxKind.GreaterThanExpression:
-                case SyntaxKind.GreaterThanOrEqualExpression:
-                case SyntaxKind.LessThanExpression:
-                case SyntaxKind.LessThanOrEqualExpression:
-                case SyntaxKind.LogicalOrExpression:
-                case SyntaxKind.LogicalAndExpression:
-                    return true;
-            }
-            return false;
-        }
-
-        /// <summary>
         /// Get negation of the condition operator
         /// </summary>
         /// <returns>
@@ -202,24 +183,6 @@ namespace ICSharpCode.CodeConverter.Util
                     return SyntaxKind.LogicalOrExpression;
             }
             throw new ArgumentOutOfRangeException(nameof(op));
-        }
-
-        public static bool AreConditionsEqual(ExpressionSyntax cond1, ExpressionSyntax cond2)
-        {
-            if (cond1 == null || cond2 == null)
-                return false;
-            return cond1.SkipParens().IsEquivalentTo(cond2.SkipParens(), true);
-        }
-
-        public static ExpressionSyntax ExtractUnaryOperand(this ExpressionSyntax expr)
-        {
-            if (expr == null)
-                throw new ArgumentNullException(nameof(expr));
-            if (expr is PostfixUnaryExpressionSyntax)
-                return ((PostfixUnaryExpressionSyntax)expr).Operand;
-            if (expr is PrefixUnaryExpressionSyntax)
-                return ((PrefixUnaryExpressionSyntax)expr).Operand;
-            return null;
         }
 
         public static T WithBody<T>(this T method, BlockSyntax body) where T : BaseMethodDeclarationSyntax
