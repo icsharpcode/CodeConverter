@@ -54,6 +54,7 @@ steps:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
     codeCoverageEnabled: True
+    runSettingsFile: Tests/continuousintegration.runsettings
 
 - task: DotNetCoreCLI@2
   inputs:
