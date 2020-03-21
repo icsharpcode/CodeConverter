@@ -6,7 +6,6 @@ using System.Text;
 using CodeConverter.Tests.Compilation;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.Shared;
-using ICSharpCode.CodeConverter.Util;
 using Microsoft.VisualStudio.Threading;
 using Xunit;
 using Xunit.Sdk;

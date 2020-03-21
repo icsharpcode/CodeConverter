@@ -1,7 +1,8 @@
 ﻿using System;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 
-namespace ICSharpCode.CodeConverter.Util
+namespace ICSharpCode.CodeConverter.Shared
 {
 
     internal sealed class TriviaKinds

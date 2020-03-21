@@ -8,6 +8,7 @@ using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Linq;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Shared;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {

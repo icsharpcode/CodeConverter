@@ -6,9 +6,6 @@ using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Util
 {
-#if NR6
-    public
-#endif
     internal static class ISymbolExtensions
     {
         // A lot of symbols in DateAndTime do not exist in DateTime, eg. DateSerial(),
@@ -18,56 +15,10 @@ namespace ICSharpCode.CodeConverter.Util
 
         public const string ForcePartialTypesAssemblyName = "ProjectToBeConvertedWithPartialTypes";
 
-        public static bool IsDefinedInMetadata(this ISymbol symbol)
-        {
-            return symbol.Locations.Any(loc => loc.IsInMetadata);
-        }
 
         public static bool IsDefinedInSource(this ISymbol symbol)
         {
             return symbol.Locations.Any(loc => loc.IsInSource);
-        }
-
-        public static IEnumerable<SyntaxReference> GetDeclarations(this ISymbol symbol)
-        {
-            return symbol != null
-                ? symbol.DeclaringSyntaxReferences.AsEnumerable()
-                    : SpecializedCollections.EmptyEnumerable<SyntaxReference>();
-        }
-
-        public static ISymbol GetContainingMemberOrThis(this ISymbol symbol)
-        {
-            if (symbol == null)
-                return null;
-            switch (symbol.Kind) {
-                case SymbolKind.Assembly:
-                case SymbolKind.NetModule:
-                case SymbolKind.Namespace:
-                case SymbolKind.Preprocessing:
-                case SymbolKind.Alias:
-                case SymbolKind.ArrayType:
-                case SymbolKind.DynamicType:
-                case SymbolKind.ErrorType:
-                case SymbolKind.NamedType:
-                case SymbolKind.PointerType:
-                case SymbolKind.Label:
-                    throw new NotSupportedException();
-                case SymbolKind.Field:
-                case SymbolKind.Property:
-                case SymbolKind.Event:
-                    return symbol;
-                case SymbolKind.Method:
-                    if (symbol.IsAccessorMethod())
-                        return ((IMethodSymbol)symbol).AssociatedSymbol;
-                    return symbol;
-                case SymbolKind.Local:
-                case SymbolKind.Parameter:
-                case SymbolKind.TypeParameter:
-                case SymbolKind.RangeVariable:
-                    return GetContainingMemberOrThis(symbol.ContainingSymbol);
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
         }
 
         public static ISymbol ExtractBestMatch(this SymbolInfo info, Func<ISymbol, bool> isMatch = null)
@@ -111,11 +62,6 @@ namespace ICSharpCode.CodeConverter.Util
 
             cSharpDisplayString = null;
             return false;
-        }
-
-        private static bool ShouldConvertToDateTime(ITypeSymbol symbol, string fullName)
-        {
-            return TypesToConvertToDateTime.Contains(symbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
         }
 
         public static bool IsPartialMethodImplementation(this ISymbol declaredSymbol)

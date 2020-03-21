@@ -8,16 +8,8 @@ using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.Util
 {
-#if NR6
-    public
-#endif
     internal static class SyntaxExtensions
     {
-        /// <summary>
-        /// Look inside a trivia list for a skipped token that contains the given position.
-        /// </summary>
-        private static readonly Func<SyntaxTriviaList, int, SyntaxToken> s_findSkippedTokenBackward =
-            (l, p) => FindTokenHelper.FindSkippedTokenBackward(GetSkippedTokens(l), p);
 
         /// <summary>
         /// return only skipped tokens
@@ -109,10 +101,6 @@ namespace ICSharpCode.CodeConverter.Util
             }
 
             return null;
-        }
-        public static bool HasOperandOfUnconvertedType(this AssignmentStatementSyntax node, string operandType, SemanticModel semanticModel)
-        {
-            return new[] { node.Left, node.Right }.Any(e => ExpressionSyntaxExtensions.UnconvertedIsType(e, operandType, semanticModel));
         }
     }
 }

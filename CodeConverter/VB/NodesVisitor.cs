@@ -822,8 +822,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             if (node.IsKind(CS.SyntaxKind.DefaultLiteralExpression)) {
                 return VisualBasicSyntaxFactory.NothingExpression;
-                // This looks somehow hacky... is there a better way to check whether it's a verbatim string?
-            } else if (node.IsKind(CS.SyntaxKind.StringLiteralExpression) && node.Token.Text.StartsWith("@", StringComparison.Ordinal)) {
+            } else if (node.IsKind(CS.SyntaxKind.StringLiteralExpression) && CS.CSharpExtensions.IsVerbatimStringLiteral(node.Token)) {
                 return SyntaxFactory.StringLiteralExpression(
                     SyntaxFactory.StringLiteralToken(
                         node.Token.Text.Substring(1),

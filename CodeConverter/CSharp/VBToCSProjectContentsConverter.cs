@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
-using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;

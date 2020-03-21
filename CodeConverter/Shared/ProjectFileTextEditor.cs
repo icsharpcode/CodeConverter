@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace ICSharpCode.CodeConverter.Util
+namespace ICSharpCode.CodeConverter.Shared
 {
     internal static class ProjectFileTextEditor
     {
@@ -10,14 +10,11 @@ namespace ICSharpCode.CodeConverter.Util
         public static string WithUpdatedDefaultItemExcludes(string s, string extensionNotToExclude, string extensionToExclude)
         {
             string verbatimExcludeToRemove = Regex.Escape($@"$(ProjectDir)**\*.{extensionNotToExclude}");
-            Regex matchDefaultItemExcludes =
+            var matchDefaultItemExcludes =
                 new Regex($@"(<DefaultItemExcludes>.*){verbatimExcludeToRemove}(.*<\/DefaultItemExcludes>)");
-            if (matchDefaultItemExcludes.IsMatch(s))
-            {
+            if (matchDefaultItemExcludes.IsMatch(s)) {
                 s = matchDefaultItemExcludes.Replace(s, $@"$1$(ProjectDir)**\*.{extensionToExclude}$2", 1);
-            }
-            else
-            {
+            } else {
                 var firstPropertyGroupEnd = new Regex(@"(\s*</PropertyGroup>)");
                 s = firstPropertyGroupEnd.Replace(s,
                     "\r\n" + $@"    <DefaultItemExcludes>$(DefaultItemExcludes);$(ProjectDir)**\*.{extensionToExclude}</DefaultItemExcludes>$1", 1);

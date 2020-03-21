@@ -23,7 +23,6 @@ namespace ICSharpCode.CodeConverter.Util
 {
     internal static class SyntaxNodeExtensions
     {
-
         public static IEnumerable<SyntaxNode> GetAncestors(this SyntaxNode node)
         {
             var current = node.Parent;
@@ -222,18 +221,6 @@ namespace ICSharpCode.CodeConverter.Util
             return csharpKind == kind1 || csharpKind == kind2 || csharpKind == kind3 || csharpKind == kind4 || csharpKind == kind5;
         }
 
-        /// <summary>
-        /// Returns the list of using directives that affect <paramref name="node"/>. The list will be returned in
-        /// top down order.
-        /// </summary>
-        public static IEnumerable<UsingDirectiveSyntax> GetEnclosingUsingDirectives(this SyntaxNode node)
-        {
-            return node.GetAncestorOrThis<CompilationUnitSyntax>().Usings
-                .Concat(node.GetAncestorsOrThis<NamespaceDeclarationSyntax>()
-                    .Reverse()
-                    .SelectMany(n => n.Usings));
-        }
-
         public static bool IsInStaticCsContext(this SyntaxNode node)
         {
             // this/base calls are always static.
@@ -269,81 +256,6 @@ namespace ICSharpCode.CodeConverter.Util
 
             // any other location is considered static
             return true;
-        }
-
-        /// <summary>
-        /// Returns all of the trivia to the left of this token up to the previous token (concatenates
-        /// the previous token's trailing trivia and this token's leading trivia).
-        /// </summary>
-        public static IEnumerable<SyntaxTrivia> GetAllPrecedingTriviaToPreviousToken(this SyntaxToken token)
-        {
-            var prevToken = token.GetPreviousToken(includeSkipped: true);
-            if (CSharpExtensions.Kind(prevToken) == CSSyntaxKind.None) {
-                return token.LeadingTrivia;
-            }
-
-            return prevToken.TrailingTrivia.Concat(token.LeadingTrivia);
-        }
-
-        public static bool IsBreakableConstruct(this SyntaxNode node)
-        {
-            switch (CSharpExtensions.Kind(node)) {
-                case CSSyntaxKind.DoStatement:
-                case CSSyntaxKind.WhileStatement:
-                case CSSyntaxKind.SwitchStatement:
-                case CSSyntaxKind.ForStatement:
-                case CSSyntaxKind.ForEachStatement:
-                    return true;
-            }
-
-            return false;
-        }
-
-        public static bool IsContinuableConstruct(this SyntaxNode node)
-        {
-            switch (CSharpExtensions.Kind(node)) {
-                case CSSyntaxKind.DoStatement:
-                case CSSyntaxKind.WhileStatement:
-                case CSSyntaxKind.ForStatement:
-                case CSSyntaxKind.ForEachStatement:
-                    return true;
-            }
-
-            return false;
-        }
-
-        public static bool IsReturnableConstruct(this SyntaxNode node)
-        {
-            switch (CSharpExtensions.Kind(node)) {
-                case CSSyntaxKind.AnonymousMethodExpression:
-                case CSSyntaxKind.SimpleLambdaExpression:
-                case CSSyntaxKind.ParenthesizedLambdaExpression:
-                case CSSyntaxKind.MethodDeclaration:
-                case CSSyntaxKind.ConstructorDeclaration:
-                case CSSyntaxKind.DestructorDeclaration:
-                case CSSyntaxKind.GetAccessorDeclaration:
-                case CSSyntaxKind.SetAccessorDeclaration:
-                case CSSyntaxKind.OperatorDeclaration:
-                case CSSyntaxKind.AddAccessorDeclaration:
-                case CSSyntaxKind.RemoveAccessorDeclaration:
-                    return true;
-            }
-
-            return false;
-        }
-
-        public static bool SpansPreprocessorDirective<TSyntaxNode>(
-            this IEnumerable<TSyntaxNode> list)
-            where TSyntaxNode : SyntaxNode
-        {
-            if (list == null || !list.Any()) {
-                return false;
-            }
-
-            var tokens = list.SelectMany(n => n.DescendantTokens());
-
-            // todo: we need to dive into trivia here.
-            return tokens.SpansPreprocessorDirective();
         }
 
         public static T WithPrependedLeadingTrivia<T>(
@@ -411,22 +323,6 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return node.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(trailingTrivia);
         }
-        public static SyntaxToken WithConvertedTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
-        {
-            return node.WithConvertedLeadingTriviaFrom(otherNode).WithConvertedTrailingTriviaFrom(otherNode);
-        }
-
-        public static T WithConvertedLeadingTriviaFrom<T>(this T node, SyntaxToken fromToken) where T : SyntaxNode
-        {
-            var firstConvertedToken = node.GetFirstToken();
-            return node.ReplaceToken(firstConvertedToken, firstConvertedToken.WithConvertedLeadingTriviaFrom(fromToken));
-        }
-
-        public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode)
-        {
-            var firstToken = otherNode?.GetFirstToken();
-            return WithConvertedLeadingTriviaFrom(node, firstToken);
-        }
 
         public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxToken? sourceToken)
         {
@@ -439,11 +335,6 @@ namespace ICSharpCode.CodeConverter.Util
         {
             var lastConvertedToken = node.GetLastToken();
             return node.ReplaceToken(lastConvertedToken, lastConvertedToken.WithConvertedTrailingTriviaFrom(fromToken, triviaKinds));
-        }
-
-        public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxNode otherNode, TriviaKinds triviaKinds = null)
-        {
-            return node.WithConvertedTrailingTriviaFrom(otherNode?.GetLastToken(), triviaKinds);
         }
 
         public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxToken? otherToken, TriviaKinds triviaKinds = null)
@@ -553,64 +444,6 @@ namespace ICSharpCode.CodeConverter.Util
             return default(SyntaxTokenList);
         }
 
-        public static SyntaxNode WithModifiers(this SyntaxNode member, SyntaxTokenList modifiers)
-        {
-            if (member != null) {
-                switch (CSharpExtensions.Kind(member)) {
-                    case CSSyntaxKind.EnumDeclaration:
-                        return ((EnumDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.ClassDeclaration:
-                    case CSSyntaxKind.InterfaceDeclaration:
-                    case CSSyntaxKind.StructDeclaration:
-                        return ((TypeDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.DelegateDeclaration:
-                        return ((DelegateDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.FieldDeclaration:
-                        return ((FieldDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.EventFieldDeclaration:
-                        return ((EventFieldDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.ConstructorDeclaration:
-                        return ((ConstructorDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.DestructorDeclaration:
-                        return ((DestructorDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.PropertyDeclaration:
-                        return ((PropertyDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.EventDeclaration:
-                        return ((EventDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.IndexerDeclaration:
-                        return ((IndexerDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.OperatorDeclaration:
-                        return ((OperatorDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.ConversionOperatorDeclaration:
-                        return ((ConversionOperatorDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.MethodDeclaration:
-                        return ((MethodDeclarationSyntax)member).WithModifiers(modifiers);
-                    case CSSyntaxKind.GetAccessorDeclaration:
-                    case CSSyntaxKind.SetAccessorDeclaration:
-                    case CSSyntaxKind.AddAccessorDeclaration:
-                    case CSSyntaxKind.RemoveAccessorDeclaration:
-                        return ((AccessorDeclarationSyntax)member).WithModifiers(modifiers);
-                }
-            }
-
-            return null;
-        }
-
-        public static TypeDeclarationSyntax WithModifiers(
-            this TypeDeclarationSyntax node, SyntaxTokenList modifiers)
-        {
-            switch (node.Kind()) {
-                case CSSyntaxKind.ClassDeclaration:
-                    return ((ClassDeclarationSyntax)node).WithModifiers(modifiers);
-                case CSSyntaxKind.InterfaceDeclaration:
-                    return ((InterfaceDeclarationSyntax)node).WithModifiers(modifiers);
-                case CSSyntaxKind.StructDeclaration:
-                    return ((StructDeclarationSyntax)node).WithModifiers(modifiers);
-            }
-
-            throw new InvalidOperationException();
-        }
-
         public static SyntaxTree WithAnnotatedNode(this SyntaxNode root, SyntaxNode selectedNode, string annotationKind, string annotationData = "")
         {
             var annotatatedNode =
@@ -656,19 +489,6 @@ namespace ICSharpCode.CodeConverter.Util
             return dummyDestNode
                 .WithTrailingTrivia(trailingTrivia)
                 .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, exception.ToString()));
-        }
-
-        public static T WithCsTrailingWarningComment<T>(this T dummyDestNode, string warning, string addtlInfo,
-            CSharpSyntaxNode convertedNode
-            ) where T : CSharpSyntaxNode
-        {
-            var warningDirective = SyntaxFactory.ParseTrailingTrivia($"#warning {warning}{Environment.NewLine}");
-            var warningDescription = convertedNode.DescribeConversionWarning(addtlInfo);
-            var commentedText = "/* " + warningDescription + " */";
-            var trailingTrivia = SyntaxFactory.TriviaList(warningDirective.Concat(SyntaxFactory.Comment(commentedText)));
-
-            return dummyDestNode
-                .WithTrailingTrivia(trailingTrivia);
         }
 
         public static T WithVbTrailingErrorComment<T>(

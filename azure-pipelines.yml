@@ -53,6 +53,8 @@ steps:
   inputs:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+    codeCoverageEnabled: True
+    runSettingsFile: Tests/continuousintegration.runsettings
 
 - task: DotNetCoreCLI@2
   inputs:
@@ -68,7 +70,8 @@ steps:
       **\ICSharpCode.CodeConverter.VsExtension.vsix
     targetFolder: $(Build.ArtifactStagingDirectory)
 
-- task: PublishPipelineArtifact@0
+- task: PublishPipelineArtifact@1
   displayName: Publish Artifacts
   inputs:
     targetPath: $(Build.ArtifactStagingDirectory)
+    artifactName: VSExtensionAndNupkg
