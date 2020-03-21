@@ -70,7 +70,8 @@ steps:
       **\ICSharpCode.CodeConverter.VsExtension.vsix
     targetFolder: $(Build.ArtifactStagingDirectory)
 
-- task: PublishPipelineArtifact@0
+- task: PublishPipelineArtifact@1
   displayName: Publish Artifacts
   inputs:
     targetPath: $(Build.ArtifactStagingDirectory)
+    artifactName: VSExtensionAndNupkg
