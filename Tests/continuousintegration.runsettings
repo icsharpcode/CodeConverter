@@ -7,8 +7,8 @@
           <CodeCoverage>
             <ModulePaths>
               <Include>
-                <ModulePath>.*\.dll$</ModulePath>
-                <ModulePath>.*\.exe$</ModulePath>
+                <ModulePath>^ICSharpCode\..*\.dll$</ModulePath>
+                <ModulePath>^ICSharpCode\..*\.exe$</ModulePath>
               </Include>
               <Exclude>
                 <ModulePath>.*CPPUnitTestFramework.*</ModulePath>
