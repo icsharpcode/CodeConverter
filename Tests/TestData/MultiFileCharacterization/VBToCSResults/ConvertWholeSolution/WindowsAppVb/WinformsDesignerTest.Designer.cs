@@ -86,6 +86,9 @@ namespace WindowsAppVb
             Controls.Add(_Button1);
             Name = "WinformsDesignerTest";
             Text = "Form1";
+            Load += new EventHandler(WinformsDesignerTest_EnsureSelfEventsWork);
+            SizeChanged += new EventHandler(WinformsDesignerTest_EnsureSelfEventsWork);
+            MouseClick += new MouseEventHandler(WinformsDesignerTest_MouseClick);
             ResumeLayout(false);
             PerformLayout();
         }

@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using ICSharpCode.CodeConverter.Util;
 using System.Diagnostics;
 using Microsoft.CodeAnalysis.Editing;
+using System.Reflection.Metadata;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -112,11 +113,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Select(e => CreateHandlesUpdater(fieldIdSyntax, e, assignmentExpressionKind, requiresNewDelegate));
         }
 
+        /// <summary>Use instead of <see cref="GetConstructorEventHandlers"/> for DesignerGenerated classes: https://github.com/icsharpcode/CodeConverter/issues/550</summary>
+        public IEnumerable<StatementSyntax> GetInitializeComponentClassEventHandlers()
+        {
+            return HandledClassEventCSharpIds
+                .Select(e => CreateHandlesUpdater(SyntaxFactory.ThisExpression(), e, SyntaxKind.AddAssignmentExpression, true));
+        }
+
         /// <remarks>
         /// <paramref name="requiresNewDelegate"/> must be set to true if this statement will be within InitializeComponent, otherwise C# Winforms designer won't be able to recognize it.
         /// If a lambda has been generated to discard parameters, the C# Winforms designer will throw an exception when trying to load, but it will wprl at runtime, and it's better than silently losing events on regeneration.
         /// </remarks>
-        private StatementSyntax CreateHandlesUpdater(IdentifierNameSyntax eventSource,
+        private StatementSyntax CreateHandlesUpdater(ExpressionSyntax eventSource,
             (SyntaxToken EventContainerName, SyntaxToken EventSymbolName, IEventSymbol Event, int ParametersToDiscard) e,
             SyntaxKind assignmentExpressionKind,
             bool requiresNewDelegate)
@@ -158,14 +166,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .WithBody(null).WithExpressionBody(body).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken));
         }
 
-        private static ExpressionSyntax MemberAccess(IdentifierNameSyntax eventSource, (SyntaxToken EventContainerName, SyntaxToken EventSymbolName, IEventSymbol Event, int ParametersToDiscard) e)
+        private static ExpressionSyntax MemberAccess(ExpressionSyntax eventSource, (SyntaxToken EventContainerName, SyntaxToken EventSymbolName, IEventSymbol Event, int ParametersToDiscard) e)
         {
             return SyntaxFactory.MemberAccessExpression(
                             SyntaxKind.SimpleMemberAccessExpression,
                             eventSource, SyntaxFactory.IdentifierName(e.EventSymbolName));
         }
 
-        public IEnumerable<(ExpressionSyntax EventField, SyntaxKind AssignmentKind, ExpressionSyntax HandlerId)> GetPreInitializeComponentEventHandlers()
+        public IEnumerable<(ExpressionSyntax EventField, SyntaxKind AssignmentKind, ExpressionSyntax HandlerId)> GetConstructorEventHandlers()
         {
             return HandledClassEventCSharpIds.Select(e =>
                 (MemberAccess(SyntaxFactory.IdentifierName(e.EventContainerName), e), SyntaxKind.AddAssignmentExpression, Invocable(_methodId, e.ParametersToDiscard))

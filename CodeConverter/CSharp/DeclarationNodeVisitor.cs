@@ -203,14 +203,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var namedTypeSymbol = _semanticModel.GetDeclaredSymbol(parentType);
             bool shouldAddTypeWideInitToThisPart = ShouldAddTypeWideInitToThisPart(parentType, namedTypeSymbol);
-            if (shouldAddTypeWideInitToThisPart) {
-                    _additionalInitializers.AdditionalInstanceInitializers.AddRange(_methodsWithHandles.GetConstructorEventAssignments());
-            }
-
             var requiresInitializeComponent = namedTypeSymbol.IsDesignerGeneratedTypeWithInitializeComponent(_compilation);
 
-            if (shouldAddTypeWideInitToThisPart && requiresInitializeComponent) {
-                directlyConvertedMembers = directlyConvertedMembers.Concat(_methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
+            if (shouldAddTypeWideInitToThisPart) {
+                if (requiresInitializeComponent) {
+                    // Constructor event handlers not required since they'll be inside InitializeComponent
+                    directlyConvertedMembers = directlyConvertedMembers.Concat(_methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
+                } else {
+                    _additionalInitializers.AdditionalInstanceInitializers.AddRange(_methodsWithHandles.GetConstructorEventHandlers());
+                }
             }
 
             return _additionalInitializers.WithAdditionalInitializers(namedTypeSymbol, directlyConvertedMembers.ToList(), CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier), shouldAddTypeWideInitToThisPart, requiresInitializeComponent);
@@ -877,9 +878,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             var visualBasicSyntaxVisitor = CreateMethodBodyVisitor(node, node.IsIterator(), csReturnVariableOrNull);
             var convertedStatements = await ConvertStatements(node.Statements, visualBasicSyntaxVisitor);
 
+            if (node.SubOrFunctionStatement.Identifier.Text == "InitializeComponent" && node.SubOrFunctionStatement.IsKind(VBasic.SyntaxKind.SubStatement) && declaredSymbol.ContainingType.IsDesignerGeneratedTypeWithInitializeComponent(_compilation)) {
+                var firstResumeLayout = convertedStatements.Statements.FirstOrDefault(IsThisResumeLayoutInvocation) ?? convertedStatements.Statements.Last();
+                convertedStatements = convertedStatements.InsertNodesBefore(firstResumeLayout, _methodsWithHandles.GetInitializeComponentClassEventHandlers());
+            }
+
             var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
 
             return methodBlock.WithBody(body);
+        }
+
+        private static bool IsThisResumeLayoutInvocation(StatementSyntax s)
+        {
+            return s is ExpressionStatementSyntax ess && ess.Expression is InvocationExpressionSyntax ies && ies.Expression.ToString().Equals("this.ResumeLayout");
         }
 
         private BlockSyntax WithImplicitReturnStatements(VBSyntax.MethodBlockBaseSyntax node, BlockSyntax convertedStatements,
