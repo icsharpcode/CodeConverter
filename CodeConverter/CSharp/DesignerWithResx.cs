@@ -18,18 +18,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             this.TargetResxPath = newResxPath;
         }
 
-        public static DesignerWithResx TryCreate(string path)
+        public static DesignerWithResx TryCreate(string projectDir, string sourcePathOrNull)
         {
-            if (path != null && path.EndsWith(".Designer.vb")) {
-                var sourceFile = new FileInfo(path);
-                if (sourceFile.Directory.Name == "My Project") {
-                    string projectDir = sourceFile.Directory.Parent.FullName;
+            if (sourcePathOrNull != null && sourcePathOrNull.EndsWith(".Designer.vb")) {
+                var sourceFile = new FileInfo(sourcePathOrNull);
+                if (sourceFile.Directory.FullName != projectDir) {
                     string resxFilename = sourceFile.Name.Replace(".Designer.vb", ".resx");
-                    string oldResxPath = System.IO.Path.Combine(projectDir, sourceFile.Directory.Name, resxFilename);
+                    string oldResxPath = System.IO.Path.Combine(sourceFile.Directory.FullName, resxFilename);
                     if (File.Exists(oldResxPath)) {
-                        string newDesignerPath = PathConverter.TogglePathExtension(System.IO.Path.Combine(projectDir, sourceFile.Name));
-                        string newResxPath = System.IO.Path.Combine(sourceFile.Directory.Parent.FullName, resxFilename);
-                        return new DesignerWithResx(path, newDesignerPath, oldResxPath, newResxPath);
+                        string newDesignerPath = PathConverter.TogglePathExtension(sourcePathOrNull);
+                        string newResxPath = System.IO.Path.Combine(projectDir, resxFilename);
+                        return new DesignerWithResx(sourcePathOrNull, newDesignerPath, oldResxPath, newResxPath);
                     }
                 }
             }

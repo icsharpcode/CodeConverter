@@ -92,7 +92,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private static IEnumerable<string> GetSourcePaths(Document f)
         {
-            if (DesignerWithResx.TryCreate(f.FilePath) is DesignerWithResx d && d.SourceResxPath != d.TargetResxPath) {
+            if (DesignerWithResx.TryCreate(f.Project.GetDirectoryPath(), f.FilePath) is DesignerWithResx d && d.SourceResxPath != d.TargetResxPath) {
                 yield return d.SourceResxPath;
             }
             yield return f.FilePath;

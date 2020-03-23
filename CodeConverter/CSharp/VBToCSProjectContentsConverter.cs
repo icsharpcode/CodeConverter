@@ -62,7 +62,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public IEnumerable<ConversionResult> GetConversionResults(ConversionResult result)
         {
-            if (DesignerWithResx.TryCreate(result.SourcePathOrNull) is DesignerWithResx d) {
+            if (DesignerWithResx.TryCreate(Project.GetDirectoryPath(), result.SourcePathOrNull) is DesignerWithResx d) {
                 result.TargetPathOrNull = d.TargetDesignerPath;
                 if (d.SourceResxPath != d.TargetResxPath) {
                     yield return new ConversionResult(RebaseResxPaths(d.SourceResxPath)) { SourcePathOrNull = d.SourceResxPath, TargetPathOrNull = d.TargetResxPath };
