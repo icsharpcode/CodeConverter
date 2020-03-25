@@ -221,13 +221,12 @@ CS0103: The name 'string' does not exist in the current context");
     Sub Foo()
         Dim x = ""x "" & 5 - 4 & "" y""
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
-
+End Class", @"
 public partial class Class1
 {
     public void Foo()
     {
-        string x = ""x "" + Conversions.ToString(5 - 4) + "" y"";
+        string x = ""x "" + (5 - 4).ToString() + "" y"";
     }
 }");
         }

@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Register event handlers for DesignerGenerated [#550](https://github.com/icsharpcode/CodeConverter/issues/550)
 * Improve qualification with arguments of unknown type [#481](https://github.com/icsharpcode/CodeConverter/issues/481)
 * Omit conversion in string concatenation where possible [#508](https://github.com/icsharpcode/CodeConverter/issues/508)
+* Use ToString for numeric types rather than Conversions.ToString
 
 ### C# -> VB
 

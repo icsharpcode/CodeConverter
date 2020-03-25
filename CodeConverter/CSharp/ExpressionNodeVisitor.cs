@@ -653,6 +653,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var lhs = (ExpressionSyntax)await node.Left.AcceptAsync(TriviaConvertingExpressionVisitor);
             var rhs = (ExpressionSyntax)await node.Right.AcceptAsync(TriviaConvertingExpressionVisitor);
 
+            ITypeSymbol forceLhsTargetType = null;
             bool omitRightConversion = false;
             bool omitConversion = false;
             if (node.IsKind(VBasic.SyntaxKind.ConcatenateExpression)) {
@@ -660,9 +661,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 omitConversion = lhsTypeInfo.Type.SpecialType == SpecialType.System_String ||
                     rhsTypeInfo.Type.SpecialType == SpecialType.System_String;
                 if (lhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String) {
-                    var stringType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
-                    lhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConvertTo(node.Left, lhs, stringType);
-                    omitConversion = true;
+                    forceLhsTargetType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
                 }
             }
 
@@ -683,7 +682,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             omitConversion |= lhsTypeInfo.Type != null && rhsTypeInfo.Type != null &&
                                  lhsTypeInfo.Type.IsEnumType() && Equals(lhsTypeInfo.Type, rhsTypeInfo.Type)
                                  && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression);
-            lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs);
+            lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType);
             rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
 
 

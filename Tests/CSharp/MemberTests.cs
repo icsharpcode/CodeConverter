@@ -237,8 +237,8 @@ public partial class Class1
         get
         {
             string XRet = default;
-            XRet = Conversions.ToString(4);
-            XRet = Conversions.ToString(Conversions.ToDouble(XRet) * 2);
+            XRet = 4.ToString();
+            XRet = (Conversions.ToDouble(XRet) * 2).ToString().ToString();
             string y = ""random variable to check it isn't just using the value of the last statement"";
             return XRet;
         }
@@ -480,13 +480,12 @@ internal partial class TestClass
     Public Function Four() As String
         Return 4
     End Function
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
-
+End Class", @"
 internal partial class TestClass
 {
     public string Four()
     {
-        return Conversions.ToString(4);
+        return 4.ToString();
     }
 }");
         }
@@ -792,7 +791,6 @@ internal partial class TestClass
         End Select
     End Sub
 End Class", @"using System.Linq;
-using Microsoft.VisualBasic.CompilerServices;
 
 public partial class ParameterizedPropertiesAndEnumTest
 {
@@ -803,7 +801,7 @@ public partial class ParameterizedPropertiesAndEnumTest
 
     public string get_MyProp(int blah)
     {
-        return Conversions.ToString(blah);
+        return blah.ToString();
     }
 
     public void set_MyProp(int blah, string value)

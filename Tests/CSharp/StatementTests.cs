@@ -1941,8 +1941,7 @@ internal partial class TestClass
                 Return ""in the future""
         End Select
     End Function
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
-
+End Class", @"
 public partial class TestClass
 {
     public static string TimeAgo(int daysAgo)
@@ -1960,7 +1959,7 @@ public partial class TestClass
 
             case object _ when daysAgo > 0:
                 {
-                    return Conversions.ToString(daysAgo / 7) + "" weeks ago"";
+                    return (daysAgo / 7).ToString() + "" weeks ago"";
                 }
 
             default:

@@ -77,7 +77,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false, ITypeSymbol forceTargetType = null)
         {
-            var vbConvertedType = forceTargetType ?? ModelExtensions.GetTypeInfo(_semanticModel, vbNode).ConvertedType;
+            var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, vbNode);
+            var vbType = typeInfo.Type;
+            var vbConvertedType = forceTargetType ?? typeInfo.ConvertedType;
             switch (conversionKind)
             {
                 case TypeConversionKind.Unknown:
@@ -87,7 +89,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case TypeConversionKind.NonDestructiveCast:
                     return CreateCast(csNode, vbConvertedType);
                 case TypeConversionKind.Conversion:
-                    return AddExplicitConvertTo(vbNode, csNode, vbConvertedType);
+                    return AddExplicitConvertTo(vbNode, csNode, vbType, vbConvertedType);
                 case TypeConversionKind.ConstConversion:
                     return ConstantFold(vbNode, vbConvertedType);
                 case TypeConversionKind.NullableBool:
@@ -372,7 +374,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
 
-        public ExpressionSyntax AddExplicitConvertTo(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol targetType)
+        public ExpressionSyntax AddExplicitConvertTo(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
         {
             var displayType = targetType.ToMinimalDisplayString(_semanticModel, vbNode.SpanStart);
             if (csNode is InvocationExpressionSyntax invoke &&
@@ -381,6 +383,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 expr.Name.Identifier.ValueText == $"To{displayType}") {
                 return csNode;
             }
+
+            if (GetToStringConversionOrNull(csNode, currentType, targetType) is ExpressionSyntax csNodeToString) return csNodeToString;
 
             if (!ConversionsTypeFullNames.TryGetValue(targetType.GetFullMetadataName(), out var methodId)) {
                 return CreateCast(csNode, targetType);
@@ -392,6 +396,20 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxFactory.IdentifierName("Conversions"), SyntaxFactory.IdentifierName(methodId.Name));
             var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(csNode)));
             return SyntaxFactory.InvocationExpression(memberAccess, arguments);
+        }
+
+        /// <summary>
+        /// For many types, Conversions.ToString is the same as ToString.
+        /// I've done some checks on numeric types, could add more here in future. Any reference types will need a conditional to avoid nullref like Conversions does
+        /// </summary>
+        private static ExpressionSyntax GetToStringConversionOrNull(ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
+        {
+            if (targetType.SpecialType == SpecialType.System_String && currentType.IsNumericType()) {
+                var toString = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                    csNode.AddParens(), SyntaxFactory.IdentifierName("ToString"));
+                return SyntaxFactory.InvocationExpression(toString, SyntaxFactory.ArgumentList());
+            }
+            return null;
         }
 
         public enum TypeConversionKind
