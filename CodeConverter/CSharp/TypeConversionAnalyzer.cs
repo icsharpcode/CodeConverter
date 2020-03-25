@@ -22,6 +22,7 @@ using MemberAccessExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.Member
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -404,9 +405,16 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         private static ExpressionSyntax GetToStringConversionOrNull(ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
         {
-            if (targetType.SpecialType == SpecialType.System_String && currentType.IsNumericType()) {
+            if (targetType.SpecialType != SpecialType.System_String) return null;
+
+            const string toStringMethodName = "ToString";
+            if (csNode is MemberAccessExpressionSyntax maes && maes.Name.Identifier.Text == toStringMethodName) {
+                return csNode;
+            }
+
+            if (currentType.IsNumericType()) {
                 var toString = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    csNode.AddParens(), SyntaxFactory.IdentifierName("ToString"));
+                    csNode.AddParens(), SyntaxFactory.IdentifierName(toStringMethodName));
                 return SyntaxFactory.InvocationExpression(toString, SyntaxFactory.ArgumentList());
             }
             return null;

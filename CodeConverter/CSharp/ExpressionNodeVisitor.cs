@@ -708,7 +708,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
 
             var csBinExp = SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
-            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, csBinExp);
+            return node.Parent.IsKind(VBasic.SyntaxKind.SimpleArgument) ? csBinExp : csBinExp.AddParens();
         }
 
         private async Task<ExpressionSyntax> ConvertNothingComparisonOrNull(VBSyntax.ExpressionSyntax exprNode, bool negateExpression = false)

@@ -238,7 +238,7 @@ public partial class Class1
         {
             string XRet = default;
             XRet = 4.ToString();
-            XRet = (Conversions.ToDouble(XRet) * 2).ToString().ToString();
+            XRet = (Conversions.ToDouble(XRet) * 2).ToString();
             string y = ""random variable to check it isn't just using the value of the last statement"";
             return XRet;
         }

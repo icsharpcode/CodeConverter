@@ -1959,7 +1959,7 @@ public partial class TestClass
 
             case object _ when daysAgo > 0:
                 {
-                    return (daysAgo / 7).ToString() + "" weeks ago"";
+                    return daysAgo / 7 + "" weeks ago"";
                 }
 
             default:
