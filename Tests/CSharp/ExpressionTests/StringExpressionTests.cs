@@ -55,8 +55,7 @@ World!"";
     Shared Function GetDeltaPoint(pDelta As Integer) As String
         Return (""{""""delta"""": """""" & pDelta & """"""}"")
     End Function
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
-
+End Class", @"
 internal partial class TestClass
 {
     public static string GetTextFeedInput(string pStream, string pTitle, string pText)
@@ -71,7 +70,7 @@ internal partial class TestClass
 
     public static string GetNameValuePair(string pName, int pValue)
     {
-        return ""{\""name\"": \"""" + pName + ""\"", \""value\"": \"""" + Conversions.ToString(pValue) + ""\""}"";
+        return ""{\""name\"": \"""" + pName + ""\"", \""value\"": \"""" + pValue + ""\""}"";
     }
 
     public static string GetNameValuePair(string pName, string pValue)
@@ -86,7 +85,7 @@ internal partial class TestClass
 
     public static string GetDeltaPoint(int pDelta)
     {
-        return ""{\""delta\"": \"""" + Conversions.ToString(pDelta) + ""\""}"";
+        return ""{\""delta\"": \"""" + pDelta + ""\""}"";
     }
 }");
         }
@@ -300,6 +299,25 @@ namespace InnerNamespace
             string f = $""pre{{escapedBraces}}{dt,4:hh}"";
             return a + b + c + d + e + f;
         }
+    }
+}");
+        }
+
+        [Fact]
+        public async Task NoConversionRequiredWithinConcatenation()
+        {
+            await TestConversionVisualBasicToCSharp(
+@"Public Class Issue508
+    Sub Foo()
+        Dim x = ""x"" & 4 & ""y""
+    End Sub
+End Class",
+@"
+public partial class Issue508
+{
+    public void Foo()
+    {
+        string x = ""x"" + 4 + ""y"";
     }
 }");
         }

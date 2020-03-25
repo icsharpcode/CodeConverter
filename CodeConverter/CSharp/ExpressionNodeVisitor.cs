@@ -653,14 +653,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             var lhs = (ExpressionSyntax)await node.Left.AcceptAsync(TriviaConvertingExpressionVisitor);
             var rhs = (ExpressionSyntax)await node.Right.AcceptAsync(TriviaConvertingExpressionVisitor);
 
-
+            bool omitRightConversion = false;
+            bool omitConversion = false;
             if (node.IsKind(VBasic.SyntaxKind.ConcatenateExpression)) {
-                if (lhsTypeInfo.Type.SpecialType != SpecialType.System_String &&
-                    lhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String &&
-                    rhsTypeInfo.Type.SpecialType != SpecialType.System_String &&
-                    rhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String) {
+                omitRightConversion = true;
+                omitConversion = lhsTypeInfo.Type.SpecialType == SpecialType.System_String ||
+                    rhsTypeInfo.Type.SpecialType == SpecialType.System_String;
+                if (lhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String) {
                     var stringType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
                     lhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConvertTo(node.Left, lhs, stringType);
+                    omitConversion = true;
                 }
             }
 
@@ -678,11 +680,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(node, lhs, rhs);
             }
 
-            var omitConversion = lhsTypeInfo.Type != null && rhsTypeInfo.Type != null &&
+            omitConversion |= lhsTypeInfo.Type != null && rhsTypeInfo.Type != null &&
                                  lhsTypeInfo.Type.IsEnumType() && Equals(lhsTypeInfo.Type, rhsTypeInfo.Type)
                                  && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression);
             lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs);
-            rhs = omitConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+            rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
 
 
             if (node.IsKind(VBasic.SyntaxKind.ExponentiateExpression,

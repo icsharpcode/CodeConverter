@@ -291,7 +291,6 @@ internal partial class TestClass
         Console.ReadKey()
     End Sub
 End Class", @"using System;
-using Microsoft.VisualBasic.CompilerServices;
 
 internal partial class TestClass
 {
@@ -299,7 +298,7 @@ internal partial class TestClass
     {
         int length;
         length = str.Length;
-        Console.WriteLine(""Test"" + Conversions.ToString(length));
+        Console.WriteLine(""Test"" + length);
         Console.ReadKey();
     }
 }");
@@ -544,7 +543,6 @@ Public Class TestIssue479
 End Class",
                 @"using System;
 using Microsoft.VisualBasic;
-using Microsoft.VisualBasic.CompilerServices;
 
 public partial class Issue479
 {
@@ -562,7 +560,7 @@ public partial class TestIssue479
     public void compareAccess()
     {
         var hD = new Issue479();
-        Console.WriteLine(""Traditional access returns "" + Conversions.ToString(hD[""X""]) + Constants.vbCrLf + ""Default property access returns "" + Conversions.ToString(hD[""X""]) + Constants.vbCrLf + ""Dictionary access returns "" + Conversions.ToString(hD[""X""]));
+        Console.WriteLine(""Traditional access returns "" + hD[""X""] + Constants.vbCrLf + ""Default property access returns "" + hD[""X""] + Constants.vbCrLf + ""Dictionary access returns "" + hD[""X""]);
     }
 }");
         }

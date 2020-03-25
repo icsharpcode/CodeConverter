@@ -2016,8 +2016,8 @@ namespace Microsoft.VisualBasic
     [StandardModule]
     internal static class Constants
     {
-        public const string vbCrLf = Conversions.ToString(Strings.ChrW(13)) + Conversions.ToString(Strings.ChrW(10));
-        public const string vbNewLine = Conversions.ToString(Strings.ChrW(13)) + Conversions.ToString(Strings.ChrW(10));
+        public const string vbCrLf = Conversions.ToString(Strings.ChrW(13)) + Strings.ChrW(10);
+        public const string vbNewLine = Conversions.ToString(Strings.ChrW(13)) + Strings.ChrW(10);
         public const string vbCr = "\r";
         public const string vbLf = "\n";
         public const string vbBack = "\b";

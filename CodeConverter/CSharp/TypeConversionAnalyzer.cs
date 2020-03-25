@@ -372,9 +372,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
 
-        public ExpressionSyntax AddExplicitConvertTo(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol type)
+        public ExpressionSyntax AddExplicitConvertTo(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol targetType)
         {
-            var displayType = type.ToMinimalDisplayString(_semanticModel, vbNode.SpanStart);
+            var displayType = targetType.ToMinimalDisplayString(_semanticModel, vbNode.SpanStart);
             if (csNode is InvocationExpressionSyntax invoke &&
                 invoke.Expression is MemberAccessExpressionSyntax expr &&
                 expr.Expression is IdentifierNameSyntax name && name.Identifier.ValueText == "Conversions" &&
@@ -382,11 +382,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return csNode;
             }
 
-            if (!ConversionsTypeFullNames.TryGetValue(type.GetFullMetadataName(), out var methodId)) {
-                return CreateCast(csNode, type);
+            if (!ConversionsTypeFullNames.TryGetValue(targetType.GetFullMetadataName(), out var methodId)) {
+                return CreateCast(csNode, targetType);
             }
 
-            // Need to use Conversions rather than Convert to match what VB does, eg. True -> -1
+            // Need to use Conversions rather than Convert to match what VB does, eg. Conversions.ToInteger(True) -> -1
             _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
             var memberAccess = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                 SyntaxFactory.IdentifierName("Conversions"), SyntaxFactory.IdentifierName(methodId.Name));
