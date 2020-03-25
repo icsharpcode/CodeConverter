@@ -164,7 +164,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </remarks>
         private SyntaxList<StatementSyntax> GetPostAssignmentStatements(VBSyntax.AssignmentStatementSyntax node)
         {
-            var potentialPropertySymbol = _semanticModel.GetSymbolInfo(node.Left).ExtractBestMatch();
+            var potentialPropertySymbol = _semanticModel.GetSymbolInfo(node.Left).ExtractBestMatch<ISymbol>();
             return _methodsWithHandles.GetPostAssignmentStatements(node, potentialPropertySymbol);
         }
 
@@ -371,7 +371,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var argumentListSyntax = (ArgumentListSyntax) await node.ArgumentList.AcceptAsync(_expressionVisitor) ?? SyntaxFactory.ArgumentList();
 
-            var symbolInfo = _semanticModel.GetSymbolInfo(node.Name).ExtractBestMatch() as IEventSymbol;
+            var symbolInfo = _semanticModel.GetSymbolInfo(node.Name).ExtractBestMatch<IEventSymbol>();
             if (symbolInfo?.RaiseMethod != null) {
                 return SingleStatement(SyntaxFactory.InvocationExpression(
                     SyntaxFactory.IdentifierName($"On{symbolInfo.Name}"),

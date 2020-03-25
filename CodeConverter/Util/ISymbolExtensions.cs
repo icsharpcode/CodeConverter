@@ -21,14 +21,14 @@ namespace ICSharpCode.CodeConverter.Util
             return symbol.Locations.Any(loc => loc.IsInSource);
         }
 
-        public static ISymbol ExtractBestMatch(this SymbolInfo info, Func<ISymbol, bool> isMatch = null)
+        public static TSymbol ExtractBestMatch<TSymbol>(this SymbolInfo info, Func<TSymbol, bool> isMatch = null) where TSymbol : class, ISymbol
         {
             isMatch = isMatch ?? (_ => true);
             if (info.Symbol == null && info.CandidateSymbols.Length == 0)
                 return null;
             if (info.Symbol != null)
-                return info.Symbol;
-            var matches = info.CandidateSymbols.Where(isMatch).ToList();
+                return info.Symbol as TSymbol;
+            var matches = info.CandidateSymbols.OfType<TSymbol>().Where(isMatch).ToList();
             if (matches.Count == 1) {
                 return matches.Single();
             }

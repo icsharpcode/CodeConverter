@@ -331,7 +331,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var simpleNameSyntax = (SimpleNameSyntax) await node.Name.AcceptAsync(TriviaConvertingExpressionVisitor);
 
-            var nodeSymbol = GetSymbolInfoInDocument(node.Name);
+            var nodeSymbol = GetSymbolInfoInDocument<ISymbol>(node.Name);
             var isDefaultProperty = nodeSymbol is IPropertySymbol p && VBasic.VisualBasicExtensions.IsDefault(p);
             ExpressionSyntax left = null;
             if (node.Expression is VBasic.Syntax.MyClassExpressionSyntax && nodeSymbol != null) {
@@ -784,8 +784,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitInvocationExpression(
             VBasic.Syntax.InvocationExpressionSyntax node)
         {
-            var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch();
-            var expressionSymbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
+            var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch<ISymbol>();
+            var expressionSymbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch<ISymbol>();
             var expressionReturnType =
                 expressionSymbol?.GetReturnType() ?? _semanticModel.GetTypeInfo(node.Expression).Type;
             var operation = _semanticModel.GetOperation(node);
@@ -1021,8 +1021,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var qualifiedIdentifier = requiresQualification
                 ? QualifyNode(node, identifier) : identifier;
 
-            var sym = GetSymbolInfoInDocument(node);
-            if (sym != null && sym.Kind == SymbolKind.Local) {
+            var sym = GetSymbolInfoInDocument<ILocalSymbol>(node);
+            if (sym != null) {
                 var vbMethodBlock = node.Ancestors().OfType<VBasic.Syntax.MethodBlockBaseSyntax>().FirstOrDefault();
                 if (vbMethodBlock != null &&
                     vbMethodBlock.MustReturn() &&
@@ -1042,8 +1042,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitQualifiedName(VBasic.Syntax.QualifiedNameSyntax node)
         {
-            var symbol = GetSymbolInfoInDocument(node);
-            if (symbol != null && symbol.IsType()) {
+            var symbol = GetSymbolInfoInDocument<ITypeSymbol>(node);
+            if (symbol != null) {
                 return CommonConversions.GetTypeSyntax(symbol.GetSymbolType());
             }
             var lhsSyntax = (NameSyntax) await node.Left.AcceptAsync(TriviaConvertingExpressionVisitor);
@@ -1071,7 +1071,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitGenericName(VBasic.Syntax.GenericNameSyntax node)
         {
-            var symbol = GetSymbolInfoInDocument(node);
+            var symbol = GetSymbolInfoInDocument<ISymbol>(node);
             var genericNameSyntax = await GenericNameAccountingForReducedParameters(node, symbol);
             ExpressionSyntax name = genericNameSyntax;
 
@@ -1246,7 +1246,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool isIdentifier = node.Expression is VBasic.Syntax.IdentifierNameSyntax;
             bool isMemberAccess = node.Expression is VBasic.Syntax.MemberAccessExpressionSyntax;
 
-            var symbolInfo = GetSymbolInfoInDocument(node.Expression);
+            var symbolInfo = GetSymbolInfoInDocument<ISymbol>(node.Expression);
             bool isProperty = symbolInfo != null && symbolInfo.IsKind(SymbolKind.Property);
             bool isUsing = symbolInfo?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()?.Parent?.Parent?.IsKind(VBasic.SyntaxKind.UsingStatement) == true;
 
@@ -1259,9 +1259,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         private ISymbol GetInvocationSymbol(SyntaxNode invocation)
         {
             var symbol = invocation.TypeSwitch(
-                (VBasic.Syntax.InvocationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch(),
-                (VBasic.Syntax.ObjectCreationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch(),
-                (VBasic.Syntax.RaiseEventStatementSyntax e) => _semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch(),
+                (VBasic.Syntax.InvocationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
+                (VBasic.Syntax.ObjectCreationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
+                (VBasic.Syntax.RaiseEventStatementSyntax e) => _semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch<ISymbol>(),
                 _ => { throw new NotSupportedException(); }
             );
             return symbol;
@@ -1316,7 +1316,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<CSharpSyntaxNode> SubstituteVisualBasicMethodOrNull(VBasic.Syntax.InvocationExpressionSyntax node)
         {
             CastExpressionSyntax cSharpSyntaxNode = null;
-            var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch();
+            var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch<ISymbol>();
             if (symbol?.Name == "ChrW" || symbol?.Name == "Chr") {
                 var args = await ConvertArguments(node.ArgumentList);
                 cSharpSyntaxNode = ValidSyntaxFactory.CastExpression(SyntaxFactory.ParseTypeName("char"),
@@ -1333,9 +1333,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : id;
         }
 
+        /// <summary>
+        /// The pre-expansion phase <see cref="DocumentExtensions.WithExpandedRootAsync(Document, System.Threading.CancellationToken)"/> should handle this for compiling nodes.
+        /// This is mainly targeted at dealing with missing semantic info.
+        /// </summary>
+        /// <returns></returns>
         private ExpressionSyntax QualifyNode(SyntaxNode node, SimpleNameSyntax left)
         {
-            var nodeSymbolInfo = GetSymbolInfoInDocument(node);
+            var nodeSymbolInfo = GetSymbolInfoInDocument<ISymbol>(node);
             if (left != null &&
                 nodeSymbolInfo?.ContainingSymbol is INamespaceOrTypeSymbol containingSymbol &&
                 !ContextImplicitlyQualfiesSymbol(node, containingSymbol)) {
@@ -1382,9 +1387,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         /// <returns>The ISymbol if available in this document, otherwise null</returns>
         /// <remarks>It's possible to use _semanticModel.GetSpeculativeSymbolInfo(...) if you know (or can approximate) the position where the symbol would have been in the original document.</remarks>
-        private ISymbol GetSymbolInfoInDocument(SyntaxNode node)
+        private TSymbol GetSymbolInfoInDocument<TSymbol>(SyntaxNode node) where TSymbol: class, ISymbol
         {
-            return _semanticModel.SyntaxTree == node.SyntaxTree ? _semanticModel.GetSymbolInfo(node).Symbol : null;
+            return _semanticModel.SyntaxTree == node.SyntaxTree ? _semanticModel.GetSymbolInfo(node).ExtractBestMatch<TSymbol>(): null;
         }
     }
 }

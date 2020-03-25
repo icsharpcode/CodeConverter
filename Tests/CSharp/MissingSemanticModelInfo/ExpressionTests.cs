@@ -282,17 +282,17 @@ BC32016: 'Private Property DefaultDate As System.SomeUnknownType' has no paramet
 CS0234: The type or namespace name 'SomeUnknownType' does not exist in the namespace 'System' (are you missing an assembly reference?)");
         }
 
-    [Fact]
-    public async Task CharacterizeRaiseEventWithMissingDefinitionActsLikeMultiIndexer()
-    {
-    await TestConversionVisualBasicToCSharp(
-        @"Imports System
+        [Fact]
+        public async Task CharacterizeRaiseEventWithMissingDefinitionActsLikeMultiIndexer()
+        {
+        await TestConversionVisualBasicToCSharp(
+            @"Imports System
 
-Friend Class TestClass
-    Private Sub TestMethod()
-        If MyEvent IsNot Nothing Then MyEvent(Me, EventArgs.Empty)
-    End Sub
-End Class", @"using System;
+    Friend Class TestClass
+        Private Sub TestMethod()
+            If MyEvent IsNot Nothing Then MyEvent(Me, EventArgs.Empty)
+        End Sub
+    End Class", @"using System;
 
 internal partial class TestClass
 {
@@ -308,5 +308,37 @@ BC30451: 'MyEvent' is not declared. It may be inaccessible due to its protection
 CS0103: The name 'MyEvent' does not exist in the current context
 CS0201: Only assignment, call, increment, decrement, await, and new object expressions can be used as a statement");
         }
+
+        [Fact]
+        public async Task ConvertBuiltInMethodWithUnknownArgumentType()
+        {
+        await TestConversionVisualBasicToCSharp(
+            @"Class A
+    Public Sub Test()
+        Dim x As SomeUnknownType = Nothing
+        Dim y As Integer = 3
+        If IsNothing(x) OrElse IsNothing(y) Then
+
+        End If
+    End Sub
+End Class", @"using Microsoft.VisualBasic;
+
+internal partial class A
+{
+    public void Test()
+    {
+        SomeUnknownType x = default;
+        int y = 3;
+        if (Information.IsNothing(x) || Information.IsNothing(y))
+        {
+        }
+    }
+}
+1 source compilation errors:
+BC30002: Type 'SomeUnknownType' is not defined.
+1 target compilation errors:
+CS0246: The type or namespace name 'SomeUnknownType' could not be found (are you missing a using directive or an assembly reference?)");
+        }
+
     }
 }

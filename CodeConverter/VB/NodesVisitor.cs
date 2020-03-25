@@ -1106,7 +1106,7 @@ namespace ICSharpCode.CodeConverter.VB
             return node.Expression is CSS.IdentifierNameSyntax methodIdentifier
                    && methodIdentifier?.Identifier.Text == "nameof"
                    // nameof expressions don't have an associated method symbol, a method called nameof usually would
-                   && _semanticModel.GetSymbolInfo(methodIdentifier).ExtractBestMatch() == null;
+                   && _semanticModel.GetSymbolInfo(methodIdentifier).ExtractBestMatch<ISymbol>() == null;
         }
 
         public override VisualBasicSyntaxNode VisitConditionalExpression(CSS.ConditionalExpressionSyntax node)
@@ -1731,7 +1731,7 @@ namespace ICSharpCode.CodeConverter.VB
                 var argIndex = ies.ArgumentList.Arguments.IndexOf(nameArgument);
                 //TODO: Deal with named parameters
                 var symbolInfo = _semanticModel.GetSymbolInfo(ies.Expression);
-                var destinationType = symbolInfo.ExtractBestMatch(m => m.GetParameters().Length > argIndex);
+                var destinationType = symbolInfo.ExtractBestMatch<ISymbol>(m => m.GetParameters().Length > argIndex);
                 if (destinationType != null) {
                     var symbolType = destinationType.GetParameters()[argIndex].Type;
                     return _commonConversions.GetFullyQualifiedNameSyntax(symbolType);
