@@ -44,9 +44,9 @@ End Sub",
 End Sub",
                 @"public static void Linq40()
 {
-    var numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };"/*TODO Remove need for new[]*/ + @"
+    var numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };
     var numberGroups = from n in numbers
-                       group n by n % 5 into g
+                       group n by (n % 5) into g
                        let __groupByKey1__ = g.Key
                        select new { Remainder = __groupByKey1__, Numbers = g };
     foreach (var g in numberGroups)
