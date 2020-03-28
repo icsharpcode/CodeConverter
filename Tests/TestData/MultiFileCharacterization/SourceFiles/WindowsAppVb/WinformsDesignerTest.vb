@@ -41,4 +41,8 @@
         AddHandler Me.MouseClick, paramToHandle
         WinformsDesignerTest_MouseClick()
     End Sub
+
+    Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
+        FolderForm.ShowDialog()
+    End Sub
 End Class

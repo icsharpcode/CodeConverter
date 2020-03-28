@@ -10,6 +10,8 @@ using System;
 using System.Xml.Linq;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using ICSharpCode.CodeConverter.Util;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -20,6 +22,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private readonly ConversionOptions _conversionOptions;
         private CSharpCompilation _csharpViewOfVbSymbols;
+        private Dictionary<string, string> _designerToResxRelativePath;
         private Project _convertedCsProject;
 
         private Project _csharpReferenceProject;
@@ -42,7 +45,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             _convertedCsProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, CSharpCompiler.ParseOptions);
             _csharpReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(cSharpCompilationOptions, CSharpCompiler.ParseOptions);
             _csharpViewOfVbSymbols = (CSharpCompilation) await _csharpReferenceProject.GetCompilationAsync(_cancellationToken);
-            Project = await project.WithRenamedMergedMyNamespace(_cancellationToken);
+            _designerToResxRelativePath = project.ReadVbEmbeddedResources().ToDictionary(r => r.LastGenOutput, r => r.RelativePath);
+            Project = await project.WithAdditionalDocs(_designerToResxRelativePath.Values)
+                        .WithRenamedMergedMyNamespace(_cancellationToken);
         }
 
         public string LanguageVersion { get { return LangVersion.Latest.ToDisplayString(); } }
@@ -56,25 +61,49 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProject(WipFileConversion<SyntaxNode>[] firstPassResults)
         {
-            var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults);
+            var projDirPath = Project.GetDirectoryPath();
+            var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults.Select(r => r.WithTargetPath(GetTargetPath(projDirPath, r))).ToArray());
             return (await project.RenameMergedNamespaces(_cancellationToken), docIds);
         }
 
-        public IEnumerable<ConversionResult> GetConversionResults(ConversionResult result)
+        private string GetTargetPath(string projDirPath, WipFileConversion<SyntaxNode> r)
         {
-            if (DesignerWithResx.TryCreate(Project.GetDirectoryPath(), result.SourcePathOrNull) is DesignerWithResx d) {
-                result.TargetPathOrNull = d.TargetDesignerPath;
-                if (d.SourceResxPath != d.TargetResxPath) {
-                    yield return new ConversionResult(RebaseResxPaths(d.SourceResxPath)) { SourcePathOrNull = d.SourceResxPath, TargetPathOrNull = d.TargetResxPath };
-                }
-            }
-            yield return result;
+            return _designerToResxRelativePath.ContainsKey(GetPathRelativeToProject(projDirPath, r.SourcePath)) ? Path.Combine(projDirPath, Path.GetFileName(r.TargetPath)) : null;
         }
 
-        private static string RebaseResxPaths(string oldResxPath)
+        private static string GetPathRelativeToProject(string projDirPath, string p)
         {
-            var original = File.ReadAllText(oldResxPath);
-            return original.Replace(@"<value>..\", "<value>");
+            return p.Replace(projDirPath, "").TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+
+        public async IAsyncEnumerable<ConversionResult> GetAdditionalConversionResults([EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            string projDirPath = Project.GetDirectoryPath();
+            foreach (var doc in Project.AdditionalDocuments) {
+                string newPath = Path.Combine(projDirPath, Path.GetFileName(doc.FilePath));
+                if (newPath != doc.FilePath) {
+                    string newText = RebaseResxPaths(projDirPath, Path.GetDirectoryName(doc.FilePath), (await doc.GetTextAsync(cancellationToken)).ToString());
+                    yield return new ConversionResult(newText) {
+                        SourcePathOrNull = doc.FilePath,
+                        TargetPathOrNull = newPath
+                    };
+                }
+            }
+        }
+
+        private string RebaseResxPaths(string projDirPath, string resxDirPath, string originalResx)
+        {
+            var xml = XDocument.Parse(originalResx);
+            var xmlNs = xml.Root.GetDefaultNamespace();
+            var fileRefValues = xml.Descendants(xmlNs + "data")
+                .Where(a => a.Attribute("type")?.Value == "System.Resources.ResXFileRef, System.Windows.Forms")
+                .Select(d => d.Element(xmlNs + "value"));
+            foreach (var fileRefValue in fileRefValues) {
+                var origValueParts = fileRefValue.Value.Split(';');
+                string newRelativePath = GetPathRelativeToProject(projDirPath, Path.GetFullPath(Path.Combine(resxDirPath, origValueParts[0])));
+                fileRefValue.Value = string.Join(";", newRelativePath.Yield().Concat(origValueParts.Skip(1)));
+            }
+            return xml.Declaration.ToString() + Environment.NewLine + xml.ToString();
         }
     }
 }

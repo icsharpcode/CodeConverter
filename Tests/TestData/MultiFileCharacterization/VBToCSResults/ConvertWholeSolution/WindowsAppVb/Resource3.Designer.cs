@@ -24,13 +24,13 @@ namespace WindowsAppVb.My.Resources
     [System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [DebuggerNonUserCode()]
     [System.Runtime.CompilerServices.CompilerGenerated()]
-    public class Resource1
+    internal class Resource3
     {
         private static System.Resources.ResourceManager resourceMan;
         private static System.Globalization.CultureInfo resourceCulture;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        internal Resource1() : base()
+        internal Resource3() : base()
         {
         }
 
@@ -38,13 +38,13 @@ namespace WindowsAppVb.My.Resources
         /// Returns the cached ResourceManager instance used by this class.
         /// </summary>
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static System.Resources.ResourceManager ResourceManager
+        internal static System.Resources.ResourceManager ResourceManager
         {
             get
             {
                 if (ReferenceEquals(resourceMan, null))
                 {
-                    var temp = new System.Resources.ResourceManager("WindowsAppVb.Resource1", typeof(Resource1).Assembly);
+                    var temp = new System.Resources.ResourceManager("WindowsAppVb.Resource3", typeof(Resource3).Assembly);
                     resourceMan = temp;
                 }
 
@@ -57,7 +57,7 @@ namespace WindowsAppVb.My.Resources
         /// resource lookups using this strongly typed resource class.
         /// </summary>
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static System.Globalization.CultureInfo Culture
+        internal static System.Globalization.CultureInfo Culture
         {
             get
             {
@@ -71,9 +71,9 @@ namespace WindowsAppVb.My.Resources
         }
 
         /// <summary>
-        /// Looks up a localized string similar to Colour.
+        /// Looks up a localized string similar to AString.
         /// </summary>
-        public static string String1
+        internal static string String1
         {
             get
             {
@@ -84,7 +84,7 @@ namespace WindowsAppVb.My.Resources
         /// <summary>
         /// Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        public static Bitmap test
+        internal static Bitmap test
         {
             get
             {
@@ -96,7 +96,7 @@ namespace WindowsAppVb.My.Resources
         /// <summary>
         /// Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        public static Bitmap test2
+        internal static Bitmap test2
         {
             get
             {
@@ -108,7 +108,7 @@ namespace WindowsAppVb.My.Resources
         /// <summary>
         /// Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        public static Bitmap test3
+        internal static Bitmap test3
         {
             get
             {

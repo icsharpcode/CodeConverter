@@ -9,6 +9,7 @@
 // ------------------------------------------------------------------------------
 
 using System.Diagnostics;
+using System.Drawing;
 using Microsoft.VisualBasic;
 
 namespace WindowsAppVb.My.Resources
@@ -21,7 +22,7 @@ namespace WindowsAppVb.My.Resources
     /// <summary>
     /// A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
-    [System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [DebuggerNonUserCode()]
     [System.Runtime.CompilerServices.CompilerGenerated()]
     [HideModuleName()]
@@ -63,6 +64,42 @@ namespace WindowsAppVb.My.Resources
             set
             {
                 resourceCulture = value;
+            }
+        }
+
+        /// <summary>
+        /// Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static Bitmap test
+        {
+            get
+            {
+                var obj = ResourceManager.GetObject("test", resourceCulture);
+                return (Bitmap)obj;
+            }
+        }
+
+        /// <summary>
+        /// Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static Bitmap test2
+        {
+            get
+            {
+                var obj = ResourceManager.GetObject("test2", resourceCulture);
+                return (Bitmap)obj;
+            }
+        }
+
+        /// <summary>
+        /// Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static Bitmap test3
+        {
+            get
+            {
+                var obj = ResourceManager.GetObject("test3", resourceCulture);
+                return (Bitmap)obj;
             }
         }
     }

@@ -80,22 +80,14 @@ namespace ICSharpCode.CodeConverter.Shared
             progress = progress ?? new Progress<ConversionProgress>();
             using var roslynEntryPoint = await RoslynEntryPoint(progress);
 
-            var sourceFilePaths = project.Documents.SelectMany(f => GetSourcePaths(f)).ToImmutableHashSet();
             var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(project, progress, cancellationToken);
+            var sourceFilePaths = project.Documents.Concat(projectContentsConverter.Project.AdditionalDocuments).Select(d => d.FilePath).ToImmutableHashSet();
             project = projectContentsConverter.Project;
             var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress, cancellationToken);
 
 
             var results = WithProjectFile(projectContentsConverter, languageConversion, sourceFilePaths, convertProjectContents, replacements);
             await foreach (var result in results) yield return result;
-        }
-
-        private static IEnumerable<string> GetSourcePaths(Document f)
-        {
-            if (DesignerWithResx.TryCreate(f.Project.GetDirectoryPath(), f.FilePath) is DesignerWithResx d && d.SourceResxPath != d.TargetResxPath) {
-                yield return d.SourceResxPath;
-            }
-            yield return f.FilePath;
         }
 
         /// <remarks>Perf: Keep lazy so that we don't keep all files in memory at once</remarks>
@@ -192,17 +184,17 @@ namespace ICSharpCode.CodeConverter.Shared
 
             phaseProgress = StartPhase(progress, "Phase 2 of 2:");
             var secondPassResults = proj1.GetDocuments(docs1).ParallelSelectAwait(d => SecondPass(d, phaseProgress), Env.MaxDop, _cancellationToken);
-            await foreach (var result in secondPassResults.SelectMany(CreateConversionResults)) {
+            await foreach (var result in secondPassResults.Select(CreateConversionResult)) {
+                yield return result;
+            }
+            await foreach (var result in _projectContentsConverter.GetAdditionalConversionResults(_cancellationToken)) {
                 yield return result;
             }
         }
 
-        private async IAsyncEnumerable<ConversionResult> CreateConversionResults(WipFileConversion<SyntaxNode> r)
+        private ConversionResult CreateConversionResult(WipFileConversion<SyntaxNode> r)
         {
-            var initialResult = new ConversionResult(r.Wip?.ToFullString()) { SourcePathOrNull = r.Path, Exceptions = r.Errors.ToList() };
-            foreach (var result in _projectContentsConverter.GetConversionResults(initialResult)) {
-                yield return result;
-            }
+            return new ConversionResult(r.Wip?.ToFullString()) { SourcePathOrNull = r.SourcePath, TargetPathOrNull = r.TargetPath, Exceptions = r.Errors.ToList() };
         }
 
         private static Progress<string> StartPhase(IProgress<ConversionProgress> progress, string phaseTitle)
@@ -217,10 +209,10 @@ namespace ICSharpCode.CodeConverter.Shared
             if (firstPassResult.Wip != null) {
                 LogProgress(firstPassResult, "Simplifying", progress);
                 var (convertedNode, errors) = await SingleSecondPassHandled(firstPassResult.Wip);
-                return (firstPassResult.Path, convertedNode, firstPassResult.Errors.Concat(errors).Union(GetErrorsFromAnnotations(convertedNode)).ToArray());
+                return firstPassResult.With(convertedNode, firstPassResult.Errors.Concat(errors).Union(GetErrorsFromAnnotations(convertedNode)).ToArray());
             }
 
-            return (firstPassResult.Path, null, firstPassResult.Errors);
+            return firstPassResult.With(default(SyntaxNode));
         }
 
         private async Task<(SyntaxNode convertedDoc, string[] errors)> SingleSecondPassHandled(Document convertedDocument)
@@ -309,7 +301,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var indentedException = string.Join(Environment.NewLine, convertedFile.Errors)
                 .Replace(Environment.NewLine, Environment.NewLine + "    ").TrimEnd();
-            var relativePath = PathRelativeToSolutionDir(convertedFile.Path ?? "unknown");
+            var relativePath = PathRelativeToSolutionDir(convertedFile.SourcePath ?? "unknown");
 
             var containsErrors = !string.IsNullOrWhiteSpace(indentedException);
             string output;

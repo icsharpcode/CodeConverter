@@ -71,12 +71,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (firstPassResult.Wip != null)
                 {
                     docId = DocumentId.CreateNewId(project.Id);
-                    var solution = project.Solution.AddDocument(docId, firstPassResult.Path, firstPassResult.Wip,
-                        filePath: firstPassResult.Path);
+                    var solution = project.Solution.AddDocument(docId, firstPassResult.SourcePath, firstPassResult.Wip,
+                        filePath: firstPassResult.SourcePath);
                     project = solution.GetProject(project.Id);
                 }
 
-                return WipFileConversion.Create(firstPassResult.Path, docId, firstPassResult.Errors);
+                return firstPassResult.With(docId);
             }).ToList();
 
             //ToList ensures that the project returned has all documents added. We only return DocumentIds so it's easy to look up the final version of the doc later
@@ -85,7 +85,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public static IEnumerable<WipFileConversion<Document>> GetDocuments(this Project project, List<WipFileConversion<DocumentId>> docIds)
         {
-            return docIds.Select(f => WipFileConversion.Create(f.Path, f.Wip != null ? project.GetDocument(f.Wip) : null, f.Errors));
+            return docIds.Select(f => f.With(f.Wip != null ? project.GetDocument(f.Wip) : null));
         }
     }
 }

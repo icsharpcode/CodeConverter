@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis.VisualBasic;
 using System;
 using System.Threading;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace ICSharpCode.CodeConverter.VB
 {
@@ -70,9 +71,9 @@ namespace ICSharpCode.CodeConverter.VB
             return _convertedVbProject.WithDocuments(firstPassResults);
         }
 
-        public IEnumerable<ConversionResult> GetConversionResults(ConversionResult result)
+        public async IAsyncEnumerable<ConversionResult> GetAdditionalConversionResults([EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            yield return result;
+            yield break;
         }
     }
 }

@@ -46,6 +46,7 @@ namespace WindowsAppVb
             _CheckBox1.CheckedChanged += new EventHandler(ButtonMouseClickWithNoArgs2);
             _Button2 = new Button();
             _Button2.MouseClick += new MouseEventHandler(ButtonMouseClickWithNoArgs);
+            _Button2.Click += new EventHandler(Button2_Click);
             SuspendLayout();
             // 
             // Button1
@@ -73,7 +74,7 @@ namespace WindowsAppVb
             _Button2.Name = "Button2";
             _Button2.Size = new Size(75, 23);
             _Button2.TabIndex = 2;
-            _Button2.Text = "Button2";
+            _Button2.Text = "Show resources";
             _Button2.UseVisualStyleBackColor = true;
             // 
             // WinformsDesignerTest
@@ -174,12 +175,14 @@ namespace WindowsAppVb
                 if (_Button2 != null)
                 {
                     _Button2.MouseClick -= (_, __) => ButtonMouseClickWithNoArgs();
+                    _Button2.Click -= Button2_Click;
                 }
 
                 _Button2 = value;
                 if (_Button2 != null)
                 {
                     _Button2.MouseClick += (_, __) => ButtonMouseClickWithNoArgs();
+                    _Button2.Click += Button2_Click;
                 }
             }
         }

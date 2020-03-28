@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 
@@ -12,6 +14,6 @@ namespace ICSharpCode.CodeConverter.Shared
         Project Project { get; }
         Task<SyntaxNode> SingleFirstPass(Document document);
         Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProject(WipFileConversion<SyntaxNode>[] firstPassResults);
-        public IEnumerable<ConversionResult> GetConversionResults(ConversionResult result);
+        public IAsyncEnumerable<ConversionResult> GetAdditionalConversionResults(CancellationToken cancellationToken);
     }
 }

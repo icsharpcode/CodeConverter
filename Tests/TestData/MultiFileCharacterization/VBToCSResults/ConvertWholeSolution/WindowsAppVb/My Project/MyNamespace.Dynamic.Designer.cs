@@ -9,6 +9,29 @@ namespace WindowsAppVb.My
         internal partial class MyForms
         {
             [EditorBrowsable(EditorBrowsableState.Never)]
+            public FolderForm m_FolderForm;
+
+            public FolderForm FolderForm
+            {
+                [DebuggerHidden]
+                get
+                {
+                    m_FolderForm = MyForms.Create__Instance__(m_FolderForm);
+                    return m_FolderForm;
+                }
+
+                [DebuggerHidden]
+                set
+                {
+                    if (value == m_FolderForm)
+                        return;
+                    if (value is object)
+                        throw new ArgumentException("Property can only be set to Nothing");
+                    Dispose__Instance__(ref m_FolderForm);
+                }
+            }
+
+            [EditorBrowsable(EditorBrowsableState.Never)]
             public WinformsDesignerTest m_WinformsDesignerTest;
 
             public WinformsDesignerTest WinformsDesignerTest

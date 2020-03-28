@@ -11,6 +11,8 @@ using Microsoft.CodeAnalysis.VisualBasic;
 using System.Threading;
 using System.Collections.Generic;
 using System.Xml.Linq;
+using Microsoft.CodeAnalysis.Text;
+using System.Runtime.CompilerServices;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -22,6 +24,40 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// </remarks>
     internal static class ProjectMergedDeclarationExtensions
     {
+        public static Project WithAdditionalDocs(this Project vbProject, IEnumerable<string> relativePaths)
+        {
+            string projDir = vbProject.GetDirectoryPath();
+            foreach (var relativePath in relativePaths) {
+                string fullPath = Path.Combine(projDir, relativePath);
+                vbProject = vbProject.AddAdditionalDocument(relativePath, SourceText.From(File.ReadAllText(fullPath)), filePath: fullPath).Project;
+            }
+            return vbProject;
+        }
+
+        public static IEnumerable<(string RelativePath, string LastGenOutput)> ReadVbEmbeddedResources(this Project vbProject)
+        {
+            if (vbProject.FilePath == null || !File.Exists(vbProject.FilePath)) yield break;
+            var projXml = XDocument.Load(vbProject.FilePath);
+            var xmlNs = projXml.Root.GetDefaultNamespace();
+            foreach (var resx in projXml.Descendants().Where(IsStandaloneGeneratedResource)) {
+                string relativePath = GetIncludeAttribute(resx).Value;
+                string lastGenOutput = resx.Element(xmlNs + "LastGenOutput").Value;
+                yield return (relativePath, Path.Combine(Path.GetDirectoryName(relativePath), lastGenOutput));
+            }
+        }
+
+        private static bool IsStandaloneGeneratedResource(XElement t)
+        {
+            return t.Name.LocalName == "EmbeddedResource" &&
+                GetIncludeAttribute(t)?.Value?.EndsWith(".resx") == true &&
+                t.Element(t.GetDefaultNamespace() + "Generator")?.Value?.EndsWith("ResXFileCodeGenerator") == true;
+        }
+
+        private static XAttribute GetIncludeAttribute(XElement t)
+        {
+            return t.Attribute("Include");
+        }
+
         public static async Task<Project> WithRenamedMergedMyNamespace(this Project vbProject, CancellationToken cancellationToken)
         {
             string name = "MyNamespace";
