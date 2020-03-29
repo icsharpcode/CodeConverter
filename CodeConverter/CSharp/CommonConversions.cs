@@ -57,7 +57,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csCompilation = csCompilation;
         }
 
-        public async Task<(IReadOnlyCollection<VariableDeclarationSyntax> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarations(
+        public async Task<(IReadOnlyCollection<(VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarations(
             VariableDeclaratorSyntax declarator, bool preferExplicitType = false)
         {
             var vbInitValue = GetInitializerToConvert(declarator);
@@ -75,7 +75,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 requireExplicitTypeForAll |= vbInitIsNothingLiteral || isAnonymousFunction;
             }
 
-            var csVars = new Dictionary<string, VariableDeclarationSyntax>();
+            var csVars = new Dictionary<string, (VariableDeclarationSyntax Decl, ITypeSymbol Type)>();
             var csMethods = new List<CSharpSyntaxNode>();
 
             foreach (var name in declarator.Names) {
@@ -87,7 +87,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 string k = declaredSymbolType?.GetFullMetadataName() ?? name.ToString();//Use likely unique key if the type symbol isn't available
 
                 if (csVars.TryGetValue(k, out var decl)) {
-                    csVars[k] = decl.AddVariables(v);
+                    csVars[k] = (decl.Decl.AddVariables(v), decl.Type);
                     continue;
                 }
 
@@ -95,7 +95,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var variableDeclaration = CreateVariableDeclaration(declarator, preferExplicitType,
                         requireExplicitTypeForAll, vbInitializerType, declaredSymbolType, equalsValueClauseSyntax,
                         initSymbol, v);
-                    csVars[k] = variableDeclaration;
+                    csVars[k] = (variableDeclaration, declaredSymbolType);
                 } else {
                     csMethods.Add(initializerOrMethodDecl);
                 }

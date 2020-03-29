@@ -90,7 +90,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             foreach (var declarator in node.Declarators) {
                 var splitVariableDeclarations = await CommonConversions.SplitVariableDeclarations(declarator, preferExplicitType: isConst);
-                var localDeclarationStatementSyntaxs = splitVariableDeclarations.Variables.Select(decl => SyntaxFactory.LocalDeclarationStatement(modifiers, decl));
+                var localDeclarationStatementSyntaxs = splitVariableDeclarations.Variables.Select(declAndType => SyntaxFactory.LocalDeclarationStatement(modifiers, declAndType.Decl));
                 declarations.AddRange(localDeclarationStatementSyntaxs);
                 var localFunctions = splitVariableDeclarations.Methods.Cast<LocalFunctionStatementSyntax>();
                 declarations.AddRange(localFunctions);
@@ -454,7 +454,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var initializers = new List<ExpressionSyntax>();
             if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                 var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
-                declaration = (await CommonConversions.SplitVariableDeclarations(v)).Variables.Single();
+                declaration = (await CommonConversions.SplitVariableDeclarations(v)).Variables.Single().Decl;
                 declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(declaration.Variables[0].WithInitializer(SyntaxFactory.EqualsValueClause(startValue))));
                 id = SyntaxFactory.IdentifierName(declaration.Variables[0].Identifier);
             } else {
@@ -519,7 +519,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             TypeSyntax type;
             SyntaxToken id;
             if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax vds) {
-                var declaration = (await CommonConversions.SplitVariableDeclarations(vds)).Variables.Single();
+                var declaration = (await CommonConversions.SplitVariableDeclarations(vds)).Variables.Single().Decl;
                 type = declaration.Type;
                 id = declaration.Variables.Single().Identifier;
             } else {
@@ -709,7 +709,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 StatementSyntax stmt = statementSyntax;
                 foreach (var v in node.UsingStatement.Variables.Reverse())
                 foreach (var declaration in (await CommonConversions.SplitVariableDeclarations(v)).Variables.Reverse())
-                    stmt = SyntaxFactory.UsingStatement(declaration, null, stmt);
+                    stmt = SyntaxFactory.UsingStatement(declaration.Decl, null, stmt);
                 return SingleStatement(stmt);
             }
 

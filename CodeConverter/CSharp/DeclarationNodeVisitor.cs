@@ -474,10 +474,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             return declarations;
         }
 
-        private IEnumerable<MemberDeclarationSyntax> CreateMemberDeclarations(IReadOnlyCollection<VariableDeclarationSyntax> splitDeclarationVariables,
+        private IEnumerable<MemberDeclarationSyntax> CreateMemberDeclarations(IReadOnlyCollection<(VariableDeclarationSyntax Decl, ITypeSymbol Type)> splitDeclarationVariables,
             bool isWithEvents, SyntaxTokenList convertedModifiers, List<AttributeListSyntax> attributes)
         {
-            foreach (var decl in splitDeclarationVariables)
+            foreach (var (decl, type) in splitDeclarationVariables)
             {
                 if (isWithEvents) {
                     var fieldDecls = CreateWithEventsMembers(convertedModifiers, attributes, decl);
@@ -488,8 +488,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                         foreach (var additionalDecl in CreateAdditionalLocalMembers(convertedModifiers, attributes, decl)) {
                             yield return additionalDecl;
                         }
-                    } else
-                    {
+                    } else {
+
                         yield return SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, decl);
                     }
 
