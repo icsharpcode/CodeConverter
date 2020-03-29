@@ -3,51 +3,56 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using CS = Microsoft.CodeAnalysis.CSharp;
+using VBasic = Microsoft.CodeAnalysis.VisualBasic;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.Util
 {
     internal static class SyntaxExtensions
     {
-
         /// <summary>
         /// return only skipped tokens
         /// </summary>
         private static IEnumerable<SyntaxToken> GetSkippedTokens(SyntaxTriviaList list)
         {
-            return list.Where(trivia => trivia.RawKind == (int)SyntaxKind.SkippedTokensTrivia)
-                .SelectMany(t => ((SkippedTokensTriviaSyntax)t.GetStructure()).Tokens);
+            return list.Where(trivia => trivia.RawKind == (int)CS.SyntaxKind.SkippedTokensTrivia)
+                .SelectMany(t => ((VBSyntax.SkippedTokensTriviaSyntax)t.GetStructure()).Tokens);
         }
 
-        public static Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax SkipParens(this Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax expression)
+        public static CS.Syntax.ExpressionSyntax SkipParens(this CS.Syntax.ExpressionSyntax expression)
         {
             if (expression == null)
                 return null;
-            while (expression is Microsoft.CodeAnalysis.CSharp.Syntax.ParenthesizedExpressionSyntax pes) {
+            while (expression is CS.Syntax.ParenthesizedExpressionSyntax pes) {
                 expression = pes.Expression;
             }
             return expression;
         }
 
-        public static Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax SkipParens(this Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax expression)
+        public static VBSyntax.ExpressionSyntax SkipParens(this VBSyntax.ExpressionSyntax expression)
         {
             if (expression == null)
                 return null;
-            while (expression is Microsoft.CodeAnalysis.VisualBasic.Syntax.ParenthesizedExpressionSyntax pes) {
+            while (expression is VBSyntax.ParenthesizedExpressionSyntax pes) {
                 expression = pes.Expression;
             }
             return expression;
         }
 
-        public static bool IsParentKind(this SyntaxNode node, SyntaxKind kind)
+        public static bool IsParentKind(this SyntaxNode node, CS.SyntaxKind kind)
         {
             return node != null && node.Parent.IsKind(kind);
         }
 
-        public static bool IsParentKind(this SyntaxToken node, SyntaxKind kind)
+        public static bool IsParentKind(this SyntaxNode node, VBasic.SyntaxKind kind)
         {
-            return node.Parent != null && node.Parent.IsKind(kind);
+            return node?.Parent.IsKind(kind) == true;
+        }
+
+        public static bool IsParentKind(this SyntaxToken node, CS.SyntaxKind kind)
+        {
+            return node.Parent?.IsKind(kind) == true;
         }
 
         public static TSymbol GetEnclosingSymbol<TSymbol>(this SemanticModel semanticModel, int position, CancellationToken cancellationToken)
@@ -74,20 +79,20 @@ namespace ICSharpCode.CodeConverter.Util
         private static SyntaxNode FindImmediatelyEnclosingLocalVariableDeclarationSpace(SyntaxNode syntax)
         {
             for (var declSpace = syntax; declSpace != null; declSpace = declSpace.Parent) {
-                switch (declSpace.Kind()) {
+                switch (CS.CSharpExtensions.Kind(declSpace)) {
                     // These are declaration-space-defining syntaxes, by the spec:
-                    case SyntaxKind.MethodDeclaration:
-                    case SyntaxKind.IndexerDeclaration:
-                    case SyntaxKind.OperatorDeclaration:
-                    case SyntaxKind.ConstructorDeclaration:
-                    case SyntaxKind.Block:
-                    case SyntaxKind.ParenthesizedLambdaExpression:
-                    case SyntaxKind.SimpleLambdaExpression:
-                    case SyntaxKind.AnonymousMethodExpression:
-                    case SyntaxKind.SwitchStatement:
-                    case SyntaxKind.ForEachKeyword:
-                    case SyntaxKind.ForStatement:
-                    case SyntaxKind.UsingStatement:
+                    case CS.SyntaxKind.MethodDeclaration:
+                    case CS.SyntaxKind.IndexerDeclaration:
+                    case CS.SyntaxKind.OperatorDeclaration:
+                    case CS.SyntaxKind.ConstructorDeclaration:
+                    case CS.SyntaxKind.Block:
+                    case CS.SyntaxKind.ParenthesizedLambdaExpression:
+                    case CS.SyntaxKind.SimpleLambdaExpression:
+                    case CS.SyntaxKind.AnonymousMethodExpression:
+                    case CS.SyntaxKind.SwitchStatement:
+                    case CS.SyntaxKind.ForEachKeyword:
+                    case CS.SyntaxKind.ForStatement:
+                    case CS.SyntaxKind.UsingStatement:
 
                     // SPEC VIOLATION: We also want to stop walking out if, say, we are in a field
                     // initializer. Technically according to the wording of the spec it should be
@@ -95,7 +100,7 @@ namespace ICSharpCode.CodeConverter.Util
                     // it does not define a local variable declaration space. In practice of course
                     // we want to check for that. (As the native compiler does as well.)
 
-                    case SyntaxKind.FieldDeclaration:
+                    case CS.SyntaxKind.FieldDeclaration:
                         return declSpace;
                 }
             }
