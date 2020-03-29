@@ -489,7 +489,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                             yield return additionalDecl;
                         }
                     } else {
-
+                        if (type?.SpecialType == SpecialType.System_DateTime) {
+                            var index = convertedModifiers.IndexOf(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
+                            if (index >= 0) {
+                                convertedModifiers = convertedModifiers.Replace(convertedModifiers[index], SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
+                            }
+                        }
                         yield return SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, decl);
                     }
 

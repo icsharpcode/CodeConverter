@@ -68,15 +68,44 @@ using System.Runtime.InteropServices;
 
 public partial class Issue213
 {
-    private const DateTime x = DateTime.Parse(""1990-01-01"");
+    private static DateTime x = DateTime.Parse(""1990-01-01"");
 
     private void Y([Optional, DateTimeConstant(627667488000000000/* Global.Issue213.x */)] DateTime opt)
     {
     }
-}
-2 target compilation errors:
-CS0283: The type 'DateTime' cannot be declared const
-CS0133: The expression being assigned to 'Issue213.x' must be constant");
+}");
+        }
+
+        [Fact]
+        public async Task OptionalRefDateConstsWithOmittedArgList()
+        {
+            await TestConversionVisualBasicToCSharp(@"Public Class Issue213
+    Const x As Date = #1990-1-1#
+
+    Private Sub Y(Optional ByRef opt As Date = x)
+    End Sub
+
+    Private Sub CallsY()
+        Y
+    End Sub
+End Class", @"using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+public partial class Issue213
+{
+    private static DateTime x = DateTime.Parse(""1990-01-01"");
+
+    private void Y([Optional, DateTimeConstant(627667488000000000/* Global.Issue213.x */)] ref DateTime opt)
+    {
+    }
+
+    private void CallsY()
+    {
+        DateTime argopt = DateTime.Parse(""1990-01-01"");
+        Y(opt: ref argopt);
+    }
+}");
         }
 
         [Fact]

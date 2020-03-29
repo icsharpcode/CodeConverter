@@ -483,7 +483,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.ObjectCreationExpression(
                 (TypeSyntax) await node.Type.AcceptAsync(TriviaConvertingExpressionVisitor),
                 // VB can omit empty arg lists:
-                (ArgumentListSyntax) await node.ArgumentList.AcceptAsync(TriviaConvertingExpressionVisitor) ?? SyntaxFactory.ArgumentList(),
+                await ConvertArgumentListOrEmpty(node, node.ArgumentList),
                 (InitializerExpressionSyntax) await node.Initializer.AcceptAsync(TriviaConvertingExpressionVisitor)
             );
         }
@@ -803,7 +803,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var idToken = expr.DescendantTokens().Last(t => t.IsKind(SyntaxKind.IdentifierToken));
                 expr = ReplaceRightmostIdentifierText(expr, idToken, overrideIdentifier);
 
-                var args = await ConvertArgumentListOrEmpty(node.ArgumentList);
+                var args = await ConvertArgumentListOrEmpty(node, node.ArgumentList);
                 if (extraArg != null) {
                     args = args.WithArguments(args.Arguments.Add(SyntaxFactory.Argument(extraArg)));
                 }
@@ -832,7 +832,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return SyntaxFactory.InvocationExpression(convertedExpression,
-                await ConvertArgumentListOrEmpty(node.ArgumentList));
+                await ConvertArgumentListOrEmpty(node, node.ArgumentList));
 
             async Task<(ExpressionSyntax, bool isElementAccess)> ConvertInvocationSubExpression()
             {
@@ -1235,17 +1235,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<IEnumerable<ArgumentSyntax>> ConvertArguments(VBasic.Syntax.ArgumentListSyntax node)
         {
             ISymbol invocationSymbol = GetInvocationSymbol(node.Parent);
-            int vbPositionalArgs = node.Arguments.TakeWhile(a => !a.IsNamed).Count();
-            var namedArgNames = new HashSet<string>(node.Arguments.OfType<VBasic.Syntax.SimpleArgumentSyntax>().Where(a => a.IsNamed).Select(a => a.NameColonEquals.Name.Identifier.Text), StringComparer.OrdinalIgnoreCase);
             bool forceNamedParameters = false;
             var argumentSyntaxs = (await node.Arguments.SelectAsync(async (a, i) => await ConvertArg(a, i)))
                 .Where(a => a != null);
-
-            if (invocationSymbol != null) {
-                var requiredInCs = invocationSymbol.GetParameters()
-                    .Where((p, i) => p.HasExplicitDefaultValue && p.RefKind != RefKind.None && i >= vbPositionalArgs && !namedArgNames.Contains(p.Name));
-                argumentSyntaxs = argumentSyntaxs.Concat(requiredInCs.Select(CreateOptionalRefArg));
-            }
+            argumentSyntaxs = argumentSyntaxs.Concat(GetAdditionalRequiredArgs(invocationSymbol, node.Arguments));
 
             return argumentSyntaxs;
 
@@ -1270,6 +1263,19 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 return argumentSyntax;
             }
+        }
+
+        private IEnumerable<ArgumentSyntax> GetAdditionalRequiredArgs(ISymbol invocationSymbol, IReadOnlyCollection<VBasic.Syntax.ArgumentSyntax> existingArgs)
+        {
+            int vbPositionalArgs = existingArgs.TakeWhile(a => !a.IsNamed).Count();
+            var namedArgNames = new HashSet<string>(existingArgs.OfType<VBasic.Syntax.SimpleArgumentSyntax>().Where(a => a.IsNamed).Select(a => a.NameColonEquals.Name.Identifier.Text), StringComparer.OrdinalIgnoreCase);
+            if (invocationSymbol != null) {
+                var requiredInCs = invocationSymbol.GetParameters()
+                    .Where((p, i) => p.HasExplicitDefaultValue && p.RefKind != RefKind.None && i >= vbPositionalArgs && !namedArgNames.Contains(p.Name));
+                return requiredInCs.Select(CreateOptionalRefArg);
+            }
+
+            return Enumerable.Empty<ArgumentSyntax>();
         }
 
         private ArgumentSyntax CreateOptionalRefArg(IParameterSymbol p)
@@ -1346,9 +1352,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             return !node.IsParentKind(VBasic.SyntaxKind.CallStatement) && !(symbol is IMethodSymbol) && symbolReturnType.IsErrorType() && node.Expression is VBasic.Syntax.IdentifierNameSyntax && node.ArgumentList?.Arguments.Any() == true;
         }
 
-        private async Task<ArgumentListSyntax> ConvertArgumentListOrEmpty(VBasic.Syntax.ArgumentListSyntax argumentListSyntax)
+        private async Task<ArgumentListSyntax> ConvertArgumentListOrEmpty(SyntaxNode node, VBSyntax.ArgumentListSyntax argumentList)
         {
-            return (ArgumentListSyntax) await argumentListSyntax.AcceptAsync(TriviaConvertingExpressionVisitor) ?? SyntaxFactory.ArgumentList();
+            return (ArgumentListSyntax)await argumentList.AcceptAsync(TriviaConvertingExpressionVisitor) ?? CreateArgList(_semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol);
+        }
+
+        private ArgumentListSyntax CreateArgList(IMethodSymbol methodSymbol)
+        {
+            return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(
+                       GetAdditionalRequiredArgs(methodSymbol, Array.Empty<VBSyntax.ArgumentSyntax>()))
+                   );
         }
 
         private async Task<CSharpSyntaxNode> SubstituteVisualBasicMethodOrNull(VBasic.Syntax.InvocationExpressionSyntax node)
@@ -1366,8 +1379,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(SyntaxNode node, ExpressionSyntax id)
         {
-            return _semanticModel.GetOperation(node)?.Kind == OperationKind.Invocation
-                ? SyntaxFactory.InvocationExpression(id, SyntaxFactory.ArgumentList())
+            return _semanticModel.GetOperation(node) is IInvocationOperation invocation
+                ? SyntaxFactory.InvocationExpression(id, CreateArgList(invocation.TargetMethod))
                 : id;
         }
 

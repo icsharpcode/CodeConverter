@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Use ToString for numeric types rather than Conversions.ToString
 * Convert optional ref parameters - fixes #91
 * Always convert Call statement to method call [#445](https://github.com/icsharpcode/CodeConverter/issues/445)
+* Avoid compilation errors when converting const Dates [#213](https://github.com/icsharpcode/CodeConverter/issues/213)
 
 ### C# -> VB
 
