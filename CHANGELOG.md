@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Omit conversion in string concatenation where possible [#508](https://github.com/icsharpcode/CodeConverter/issues/508)
 * Use ToString for numeric types rather than Conversions.ToString
 * Convert optional ref parameters - fixes #91
+* Always convert Call statement to method call [#445](https://github.com/icsharpcode/CodeConverter/issues/445)
 
 ### C# -> VB
 

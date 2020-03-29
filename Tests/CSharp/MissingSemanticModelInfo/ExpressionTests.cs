@@ -340,5 +340,15 @@ BC30002: Type 'SomeUnknownType' is not defined.
 CS0246: The type or namespace name 'SomeUnknownType' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
+        [Fact]
+        public async Task CallShouldAlwaysBecomeInvocation()
+        {
+            await TestConversionVisualBasicToCSharp(
+                @"Call mySuperFunction(strSomething, , optionalSomething)",
+                @"mySuperFunction(strSomething, default, optionalSomething);",
+                expectSurroundingBlock: true, missingSemanticInfo: true
+            );
+        }
+
     }
 }

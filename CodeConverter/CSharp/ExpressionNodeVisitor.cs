@@ -1232,7 +1232,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             ISymbol invocationSymbol = GetInvocationSymbol(node.Parent);
             int vbPositionalArgs = node.Arguments.TakeWhile(a => !a.IsNamed).Count();
             var namedArgNames = new HashSet<string>(node.Arguments.OfType<VBasic.Syntax.SimpleArgumentSyntax>().Where(a => a.IsNamed).Select(a => a.NameColonEquals.Name.Identifier.Text), StringComparer.OrdinalIgnoreCase);
-            bool afterOmitted = false;
+            bool forceNamedParameters = false;
             var argumentSyntaxs = (await node.Arguments.SelectAsync(async (a, i) => await ConvertArg(a, i)))
                 .Where(a => a != null);
 
@@ -1247,9 +1247,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             async Task<ArgumentSyntax> ConvertArg(VBSyntax.ArgumentSyntax a, int i)
             {
                 if (a.IsOmitted) {
-                    afterOmitted = true;
-
                     if (invocationSymbol != null) {
+                        forceNamedParameters = true;
                         return null; //Prefer to skip omitted and use named parameters when the symbol is available
                     }
 
@@ -1259,7 +1258,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var argumentSyntax = (ArgumentSyntax)await a.AcceptAsync(TriviaConvertingExpressionVisitor);
 
-                if (afterOmitted) {
+                if (forceNamedParameters) {
                     var elementAtOrDefault = invocationSymbol.GetParameters().ElementAt(i).Name;
                     return argumentSyntax.WithNameColon(SyntaxFactory.NameColon(elementAtOrDefault));
                 }
@@ -1339,7 +1338,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         private static bool ProbablyNotAMethodCall(VBasic.Syntax.InvocationExpressionSyntax node, ISymbol symbol, ITypeSymbol symbolReturnType)
         {
-            return !(symbol is IMethodSymbol) && symbolReturnType.IsErrorType() && node.Expression is VBasic.Syntax.IdentifierNameSyntax && node.ArgumentList?.Arguments.Any() == true;
+            return !node.IsParentKind(VBasic.SyntaxKind.CallStatement) && !(symbol is IMethodSymbol) && symbolReturnType.IsErrorType() && node.Expression is VBasic.Syntax.IdentifierNameSyntax && node.ArgumentList?.Arguments.Any() == true;
         }
 
         private async Task<ArgumentListSyntax> ConvertArgumentListOrEmpty(VBasic.Syntax.ArgumentListSyntax argumentListSyntax)
