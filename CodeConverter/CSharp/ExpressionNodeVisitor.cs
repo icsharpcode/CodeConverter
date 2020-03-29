@@ -924,25 +924,30 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             EqualsValueClauseSyntax @default = null;
             if (node.Default != null) {
-                if (node.Default.Value is VBSyntax.LiteralExpressionSyntax les && les.Token.Value is DateTime dt) {
-                    var dateTimeAsLongCsLiteral = LiteralConversions.GetLiteralExpression(dt.Ticks, dt.Ticks + "L");
-                    var dateTimeArg = CommonConversions.CreateAttributeArgumentList(SyntaxFactory.AttributeArgument(dateTimeAsLongCsLiteral));
-                    _extraUsingDirectives.Add("System.Runtime.InteropServices");
-                    _extraUsingDirectives.Add("System.Runtime.CompilerServices");
-                    var optionalDateTimeAttributes = new[] {
-                        SyntaxFactory.Attribute(SyntaxFactory.ParseName("Optional")),
-                        SyntaxFactory.Attribute(SyntaxFactory.ParseName("DateTimeConstant"), dateTimeArg)
+                var defaultValue = node.Default.Value.SkipParens();
+                if (_semanticModel.GetTypeInfo(defaultValue).Type?.SpecialType == SpecialType.System_DateTime) {
+                    var constant = _semanticModel.GetConstantValue(defaultValue);
+                    if (constant.HasValue && constant.Value is DateTime dt) {
+                        var dateTimeAsLongCsLiteral = CommonConversions.Literal(dt.Ticks)
+                            .WithTrailingTrivia(SyntaxFactory.ParseTrailingTrivia($"/* {defaultValue} */"));
+                        var dateTimeArg = CommonConversions.CreateAttributeArgumentList(SyntaxFactory.AttributeArgument(dateTimeAsLongCsLiteral));
+                        _extraUsingDirectives.Add("System.Runtime.InteropServices");
+                        _extraUsingDirectives.Add("System.Runtime.CompilerServices");
+                        var optionalDateTimeAttributes = new[] {
+                        SyntaxFactory.Attribute(SyntaxFactory.IdentifierName("Optional")),
+                        SyntaxFactory.Attribute(SyntaxFactory.IdentifierName("DateTimeConstant"), dateTimeArg)
                     };
-                    attributes.Insert(0,
-                        SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(optionalDateTimeAttributes)));
+                        attributes.Insert(0,
+                            SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(optionalDateTimeAttributes)));
+                    }
                 } else if (node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.ByRefKeyword))) {
                     var defaultExpression = (ExpressionSyntax)await node.Default.Value.AcceptAsync(TriviaConvertingExpressionVisitor);
                     var arg = CommonConversions.CreateAttributeArgumentList(SyntaxFactory.AttributeArgument(defaultExpression));
                     _extraUsingDirectives.Add("System.Runtime.InteropServices");
                     _extraUsingDirectives.Add("System.Runtime.CompilerServices");
                     var optionalAttributes = new[] {
-                        SyntaxFactory.Attribute(SyntaxFactory.ParseName("Optional")),
-                        SyntaxFactory.Attribute(SyntaxFactory.ParseName("DefaultParameterValue"), arg)
+                        SyntaxFactory.Attribute(SyntaxFactory.IdentifierName("Optional")),
+                        SyntaxFactory.Attribute(SyntaxFactory.IdentifierName("DefaultParameterValue"), arg)
                     };
                     attributes.Insert(0,
                         SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(optionalAttributes)));

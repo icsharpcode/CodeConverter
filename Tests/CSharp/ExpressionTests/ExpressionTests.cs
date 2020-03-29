@@ -43,7 +43,7 @@ using System.Runtime.InteropServices;
 
 internal partial class TestClass
 {
-    private void TestMethod([Optional, DateTimeConstant(599266080000000000L)] DateTime date)
+    private void TestMethod([Optional, DateTimeConstant(599266080000000000/* #1/1/1900# */)] DateTime date)
     {
         var rslt = DateTime.Parse(""1900-01-01"");
         var rslt2 = DateTime.Parse(""2002-08-13 12:14:00"");
@@ -52,6 +52,31 @@ internal partial class TestClass
 2 source compilation errors:
 BC30183: Keyword is not valid as an identifier.
 BC32024: Default values cannot be supplied for parameters that are not declared 'Optional'.");
+        }
+
+        [Fact]
+        public async Task DateConsts()
+        {
+            await TestConversionVisualBasicToCSharp(@"Public Class Issue213
+    Const x As Date = #1990-1-1#
+
+    Private Sub Y(Optional ByVal opt As Date = x)
+    End Sub
+End Class", @"using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+public partial class Issue213
+{
+    private const DateTime x = DateTime.Parse(""1990-01-01"");
+
+    private void Y([Optional, DateTimeConstant(627667488000000000/* Global.Issue213.x */)] DateTime opt)
+    {
+    }
+}
+2 target compilation errors:
+CS0283: The type 'DateTime' cannot be declared const
+CS0133: The expression being assigned to 'Issue213.x' must be constant");
         }
 
         [Fact]
