@@ -138,9 +138,9 @@ public partial class Class1
         Bar(x = True)
     End Sub
 
-    Sub Foo2()
+    Function Foo2()
         Return Bar(True = False)
-    End Sub
+    End Function
 
     Sub Foo3()
         If Bar(True = False) Then Bar(True = False)
@@ -160,8 +160,9 @@ public partial class Class1
         Bar(Nothing)
     End Sub
 
-    Sub Bar(ByRef b As Boolean)
-    End Sub
+    Function Bar(ByRef b As Boolean) As Boolean
+            Return True
+    End Function
 
     Function Bar2(ByRef c1 As Class1) As Integer
         If c1 IsNot Nothing AndAlso Len(Bar3(Me)) <> 0 Then
@@ -185,7 +186,7 @@ public partial class Class1
         Bar(ref argb);
     }
 
-    public void Foo2()
+    public object Foo2()
     {
         bool argb = true == false;
         return Bar(ref argb);
@@ -228,8 +229,9 @@ public partial class Class1
         Bar(ref argb);
     }
 
-    public void Bar(ref bool b)
+    public bool Bar(ref bool b)
     {
+        return true;
     }
 
     public int Bar2(ref Class1 c1)
@@ -247,13 +249,7 @@ public partial class Class1
     {
         return """";
     }
-}
-2 source compilation errors:
-BC30647: 'Return' statement in a Sub or a Set cannot return a value.
-BC30491: Expression does not produce a value.
-2 target compilation errors:
-CS0127: Since 'Class1.Foo2()' returns void, a return keyword must not be followed by an object expression
-CS0029: Cannot implicitly convert type 'void' to 'bool'");
+}");
         }
 
         [Fact]
