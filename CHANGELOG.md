@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [8.0.3] - 2020-03-29
+
+
+### Vsix
+
+
+### VB -> C#
+
 * All resx files now moved to project root [#551](https://github.com/icsharpcode/CodeConverter/issues/551)
 * Register event handlers for DesignerGenerated [#550](https://github.com/icsharpcode/CodeConverter/issues/550)
 * Improve qualification with arguments of unknown type [#481](https://github.com/icsharpcode/CodeConverter/issues/481)
