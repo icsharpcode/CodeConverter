@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace WindowsAppVb
@@ -94,7 +95,7 @@ namespace WindowsAppVb
             PerformLayout();
         }
 
-        public static bool TestSub(ref bool IsDefault = false)
+        public static bool TestSub([Optional, DefaultParameterValue(false)] ref bool IsDefault)
         {
             return default;
         }

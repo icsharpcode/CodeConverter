@@ -27,7 +27,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public AdditionalLocal AddAdditionalLocal(AdditionalLocal additionalLocal)
         {
-            _additionalLocals.Peek().Add(additionalLocal.ID, additionalLocal);
+            _additionalLocals.Peek().Add(additionalLocal.Id, additionalLocal);
             return additionalLocal;
         }
 

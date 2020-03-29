@@ -399,7 +399,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitSimpleArgument(VBasic.Syntax.SimpleArgumentSyntax node)
         {
-            var invocation = node.Parent.Parent;
+            var argList = (VBasic.Syntax.ArgumentListSyntax)node.Parent;
+            var invocation = argList.Parent;
             if (invocation is VBasic.Syntax.ArrayCreationExpressionSyntax)
                 return await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
             var symbol = GetInvocationSymbol(invocation);
@@ -407,12 +408,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             string argName = null;
             RefKind refKind = RefKind.None;
             if (symbol is IMethodSymbol methodSymbol) {
-                int argId = ((VBasic.Syntax.ArgumentListSyntax)node.Parent).Arguments.IndexOf(node);
                 var parameters = (CommonConversions.GetCsOriginalSymbolOrNull(methodSymbol.OriginalDefinition) ?? methodSymbol).GetParameters();
-                //WARNING: If named parameters can reach here it won't work properly for them
-                if (argId < parameters.Count()) {
-                    refKind = parameters[argId].RefKind;
-                    argName = parameters[argId].Name;
+                var parameter = !node.IsNamed ? parameters.ElementAtOrDefault(argList.Arguments.IndexOf(node)) : parameters.FirstOrDefault(p => p.Name.Equals(node.NameColonEquals.Name.Identifier.Text, StringComparison.OrdinalIgnoreCase));
+                if (parameter != null) {
+                    refKind = parameter.RefKind;
+                    argName = parameter.Name;
                 }
                 switch (refKind) {
                     case RefKind.None:
@@ -441,7 +441,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (local == null) {
                 return SyntaxFactory.Argument(nameColon, token, expression);
             } else {
-                return SyntaxFactory.Argument(nameColon, token, SyntaxFactory.IdentifierName(local.ID).WithAdditionalAnnotations(AdditionalLocals.Annotation));
+                return SyntaxFactory.Argument(nameColon, token, local.IdentifierName);
             }
         }
 
@@ -935,6 +935,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                     };
                     attributes.Insert(0,
                         SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(optionalDateTimeAttributes)));
+                } else if (node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.ByRefKeyword))) {
+                    var defaultExpression = (ExpressionSyntax)await node.Default.Value.AcceptAsync(TriviaConvertingExpressionVisitor);
+                    var arg = CommonConversions.CreateAttributeArgumentList(SyntaxFactory.AttributeArgument(defaultExpression));
+                    _extraUsingDirectives.Add("System.Runtime.InteropServices");
+                    _extraUsingDirectives.Add("System.Runtime.CompilerServices");
+                    var optionalAttributes = new[] {
+                        SyntaxFactory.Attribute(SyntaxFactory.ParseName("Optional")),
+                        SyntaxFactory.Attribute(SyntaxFactory.ParseName("DefaultParameterValue"), arg)
+                    };
+                    attributes.Insert(0,
+                        SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(optionalAttributes)));
                 } else {
                     @default = SyntaxFactory.EqualsValueClause(
                         (ExpressionSyntax) await node.Default.Value.AcceptAsync(TriviaConvertingExpressionVisitor));
@@ -1218,28 +1229,50 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<IEnumerable<ArgumentSyntax>> ConvertArguments(VBasic.Syntax.ArgumentListSyntax node)
         {
-            ISymbol invocationSymbolForForcedNames = null;
-            var argumentSyntaxs = (await node.Arguments.SelectAsync(async (a, i) => {
+            ISymbol invocationSymbol = GetInvocationSymbol(node.Parent);
+            int vbPositionalArgs = node.Arguments.TakeWhile(a => !a.IsNamed).Count();
+            var namedArgNames = new HashSet<string>(node.Arguments.OfType<VBasic.Syntax.SimpleArgumentSyntax>().Where(a => a.IsNamed).Select(a => a.NameColonEquals.Name.Identifier.Text), StringComparer.OrdinalIgnoreCase);
+            bool afterOmitted = false;
+            var argumentSyntaxs = (await node.Arguments.SelectAsync(async (a, i) => await ConvertArg(a, i)))
+                .Where(a => a != null);
+
+            if (invocationSymbol != null) {
+                var requiredInCs = invocationSymbol.GetParameters()
+                    .Where((p, i) => p.HasExplicitDefaultValue && p.RefKind != RefKind.None && i >= vbPositionalArgs && !namedArgNames.Contains(p.Name));
+                argumentSyntaxs = argumentSyntaxs.Concat(requiredInCs.Select(CreateOptionalRefArg));
+            }
+
+            return argumentSyntaxs;
+
+            async Task<ArgumentSyntax> ConvertArg(VBSyntax.ArgumentSyntax a, int i)
+            {
                 if (a.IsOmitted) {
-                    invocationSymbolForForcedNames = GetInvocationSymbol(node.Parent);
-                    if (invocationSymbolForForcedNames != null) {
-                        return null;
+                    afterOmitted = true;
+
+                    if (invocationSymbol != null) {
+                        return null; //Prefer to skip omitted and use named parameters when the symbol is available
                     }
 
                     var defaultLiteral = SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
                     return SyntaxFactory.Argument(defaultLiteral);
                 }
 
-                var argumentSyntax = (ArgumentSyntax) await a.AcceptAsync(TriviaConvertingExpressionVisitor);
+                var argumentSyntax = (ArgumentSyntax)await a.AcceptAsync(TriviaConvertingExpressionVisitor);
 
-                if (invocationSymbolForForcedNames != null) {
-                    var elementAtOrDefault = invocationSymbolForForcedNames.GetParameters().ElementAt(i).Name;
+                if (afterOmitted) {
+                    var elementAtOrDefault = invocationSymbol.GetParameters().ElementAt(i).Name;
                     return argumentSyntax.WithNameColon(SyntaxFactory.NameColon(elementAtOrDefault));
                 }
 
                 return argumentSyntax;
-            })).Where(a => a != null);
-            return argumentSyntaxs;
+            }
+        }
+
+        private ArgumentSyntax CreateOptionalRefArg(IParameterSymbol p)
+        {
+            string prefix = $"arg{p.Name}";
+            var local = _additionalLocals.AddAdditionalLocal(new AdditionalLocal(prefix, CommonConversions.Literal(p.ExplicitDefaultValue), CommonConversions.GetTypeSyntax(p.Type)));
+            return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, p.RefKind, local.IdentifierName);
         }
 
         private bool NeedsVariableForArgument(VBasic.Syntax.SimpleArgumentSyntax node)
