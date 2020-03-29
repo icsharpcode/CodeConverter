@@ -1,6 +1,6 @@
 ---
 name: General bug report
-about: Something unrelated to the converted code is wrong
+about: Error dialog, crash, or anything else unrelated to the converted code is wrong
 title: ''
 labels: ''
 assignees: ''
