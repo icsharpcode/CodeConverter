@@ -177,5 +177,11 @@
   <ItemGroup>
     <None Include="Folder\test2.png" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\VbNetStandardLib\VbNetStandardLib.vbproj">
+      <Project>{fbfbe639-a532-408a-960d-288e05feeb0e}</Project>
+      <Name>VbNetStandardLib</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
 </Project>

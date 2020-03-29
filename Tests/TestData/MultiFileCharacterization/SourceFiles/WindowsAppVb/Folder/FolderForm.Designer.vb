@@ -36,15 +36,18 @@ Partial Class FolderForm
         Me.ToolStripButton10 = New System.Windows.Forms.ToolStripButton()
         Me.ToolStripButton11 = New System.Windows.Forms.ToolStripButton()
         Me.ToolStripButton12 = New System.Windows.Forms.ToolStripButton()
+        Me.ToolStripButton13 = New System.Windows.Forms.ToolStripButton()
+        Me.ToolStripButton14 = New System.Windows.Forms.ToolStripButton()
+        Me.ToolStripButton15 = New System.Windows.Forms.ToolStripButton()
         Me.ToolStrip1.SuspendLayout()
         Me.SuspendLayout()
         '
         'ToolStrip1
         '
-        Me.ToolStrip1.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.ToolStripButton1, Me.ToolStripButton2, Me.ToolStripButton3, Me.ToolStripButton4, Me.ToolStripButton5, Me.ToolStripButton6, Me.ToolStripButton7, Me.ToolStripButton8, Me.ToolStripButton9, Me.ToolStripButton10, Me.ToolStripButton11, Me.ToolStripButton12})
+        Me.ToolStrip1.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.ToolStripButton1, Me.ToolStripButton2, Me.ToolStripButton3, Me.ToolStripButton4, Me.ToolStripButton5, Me.ToolStripButton6, Me.ToolStripButton7, Me.ToolStripButton8, Me.ToolStripButton9, Me.ToolStripButton10, Me.ToolStripButton11, Me.ToolStripButton12, Me.ToolStripButton13, Me.ToolStripButton14, Me.ToolStripButton15})
         Me.ToolStrip1.Location = New System.Drawing.Point(0, 0)
         Me.ToolStrip1.Name = "ToolStrip1"
-        Me.ToolStrip1.Size = New System.Drawing.Size(483, 25)
+        Me.ToolStrip1.Size = New System.Drawing.Size(621, 25)
         Me.ToolStrip1.TabIndex = 0
         Me.ToolStrip1.Text = "ToolStrip1"
         '
@@ -156,14 +159,42 @@ Partial Class FolderForm
         Me.ToolStripButton12.Size = New System.Drawing.Size(23, 22)
         Me.ToolStripButton12.Text = "ToolStripButton12"
         '
+        'ToolStripButton13
+        '
+        Me.ToolStripButton13.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image
+        Me.ToolStripButton13.Image = CType(resources.GetObject("ToolStripButton13.Image"), System.Drawing.Image)
+        Me.ToolStripButton13.ImageTransparentColor = System.Drawing.Color.Magenta
+        Me.ToolStripButton13.Name = "ToolStripButton13"
+        Me.ToolStripButton13.Size = New System.Drawing.Size(23, 22)
+        Me.ToolStripButton13.Text = "ToolStripButton13"
+        '
+        'ToolStripButton14
+        '
+        Me.ToolStripButton14.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image
+        Me.ToolStripButton14.Image = CType(resources.GetObject("ToolStripButton14.Image"), System.Drawing.Image)
+        Me.ToolStripButton14.ImageTransparentColor = System.Drawing.Color.Magenta
+        Me.ToolStripButton14.Name = "ToolStripButton14"
+        Me.ToolStripButton14.Size = New System.Drawing.Size(23, 22)
+        Me.ToolStripButton14.Text = "ToolStripButton14"
+        '
+        'ToolStripButton15
+        '
+        Me.ToolStripButton15.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image
+        Me.ToolStripButton15.Image = CType(resources.GetObject("ToolStripButton15.Image"), System.Drawing.Image)
+        Me.ToolStripButton15.ImageTransparentColor = System.Drawing.Color.Magenta
+        Me.ToolStripButton15.Name = "ToolStripButton15"
+        Me.ToolStripButton15.Size = New System.Drawing.Size(23, 22)
+        Me.ToolStripButton15.Text = "ToolStripButton15"
+        '
         'FolderForm
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(483, 257)
+        Me.ClientSize = New System.Drawing.Size(621, 257)
         Me.Controls.Add(Me.ToolStrip1)
         Me.Name = "FolderForm"
-        Me.Text = "DesignTime images: 123123 then 6 blank, Runtime: 123123123123"
+        Me.Text = "DesignTime images: 123123 then 9 blank, Runtime: 123123123123111 - check tooltips" &
+    ""
         Me.ToolStrip1.ResumeLayout(False)
         Me.ToolStrip1.PerformLayout()
         Me.ResumeLayout(False)
@@ -184,4 +215,7 @@ Partial Class FolderForm
     Friend WithEvents ToolStripButton10 As ToolStripButton
     Friend WithEvents ToolStripButton11 As ToolStripButton
     Friend WithEvents ToolStripButton12 As ToolStripButton
+    Friend WithEvents ToolStripButton13 As ToolStripButton
+    Friend WithEvents ToolStripButton14 As ToolStripButton
+    Friend WithEvents ToolStripButton15 As ToolStripButton
 End Class

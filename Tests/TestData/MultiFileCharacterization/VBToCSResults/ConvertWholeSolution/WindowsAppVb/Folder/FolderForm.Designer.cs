@@ -51,15 +51,18 @@ namespace WindowsAppVb
             _ToolStripButton10 = new ToolStripButton();
             _ToolStripButton11 = new ToolStripButton();
             _ToolStripButton12 = new ToolStripButton();
+            _ToolStripButton13 = new ToolStripButton();
+            _ToolStripButton14 = new ToolStripButton();
+            _ToolStripButton15 = new ToolStripButton();
             _ToolStrip1.SuspendLayout();
             SuspendLayout();
             // 
             // ToolStrip1
             // 
-            _ToolStrip1.Items.AddRange(new ToolStripItem[] { _ToolStripButton1, _ToolStripButton2, _ToolStripButton3, _ToolStripButton4, _ToolStripButton5, _ToolStripButton6, _ToolStripButton7, _ToolStripButton8, _ToolStripButton9, _ToolStripButton10, _ToolStripButton11, _ToolStripButton12 });
+            _ToolStrip1.Items.AddRange(new ToolStripItem[] { _ToolStripButton1, _ToolStripButton2, _ToolStripButton3, _ToolStripButton4, _ToolStripButton5, _ToolStripButton6, _ToolStripButton7, _ToolStripButton8, _ToolStripButton9, _ToolStripButton10, _ToolStripButton11, _ToolStripButton12, _ToolStripButton13, _ToolStripButton14, _ToolStripButton15 });
             _ToolStrip1.Location = new Point(0, 0);
             _ToolStrip1.Name = "ToolStrip1";
-            _ToolStrip1.Size = new Size(483, 25);
+            _ToolStrip1.Size = new Size(621, 25);
             _ToolStrip1.TabIndex = 0;
             _ToolStrip1.Text = "ToolStrip1";
             // 
@@ -171,14 +174,41 @@ namespace WindowsAppVb
             _ToolStripButton12.Size = new Size(23, 22);
             _ToolStripButton12.Text = "ToolStripButton12";
             // 
+            // ToolStripButton13
+            // 
+            _ToolStripButton13.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            _ToolStripButton13.Image = (Image)resources.GetObject("ToolStripButton13.Image");
+            _ToolStripButton13.ImageTransparentColor = Color.Magenta;
+            _ToolStripButton13.Name = "ToolStripButton13";
+            _ToolStripButton13.Size = new Size(23, 22);
+            _ToolStripButton13.Text = "ToolStripButton13";
+            // 
+            // ToolStripButton14
+            // 
+            _ToolStripButton14.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            _ToolStripButton14.Image = (Image)resources.GetObject("ToolStripButton14.Image");
+            _ToolStripButton14.ImageTransparentColor = Color.Magenta;
+            _ToolStripButton14.Name = "ToolStripButton14";
+            _ToolStripButton14.Size = new Size(23, 22);
+            _ToolStripButton14.Text = "ToolStripButton14";
+            // 
+            // ToolStripButton15
+            // 
+            _ToolStripButton15.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            _ToolStripButton15.Image = (Image)resources.GetObject("ToolStripButton15.Image");
+            _ToolStripButton15.ImageTransparentColor = Color.Magenta;
+            _ToolStripButton15.Name = "ToolStripButton15";
+            _ToolStripButton15.Size = new Size(23, 22);
+            _ToolStripButton15.Text = "ToolStripButton15";
+            // 
             // FolderForm
             // 
             AutoScaleDimensions = new SizeF(6.0F, 13.0F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(483, 257);
+            ClientSize = new Size(621, 257);
             Controls.Add(_ToolStrip1);
             Name = "FolderForm";
-            Text = "DesignTime images: 123123 then 6 blank, Runtime: 123123123123";
+            Text = "DesignTime images: 123123 then 9 blank, Runtime: 123123123123111 - check tooltips" + "";
             _ToolStrip1.ResumeLayout(false);
             _ToolStrip1.PerformLayout();
             Load += new EventHandler(FolderForm_Load);
@@ -493,6 +523,78 @@ namespace WindowsAppVb
 
                 _ToolStripButton12 = value;
                 if (_ToolStripButton12 != null)
+                {
+                }
+            }
+        }
+
+        private ToolStripButton _ToolStripButton13;
+
+        internal ToolStripButton ToolStripButton13
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get
+            {
+                return _ToolStripButton13;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            set
+            {
+                if (_ToolStripButton13 != null)
+                {
+                }
+
+                _ToolStripButton13 = value;
+                if (_ToolStripButton13 != null)
+                {
+                }
+            }
+        }
+
+        private ToolStripButton _ToolStripButton14;
+
+        internal ToolStripButton ToolStripButton14
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get
+            {
+                return _ToolStripButton14;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            set
+            {
+                if (_ToolStripButton14 != null)
+                {
+                }
+
+                _ToolStripButton14 = value;
+                if (_ToolStripButton14 != null)
+                {
+                }
+            }
+        }
+
+        private ToolStripButton _ToolStripButton15;
+
+        internal ToolStripButton ToolStripButton15
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get
+            {
+                return _ToolStripButton15;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            set
+            {
+                if (_ToolStripButton15 != null)
+                {
+                }
+
+                _ToolStripButton15 = value;
+                if (_ToolStripButton15 != null)
                 {
                 }
             }
