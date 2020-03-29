@@ -148,7 +148,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public IEnumerable<MethodDeclarationSyntax> CreateDelegatingMethodsRequiredByInitializeComponent()
         {
-            return HandledPropertyEventCSharpIds.Where(e => e.ParametersToDiscard > 0 && e.Event?.Type.GetDelegateInvokeMethod() != null)
+            return HandledPropertyEventCSharpIds.Concat(HandledClassEventCSharpIds).Where(e => e.ParametersToDiscard > 0 && e.Event?.Type.GetDelegateInvokeMethod() != null)
                 .Select(e => {
                     var invokeMethod = (MethodDeclarationSyntax)_csSyntaxGenerator.MethodDeclaration(e.Event.Type.GetDelegateInvokeMethod());
                     return DelegatingMethod(invokeMethod);

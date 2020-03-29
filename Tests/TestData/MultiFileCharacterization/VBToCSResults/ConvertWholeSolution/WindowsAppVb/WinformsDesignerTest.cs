@@ -64,6 +64,7 @@ namespace WindowsAppVb
             My.MyProject.Forms.FolderForm.ShowDialog();
         }
 
+        private void WinformsDesignerTest_MouseClick(object sender, MouseEventArgs e) => WinformsDesignerTest_MouseClick();
         private void ButtonMouseClickWithNoArgs(object sender, MouseEventArgs e) => ButtonMouseClickWithNoArgs();
         private void ButtonMouseClickWithNoArgs2(object sender, MouseEventArgs e) => ButtonMouseClickWithNoArgs2();
         private void ButtonMouseClickWithNoArgs2(object sender, EventArgs e) => ButtonMouseClickWithNoArgs2();
