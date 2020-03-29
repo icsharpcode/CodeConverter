@@ -16,7 +16,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
 using Task = System.Threading.Tasks.Task;
 
-namespace CodeConverter.VsExtension
+namespace ICSharpCode.CodeConverter.VsExtension
 {
     /// <summary>
     /// Implements the VS package exposed by this assembly.

@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
-using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace CodeConverter.Tests.VB
+namespace ICSharpCode.CodeConverter.Tests.VB
 {
     public class TriviaTests : ConverterTestBase
     {

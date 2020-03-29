@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace CodeConverter.Tests.TestRunners
+namespace ICSharpCode.CodeConverter.Tests.TestRunners
 {
     public static class TestFileRewriter
     {

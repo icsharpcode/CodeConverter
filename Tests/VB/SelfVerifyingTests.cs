@@ -4,11 +4,11 @@ using ICSharpCode.CodeConverter.CSharp;
 using Xunit;
 using System.IO;
 using System.Threading.Tasks;
-using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.VB;
 using ICSharpCode.CodeConverter.Shared;
 
-namespace CodeConverter.Tests.VB
+namespace ICSharpCode.CodeConverter.Tests.VB
 {
     /// <summary>
     /// Run pairs of xUnit tests in converted code before and after conversion

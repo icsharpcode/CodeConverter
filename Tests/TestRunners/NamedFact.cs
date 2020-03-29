@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace CodeConverter.Tests.TestRunners
+namespace ICSharpCode.CodeConverter.Tests.TestRunners
 {
     public class NamedFact
     {

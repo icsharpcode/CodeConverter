@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
-namespace CodeConverter.VsExtension
+namespace ICSharpCode.CodeConverter.VsExtension
 {
     internal class VsDocument
     {

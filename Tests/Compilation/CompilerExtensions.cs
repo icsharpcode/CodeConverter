@@ -7,7 +7,7 @@ using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 
-namespace CodeConverter.Tests.Compilation
+namespace ICSharpCode.CodeConverter.Tests.Compilation
 {
     public static class CompilerExtensions
     {

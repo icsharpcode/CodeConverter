@@ -1,7 +1,7 @@
 ﻿using System.Text;
-using CodeConverter.Util;
+using ICSharpCode.CodeConverter.Util;
 
-namespace CodeConverter.Tests
+namespace ICSharpCode.CodeConverter.Tests
 {
     internal static class Utils
     {

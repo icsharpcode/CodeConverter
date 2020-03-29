@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using Microsoft.VisualStudio.Shell;
 
-namespace CodeConverter.VsExtension
+namespace ICSharpCode.CodeConverter.VsExtension
 {
     internal sealed class ConverterOptionsPage : DialogPage
     {

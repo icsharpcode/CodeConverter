@@ -13,7 +13,7 @@ using Microsoft.CodeAnalysis.VisualBasic;
 using Xunit;
 using Xunit.Sdk;
 
-namespace CodeConverter.Tests.TestRunners
+namespace ICSharpCode.CodeConverter.Tests.TestRunners
 {
     public class ConverterTestBase
     {

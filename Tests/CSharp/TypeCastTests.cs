@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
-using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace CodeConverter.Tests.CSharp
+namespace ICSharpCode.CodeConverter.Tests.CSharp
 {
     public class TypeCastTests : ConverterTestBase
     {

@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
-using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace CodeConverter.Tests.CSharp.MissingSemanticModelInfo
+namespace ICSharpCode.CodeConverter.Tests.CSharp.MissingSemanticModelInfo
 {
     public class ExpressionTests : ConverterTestBase
     {

@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace CodeConverter.Tests.TestRunners
+namespace ICSharpCode.CodeConverter.Tests.TestRunners
 {
     /// <summary>
     /// Discover and return xUnit Facts in given assemblies

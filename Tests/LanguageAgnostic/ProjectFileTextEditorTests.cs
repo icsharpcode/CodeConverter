@@ -1,7 +1,7 @@
 ﻿using ICSharpCode.CodeConverter.Shared;
 using Xunit;
 
-namespace CodeConverter.Tests.LanguageAgnostic
+namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
 {
     public class ProjectFileTextEditorTests
     {

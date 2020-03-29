@@ -1,9 +1,9 @@
 ﻿using System.Threading.Tasks;
-using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.VB;
 using Xunit;
 
-namespace CodeConverter.Tests.VB
+namespace ICSharpCode.CodeConverter.Tests.VB
 {
     public class MemberTests : ConverterTestBase
     {

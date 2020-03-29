@@ -4,10 +4,10 @@ using ICSharpCode.CodeConverter.CSharp;
 using Xunit;
 using System.IO;
 using System.Threading.Tasks;
-using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.Shared;
 
-namespace CodeConverter.Tests.CSharp
+namespace ICSharpCode.CodeConverter.Tests.CSharp
 {
     /// <summary>
     /// Run pairs of xUnit tests in converted code before and after conversion

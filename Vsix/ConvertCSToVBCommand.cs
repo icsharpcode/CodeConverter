@@ -9,7 +9,7 @@ using OleMenuCommand = Microsoft.VisualStudio.Shell.OleMenuCommand;
 using OleMenuCommandService = Microsoft.VisualStudio.Shell.OleMenuCommandService;
 using Task = System.Threading.Tasks.Task;
 
-namespace CodeConverter.VsExtension
+namespace ICSharpCode.CodeConverter.VsExtension
 {
     /// <summary>
     /// Command handler

@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
 
-namespace CodeConverter.VsExtension
+namespace ICSharpCode.CodeConverter.VsExtension
 {
     internal static class ServiceProviderExtensions
     {

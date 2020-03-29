@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Threading;
 using Constants = EnvDTE.Constants;
 using Task = System.Threading.Tasks.Task;
 
-namespace CodeConverter.VsExtension
+namespace ICSharpCode.CodeConverter.VsExtension
 {
     /// <remarks>
     /// All public methods switch to the main thread, do their work, then switch back to the thread pool

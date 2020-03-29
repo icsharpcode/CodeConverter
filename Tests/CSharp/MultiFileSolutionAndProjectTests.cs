@@ -1,9 +1,9 @@
 ﻿using System.Threading.Tasks;
-using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.CSharp;
 using Xunit;
 
-namespace CodeConverter.Tests.CSharp
+namespace ICSharpCode.CodeConverter.Tests.CSharp
 {
     /// <summary>
     /// <see cref="MultiFileTestFixture"/> for info on how these tests work.

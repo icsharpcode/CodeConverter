@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
-namespace CodeConverter.Web
+namespace ICSharpCode.CodeConverter.Web
 {
     public class Program
     {

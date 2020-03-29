@@ -2,7 +2,7 @@
 using System.Text;
 using Xunit;
 
-namespace CodeConverter.Tests.TestRunners
+namespace ICSharpCode.CodeConverter.Tests.TestRunners
 {
     public static class OurAssert
     {

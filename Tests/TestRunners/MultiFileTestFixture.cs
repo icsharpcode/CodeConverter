@@ -19,7 +19,7 @@ using Microsoft.VisualStudio.Threading;
 using Xunit;
 using SearchOption = System.IO.SearchOption;
 
-namespace CodeConverter.Tests.TestRunners
+namespace ICSharpCode.CodeConverter.Tests.TestRunners
 {
     /// <summary>
     /// For all files in the testdata folder relevant to the testname, ensures they match the result of the conversion.

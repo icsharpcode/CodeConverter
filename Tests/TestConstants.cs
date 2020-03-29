@@ -2,7 +2,7 @@
 using System.IO;
 using System.Reflection;
 
-namespace CodeConverter.Tests
+namespace ICSharpCode.CodeConverter.Tests
 {
     public static class TestConstants
     {

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using CodeConverter.Util;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using CS = Microsoft.CodeAnalysis.CSharp;

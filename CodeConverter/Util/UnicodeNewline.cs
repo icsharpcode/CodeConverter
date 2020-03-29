@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CodeConverter.Util
+namespace ICSharpCode.CodeConverter.Util
 {
     internal enum UnicodeNewline
     {

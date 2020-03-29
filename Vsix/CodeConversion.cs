@@ -17,7 +17,7 @@ using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider
 using Project = EnvDTE.Project;
 using Task = System.Threading.Tasks.Task;
 
-namespace CodeConverter.VsExtension
+namespace ICSharpCode.CodeConverter.VsExtension
 {
     internal class CodeConversion
     {

@@ -3,14 +3,14 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using CodeConverter.Tests.Compilation;
+using ICSharpCode.CodeConverter.Tests.Compilation;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.VisualStudio.Threading;
 using Xunit;
 using Xunit.Sdk;
 
-namespace CodeConverter.Tests.TestRunners
+namespace ICSharpCode.CodeConverter.Tests.TestRunners
 {
     internal class SelfVerifyingTestFactory
     {

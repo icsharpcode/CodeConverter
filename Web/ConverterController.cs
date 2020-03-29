@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
-using CodeConverter.Web.Models;
+using ICSharpCode.CodeConverter.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.Shared;
 
-namespace CodeConverter.Web
+namespace ICSharpCode.CodeConverter.Web
 {
     [Route("api/[controller]")]
     public class ConverterController : Controller

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace CodeConverter.VsExtension
+namespace ICSharpCode.CodeConverter.VsExtension
 {
     internal sealed class Cancellation : IDisposable
     {

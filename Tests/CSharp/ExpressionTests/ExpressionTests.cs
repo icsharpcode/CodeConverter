@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests

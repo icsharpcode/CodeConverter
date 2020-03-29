@@ -13,7 +13,6 @@ using VBS = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.VisualBasic.CompilerServices;
 using CSharpToVBCodeConverter.DestVisualBasic;
 using ICSharpCode.CodeConverter.Util;
-using CodeConverter.Util;
 
 namespace CSharpToVBCodeConverter.Util
 {

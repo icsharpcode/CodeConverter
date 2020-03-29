@@ -21,7 +21,7 @@ using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider
 using Task = System.Threading.Tasks.Task;
 using Window = EnvDTE.Window;
 
-namespace CodeConverter.VsExtension
+namespace ICSharpCode.CodeConverter.VsExtension
 {
     /// <remarks>
     /// All public methods switch to the main thread, do their work, then switch back to the thread pool

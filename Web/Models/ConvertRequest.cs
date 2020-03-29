@@ -1,4 +1,4 @@
-﻿namespace CodeConverter.Web.Models
+﻿namespace ICSharpCode.CodeConverter.Web.Models
 {
     public class ConvertRequest
     {
