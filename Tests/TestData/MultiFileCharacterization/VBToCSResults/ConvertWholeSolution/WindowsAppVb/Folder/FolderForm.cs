@@ -1,6 +1,8 @@
 using System;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
+using System.Threading;
 using VbNetStandardLib.My.Resources;
 
 namespace WindowsAppVb
@@ -14,6 +16,7 @@ namespace WindowsAppVb
 
         private void FolderForm_Load(object sender, EventArgs e)
         {
+            Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
             ToolStripButton7.Image = My.Resources.Resource2.test;
             ToolStripButton8.Image = My.Resources.Resource2.test2;
             ToolStripButton9.Image = My.Resources.Resource2.test3;

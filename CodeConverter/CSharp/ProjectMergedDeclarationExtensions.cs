@@ -27,13 +27,19 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static Project WithAdditionalDocs(this Project vbProject, IEnumerable<string> relativePaths)
         {
             string projDir = vbProject.GetDirectoryPath();
-            foreach (var relativePath in relativePaths) {
-                string fullPath = Path.Combine(projDir, relativePath);
-                if (File.Exists(fullPath)) {
-                    vbProject = vbProject.AddAdditionalDocument(relativePath, SourceText.From(File.ReadAllText(fullPath)), filePath: fullPath).Project;
-                }
+            foreach (var fullPath in relativePaths.SelectMany(relativePath => GetAllLocaleResxFilePaths(projDir, relativePath))) {
+                vbProject = vbProject.AddAdditionalDocument(Path.GetFileName(fullPath), SourceText.From(File.ReadAllText(fullPath)), filePath: fullPath).Project;
             }
             return vbProject;
+        }
+
+        private static IEnumerable<string> GetAllLocaleResxFilePaths(string projDir, string relativePath)
+        {
+            var filename = Path.GetFileName(relativePath);
+            string fullDir = Path.Combine(projDir, Path.GetDirectoryName(relativePath));
+            string otherLocaleSearchPattern = Path.ChangeExtension(filename, ".*.resx");
+            var resxPaths = Directory.EnumerateFiles(fullDir, filename).Concat(Directory.EnumerateFiles(fullDir, otherLocaleSearchPattern));
+            return resxPaths;
         }
 
         public static IEnumerable<(string RelativePath, string LastGenOutput)> ReadVbEmbeddedResources(this Project vbProject)

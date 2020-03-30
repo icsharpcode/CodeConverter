@@ -130,6 +130,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resource3.en-US.resx" />
     <EmbeddedResource Include="Resource3.resx">
       <CustomToolNamespace>WindowsAppVb.My.Resources</CustomToolNamespace>
       <Generator>ResXFileCodeGenerator</Generator>
