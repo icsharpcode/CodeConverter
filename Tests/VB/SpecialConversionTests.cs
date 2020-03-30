@@ -641,12 +641,13 @@ End Class");
     End Class
 End Namespace");
         }
+
         [Fact]
         public async Task ConstantsShouldBeQualified() {
             await TestConversionCSharpToVisualBasic(
 @"public class TestClass {
     public void Method() {
-        string vbLf = ""\n""
+        string vbLf = ""\n"";
         string vbCrLf = ""\r\n"";
     }
 }",
@@ -655,10 +656,7 @@ End Namespace");
         Dim vbLf As String = Microsoft.VisualBasic.vbLf
         Dim vbCrLf As String = Microsoft.VisualBasic.vbCrLf
     End Sub
-End Class
-
-1 source compilation errors:
-CS1002: ; expected", conversionOptions: EmptyNamespaceOptionStrictOff);
+End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
     }
 }
