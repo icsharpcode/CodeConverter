@@ -1,6 +1,6 @@
 ﻿# Tests
 
-* Most tests are "characterization" tests, meaning they represent the current output. This does not mean that it's the ideal output.
+* Most tests are "characterization" tests, meaning they represent the current output under [these guidelines](https://github.com/icsharpcode/CodeConverter/blob/master/.github/CONTRIBUTING.md#deciding-what-the-output-should-be). This does not mean that it's the ideal output.
 * If you need to change an existing characterization, that's fine, so long as you're convinced it's no less correct than what was previously there.
 * See TestConstants for an automated way to rewrite the expected output en masse 
  * Run hooks/enable-hooks.cmd to enable a pre-commit hook which stops you committing the flag when true
