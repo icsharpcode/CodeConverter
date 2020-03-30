@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
 namespace ICSharpCode.CodeConverter.CSharp
@@ -15,21 +16,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             return parent;
         }
 
-        public static IOperation GetIgnoringParentheses(this IOperation operation)
-        {
-            while (operation is IParenthesizedOperation) {
-                operation = operation?.Parent;
-            }
-
-            return operation;
-        }
-
-        public static IOperation GetNonConversionOperation(this IOperation operation)
+        public static IOperation SkipParens(this IOperation operation, bool skipImplicitNumericConvert = false)
         {
             while (true) {
                 switch (operation)
                 {
-                    case IConversionOperation co:
+                    case IConversionOperation co when skipImplicitNumericConvert && co.IsImplicit && co.Conversion.IsNumeric && !co.Conversion.IsUserDefined && co.Operand.Type.IsNumericType() && co.Type.IsNumericType():
                         operation = co.Operand;
                         break;
                     case IParenthesizedOperation po:

@@ -23,6 +23,7 @@ using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Linq.Expressions;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -73,14 +74,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             csNode = addParenthesisIfNeeded && (conversionKind == TypeConversionKind.DestructiveCast || conversionKind == TypeConversionKind.NonDestructiveCast)
                 ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;
-            return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded, forceTargetType: forceTargetType);
+            return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded, isConst, forceTargetType: forceTargetType);
         }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false, ITypeSymbol forceTargetType = null)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false, bool isConst = false, ITypeSymbol forceTargetType = null)
         {
             var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, vbNode);
             var vbType = typeInfo.Type;
             var vbConvertedType = forceTargetType ?? typeInfo.ConvertedType;
+
+            if (isConst && GetConstantOrNull(vbNode, vbConvertedType, csNode) is ExpressionSyntax constLiteral) {
+                return constLiteral;
+            }
+
             switch (conversionKind)
             {
                 case TypeConversionKind.Unknown:
@@ -90,9 +96,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case TypeConversionKind.NonDestructiveCast:
                     return CreateCast(csNode, vbConvertedType);
                 case TypeConversionKind.Conversion:
-                    return AddExplicitConvertTo(vbNode, csNode, vbType, vbConvertedType);
-                case TypeConversionKind.ConstConversion:
-                    return ConstantFold(vbNode, vbConvertedType);
+                    return AddExplicitConvertTo(vbNode, csNode, vbType, vbConvertedType);;
                 case TypeConversionKind.NullableBool:
                     return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, csNode,
                         LiteralConversions.GetLiteralExpression(true));
@@ -189,7 +193,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return true;
                 }
                 if (isConvertToString || vbConversion.IsNarrowing) {
-                    typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
+                    typeConversionKind = TypeConversionKind.Conversion;
                     return true;
                 }
             } else if (vbConversion.IsWidening && vbConversion.IsNumeric && csConversion.IsImplicit &&
@@ -207,7 +211,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     vbCompilation.ClassifyConversion(vbConvertedType,
                         vbCompilation.GetTypeByMetadataName("System.Int32"));
                 if (arithmeticConversion.IsWidening && !arithmeticConversion.IsIdentity) {
-                    typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
+                    typeConversionKind = TypeConversionKind.Conversion;
                     return true;
                 }
             } else if (csConversion.IsExplicit && csConversion.IsNumeric && vbConversion.IsNarrowing && isConst) {
@@ -215,13 +219,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return true;
             } else if (csConversion.IsExplicit && vbConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
                 typeConversionKind = IsImplicitConstantConversion(vbNode) ? TypeConversionKind.Identity :
-                    isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
+                    TypeConversionKind.Conversion;
                 return true;
             } else if (csConversion.IsExplicit && vbConversion.IsIdentity && csConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
-                typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
+                typeConversionKind = TypeConversionKind.Conversion;
                 return true;
             } else if (isConvertToString && vbType.SpecialType == SpecialType.System_Object) {
-                typeConversionKind = isConst ? TypeConversionKind.ConstConversion : TypeConversionKind.Conversion;
+                typeConversionKind = TypeConversionKind.Conversion;
                 return true;
             } else if (csConversion.IsNullable && csConvertedType.SpecialType == SpecialType.System_Boolean) {
                 typeConversionKind = TypeConversionKind.NullableBool;
@@ -260,16 +264,36 @@ namespace ICSharpCode.CodeConverter.CSharp
             return TypeConversionKind.Unknown;
         }
 
-        private ExpressionSyntax ConstantFold(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol type)
+        private ExpressionSyntax GetConstantOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol type, ExpressionSyntax csNode)
         {
-            var vbOperation = _semanticModel.GetOperation(vbNode);
+            var vbOperation = _semanticModel.GetOperation(vbNode).SkipParens(true);
+
+            // Guideline tradeoff: Usually would aim for erring on the side of correct runtime behaviour. But making lots of simple constants unreadable for the sake of an edge case that will turn into an easily fixed compile error seems overkill.
+            // See https://github.com/icsharpcode/CodeConverter/blob/master/.github/CONTRIBUTING.md#deciding-what-the-output-should-be
+            if (Equals(vbOperation.Type, type) && IsProbablyConstExpression(vbOperation)) return csNode;
 
             if (TryCompileTimeEvaluate(vbOperation, out var result) && ConversionsTypeFullNames.TryGetValue(type.GetFullMetadataName(), out var method)) {
                 result = method.Invoke(null, new[] { result });
-                return LiteralConversions.GetLiteralExpression(result);
+                return LiteralConversions.GetLiteralExpression(result, convertedType: type);
             }
 
-            throw new NotImplementedException("Cannot generate constant C# expression");
+            return null;
+        }
+
+        /// <remarks>Deal with cases like "2*PI" without inlining the const</remarks>
+        private bool IsProbablyConstExpression(IOperation op)
+        {
+            op = op.SkipParens(true);
+
+            if (op is IFieldReferenceOperation fro && fro.Field.IsConst || op is ILocalReferenceOperation lro && lro.Local.IsConst || op is ILiteralOperation) {
+                return true;
+            }
+
+            if (op is IBinaryOperation bo && IsProbablyConstExpression(bo.LeftOperand) && IsProbablyConstExpression(bo.RightOperand)) {
+                return true;
+            }
+
+            return false;
         }
 
         private bool TryCompileTimeEvaluate(IOperation vbOperation, out object result)
@@ -427,7 +451,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             DestructiveCast,
             NonDestructiveCast,
             Conversion,
-            ConstConversion,
             NullableBool,
             StringToCharArray
         }

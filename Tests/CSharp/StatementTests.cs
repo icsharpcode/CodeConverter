@@ -1073,7 +1073,7 @@ internal partial class TestClass
     Private Sub TestMethod()
 the_beginning:
         Dim value As Integer = 1
-        Const myPIe As Double = System.Math.PI
+        Const myPIe As Double = 2 * System.Math.PI
         Dim text = ""This is my text!""
         GoTo the_beginning
     End Sub
@@ -1086,7 +1086,7 @@ internal partial class Test
     the_beginning:
         ;
         int value = 1;
-        const double myPIe = Math.PI;
+        const double myPIe = 2 * Math.PI;
         string text = ""This is my text!"";
         goto the_beginning;
     }

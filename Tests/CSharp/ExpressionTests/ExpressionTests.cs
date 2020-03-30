@@ -1504,6 +1504,7 @@ public partial class test
     Const k As UInteger = 1
     Const l As UShort = 1
     Const m As ULong = 1
+    Const Nl As String = ChrW(13) + ChrW(10)
 
     Sub Main()
         Const x As SByte = 4
@@ -1512,7 +1513,7 @@ End Module", @"
 internal static partial class Module1
 {
     private const bool a = true;
-    private const char b = (char)1;
+    private const char b = '\u0001';
     private const float c = 1;
     private const double d = 1;
     private const decimal e = 1;
@@ -1524,6 +1525,7 @@ internal static partial class Module1
     private const uint k = 1;
     private const ushort l = 1;
     private const ulong m = 1;
+    private const string Nl = ""\r\n"";
 
     public static void Main()
     {
