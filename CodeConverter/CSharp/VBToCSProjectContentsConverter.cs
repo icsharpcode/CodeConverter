@@ -76,10 +76,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             return p.Replace(projDirPath, "").TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
 
-        public async IAsyncEnumerable<ConversionResult> GetAdditionalConversionResults([EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<ConversionResult> GetAdditionalConversionResults(IReadOnlyCollection<TextDocument> additionalDocumentsToConvert, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             string projDirPath = Project.GetDirectoryPath();
-            foreach (var doc in Project.AdditionalDocuments) {
+            foreach (var doc in additionalDocumentsToConvert) {
                 string newPath = Path.Combine(projDirPath, Path.GetFileName(doc.FilePath));
                 if (newPath != doc.FilePath) {
                     string newText = RebaseResxPaths(projDirPath, Path.GetDirectoryName(doc.FilePath), (await doc.GetTextAsync(cancellationToken)).ToString());

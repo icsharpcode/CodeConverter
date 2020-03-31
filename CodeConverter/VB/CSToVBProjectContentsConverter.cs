@@ -71,7 +71,7 @@ namespace ICSharpCode.CodeConverter.VB
             return _convertedVbProject.WithDocuments(firstPassResults);
         }
 
-        public async IAsyncEnumerable<ConversionResult> GetAdditionalConversionResults([EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<ConversionResult> GetAdditionalConversionResults(IReadOnlyCollection<TextDocument> additionalDocumentsToConvert, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             yield break;
         }
