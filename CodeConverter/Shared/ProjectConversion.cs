@@ -69,8 +69,16 @@ namespace ICSharpCode.CodeConverter.Shared
 
             var conversion = new ProjectConversion(projectContentsConverter, new[] { document }, Enumerable.Empty<TextDocument>(), languageConversion, cancellationToken, conversionOptions.ShowCompilationErrors, returnSelectedNode);
             var conversionResults = await conversion.Convert(progress).ToArrayAsync();
-            var codeResult = conversionResults.SingleOrDefault(x => !string.IsNullOrWhiteSpace(x.ConvertedCode))
-                             ?? conversionResults.First();
+            return GetSingleResultForDocument(conversionResults, document, progress);
+        }
+
+        private static ConversionResult GetSingleResultForDocument(ConversionResult[] conversionResults, Document document, IProgress<ConversionProgress> progress)
+        {
+            var codeResults = conversionResults.Where(x => !string.IsNullOrWhiteSpace(x.ConvertedCode)).OrderByDescending(r => r.SourcePathOrNull == document.FilePath).ToArray();
+            if (codeResults.Count() != 1) {
+                progress.Report(new ConversionProgress($"ERROR: Expected one result, but received {codeResults.Count()}:{Environment.NewLine}{string.Join(Environment.NewLine, codeResults.Select(r => r.TargetPathOrNull))}"));
+            }
+            var codeResult = codeResults.First();
             codeResult.Exceptions = conversionResults.SelectMany(x => x.Exceptions).ToArray();
             return codeResult;
         }
