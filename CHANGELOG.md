@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [8.0.4] - 2020-03-31
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Fixes error thrown when converting single file from VB project with resx files
 
 ### C# -> VB
