@@ -10,12 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Fixes error thrown when converting single file from VB project with resx files
 
 ### C# -> VB
 
 
 ## [8.0.3] - 2020-03-30
 
+Known issue: Converting single file from VB project with resx files throws an error. To workaround, use a different version, or convert the whole project at once.
 
 ### Vsix
 
