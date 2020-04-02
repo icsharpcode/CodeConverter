@@ -27,34 +27,52 @@ namespace ICSharpCode.CodeConverter.Shared
             var processor = new TransformBlock<TArg, TResult>(selector, new ExecutionDataflowBlockOptions {
                 MaxDegreeOfParallelism = maxDop,
                 BoundedCapacity = (maxDop * 5) / 4,
-                CancellationToken = token
+                CancellationToken = token,
+                SingleProducerConstrained = true,
+                EnsureOrdered = false
             });
+
+            bool pipelineTerminatedEarly = false;
 
             foreach (var item in source) {
                 while (!processor.Post(item)) {
-                    yield return await ReceiveAsync();
-                }
-                if (processor.TryReceive(out var result)) {
+                    var result = await ReceiveAsync();
+                    if (pipelineTerminatedEarly) break;
                     yield return result;
+                }
+                if (pipelineTerminatedEarly) break;
+
+                if (processor.TryReceive(out var resultIfAvailable)) {
+                    yield return resultIfAvailable;
                 }
             }
             processor.Complete();
 
             while (await processor.OutputAvailableAsync(token)) {
-                yield return Receive();
+                var result = ReceiveKnownAvailable();
+                if (pipelineTerminatedEarly) break;
+                yield return result;
+            }
+
+            await processor.Completion;
+
+            if (pipelineTerminatedEarly) {
+                throw new InvalidOperationException("Pipeline terminated early missing items, but no exception thrown");
             }
 
             async Task<TResult> ReceiveAsync()
             {
-                if (!await processor.OutputAvailableAsync() && !token.IsCancellationRequested) throw new InvalidOperationException("No output available after posting output and waiting");
-                return Receive();
+                await processor.OutputAvailableAsync();
+                return ReceiveKnownAvailable();
             }
 
-            TResult Receive()
+            TResult ReceiveKnownAvailable()
             {
-                token.ThrowIfCancellationRequested();
-                if (!processor.TryReceive(out var result)) throw new InvalidOperationException("Nothing received even though output available");
-                return result;
+                if (!processor.TryReceive(out var item)) {
+                    pipelineTerminatedEarly = true;
+                    return default;
+                }
+                return item;
             }
         }
 
