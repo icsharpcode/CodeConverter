@@ -183,7 +183,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private async IAsyncEnumerable<ConversionResult> Convert(IProgress<ConversionProgress> progress)
         {
             var phaseProgress = StartPhase(progress, "Phase 1 of 2:");
-            var firstPassResults = _documentsToConvert.ParallelSelectAwait(d => FirstPass(d, phaseProgress), Env.MaxDop, _cancellationToken);
+            var firstPassResults = _documentsToConvert.ParallelSelectAwait(d => FirstPassLogged(d, phaseProgress), Env.MaxDop, _cancellationToken);
             var (proj1, docs1) = await _projectContentsConverter.GetConvertedProject(await firstPassResults.ToArrayAsync());
 
             var warnings = await GetProjectWarnings(_projectContentsConverter.Project, proj1);
@@ -193,7 +193,7 @@ namespace ICSharpCode.CodeConverter.Shared
             }
 
             phaseProgress = StartPhase(progress, "Phase 2 of 2:");
-            var secondPassResults = proj1.GetDocuments(docs1).ParallelSelectAwait(d => SecondPass(d, phaseProgress), Env.MaxDop, _cancellationToken);
+            var secondPassResults = proj1.GetDocuments(docs1).ParallelSelectAwait(d => SecondPassLogged(d, phaseProgress), Env.MaxDop, _cancellationToken);
             await foreach (var result in secondPassResults.Select(CreateConversionResult)) {
                 yield return result;
             }
@@ -214,14 +214,17 @@ namespace ICSharpCode.CodeConverter.Shared
             return strProgress;
         }
 
-        private async Task<WipFileConversion<SyntaxNode>> SecondPass(WipFileConversion<Document> firstPassResult, IProgress<string> progress)
+        private async Task<WipFileConversion<SyntaxNode>> SecondPassLogged(WipFileConversion<Document> firstPassResult, IProgress<string> progress)
         {
             if (firstPassResult.Wip != null) {
-                LogProgress(firstPassResult, "Simplifying", progress);
+                progress.Report($"{firstPassResult.SourcePath} - simplification started");
                 var (convertedNode, errors) = await SingleSecondPassHandled(firstPassResult.Wip);
-                return firstPassResult.With(convertedNode, firstPassResult.Errors.Concat(errors).Union(GetErrorsFromAnnotations(convertedNode)).ToArray());
+                var result = firstPassResult.With(convertedNode, firstPassResult.Errors.Concat(errors).Union(GetErrorsFromAnnotations(convertedNode)).ToArray());
+                LogProgress(firstPassResult, "simplification", progress);
+                return result;
             }
 
+            progress.Report($"{firstPassResult.SourcePath} - simplification skipped due to earlier errors");
             return firstPassResult.With(default(SyntaxNode));
         }
 
@@ -261,14 +264,21 @@ namespace ICSharpCode.CodeConverter.Shared
             return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(convertedCompilation, "target");
         }
 
-        private async Task<WipFileConversion<SyntaxNode>> FirstPass(Document document, IProgress<string> progress)
+        private async Task<WipFileConversion<SyntaxNode>> FirstPassLogged(Document document, IProgress<string> progress)
         {
             var treeFilePath = document.FilePath ?? "";
-            progress.Report(treeFilePath);
+            progress.Report($"{treeFilePath} - conversion started");
+            var result = await FirstPass(document);
+            LogProgress(result, "conversion", progress);
+            return result;
+        }
+
+        private async Task<WipFileConversion<SyntaxNode>> FirstPass(Document document)
+        {
+            var treeFilePath = document.FilePath ?? "";
             try {
                 var convertedNode = await _projectContentsConverter.SingleFirstPass(document);
                 string[] errors = GetErrorsFromAnnotations(convertedNode);
-
                 return (treeFilePath, convertedNode, errors);
             } catch (Exception e) {
                 return (treeFilePath, null, new[] { e.ToString() });
@@ -307,7 +317,7 @@ namespace ICSharpCode.CodeConverter.Shared
             return selectedNode ?? resultNode;
         }
 
-        private void LogProgress(WipFileConversion<Document> convertedFile, string action, IProgress<string> progress)
+        private WipFileConversion<T> LogProgress<T>(WipFileConversion<T> convertedFile, string action, IProgress<string> progress)
         {
             var indentedException = string.Join(Environment.NewLine, convertedFile.Errors)
                 .Replace(Environment.NewLine, Environment.NewLine + "    ").TrimEnd();
@@ -316,14 +326,15 @@ namespace ICSharpCode.CodeConverter.Shared
             var containsErrors = !string.IsNullOrWhiteSpace(indentedException);
             string output;
             if (convertedFile.Wip == null) {
-                output = $"Failed {action.ToLower()} {relativePath}:{Environment.NewLine}    {indentedException}";
+                output = $"{relativePath} - {action} failed:{Environment.NewLine}    {indentedException}";
             } else if (containsErrors) {
-                output = $"Error {action.ToLower()} {relativePath}:{Environment.NewLine}    {indentedException}";
+                output = $"{relativePath} - {action} has errors: {Environment.NewLine}    {indentedException}";
             } else {
-                output = $"{action} {relativePath}";
+                output = $"{relativePath} {action} succeeded";
             }
 
             progress.Report(output);
+            return convertedFile;
         }
 
         private string PathRelativeToSolutionDir(string path)
