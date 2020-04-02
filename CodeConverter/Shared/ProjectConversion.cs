@@ -213,14 +213,13 @@ namespace ICSharpCode.CodeConverter.Shared
         private async Task<WipFileConversion<SyntaxNode>> SecondPassLogged(WipFileConversion<Document> firstPassResult, IProgress<string> progress)
         {
             if (firstPassResult.Wip != null) {
-                progress.Report($"{firstPassResult.SourcePath} - simplification started");
+                LogStart(firstPassResult.SourcePath, "simplification", progress);
                 var (convertedNode, errors) = await SingleSecondPassHandled(firstPassResult.Wip);
                 var result = firstPassResult.With(convertedNode, firstPassResult.Errors.Concat(errors).Union(GetErrorsFromAnnotations(convertedNode)).ToArray());
-                LogProgress(firstPassResult, "simplification", progress);
+                LogEnd(firstPassResult, "simplification", progress);
                 return result;
             }
 
-            progress.Report($"{firstPassResult.SourcePath} - simplification skipped due to earlier errors");
             return firstPassResult.With(default(SyntaxNode));
         }
 
@@ -263,9 +262,9 @@ namespace ICSharpCode.CodeConverter.Shared
         private async Task<WipFileConversion<SyntaxNode>> FirstPassLogged(Document document, IProgress<string> progress)
         {
             var treeFilePath = document.FilePath ?? "";
-            progress.Report($"{treeFilePath} - conversion started");
+            LogStart(treeFilePath, "conversion", progress);
             var result = await FirstPass(document);
-            LogProgress(result, "conversion", progress);
+            LogEnd(result, "conversion", progress);
             return result;
         }
 
@@ -313,11 +312,17 @@ namespace ICSharpCode.CodeConverter.Shared
             return selectedNode ?? resultNode;
         }
 
-        private WipFileConversion<T> LogProgress<T>(WipFileConversion<T> convertedFile, string action, IProgress<string> progress)
+        private void LogStart(string filePath, string action, IProgress<string> progress)
+        {
+            var relativePath = PathRelativeToSolutionDir(filePath);
+            progress.Report($"{relativePath} - {action} started");
+        }
+
+        private WipFileConversion<T> LogEnd<T>(WipFileConversion<T> convertedFile, string action, IProgress<string> progress)
         {
             var indentedException = string.Join(Environment.NewLine, convertedFile.Errors)
                 .Replace(Environment.NewLine, Environment.NewLine + "    ").TrimEnd();
-            var relativePath = PathRelativeToSolutionDir(convertedFile.SourcePath ?? "unknown");
+            var relativePath = PathRelativeToSolutionDir(convertedFile.SourcePath);
 
             var containsErrors = !string.IsNullOrWhiteSpace(indentedException);
             string output;
@@ -326,7 +331,7 @@ namespace ICSharpCode.CodeConverter.Shared
             } else if (containsErrors) {
                 output = $"{relativePath} - {action} has errors: {Environment.NewLine}    {indentedException}";
             } else {
-                output = $"{relativePath} {action} succeeded";
+                output = $"{relativePath} - {action} succeeded";
             }
 
             progress.Report(output);

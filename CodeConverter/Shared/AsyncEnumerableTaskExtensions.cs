@@ -68,6 +68,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             TResult ReceiveKnownAvailable()
             {
+                token.ThrowIfCancellationRequested();
                 if (!processor.TryReceive(out var item)) {
                     pipelineTerminatedEarly = true;
                     return default;
