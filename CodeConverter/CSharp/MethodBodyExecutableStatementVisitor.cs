@@ -14,6 +14,7 @@ using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using Microsoft.VisualBasic.CompilerServices;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -468,10 +469,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            var step = (ExpressionSyntax) await (stmt.StepClause?.StepValue).AcceptAsync(_expressionVisitor);
-            PrefixUnaryExpressionSyntax value = step.SkipParens() as PrefixUnaryExpressionSyntax;
-            ExpressionSyntax condition;
-
             // In Visual Basic, the To expression is only evaluated once, but in C# will be evaluated every loop.
             // If it could evaluate differently or has side effects, it must be extracted as a variable
             var preLoopStatements = new List<SyntaxNode>();
@@ -493,23 +490,47 @@ namespace ICSharpCode.CodeConverter.CSharp
                 csToValue = toVariableId;
             };
 
-            if (value == null) {
-                condition = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, id, csToValue);
-            } else {
-                condition = SyntaxFactory.BinaryExpression(SyntaxKind.GreaterThanOrEqualExpression, id, csToValue);
-            }
-            if (step == null)
-                step = SyntaxFactory.PostfixUnaryExpression(SyntaxKind.PostIncrementExpression, id);
-            else
-                step = SyntaxFactory.AssignmentExpression(SyntaxKind.AddAssignmentExpression, id, step);
+
+            var (csCondition, csStep) = await ConvertConditionAndStepClause(stmt, id, csToValue);
+
             var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
             var forStatementSyntax = SyntaxFactory.ForStatement(
                 declaration,
                 SyntaxFactory.SeparatedList(initializers),
-                condition,
-                SyntaxFactory.SingletonSeparatedList(step),
+                csCondition,
+                SyntaxFactory.SingletonSeparatedList(csStep),
                 block.UnpackNonNestedBlock());
-            return SyntaxFactory.List(preLoopStatements.Concat(new[] {forStatementSyntax}));
+            return SyntaxFactory.List(preLoopStatements.Concat(new[] { forStatementSyntax }));
+        }
+
+        private async Task<(ExpressionSyntax, ExpressionSyntax)> ConvertConditionAndStepClause(VBSyntax.ForStatementSyntax stmt, ExpressionSyntax id, ExpressionSyntax csToValue)
+        {
+            var vbStepValue = stmt.StepClause?.StepValue;
+            var csStepValue = (ExpressionSyntax)await (stmt.StepClause?.StepValue).AcceptAsync(_expressionVisitor);
+            csStepValue = csStepValue?.SkipParens();
+            var nonNegativeCondition = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, id, csToValue);
+            var negativeCondition = SyntaxFactory.BinaryExpression(SyntaxKind.GreaterThanOrEqualExpression, id, csToValue);
+            if (csStepValue == null) {
+                return (nonNegativeCondition, SyntaxFactory.PostfixUnaryExpression(SyntaxKind.PostIncrementExpression, id));
+            }
+
+            ExpressionSyntax csCondition;
+            ExpressionSyntax csStep = SyntaxFactory.AssignmentExpression(SyntaxKind.AddAssignmentExpression, id, csStepValue);
+            var vbStepConstValue = _semanticModel.GetConstantValue(vbStepValue);
+            var constValue = !vbStepConstValue.HasValue ? null : (dynamic)vbStepConstValue.Value;
+            if (constValue == null) {
+                var ifStepNonNegative = SyntaxFactory.BinaryExpression(SyntaxKind.GreaterThanOrEqualExpression, csStepValue, CommonConversions.Literal(0));
+                csCondition = SyntaxFactory.ConditionalExpression(ifStepNonNegative, nonNegativeCondition, negativeCondition);
+            } else if (constValue < 0) {
+                csCondition = negativeCondition;
+                if (csStepValue is PrefixUnaryExpressionSyntax pues && pues.OperatorToken.IsKind(SyntaxKind.MinusToken)) {
+                    csStep = SyntaxFactory.AssignmentExpression(SyntaxKind.SubtractAssignmentExpression, id, pues.Operand);
+                }
+            } else {
+                csCondition = nonNegativeCondition;
+            }
+
+            return (csCondition, csStep);
         }
 
         public override async Task<SyntaxList<StatementSyntax>> VisitForEachBlock(VBSyntax.ForEachBlockSyntax node)

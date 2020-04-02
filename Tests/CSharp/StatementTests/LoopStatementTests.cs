@@ -215,6 +215,69 @@ internal partial class Program
         }
 
         [Fact]
+        public async Task ForNonNegativeStep()
+        {
+            await TestConversionVisualBasicToCSharp(@"Friend Class Issue453
+    Sub PrintLoop(startIndex As Integer, endIndex As Integer)
+      For i As Integer = startIndex To endIndex Step -0
+        Debug.WriteLine(i)
+  Next
+End Sub
+End Class", @"using System.Diagnostics;
+
+internal partial class Issue453
+{
+    public void PrintLoop(int startIndex, int endIndex)
+    {
+        for (int i = startIndex, loopTo = endIndex; i <= loopTo; i += -0)
+            Debug.WriteLine(i);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ForNegativeStep()
+        {
+            await TestConversionVisualBasicToCSharp(@"Friend Class Issue453
+    Sub PrintLoop(startIndex As Integer, endIndex As Integer)
+      For i As Integer = startIndex To endIndex Step -5
+        Debug.WriteLine(i)
+  Next
+End Sub
+End Class", @"using System.Diagnostics;
+
+internal partial class Issue453
+{
+    public void PrintLoop(int startIndex, int endIndex)
+    {
+        for (int i = startIndex, loopTo = endIndex; i >= loopTo; i -= 5)
+            Debug.WriteLine(i);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ForVariableStep()
+        {
+            await TestConversionVisualBasicToCSharp(@"Friend Class Issue453
+    Sub PrintLoop(startIndex As Integer, endIndex As Integer, [step] As Integer)
+      For i As Integer = startIndex To endIndex Step [step]
+        Debug.WriteLine(i)
+  Next
+End Sub
+End Class", @"using System.Diagnostics;
+
+internal partial class Issue453
+{
+    public void PrintLoop(int startIndex, int endIndex, int step)
+    {
+        for (int i = startIndex, loopTo = endIndex; step >= 0 ? i <= loopTo : i >= loopTo; i += step)
+            Debug.WriteLine(i);
+    }
+}");
+        }
+
+        [Fact]
         public async Task ForeachWithObjectCollection()
         {
             await TestConversionVisualBasicToCSharp(@"Friend Class Program
