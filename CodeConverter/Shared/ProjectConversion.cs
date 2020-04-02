@@ -74,11 +74,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private static ConversionResult GetSingleResultForDocument(ConversionResult[] conversionResults, Document document, IProgress<ConversionProgress> progress)
         {
-            var codeResults = conversionResults.Where(x => !string.IsNullOrWhiteSpace(x.ConvertedCode)).OrderByDescending(r => r.SourcePathOrNull == document.FilePath).ToArray();
-            if (codeResults.Count() != 1) {
-                progress.Report(new ConversionProgress($"ERROR: Expected one result, but received {codeResults.Count()}:{Environment.NewLine}{string.Join(Environment.NewLine, codeResults.Select(r => r.TargetPathOrNull))}"));
-            }
-            var codeResult = codeResults.First();
+            var codeResult = conversionResults.First(r => r.SourcePathOrNull == document.FilePath);
             codeResult.Exceptions = conversionResults.SelectMany(x => x.Exceptions).ToArray();
             return codeResult;
         }
