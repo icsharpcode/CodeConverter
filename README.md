@@ -24,7 +24,9 @@ Let us know what needs improving. If you want to get involved in writing the cod
 Currently, the VB -> C# conversion quality is higher than the C# -> VB conversion quality. This is due to demand of people raising issues and supply of developers willing to fix them. But we're very happy to support developers who want to contribute to either conversion direction. Visual Basic will have support for some project types on initial versions of .NET 5, but won't be getting new features according to the [.NET Team Blog](https://devblogs.microsoft.com/vbteam/visual-basic-support-planned-for-net-5-0/).
 
 ## Other ways to use the converter
-* VSIX file inside "1 published" artifact from latest CI build (potentially less stable): https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_build/latest?definitionId=2&branchName=master&status=succeeded
+* Latest CI build (potentially less stable):
+  * https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_build/latest?definitionId=2&branchName=master&status=succeeded
+  * Uninstall current version, then install VSIX file inside "1 published" artifact
 
 * Online snippet converter: [https://codeconverter.icsharpcode.net/](https://codeconverter.icsharpcode.net/) (less accurate due to lack of project context)
 
