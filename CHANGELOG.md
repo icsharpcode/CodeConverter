@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
-
+* Convert files with legacy vb6 file extensions (e.g. .cls, .frm)
 
 ### C# -> VB
 

@@ -13,15 +13,21 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private static string GetConvertedExtension(string originalExtension)
         {
-            switch (originalExtension)
-            {
+            switch (originalExtension) {
                 case ".csproj":
                     return ".vbproj";
                 case ".vbproj":
                     return ".csproj";
                 case ".cs":
                     return ".vb";
-                case ".vb":
+                case ".vb": //https://github.com/dotnet/roslyn/blob/91571a3bb038e05e7bf2ab87510273a1017faed0/src/VisualStudio/VisualBasic/Impl/LanguageService/VisualBasicPackage.vb#L45-L52
+                case ".bas":
+                case ".cls":
+                case ".ctl":
+                case ".dob":
+                case ".dsr":
+                case ".frm":
+                case ".pag":
                     return ".cs";
                 case ".txt":
                     return ".txt";

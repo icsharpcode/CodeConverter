@@ -287,9 +287,21 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             return fileName.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <remarks>https://github.com/dotnet/roslyn/blob/91571a3bb038e05e7bf2ab87510273a1017faed0/src/VisualStudio/VisualBasic/Impl/LanguageService/VisualBasicPackage.vb#L45-L52</remarks>
         public static bool IsVBFileName(string fileName)
         {
-            return fileName.EndsWith(".vb", StringComparison.OrdinalIgnoreCase);
+            switch (Path.GetExtension(fileName).ToLower()) {
+                case ".vb":
+                case ".bas":
+                case ".cls":
+                case ".ctl":
+                case ".dob":
+                case ".dsr":
+                case ".frm":
+                case ".pag":
+                    return true;
+            }
+            return false;
         }
     }
 }
