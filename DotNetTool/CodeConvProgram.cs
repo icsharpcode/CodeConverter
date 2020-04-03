@@ -1,16 +1,14 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
-using System.Linq;
 using McMaster.Extensions.CommandLineUtils;
 using System.Threading;
 using ICSharpCode.CodeConverter.Shared;
-using ICSharpCode.CodeConverter.DotNetTool;
 using ICSharpCode.CodeConverter.CSharp;
 using System.Threading.Tasks;
+using ICSharpCode.Decompiler.Console;
 
-namespace ICSharpCode.Decompiler.Console
+namespace ICSharpCode.CodeConverter.DotNetTool
 {
     [Command(Name = "codeconv", Description = "Convert code from VB.NET to C# or C# to VB.NET",
         ExtendedHelpText = @"
@@ -27,9 +25,22 @@ Remarks:
         [Argument(0, "Project or solution path", "The project or solution to be converted.")]
         public string ProjectOrSolutionPath { get; }
 
+        [Option("-b|--besteffort", "Overrides warnings about compilation issues with input, and attempts a best effort conversion anyway", CommandOptionType.NoValue)]
+        public bool BestEffortConversion { get; }
+
+
+        [Option("-t|--targetlanguage", "", CommandOptionType.SingleValue, ValueName = "CS|VB")]
+        public Language TargetLanguage { get; }
+
+        public enum Language
+        {
+            CS,
+            VB
+        }
+
         private async Task<int> OnExecuteAsync(CommandLineApplication app)
         {
-            TextWriter output = System.Console.Out;
+            var output = Console.Out;
 
             try {
                 var progress = new Progress<ConversionProgress>(s => output.WriteLine(s.ToString()));
@@ -46,8 +57,8 @@ Remarks:
 
         private async Task ExecuteUnhandled(Progress<ConversionProgress> progress)
         {
-            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(ProjectOrSolutionPath);
-            var converterResultsEnumerable = msbuildWorkspaceConverter.ConvertProjectsWhere<VBToCSConversion>(p => true, progress, CancellationToken.None);
+            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(ProjectOrSolutionPath, new Progress<string>(p => new ConversionProgress(p)), BestEffortConversion);
+            var converterResultsEnumerable = msbuildWorkspaceConverter.ConvertProjectsWhere(p => true, TargetLanguage, progress, CancellationToken.None);
             await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, ProjectOrSolutionPath, null, false, false);
         }
     }

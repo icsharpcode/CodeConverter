@@ -24,11 +24,19 @@ namespace ICSharpCode.CodeConverter.Shared
             IProgress<ConversionProgress> progress = null,
             CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
         {
-            var conversion = new TLanguageConversion {ConversionOptions = conversionOptions ?? new ConversionOptions() };
+            var conversion = new TLanguageConversion {ConversionOptions = conversionOptions };
+            return CreateFor(conversion, projectsToConvert, progress, cancellationToken);
+        }
+
+        public static SolutionConverter CreateFor(ILanguageConversion languageConversion, IReadOnlyCollection<Project> projectsToConvert,
+            IProgress<ConversionProgress> progress,
+            CancellationToken cancellationToken)
+        {
+            languageConversion.ConversionOptions ??= new ConversionOptions();
             var solutionFilePath = projectsToConvert.First().Solution.FilePath;
             var sourceSolutionContents = File.Exists(solutionFilePath) ? File.ReadAllText(solutionFilePath) : "";
             var projectReferenceReplacements = GetProjectReferenceReplacements(projectsToConvert, sourceSolutionContents);
-            return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, progress ?? new Progress<ConversionProgress>(), cancellationToken, conversion);
+            return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, progress ?? new Progress<ConversionProgress>(), cancellationToken, languageConversion);
         }
 
         private SolutionConverter(string solutionFilePath,
