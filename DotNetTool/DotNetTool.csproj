@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <AssemblyName>ICSharpCode.CodeConverter.DotNetTool</AssemblyName>
+    <RootNamespace>ICSharpCode.CodeConverter.DotNetTool</RootNamespace>
+    <ToolCommandName>codeconv</ToolCommandName>
+    <AssemblyVersion>8.0.4.0</AssemblyVersion>
+    <FileVersion>8.0.4.0</FileVersion>
+    <Version>8.0.4</Version>
+    <Description>Bidirectional code converter for VB and C#</Description>
+    <Copyright>Copyright 2011-2020 AlphaSierraPapa</Copyright>
+    <PackageProjectUrl>https://github.com/icsharpcode/CodeConverter/</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>CodeConvNuGetPackageIcon.png</PackageIcon>
+    <RepositoryUrl>https://github.com/icsharpcode/CodeConverter/</RepositoryUrl>
+    <Company />
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>ICSharpCode</Authors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="CodeConvNuGetPackageIcon.png"  Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Build.Locator" Version="1.2.6" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.4.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="3.4.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="3.4.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.4.43" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.3.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodeConverter\CodeConverter.csproj" />
+  </ItemGroup>
+
+</Project>
