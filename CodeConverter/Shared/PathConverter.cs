@@ -3,7 +3,7 @@ using System.IO;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
-    internal class PathConverter
+    internal static class PathConverter
     {
         public static string TogglePathExtension(string filePath)
         {

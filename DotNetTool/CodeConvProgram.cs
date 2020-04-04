@@ -25,10 +25,27 @@ Remarks:
         /// <remarks>Calls <see cref="OnExecuteAsync(CommandLineApplication)"/></remarks>
         public static async Task<int> Main(string[] args) => await CommandLineApplication.ExecuteAsync<CodeConvProgram>(args);
 
+        /// <remarks>Used by reflection in CommandLineApplication.ExecuteAsync</remarks>
+        private async Task<int> OnExecuteAsync(CommandLineApplication app)
+        {
+            try {
+                var progress = new Progress<ConversionProgress>(s => Console.Out.WriteLine(s.ToString()));
+                await ExecuteUnhandledAsync(progress, CancellationToken.None);
+            } catch (Exception ex) {
+                await Console.Error.WriteLineAsync(ex.ToString());
+                await Console.Error.WriteLineAsync();
+                await Console.Error.WriteLineAsync("Please report issues at github.com/icsharpcode/CodeConverter");
+                return ProgramExitCodes.EX_SOFTWARE;
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Exiting successfully. Report any issues at github.com/icsharpcode/CodeConverter to help us improve the accuracy of future conversions");
+            return 0;
+        }
 
         [FileExists]
         [Required]
-        [Argument(0, "Souce solution path", "The solution containing project(s) to be converted.")]
+        [Argument(0, "Source solution path", "The solution containing project(s) to be converted.")]
         public string SolutionPath { get; }
 
         [Option("-i|--include", "Regex matching project file paths to convert. Can be used multiple times", CommandOptionType.MultipleValue)]
@@ -62,35 +79,6 @@ Remarks:
             VB
         }
 
-        private Dictionary<string, string> ParsedProperties()
-        {
-            var props = BuildProperty.SelectMany(bp => bp.Split(';', ',', StringSplitOptions.RemoveEmptyEntries).Select(p => p.Split('=')));
-            return props.ToLookup(s => s[0], GetValidatedPropertyValue).ToDictionary();
-        }
-
-        private string GetValidatedPropertyValue(string[] s)
-        {
-            return s.Length == 2 ? s[1] : throw new ArgumentOutOfRangeException(nameof(BuildProperty), BuildProperty, $"{s[0]} must have exactly one value, e.g. `{s[0]}=1`");
-        }
-
-        /// <remarks>Used by reflection in CommandLineApplication.ExecuteAsync</remarks>
-        private async Task<int> OnExecuteAsync(CommandLineApplication app)
-        {
-            try {
-                var progress = new Progress<ConversionProgress>(s => Console.Out.WriteLine(s.ToString()));
-                await ExecuteUnhandledAsync(progress, CancellationToken.None);
-            } catch (Exception ex) {
-                await Console.Error.WriteLineAsync(ex.ToString());
-                await Console.Error.WriteLineAsync();
-                await Console.Error.WriteLineAsync("Please report issues at github.com/icsharpcode/CodeConverter");
-                return ProgramExitCodes.EX_SOFTWARE;
-            }
-
-            Console.WriteLine();
-            Console.WriteLine("Exiting successfully. Report any issues at github.com/icsharpcode/CodeConverter to help us improve the accuracy of future conversions");
-            return 0;
-        }
-
         private async Task ExecuteUnhandledAsync(IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
             var properties = ParsedProperties();
@@ -101,6 +89,17 @@ Remarks:
 
             var converterResultsEnumerable = msbuildWorkspaceConverter.ConvertProjectsWhereAsync(ShouldIncludeProject, targetLanguage, progress, cancellationToken);
             await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, SolutionPath, OutputDirectory, Force, true);
+        }
+
+        private Dictionary<string, string> ParsedProperties()
+        {
+            var props = BuildProperty.SelectMany(bp => bp.Split(';', ',', StringSplitOptions.RemoveEmptyEntries).Select(p => p.Split('=')));
+            return props.ToLookup(s => s[0], GetValidatedPropertyValue).ToDictionary();
+        }
+
+        private string GetValidatedPropertyValue(string[] s)
+        {
+            return s.Length == 2 ? s[1] : throw new ArgumentOutOfRangeException(nameof(BuildProperty), BuildProperty, $"{s[0]} must have exactly one value, e.g. `{s[0]}=1`");
         }
 
         private bool ShouldIncludeProject(Project project)
