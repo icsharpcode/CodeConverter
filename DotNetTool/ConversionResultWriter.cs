@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.VisualBasic.FileIO;
@@ -27,7 +28,7 @@ namespace ICSharpCode.CodeConverter.DotNetTool
                     progress.Report($"Started copying contents of {solutionFile.Directory.FullName} to {targetDirectory.FullName} so that the output is a usable solution.{Environment.NewLine}" +
                         "If you don't see the 'Finished copying contents' message, consider running the conversion in-place by not specifying an output directory."
                     );
-                    FileSystem.CopyDirectory(solutionFile.Directory.FullName, targetDirectory.FullName);
+                    FileSystem.CopyDirectory(solutionFile.Directory.FullName, targetDirectory.FullName, true);
                     progress.Report($"Finished copying contents of {solutionFile.Directory.FullName} to {targetDirectory.FullName}."
                     );
                 }
@@ -53,13 +54,24 @@ namespace ICSharpCode.CodeConverter.DotNetTool
             bool foundGitDir = gitDir is DirectoryInfo;
             foreach (var fileSystemInfo in filesAndDirs.Except(gitDir.Yield())) {
                 if (fileSystemInfo is DirectoryInfo di) {
-                    foundGitDir |= DeleteExceptGitDir(targetDirectory);
+                    foundGitDir |= DeleteExceptGitDir(di);
                 } else {
                     fileSystemInfo.Delete();
                 }
             }
-            if (!foundGitDir) targetDirectory.Delete(true);
+            if (!foundGitDir) DeleteRecursive(targetDirectory);
             return !foundGitDir;
+        }
+
+        private static void DeleteRecursive(DirectoryInfo targetDirectory)
+        {
+            try {
+                targetDirectory.Delete(true);
+            } catch (Exception) {
+                Thread.Sleep(10);
+                targetDirectory.Refresh();
+                targetDirectory.Delete(true);
+            }
         }
     }
 }
