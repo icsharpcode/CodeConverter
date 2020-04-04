@@ -24,19 +24,26 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="CodeConvNuGetPackageIcon.png"  Pack="true" PackagePath="" />
+    <Compile Remove="DotNetTool %28netcoreapp3.1%29\**" />
+    <EmbeddedResource Remove="DotNetTool %28netcoreapp3.1%29\**" />
+    <None Remove="DotNetTool %28netcoreapp3.1%29\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="CodeConvNuGetPackageIcon.png" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.1.0" />
     <PackageReference Include="Microsoft.Build.Locator" Version="1.2.6" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.4.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="3.4.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="3.4.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.4.43" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.5.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="3.5.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="3.5.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.6.13" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="4.7.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
 
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="2.3.2" />
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.0.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,36 +1,31 @@
-# ilspycmd
+# codeconv
 
 ```
-dotnet tool install ilspycmd -g
+dotnet tool install codeconv -g
 ```
 
-.NET Core 2.1 Tool 
+.NET Core 3.1 Tool 
 
 ```
-ilspycmd -h
+codeconv -h
 
-dotnet tool for decompiling .NET assemblies and generating portable PDBs
+Convert code from VB.NET to C# or C# to VB.NET
 
-Usage: ilspycmd [arguments] [options]
+Usage: codeconv [arguments] [options]
 
 Arguments:
-  Assembly file name               The assembly that is being decompiled. This argument is mandatory.
+  Solution path                                       The solution containing project(s) to be converted.
 
 Options:
-  -h|--help                        Show help information
-  -o|--outputdir <directory>       The output directory, if omitted decompiler output is written to standard out.
-  -p|--project                     Decompile assembly as compilable project. This requires the output directory option.
-  -t|--type <type-name>            The fully qualified name of the type to decompile.
-  -il|--ilcode                     Show IL code.
-  -genpdb                          Generate PDB.
-  -usepdb                          Use PDB.
-  -l|--list <entity-type(s)>       Lists all entities of the specified type(s). Valid types: c(lass), i(nterface), s(truct), d(elegate), e(num)
-  -v|--version                     Show version of ICSharpCode.Decompiler used.
-  -lv|--languageversion <version>  C# Language version: CSharp1, CSharp2, CSharp3, CSharp4, CSharp5, CSharp6, CSharp7_0, CSharp7_1, CSharp7_2, CSharp7_3, CSharp8_0 or Latest
-  -r|--referencepath <path>        Path to a directory containing dependencies of the assembly that is being decompiled.
-  --no-dead-code                   Remove dead code.
-  --no-dead-stores                 Remove dead stores.
+  -h|--help                                           Show help information
+  -i|--include                                        A regex matching project file paths to convert
+  -e|--exclude                                        A regex matching project file paths to exclude from conversion
+  -t|--target-language <CS | VB>                      The language to convert to.
+  -o|--output-directory                               Directory to be wiped, and used for output.
+  -b|--best-effort                                     Overrides warnings about compilation issues with input, and attempts a best effort conversion anyway
+  -p|--property <Platform=x64;Configuration=Release>  Set or override the specified project-level properties, where name is the property name and value is the property value. Specify each property separately, or use a semicolon or comma to separate multiple properties.
 
 Remarks:
-  -o is valid with every option and required when using -p.
+  Converts all projects in a solution from VB.NET to C#.
+  See https://github.com/icsharpcode/CodeConverter for the source code, issues, Visual Studio extension and other info.
 ```

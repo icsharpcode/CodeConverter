@@ -94,7 +94,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 var projFilename = Path.GetFileName(project.FilePath);
                 var newProjFilename = PathConverter.TogglePathExtension(projFilename);
                 projectReferenceReplacements.Add((projFilename, newProjFilename, false));
-                projectReferenceReplacements.Add(GetProjectGuidReplacement(projFilename, sourceSolutionContents));
+                if (!string.IsNullOrWhiteSpace(sourceSolutionContents)) projectReferenceReplacements.Add(GetProjectGuidReplacement(projFilename, sourceSolutionContents));
             }
 
             return projectReferenceReplacements;

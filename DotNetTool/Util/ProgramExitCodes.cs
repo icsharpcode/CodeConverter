@@ -1,8 +1,8 @@
 ﻿// ReSharper disable InconsistentNaming
 
-namespace ICSharpCode.Decompiler.Console
+namespace ICSharpCode.CodeConverter.DotNetTool.Util
 {
-    public class ProgramExitCodes
+    internal static class ProgramExitCodes
     {
         // https://www.freebsd.org/cgi/man.cgi?query=sysexits
         public const int EX_USAGE = 64;
