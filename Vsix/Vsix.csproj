@@ -48,9 +48,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Build against VS 15.7 -->
     <PackageReference Include="Microsoft.VisualStudio.LanguageServices" Version="2.8.2" />
-    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="15.7.27703" ExcludeAssets="runtime" />
-    <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes" Version="15.0.27" />
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="15.0.0" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes" Version="15.0.29" />
     <!-- Avoids needing the VSSDK MSI installed. Version is the VS version used during compilation, not where the VSIX will be installed -->
     <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="15.9.3039">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
