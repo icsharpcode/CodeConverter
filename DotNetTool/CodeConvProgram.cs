@@ -17,6 +17,8 @@ namespace ICSharpCode.CodeConverter.DotNetTool
         ExtendedHelpText = @"
 Remarks:
   Converts all projects in a solution from VB.NET to C#.
+  Please backup / commit your files to source control before use.
+  We recommend running the conversion in-place (i.e. not specifying an output directory) for best performance.
   See https://github.com/icsharpcode/CodeConverter for the source code, issues, Visual Studio extension and other info.
 ")]
     [HelpOption("-h|--help")]
@@ -58,7 +60,7 @@ Remarks:
         public Language? TargetLanguage { get; }
 
         [FileNotExists]
-        [Option("-o|--output-directory", "Empty or non-existent directory to be used for output.", CommandOptionType.SingleValue)]
+        [Option("-o|--output-directory", "Empty or non-existent directory to copy the solution directory to, then write the output.", CommandOptionType.SingleValue)]
         public string OutputDirectory { get; }
 
         [Option("-f|--force", "Wipe the output directory before conversion", CommandOptionType.NoValue)]
@@ -70,7 +72,7 @@ Remarks:
         /// <remarks>
         /// Also allows semicolon and comma splitting of build properties to be compatible with https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild-command-line-reference?view=vs-2019#switches
         /// </remarks>
-        [Option("-b|--build-property", "Set build properties in format: propertyName=propertyValue. Can be used multiple times", CommandOptionType.MultipleValue, ValueName = "Configuration=Release")]
+        [Option("-p|--build-property", "Set build properties in format: propertyName=propertyValue. Can be used multiple times", CommandOptionType.MultipleValue, ValueName = "Configuration=Release")]
         public string[] BuildProperty { get; } = new string[0];
 
         public enum Language
@@ -81,14 +83,22 @@ Remarks:
 
         private async Task ExecuteUnhandledAsync(IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
+            IProgress<string> strProgress = new Progress<string>(p => progress.Report(new ConversionProgress(p)));
+
+            if (!string.Equals(Path.GetExtension(SolutionPath), ".sln", StringComparison.OrdinalIgnoreCase)) {
+                throw new ValidationException("Solution path must end in `.sln`"); 
+            }
+
+            if (!string.IsNullOrWhiteSpace(OutputDirectory) && Directory.Exists(OutputDirectory) && new DirectoryInfo(OutputDirectory).GetFileSystemInfos().Any(d => !string.Equals(d.Name, ".git", StringComparison.OrdinalIgnoreCase))) {
+                if (Force) strProgress.Report($"The contents of {OutputDirectory} will be deleted since the force option is specified");
+                else throw new ValidationException($"Omit the --output-directory option for an in-place conversion. Or if you're sure you want to delete all files/folders within {OutputDirectory}, you can use --force to override this check.");
+            }
+
             var properties = ParsedProperties();
-            var targetLanguage = TargetLanguage ??
-                (string.Equals(Path.GetExtension(SolutionPath), ".csproj", StringComparison.OrdinalIgnoreCase) ? Language.VB : Language.CS);
-            var strProgress = new Progress<string>(p => progress.Report(new ConversionProgress(p)));
             var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionPath, strProgress, BestEffort, properties);
 
-            var converterResultsEnumerable = msbuildWorkspaceConverter.ConvertProjectsWhereAsync(ShouldIncludeProject, targetLanguage, progress, cancellationToken);
-            await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, SolutionPath, OutputDirectory, Force, true);
+            var converterResultsEnumerable = msbuildWorkspaceConverter.ConvertProjectsWhereAsync(ShouldIncludeProject, TargetLanguage, progress, cancellationToken);
+            await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, SolutionPath, OutputDirectory, Force, true, strProgress);
         }
 
         private Dictionary<string, string> ParsedProperties()

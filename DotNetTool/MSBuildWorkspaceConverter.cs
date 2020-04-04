@@ -40,8 +40,14 @@ namespace ICSharpCode.CodeConverter.DotNetTool
             _solutionFilePath = solutionFilePath;
         }
 
-        public async IAsyncEnumerable<ConversionResult> ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, CodeConvProgram.Language targetLanguage, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken token)
+        public async IAsyncEnumerable<ConversionResult> ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, CodeConvProgram.Language? targetLanguage, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken token)
         {
+            var solution = _cachedSolution ?? (_cachedSolution = await GetSolutionAsync(_solutionFilePath));
+
+            if (!targetLanguage.HasValue) {
+                targetLanguage = solution.Projects.Any(p => p.Language == LanguageNames.VisualBasic) ? CodeConvProgram.Language.CS : CodeConvProgram.Language.VB;
+            }
+
             var languageConversion = targetLanguage == CodeConvProgram.Language.CS
                 ? (ILanguageConversion)new VBToCSConversion()
                 : new CSToVBConversion();
@@ -49,7 +55,6 @@ namespace ICSharpCode.CodeConverter.DotNetTool
                 ? LanguageNames.VisualBasic
                 : LanguageNames.CSharp;
 
-            var solution = _cachedSolution ?? (_cachedSolution = await GetSolutionAsync(_solutionFilePath));
             var projectsToConvert = solution.Projects.Where(p => p.Language == languageNameToConvert && shouldConvertProject(p)).ToArray();
             var results = SolutionConverter.CreateFor(languageConversion, projectsToConvert, progress, token).Convert();
             await foreach (var r in results) yield return r;
