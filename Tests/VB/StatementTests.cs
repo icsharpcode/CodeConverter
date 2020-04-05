@@ -1383,7 +1383,7 @@ End Class
 
 2 source compilation errors:
 CS0103: The name 'Console' does not exist in the current context
-CS0246: The type or namespace name 'Exception' could not be found (are you missing a using directive or an assembly reference?)");
+CS0122: 'Exception' is inaccessible due to its protection level");
         }
 
         [Fact]

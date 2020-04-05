@@ -1222,7 +1222,8 @@ internal partial class TestClass
         Dim intList As New List(Of Integer) From {1}
         Dim dict As New Dictionary(Of Integer, Integer) From {{1, 2}, {3, 4}}
     End Sub
-End Class", @"using System.Collections.Generic;
+End Class", @"using System;
+using System.Collections.Generic;
 
 internal partial class TestClass
 {

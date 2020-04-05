@@ -212,7 +212,7 @@ End Class");
 End Class
 
 1 source compilation errors:
-CS0246: The type or namespace name 'Exception' could not be found (are you missing a using directive or an assembly reference?)
+CS0122: 'Exception' is inaccessible due to its protection level
 1 target compilation errors:
 BC30451: 'CSharpImpl.__Throw' is not declared. It may be inaccessible due to its protection level.");
         }
