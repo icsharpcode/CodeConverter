@@ -515,15 +515,18 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task TestAbstractMethod()
+        public async Task TestAbstractMethodAndProperty()
         {
             await TestConversionVisualBasicToCSharp(
 @"MustInherit Class TestClass
     Public MustOverride Sub TestMethod()
+    Public MustOverride ReadOnly Property AbstractProperty As String
 End Class", @"
 internal abstract partial class TestClass
 {
     public abstract void TestMethod();
+
+    public abstract string AbstractProperty { get; }
 }");
         }
 
@@ -1149,9 +1152,6 @@ Class Class1
     Shared WithEvents SharedEventClassInstance As New MyEventClass
     WithEvents NonSharedEventClassInstance As New MyEventClass
 
-    Public Sub New()
-    End Sub
-
     Public Sub New(num As Integer)
     End Sub
 
@@ -1164,6 +1164,9 @@ Class Class1
 
     Sub PrintTestMessage3() Handles NonSharedEventClassInstance.TestEvent
     End Sub
+End Class
+
+Public Class ShouldNotGainConstructor
 End Class", @"using System.Runtime.CompilerServices;
 
 internal partial class MyEventClass
@@ -1185,12 +1188,12 @@ internal partial class Class1
         SharedEventClassInstance = new MyEventClass();
     }
 
-    public Class1(int num)
+    public Class1()
     {
         NonSharedEventClassInstance = new MyEventClass();
     }
 
-    public Class1()
+    public Class1(int num)
     {
         NonSharedEventClassInstance = new MyEventClass();
     }
@@ -1261,8 +1264,19 @@ internal partial class Class1
     {
     }
 }
-1 target compilation errors:
-CS1547: Keyword 'void' cannot be used in this context", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
+
+public partial class ShouldNotGainConstructor
+{
+    static ShouldNotGainConstructor()
+    {
+        SharedEventClassInstance = new MyEventClass();
+    }
+}
+1 source compilation errors:
+BC30516: Overload resolution failed because no accessible 'New' accepts this number of arguments.
+2 target compilation errors:
+CS1547: Keyword 'void' cannot be used in this context
+CS0103: The name 'SharedEventClassInstance' does not exist in the current context", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
         }
 
         [Fact]

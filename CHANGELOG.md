@@ -12,6 +12,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 * Convert files with legacy vb6 file extensions (e.g. .cls, .frm)
 * Fix for converting For...Next...Step loops with a variable step that's sometimes negative [#453](https://github.com/icsharpcode/CodeConverter/issues/453)
+* Fix for abstract readonly/writeonly property conversion including a private accessor
+* Generated parameterless constructors are now public by default
+* Multiple classes in the same file no longer affect each other's constructors
 
 ### C# -> VB
 

@@ -197,7 +197,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<IEnumerable<MemberDeclarationSyntax>> ConvertMembers(VBSyntax.TypeBlockSyntax parentType)
         {
             var members = parentType.Members;
+
+            //TODO: Store these per-type so nested classes aren't affected
             _methodsWithHandles.Initialize(GetMethodWithHandles(parentType));
+            _additionalInitializers.AdditionalInstanceInitializers.Clear();
+            _additionalInitializers.AdditionalInstanceInitializers.Clear();
+
             if (_methodsWithHandles.Any()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
 
             var directlyConvertedMembers = await GetDirectlyConvertMembers();
@@ -639,7 +644,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var modifiers = CommonConversions.ConvertModifiers(node, convertibleModifiers.ToList(), GetMemberContext(node));
             var isIndexer = CommonConversions.IsDefaultIndexer(node);
             var accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, ModelExtensions.GetDeclaredSymbol(_semanticModel, node));
-            bool isInInterface = node.Ancestors().OfType<VBSyntax.InterfaceBlockSyntax>().FirstOrDefault() != null;
+            bool hasImplementation = !node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.MustOverrideKeyword)) && node.GetAncestor<VBSyntax.InterfaceBlockSyntax>() == null;
 
             var initializer = (EqualsValueClauseSyntax) await node.Initializer.AcceptAsync(_triviaConvertingExpressionVisitor);
             VBSyntax.TypeSyntax vbType;
@@ -683,7 +688,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         )
                     ));
             } else {
-                accessors = ConvertSimpleAccessors(isWriteOnly, isReadonly, isInInterface);
+                accessors = ConvertSimpleAccessors(isWriteOnly, isReadonly, hasImplementation);
             }
 
 
@@ -759,7 +764,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return csIndentifierName;
         }
 
-        private static AccessorListSyntax ConvertSimpleAccessors(bool isWriteOnly, bool isReadonly, bool isInInterface)
+        private static AccessorListSyntax ConvertSimpleAccessors(bool isWriteOnly, bool isReadonly, bool hasImplementation)
         {
             AccessorListSyntax accessors;
             var getAccessor = SyntaxFactory.AccessorDeclaration(Microsoft.CodeAnalysis.CSharp.SyntaxKind.GetAccessorDeclaration)
@@ -776,11 +781,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 setAccessor = setAccessor.AddModifiers(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword));
             }
 
-            if (isInInterface && isReadonly)
+            if (!hasImplementation && isReadonly)
             {
                 accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor}));
             }
-            else if (isInInterface && isWriteOnly)
+            else if (!hasImplementation && isWriteOnly)
             {
                 accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {setAccessor}));
             }

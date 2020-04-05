@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -17,16 +18,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             List<MemberDeclarationSyntax> convertedMembers, SyntaxToken parentTypeName, bool shouldAddTypeWideInitToThisPart, bool requiresInitializeComponent)
         {
             var constructorsInAllParts = parentType?.GetMembers().OfType<IMethodSymbol>().Where(m => m.IsConstructor()).ToList();
-            var hasInstanceConstructors = constructorsInAllParts?.Any(c => !c.IsStatic && !c.IsImplicitlyDeclared) == true;
-            var hasStaticConstructors = constructorsInAllParts?.Any(c => c.IsStatic) == true;
+            var parameterlessConstructorsInAllParts = constructorsInAllParts?.Where(c => !c.IsImplicitlyDeclared && !c.Parameters.Any()) ?? Array.Empty<IMethodSymbol>();
+            var requiresInstanceConstructor = !parameterlessConstructorsInAllParts.Any(c => !c.IsStatic);
+            var requiresStaticConstructor = !parameterlessConstructorsInAllParts.Any(c => c.IsStatic);
             var rootConstructors = convertedMembers.OfType<ConstructorDeclarationSyntax>()
                 .Where(cds => !cds.Initializer.IsKind(SyntaxKind.ThisConstructorInitializer))
                 .ToLookup(cds => cds.IsInStaticCsContext());
 
-            convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(), rootConstructors[false], shouldAddTypeWideInitToThisPart && !hasInstanceConstructors, requiresInitializeComponent);
+            convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)), rootConstructors[false], shouldAddTypeWideInitToThisPart && requiresInstanceConstructor, requiresInitializeComponent);
 
             convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName,
-                AdditionalStaticInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword)), rootConstructors[true], !hasStaticConstructors, false);
+                AdditionalStaticInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword)), rootConstructors[true], requiresStaticConstructor, false);
 
             return convertedMembers;
         }
@@ -42,7 +44,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var statements = new List<StatementSyntax>();
                 if (addedConstructorRequiresInitializeComponent) {
                     statements.Add(SyntaxFactory.ExpressionStatement(SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName("InitializeComponent"))));
-                    modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.PublicKeyword));
                 }
                 constructors.Add(SyntaxFactory.ConstructorDeclaration(convertIdentifier)
                     .WithBody(SyntaxFactory.Block(statements.ToArray()))
@@ -59,13 +60,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         private ConstructorDeclarationSyntax WithAdditionalInitializers(ConstructorDeclarationSyntax oldConstructor,
             IReadOnlyCollection<(ExpressionSyntax Field, SyntaxKind AssignmentKind, ExpressionSyntax Initializer)> additionalConstructorAssignments)
         {
-            var staticInitializerStatements = additionalConstructorAssignments.Select(assignment =>
+            var initializerStatements = additionalConstructorAssignments.Select(assignment =>
                 SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(
                     assignment.AssignmentKind, assignment.Field, assignment.Initializer))
             ).ToList();
             var oldConstructorBody = oldConstructor.Body ?? SyntaxFactory.Block(SyntaxFactory.ExpressionStatement(oldConstructor.ExpressionBody.Expression));
             var newConstructor = oldConstructor.WithBody(oldConstructorBody.WithStatements(
-                oldConstructorBody.Statements.InsertRange(0, staticInitializerStatements)));
+                oldConstructorBody.Statements.InsertRange(0, initializerStatements)));
 
             return newConstructor;
         }
