@@ -1181,9 +1181,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 if (castToOrNull != null) {
                     expressionSyntax = await Cast(expressionSyntax, castToOrNull);
-                    if (node.Parent is VBasic.Syntax.MemberAccessExpressionSyntax) {
-                        expressionSyntax = SyntaxFactory.ParenthesizedExpression(expressionSyntax);
-                    }
+                     expressionSyntax = node.ParenthesizeIfPrecedenceCouldChange(expressionSyntax);
                 }
             }
 

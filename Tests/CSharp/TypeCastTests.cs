@@ -325,5 +325,24 @@ internal partial class CharTestClass
     }
 }");
         }
+
+        [Fact]
+        public async Task TestCastHasBracketsWhenElementAccess()
+        {
+            await TestConversionVisualBasicToCSharp(
+                @"Class TestCastHasBracketsWhenElementAccess
+    Private Function Casting(ByVal sender As Object) As Integer
+        Return CInt(DirectCast(sender, Object())(0))
+    End Function
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+internal partial class TestCastHasBracketsWhenElementAccess
+{
+    private int Casting(object sender)
+    {
+        return Conversions.ToInteger(((object[])sender)[0]);
+    }
+}");
+        }
     }
 }

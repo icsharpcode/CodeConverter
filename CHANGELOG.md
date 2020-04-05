@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Fix for abstract readonly/writeonly property conversion including a private accessor
 * Generated parameterless constructors are now public by default
 * Multiple classes in the same file no longer affect each other's constructors
+* Cast expressions are now parenthesized when converted
 
 ### C# -> VB
 
