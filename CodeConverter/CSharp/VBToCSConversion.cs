@@ -167,8 +167,7 @@ End Class";
 
         public Document CreateProjectDocumentFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
-            //TODO Check references match
-            var project = _cachedSourceProject ?? (_cachedSourceProject = CreateEmptyVbProject(references));
+            var project = CreateEmptyVbProject(references);
             return project.AddDocumentFromTree(tree);
         }
 
