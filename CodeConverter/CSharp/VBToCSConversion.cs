@@ -25,6 +25,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private VBToCSProjectContentsConverter _vbToCsProjectContentsConverter;
         private IProgress<ConversionProgress> _progress;
         private CancellationToken _cancellationToken;
+        private Project _cachedSourceProject;
 
         public ConversionOptions ConversionOptions { get; set; }
 
@@ -164,12 +165,17 @@ End Class";
             return new VisualBasicCompiler(ConversionOptions.RootNamespaceOverride);
         }
 
-        public Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
-            IEnumerable<MetadataReference> references)
+        public Document CreateProjectDocumentFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
+        {
+            //TODO Check references match
+            var project = _cachedSourceProject ?? (_cachedSourceProject = CreateEmptyVbProject(references));
+            return project.AddDocumentFromTree(tree);
+        }
+
+        private Project CreateEmptyVbProject(IEnumerable<MetadataReference> references)
         {
             return VisualBasicCompiler.CreateCompilationOptions(ConversionOptions.RootNamespaceOverride)
-                .CreateProjectDocumentFromTree(workspace, tree, references, VisualBasicParseOptions.Default,
-                    ISymbolExtensions.ForcePartialTypesAssemblyName);
+                            .CreateProject(references, VisualBasicParseOptions.Default, ISymbolExtensions.ForcePartialTypesAssemblyName);
         }
     }
 }
