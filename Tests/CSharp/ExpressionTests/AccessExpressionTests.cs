@@ -580,7 +580,7 @@ Public Class Test
 
     ' Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
     Private Tr As String = NameOf(TextReader)
-    Private Strings As String = NameOf(VBCodeProvider)
+    Private Strings As String = NameOf(AppWinStyle)
 
     Class ErrorEventHandler
     End Class
@@ -601,7 +601,7 @@ public partial class Test
 
     // Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
     private string Tr = nameof(TextReader);
-    private string Strings = nameof(VBCodeProvider);
+    private string Strings = nameof(AppWinStyle);
 
     public partial class ErrorEventHandler
     {

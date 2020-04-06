@@ -27,7 +27,8 @@ namespace ICSharpCode.CodeConverter.Shared
             typeof(System.Web.HttpUtility),
             typeof(System.Xml.XmlElement),
             typeof(System.Xml.Linq.XElement),
-            typeof(Microsoft.VisualBasic.Constants)
+            typeof(Microsoft.VisualBasic.Constants),
+            typeof(System.Data.SqlClient.SqlCommand),
         }.Select(t => t.Assembly).Concat(AppDomain.CurrentDomain.GetAssemblies()).ToArray();
 
         private static Dictionary<string, (string Location, string[] ReferenceNames)> _assemblyInfoCache = new Dictionary<string, (string Location, string[] ReferenceNames)>();
