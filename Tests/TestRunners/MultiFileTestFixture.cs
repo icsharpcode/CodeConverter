@@ -129,7 +129,7 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
         private static MSBuildWorkspace CreateWorkspaceUnhandled()
         {
             var instances = MSBuildLocator.QueryVisualStudioInstances();
-            MSBuildLocator.RegisterInstance(instances.OrderByDescending(x => x.Version).First(x => x.Version.Major >= 16));
+            MSBuildLocator.RegisterInstance(instances.OrderByDescending(x => x.Version).First());
             return MSBuildWorkspace.Create(new Dictionary<string, string>()
             {
                 {"Configuration", "Debug"},
