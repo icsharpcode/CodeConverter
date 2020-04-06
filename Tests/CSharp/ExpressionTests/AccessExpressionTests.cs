@@ -65,8 +65,7 @@ internal static partial class Module1
         Dim dict = New Dictionary(Of String, String) From {{""a"", ""AAA""}, {""b"", ""bbb""}}
         Dim v = dict?.Item(""a"")
     End Sub
-End Class", @"using System;
-using System.Collections.Generic;
+End Class", @"using System.Collections.Generic;
 
 public partial class A
 {

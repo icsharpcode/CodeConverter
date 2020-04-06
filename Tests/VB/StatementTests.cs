@@ -167,10 +167,7 @@ End Class");
         Dim b As String
         b = New String(""test"")
     End Sub
-End Class
-
-1 source compilation errors:
-CS1503: Argument 1: cannot convert from 'string' to 'char*'");
+End Class");
         }
 
         [Fact]
@@ -186,10 +183,7 @@ CS1503: Argument 1: cannot convert from 'string' to 'char*'");
     Private Sub TestMethod()
         Dim b As String = New String(""test"")
     End Sub
-End Class
-
-1 source compilation errors:
-CS1503: Argument 1: cannot convert from 'string' to 'char*'");
+End Class");
         }
 
         [Fact]
@@ -205,10 +199,7 @@ CS1503: Argument 1: cannot convert from 'string' to 'char*'");
     Private Sub TestMethod()
         Dim b = New String(""test"")
     End Sub
-End Class
-
-1 source compilation errors:
-CS1503: Argument 1: cannot convert from 'string' to 'char*'");
+End Class");
         }
 
         [Fact]
@@ -1383,7 +1374,7 @@ End Class
 
 2 source compilation errors:
 CS0103: The name 'Console' does not exist in the current context
-CS0122: 'Exception' is inaccessible due to its protection level");
+CS0246: The type or namespace name 'Exception' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]

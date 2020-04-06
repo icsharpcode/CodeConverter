@@ -1257,12 +1257,12 @@ End Class
 
 15 source compilation errors:
 CS1002: ; expected
-CS0535: 'TestClass' does not implement interface member 'IList.Add(object)'
-CS0535: 'TestClass' does not implement interface member 'IList.Contains(object)'
+CS0535: 'TestClass' does not implement interface member 'IList.Add(object?)'
+CS0535: 'TestClass' does not implement interface member 'IList.Contains(object?)'
 CS0535: 'TestClass' does not implement interface member 'IList.Clear()'
-CS0535: 'TestClass' does not implement interface member 'IList.IndexOf(object)'
-CS0535: 'TestClass' does not implement interface member 'IList.Insert(int, object)'
-CS0535: 'TestClass' does not implement interface member 'IList.Remove(object)'
+CS0535: 'TestClass' does not implement interface member 'IList.IndexOf(object?)'
+CS0535: 'TestClass' does not implement interface member 'IList.Insert(int, object?)'
+CS0535: 'TestClass' does not implement interface member 'IList.Remove(object?)'
 CS0535: 'TestClass' does not implement interface member 'IList.RemoveAt(int)'
 CS0535: 'TestClass' does not implement interface member 'IList.IsReadOnly'
 CS0535: 'TestClass' does not implement interface member 'IList.IsFixedSize'
