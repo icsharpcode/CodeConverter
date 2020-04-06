@@ -192,13 +192,17 @@ End Class");
         [Fact]
         public async Task ThrowExpression()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasic(@"using System;
+
+class TestClass
 {
     void TestMethod(string str)
     {
         bool result = (str == """") ? throw new Exception(""empty"") : false;
     }
-}", @"Friend Class TestClass
+}", @"Imports System
+
+Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = If(Equals(str, """"), CSharpImpl.__Throw(Of Boolean)(New Exception(""empty"")), False)
     End Sub
@@ -211,8 +215,6 @@ End Class");
     End Class
 End Class
 
-1 source compilation errors:
-CS0122: 'Exception' is inaccessible due to its protection level
 1 target compilation errors:
 BC30451: 'CSharpImpl.__Throw' is not declared. It may be inaccessible due to its protection level.");
         }
