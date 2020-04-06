@@ -260,7 +260,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitLiteralExpression(VBasic.Syntax.LiteralExpressionSyntax node)
         {
-            var convertedType = _semanticModel.GetTypeInfo(node).ConvertedType;
+            var typeInfo = _semanticModel.GetTypeInfo(node);
+            var convertedType = typeInfo.ConvertedType;
             if (node.Token.Value == null) {
                 if (convertedType == null) {
                     return SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
@@ -269,7 +270,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return !convertedType.IsReferenceType ? SyntaxFactory.DefaultExpression(CommonConversions.GetTypeSyntax(convertedType)) : CommonConversions.Literal(null);
             }
 
-            if (TypeConversionAnalyzer.ConvertStringToCharLiteral(node, convertedType, out char chr)) {
+            if (TypeConversionAnalyzer.ConvertStringToCharLiteral(node, typeInfo.Type, convertedType, out char chr)) {
                 return CommonConversions.Literal(chr);
             }
             return CommonConversions.Literal(node.Token.Value, node.Token.Text, convertedType);
