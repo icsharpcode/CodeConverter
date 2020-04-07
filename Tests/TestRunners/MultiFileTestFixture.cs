@@ -48,15 +48,10 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
         /// </summary>
         private readonly bool _writeAllFilesForManualTesting = false;
 
-        private readonly MSBuildWorkspaceConverter _msBuildWorkspaceConverter;
+        private static readonly MSBuildWorkspaceConverter _msBuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionFile);
         private static readonly string MultiFileCharacterizationDir = Path.Combine(TestConstants.GetTestDataDirectory(), "MultiFileCharacterization");
         private static readonly string OriginalSolutionDir = Path.Combine(MultiFileCharacterizationDir, "SourceFiles");
         private static readonly string SolutionFile = Path.Combine(OriginalSolutionDir, "CharacterizationTestSolution.sln");
-
-        public MultiFileTestFixture()
-        {
-            _msBuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionFile);
-        }
 
         public async Task ConvertProjectsWhere(Func<Project, bool> shouldConvertProject, Language targetLanguage, [CallerMemberName] string expectedResultsDirectory = "")
         {
