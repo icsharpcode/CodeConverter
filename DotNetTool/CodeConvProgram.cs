@@ -86,19 +86,35 @@ Remarks:
             IProgress<string> strProgress = new Progress<string>(p => progress.Report(new ConversionProgress(p)));
 
             if (!string.Equals(Path.GetExtension(SolutionPath), ".sln", StringComparison.OrdinalIgnoreCase)) {
-                throw new ValidationException("Solution path must end in `.sln`"); 
+                throw new ValidationException("Solution path must end in `.sln`");
             }
 
-            if (!string.IsNullOrWhiteSpace(OutputDirectory) && Directory.Exists(OutputDirectory) && new DirectoryInfo(OutputDirectory).GetFileSystemInfos().Any(d => !string.Equals(d.Name, ".git", StringComparison.OrdinalIgnoreCase))) {
-                if (Force) strProgress.Report($"The contents of {OutputDirectory} will be deleted since the force option is specified");
-                else throw new ValidationException($"Omit the --output-directory option for an in-place conversion. Or if you're sure you want to delete all files/folders within {OutputDirectory}, you can use --force to override this check.");
+            var outputDirectory = string.IsNullOrWhiteSpace(OutputDirectory) ? Path.GetDirectoryName(SolutionPath) : OutputDirectory;
+            if (await CouldOverwriteUncomittedFilesAsync(outputDirectory)) {
+                var action = string.IsNullOrWhiteSpace(OutputDirectory) ? "may be overwritten" : "will be deleted";
+                strProgress.Report($"WARNING: There are files in {outputDirectory} which {action}, and aren't comitted to git");
+                if (Force) strProgress.Report("Continuing with possibility of data loss due to force option.");
+                else throw new ValidationException("Aborting to avoid data loss (see above warning). Commit the files to git, remove them, or use the --force option to override this check.");
             }
 
             var properties = ParsedProperties();
             var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionPath, strProgress, BestEffort, properties);
 
             var converterResultsEnumerable = msbuildWorkspaceConverter.ConvertProjectsWhereAsync(ShouldIncludeProject, TargetLanguage, progress, cancellationToken);
-            await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, SolutionPath, OutputDirectory, Force, true, strProgress);
+            await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, SolutionPath, outputDirectory, Force, true, strProgress);
+        }
+
+        private static async Task<bool> CouldOverwriteUncomittedFilesAsync(string outputDirectory)
+        {
+            if (!Directory.Exists(outputDirectory) || !ContainsDataOtherThanGitDir(outputDirectory)) return false;
+            var gitDiff = await ProcessRunner.StartRedirectedToConsoleAsync("git", "diff", outputDirectory, "--exit-code");
+            return gitDiff.ExitCode != 0;
+        }
+
+        private static bool ContainsDataOtherThanGitDir(string outputDirectory)
+        {
+            var filesAndFolders = new DirectoryInfo(outputDirectory).GetFileSystemInfos();
+            return filesAndFolders.Any(d => !string.Equals(d.Name, ".git", StringComparison.OrdinalIgnoreCase));
         }
 
         private Dictionary<string, string> ParsedProperties()

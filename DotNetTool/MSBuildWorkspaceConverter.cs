@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
@@ -15,9 +12,7 @@ using ICSharpCode.CodeConverter.VB;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
-using Microsoft.VisualStudio.Threading;
 using McMaster.Extensions.CommandLineUtils;
-using System.Collections.Concurrent;
 using System.IO;
 
 namespace ICSharpCode.CodeConverter.DotNetTool
@@ -92,9 +87,8 @@ namespace ICSharpCode.CodeConverter.DotNetTool
 
         private static async Task RestorePackagesForSolutionAsync(string solutionFile)
         {
-            var processStartInfo = new ProcessStartInfo(DotNetExe.FullPathOrDefault(), ArgumentEscaper.EscapeAndConcatenate(new[] { "restore", solutionFile }));
-            var dotnetRestore = await processStartInfo.StartRedirectedToConsoleAsync();
-            if (dotnetRestore.ExitCode != 0) throw new InvalidOperationException($"dotnet restore had a non-zero exit code.");
+            var dotnetRestore = await ProcessRunner.StartRedirectedToConsoleAsync(DotNetExe.FullPathOrDefault(), "restore", solutionFile);
+            if (dotnetRestore.ExitCode != 0) throw new InvalidOperationException("dotnet restore had a non-zero exit code.");
         }
 
         private static MSBuildWorkspace CreateWorkspace(Dictionary<string, string> buildProps)
