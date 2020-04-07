@@ -40,7 +40,7 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
     /// https://xunit.net/docs/shared-context
     /// </remarks>
     [CollectionDefinition(Collection)]
-    public sealed class MultiFileTestFixture : ICollectionFixture<MultiFileTestFixture>, IDisposable
+    public sealed class MultiFileTestFixture : ICollectionFixture<MultiFileTestFixture>
     {
         public const string Collection = "Uses MSBuild";
         /// <summary>
@@ -151,11 +151,6 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
             string conversionDirectionFolderName = languagePrefix + "Results";
             var path = Path.Combine(MultiFileCharacterizationDir, conversionDirectionFolderName, testFolderName);
             return new DirectoryInfo(path);
-        }
-
-        public void Dispose()
-        {
-            _msBuildWorkspaceConverter.Dispose();
         }
     }
 }
