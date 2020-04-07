@@ -59,7 +59,7 @@ namespace ICSharpCode.CodeConverter.DotNetTool
             progress.Report($"Running dotnet restore on {projectOrSolutionFile}");
             await RestorePackagesForSolutionAsync(projectOrSolutionFile);
 
-            var workspace = CreateWorkspace(_buildProps);
+            var workspace = await CreateWorkspaceAsync(_buildProps);
             var solution = string.Equals(Path.GetExtension(projectOrSolutionFile), ".sln", StringComparison.OrdinalIgnoreCase) ? await workspace.OpenSolutionAsync(projectOrSolutionFile)
                 : (await workspace.OpenProjectAsync(projectOrSolutionFile)).Solution;
 
@@ -90,12 +90,20 @@ namespace ICSharpCode.CodeConverter.DotNetTool
             if (dotnetRestore.ExitCode != 0) throw new InvalidOperationException("dotnet restore had a non-zero exit code.");
         }
 
-        private static MSBuildWorkspace CreateWorkspace(Dictionary<string, string> buildProps)
+        private static async Task<MSBuildWorkspace> CreateWorkspaceAsync(Dictionary<string, string> buildProps)
         {
-            var instances = MSBuildLocator.QueryVisualStudioInstances().ToArray();
-            var instance = instances.OrderByDescending(x => x.Version).FirstOrDefault() 
-                ?? throw new InvalidOperationException("No Visual Studio instance available");
-            MSBuildLocator.RegisterInstance(instance);
+            if (MSBuildLocator.CanRegister) {
+                // DiscoveryType.VisualStudioSetup not supported in dot net core and never will be: https://github.com/microsoft/MSBuildLocator/issues/61
+                var latestMsBuildExePath = await ProcessRunner.GetSuccessStdOutAsync(@"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe", "-latest", "-prerelease", "-products", "*", "-requires", "Microsoft.Component.MSBuild", "-find", @"MSBuild\**\Bin\MSBuild.exe");
+                if (latestMsBuildExePath != null) {
+                    MSBuildLocator.RegisterMSBuildPath(Path.GetDirectoryName(latestMsBuildExePath));
+                } else {
+                    var instances = MSBuildLocator.QueryVisualStudioInstances().ToArray();
+                    var instance = instances.OrderByDescending(x => x.Version).FirstOrDefault()
+                        ?? throw new InvalidOperationException("No Visual Studio instance available");
+                    MSBuildLocator.RegisterInstance(instance);
+                }
+            }
             return MSBuildWorkspace.Create(buildProps);
         }
 
