@@ -98,7 +98,7 @@ Remarks:
             }
 
             var properties = ParsedProperties();
-            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionPath, strProgress, BestEffort, properties);
+            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionPath, BestEffort, properties);
 
             var converterResultsEnumerable = msbuildWorkspaceConverter.ConvertProjectsWhereAsync(ShouldIncludeProject, TargetLanguage, progress, cancellationToken);
             await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, SolutionPath, outputDirectory, Force, true, strProgress, cancellationToken);

@@ -17,17 +17,15 @@ using System.IO;
 
 namespace ICSharpCode.CodeConverter.DotNetTool
 {
-    internal class MSBuildWorkspaceConverter
+    public sealed class MSBuildWorkspaceConverter : IDisposable
     {
-        private readonly IProgress<string> _progress;
         private readonly bool _bestEffortConversion;
         private readonly string _solutionFilePath;
         private readonly Dictionary<string, string> _buildProps;
         private Solution _cachedSolution;
 
-        public MSBuildWorkspaceConverter(string solutionFilePath, IProgress<string> progress, bool bestEffortConversion = false, Dictionary<string, string> buildProps = null)
+        public MSBuildWorkspaceConverter(string solutionFilePath, bool bestEffortConversion = false, Dictionary<string, string> buildProps = null)
         {
-            _progress = progress;
             _bestEffortConversion = bestEffortConversion;
             _buildProps ??= new Dictionary<string, string>();
             _buildProps.TryAdd("Configuration", "Debug");
@@ -37,7 +35,8 @@ namespace ICSharpCode.CodeConverter.DotNetTool
 
         public async IAsyncEnumerable<ConversionResult> ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, CodeConvProgram.Language? targetLanguage, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken token)
         {
-            var solution = _cachedSolution ?? (_cachedSolution = await GetSolutionAsync(_solutionFilePath));
+            var strProgress = new Progress<string>(s => progress.Report(new ConversionProgress(s)));
+            var solution = _cachedSolution ?? (_cachedSolution = await GetSolutionAsync(_solutionFilePath, strProgress));
 
             if (!targetLanguage.HasValue) {
                 targetLanguage = solution.Projects.Any(p => p.Language == LanguageNames.VisualBasic) ? CodeConvProgram.Language.CS : CodeConvProgram.Language.VB;
@@ -55,9 +54,9 @@ namespace ICSharpCode.CodeConverter.DotNetTool
             await foreach (var r in results) yield return r;
         }
 
-        private async Task<Solution> GetSolutionAsync(string projectOrSolutionFile)
+        private async Task<Solution> GetSolutionAsync(string projectOrSolutionFile, IProgress<string> progress)
         {
-            _progress.Report($"Running dotnet restore on {projectOrSolutionFile}");
+            progress.Report($"Running dotnet restore on {projectOrSolutionFile}");
             await RestorePackagesForSolutionAsync(projectOrSolutionFile);
 
             var workspace = CreateWorkspace(_buildProps);
@@ -66,8 +65,8 @@ namespace ICSharpCode.CodeConverter.DotNetTool
 
             var errorString = await GetCompilationErrorsAsync(solution.Projects, workspace.Diagnostics);
             if (errorString != "") {
-                _progress.Report($"Please fix compilation erorrs before conversion, or use the best effort conversion option:{Environment.NewLine}{errorString}");
-                if (_bestEffortConversion) _progress.Report("Attempting best effort conversion on broken input due to override");
+                progress.Report($"Please fix compilation erorrs before conversion, or use the best effort conversion option:{Environment.NewLine}{errorString}");
+                if (_bestEffortConversion) progress.Report("Attempting best effort conversion on broken input due to override");
                 else throw new InvalidOperationException($"Fix compilation erorrs before conversion for an accurate conversion, or use the best effort conversion option:{Environment.NewLine}{errorString}");
             }
             return solution;
@@ -98,6 +97,11 @@ namespace ICSharpCode.CodeConverter.DotNetTool
                 ?? throw new InvalidOperationException("No Visual Studio instance available");
             MSBuildLocator.RegisterInstance(instance);
             return MSBuildWorkspace.Create(buildProps);
+        }
+
+        public void Dispose()
+        {
+            if (_cachedSolution != null) _cachedSolution.Workspace.Dispose();
         }
     }
 }

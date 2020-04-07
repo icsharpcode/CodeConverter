@@ -21,13 +21,13 @@ namespace ICSharpCode.CodeConverter.Tests.VB
         [Fact]
         public async Task ConvertWholeSolution()
         {
-            await _multiFileTestFixture.ConvertProjectsWhere<CSToVBConversion>(p => true);
+            await _multiFileTestFixture.ConvertProjectsWhere(p => true, DotNetTool.CodeConvProgram.Language.VB);
         }
 
         [Fact]
         public async Task ConvertCSharpConsoleAppOnly()
         {
-            await _multiFileTestFixture.ConvertProjectsWhere<CSToVBConversion>(p => p.Name == "CSharpConsoleApp");
+            await _multiFileTestFixture.ConvertProjectsWhere(p => p.Name == "CSharpConsoleApp", DotNetTool.CodeConvProgram.Language.VB);
         }
     }
 }

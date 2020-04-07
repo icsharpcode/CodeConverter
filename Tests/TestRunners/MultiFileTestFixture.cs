@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.DotNetTool;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.Build.Locator;
@@ -17,6 +18,7 @@ using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.VisualBasic.FileIO;
 using Microsoft.VisualStudio.Threading;
 using Xunit;
+using static ICSharpCode.CodeConverter.DotNetTool.CodeConvProgram;
 using SearchOption = System.IO.SearchOption;
 
 namespace ICSharpCode.CodeConverter.Tests.TestRunners
@@ -46,51 +48,23 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
         /// </summary>
         private readonly bool _writeAllFilesForManualTesting = false;
 
-        private readonly Lazy<MSBuildWorkspace> _msBuildWorkspace;
-        private readonly AsyncLazy<Solution> _solution;
+        private readonly MSBuildWorkspaceConverter _msBuildWorkspaceConverter;
         private static readonly string MultiFileCharacterizationDir = Path.Combine(TestConstants.GetTestDataDirectory(), "MultiFileCharacterization");
         private static readonly string OriginalSolutionDir = Path.Combine(MultiFileCharacterizationDir, "SourceFiles");
         private static readonly string SolutionFile = Path.Combine(OriginalSolutionDir, "CharacterizationTestSolution.sln");
 
         public MultiFileTestFixture()
         {
-            _msBuildWorkspace = new Lazy<MSBuildWorkspace>(CreateWorkspace);
-            _solution = new AsyncLazy<Solution>(() => GetSolutionAsync(SolutionFile));
+            _msBuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionFile);
         }
 
-        private async Task<Solution> GetSolutionAsync(string solutionFile)
-        {
-            await RestorePackagesForSolution(solutionFile);
-            var solution = await _msBuildWorkspace.Value.OpenSolutionAsync(solutionFile);
-            await AssertMSBuildIsWorkingAndProjectsValid(_msBuildWorkspace.Value.Diagnostics, solution.Projects);
-            return solution;
-        }
-
-        private static async Task RestorePackagesForSolution(string solutionFile)
-        {
-            var psi = new ProcessStartInfo("dotnet", $"restore \"{solutionFile}\""){UseShellExecute = false, RedirectStandardError =  true, RedirectStandardOutput = true};
-            Process dotnetRestore = Process.Start(psi);
-            Assert.NotNull(dotnetRestore);
-            await dotnetRestore.WaitForExitAsync();
-            if (dotnetRestore.ExitCode != 0) Assert.True(false, dotnetRestore.StandardOutput.ReadToEnd() + " " + dotnetRestore.StandardError.ReadToEnd());
-        }
-
-        public void Dispose()
-        {
-            if (_msBuildWorkspace.IsValueCreated) _msBuildWorkspace.Value.Dispose();
-        }
-
-        public async Task ConvertProjectsWhere<TLanguageConversion>(Func<Project, bool> shouldConvertProject, [CallerMemberName] string expectedResultsDirectory = "") where TLanguageConversion : ILanguageConversion, new()
+        public async Task ConvertProjectsWhere(Func<Project, bool> shouldConvertProject, Language targetLanguage, [CallerMemberName] string expectedResultsDirectory = "")
         {
             bool recharacterizeByWritingExpectedOverActual = TestConstants.RecharacterizeByWritingExpectedOverActual;
 
-            var languageNameToConvert = typeof(TLanguageConversion) == typeof(VBToCSConversion)
-                ? LanguageNames.VisualBasic
-                : LanguageNames.CSharp;
-
-            var projectsToConvert = (await _solution.GetValueAsync()).Projects.Where(p => p.Language == languageNameToConvert && shouldConvertProject(p)).ToArray();
-            var conversionResults = await SolutionConverter.CreateFor<TLanguageConversion>(projectsToConvert).Convert().ToDictionaryAsync(c => c.TargetPathOrNull, StringComparer.OrdinalIgnoreCase);
-            var expectedResultDirectory = GetExpectedResultDirectory<TLanguageConversion>(expectedResultsDirectory);
+            var results = await _msBuildWorkspaceConverter.ConvertProjectsWhereAsync(shouldConvertProject, targetLanguage, new Progress<ConversionProgress>(), default).ToArrayAsync();
+            var conversionResults = results.ToDictionary(c => c.TargetPathOrNull, StringComparer.OrdinalIgnoreCase);
+            var expectedResultDirectory = GetExpectedResultDirectory(expectedResultsDirectory, targetLanguage);
 
             try {
                 if (!expectedResultDirectory.Exists) expectedResultDirectory.Create();
@@ -101,56 +75,11 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
                 AssertNoConversionErrors(conversionResults);
             } finally {
                 if (recharacterizeByWritingExpectedOverActual) {
-                    if (expectedResultDirectory.Exists) expectedResultDirectory.Delete(true);
-                    if (_writeAllFilesForManualTesting) FileSystem.CopyDirectory(OriginalSolutionDir, expectedResultDirectory.FullName);
-
-                    foreach (var conversionResult in conversionResults) {
-                        var expectedFilePath =
-                            conversionResult.Key.Replace(OriginalSolutionDir, expectedResultDirectory.FullName);
-                        Directory.CreateDirectory(Path.GetDirectoryName(expectedFilePath));
-                        File.WriteAllText(expectedFilePath, conversionResult.Value.ConvertedCode);
-                    }
+                    var things = ConversionResultWriter.WriteConvertedAsync(results.ToAsyncEnumerable(), SolutionFile, expectedResultDirectory, true, _writeAllFilesForManualTesting, new Progress<string>(), default);
                 }
             }
 
             Assert.False(recharacterizeByWritingExpectedOverActual, $"Test setup issue: Set {nameof(recharacterizeByWritingExpectedOverActual)} to false after using it");
-        }
-
-        private static MSBuildWorkspace CreateWorkspace()
-        {
-            try {
-                return CreateWorkspaceUnhandled();
-            } catch (NullReferenceException e) {
-                Assert.True(false, "MSBuild nullrefs sometimes, just run the test again." + e);
-                return null;
-            }
-        }
-
-        private static MSBuildWorkspace CreateWorkspaceUnhandled()
-        {
-            var instances = MSBuildLocator.QueryVisualStudioInstances();
-            MSBuildLocator.RegisterInstance(instances.OrderByDescending(x => x.Version).First());
-            return MSBuildWorkspace.Create(new Dictionary<string, string>()
-            {
-                {"Configuration", "Debug"},
-                {"Platform", "AnyCPU"}
-            });
-        }
-
-        /// <summary>
-        /// If you've changed the source project not to compile, the results will be very confusing
-        /// If this happens randomly, updating the Microsoft.Build dependency may help - it may have to line up with a version installed on the machine in some way.
-        /// </summary>
-        private static async Task AssertMSBuildIsWorkingAndProjectsValid(
-            ImmutableList<WorkspaceDiagnostic> valueDiagnostics, IEnumerable<Project> projectsToConvert)
-        {
-            var errors = await projectsToConvert.ParallelSelectAwait(async x => {
-                var c = await x.GetCompilationAsync();
-                return new[]{CompilationWarnings.WarningsForCompilation(c, c.AssemblyName)}.Concat(
-                    valueDiagnostics.Where(d => d.Kind > WorkspaceDiagnosticKind.Warning).Select(d => d.Message));
-            }, Env.MaxDop, default).ToArrayAsync();
-            var errorString = string.Join("\r\n", errors.SelectMany(w => w).Where(w => w != null));
-            Assert.True(errorString == "", errorString);
         }
 
         private static void AssertAllConvertedFilesWereExpected(FileInfo[] expectedFiles,
@@ -221,11 +150,17 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
             }
         }
 
-        private static DirectoryInfo GetExpectedResultDirectory<TLanguageConversion>(string testFolderName) where TLanguageConversion : ILanguageConversion, new()
+        private static DirectoryInfo GetExpectedResultDirectory(string testFolderName, Language targetLanguage)
         {
-            string conversionDirectionFolderName = typeof(TLanguageConversion).Name.Replace("Conversion", "Results");
+            string languagePrefix = targetLanguage == Language.CS ? "VBToCS" : "CSToVB";
+            string conversionDirectionFolderName = languagePrefix + "Results";
             var path = Path.Combine(MultiFileCharacterizationDir, conversionDirectionFolderName, testFolderName);
             return new DirectoryInfo(path);
+        }
+
+        public void Dispose()
+        {
+            _msBuildWorkspaceConverter.Dispose();
         }
     }
 }
