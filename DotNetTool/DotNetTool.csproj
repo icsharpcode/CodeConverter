@@ -24,12 +24,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="DotNetTool %28netcoreapp3.1%29\**" />
-    <EmbeddedResource Remove="DotNetTool %28netcoreapp3.1%29\**" />
-    <None Remove="DotNetTool %28netcoreapp3.1%29\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="CodeConvNuGetPackageIcon.png" Pack="true" PackagePath="" />
   </ItemGroup>
 
