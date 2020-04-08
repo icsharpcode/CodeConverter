@@ -113,7 +113,7 @@ Remarks:
 
         private Dictionary<string, string> ParsedProperties()
         {
-            var props = BuildProperty.SelectMany(bp => bp.Split(';', ',', StringSplitOptions.RemoveEmptyEntries).Select(p => p.Split('=')));
+            var props = BuildProperty.SelectMany(bp => bp.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Split('=')));
             return props.ToLookup(s => s[0], GetValidatedPropertyValue).ToDictionary();
         }
 
