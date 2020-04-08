@@ -34,6 +34,7 @@ Remarks:
                 var progress = new Progress<ConversionProgress>(s => Console.Out.WriteLine(s.ToString()));
                 await ExecuteUnhandledAsync(progress, CancellationToken.None);
             } catch (Exception ex) {
+                await Console.Error.WriteLineAsync(Environment.NewLine);
                 await Console.Error.WriteLineAsync(ex.ToString());
                 await Console.Error.WriteLineAsync();
                 await Console.Error.WriteLineAsync("Please report issues at github.com/icsharpcode/CodeConverter");
