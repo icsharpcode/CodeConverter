@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RunSettings>
   <RunConfiguration>
-    <TargetPlatform>x64</TargetPlatform>
+    <TargetFrameworkVersion>.NETCoreApp, Version=v3.1</TargetFrameworkVersion>
   </RunConfiguration>
   <DataCollectionRunSettings>
     <DataCollectors>
