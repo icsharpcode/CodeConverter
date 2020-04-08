@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RunSettings>
   <RunConfiguration>
-    <TargetPlatform>AnyCPU</TargetPlatform> 
+    <TargetPlatform>x64</TargetPlatform>
   </RunConfiguration>
   <DataCollectionRunSettings>
     <DataCollectors>
