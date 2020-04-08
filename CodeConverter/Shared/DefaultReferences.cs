@@ -31,7 +31,7 @@ namespace ICSharpCode.CodeConverter.Shared
             typeof(Microsoft.VisualBasic.Constants),
             typeof(System.Data.SqlClient.SqlCommand),
         }.Select(t => t.Assembly).Concat(
-            Assembly.Load("System.Runtime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a").Yield()
+            new[] { Assembly.Load("System.Runtime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a") }
             ).ToArray();
 
         private static Dictionary<string, (string Location, string[] ReferenceNames)> _assemblyInfoCache = new Dictionary<string, (string Location, string[] ReferenceNames)>();
