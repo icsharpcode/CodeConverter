@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Util
 {
-    internal static class CompilationWarnings
+    public static class CompilationWarnings
     {
         public static string WarningsForCompilation(Compilation finalCompilation, string compilationDescription)
         {

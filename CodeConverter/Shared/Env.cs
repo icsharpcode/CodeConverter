@@ -2,7 +2,7 @@
 
 namespace ICSharpCode.CodeConverter.Shared
 {
-    internal static class Env
+    public static class Env
     {
         /// <summary>
         /// Should be used to control any degree of parallelism in the codebase

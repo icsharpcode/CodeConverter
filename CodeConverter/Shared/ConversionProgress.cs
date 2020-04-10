@@ -7,7 +7,7 @@ namespace ICSharpCode.CodeConverter.Shared
     /// </summary>
     public struct ConversionProgress
     {
-        internal ConversionProgress(string message, int nestingLevel = 0)
+        public ConversionProgress(string message, int nestingLevel = 0)
         {
             Message = message;
             NestingLevel = nestingLevel;
