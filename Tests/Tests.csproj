@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <OutputType>Library</OutputType>
     <AssemblyName>ICSharpCode.CodeConverter.Tests</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter.Tests</RootNamespace>
@@ -12,7 +12,6 @@
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="System.Data.SqlClient" Version="4.8.1" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
   </ItemGroup>
@@ -27,7 +26,7 @@
     <None Include="TestData\**\*.*" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CommandLine\CodeConv.DotNetTool\CodeConv.DotNetTool.csproj" />
+    <ProjectReference Include="..\CommandLine\CodeConv.NetFramework\CodeConv.NetFramework.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Web" />
