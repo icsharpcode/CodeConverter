@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <AssemblyName>ICSharpCode.CodeConverter.CodeConv.DotNetTool</AssemblyName>
+    <RootNamespace>ICSharpCode.CodeConverter.CodeConv.DotNetTool</RootNamespace>
+    <ToolCommandName>codeconv</ToolCommandName>
+    <AssemblyVersion>8.0.4.0</AssemblyVersion>
+    <FileVersion>8.0.4.0</FileVersion>
+    <Version>8.0.4</Version>
+    <Description>Bidirectional code converter for VB and C#</Description>
+    <Copyright>Copyright 2011-2020 AlphaSierraPapa</Copyright>
+    <PackageProjectUrl>https://github.com/icsharpcode/CodeConverter/</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>CodeConvNuGetPackageIcon.png</PackageIcon>
+    <RepositoryUrl>https://github.com/icsharpcode/CodeConverter/</RepositoryUrl>
+    <Company />
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>ICSharpCode</Authors>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <LangVersion>8.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="CodeConvNuGetPackageIcon.png" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodeConv.Lib\CodeConv.Lib.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -28,7 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeConverter\CodeConverter.csproj" />
-    <ProjectReference Include="..\DotNetTool\DotNetTool.csproj" />
+    <ProjectReference Include="..\CommandLine\CodeConv.Lib\CodeConv.Lib.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Web" />
