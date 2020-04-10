@@ -4,9 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.DotNetTool.Util;
 using ICSharpCode.CodeConverter.Util;
 
-namespace ICSharpCode.CodeConverter.DotNetTool.Util
+namespace ICSharpCode.CodeConverter.CommandLine.Util
 {
 
     internal static class DirectoryInfoExtensions

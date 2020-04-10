@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
-using ICSharpCode.CodeConverter.DotNetTool;
+using ICSharpCode.CodeConverter.CommandLine;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.Build.Locator;
@@ -18,7 +18,7 @@ using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.VisualBasic.FileIO;
 using Microsoft.VisualStudio.Threading;
 using Xunit;
-using static ICSharpCode.CodeConverter.DotNetTool.CodeConvProgram;
+using static ICSharpCode.CodeConverter.CommandLine.CodeConvProgram;
 using SearchOption = System.IO.SearchOption;
 
 namespace ICSharpCode.CodeConverter.Tests.TestRunners

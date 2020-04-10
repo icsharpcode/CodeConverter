@@ -21,13 +21,18 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommandLine", "CommandLine"
 		CommandLine\CodeConv.NetFramework\README.md = CommandLine\CodeConv.NetFramework\README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeConv.Lib", "CommandLine\CodeConv.Lib\CodeConv.Lib.csproj", "{2DDA7446-B4DF-4DC2-A475-70AF8FC325A6}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeConv.NetFramework", "CommandLine\CodeConv.NetFramework\CodeConv.NetFramework.csproj", "{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeConv.DotNetTool", "CommandLine\CodeConv.DotNetTool\CodeConv.DotNetTool.csproj", "{160F0B34-0F6F-4532-8D7B-39064956364D}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "CodeConv.Shared", "CommandLine\CodeConv.Shared\CodeConv.Shared.shproj", "{D3A957FF-DAFC-4265-9AE2-D94F6473411A}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		CommandLine\CodeConv.Shared\CodeConv.Shared.projitems*{160f0b34-0f6f-4532-8d7b-39064956364d}*SharedItemsImports = 5
+		CommandLine\CodeConv.Shared\CodeConv.Shared.projitems*{cf18cbcf-67ff-46ca-8d1d-3221b7706d7d}*SharedItemsImports = 5
+		CommandLine\CodeConv.Shared\CodeConv.Shared.projitems*{d3a957ff-dafc-4265-9ae2-d94f6473411a}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -49,10 +54,6 @@ Global
 		{08A20D4F-6310-43BB-B339-6317ACF3B52E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{08A20D4F-6310-43BB-B339-6317ACF3B52E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{08A20D4F-6310-43BB-B339-6317ACF3B52E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2DDA7446-B4DF-4DC2-A475-70AF8FC325A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2DDA7446-B4DF-4DC2-A475-70AF8FC325A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2DDA7446-B4DF-4DC2-A475-70AF8FC325A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2DDA7446-B4DF-4DC2-A475-70AF8FC325A6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -66,9 +67,9 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{2DDA7446-B4DF-4DC2-A475-70AF8FC325A6} = {926D43FE-D6AE-45E7-A933-8A0F866E7876}
 		{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D} = {926D43FE-D6AE-45E7-A933-8A0F866E7876}
 		{160F0B34-0F6F-4532-8D7B-39064956364D} = {926D43FE-D6AE-45E7-A933-8A0F866E7876}
+		{D3A957FF-DAFC-4265-9AE2-D94F6473411A} = {926D43FE-D6AE-45E7-A933-8A0F866E7876}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B87DD8E0-BF04-46F6-A98F-76F93AFD2988}

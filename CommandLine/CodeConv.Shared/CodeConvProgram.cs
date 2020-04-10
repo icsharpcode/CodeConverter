@@ -10,8 +10,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
+using ICSharpCode.CodeConverter.CommandLine.Util;
 
-namespace ICSharpCode.CodeConverter.DotNetTool
+namespace ICSharpCode.CodeConverter.CommandLine
 {
     [Command(Name = "codeconv", Description = "Convert code from VB.NET to C# or C# to VB.NET",
         ExtendedHelpText = @"
@@ -22,7 +23,7 @@ Remarks:
   See https://github.com/icsharpcode/CodeConverter for the source code, issues, Visual Studio extension and other info.
 ")]
     [HelpOption("-h|--help")]
-    public class CodeConvProgram
+    public partial class CodeConvProgram
     {
         /// <remarks>Calls <see cref="OnExecuteAsync(CommandLineApplication)"/></remarks>
         public static async Task<int> Main(string[] args) => await CommandLineApplication.ExecuteAsync<CodeConvProgram>(args);

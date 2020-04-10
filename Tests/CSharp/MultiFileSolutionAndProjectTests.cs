@@ -2,6 +2,7 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.CSharp;
 using Xunit;
+using static ICSharpCode.CodeConverter.CommandLine.CodeConvProgram;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp
 {
@@ -21,13 +22,13 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp
         [Fact]
         public async Task ConvertWholeSolution()
         {
-            await _multiFileTestFixture.ConvertProjectsWhere(p => true, DotNetTool.CodeConvProgram.Language.CS);
+            await _multiFileTestFixture.ConvertProjectsWhere(p => true, Language.CS);
         }
 
         [Fact]
         public async Task ConvertVbLibraryOnly()
         {
-            await _multiFileTestFixture.ConvertProjectsWhere(p => p.Name == "VbLibrary", DotNetTool.CodeConvProgram.Language.CS);
+            await _multiFileTestFixture.ConvertProjectsWhere(p => p.Name == "VbLibrary", Language.CS);
         }
     }
 }

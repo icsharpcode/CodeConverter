@@ -4,11 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.CommandLine.Util;
 using ICSharpCode.CodeConverter.DotNetTool.Util;
 using Microsoft.VisualBasic.FileIO;
 using Microsoft.VisualStudio.Threading;
 
-namespace ICSharpCode.CodeConverter.DotNetTool
+namespace ICSharpCode.CodeConverter.CommandLine
 {
     public static class ConversionResultWriter
     {

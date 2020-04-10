@@ -27,8 +27,7 @@
     <None Include="TestData\**\*.*" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CodeConverter\CodeConverter.csproj" />
-    <ProjectReference Include="..\CommandLine\CodeConv.Lib\CodeConv.Lib.csproj" />
+    <ProjectReference Include="..\CommandLine\CodeConv.DotNetTool\CodeConv.DotNetTool.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Web" />

@@ -2,6 +2,7 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.VB;
 using Xunit;
+using static ICSharpCode.CodeConverter.CommandLine.CodeConvProgram;
 
 namespace ICSharpCode.CodeConverter.Tests.VB
 {
@@ -21,13 +22,13 @@ namespace ICSharpCode.CodeConverter.Tests.VB
         [Fact]
         public async Task ConvertWholeSolution()
         {
-            await _multiFileTestFixture.ConvertProjectsWhere(p => true, DotNetTool.CodeConvProgram.Language.VB);
+            await _multiFileTestFixture.ConvertProjectsWhere(p => true, Language.VB);
         }
 
         [Fact]
         public async Task ConvertCSharpConsoleAppOnly()
         {
-            await _multiFileTestFixture.ConvertProjectsWhere(p => p.Name == "CSharpConsoleApp", DotNetTool.CodeConvProgram.Language.VB);
+            await _multiFileTestFixture.ConvertProjectsWhere(p => p.Name == "CSharpConsoleApp", Language.VB);
         }
     }
 }

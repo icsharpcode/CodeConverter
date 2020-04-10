@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Collections.Generic;
 
-namespace ICSharpCode.CodeConverter.DotNetTool
+namespace ICSharpCode.CodeConverter.CommandLine.Util
 {
     internal static class EnumerableExtensions
     {
@@ -18,6 +18,11 @@ namespace ICSharpCode.CodeConverter.DotNetTool
             if (lookup.ContainsKey(key)) return false;
             lookup[key] = element;
             return true;
+        }
+
+        public static IEnumerable<T> Yield<T>(this T singleElement)
+        {
+            yield return singleElement;
         }
     }
 }

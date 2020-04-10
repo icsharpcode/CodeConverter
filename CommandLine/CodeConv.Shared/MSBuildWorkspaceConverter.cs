@@ -14,8 +14,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
 using McMaster.Extensions.CommandLineUtils;
 using System.IO;
+using ICSharpCode.CodeConverter.CommandLine.Util;
 
-namespace ICSharpCode.CodeConverter.DotNetTool
+namespace ICSharpCode.CodeConverter.CommandLine
 {
     public sealed class MSBuildWorkspaceConverter : IDisposable
     {
