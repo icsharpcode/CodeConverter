@@ -18,10 +18,6 @@ namespace ICSharpCode.CodeConverter.CommandLine
 
     public partial class CodeConvProgram
     {
-        private const string FrameworkOptionDefinition = "--framework";
-
-        [Option(FrameworkOptionDefinition, "One or more of the projects to be converted are .NET Framework (rather than .NET Core)", CommandOptionType.NoValue)]
-        public bool Framework { get; }
 
         public static async Task<int> Main(string[] args)
         {

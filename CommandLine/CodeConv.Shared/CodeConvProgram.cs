@@ -53,6 +53,10 @@ Remarks:
         [Required]
         [Argument(0, "Source solution path", "The solution containing project(s) to be converted.")]
         public string SolutionPath { get; }
+        private const string FrameworkOptionDefinition = "--framework";
+
+        [Option(FrameworkOptionDefinition, "One or more of the projects to be converted are .NET Framework (rather than .NET Core)", CommandOptionType.NoValue)]
+        public bool Framework { get; }
 
         [Option("-i|--include", "Regex matching project file paths to convert. Can be used multiple times", CommandOptionType.MultipleValue)]
         public string[] Include { get; } = new string[0];
@@ -102,7 +106,7 @@ Remarks:
             }
 
             var properties = ParsedProperties();
-            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionPath, BestEffort, properties);
+            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionPath, Framework, BestEffort, properties);
 
             var converterResultsEnumerable = msbuildWorkspaceConverter.ConvertProjectsWhereAsync(ShouldIncludeProject, TargetLanguage, progress, cancellationToken);
             await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, SolutionPath, outputDirectory, Force, true, strProgress, cancellationToken);

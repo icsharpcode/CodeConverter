@@ -24,14 +24,16 @@ namespace ICSharpCode.CodeConverter.CommandLine
         private readonly string _solutionFilePath;
         private readonly Dictionary<string, string> _buildProps;
         private Solution _cachedSolution;
+        private readonly bool _isNetFramework;
 
-        public MSBuildWorkspaceConverter(string solutionFilePath, bool bestEffortConversion = false, Dictionary<string, string> buildProps = null)
+        public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetFramework, bool bestEffortConversion = false, Dictionary<string, string> buildProps = null)
         {
             _bestEffortConversion = bestEffortConversion;
             _buildProps ??= new Dictionary<string, string>();
             _buildProps.TryAdd("Configuration", "Debug");
             _buildProps.TryAdd("Platform", "AnyCPU");
             _solutionFilePath = solutionFilePath;
+            _isNetFramework = isNetFramework;
         }
 
         public async IAsyncEnumerable<ConversionResult> ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, CodeConvProgram.Language? targetLanguage, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken token)
@@ -65,10 +67,15 @@ namespace ICSharpCode.CodeConverter.CommandLine
                 : (await workspace.OpenProjectAsync(projectOrSolutionFile)).Solution;
 
             var errorString = await GetCompilationErrorsAsync(solution.Projects, workspace.Diagnostics);
-            if (errorString != "") {
-                progress.Report($"Please fix compilation erorrs before conversion, or use the best effort conversion option:{Environment.NewLine}{errorString}");
-                if (_bestEffortConversion) progress.Report("Attempting best effort conversion on broken input due to override");
-                else throw new InvalidOperationException($"Fix compilation erorrs before conversion for an accurate conversion, or use the best effort conversion option:{Environment.NewLine}{errorString}");
+            if (string.IsNullOrEmpty(errorString)) return solution;
+            progress.Report($"Compilation errors found before conversion:{Environment.NewLine}{errorString}");
+
+            if (_bestEffortConversion) {
+                progress.Report("Attempting best effort conversion on broken input due to override");
+            } else if (!_isNetFramework && new[] { "Type 'System.Void' is not defined", "is missing from assembly" }.Any(errorString.Contains)) {
+                throw new InvalidOperationException("Compiling with dotnet caused compilation errors, use the --framework switch if this is a .net framework project.");
+            } else {
+                throw new InvalidOperationException("Fix compilation erorrs before conversion for an accurate conversion, or as a last resort, use the best effort conversion option");
             }
             return solution;
         }
@@ -94,16 +101,10 @@ namespace ICSharpCode.CodeConverter.CommandLine
         private static async Task<MSBuildWorkspace> CreateWorkspaceAsync(Dictionary<string, string> buildProps)
         {
             if (MSBuildLocator.CanRegister) {
-                // DiscoveryType.VisualStudioSetup not supported in dot net core and never will be: https://github.com/microsoft/MSBuildLocator/issues/61
-                var latestMsBuildExePath = await ProcessRunner.GetSuccessStdOutAsync(@"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe", "-latest", "-prerelease", "-products", "*", "-requires", "Microsoft.Component.MSBuild", "-find", @"MSBuild\**\Bin\MSBuild.exe");
-                if (latestMsBuildExePath != null) {
-                    MSBuildLocator.RegisterMSBuildPath(Path.GetDirectoryName(latestMsBuildExePath));
-                } else {
-                    var instances = MSBuildLocator.QueryVisualStudioInstances().ToArray();
-                    var instance = instances.OrderByDescending(x => x.Version).FirstOrDefault()
-                        ?? throw new InvalidOperationException("No Visual Studio instance available");
-                    MSBuildLocator.RegisterInstance(instance);
-                }
+                var instances = MSBuildLocator.QueryVisualStudioInstances().ToArray();
+                var instance = instances.OrderByDescending(x => x.Version).FirstOrDefault()
+                    ?? throw new InvalidOperationException("No Visual Studio instance available");
+                MSBuildLocator.RegisterInstance(instance);
             }
             return MSBuildWorkspace.Create(buildProps);
         }

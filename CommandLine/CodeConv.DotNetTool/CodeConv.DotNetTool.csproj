@@ -49,6 +49,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\CodeConverter\CodeConverter.csproj" />
+    <ProjectReference Include="..\CodeConv.NetFramework\CodeConv.NetFramework.csproj" />
   </ItemGroup>
 
   <Import Project="..\CodeConv.Shared\CodeConv.Shared.projitems" Label="Shared" />
