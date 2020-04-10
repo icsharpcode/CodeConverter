@@ -27,6 +27,9 @@
 
   <ItemGroup>
     <None Include="CodeConvNuGetPackageIcon.png" Pack="true" PackagePath="" />
+    <Content Include="$(SolutionDir)CommandLine\CodeConv.NetFramework\bin\$(Configuration)\net472\**" LinkBase="NetFramework" Pack="true">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -49,5 +52,4 @@
   </ItemGroup>
 
   <Import Project="..\CodeConv.Shared\CodeConv.Shared.projitems" Label="Shared" />
-
 </Project>

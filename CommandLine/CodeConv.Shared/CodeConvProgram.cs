@@ -26,14 +26,16 @@ Remarks:
     public partial class CodeConvProgram
     {
         /// <remarks>Calls <see cref="OnExecuteAsync(CommandLineApplication)"/></remarks>
-        public static async Task<int> Main(string[] args) => await CommandLineApplication.ExecuteAsync<CodeConvProgram>(args);
+        private static async Task<int> ExecuteCurrentFrameworkAsync(string[] args) => await CommandLineApplication.ExecuteAsync<CodeConvProgram>(args);
 
         /// <remarks>Used by reflection in CommandLineApplication.ExecuteAsync</remarks>
-        private async Task<int> OnExecuteAsync(CommandLineApplication app)
+        private async Task<int> OnExecuteAsync(CommandLineApplication app) => await ExecuteAsync();
+
+        private async Task<int> ExecuteAsync()
         {
             try {
                 var progress = new Progress<ConversionProgress>(s => Console.Out.WriteLine(s.ToString()));
-                await ExecuteUnhandledAsync(progress, CancellationToken.None);
+                await ConvertAsync(progress, CancellationToken.None);
             } catch (Exception ex) {
                 await Console.Error.WriteLineAsync(Environment.NewLine);
                 await Console.Error.WriteLineAsync(ex.ToString());
@@ -83,7 +85,7 @@ Remarks:
             VB
         }
 
-        private async Task ExecuteUnhandledAsync(IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
+        private async Task ConvertAsync(IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
             IProgress<string> strProgress = new Progress<string>(p => progress.Report(new ConversionProgress(p)));
 
