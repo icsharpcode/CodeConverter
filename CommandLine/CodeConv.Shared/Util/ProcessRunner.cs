@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
@@ -17,8 +18,13 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
         public static async Task<string> GetSuccessStdOutAsync(string command, params string[] args)
         {
             var sb = new StringBuilder();
-            var proc = await new ProcessStartInfo(Environment.ExpandEnvironmentVariables(command), ArgumentEscaper.EscapeAndConcatenate(args)).StartRedirectedToConsoleAsync(sb);
-            return proc.ExitCode == 0 ? sb.ToString().Trim('\r', '\n') : null;
+            string fullFilePath = Environment.ExpandEnvironmentVariables(command);
+            if (Path.IsPathRooted(command) && !File.Exists(fullFilePath)) return null;
+            
+            var proc = await new ProcessStartInfo(fullFilePath, ArgumentEscaper.EscapeAndConcatenate(args)).StartRedirectedToConsoleAsync(sb);
+            if (proc.ExitCode == 0) return sb.ToString().Trim('\r', '\n');
+
+            return null;
         }
 
         private static async Task<Process> StartRedirectedToConsoleAsync(this ProcessStartInfo psi, StringBuilder stdOut = null)

@@ -51,7 +51,7 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
         private static readonly string MultiFileCharacterizationDir = Path.Combine(TestConstants.GetTestDataDirectory(), "MultiFileCharacterization");
         private static readonly string OriginalSolutionDir = Path.Combine(MultiFileCharacterizationDir, "SourceFiles");
         private static readonly string SolutionFile = Path.Combine(OriginalSolutionDir, "CharacterizationTestSolution.sln");
-        private static readonly MSBuildWorkspaceConverter _msBuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionFile, true);
+        private static readonly MSBuildWorkspaceConverter _msBuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionFile, false);
 
         public async Task ConvertProjectsWhere(Func<Project, bool> shouldConvertProject, Language targetLanguage, [CallerMemberName] string expectedResultsDirectory = "")
         {

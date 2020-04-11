@@ -24,16 +24,16 @@ namespace ICSharpCode.CodeConverter.CommandLine
         private readonly string _solutionFilePath;
         private readonly Dictionary<string, string> _buildProps;
         private Solution _cachedSolution;
-        private readonly bool _isNetFramework;
+        private readonly bool _isNetCore;
 
-        public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetFramework, bool bestEffortConversion = false, Dictionary<string, string> buildProps = null)
+        public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetCore, bool bestEffortConversion = false, Dictionary<string, string> buildProps = null)
         {
             _bestEffortConversion = bestEffortConversion;
             _buildProps ??= new Dictionary<string, string>();
             _buildProps.TryAdd("Configuration", "Debug");
             _buildProps.TryAdd("Platform", "AnyCPU");
             _solutionFilePath = solutionFilePath;
-            _isNetFramework = isNetFramework;
+            _isNetCore = isNetCore;
         }
 
         public async IAsyncEnumerable<ConversionResult> ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, CodeConvProgram.Language? targetLanguage, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken token)
@@ -70,10 +70,13 @@ namespace ICSharpCode.CodeConverter.CommandLine
             if (string.IsNullOrEmpty(errorString)) return solution;
             progress.Report($"Compilation errors found before conversion:{Environment.NewLine}{errorString}");
 
+            bool wrongFramework = new[] { "Type 'System.Void' is not defined", "is missing from assembly" }.Any(errorString.Contains);
             if (_bestEffortConversion) {
                 progress.Report("Attempting best effort conversion on broken input due to override");
-            } else if (!_isNetFramework && new[] { "Type 'System.Void' is not defined", "is missing from assembly" }.Any(errorString.Contains)) {
-                throw new InvalidOperationException("Compiling with dotnet caused compilation errors, use the --framework switch if this is a .net framework project.");
+            } else if (wrongFramework && _isNetCore) {
+                throw new InvalidOperationException("Compiling with dotnet core caused compilation errors, ensure a version of MSBuild is installed if this is a .NET framework project.");
+            } else if (wrongFramework && !_isNetCore) {
+                throw new InvalidOperationException("Compiling with .NET Framework MSBuild caused compilation errors, use the --core switch if this is a .NET core only solution.");
             } else {
                 throw new InvalidOperationException("Fix compilation erorrs before conversion for an accurate conversion, or as a last resort, use the best effort conversion option");
             }

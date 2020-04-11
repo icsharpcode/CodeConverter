@@ -53,10 +53,10 @@ Remarks:
         [Required]
         [Argument(0, "Source solution path", "The solution containing project(s) to be converted.")]
         public string SolutionPath { get; }
-        private const string FrameworkOptionDefinition = "--framework";
+        private const string CoreOptionDefinition = "--core";
 
-        [Option(FrameworkOptionDefinition, "One or more of the projects to be converted are .NET Framework (rather than .NET Core)", CommandOptionType.NoValue)]
-        public bool Framework { get; }
+        [Option(CoreOptionDefinition, "Force dot net core build if converting only .NET Core projects and seeing pre-conversion compile errors", CommandOptionType.NoValue)]
+        public bool Core { get; }
 
         [Option("-i|--include", "Regex matching project file paths to convert. Can be used multiple times", CommandOptionType.MultipleValue)]
         public string[] Include { get; } = new string[0];
@@ -106,7 +106,7 @@ Remarks:
             }
 
             var properties = ParsedProperties();
-            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionPath, Framework, BestEffort, properties);
+            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionPath, Core, BestEffort, properties);
 
             var converterResultsEnumerable = msbuildWorkspaceConverter.ConvertProjectsWhereAsync(ShouldIncludeProject, TargetLanguage, progress, cancellationToken);
             await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, SolutionPath, outputDirectory, Force, true, strProgress, cancellationToken);
