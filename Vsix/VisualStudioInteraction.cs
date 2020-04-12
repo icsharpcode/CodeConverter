@@ -90,7 +90,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
             if (!CancelAllToken.IsCancellationRequested) {
-                MessageBox.Show($"An error has occured during conversion: {ex}",
+                MessageBox.Show($"An error has occured during conversion - press Ctrl+C to copy the details: {ex}",
                     title, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
