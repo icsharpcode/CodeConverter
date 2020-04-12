@@ -15,7 +15,7 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
             return new ProcessStartInfo(Environment.ExpandEnvironmentVariables(command), ArgumentEscaper.EscapeAndConcatenate(args)).StartRedirectedToConsoleAsync();
         }
 
-        public static async Task<string> GetSuccessStdOutAsync(string command, params string[] args)
+        public static async Task<string?> GetSuccessStdOutAsync(string command, params string[] args)
         {
             var sb = new StringBuilder();
             string fullFilePath = Environment.ExpandEnvironmentVariables(command);
@@ -27,7 +27,7 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
             return null;
         }
 
-        private static async Task<Process> StartRedirectedToConsoleAsync(this ProcessStartInfo psi, StringBuilder stdOut = null)
+        private static async Task<Process> StartRedirectedToConsoleAsync(this ProcessStartInfo psi, StringBuilder? stdOut = null)
         {
             psi.UseShellExecute = false;
             psi.RedirectStandardError = true;

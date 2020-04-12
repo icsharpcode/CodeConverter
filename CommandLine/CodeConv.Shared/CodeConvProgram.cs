@@ -25,6 +25,8 @@ Remarks:
     [HelpOption("-h|--help")]
     public partial class CodeConvProgram
     {
+        private const string CoreOptionDefinition = "--core";
+
         /// <remarks>Calls <see cref="OnExecuteAsync(CommandLineApplication)"/></remarks>
         private static async Task<int> ExecuteCurrentFrameworkAsync(string[] args) => await CommandLineApplication.ExecuteAsync<CodeConvProgram>(args);
 
@@ -52,11 +54,7 @@ Remarks:
         [FileExists]
         [Required]
         [Argument(0, "Source solution path", "The solution containing project(s) to be converted.")]
-        public string SolutionPath { get; }
-        private const string CoreOptionDefinition = "--core";
-
-        [Option(CoreOptionDefinition, "Force dot net core build if converting only .NET Core projects and seeing pre-conversion compile errors", CommandOptionType.NoValue)]
-        public bool Core { get; }
+        public string SolutionPath { get; } = "";
 
         [Option("-i|--include", "Regex matching project file paths to convert. Can be used multiple times", CommandOptionType.MultipleValue)]
         public string[] Include { get; } = new string[0];
@@ -67,15 +65,18 @@ Remarks:
         [Option("-t|--target-language", "The language to convert to.", CommandOptionType.SingleValue, ValueName = nameof(Language.CS) + " | " + nameof(Language.VB))]
         public Language? TargetLanguage { get; }
 
-        [FileNotExists]
-        [Option("-o|--output-directory", "Empty or non-existent directory to copy the solution directory to, then write the output.", CommandOptionType.SingleValue)]
-        public string OutputDirectory { get; }
-
         [Option("-f|--force", "Wipe the output directory before conversion", CommandOptionType.NoValue)]
         public bool Force { get; }
 
+        [Option(CoreOptionDefinition, "Force dot net core build if converting only .NET Core projects and seeing pre-conversion compile errors", CommandOptionType.NoValue)]
+        public bool Core { get; }
+
         [Option("-b|--best-effort", "Overrides warnings about compilation issues with input, and attempts a best effort conversion anyway", CommandOptionType.NoValue)]
         public bool BestEffort { get; }
+
+        [FileNotExists]
+        [Option("-o|--output-directory", "Empty or non-existent directory to copy the solution directory to, then write the output.", CommandOptionType.SingleValue)]
+        public string? OutputDirectory { get; }
 
         /// <remarks>
         /// Also allows semicolon and comma splitting of build properties to be compatible with https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild-command-line-reference?view=vs-2019#switches

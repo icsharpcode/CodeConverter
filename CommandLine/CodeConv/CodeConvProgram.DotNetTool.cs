@@ -18,7 +18,9 @@ namespace ICSharpCode.CodeConverter.CommandLine
             var latestMsBuildExePath = await ProcessRunner.GetSuccessStdOutAsync(@"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe", "-latest", "-prerelease", "-products", "*", "-requires", "Microsoft.Component.MSBuild", "-version", "[15.5,]", "-find", @"MSBuild\**\Bin\MSBuild.exe");
             if (!args.Contains(CoreOptionDefinition, StringComparer.OrdinalIgnoreCase) && !string.IsNullOrEmpty(latestMsBuildExePath)) {
                 Console.WriteLine($"Using MSBuild from {latestMsBuildExePath}");
-                var assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string currentAssemblyLocation = Assembly.GetExecutingAssembly().Location;
+                var assemblyPath = Path.GetDirectoryName(currentAssemblyLocation);
+                if (string.IsNullOrWhiteSpace(assemblyPath)) throw new InvalidOperationException("Could not retrieve executing assembly location");
                 var netFrameworkExe = Path.Combine(assemblyPath, "NetFramework", "ICSharpCode.CodeConverter.CodeConv.NetFramework.exe");
                 var process = await ProcessRunner.StartRedirectedToConsoleAsync(netFrameworkExe, args);
                 return process.ExitCode;

@@ -23,7 +23,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommandLine", "CommandLine"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeConv.NetFramework", "CommandLine\CodeConv.NetFramework\CodeConv.NetFramework.csproj", "{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeConv.DotNetTool", "CommandLine\CodeConv.DotNetTool\CodeConv.DotNetTool.csproj", "{160F0B34-0F6F-4532-8D7B-39064956364D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeConv", "CommandLine\CodeConv\CodeConv.csproj", "{160F0B34-0F6F-4532-8D7B-39064956364D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D} = {CF18CBCF-67FF-46CA-8D1D-3221B7706D7D}
+	EndProjectSection
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "CodeConv.Shared", "CommandLine\CodeConv.Shared\CodeConv.Shared.shproj", "{D3A957FF-DAFC-4265-9AE2-D94F6473411A}"
 EndProject

@@ -23,10 +23,10 @@ namespace ICSharpCode.CodeConverter.CommandLine
         private readonly bool _bestEffortConversion;
         private readonly string _solutionFilePath;
         private readonly Dictionary<string, string> _buildProps;
-        private Solution _cachedSolution;
+        private Solution? _cachedSolution;
         private readonly bool _isNetCore;
 
-        public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetCore, bool bestEffortConversion = false, Dictionary<string, string> buildProps = null)
+        public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetCore, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null)
         {
             _bestEffortConversion = bestEffortConversion;
             _buildProps ??= new Dictionary<string, string>();
@@ -62,7 +62,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
             progress.Report($"Running dotnet restore on {projectOrSolutionFile}");
             await RestorePackagesForSolutionAsync(projectOrSolutionFile);
 
-            var workspace = await CreateWorkspaceAsync(_buildProps);
+            var workspace = CreateWorkspace(_buildProps);
             var solution = string.Equals(Path.GetExtension(projectOrSolutionFile), ".sln", StringComparison.OrdinalIgnoreCase) ? await workspace.OpenSolutionAsync(projectOrSolutionFile)
                 : (await workspace.OpenProjectAsync(projectOrSolutionFile)).Solution;
 
@@ -87,7 +87,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
             IEnumerable<Project> projectsToConvert, IReadOnlyCollection<WorkspaceDiagnostic> valueDiagnostics)
         {
             var errors = await projectsToConvert.ParallelSelectAwait(async x => {
-                var c = await x.GetCompilationAsync();
+                var c = await x.GetCompilationAsync() ?? throw new InvalidOperationException($"Compilation could not be created for {x.Language}");
                 return new[] { CompilationWarnings.WarningsForCompilation(c, c.AssemblyName) };
             }, Env.MaxDop, default).ToArrayAsync();
             var solutionErrors = valueDiagnostics.Where(d => d.Kind > WorkspaceDiagnosticKind.Warning).Select(d => d.Message);
@@ -101,7 +101,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
             if (dotnetRestore.ExitCode != 0) throw new InvalidOperationException("dotnet restore had a non-zero exit code.");
         }
 
-        private static async Task<MSBuildWorkspace> CreateWorkspaceAsync(Dictionary<string, string> buildProps)
+        private static MSBuildWorkspace CreateWorkspace(Dictionary<string, string> buildProps)
         {
             if (MSBuildLocator.CanRegister) {
                 var instances = MSBuildLocator.QueryVisualStudioInstances().ToArray();
