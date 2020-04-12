@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Generated parameterless constructors are now public by default
 * Multiple classes in the same file no longer affect each other's constructors
 * Cast expressions are now parenthesized when converted
+* Fix nullref fatal error dialog for delegates with omitted argument types [#560](https://github.com/icsharpcode/CodeConverter/issues/560)
 
 ### C# -> VB
 

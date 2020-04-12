@@ -892,29 +892,18 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitParameter(VBSyntax.ParameterSyntax node)
         {
             var id = CommonConversions.ConvertIdentifier(node.Identifier.Identifier);
-            var paramType = (TypeSyntax) await (node.AsClause?.Type).AcceptAsync(TriviaConvertingExpressionVisitor);
-            if (node.Parent?.Parent?.IsKind(VBasic.SyntaxKind.FunctionStatement,
-                    VBasic.SyntaxKind.SubStatement) == true) {
-                paramType = paramType ?? SyntaxFactory.ParseTypeName("object");
-            }
 
-            var rankSpecifiers = await CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.Identifier.ArrayRankSpecifiers, node.Identifier.ArrayBounds, false);
-            if (rankSpecifiers.Any() && paramType != null) {
-                paramType = SyntaxFactory.ArrayType(paramType, rankSpecifiers);
-            }
-
-            if (paramType != null && !SyntaxTokenExtensions.IsKind(node.Identifier.Nullable, SyntaxKind.None)) {
-                var arrayType = paramType as ArrayTypeSyntax;
-                if (arrayType == null) {
-                    paramType = SyntaxFactory.NullableType(paramType);
-                } else {
-                    paramType = arrayType.WithElementType(SyntaxFactory.NullableType(arrayType.ElementType));
-                }
+            TypeSyntax paramType = null;
+            if (node.Parent?.Parent?.IsKind(VBasic.SyntaxKind.FunctionLambdaHeader,
+                    VBasic.SyntaxKind.SubLambdaHeader) != true || node.AsClause != null) {
+                var vbParamSymbol = _semanticModel.GetDeclaredSymbol(node) as IParameterSymbol;
+                paramType = vbParamSymbol != null ? CommonConversions.GetTypeSyntax(vbParamSymbol.Type)
+                    : await SyntaxOnlyConvertParam(node);
             }
 
             var attributes = (await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttribute)).ToList();
-            var csParamSymbol = CommonConversions.GetDeclaredCsOriginalSymbolOrNull(node) as IParameterSymbol;
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Local);
+            var csParamSymbol = CommonConversions.GetDeclaredCsOriginalSymbolOrNull(node) as IParameterSymbol;
             if (csParamSymbol?.RefKind == RefKind.Out || node.AttributeLists.Any(CommonConversions.HasOutAttribute)) {
                 modifiers = SyntaxFactory.TokenList(modifiers
                     .Where(m => !m.IsKind(SyntaxKind.RefKeyword))
@@ -953,7 +942,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(optionalAttributes)));
                 } else {
                     @default = SyntaxFactory.EqualsValueClause(
-                        (ExpressionSyntax) await node.Default.Value.AcceptAsync(TriviaConvertingExpressionVisitor));
+                        (ExpressionSyntax)await node.Default.Value.AcceptAsync(TriviaConvertingExpressionVisitor));
                 }
             }
 
@@ -968,6 +957,27 @@ namespace ICSharpCode.CodeConverter.CSharp
                 id,
                 @default
             );
+        }
+
+        private async Task<TypeSyntax> SyntaxOnlyConvertParam(VBSyntax.ParameterSyntax node)
+        {
+            var syntaxParamType = (TypeSyntax)await (node.AsClause?.Type).AcceptAsync(TriviaConvertingExpressionVisitor)
+                 ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword));
+
+            var rankSpecifiers = await CommonConversions.ConvertArrayRankSpecifierSyntaxes(node.Identifier.ArrayRankSpecifiers, node.Identifier.ArrayBounds, false);
+            if (rankSpecifiers.Any()) {
+                syntaxParamType = SyntaxFactory.ArrayType(syntaxParamType, rankSpecifiers);
+            }
+
+            if (!SyntaxTokenExtensions.IsKind(node.Identifier.Nullable, SyntaxKind.None)) {
+                var arrayType = syntaxParamType as ArrayTypeSyntax;
+                if (arrayType == null) {
+                    syntaxParamType = SyntaxFactory.NullableType(syntaxParamType);
+                } else {
+                    syntaxParamType = arrayType.WithElementType(SyntaxFactory.NullableType(arrayType.ElementType));
+                }
+            }
+            return syntaxParamType;
         }
 
         public override async Task<CSharpSyntaxNode> VisitAttribute(VBSyntax.AttributeSyntax node)
