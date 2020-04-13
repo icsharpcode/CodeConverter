@@ -160,14 +160,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.MultiplyExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DivideExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IntegerDivideExpression);
-            if (!csConversion.Exists || csConversion.IsUnboxing || csConversion.IsImplicit && !csConversion.IsNumeric) {
+            if (!csConversion.Exists || csConversion.IsUnboxing) {
                 if (ConvertStringToCharLiteral(vbNode, vbType, vbConvertedType, out _)) {
                     typeConversionKind =
                         TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
                     return true;
                 }
 
-                if (IsStringToChar(vbType, vbConvertedType)) {
+                if (vbType.SpecialType == SpecialType.System_String && vbConvertedType.IsArrayOf(SpecialType.System_Char)) {
                     typeConversionKind = TypeConversionKind.StringToCharArray;
                     return true;
                 }
@@ -307,7 +307,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var preferChar = node.Parent is VBSyntax.PredefinedCastExpressionSyntax pces &&
                                pces.Keyword.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.CCharKeyword)
-                || BackwardsCompatibleStringSplit(node, type, convertedType);
+                || convertedType?.SpecialType == SpecialType.System_Char;
             if (preferChar && node.SkipParens() is VBSyntax.LiteralExpressionSyntax les &&
                 les.Token.Value is string str &&
                 str.Length == 1) {
@@ -317,19 +317,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             chr = default;
             return false;
-        }
-
-        /// <remarks>Contains temporary hack to treat readonly spans of char as char so we support compilations with latest language features but generate code compatible with the old libraries that old had a char overload</remarks>
-        private static bool IsStringToChar(ITypeSymbol type, ITypeSymbol convertedType)
-        {
-            return type != null && convertedType != null && type.SpecialType == SpecialType.System_String && (convertedType.IsArrayOf(SpecialType.System_Char) || convertedType.ToString() == "System.ReadOnlySpan(Of Char)");
-        }
-
-
-        /// <remarks>Temporary hack so we support compilations with latest language features but generate code compatible with the old libraries that only had a char overload</remarks>
-        private static bool BackwardsCompatibleStringSplit(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol type, ITypeSymbol convertedType)
-        {
-            return type?.SpecialType == SpecialType.System_String && convertedType?.SpecialType == SpecialType.System_String && vbNode.Parent is VBSyntax.SimpleArgumentSyntax sas && sas.Parent.Parent is VBSyntax.InvocationExpressionSyntax ies && ies.Expression.ToString().EndsWith(".Split", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
