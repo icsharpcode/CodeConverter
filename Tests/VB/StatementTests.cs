@@ -167,7 +167,10 @@ End Class");
         Dim b As String
         b = New String(""test"")
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         }
 
         [Fact]
@@ -183,7 +186,10 @@ End Class");
     Private Sub TestMethod()
         Dim b As String = New String(""test"")
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         }
 
         [Fact]
@@ -199,7 +205,10 @@ End Class");
     Private Sub TestMethod()
         Dim b = New String(""test"")
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         }
 
         [Fact]
