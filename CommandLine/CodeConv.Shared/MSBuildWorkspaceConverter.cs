@@ -31,7 +31,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
         public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetCore, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null)
         {
             _bestEffortConversion = bestEffortConversion;
-            _buildProps ??= new Dictionary<string, string>();
+            _buildProps = buildProps ?? new Dictionary<string, string>();
             _buildProps.TryAdd("Configuration", "Debug");
             _buildProps.TryAdd("Platform", "AnyCPU");
             _solutionFilePath = solutionFilePath;
@@ -90,15 +90,15 @@ namespace ICSharpCode.CodeConverter.CommandLine
             return solution;
         }
 
-        private static async Task<string> GetCompilationErrorsAsync(
+        private async Task<string> GetCompilationErrorsAsync(
             IEnumerable<Project> projectsToConvert, IReadOnlyCollection<WorkspaceDiagnostic> valueDiagnostics)
         {
+            var workspaceErrors = _workspace.Value.Diagnostics.GetErrorString();
             var errors = await projectsToConvert.ParallelSelectAwait(async x => {
                 var c = await x.GetCompilationAsync() ?? throw new InvalidOperationException($"Compilation could not be created for {x.Language}");
                 return new[] { CompilationWarnings.WarningsForCompilation(c, c.AssemblyName) };
             }, Env.MaxDop, default).ToArrayAsync();
-            var solutionErrors = valueDiagnostics.Where(d => d.Kind > WorkspaceDiagnosticKind.Warning).Select(d => d.Message);
-            var errorString = string.Join("\r\n", solutionErrors.Concat(errors.SelectMany(w => w).Where(w => w != null)));
+            var errorString = string.Join("\r\n", workspaceErrors.Yield().Concat(errors.SelectMany(w => w)).Where(w => w != null));
             return errorString;
         }
 
@@ -112,7 +112,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
         {
             if (MSBuildLocator.CanRegister) {
                 var instances = MSBuildLocator.QueryVisualStudioInstances().ToArray();
-                var instance = instances.OrderByDescending(x => x.Version).FirstOrDefault()
+                var instance = instances.OrderByDescending(x => x.Version).LastOrDefault()
                     ?? throw new InvalidOperationException("No Visual Studio instance available");
                 MSBuildLocator.RegisterInstance(instance);
             }

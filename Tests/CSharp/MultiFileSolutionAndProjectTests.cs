@@ -22,6 +22,7 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp
         [Fact]
         public async Task ConvertWholeSolution()
         {
+
             await _multiFileTestFixture.ConvertProjectsWhere(p => true, Language.CS);
         }
 

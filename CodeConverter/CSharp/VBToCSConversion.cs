@@ -25,7 +25,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         private VBToCSProjectContentsConverter _vbToCsProjectContentsConverter;
         private IProgress<ConversionProgress> _progress;
         private CancellationToken _cancellationToken;
-        private Project _cachedSourceProject;
 
         public ConversionOptions ConversionOptions { get; set; }
 
