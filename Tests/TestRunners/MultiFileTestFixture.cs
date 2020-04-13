@@ -61,7 +61,7 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
                 AssertNoConversionErrors(conversionResults);
             } finally {
                 if (recharacterizeByWritingExpectedOverActual) {
-                    var things = ConversionResultWriter.WriteConvertedAsync(results.ToAsyncEnumerable(), SolutionFile, expectedResultDirectory, true, _writeAllFilesForManualTesting, new Progress<string>(), default);
+                    await ConversionResultWriter.WriteConvertedAsync(results.ToAsyncEnumerable(), SolutionFile, expectedResultDirectory, true, _writeAllFilesForManualTesting, new Progress<string>(), default);
                 }
             }
 
