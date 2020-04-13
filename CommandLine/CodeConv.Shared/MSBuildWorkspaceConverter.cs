@@ -15,6 +15,7 @@ using Microsoft.CodeAnalysis.MSBuild;
 using McMaster.Extensions.CommandLineUtils;
 using System.IO;
 using ICSharpCode.CodeConverter.CommandLine.Util;
+using Microsoft.VisualStudio.Threading;
 
 namespace ICSharpCode.CodeConverter.CommandLine
 {
@@ -23,7 +24,8 @@ namespace ICSharpCode.CodeConverter.CommandLine
         private readonly bool _bestEffortConversion;
         private readonly string _solutionFilePath;
         private readonly Dictionary<string, string> _buildProps;
-        private Solution? _cachedSolution;
+        private readonly Lazy<MSBuildWorkspace> _workspace; //Cached to avoid NullRef from OptionsService when initialized concurrently (e.g. in our tests)
+        private AsyncLazy<Solution>? _cachedSolution; //Cached for performance of tests
         private readonly bool _isNetCore;
 
         public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetCore, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null)
@@ -34,12 +36,16 @@ namespace ICSharpCode.CodeConverter.CommandLine
             _buildProps.TryAdd("Platform", "AnyCPU");
             _solutionFilePath = solutionFilePath;
             _isNetCore = isNetCore;
+            _workspace = new Lazy<MSBuildWorkspace>(() => CreateWorkspace(_buildProps));
         }
 
         public async IAsyncEnumerable<ConversionResult> ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, CodeConvProgram.Language? targetLanguage, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken token)
         {
             var strProgress = new Progress<string>(s => progress.Report(new ConversionProgress(s)));
-            var solution = _cachedSolution ?? (_cachedSolution = await GetSolutionAsync(_solutionFilePath, strProgress));
+#pragma warning disable VSTHRD012 // Provide JoinableTaskFactory where allowed - Shouldn't need main thread, and I can't access ThreadHelper without referencing VS shell.
+            _cachedSolution ??= new AsyncLazy<Solution>(async () => await GetSolutionAsync(_solutionFilePath, strProgress));
+#pragma warning restore VSTHRD012 // Provide JoinableTaskFactory where allowed
+            var solution = await _cachedSolution.GetValueAsync();
 
             if (!targetLanguage.HasValue) {
                 targetLanguage = solution.Projects.Any(p => p.Language == LanguageNames.VisualBasic) ? CodeConvProgram.Language.CS : CodeConvProgram.Language.VB;
@@ -62,7 +68,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
             progress.Report($"Running dotnet restore on {projectOrSolutionFile}");
             await RestorePackagesForSolutionAsync(projectOrSolutionFile);
 
-            var workspace = CreateWorkspace(_buildProps);
+            var workspace = _workspace.Value;
             var solution = string.Equals(Path.GetExtension(projectOrSolutionFile), ".sln", StringComparison.OrdinalIgnoreCase) ? await workspace.OpenSolutionAsync(projectOrSolutionFile)
                 : (await workspace.OpenProjectAsync(projectOrSolutionFile)).Solution;
 
@@ -115,7 +121,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
 
         public void Dispose()
         {
-            if (_cachedSolution != null) _cachedSolution.Workspace.Dispose();
+            if (_workspace.IsValueCreated) _workspace.Value.Dispose();
         }
     }
 }
