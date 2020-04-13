@@ -121,8 +121,10 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
         private Encoding GetEncoding(ConversionResult conversionResult)
         {
             var filePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            var originalTargetPath = conversionResult.TargetPathOrNull;
             conversionResult.TargetPathOrNull = filePath;
             conversionResult.WriteToFile();
+            conversionResult.TargetPathOrNull = originalTargetPath;
             var encoding = GetEncoding(filePath);
             File.Delete(filePath);
             return encoding;
