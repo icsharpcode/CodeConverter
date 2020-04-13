@@ -78,7 +78,8 @@ namespace ICSharpCode.CodeConverter.CommandLine
             } else if (wrongFramework && !_isNetCore) {
                 throw new InvalidOperationException("Compiling with .NET Framework MSBuild caused compilation errors, use the --core switch if this is a .NET core only solution.");
             } else {
-                throw new InvalidOperationException("Fix compilation erorrs before conversion for an accurate conversion, or as a last resort, use the best effort conversion option");
+                var mainMessage = "Fix compilation erorrs before conversion for an accurate conversion, or as a last resort, use the best effort conversion option";
+                throw new InvalidOperationException($"{mainMessage}:{Environment.NewLine}{errorString}{Environment.NewLine}{mainMessage}");
             }
             return solution;
         }
