@@ -112,7 +112,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
         {
             if (MSBuildLocator.CanRegister) {
                 var instances = MSBuildLocator.QueryVisualStudioInstances().ToArray();
-                var instance = instances.OrderByDescending(x => x.Version).LastOrDefault()
+                var instance = instances.OrderByDescending(x => x.Version).FirstOrDefault()
                     ?? throw new InvalidOperationException("No Visual Studio instance available");
                 MSBuildLocator.RegisterInstance(instance);
             }
