@@ -39,6 +39,9 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
             await process.WaitForExitAsync();
+            for(int i = 0; process.ExitCode == 0 && stdOut != null && stdOut.Length == 0 && i < 500; i++) {
+                await Task.Delay(20);
+            }
             return process;
         }
     }
