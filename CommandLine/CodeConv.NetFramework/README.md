@@ -11,21 +11,30 @@ codeconv -h
 
 Convert code from VB.NET to C# or C# to VB.NET
 
-Usage: codeconv [arguments] [options]
+Usage: codeconv [options] <Source solution path>
 
 Arguments:
-  Solution path                                       The solution containing project(s) to be converted.
+  Source solution path                         The solution containing project(s) to be converted.
 
 Options:
-  -h|--help                                           Show help information
-  -i|--include                                        A regex matching project file paths to convert
-  -e|--exclude                                        A regex matching project file paths to exclude from conversion
-  -t|--target-language <CS | VB>                      The language to convert to.
-  -o|--output-directory                               Directory to be wiped, and used for output.
-  -b|--best-effort                                     Overrides warnings about compilation issues with input, and attempts a best effort conversion anyway
-  -p|--property <Platform=x64;Configuration=Release>  Set or override the specified project-level properties, where name is the property name and value is the property value. Specify each property separately, or use a semicolon or comma to separate multiple properties.
+  -h|--help                                    Show help information
+  -i|--include                                 Regex matching project file paths to convert. Can be used multiple times
+  -e|--exclude                                 Regex matching project file paths to exclude from conversion. Can be used
+                                               multiple times
+  -t|--target-language <CS | VB>               The language to convert to.
+  -f|--force                                   Wipe the output directory before conversion
+  --core                                       Force dot net core build if converting only .NET Core projects and seeing
+                                               pre-conversion compile errors
+  -b|--best-effort                             Overrides warnings about compilation issues with input, and attempts a
+                                               best effort conversion anyway
+  -o|--output-directory                        Empty or non-existent directory to copy the solution directory to, then
+                                               write the output.
+  -p|--build-property <Configuration=Release>  Set build properties in format: propertyName=propertyValue. Can be used
+                                               multiple times
 
 Remarks:
   Converts all projects in a solution from VB.NET to C#.
+  Please backup / commit your files to source control before use.
+  We recommend running the conversion in-place (i.e. not specifying an output directory) for best performance.
   See https://github.com/icsharpcode/CodeConverter for the source code, issues, Visual Studio extension and other info.
 ```

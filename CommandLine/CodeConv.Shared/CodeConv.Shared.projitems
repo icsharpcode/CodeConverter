@@ -17,7 +17,4 @@
     <Compile Include="$(MSBuildThisFileDirectory)Util\ProcessRunner.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\ProgramExitCodes.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)README.md" />
-  </ItemGroup>
 </Project>
