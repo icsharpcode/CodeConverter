@@ -19,9 +19,13 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
         {
             var sb = new StringBuilder();
             string fullFilePath = Environment.ExpandEnvironmentVariables(command);
-            if (Path.IsPathRooted(command) && !File.Exists(fullFilePath)) return null;
-            
-            var proc = await new ProcessStartInfo(fullFilePath, ArgumentEscaper.EscapeAndConcatenate(args)).StartRedirectedToConsoleAsync(sb);
+            var psi = new ProcessStartInfo(fullFilePath, ArgumentEscaper.EscapeAndConcatenate(args));
+            if (Path.IsPathRooted(command)) {
+                if (!File.Exists(fullFilePath)) return null;
+                psi.WorkingDirectory = Path.GetDirectoryName(psi.FileName);
+            }
+
+                var proc = await psi.StartRedirectedToConsoleAsync(sb);
             if (proc.ExitCode == 0) return sb.ToString().Trim('\r', '\n');
 
             return null;
