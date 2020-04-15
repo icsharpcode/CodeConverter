@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CommandLine.Util;
-using ICSharpCode.CodeConverter.DotNetTool.Util;
 using Microsoft.VisualBasic.FileIO;
 using Microsoft.VisualStudio.Threading;
 
@@ -33,12 +32,24 @@ namespace ICSharpCode.CodeConverter.CommandLine
                 }
             }
 
+            var sourcePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var targetPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             await foreach (var conversionResult in conversionResultsEnumerable.Where(x => x.TargetPathOrNull != null)) {
+                sourcePaths.Add(Path.GetFullPath(conversionResult.SourcePathOrNull));
+                targetPaths.Add(Path.GetFullPath(conversionResult.TargetPathOrNull));
                 cancellationToken.ThrowIfCancellationRequested();
                 var expectedFilePath =
                     conversionResult.TargetPathOrNull.Replace(solutionFile.Directory.FullName, targetDirectory.FullName);
                 Directory.CreateDirectory(Path.GetDirectoryName(expectedFilePath));
                 File.WriteAllText(expectedFilePath, conversionResult.ConvertedCode);
+            }
+
+            if (!sourceAndTargetSame) {
+                var filePathsToRemove = sourcePaths.Except(targetPaths).Where(p => File.Exists(p));
+                foreach (var filePathToRemove in filePathsToRemove) {
+                    File.Delete(filePathToRemove);
+                }
             }
         }
     }

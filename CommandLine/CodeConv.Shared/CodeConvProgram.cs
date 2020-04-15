@@ -11,6 +11,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using ICSharpCode.CodeConverter.CommandLine.Util;
+using CodeConv.Shared.Util;
 
 namespace ICSharpCode.CodeConverter.CommandLine
 {
@@ -35,6 +36,8 @@ Remarks:
 
         private async Task<int> ExecuteAsync()
         {
+            // We basically want to "have a go" with whatever version of MSBuild and its dependencies get loaded
+            AppDomain.CurrentDomain.UseVersionAgnosticAssemblyResolution();
             try {
                 var progress = new Progress<ConversionProgress>(s => Console.Out.WriteLine(s.ToString()));
                 await ConvertAsync(progress, CancellationToken.None);

@@ -14,6 +14,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)MSBuildWorkspaceConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\DirectoryInfoExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\EnumerableExtensions.cs" />
+    <Compile Include="..\CodeConv.Shared\Util\AppDomainExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\ProcessRunner.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\ProgramExitCodes.cs" />
   </ItemGroup>
