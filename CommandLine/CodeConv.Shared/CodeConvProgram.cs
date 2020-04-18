@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using ICSharpCode.CodeConverter.CommandLine.Util;
 using CodeConv.Shared.Util;
+using System.Reflection;
 
 namespace ICSharpCode.CodeConverter.CommandLine
 {
@@ -83,6 +84,11 @@ Remarks:
             } catch (Exception ex) {
                 await Console.Error.WriteLineAsync(Environment.NewLine);
                 await Console.Error.WriteLineAsync(ex.ToString());
+                if (ex is ReflectionTypeLoadException rtle) {
+                    foreach (var e in rtle.LoaderExceptions) {
+                        await Console.Error.WriteLineAsync(e.ToString());
+                    }
+                }
                 await Console.Error.WriteLineAsync();
                 await Console.Error.WriteLineAsync("Please report issues at github.com/icsharpcode/CodeConverter");
                 return ProgramExitCodes.EX_SOFTWARE;
