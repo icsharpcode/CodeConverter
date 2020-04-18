@@ -57,7 +57,7 @@ namespace ICSharpCode.CodeConverter.CommandLine.Util
 
         public static async Task<bool> IsGitDiffEmptyAsync(this DirectoryInfo outputDirectory)
         {
-            var gitDiff = await ProcessRunner.RedirectConsoleAndGetExitCodeAsync(outputDirectory, "git", "diff", "--exit-code", "--relative");
+            var gitDiff = await ProcessRunner.RedirectConsoleAndGetExitCodeAsync(outputDirectory, maxStdOutLines: 100, "git", "diff", "--exit-code", "--relative");
             return gitDiff != 0;
         }
 

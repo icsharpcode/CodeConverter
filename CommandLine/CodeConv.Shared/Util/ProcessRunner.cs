@@ -10,11 +10,11 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
 {
     internal static class ProcessRunner
     {
-        public static Task<int> RedirectConsoleAndGetExitCodeAsync(DirectoryInfo workingDirectory, string command, params string[] args)
+        public static Task<int> RedirectConsoleAndGetExitCodeAsync(DirectoryInfo workingDirectory, int maxStdOutLines, string command, params string[] args)
         {
             return new ProcessStartInfo(Environment.ExpandEnvironmentVariables(command), ArgumentEscaper.EscapeAndConcatenate(args)) {
                 WorkingDirectory = workingDirectory.FullName
-            }.RedirectConsoleGetExitCodeAsync();
+            }.RedirectConsoleGetExitCodeAsync(maxStdOutLines);
         }
 
         public static Task<int> RedirectConsoleAndGetExitCodeAsync(string command, params string[] args) =>
@@ -37,7 +37,7 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
             return null;
         }
 
-        private static async Task<int> RedirectConsoleGetExitCodeAsync(this ProcessStartInfo psi, int maxStdOutLines = 100, StringBuilder? stdOut = null)
+        private static async Task<int> RedirectConsoleGetExitCodeAsync(this ProcessStartInfo psi, int maxStdOutLines = int.MaxValue, StringBuilder? stdOut = null)
         {
             psi.UseShellExecute = false;
             psi.RedirectStandardError = true;

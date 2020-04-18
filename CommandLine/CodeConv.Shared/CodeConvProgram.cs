@@ -29,7 +29,6 @@ Remarks:
     {
         private const string CoreOptionDefinition = "--core-only";
 
-
         /// <remarks>Calls <see cref="OnExecuteAsync(CommandLineApplication)"/> by reflection</remarks>
         public static async Task<int> Main(string[] args) => await CommandLineApplication.ExecuteAsync<CodeConvProgram>(args);
         /// <remarks>Used by reflection in CommandLineApplication.ExecuteAsync</remarks>
