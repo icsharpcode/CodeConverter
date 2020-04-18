@@ -1495,15 +1495,11 @@ public partial class TestHandlesAdded
     {
     }
 }
-4 source compilation errors:
+2 source compilation errors:
 BC30002: Type 'Button' is not defined.
 BC30590: Event 'Click' cannot be found.
-BC30002: Type 'System.Drawing.Point' is not defined.
-BC30002: Type 'System.Drawing.Size' is not defined.
-3 target compilation errors:
-CS0246: The type or namespace name 'Button' could not be found (are you missing a using directive or an assembly reference?)
-CS0234: The type or namespace name 'Point' does not exist in the namespace 'System.Drawing' (are you missing an assembly reference?)
-CS0234: The type or namespace name 'Size' does not exist in the namespace 'System.Drawing' (are you missing an assembly reference?)");
+1 target compilation errors:
+CS0246: The type or namespace name 'Button' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]

@@ -264,22 +264,8 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
         private Progress<ConversionProgress> CreateOutputWindowProgress()
         {
             return new Progress<ConversionProgress>(s => {
-                _outputWindow.WriteToOutputWindowAsync(FormatForOutputWindow(s)).ForgetNoThrow();
+                _outputWindow.WriteToOutputWindowAsync(s.ToString()).ForgetNoThrow();
             });
-        }
-
-        private static string FormatForOutputWindow(ConversionProgress s)
-        {
-            string preMessage = Environment.NewLine;
-            switch (s.NestingLevel)
-            {
-                case 0:
-                    return preMessage + Environment.NewLine + s.Message;
-                case 1:
-                    return preMessage + "* " + s.Message;
-            }
-
-            return "";
         }
 
         public static bool IsCSFileName(string fileName)

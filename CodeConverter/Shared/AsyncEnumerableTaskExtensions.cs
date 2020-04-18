@@ -8,7 +8,7 @@ using System.Threading.Tasks.Dataflow;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
-    internal static class AsyncEnumerableTaskExtensions
+    public static class AsyncEnumerableTaskExtensions
     {
         public static async Task<TResult[]> SelectManyAsync<TArg, TResult>(this IEnumerable<TArg> nodes,
             Func<TArg, Task<IEnumerable<TResult>>> selector)

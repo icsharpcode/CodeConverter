@@ -46,8 +46,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
             var syntaxTree = languageConversion.MakeFullCompilationUnit(text, out var textSpan);
             if (textSpan.HasValue) conversionOptions.SelectedTextSpan = textSpan.Value;
-            using var workspace = new AdhocWorkspace();
-            var document = languageConversion.CreateProjectDocumentFromTree(workspace, syntaxTree, conversionOptions.References);
+            var document = languageConversion.CreateProjectDocumentFromTree(syntaxTree, conversionOptions.References);
             return await ConvertSingle<TLanguageConversion>(document, conversionOptions, progress, cancellationToken);
         }
 

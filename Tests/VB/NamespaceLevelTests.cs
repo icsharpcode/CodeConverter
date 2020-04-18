@@ -264,20 +264,20 @@ BC30149: Structure 'MyType' must implement 'Function CompareTo(other As MyType) 
         [Fact]
         public async Task GlobalImportsStatement()
         {
-               await AssertConvertedCodeResultEquals<CSToVBWithoutSimplifierConversion>(@"using MyAlias = global::System.Runtime.Remoting.Metadata.W3cXsd2001;
-using SO = global::System.Runtime.Remoting.Metadata.SoapOption;
+               await AssertConvertedCodeResultEquals<CSToVBWithoutSimplifierConversion>(@"using MyAlias = global::System.Data.SqlClient;
+using SO = global::System.Data.SqlClient.SqlCommandBuilder;
 
 class ThisUri
 {
-    private MyAlias.SoapAnyUri s;
+    private MyAlias.SqlCommand s;
     private SO so;
 }",
-@"Imports MyAlias = System.Runtime.Remoting.Metadata.W3cXsd2001
-Imports SO = System.Runtime.Remoting.Metadata.SoapOption
+@"Imports MyAlias = System.Data.SqlClient
+Imports SO = System.Data.SqlClient.SqlCommandBuilder
 
 Friend Class ThisUri
-    Private s As System.Runtime.Remoting.Metadata.W3cXsd2001.SoapAnyUri
-    Private so As System.Runtime.Remoting.Metadata.SoapOption
+    Private s As System.Data.SqlClient.SqlCommand
+    Private so As System.Data.SqlClient.SqlCommandBuilder
 End Class");
         }
 

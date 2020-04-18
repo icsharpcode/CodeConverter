@@ -151,10 +151,10 @@ namespace ICSharpCode.CodeConverter.VB
         {
             return new CSharpCompiler().CreateTree(text);
         }
-        public Document CreateProjectDocumentFromTree(Workspace workspace, SyntaxTree tree,
-            IEnumerable<MetadataReference> references)
+
+        public Document CreateProjectDocumentFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
-            return CSharpCompiler.CreateCompilationOptions().CreateProjectDocumentFromTree(workspace, tree, references, CSharpParseOptions.Default);
+            return CSharpCompiler.CreateCompilationOptions().CreateProject(references, CSharpParseOptions.Default).AddDocumentFromTree(tree);
         }
     }
 }

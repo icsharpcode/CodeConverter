@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.CodeAnalysis;
@@ -7,18 +8,20 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     internal static class CompilationOptionsExtensions
     {
+        private static Lazy<Workspace> Workspace = new Lazy<Workspace>(() => new AdhocWorkspace());
 
-        public static Document CreateProjectDocumentFromTree(this CompilationOptions options,
-            Workspace workspace, SyntaxTree tree, IEnumerable<MetadataReference> references, ParseOptions parseOptions,
-            string singleDocumentAssemblyName = null)
+        public static Document AddDocumentFromTree(this Project project, SyntaxTree tree)
         {
-            singleDocumentAssemblyName = singleDocumentAssemblyName ?? "ProjectToBeConverted";
+            return project.AddDocument("CodeToConvert", tree.GetRoot(), filePath: Path.Combine(Directory.GetCurrentDirectory(), "TempCodeToConvert.txt"));
+        }
+
+        public static Project CreateProject(this CompilationOptions options, IEnumerable<MetadataReference> references, ParseOptions parseOptions, string singleDocumentAssemblyName = "ProjectToBeConverted")
+        {
             ProjectId projectId = ProjectId.CreateNewId();
 
             string projFileExtension = parseOptions.Language == LanguageNames.CSharp ? ".csproj" : ".vbproj";
             var projectFilePath = Path.Combine(Directory.GetCurrentDirectory() + singleDocumentAssemblyName + projFileExtension);
-
-            var solution = workspace.CurrentSolution.AddProject(projectId, singleDocumentAssemblyName,
+            var solution = Workspace.Value.CurrentSolution.AddProject(projectId, singleDocumentAssemblyName,
                 singleDocumentAssemblyName, options.Language)
                 .WithProjectFilePath(projectId, projectFilePath);
 
@@ -26,7 +29,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 .WithCompilationOptions(options)
                 .WithParseOptions(parseOptions)
                 .WithMetadataReferences(references);
-            return project.AddDocument("CodeToConvert", tree.GetRoot(), filePath: Path.Combine(Directory.GetCurrentDirectory(), "TempCodeToConvert.txt"));
+            return project;
         }
     }
 }

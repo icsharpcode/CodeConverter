@@ -4,6 +4,7 @@ using ICSharpCode.CodeConverter.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.Shared;
+using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Web
 {
@@ -16,8 +17,8 @@ namespace ICSharpCode.CodeConverter.Web
         {
             var languages = todo.requestedConversion.Split('2');
 
-            string fromLanguage = "C#";
-            string toLanguage = "Visual Basic";
+            string fromLanguage = LanguageNames.CSharp;
+            string toLanguage = LanguageNames.VisualBasic;
             int fromVersion = 6;
             int toVersion = 14;
 
@@ -32,7 +33,7 @@ namespace ICSharpCode.CodeConverter.Web
                 .WithTypeReferences(DefaultReferences.NetStandard2)
                 .SetFromLanguage(fromLanguage, fromVersion)
                 .SetToLanguage(toLanguage, toVersion);
-            var result = await ICSharpCode.CodeConverter.CodeConverter.Convert(codeWithOptions);
+            var result = await CodeConverter.Convert(codeWithOptions);
 
             var response = new ConvertResponse() {
                 conversionOk = result.Success,
@@ -48,9 +49,9 @@ namespace ICSharpCode.CodeConverter.Web
             if (language == null)
                 throw new ArgumentNullException(nameof(language));
             if (language.StartsWith("cs", StringComparison.OrdinalIgnoreCase))
-                return "C#";
+                return LanguageNames.CSharp;
             if (language.StartsWith("vb", StringComparison.OrdinalIgnoreCase))
-                return "Visual Basic";
+                return LanguageNames.VisualBasic;
             throw new ArgumentException($"{language} not supported!");
         }
 

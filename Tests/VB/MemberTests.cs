@@ -802,7 +802,9 @@ End Class");
         public async Task TestPropertyWithExpressionBodyThatCanBeStatement()
         {
             await TestConversionCSharpToVisualBasic(
-                @"public class ConversionResult
+                @"using System;
+
+public class ConversionResult
 {
     private int _num;
 
@@ -813,7 +815,9 @@ End Class");
     public string Blanket {
         set => throw new Exception();
     }
-}", @"Public Class ConversionResult
+}", @"Imports System
+
+Public Class ConversionResult
     Private _num As Integer
 
     Public WriteOnly Property Num As String
@@ -827,10 +831,7 @@ End Class");
             Throw New Exception()
         End Set
     End Property
-End Class
-
-1 source compilation errors:
-CS0246: The type or namespace name 'Exception' could not be found (are you missing a using directive or an assembly reference?)");
+End Class");
         }
 
         [Fact]

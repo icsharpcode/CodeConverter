@@ -161,7 +161,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DivideExpression,
                 Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IntegerDivideExpression);
             if (!csConversion.Exists || csConversion.IsUnboxing) {
-                if (ConvertStringToCharLiteral(vbNode, vbConvertedType, out _)) {
+                if (ConvertStringToCharLiteral(vbNode, vbType, vbConvertedType, out _)) {
                     typeConversionKind =
                         TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
                     return true;
@@ -300,6 +300,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax node,
+            ITypeSymbol type,
             ITypeSymbol convertedType,
             out char chr)
         {

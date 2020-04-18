@@ -37,5 +37,16 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             Assert.Throws<ObjectDisposedException>(() => asyncEnumerable.ToArrayAsync().GetAwaiter().GetResult());
         }
 
+        [Fact]
+        public async Task AllElementsProcessedAsync()
+        {
+            var array = await Input.ParallelSelectAwait(
+                async i => i
+                , MaxDop
+            ).ToArrayAsync();
+
+            Assert.Equal(Input.OrderBy(x => x), array.OrderBy(x => x));
+        }
+
     }
 }
