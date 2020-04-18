@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -10,11 +11,11 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
 {
     internal static class ProcessRunner
     {
-        public static Task<int> RedirectConsoleAndGetExitCodeAsync(DirectoryInfo workingDirectory, int maxStdOutLines, string command, params string[] args)
+        public static Task<int> RedirectConsoleAndGetExitCodeAsync(DirectoryInfo workingDirectory, string command, params string[] args)
         {
             return new ProcessStartInfo(Environment.ExpandEnvironmentVariables(command), ArgumentEscaper.EscapeAndConcatenate(args)) {
                 WorkingDirectory = workingDirectory.FullName
-            }.RedirectConsoleGetExitCodeAsync(maxStdOutLines);
+            }.RedirectConsoleGetExitCodeAsync();
         }
 
         public static Task<int> RedirectConsoleAndGetExitCodeAsync(string command, params string[] args) =>
@@ -37,15 +38,19 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
             return null;
         }
 
-        private static async Task<int> RedirectConsoleGetExitCodeAsync(this ProcessStartInfo psi, int maxStdOutLines = int.MaxValue, StringBuilder? stdOut = null)
+        private static async Task<int> RedirectConsoleGetExitCodeAsync(this ProcessStartInfo psi, StringBuilder? stdOut = null)
         {
             psi.UseShellExecute = false;
             psi.RedirectStandardError = true;
             psi.RedirectStandardOutput = true;
             using var process = new Process() { StartInfo = psi };
-            process.OutputDataReceived += (sender, e) => { if (--maxStdOutLines > 0) { Console.WriteLine(e.Data); stdOut?.AppendLine(e.Data); } };
+            process.OutputDataReceived += (sender, e) => { Console.WriteLine(e.Data); stdOut?.AppendLine(e.Data); };
             process.ErrorDataReceived += (sender, e) => Console.Error.WriteLine(e.Data);
-            process.Start();
+            try {
+                process.Start();
+            } catch (Win32Exception win32Exception) {
+                return win32Exception.ErrorCode;
+            }
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
             await process.WaitForExitAsync();
