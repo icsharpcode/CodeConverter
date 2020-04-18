@@ -10,10 +10,16 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
 {
     internal static class ProcessRunner
     {
-        public static Task<Process> StartRedirectedToConsoleAsync(string command, params string[] args)
+        public static Task<Process> StartRedirectedToConsoleAsync(DirectoryInfo workingDirectory, string command, params string[] args)
         {
-            return new ProcessStartInfo(Environment.ExpandEnvironmentVariables(command), ArgumentEscaper.EscapeAndConcatenate(args)).StartRedirectedToConsoleAsync();
+            return new ProcessStartInfo(Environment.ExpandEnvironmentVariables(command), ArgumentEscaper.EscapeAndConcatenate(args)) {
+                WorkingDirectory = workingDirectory.FullName
+            }.StartRedirectedToConsoleAsync();
         }
+
+        public static Task<Process> StartRedirectedToConsoleAsync(string command, params string[] args) =>
+            new ProcessStartInfo(Environment.ExpandEnvironmentVariables(command), ArgumentEscaper.EscapeAndConcatenate(args))
+            .StartRedirectedToConsoleAsync();
 
         public static async Task<string?> GetSuccessStdOutAsync(string command, params string[] args)
         {
