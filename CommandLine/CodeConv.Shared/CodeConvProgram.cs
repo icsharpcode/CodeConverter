@@ -76,8 +76,6 @@ Remarks:
                 return await RunNetFrameworkExeAsync(latestMsBuildExePath);
             }
 
-            // We basically want to "have a go" with whatever version of MSBuild and its dependencies get loaded
-            AppDomain.CurrentDomain.UseVersionAgnosticAssemblyResolution();
             try {
                 var progress = new Progress<ConversionProgress>(s => Console.Out.WriteLine(s.ToString()));
                 await ConvertAsync(progress, CancellationToken.None);

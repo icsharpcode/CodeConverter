@@ -16,6 +16,7 @@ using McMaster.Extensions.CommandLineUtils;
 using System.IO;
 using ICSharpCode.CodeConverter.CommandLine.Util;
 using Microsoft.VisualStudio.Threading;
+using CodeConv.Shared.Util;
 
 namespace ICSharpCode.CodeConverter.CommandLine
 {
@@ -72,7 +73,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
             var solution = string.Equals(Path.GetExtension(projectOrSolutionFile), ".sln", StringComparison.OrdinalIgnoreCase) ? await workspace.OpenSolutionAsync(projectOrSolutionFile)
                 : (await workspace.OpenProjectAsync(projectOrSolutionFile)).Solution;
 
-            var errorString = await GetCompilationErrorsAsync(solution.Projects, workspace.Diagnostics);
+            var errorString = await GetCompilationErrorsAsync(solution.Projects);
             if (string.IsNullOrEmpty(errorString)) return solution;
             progress.Report($"Compilation errors found before conversion:{Environment.NewLine}{errorString}");
 
@@ -91,7 +92,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
         }
 
         private async Task<string> GetCompilationErrorsAsync(
-            IEnumerable<Project> projectsToConvert, IReadOnlyCollection<WorkspaceDiagnostic> valueDiagnostics)
+            IEnumerable<Project> projectsToConvert)
         {
             var workspaceErrors = _workspace.Value.Diagnostics.GetErrorString();
             var errors = await projectsToConvert.ParallelSelectAwait(async x => {
@@ -115,6 +116,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
                 var instance = instances.OrderByDescending(x => x.Version).FirstOrDefault()
                     ?? throw new InvalidOperationException("No Visual Studio instance available");
                 MSBuildLocator.RegisterInstance(instance);
+                AppDomain.CurrentDomain.UseVersionAgnosticAssemblyResolution();
             }
             return MSBuildWorkspace.Create(buildProps);
         }

@@ -11,7 +11,11 @@ namespace CodeConv.Shared.Util
         {
             var requestedAssemblyName = new AssemblyName(args.Name);
             if (requestedAssemblyName.Version != null) {
-                return Assembly.Load(new AssemblyName(requestedAssemblyName.Name) { CultureName = requestedAssemblyName.CultureName });
+                try {
+                    return Assembly.Load(new AssemblyName(requestedAssemblyName.Name) { CultureName = requestedAssemblyName.CultureName });
+                } catch (Exception) {
+                    return null; //Give other handlers a chance
+                }
             }
             return null;
 
