@@ -80,21 +80,23 @@ Remarks:
             }
 
             try {
-                var progress = new Progress<ConversionProgress>(s => Console.Out.WriteLine(s.ToString()));
+                Progress<ConversionProgress>? progress = new Progress<ConversionProgress>(s => Console.Out.WriteLine(s.ToString()));
                 await ConvertAsync(progress, CancellationToken.None);
             } catch (Exception ex) {
-                await Console.Error.WriteLineAsync(Environment.NewLine);
-                await Console.Error.WriteLineAsync(ex.StackTrace);
-                if (ex is ReflectionTypeLoadException rtle) {
-                    foreach (var e in rtle.LoaderExceptions) {
-                        await Console.Error.WriteLineAsync(e.Message);
+                await Task.Delay(100); // Give any async progress updates a moment to flush so they don't clash with this:
+
+                if (!(ex is ValidationException)) {
+                    await Console.Error.WriteLineAsync(Environment.NewLine + ex.GetType() + ex.StackTrace);
+                    if (ex is ReflectionTypeLoadException rtle) {
+                        foreach (var e in rtle.LoaderExceptions) {
+                            await Console.Error.WriteLineAsync(e.Message);
+                        }
                     }
                 }
 
-                await Console.Error.WriteLineAsync();
-                await Console.Error.WriteLineAsync(ex.Message);
-                await Console.Error.WriteLineAsync();
-                await Console.Error.WriteLineAsync("Please report issues at github.com/icsharpcode/CodeConverter");
+                await Console.Error.WriteLineAsync(Environment.NewLine + ex.Message + Environment.NewLine +
+                    "Please report issues at github.com/icsharpcode/CodeConverter"
+                );
                 return ProgramExitCodes.EX_SOFTWARE;
             }
 

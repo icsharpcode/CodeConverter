@@ -17,6 +17,7 @@ using System.IO;
 using ICSharpCode.CodeConverter.CommandLine.Util;
 using Microsoft.VisualStudio.Threading;
 using CodeConv.Shared.Util;
+using System.ComponentModel.DataAnnotations;
 
 namespace ICSharpCode.CodeConverter.CommandLine
 {
@@ -81,12 +82,12 @@ namespace ICSharpCode.CodeConverter.CommandLine
             if (_bestEffortConversion) {
                 progress.Report("Attempting best effort conversion on broken input due to override");
             } else if (wrongFramework && _isNetCore) {
-                throw new InvalidOperationException("Compiling with dotnet core caused compilation errors, ensure a version of MSBuild is installed if this is a .NET framework project, or use --core-only false option");
+                throw new ValidationException("Compiling with dotnet core caused compilation errors, ensure a version of MSBuild is installed if this is a .NET framework project, or use --core-only false option");
             } else if (wrongFramework && !_isNetCore) {
-                throw new InvalidOperationException("Compiling with .NET Framework MSBuild caused compilation errors, use the --core-only true option if this is a .NET core only solution.");
+                throw new ValidationException("Compiling with .NET Framework MSBuild caused compilation errors, use the --core-only true option if this is a .NET core only solution.");
             } else {
                 var mainMessage = "Fix compilation erorrs before conversion for an accurate conversion, or as a last resort, use the best effort conversion option";
-                throw new InvalidOperationException($"{mainMessage}:{Environment.NewLine}{errorString}{Environment.NewLine}{mainMessage}");
+                throw new ValidationException($"{mainMessage}:{Environment.NewLine}{errorString}{Environment.NewLine}{mainMessage}");
             }
             return solution;
         }
@@ -106,7 +107,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
         private static async Task RestorePackagesForSolutionAsync(string solutionFile)
         {
             var restoreExitCode = await ProcessRunner.RedirectConsoleAndGetExitCodeAsync(DotNetExe.FullPathOrDefault(), "restore", solutionFile);
-            if (restoreExitCode != 0) throw new InvalidOperationException("dotnet restore had a non-zero exit code.");
+            if (restoreExitCode != 0) throw new ValidationException("dotnet restore had a non-zero exit code.");
         }
 
         private static MSBuildWorkspace CreateWorkspace(Dictionary<string, string> buildProps)
@@ -114,7 +115,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
             if (MSBuildLocator.CanRegister) {
                 var instances = MSBuildLocator.QueryVisualStudioInstances().ToArray();
                 var instance = instances.OrderByDescending(x => x.Version).FirstOrDefault()
-                    ?? throw new InvalidOperationException("No Visual Studio instance available");
+                    ?? throw new ValidationException("No Visual Studio instance available");
                 MSBuildLocator.RegisterInstance(instance);
                 AppDomain.CurrentDomain.UseVersionAgnosticAssemblyResolution();
             }
