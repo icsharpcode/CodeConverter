@@ -84,12 +84,15 @@ Remarks:
                 await ConvertAsync(progress, CancellationToken.None);
             } catch (Exception ex) {
                 await Console.Error.WriteLineAsync(Environment.NewLine);
-                await Console.Error.WriteLineAsync(ex.ToString());
+                await Console.Error.WriteLineAsync(ex.StackTrace);
                 if (ex is ReflectionTypeLoadException rtle) {
                     foreach (var e in rtle.LoaderExceptions) {
-                        await Console.Error.WriteLineAsync(e.ToString());
+                        await Console.Error.WriteLineAsync(e.Message);
                     }
                 }
+
+                await Console.Error.WriteLineAsync();
+                await Console.Error.WriteLineAsync(ex.Message);
                 await Console.Error.WriteLineAsync();
                 await Console.Error.WriteLineAsync("Please report issues at github.com/icsharpcode/CodeConverter");
                 return ProgramExitCodes.EX_SOFTWARE;
