@@ -11,6 +11,8 @@ namespace ICSharpCode.CodeConverter.CommandLine
 {
     public static class ConversionResultWriter
     {
+        private static string[] FileSystemNamesToIgnore = new[] { ".git", ".gitattributes", ".gitignore", "bin", "obj", ".vs" };
+
         public static async Task WriteConvertedAsync(IAsyncEnumerable<ConversionResult> conversionResultsEnumerable, string solutionFilePath, DirectoryInfo targetDirectory, bool wipeTargetDirectory, bool copyOriginalDirectory, IProgress<string> progress, CancellationToken cancellationToken)
         {
             var solutionFile = new FileInfo(solutionFilePath);
@@ -19,7 +21,8 @@ namespace ICSharpCode.CodeConverter.CommandLine
             if (!sourceAndTargetSame) {
                 if (wipeTargetDirectory) {
                     progress.Report($"Removing {targetDirectory.FullName}");
-                    targetDirectory.DeleteExceptGitDir();
+                    //Should never be writing output within a .git dir, so it's safe to leave it there, and massively reduces the chances of accidentally destroying work
+                    await targetDirectory.DeleteExceptAsync(FileSystemNamesToIgnore);
                 }
 
                 if (copyOriginalDirectory) {
@@ -27,7 +30,8 @@ namespace ICSharpCode.CodeConverter.CommandLine
                         "If you don't see the 'Finished copying contents' message, consider running the conversion in-place by not specifying an output directory."
                     );
 
-                    CopyDirectory(solutionFile.Directory, targetDirectory, new[] { ".git", "bin", "obj" }, true, true);
+                    // Speed up the copy by skipping irrelevant binaries and caches. An alternative would be to attempt a git clone
+                    await solutionFile.Directory.CopyExceptAsync(targetDirectory, true, FileSystemNamesToIgnore);
                     progress.Report($"Finished copying contents of {solutionFile.Directory.FullName} to {targetDirectory.FullName}.");
                 }
             }
@@ -50,19 +54,6 @@ namespace ICSharpCode.CodeConverter.CommandLine
                 foreach (var filePathToRemove in filePathsToRemove) {
                     string pathInTargetDir = filePathToRemove.Replace(solutionFile.Directory.FullName, targetDirectory.FullName);
                     if (File.Exists(pathInTargetDir)) File.Delete(pathInTargetDir);
-                }
-            }
-        }
-
-        private static void CopyDirectory(DirectoryInfo sourceDirectory, DirectoryInfo targetDirectory, string[] excludeNames, bool recurse, bool overwrite)
-        {
-            targetDirectory.Create();
-            foreach (var fileSystemEntry in sourceDirectory.GetFileSystemInfos().Where(d => !excludeNames.Contains(d.Name))) {
-                var targetPath = Path.Combine(sourceDirectory.FullName, fileSystemEntry.Name);
-                if (fileSystemEntry is DirectoryInfo currentSourceDir) {
-                    CopyDirectory(currentSourceDir, new DirectoryInfo(targetPath), excludeNames, recurse, overwrite);
-                } else {
-                    File.Copy(fileSystemEntry.FullName, targetPath, overwrite);
                 }
             }
         }

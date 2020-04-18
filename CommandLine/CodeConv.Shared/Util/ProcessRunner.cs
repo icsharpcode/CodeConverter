@@ -10,18 +10,18 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
 {
     internal static class ProcessRunner
     {
-        public static Task<Process> StartRedirectedToConsoleAsync(DirectoryInfo workingDirectory, string command, params string[] args)
+        public static Task<int> RedirectConsoleAndGetExitCodeAsync(DirectoryInfo workingDirectory, string command, params string[] args)
         {
             return new ProcessStartInfo(Environment.ExpandEnvironmentVariables(command), ArgumentEscaper.EscapeAndConcatenate(args)) {
                 WorkingDirectory = workingDirectory.FullName
-            }.StartRedirectedToConsoleAsync();
+            }.RedirectConsoleGetExitCodeAsync();
         }
 
-        public static Task<Process> StartRedirectedToConsoleAsync(string command, params string[] args) =>
+        public static Task<int> RedirectConsoleAndGetExitCodeAsync(string command, params string[] args) =>
             new ProcessStartInfo(Environment.ExpandEnvironmentVariables(command), ArgumentEscaper.EscapeAndConcatenate(args))
-            .StartRedirectedToConsoleAsync();
+            .RedirectConsoleGetExitCodeAsync();
 
-        public static async Task<string?> GetSuccessStdOutAsync(string command, params string[] args)
+        public static async Task<string?> RedirectConsoleGetStdOutAsync(string command, params string[] args)
         {
             var sb = new StringBuilder();
             string fullFilePath = Environment.ExpandEnvironmentVariables(command);
@@ -31,19 +31,19 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
                 psi.WorkingDirectory = Path.GetDirectoryName(psi.FileName);
             }
 
-                var proc = await psi.StartRedirectedToConsoleAsync(sb);
-            if (proc.ExitCode == 0 && !string.IsNullOrWhiteSpace(sb.ToString())) return sb.ToString().Trim('\r', '\n');
+            var exitCode = await psi.RedirectConsoleGetExitCodeAsync(stdOut: sb);
+            if (exitCode == 0 && !string.IsNullOrWhiteSpace(sb.ToString())) return sb.ToString().Trim('\r', '\n');
 
             return null;
         }
 
-        private static async Task<Process> StartRedirectedToConsoleAsync(this ProcessStartInfo psi, StringBuilder? stdOut = null)
+        private static async Task<int> RedirectConsoleGetExitCodeAsync(this ProcessStartInfo psi, int maxStdOutLines = 100, StringBuilder? stdOut = null)
         {
             psi.UseShellExecute = false;
             psi.RedirectStandardError = true;
             psi.RedirectStandardOutput = true;
-            var process = new Process() { StartInfo = psi };
-            process.OutputDataReceived += (sender, e) => { Console.WriteLine(e.Data); stdOut?.AppendLine(e.Data); };
+            using var process = new Process() { StartInfo = psi };
+            process.OutputDataReceived += (sender, e) => { if (--maxStdOutLines > 0) { Console.WriteLine(e.Data); stdOut?.AppendLine(e.Data); } };
             process.ErrorDataReceived += (sender, e) => Console.Error.WriteLine(e.Data);
             process.Start();
             process.BeginOutputReadLine();
@@ -52,7 +52,7 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
             for(int i = 0; process.ExitCode == 0 && stdOut != null && stdOut.Length == 0 && i < 500; i++) {
                 await Task.Delay(20);
             }
-            return process;
+            return process.ExitCode;
         }
     }
 }

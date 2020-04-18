@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.DotNetTool.Util;
 using ICSharpCode.CodeConverter.Util;
@@ -12,42 +10,55 @@ namespace ICSharpCode.CodeConverter.CommandLine.Util
 
     internal static class DirectoryInfoExtensions
     {
-        /// <remarks>
-        /// Should never be writing output within a .git dir, so it's safe to leave it there, and massively reduces the chances of accidentally destroying work
-        /// </remarks>
-        /// <returns>true iff directory was entirely removed (due to finding no git directory)</returns>
-        public static bool DeleteExceptGitDir(this DirectoryInfo targetDirectory)
+        public static async Task CopyExceptAsync(this DirectoryInfo sourceDirectory, DirectoryInfo targetDirectory, bool overwrite, params string[] excludeNames)
         {
-            var filesAndDirs = targetDirectory.GetFileSystemInfos();
-            var gitDir = filesAndDirs.FirstOrDefault(d => !string.Equals(d.Name, ".git", StringComparison.OrdinalIgnoreCase));
+            targetDirectory.Create();
+            foreach (var fileSystemEntry in sourceDirectory.GetFileSystemInfos().Where(d => !excludeNames.Contains(d.Name, StringComparer.OrdinalIgnoreCase))) {
+                var targetPath = Path.Combine(targetDirectory.FullName, fileSystemEntry.Name);
+                if (fileSystemEntry is DirectoryInfo currentSourceDir) {
+                    await CopyExceptAsync(currentSourceDir, new DirectoryInfo(targetPath), overwrite, excludeNames);
+                } else if (fileSystemEntry is FileInfo fi) {
+                    await fi.RetryAsync(f => f.CopyTo(targetPath, overwrite));
+                }
+            }
+        }
 
-            bool foundGitDir = gitDir is DirectoryInfo;
-            foreach (var fileSystemInfo in filesAndDirs.Except(gitDir.Yield())) {
+        /// <returns>true iff directory is completely deleted</returns>
+        public static async Task<bool> DeleteExceptAsync(this DirectoryInfo targetDirectory, params string[] excludeNames)
+        {
+            if (!targetDirectory.Exists) return true;
+            var filesAndDirs = targetDirectory.GetFileSystemInfos();
+            var excluded = filesAndDirs.Where(d => excludeNames.Contains(d.Name, StringComparer.OrdinalIgnoreCase)).ToArray();
+
+            bool foundExclusion = excluded.Any();
+            foreach (var fileSystemInfo in filesAndDirs.Except(excluded)) {
                 if (fileSystemInfo is DirectoryInfo di) {
-                    foundGitDir |= DeleteExceptGitDir(di);
+                    foundExclusion |= await DeleteExceptAsync(di, excludeNames);
                 } else {
                     fileSystemInfo.Delete();
                 }
             }
-            if (!foundGitDir) DeleteRecursive(targetDirectory);
-            return !foundGitDir;
+            if (!foundExclusion) await targetDirectory.RetryAsync(d => d.Delete(true));
+            return !foundExclusion;
         }
 
-        private static void DeleteRecursive(DirectoryInfo targetDirectory)
+        private static async Task RetryAsync<T>(this T fileSystemInfo, Action<T> action, byte retries = 10, ushort delayMs = 10) where T: FileSystemInfo
         {
-            try {
-                targetDirectory.Delete(true);
-            } catch (Exception) {
-                Thread.Sleep(10);
-                targetDirectory.Refresh();
-                targetDirectory.Delete(true);
+            for (int i = 0; i <= retries; i++) {
+                try {
+                    action(fileSystemInfo);
+                    return;
+                } catch (Exception) when (i < retries) {
+                    await Task.Delay(delayMs);
+                    fileSystemInfo.Refresh();
+                }
             }
         }
 
         public static async Task<bool> IsGitDiffEmptyAsync(this DirectoryInfo outputDirectory)
         {
-            var gitDiff = await ProcessRunner.StartRedirectedToConsoleAsync(outputDirectory, "git", "diff", "--exit-code");
-            return gitDiff.ExitCode != 0;
+            var gitDiff = await ProcessRunner.RedirectConsoleAndGetExitCodeAsync(outputDirectory, "git", "diff", "--exit-code", "--relative");
+            return gitDiff != 0;
         }
 
         public static bool ContainsDataOtherThanGitDir(this DirectoryInfo outputDirectory)

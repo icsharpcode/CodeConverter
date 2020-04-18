@@ -105,8 +105,8 @@ namespace ICSharpCode.CodeConverter.CommandLine
 
         private static async Task RestorePackagesForSolutionAsync(string solutionFile)
         {
-            var dotnetRestore = await ProcessRunner.StartRedirectedToConsoleAsync(DotNetExe.FullPathOrDefault(), "restore", solutionFile);
-            if (dotnetRestore.ExitCode != 0) throw new InvalidOperationException("dotnet restore had a non-zero exit code.");
+            var restoreExitCode = await ProcessRunner.RedirectConsoleAndGetExitCodeAsync(DotNetExe.FullPathOrDefault(), "restore", solutionFile);
+            if (restoreExitCode != 0) throw new InvalidOperationException("dotnet restore had a non-zero exit code.");
         }
 
         private static MSBuildWorkspace CreateWorkspace(Dictionary<string, string> buildProps)

@@ -104,8 +104,8 @@ Remarks:
             var args = Environment.GetCommandLineArgs().Skip(1).ToArray();
             if (string.IsNullOrWhiteSpace(assemblyPath)) throw new InvalidOperationException("Could not retrieve executing assembly directory");
             var netFrameworkExe = Path.Combine(assemblyPath, "NetFramework", "ICSharpCode.CodeConverter.CodeConv.NetFramework.exe");
-            var process = await ProcessRunner.StartRedirectedToConsoleAsync(netFrameworkExe, args);
-            return process.ExitCode;
+            var exitCode = await ProcessRunner.RedirectConsoleAndGetExitCodeAsync(netFrameworkExe, args);
+            return exitCode;
         }
 
         private async Task ConvertAsync(IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
@@ -156,7 +156,7 @@ Remarks:
 
         private static async Task<string?> GetLatestMsBuildExePathAsync()
         {
-            return await ProcessRunner.GetSuccessStdOutAsync(@"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe", "-latest", "-prerelease", "-products", "*", "-requires", "Microsoft.Component.MSBuild", "-version", "[16.0,]", "-find", @"MSBuild\**\Bin\MSBuild.exe");
+            return await ProcessRunner.RedirectConsoleGetStdOutAsync(@"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe", "-latest", "-prerelease", "-products", "*", "-requires", "Microsoft.Component.MSBuild", "-version", "[16.0,]", "-find", @"MSBuild\**\Bin\MSBuild.exe");
         }
     }
 }
