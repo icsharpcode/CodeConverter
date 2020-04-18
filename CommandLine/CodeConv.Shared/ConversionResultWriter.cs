@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CommandLine.Util;
-using Microsoft.VisualBasic.FileIO;
 using Microsoft.VisualStudio.Threading;
 
 namespace ICSharpCode.CodeConverter.CommandLine
@@ -27,7 +26,8 @@ namespace ICSharpCode.CodeConverter.CommandLine
                     progress.Report($"Started copying contents of {solutionFile.Directory.FullName} to {targetDirectory.FullName} so that the output is a usable solution.{Environment.NewLine}" +
                         "If you don't see the 'Finished copying contents' message, consider running the conversion in-place by not specifying an output directory."
                     );
-                    FileSystem.CopyDirectory(solutionFile.Directory.FullName, targetDirectory.FullName, true);
+
+                    CopyDirectory(solutionFile.Directory, targetDirectory, new[] { ".git", "bin", "obj" }, true, true);
                     progress.Report($"Finished copying contents of {solutionFile.Directory.FullName} to {targetDirectory.FullName}.");
                 }
             }
@@ -39,16 +39,30 @@ namespace ICSharpCode.CodeConverter.CommandLine
                 sourcePaths.Add(Path.GetFullPath(conversionResult.SourcePathOrNull));
                 targetPaths.Add(Path.GetFullPath(conversionResult.TargetPathOrNull));
                 cancellationToken.ThrowIfCancellationRequested();
-                var expectedFilePath =
+                var targetFilePath =
                     conversionResult.TargetPathOrNull.Replace(solutionFile.Directory.FullName, targetDirectory.FullName);
-                Directory.CreateDirectory(Path.GetDirectoryName(expectedFilePath));
-                File.WriteAllText(expectedFilePath, conversionResult.ConvertedCode);
+                Directory.CreateDirectory(Path.GetDirectoryName(targetFilePath));
+                File.WriteAllText(targetFilePath, conversionResult.ConvertedCode);
             }
 
             if (!sourceAndTargetSame) {
-                var filePathsToRemove = sourcePaths.Except(targetPaths).Where(p => File.Exists(p));
+                var filePathsToRemove = sourcePaths.Except(targetPaths);
                 foreach (var filePathToRemove in filePathsToRemove) {
-                    File.Delete(filePathToRemove);
+                    string pathInTargetDir = filePathToRemove.Replace(solutionFile.Directory.FullName, targetDirectory.FullName);
+                    if (File.Exists(pathInTargetDir)) File.Delete(pathInTargetDir);
+                }
+            }
+        }
+
+        private static void CopyDirectory(DirectoryInfo sourceDirectory, DirectoryInfo targetDirectory, string[] excludeNames, bool recurse, bool overwrite)
+        {
+            targetDirectory.Create();
+            foreach (var fileSystemEntry in sourceDirectory.GetFileSystemInfos().Where(d => !excludeNames.Contains(d.Name))) {
+                var targetPath = Path.Combine(sourceDirectory.FullName, fileSystemEntry.Name);
+                if (fileSystemEntry is DirectoryInfo currentSourceDir) {
+                    CopyDirectory(currentSourceDir, new DirectoryInfo(targetPath), excludeNames, recurse, overwrite);
+                } else {
+                    File.Copy(fileSystemEntry.FullName, targetPath, overwrite);
                 }
             }
         }

@@ -26,7 +26,7 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
             }
 
                 var proc = await psi.StartRedirectedToConsoleAsync(sb);
-            if (proc.ExitCode == 0) return sb.ToString().Trim('\r', '\n');
+            if (proc.ExitCode == 0 && !string.IsNullOrWhiteSpace(sb.ToString())) return sb.ToString().Trim('\r', '\n');
 
             return null;
         }

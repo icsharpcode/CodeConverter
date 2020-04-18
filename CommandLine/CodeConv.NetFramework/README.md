@@ -23,7 +23,7 @@ Options:
                                                multiple times
   -t|--target-language <CS | VB>               The language to convert to.
   -f|--force                                   Wipe the output directory before conversion
-  --core                                       Force dot net core build if converting only .NET Core projects and seeing
+  --core-only                                  Force dot net core build if converting only .NET Core projects and seeing
                                                pre-conversion compile errors
   -b|--best-effort                             Overrides warnings about compilation issues with input, and attempts a
                                                best effort conversion anyway

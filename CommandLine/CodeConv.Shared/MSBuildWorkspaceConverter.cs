@@ -39,7 +39,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
             _workspace = new Lazy<MSBuildWorkspace>(() => CreateWorkspace(_buildProps));
         }
 
-        public async IAsyncEnumerable<ConversionResult> ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, CodeConvProgram.Language? targetLanguage, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken token)
+        public async IAsyncEnumerable<ConversionResult> ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, Language? targetLanguage, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken token)
         {
             var strProgress = new Progress<string>(s => progress.Report(new ConversionProgress(s)));
 #pragma warning disable VSTHRD012 // Provide JoinableTaskFactory where allowed - Shouldn't need main thread, and I can't access ThreadHelper without referencing VS shell.
@@ -48,13 +48,13 @@ namespace ICSharpCode.CodeConverter.CommandLine
             var solution = await _cachedSolution.GetValueAsync();
 
             if (!targetLanguage.HasValue) {
-                targetLanguage = solution.Projects.Any(p => p.Language == LanguageNames.VisualBasic) ? CodeConvProgram.Language.CS : CodeConvProgram.Language.VB;
+                targetLanguage = solution.Projects.Any(p => p.Language == LanguageNames.VisualBasic) ? Language.CS : Language.VB;
             }
 
-            var languageConversion = targetLanguage == CodeConvProgram.Language.CS
+            var languageConversion = targetLanguage == Language.CS
                 ? (ILanguageConversion)new VBToCSConversion()
                 : new CSToVBConversion();
-            var languageNameToConvert = targetLanguage == CodeConvProgram.Language.CS
+            var languageNameToConvert = targetLanguage == Language.CS
                 ? LanguageNames.VisualBasic
                 : LanguageNames.CSharp;
 
@@ -80,9 +80,9 @@ namespace ICSharpCode.CodeConverter.CommandLine
             if (_bestEffortConversion) {
                 progress.Report("Attempting best effort conversion on broken input due to override");
             } else if (wrongFramework && _isNetCore) {
-                throw new InvalidOperationException("Compiling with dotnet core caused compilation errors, ensure a version of MSBuild is installed if this is a .NET framework project.");
+                throw new InvalidOperationException("Compiling with dotnet core caused compilation errors, ensure a version of MSBuild is installed if this is a .NET framework project, or use --core-only false option");
             } else if (wrongFramework && !_isNetCore) {
-                throw new InvalidOperationException("Compiling with .NET Framework MSBuild caused compilation errors, use the --core switch if this is a .NET core only solution.");
+                throw new InvalidOperationException("Compiling with .NET Framework MSBuild caused compilation errors, use the --core-only true option if this is a .NET core only solution.");
             } else {
                 var mainMessage = "Fix compilation erorrs before conversion for an accurate conversion, or as a last resort, use the best effort conversion option";
                 throw new InvalidOperationException($"{mainMessage}:{Environment.NewLine}{errorString}{Environment.NewLine}{mainMessage}");

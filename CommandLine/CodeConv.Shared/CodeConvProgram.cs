@@ -26,33 +26,13 @@ Remarks:
     [HelpOption("-h|--help")]
     public partial class CodeConvProgram
     {
-        private const string CoreOptionDefinition = "--core";
+        private const string CoreOptionDefinition = "--core-only";
 
-        /// <remarks>Calls <see cref="OnExecuteAsync(CommandLineApplication)"/></remarks>
-        private static async Task<int> ExecuteCurrentFrameworkAsync(string[] args) => await CommandLineApplication.ExecuteAsync<CodeConvProgram>(args);
 
+        /// <remarks>Calls <see cref="OnExecuteAsync(CommandLineApplication)"/> by reflection</remarks>
+        public static async Task<int> Main(string[] args) => await CommandLineApplication.ExecuteAsync<CodeConvProgram>(args);
         /// <remarks>Used by reflection in CommandLineApplication.ExecuteAsync</remarks>
         private async Task<int> OnExecuteAsync(CommandLineApplication app) => await ExecuteAsync();
-
-        private async Task<int> ExecuteAsync()
-        {
-            // We basically want to "have a go" with whatever version of MSBuild and its dependencies get loaded
-            AppDomain.CurrentDomain.UseVersionAgnosticAssemblyResolution();
-            try {
-                var progress = new Progress<ConversionProgress>(s => Console.Out.WriteLine(s.ToString()));
-                await ConvertAsync(progress, CancellationToken.None);
-            } catch (Exception ex) {
-                await Console.Error.WriteLineAsync(Environment.NewLine);
-                await Console.Error.WriteLineAsync(ex.ToString());
-                await Console.Error.WriteLineAsync();
-                await Console.Error.WriteLineAsync("Please report issues at github.com/icsharpcode/CodeConverter");
-                return ProgramExitCodes.EX_SOFTWARE;
-            }
-
-            Console.WriteLine();
-            Console.WriteLine("Exiting successfully. Report any issues at github.com/icsharpcode/CodeConverter to help us improve the accuracy of future conversions");
-            return 0;
-        }
 
         [FileExists]
         [Required]
@@ -71,8 +51,8 @@ Remarks:
         [Option("-f|--force", "Wipe the output directory before conversion", CommandOptionType.NoValue)]
         public bool Force { get; }
 
-        [Option(CoreOptionDefinition, "Force dot net core build if converting only .NET Core projects and seeing pre-conversion compile errors", CommandOptionType.NoValue)]
-        public bool Core { get; }
+        [Option(CoreOptionDefinition, "Force dot net core build if converting only .NET Core projects and seeing pre-conversion compile errors", CommandOptionType.SingleValue)]
+        public bool CoreOnlyProjects { get; }
 
         [Option("-b|--best-effort", "Overrides warnings about compilation issues with input, and attempts a best effort conversion anyway", CommandOptionType.NoValue)]
         public bool BestEffort { get; }
@@ -87,10 +67,41 @@ Remarks:
         [Option("-p|--build-property", "Set build properties in format: propertyName=propertyValue. Can be used multiple times", CommandOptionType.MultipleValue, ValueName = "Configuration=Release")]
         public string[] BuildProperty { get; } = new string[0];
 
-        public enum Language
+        private async Task<int> ExecuteAsync()
         {
-            CS,
-            VB
+            // Ideally we'd be able to use MSBuildLocator.QueryVisualStudioInstances(DiscoveryType.VisualStudioSetup) from .NET core, but it will never be supported: https://github.com/microsoft/MSBuildLocator/issues/61
+            // Instead, if MSBuild 16.0+ is available, start a .NET framework process and let it run with that
+            if (_runningInNetCore && !CoreOnlyProjects && await GetLatestMsBuildExePathAsync() is string latestMsBuildExePath) {
+                return await RunNetFrameworkExeAsync(latestMsBuildExePath);
+            }
+
+            // We basically want to "have a go" with whatever version of MSBuild and its dependencies get loaded
+            AppDomain.CurrentDomain.UseVersionAgnosticAssemblyResolution();
+            try {
+                var progress = new Progress<ConversionProgress>(s => Console.Out.WriteLine(s.ToString()));
+                await ConvertAsync(progress, CancellationToken.None);
+            } catch (Exception ex) {
+                await Console.Error.WriteLineAsync(Environment.NewLine);
+                await Console.Error.WriteLineAsync(ex.ToString());
+                await Console.Error.WriteLineAsync();
+                await Console.Error.WriteLineAsync("Please report issues at github.com/icsharpcode/CodeConverter");
+                return ProgramExitCodes.EX_SOFTWARE;
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Exiting successfully. Report any issues at github.com/icsharpcode/CodeConverter to help us improve the accuracy of future conversions");
+            return 0;
+        }
+
+        private static async Task<int> RunNetFrameworkExeAsync(string latestMsBuildExePath)
+        {
+            Console.WriteLine($"Using .NET Framework MSBuild from {latestMsBuildExePath}");
+            var assemblyPath = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]);
+            var args = Environment.GetCommandLineArgs().Skip(1).ToArray();
+            if (string.IsNullOrWhiteSpace(assemblyPath)) throw new InvalidOperationException("Could not retrieve executing assembly directory");
+            var netFrameworkExe = Path.Combine(assemblyPath, "NetFramework", "ICSharpCode.CodeConverter.CodeConv.NetFramework.exe");
+            var process = await ProcessRunner.StartRedirectedToConsoleAsync(netFrameworkExe, args);
+            return process.ExitCode;
         }
 
         private async Task ConvertAsync(IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
@@ -110,7 +121,7 @@ Remarks:
             }
 
             var properties = ParsedProperties();
-            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionPath, Core, BestEffort, properties);
+            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionPath, CoreOnlyProjects, BestEffort, properties);
 
             var converterResultsEnumerable = msbuildWorkspaceConverter.ConvertProjectsWhereAsync(ShouldIncludeProject, TargetLanguage, progress, cancellationToken);
             await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, SolutionPath, outputDirectory, Force, true, strProgress, cancellationToken);
@@ -130,13 +141,18 @@ Remarks:
 
         private string GetValidatedPropertyValue(string[] s)
         {
-            return s.Length == 2 ? s[1] : throw new ArgumentOutOfRangeException(nameof(BuildProperty), BuildProperty, $"{s[0]} must have exactly one value, e.g. `{s[0]}=1`");
+            return s.Length == 2 ? s[1] : throw new ValidationException($"Build property {s[0]} must have exactly one value, e.g. `{s[0]}=1`");
         }
 
         private bool ShouldIncludeProject(Project project)
         {
             var isIncluded = !Include.Any() || Include.Any(regex => Regex.IsMatch(project.FilePath, regex));
             return isIncluded && Exclude.All(regex => !Regex.IsMatch(project.FilePath, regex));
+        }
+
+        private static async Task<string?> GetLatestMsBuildExePathAsync()
+        {
+            return await ProcessRunner.GetSuccessStdOutAsync(@"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe", "-latest", "-prerelease", "-products", "*", "-requires", "Microsoft.Component.MSBuild", "-version", "[16.0,]", "-find", @"MSBuild\**\Bin\MSBuild.exe");
         }
     }
 }
