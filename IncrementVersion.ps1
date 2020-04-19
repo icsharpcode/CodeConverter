@@ -90,7 +90,6 @@ function Update-Changelog($filePath, $newVersion) {
 }
 
 $newVersion = Increment-VersionInFile 'azure-pipelines.yml' '(buildVersion: .)(\d+\.\d+\.\d+)(\.\$)'
-Increment-VersionInFile 'appveyor.yml' '(version: )(\d+\.\d+\.\d+)(\.)' | Out-Null
 Increment-VersionInFile 'Vsix\source.extension.vsixmanifest' '(7e2a69d6-193b-4cdf-878d-3370d5931942" Version=")(\d+\.\d+\.\d+)(\.)' | Out-Null
 Get-ChildItem -Recurse '*.csproj' | Where { -not $_.FullName.Contains("TestData")} | % {
     Increment-VersionInFile $_ '(\n    <Version>)(\d+\.\d+\.\d+)(<)' $true | Out-Null
