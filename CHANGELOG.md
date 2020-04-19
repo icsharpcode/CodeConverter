@@ -10,6 +10,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [8.1.0] - 2020-04-19
+
+
+### Vsix
+
+
+### VB -> C#
+
+
+### C# -> VB
+
+
+## [8.0.5] - 2020-04-19
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Convert files with legacy vb6 file extensions (e.g. .cls, .frm)
 * Fix for converting For...Next...Step loops with a variable step that's sometimes negative [#453](https://github.com/icsharpcode/CodeConverter/issues/453)
 * Fix for abstract readonly/writeonly property conversion including a private accessor
