@@ -7,9 +7,9 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests
     public class LoopStatementTests : ConverterTestBase
     {
         [Fact]
-        public async Task WhileStatement()
+        public async Task WhileStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -40,9 +40,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task UntilStatement()
+        public async Task UntilStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(rand As Random)
         Dim charIndex As Integer
         ' allow only digits and letters
@@ -66,9 +66,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task SimpleDoStatement()
+        public async Task SimpleDoStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -100,9 +100,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task DoWhileStatement()
+        public async Task DoWhileStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -134,9 +134,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ForEachStatementWithExplicitType()
+        public async Task ForEachStatementWithExplicitTypeAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         For Each val As Integer In values
             If val = 2 Then Continue For
@@ -160,9 +160,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ForEachStatementWithVar()
+        public async Task ForEachStatementWithVarAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         For Each val In values
             If val = 2 Then Continue For
@@ -188,9 +188,9 @@ BC30516: Overload resolution failed because no accessible 'Val' accepts this num
         }
 
         [Fact]
-        public async Task TwoForEachStatementsWithImplicitVariableCreation()
+        public async Task TwoForEachStatementsWithImplicitVariableCreationAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Friend Class Program
+            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
     Public Shared Sub Main(ByVal args As String())
         For idx = 0 To 10
         Next
@@ -215,9 +215,9 @@ internal partial class Program
         }
 
         [Fact]
-        public async Task ForNonNegativeStep()
+        public async Task ForNonNegativeStepAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Friend Class Issue453
+            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
     Sub PrintLoop(startIndex As Integer, endIndex As Integer)
       For i As Integer = startIndex To endIndex Step -0
         Debug.WriteLine(i)
@@ -236,9 +236,9 @@ internal partial class Issue453
         }
 
         [Fact]
-        public async Task ForNegativeStep()
+        public async Task ForNegativeStepAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Friend Class Issue453
+            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
     Sub PrintLoop(startIndex As Integer, endIndex As Integer)
       For i As Integer = startIndex To endIndex Step -5
         Debug.WriteLine(i)
@@ -257,9 +257,9 @@ internal partial class Issue453
         }
 
         [Fact]
-        public async Task ForVariableStep()
+        public async Task ForVariableStepAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Friend Class Issue453
+            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
     Sub PrintLoop(startIndex As Integer, endIndex As Integer, [step] As Integer)
       For i As Integer = startIndex To endIndex Step [step]
         Debug.WriteLine(i)
@@ -278,9 +278,9 @@ internal partial class Issue453
         }
 
         [Fact]
-        public async Task ForeachWithObjectCollection()
+        public async Task ForeachWithObjectCollectionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Friend Class Program
+            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
     Public Shared Sub Main(ByVal args As String())
         Dim zs As Object = { 1, 2, 3 }
         For Each z in zs
@@ -303,9 +303,9 @@ internal partial class Program
 
 
         [Fact]
-        public async Task ForWithSingleStatement()
+        public async Task ForWithSingleStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(end As Integer)
         Dim b, s As Integer()
         For i = 0 To [end]
@@ -327,9 +327,9 @@ BC30183: Keyword is not valid as an identifier.");
         }
 
         [Fact]
-        public async Task ForNextMutatingField()
+        public async Task ForNextMutatingFieldAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Private Index As Integer
 
     Sub Foo()
@@ -352,9 +352,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task ForRequiringExtraVariable()
+        public async Task ForRequiringExtraVariableAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim stringValue AS string = ""42""
         For i As Integer = 1 To 10 - stringValue.Length
@@ -380,9 +380,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ForWithBlock()
+        public async Task ForWithBlockAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod([end] As Integer)
         Dim b, s As Integer()
         For i = 0 To [end] - 1
@@ -402,9 +402,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task LabeledAndForStatement()
+        public async Task LabeledAndForStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class GotoTest1
+            await TestConversionVisualBasicToCSharpAsync(@"Class GotoTest1
     Private Shared Sub Main()
         Dim x As Integer = 200, y As Integer = 4
         Dim count As Integer = 0

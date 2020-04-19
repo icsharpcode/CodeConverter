@@ -10,9 +10,9 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
     public class AccessExpressionTests : ConverterTestBase
     {
         [Fact]
-        public async Task MyClassExpr()
+        public async Task MyClassExprAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class TestClass
     Sub TestMethod()
         MyClass.Val = 6
     End Sub
@@ -31,9 +31,9 @@ public partial class TestClass
         }
 
         [Fact]
-        public async Task DictionaryIndexingIssue362()
+        public async Task DictionaryIndexingIssue362Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System ' Removed by simplifier
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System ' Removed by simplifier
 Imports System.Collections.Generic
 Imports System.Linq
 
@@ -58,9 +58,9 @@ internal static partial class Module1
         }
 
         [Fact]
-        public async Task MethodCallDictionaryAccessConditional()
+        public async Task MethodCallDictionaryAccessConditionalAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class A
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class A
     Public Sub Test()
         Dim dict = New Dictionary(Of String, String) From {{""a"", ""AAA""}, {""b"", ""bbb""}}
         Dim v = dict?.Item(""a"")
@@ -80,9 +80,9 @@ CS7036: There is no argument given that corresponds to the required formal param
         }
 
         [Fact]
-        public async Task IndexerWithParameter()
+        public async Task IndexerWithParameterAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System.Data
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
 
 Public Class A
     Public Function ReadDataSet(myData As DataSet) As String
@@ -105,9 +105,9 @@ public partial class A
         }
 
         [Fact]
-        public async Task MethodCallArrayIndexerBrackets()
+        public async Task MethodCallArrayIndexerBracketsAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class A
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class A
     Public Sub Test()
         Dim str1 = Me.GetStringFromNone(0)
         str1 = GetStringFromNone(0)
@@ -183,9 +183,9 @@ public partial class A
         }
 
         [Fact]
-        public async Task ElementAtOrDefaultIndexing()
+        public async Task ElementAtOrDefaultIndexingAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System.Linq
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
 
 Public Class Class1
     Sub Foo()
@@ -205,9 +205,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task ElementAtOrDefaultInvocationIsNotDuplicated()
+        public async Task ElementAtOrDefaultInvocationIsNotDuplicatedAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System.Linq
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
 
 Public Class Class1
     Sub Foo()
@@ -227,9 +227,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task EmptyArgumentLists()
+        public async Task EmptyArgumentListsAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim str = (New ThreadStaticAttribute).ToString
     End Sub
@@ -245,9 +245,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task UsesSquareBracketsForIndexerButParenthesesForMethodInvocation()
+        public async Task UsesSquareBracketsForIndexerButParenthesesForMethodInvocationAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Function TestMethod() As String()
         Dim s = ""1,2""
         Return s.Split(s(1))
@@ -264,9 +264,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ConditionalExpressionWithOmittedArgsList()
+        public async Task ConditionalExpressionWithOmittedArgsListAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result = str?.GetType
     End Sub
@@ -281,9 +281,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task MemberAccessAndInvocationExpression()
+        public async Task MemberAccessAndInvocationExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim length As Integer
         length = str.Length
@@ -305,9 +305,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task OmittedParamsArray()
+        public async Task OmittedParamsArrayAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Module AppBuilderUseExtensions
+            await TestConversionVisualBasicToCSharpAsync(@"Module AppBuilderUseExtensions
     <System.Runtime.CompilerServices.Extension>
     Function Use(Of T)(ByVal app As String, ParamArray args As Object()) As Object
         Return Nothing
@@ -337,9 +337,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ThisMemberAccessExpression()
+        public async Task ThisMemberAccessExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private member As Integer
 
     Private Sub TestMethod()
@@ -358,9 +358,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task BaseMemberAccessExpression()
+        public async Task BaseMemberAccessExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class BaseTestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class BaseTestClass
     Public member As Integer
 End Class
 
@@ -386,9 +386,9 @@ internal partial class TestClass : BaseTestClass
         }
 
         [Fact]
-        public async Task UnqualifiedBaseMemberAccessExpression()
+        public async Task UnqualifiedBaseMemberAccessExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class BaseController
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class BaseController
     Protected Request As HttpRequest
 End Class
 
@@ -419,9 +419,9 @@ CS0246: The type or namespace name 'HttpRequest' could not be found (are you mis
         }
 
         [Fact]
-        public async Task PartiallyQualifiedName()
+        public async Task PartiallyQualifiedNameAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System.Collections ' Removed by simplifier
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections ' Removed by simplifier
 Class TestClass
     Public Sub TestMethod(dir As String)
         IO.Path.Combine(dir, ""file.txt"")
@@ -440,9 +440,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task TypePromotedModuleIsQualified()
+        public async Task TypePromotedModuleIsQualifiedAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Namespace TestNamespace
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace TestNamespace
     Public Module TestModule
         Public Sub ModuleFunction()
         End Sub
@@ -474,9 +474,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task MemberAccessCasing()
+        public async Task MemberAccessCasingAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Bar()
 
     End Sub
@@ -501,9 +501,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task XmlMemberAccess()
+        public async Task XmlMemberAccessAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Private Sub LoadValues(ByVal strPlainKey As String)
         Dim xmlFile As XDocument = XDocument.Parse(strPlainKey)
         Dim objActivationInfo As XElement = xmlFile.<ActivationKey>.First
@@ -522,9 +522,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task ExclamationPointOperator()
+        public async Task ExclamationPointOperatorAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Public Class Issue479
   Default Public ReadOnly Property index(ByVal s As String) As Integer
     Get
@@ -566,9 +566,9 @@ public partial class TestIssue479
         }
 
         [Fact]
-        public async Task AliasedImportsWithTypePromotionIssue401()
+        public async Task AliasedImportsWithTypePromotionIssue401Async()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Imports System.IO
 Imports SIO = System.IO
 Imports Microsoft.VisualBasic
@@ -616,9 +616,9 @@ CS8082: Sub-expression cannot be used in an argument to nameof.");
         }
 
         [Fact]
-        public async Task TestGenericMethodGroupGainsBrackets()
+        public async Task TestGenericMethodGroupGainsBracketsAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Public Enum TheType
     Tree
 End Enum
@@ -662,9 +662,9 @@ CS0120: An object reference is required for the non-static field, method, or pro
         }
 
         [Fact]
-        public async Task UsesSquareBracketsForItemIndexer()
+        public async Task UsesSquareBracketsForItemIndexerAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System.Data
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
 
 Class TestClass
     Function GetItem(dr As DataRow) As Object

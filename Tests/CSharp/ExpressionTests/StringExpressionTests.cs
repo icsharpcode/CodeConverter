@@ -7,9 +7,9 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
     public class StringExpressionTests : ConverterTestBase
     {
         [Fact]
-        public async Task MultilineString()
+        public async Task MultilineStringAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim x = ""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!""
@@ -30,9 +30,9 @@ World!"";
         }
 
         [Fact]
-        public async Task Quotes()
+        public async Task QuotesAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Shared Function GetTextFeedInput(pStream As String, pTitle As String, pText As String) As String
         Return ""{"" & AccessKey() & "",""""streamName"""": """""" & pStream & """""",""""point"""": ["" & GetTitleTextPair(pTitle, pText) & ""]}""
     End Function
@@ -91,9 +91,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task StringCompare()
+        public async Task StringCompareAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim s1 As String = Nothing
         Dim s2 As String = """"
@@ -152,9 +152,9 @@ CS0103: The name 'string' does not exist in the current context");
         }
 
         [Fact]
-        public async Task StringCompareText()
+        public async Task StringCompareTextAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Option Compare Text
+            await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text
 Public Class Class1
     Sub Foo()
         Dim s1 As String = Nothing
@@ -215,9 +215,9 @@ CS0103: The name 'string' does not exist in the current context");
         }
 
         [Fact]
-        public async Task StringConcatPrecedence()
+        public async Task StringConcatPrecedenceAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim x = ""x "" & 5 - 4 & "" y""
     End Sub
@@ -232,9 +232,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task StringConcatenationAssignment()
+        public async Task StringConcatenationAssignmentAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim str = ""Hello, ""
         str &= ""World""
@@ -251,9 +251,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task StringInterpolationWithConditionalOperator()
+        public async Task StringInterpolationWithConditionalOperatorAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Public Function GetString(yourBoolean as Boolean) As String
     Return $""You {if (yourBoolean, ""do"", ""do not"")} have a true value""
 End Function",
@@ -264,9 +264,9 @@ End Function",
         }
 
         [Fact]
-        public async Task StringInterpolationWithDoubleQuotes()
+        public async Task StringInterpolationWithDoubleQuotesAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Imports System
 
 Namespace Global.InnerNamespace
@@ -303,9 +303,9 @@ namespace InnerNamespace
         }
 
         [Fact]
-        public async Task NoConversionRequiredWithinConcatenation()
+        public async Task NoConversionRequiredWithinConcatenationAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Public Class Issue508
     Sub Foo()
         Dim x = ""x"" & 4 & ""y""

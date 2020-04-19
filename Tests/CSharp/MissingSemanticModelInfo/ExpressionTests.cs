@@ -7,11 +7,11 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.MissingSemanticModelInfo
     public class ExpressionTests : ConverterTestBase
     {
         [Fact]
-        public async Task InvokeIndexerOnPropertyValue()
+        public async Task InvokeIndexerOnPropertyValueAsync()
         {
             // Chances of having an unknown delegate stored as a field/property/local seem lower than having an unknown non-delegate
             // type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
 Public Property SomeProperty As System.Some.UnknownType
     Private Sub TestMethod()
         Dim value = SomeProperty(0)
@@ -33,9 +33,9 @@ BC32016: 'Public Property SomeProperty As System.Some.UnknownType' has no parame
 CS0234: The type or namespace name 'Some' does not exist in the namespace 'System' (are you missing an assembly reference?)");
         }
         [Fact]
-        public async Task InvokeMethodWithUnknownReturnType()
+        public async Task InvokeMethodWithUnknownReturnTypeAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Bar(Nothing)
     End Sub
@@ -64,9 +64,9 @@ CS0246: The type or namespace name 'SomeClass' could not be found (are you missi
         }
 
         [Fact]
-        public async Task ForNextMutatingMissingField()
+        public async Task ForNextMutatingMissingFieldAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         For Me.Index = 0 To 10
 
@@ -89,9 +89,9 @@ CS1061: 'Class1' does not contain a definition for 'Index' and no accessible ext
         }
 
         [Fact]
-        public async Task OutParameterNonCompilingType()
+        public async Task OutParameterNonCompilingTypeAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class OutParameterWithMissingType
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class OutParameterWithMissingType
     Private Shared Sub AddToDict(ByVal pDict As Dictionary(Of Integer, MissingType), ByVal pKey As Integer)
         Dim anInstance As MissingType = Nothing
         If Not pDict.TryGetValue(pKey, anInstance) Then
@@ -142,9 +142,9 @@ BC30002: Type 'MissingType' is not defined.
 CS0246: The type or namespace name 'MissingType' could not be found (are you missing a using directive or an assembly reference?)");
         }
         [Fact]
-        public async Task EnumSwitchAndValWithUnusedMissingType()
+        public async Task EnumSwitchAndValWithUnusedMissingTypeAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class EnumAndValTest
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class EnumAndValTest
     Public Enum PositionEnum As Integer
         None = 0
         LeftTop = 1
@@ -258,9 +258,9 @@ CS0246: The type or namespace name 'MissingType' could not be found (are you mis
         }
 
         [Fact]
-        public async Task UnknownTypeInvocation()
+        public async Task UnknownTypeInvocationAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private property DefaultDate as System.SomeUnknownType
     private sub TestMethod()
         Dim a = DefaultDate(1, 2, 3).Blawer(1, 2, 3)
@@ -283,9 +283,9 @@ CS0234: The type or namespace name 'SomeUnknownType' does not exist in the names
         }
 
         [Fact]
-        public async Task CharacterizeRaiseEventWithMissingDefinitionActsLikeMultiIndexer()
+        public async Task CharacterizeRaiseEventWithMissingDefinitionActsLikeMultiIndexerAsync()
         {
-        await TestConversionVisualBasicToCSharp(
+        await TestConversionVisualBasicToCSharpAsync(
             @"Imports System
 
     Friend Class TestClass
@@ -310,9 +310,9 @@ CS0201: Only assignment, call, increment, decrement, await, and new object expre
         }
 
         [Fact]
-        public async Task ConvertBuiltInMethodWithUnknownArgumentType()
+        public async Task ConvertBuiltInMethodWithUnknownArgumentTypeAsync()
         {
-        await TestConversionVisualBasicToCSharp(
+        await TestConversionVisualBasicToCSharpAsync(
             @"Class A
     Public Sub Test()
         Dim x As SomeUnknownType = Nothing
@@ -341,9 +341,9 @@ CS0246: The type or namespace name 'SomeUnknownType' could not be found (are you
         }
 
         [Fact]
-        public async Task CallShouldAlwaysBecomeInvocation()
+        public async Task CallShouldAlwaysBecomeInvocationAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Call mySuperFunction(strSomething, , optionalSomething)",
                 @"mySuperFunction(strSomething, default, optionalSomething);",
                 expectSurroundingBlock: true, missingSemanticInfo: true

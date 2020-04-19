@@ -7,9 +7,9 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp
     public class TriviaTests : ConverterTestBase
     {
         [Fact]
-        public async Task Issue506_IfStatement()
+        public async Task Issue506_IfStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Imports System
 
 Public Class TestClass506

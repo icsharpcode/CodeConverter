@@ -44,7 +44,7 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
         private static readonly string SolutionFile = Path.Combine(OriginalSolutionDir, "CharacterizationTestSolution.sln");
         private static readonly MSBuildWorkspaceConverter _msBuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionFile, false);
 
-        public async Task ConvertProjectsWhere(Func<Project, bool> shouldConvertProject, Language targetLanguage, [CallerMemberName] string expectedResultsDirectory = "")
+        public async Task ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, Language targetLanguage, [CallerMemberName] string expectedResultsDirectory = "")
         {
             bool recharacterizeByWritingExpectedOverActual = TestConstants.RecharacterizeByWritingExpectedOverActual;
 

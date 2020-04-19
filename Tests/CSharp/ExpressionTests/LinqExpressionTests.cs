@@ -7,9 +7,9 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
     public class LinqExpressionTests : ConverterTestBase
     {
         [Fact]
-        public async Task Linq1()
+        public async Task Linq1Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Private Shared Sub SimpleQuery()
+            await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub SimpleQuery()
     Dim numbers = {7, 9, 5, 3, 6}
     Dim res = From n In numbers Where n > 5 Select n
     For Each n In res
@@ -28,9 +28,9 @@ End Sub",
         }
 
         [Fact]
-        public async Task Linq2()
+        public async Task Linq2Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Shared Sub Linq40()
+            await TestConversionVisualBasicToCSharpAsync(@"Public Shared Sub Linq40()
     Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
     Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {Key .Remainder = __groupByKey1__, Key .Numbers = g}
     
@@ -59,9 +59,9 @@ End Sub",
         }
 
         [Fact()]
-        public async Task Linq3()
+        public async Task Linq3Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Class Product
+            await TestConversionVisualBasicToCSharpAsync(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -112,9 +112,9 @@ internal partial class Test
         }
 
         [Fact]
-        public async Task Linq4()
+        public async Task Linq4Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Class Product
+            await TestConversionVisualBasicToCSharpAsync(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -171,9 +171,9 @@ internal partial class Test
         }
 
         [Fact]
-        public async Task Linq5()
+        public async Task Linq5Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Private Shared Function FindPicFilePath(AList As List(Of FileInfo), picId As String) As String
+            await TestConversionVisualBasicToCSharpAsync(@"Private Shared Function FindPicFilePath(AList As List(Of FileInfo), picId As String) As String
     For Each FileInfo As FileInfo In From FileInfo1 In AList Where FileInfo1.Name.Substring(0, 6) = picId
         Return FileInfo.FullName
     Next
@@ -189,9 +189,9 @@ End Function", @"private static string FindPicFilePath(List<FileInfo> AList, str
         }
 
         [Fact]
-        public async Task LinqMultipleFroms()
+        public async Task LinqMultipleFromsAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Private Shared Sub LinqSub()
+            await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub LinqSub()
     Dim _result = From _claimProgramSummary In New List(Of List(Of List(Of List(Of String))))()
                   From _claimComponentSummary In _claimProgramSummary.First()
                   From _lineItemCalculation In _claimComponentSummary.Last()
@@ -206,9 +206,9 @@ End Sub", @"private static void LinqSub()
         }
 
         [Fact]
-        public async Task LinqNoFroms()
+        public async Task LinqNoFromsAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class VisualBasicClass
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
     Public Shared Sub X(objs As List(Of Object))
         Dim MaxObj As Integer = Aggregate o In objs Into Max(o.GetHashCode())
         Dim CountWhereObj As Integer = Aggregate o In objs Where o.GetHashCode() > 3 Into Count()
@@ -229,9 +229,9 @@ public partial class VisualBasicClass
         }
 
         [Fact]
-        public async Task LinqPartitionDistinct()
+        public async Task LinqPartitionDistinctAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Private Shared Function FindPicFilePath() As IEnumerable(Of String)
+            await TestConversionVisualBasicToCSharpAsync(@"Private Shared Function FindPicFilePath() As IEnumerable(Of String)
     Dim words = {""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away""}
 
     Return From word In words
@@ -248,9 +248,9 @@ End Function", @"private static IEnumerable<string> FindPicFilePath()
         }
 
         [Fact(Skip = "Issue #29 - Aggregate not supported")]
-        public async Task LinqAggregateSum()
+        public async Task LinqAggregateSumAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Private Shared Sub ASub()
+            await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub ASub()
     Dim expenses() As Double = {560.0, 300.0, 1080.5, 29.95, 64.75, 200.0}
     Dim totalExpense = Aggregate expense In expenses Into Sum()
 End Sub", @"private static void ASub()
@@ -261,9 +261,9 @@ End Sub", @"private static void ASub()
         }
 
         [Fact(Skip = "Issue #29 - Group join not supported")]
-        public async Task LinqGroupJoin()
+        public async Task LinqGroupJoinAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Private Shared Sub ASub()
+            await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub ASub()
     Dim customerList = From cust In customers
                        Group Join ord In orders On
                        cust.CustomerID Equals ord.CustomerID
@@ -281,9 +281,9 @@ End Sub", @"private static void ASub()
         }
 
         [Fact()]
-        public async Task LinqGroupByTwoThingsAnonymously()
+        public async Task LinqGroupByTwoThingsAnonymouslyAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim xs As New List(Of String)
         Dim y = From x In xs Group By x.Length, x.Count() Into Group
@@ -304,9 +304,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task LinqGroupByAnonymous()
+        public async Task LinqGroupByAnonymousAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System.Runtime.CompilerServices ' Removed by simplifier
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Runtime.CompilerServices ' Removed by simplifier
 
 Public Class AccountEntry
     Public Property LookupAccountEntryTypeId As Object

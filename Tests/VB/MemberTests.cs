@@ -8,9 +8,9 @@ namespace ICSharpCode.CodeConverter.Tests.VB
     public class MemberTests : ConverterTestBase
     {
         [Fact]
-        public async Task TestPropertyWithModifier()
+        public async Task TestPropertyWithModifierAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
 @"class TestClass {
     public string Text { get; private set; }
 }", @"Friend Class TestClass
@@ -31,8 +31,8 @@ BC30451: '_Text' is not declared. It may be inaccessible due to its protection l
         }
 
         [Fact]
-        public async Task TestInferredPropertyInnerClass(){
-            await TestConversionCSharpToVisualBasic(
+        public async Task TestInferredPropertyInnerClassAsync(){
+            await TestConversionCSharpToVisualBasicAsync(
 @"class TestClass {
     class InnerClass {
         public string Text { get; private set; }
@@ -58,8 +58,8 @@ BC30451: '_Text' is not declared. It may be inaccessible due to its protection l
         }
 
         [Fact]
-        public async Task TestProperty_StaticInferred() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task TestProperty_StaticInferredAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"class TestClass {
     public static string Text { get; private set; };
     public int Count { get; private set; };
@@ -95,8 +95,8 @@ BC30451: '_Count' is not declared. It may be inaccessible due to its protection 
         }
 
         [Fact]
-        public async Task TestProperty_StaticInferredInModule() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task TestProperty_StaticInferredInModuleAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"static class TestClass {
     public static string Text { get; private set; }
 }",
@@ -118,9 +118,9 @@ BC30451: '_Text' is not declared. It may be inaccessible due to its protection l
         }
 
         [Fact]
-        public async Task TestField()
+        public async Task TestFieldAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class TestClass
 {
     const int answer = 42;
@@ -133,8 +133,8 @@ BC30451: '_Text' is not declared. It may be inaccessible due to its protection l
 End Class");
         }
         [Fact]
-        public async Task DoNotSimplifyArrayTypeInFieldDeclarations() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task DoNotSimplifyArrayTypeInFieldDeclarationsAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"class TestClass {
     int[] answer = { 1, 2 };
 }",
@@ -144,9 +144,9 @@ End Class");
         }
 
         [Fact]
-        public async Task TestMethodWithComments()
+        public async Task TestMethodWithCommentsAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class TestClass
 {
     public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class, new where T2 : struct
@@ -171,9 +171,9 @@ CS1026: ) expected");
         }
 
         [Fact]
-        public async Task TestMethodWithReturnType()
+        public async Task TestMethodWithReturnTypeAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class TestClass
 {
     public int TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class, new where T2 : struct
@@ -195,9 +195,9 @@ CS0177: The out parameter 'argument' must be assigned to before control leaves t
         }
 
         [Fact]
-        public async Task TestStaticMethod()
+        public async Task TestStaticMethodAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class TestClass
 {
     public static void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class, new where T2 : struct
@@ -222,9 +222,9 @@ CS1026: ) expected");
         }
 
         [Fact]
-        public async Task TestAbstractMethod()
+        public async Task TestAbstractMethodAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"abstract class TestClass
 {
     public abstract void TestMethod();
@@ -234,9 +234,9 @@ End Class");
         }
 
         [Fact]
-        public async Task TestNewMethodIsOverloadsNotShadows()
+        public async Task TestNewMethodIsOverloadsNotShadowsAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class TestClass
 {
     public void TestMethod()
@@ -275,10 +275,10 @@ End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
 
 
         [Fact]
-        public async Task OperatorOverloads()
+        public async Task OperatorOverloadsAsync()
         {
             // Note a couple map to the same thing in C# so occasionally the result won't compile. The user can manually decide what to do in such scenarios.
-            await TestConversionCSharpToVisualBasic(@"public class AcmeClass
+            await TestConversionCSharpToVisualBasicAsync(@"public class AcmeClass
 {
     public static AcmeClass operator +(int i, AcmeClass ac)
     {
@@ -420,9 +420,9 @@ End Class");
         }
 
         [Fact]
-        public async Task TestSealedMethod()
+        public async Task TestSealedMethodAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class TestClass
 {
     public sealed void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3) where T : class, new where T2 : struct
@@ -450,9 +450,9 @@ BC31088: 'NotOverridable' cannot be specified for methods that do not override a
         }
 
         [Fact]
-        public async Task TestExtensionMethod()
+        public async Task TestExtensionMethodAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
 @"using System;
 static class TestClass
 {
@@ -478,9 +478,9 @@ End Module", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
 
         [Fact]
-        public async Task TestExtensionMethodWithExistingImport()
+        public async Task TestExtensionMethodWithExistingImportAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
 @"using System; //Gets simplified away
 using System.Runtime.CompilerServices;
 
@@ -499,9 +499,9 @@ End Module");
         }
 
         [Fact]
-        public async Task TestProperty()
+        public async Task TestPropertyAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class TestClass
 {
     public int Test { get; set; }
@@ -536,8 +536,8 @@ End Class");
         }
 
         [Fact]
-        public async Task CaseConflict_PropertyAndField_EnsureOtherClassNotAffected() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task CaseConflict_PropertyAndField_EnsureOtherClassNotAffectedAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public class HasConflictingPropertyAndField {
     int test;
     public int Test {
@@ -581,8 +581,8 @@ End Class");
         }
 
         [Fact]
-        public async Task CaseConflict_ArgumentFieldAndMethodWithOverloads() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task CaseConflict_ArgumentFieldAndMethodWithOverloadsAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
                 @"public class HasConflictingMethodAndField {
 
     public int HasConflictingParam(int test) {
@@ -635,8 +635,8 @@ End Class");
         }
 
         [Fact]
-        public async Task CaseConflict_ArgumentFieldAndProperty() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task CaseConflict_ArgumentFieldAndPropertyAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public class HasConflictingPropertyAndField {
 
     public int HasConflictingParam(int test) {
@@ -671,8 +671,8 @@ End Class");
         }
 
         [Fact]
-        public async Task CaseConflict_ArgumentPropertyAndField() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task CaseConflict_ArgumentPropertyAndFieldAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public class HasConflictingPropertyAndField {
     int test;
     public int Test {
@@ -704,8 +704,8 @@ End Class");
         }
 
         [Fact]
-        public async Task CaseConflict_PartialClass_ArgumentFieldPropertyAndLocalInBothParts() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task CaseConflict_PartialClass_ArgumentFieldPropertyAndLocalInBothPartsAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public partial class HasConflictingPropertyAndField {
     public int HasConflictingParam(int test) {
         int TEST = 0;
@@ -749,9 +749,9 @@ End Class");
         }
 
         [Fact]
-        public async Task TestPropertyWithExpressionBody()
+        public async Task TestPropertyWithExpressionBodyAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"public class ConversionResult
 {
     private string _sourcePathOrNull;
@@ -775,9 +775,9 @@ End Class");
         }
 
         [Fact]
-        public async Task TestOmmittedAccessorsReplacedWithExpressionBody()
+        public async Task TestOmmittedAccessorsReplacedWithExpressionBodyAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class MyFavColor
 {
     private string[] favColor => new string[] {""Red"", ""Green""};
@@ -799,9 +799,9 @@ End Class");
         }
 
         [Fact]
-        public async Task TestPropertyWithExpressionBodyThatCanBeStatement()
+        public async Task TestPropertyWithExpressionBodyThatCanBeStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"using System;
 
 public class ConversionResult
@@ -835,9 +835,9 @@ End Class");
         }
 
         [Fact]
-        public async Task TestPropertyWithAttribute()
+        public async Task TestPropertyWithAttributeAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class TestClass
 {
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
@@ -858,9 +858,9 @@ BC30451: 'DatabaseGeneratedOption' is not declared. It may be inaccessible due t
         }
 
         [Fact]
-        public async Task TestClassWithGlobalAttribute()
+        public async Task TestClassWithGlobalAttributeAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"[global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
 internal class Resources
 {
@@ -875,9 +875,9 @@ BC30002: Type 'Global.System.Runtime.CompilerServices.CompilerGeneratedAttribute
         }
 
         [Fact]
-        public async Task TestConstructor()
+        public async Task TestConstructorAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class TestClass<T, T2, T3> where T : class, new where T2 : struct
 {
     public TestClass(out T argument, ref T2 argument2, T3 argument3)
@@ -898,9 +898,9 @@ CS0177: The out parameter 'argument' must be assigned to before control leaves t
 
 
         [Fact]
-        public async Task TestStaticConstructor()
+        public async Task TestStaticConstructorAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"static SurroundingClass()
 {
 }", @"Shared Sub New()
@@ -908,9 +908,9 @@ End Sub");
         }
 
         [Fact]
-        public async Task TestConstructorCallingBase()
+        public async Task TestConstructorCallingBaseAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"public class MyBaseClass
 {
     public MyBaseClass(object o)
@@ -940,9 +940,9 @@ End Class");
         }
 
         [Fact]
-        public async Task TestDestructor()
+        public async Task TestDestructorAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class TestClass
 {
     ~TestClass()
@@ -955,9 +955,9 @@ End Class");
         }
 
         [Fact]
-        public async Task TestExternDllImport()
+        public async Task TestExternDllImportAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"[DllImport(""kernel32.dll"", SetLastError = true)]
 static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);", @"<DllImport(""kernel32.dll"", SetLastError:=True)>
 Private Shared Function OpenProcess(ByVal dwDesiredAccess As AccessMask, ByVal bInheritHandle As Boolean, ByVal dwProcessId As UInteger) As IntPtr
@@ -974,9 +974,9 @@ BC30002: Type 'AccessMask' is not defined.");
         }
 
         [Fact]
-        public async Task TestEvent()
+        public async Task TestEventAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class TestClass
 {
     public event EventHandler MyEvent;
@@ -989,8 +989,8 @@ CS0246: The type or namespace name 'EventHandler' could not be found (are you mi
         }
 
         [Fact]
-        public async Task TestCustomEvent() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task TestCustomEventAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"using System;
 
 class TestClass {
@@ -1035,9 +1035,9 @@ BC36637: The '?' character cannot be used here.
 BC30451: '[Delegate]' is not declared. It may be inaccessible due to its protection level.");
         }
         [Fact]
-        public async Task TestCustomEvent_TrivialExpression()
+        public async Task TestCustomEvent_TrivialExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
 @"using System;
 class TestClass {
     EventHandler _backingField;
@@ -1070,8 +1070,8 @@ BC36637: The '?' character cannot be used here.
 BC30451: '[Delegate]' is not declared. It may be inaccessible due to its protection level.");
         }
         [Fact]
-        public async Task TestCustomEventUsingFieldEvent() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task TestCustomEventUsingFieldEventAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"using System;
 
 class TestClass {
@@ -1101,8 +1101,8 @@ Friend Class TestClass
 End Class");
         }
         [Fact]
-        public async Task SubscribeEventInPropertySetter() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task SubscribeEventInPropertySetterAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"using System.ComponentModel;
 
 class TestClass {
@@ -1148,9 +1148,9 @@ CS0535: 'OwnerClass' does not implement interface member 'INotifyPropertyChanged
 BC30149: Class 'OwnerClass' must implement 'Event PropertyChanged As PropertyChangedEventHandler' for interface 'INotifyPropertyChanged'.");
         }
         [Fact]
-        public async Task TestIndexer()
+        public async Task TestIndexerAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class TestClass
 {
     private int[] _Items;
@@ -1219,9 +1219,9 @@ BC30149: Class 'OwnerClass' must implement 'Event PropertyChanged As PropertyCha
 End Class");
         }
         [Fact]
-        public async Task Interface_Indexer()
+        public async Task Interface_IndexerAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
 @"public interface iDisplay {
     object this[int i] { get; set; }
 }",
@@ -1230,9 +1230,9 @@ End Class");
 End Interface");
         }
         [Fact]
-        public async Task Indexer_EmptySetter()
+        public async Task Indexer_EmptySetterAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
 @"using System.Collections
 
 class TestClass : IList {
@@ -1289,9 +1289,9 @@ BC30149: Class 'TestClass' must implement 'ReadOnly Property IsSynchronized As B
 BC30149: Class 'TestClass' must implement 'Function GetEnumerator() As IEnumerator' for interface 'IEnumerable'.");
         }
         [Fact]
-        public async Task Indexer_BadCase()
+        public async Task Indexer_BadCaseAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
 @"class TestClass {
     public object this[int index] {
         get { }
@@ -1311,8 +1311,8 @@ End Class
 CS0161: 'TestClass.this[int].get': not all code paths return a value");
         }
         [Fact]
-        public async Task NameMatchesWithTypeDate() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task NameMatchesWithTypeDateAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"using System; //Gets simplified away
 
 class TestClass {
@@ -1323,8 +1323,8 @@ class TestClass {
 End Class");
         }
         [Fact]
-        public async Task ParameterWithNamespaceTest() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task ParameterWithNamespaceTestAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public class TestClass {
     public object TestMethod(System.Type param1, System.Globalization.CultureInfo param2) {
         return null;
@@ -1338,10 +1338,10 @@ End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
     }
 
         [Fact]// The stack trace displayed will change from time to time. Feel free to update this characterization test appropriately.
-        public async Task InvalidOperatorOverloadsShowErrorInlineCharacterization()
+        public async Task InvalidOperatorOverloadsShowErrorInlineCharacterizationAsync()
         {
             // No valid conversion to C# - to implement this you'd need to create a new method, and convert all callers to use it.
-            var convertedCode = await Convert<CSToVBConversion>(@"public class AcmeClass
+            var convertedCode = await ConvertAsync<CSToVBConversion>(@"public class AcmeClass
 {
     public static AcmeClass operator ++(int i, AcmeClass ac)
     {
@@ -1358,8 +1358,8 @@ End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
             Assert.Contains("public static AcmeClass operator --(string s, AcmeClass ac)", convertedCode);
         }
         [Fact]
-        public async Task MethodOverloads() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task MethodOverloadsAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public class MailEmployee {
     public string Email { get; set; }
     protected bool Equals(MailEmployee other) {
@@ -1382,8 +1382,8 @@ End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
 End Class");
         }
         [Fact]
-        public async Task Interface_Get() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task Interface_GetAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public interface IParametersProvider {
     IEnumerable<object> Parameters { get; }
 }",
@@ -1395,8 +1395,8 @@ End Interface
 CS0246: The type or namespace name 'IEnumerable<>' could not be found (are you missing a using directive or an assembly reference?)");
         }
         [Fact]
-        public async Task Interface_Set() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task Interface_SetAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public interface IParametersProvider {
     IEnumerable<object> Parameters { set; }
 }",
@@ -1408,8 +1408,8 @@ End Interface
 CS0246: The type or namespace name 'IEnumerable<>' could not be found (are you missing a using directive or an assembly reference?)");
         }
         [Fact]
-        public async Task PartialMethod() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task PartialMethodAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public partial class Entities {
     partial void OnContextCreated();
 }",

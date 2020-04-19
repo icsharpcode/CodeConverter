@@ -11,9 +11,9 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp
         }
 
         [Fact]
-        public async Task RootNamespaceIsExplicit()
+        public async Task RootNamespaceIsExplicitAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class AClassInRootNamespace
+            await TestConversionVisualBasicToCSharpAsync(@"Class AClassInRootNamespace
 End Class
 
 Namespace NestedWithinRoot
@@ -37,9 +37,9 @@ namespace TheRootNamespace
         }
 
         [Fact]
-        public async Task RootNamespaceIsExplicitWithSingleClass()
+        public async Task RootNamespaceIsExplicitWithSingleClassAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class AClassInRootNamespace
+            await TestConversionVisualBasicToCSharpAsync(@"Class AClassInRootNamespace
 End Class",
                 @"
 namespace TheRootNamespace
@@ -51,9 +51,9 @@ namespace TheRootNamespace
         }
 
         [Fact]
-        public async Task RootNamespaceIsAddedToExistingNamespace()
+        public async Task RootNamespaceIsAddedToExistingNamespaceAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Namespace A.B
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace A.B
     Public Class Class1
     End Class
 End Namespace",
@@ -67,9 +67,9 @@ namespace TheRootNamespace.A.B
         }
 
         [Fact]
-        public async Task RootNamespaceIsAddedToExistingNamespaceWithDeclarationCasing()
+        public async Task RootNamespaceIsAddedToExistingNamespaceWithDeclarationCasingAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Namespace AAA.AAaB.AaA
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace AAA.AAaB.AaA
     Public Class Class1
     End Class
 End Namespace
@@ -95,9 +95,9 @@ namespace TheRootNamespace.Aaa.aAAb.aAa
         }
 
         [Fact]
-        public async Task NestedNamespacesRemainRelative()
+        public async Task NestedNamespacesRemainRelativeAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Namespace A.B
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace A.B
     Namespace C
         Public Class Class1
         End Class
@@ -116,9 +116,9 @@ namespace TheRootNamespace.A.B
         }
 
         [Fact]
-        public async Task NestedNamespaceWithRootClassRemainRelative()
+        public async Task NestedNamespaceWithRootClassRemainRelativeAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Namespace A.B
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace A.B
     Namespace C
         Public Class Class1
         End Class
@@ -147,9 +147,9 @@ namespace TheRootNamespace
         }
 
         [Fact]
-        public async Task RootNamespaceIsNotAddedToExistingGlobalNamespace()
+        public async Task RootNamespaceIsNotAddedToExistingGlobalNamespaceAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Namespace Global.A.B
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace Global.A.B
     Public Class Class1
     End Class
 End Namespace",
@@ -163,9 +163,9 @@ namespace A.B
         }
 
         [Fact]
-        public async Task RootNamespaceIsExplicitForSingleNamespace()
+        public async Task RootNamespaceIsExplicitForSingleNamespaceAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"
+            await TestConversionVisualBasicToCSharpAsync(@"
 Namespace NestedWithinRoot
     Class AClassInANamespace
     End Class
@@ -180,9 +180,9 @@ namespace TheRootNamespace.NestedWithinRoot
         }
 
         [Fact]
-        public async Task RootNamespaceNotAppliedToFullyQualifiedNamespace()
+        public async Task RootNamespaceNotAppliedToFullyQualifiedNamespaceAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"
+            await TestConversionVisualBasicToCSharpAsync(@"
 Namespace Global.NotNestedWithinRoot
     Class AClassInANamespace
     End Class
@@ -197,9 +197,9 @@ namespace NotNestedWithinRoot
         }
 
         [Fact]
-        public async Task RootNamespaceOnlyAppliedToUnqualifiedMembers()
+        public async Task RootNamespaceOnlyAppliedToUnqualifiedMembersAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"
+            await TestConversionVisualBasicToCSharpAsync(@"
 Class AClassInRootNamespace ' Becomes nested - 1
 End Class ' Becomes nested - 2
 

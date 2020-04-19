@@ -7,10 +7,10 @@ namespace ICSharpCode.CodeConverter.Tests.VB
     public class TypeCastTests : ConverterTestBase
     {
         [Fact]
-        public async Task CastObjectToInteger()
+        public async Task CastObjectToIntegerAsync()
         {
             // The leading and trailing newlines check that surrounding trivia is selected as part of this (in the comments auto-testing)
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"
 void Test()
 {
@@ -25,9 +25,9 @@ End Sub
         }
 
         [Fact]
-        public async Task CastObjectToString()
+        public async Task CastObjectToStringAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"void Test()
 {
     object o = ""Test"";
@@ -39,9 +39,9 @@ End Sub");
         }
 
         [Fact]
-        public async Task CastObjectToGenericList()
+        public async Task CastObjectToGenericListAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"void Test()
 {
     object o = new System.Collections.Generic.List<int>();
@@ -53,9 +53,9 @@ End Sub");
         }
 
         [Fact]
-        public async Task TryCastObjectToInteger()
+        public async Task TryCastObjectToIntegerAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"void Test()
 {
     object o = 5;
@@ -67,9 +67,9 @@ End Sub");
         }
 
         [Fact]
-        public async Task TryCastObjectToGenericList()
+        public async Task TryCastObjectToGenericListAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"void Test()
 {
     object o = new System.Collections.Generic.List<int>();
@@ -81,8 +81,8 @@ End Sub");
         }
 
         [Fact]
-        public async Task TryCastObjectToGenericType() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task TryCastObjectToGenericTypeAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"T Test<T>() where T : class {
     return this as T;
 }
@@ -94,9 +94,9 @@ End Function
         }
 
         [Fact]
-        public async Task CastConstantNumberToLong()
+        public async Task CastConstantNumberToLongAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"void Test()
 {
     object o = 5L;
@@ -106,9 +106,9 @@ End Sub");
         }
 
         [Fact]
-        public async Task CastConstantNumberToFloat()
+        public async Task CastConstantNumberToFloatAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"void Test()
 {
     object o = 5.0f;
@@ -118,9 +118,9 @@ End Sub");
         }
 
         [Fact]
-        public async Task CastConstantNumberToDecimal()
+        public async Task CastConstantNumberToDecimalAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"void Test()
 {
     object o = 5.0m;
@@ -130,9 +130,9 @@ End Sub");
         }
 
         [Fact]
-        public async Task CastConstantNumberToCharacter()
+        public async Task CastConstantNumberToCharacterAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
 @"void Test() {
     char CR = (char)0xD;
 }",
@@ -141,8 +141,8 @@ End Sub");
 End Sub", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
         [Fact]
-        public async Task CastCharacterToNumber() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task CastCharacterToNumberAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"void Test() {
     byte a = (byte)'A';
     decimal b = (byte)'B';
@@ -153,8 +153,8 @@ End Sub", conversionOptions: EmptyNamespaceOptionStrictOff);
 End Sub", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
         [Fact(Skip = "Many code generation")]
-        public async Task CastCharacterIncrement() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task CastCharacterIncrementAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"void Test() {
     char a = 'A';
     a++;
@@ -166,8 +166,8 @@ End Sub", conversionOptions: EmptyNamespaceOptionStrictOff);
 End Sub");
         }
         [Fact]
-        public async Task MethodInvocation() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task MethodInvocationAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public class Test {
     public void TestMethod() { }
 }
@@ -188,8 +188,8 @@ Public Class Test2
 End Class");
         }
         [Fact]
-        public async Task MethodInvocation_TryCast() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task MethodInvocation_TryCastAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public class Test {
     public void TestMethod() { }
 }

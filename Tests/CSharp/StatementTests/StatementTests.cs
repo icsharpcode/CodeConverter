@@ -7,9 +7,9 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests
     public class StatementTests : ConverterTestBase
     {
         [Fact]
-        public async Task EmptyStatement()
+        public async Task EmptyStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         If True Then
         End If
@@ -42,9 +42,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task AssignmentStatement()
+        public async Task AssignmentStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -61,9 +61,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task EnumAssignmentStatement()
+        public async Task EnumAssignmentStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Enum MyEnum
+            await TestConversionVisualBasicToCSharpAsync(@"Enum MyEnum
     AMember
 End Enum
 
@@ -90,9 +90,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task AssignmentStatementInDeclaration()
+        public async Task AssignmentStatementInDeclarationAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer = 0
     End Sub
@@ -107,9 +107,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task AssignmentStatementInVarDeclaration()
+        public async Task AssignmentStatementInVarDeclarationAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b = 0
     End Sub
@@ -124,9 +124,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task AssignmentStatementWithXmlElement()
+        public async Task AssignmentStatementWithXmlElementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b = <someXmlTag></someXmlTag>
         Dim c = <someXmlTag><bla anAttribute=""itsValue"">tata</bla><someContent>tata</someContent></someXmlTag>
@@ -149,11 +149,11 @@ internal partial class TestClass
         /// * For VB field declarations, inference doesn't happen, it just uses "Object", but in C# lambdas can't be assigned to object so we have to settle for Func/Action for externally visible methods to maintain assignability.
         /// </summary>
         [Fact]
-        public async Task AssignmentStatementWithFunc()
+        public async Task AssignmentStatementWithFuncAsync()
         {
             // BUG: pubWrite's body is missing a return statement
             // pubWrite is an example of when the LambdaConverter could analyze ConvertedType at usages, realize the return type is never used, and convert it to an Action.
-            await TestConversionVisualBasicToCSharp(@"Public Class TestFunc
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class TestFunc
     Public pubIdent = Function(row As Integer) row
     Public pubWrite = Function(row As Integer) Console.WriteLine(row)
     Dim isFalse = Function(row As Integer) False
@@ -206,9 +206,9 @@ CS1662: Cannot convert lambda expression to intended delegate type because some 
         /// e.g. ForEach (no assignment involved), Using block (can't have a disposable lambda)
         /// </summary>
         [Fact]
-        public async Task ContrivedFuncInferenceExample()
+        public async Task ContrivedFuncInferenceExampleAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Friend Class ContrivedFuncInferenceExample
+            await TestConversionVisualBasicToCSharpAsync(@"Friend Class ContrivedFuncInferenceExample
     Private Sub TestMethod()
         For index = (Function(pList As List(Of String)) pList.All(Function(x) True)) To New Blah() Step New Blah()
             Dim buffer = index.Check(New List(Of String))
@@ -303,9 +303,9 @@ CS0019: Operator '>=' cannot be applied to operands of type 'ContrivedFuncInfere
         }
 
         [Fact]
-        public async Task ObjectInitializationStatement()
+        public async Task ObjectInitializationStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As String
         b = New String(""test"")
@@ -322,9 +322,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task TupleInitializationStatement()
+        public async Task TupleInitializationStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim totales As (fics As Integer, dirs As Integer) = (0, 0)
     End Sub
@@ -339,9 +339,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ObjectInitializationStatementInDeclaration()
+        public async Task ObjectInitializationStatementInDeclarationAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As String = New String(""test"")
     End Sub
@@ -356,9 +356,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ObjectInitializationStatementInVarDeclaration()
+        public async Task ObjectInitializationStatementInVarDeclarationAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b = New String(""test"")
     End Sub
@@ -373,9 +373,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ValuesOfArrayAssignmentWithSurroundingClass()
+        public async Task ValuesOfArrayAssignmentWithSurroundingClassAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class SurroundingClass
     Public Arr() As String
 End Class
@@ -402,9 +402,9 @@ internal partial class UseClass
         }
 
         [Fact]
-        public async Task ArrayDeclarationStatement()
+        public async Task ArrayDeclarationStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()
     End Sub
@@ -419,9 +419,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ArrayDeclarationWithRangeStatement()
+        public async Task ArrayDeclarationWithRangeStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System.Collections.Generic
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
 
 Class TestClass
     Private Sub TestMethod()
@@ -441,9 +441,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task InitializeArrayOfArrays()
+        public async Task InitializeArrayOfArraysAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Module Module1
+            await TestConversionVisualBasicToCSharpAsync(@"Module Module1
     Sub Main()
         Dim ls As New ArrayList(5)
         Dim s(ls.Count - 1)() As String
@@ -461,9 +461,9 @@ internal static partial class Module1
         }
 
         [Fact]
-        public async Task ArrayEraseAndRedimStatement()
+        public async Task ArrayEraseAndRedimStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class TestClass
     Shared Function TestMethod(numArray As Integer(), numArray2 As Integer()) As Integer()
         ReDim numArray(3)
         Erase numArray
@@ -504,9 +504,9 @@ public partial class TestClass
         }
 
         [Fact]
-        public async Task Redim2dArray()
+        public async Task Redim2dArrayAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Friend Class Program
+            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
     Private Shared My2darray As Integer()()
     Public Shared Sub Main(ByVal args As String())
         ReDim Me.My2darray(6)
@@ -527,9 +527,9 @@ BC30043: 'Me' is valid only within an instance method.
         }
 
         [Fact]
-        public async Task RedimArrayOfGenerics()
+        public async Task RedimArrayOfGenericsAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Dim test() As List(Of Integer)
 
     Private Sub test123(sender As Object, e As EventArgs)
@@ -555,9 +555,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task EndStatement()
+        public async Task EndStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         End
     End Sub
@@ -575,9 +575,9 @@ BC30615: 'End' statement cannot be used in class library projects.");
         }
 
         [Fact]
-        public async Task StopStatement()
+        public async Task StopStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Stop
     End Sub
@@ -593,9 +593,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ExitStatements()
+        public async Task ExitStatementsAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Function FuncReturningNull() As Object
         Dim zeroLambda = Function(y) As Integer
                             Exit Function
@@ -643,9 +643,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task WithBlock()
+        public async Task WithBlockAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         With New System.Text.StringBuilder
             .Capacity = 20
@@ -668,9 +668,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task WithBlock2()
+        public async Task WithBlock2Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System.Data.SqlClient
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data.SqlClient
 
 Class TestClass
     Private Sub Save()
@@ -701,10 +701,10 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task WithBlockValue()
+        public async Task WithBlockValueAsync()
         {
             //Whitespace trivia bug on first statement in with block
-            await TestConversionVisualBasicToCSharp(@"Public Class VisualBasicClass
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
     Public Sub Stuff()
         Dim str As SomeStruct
         With Str
@@ -737,9 +737,9 @@ public partial struct SomeStruct
         }
 
         [Fact]
-        public async Task NestedWithBlock()
+        public async Task NestedWithBlockAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         With New System.Text.StringBuilder
             Dim withBlock as Integer = 3
@@ -772,9 +772,9 @@ internal partial class TestClass
 }");
         }
         [Fact]
-        public async Task ArrayInitializationStatement()
+        public async Task ArrayInitializationStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = {1, 2, 3}
     End Sub
@@ -789,9 +789,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ArrayInitializationStatementInVarDeclaration()
+        public async Task ArrayInitializationStatementInVarDeclarationAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b = {1, 2, 3}
     End Sub
@@ -806,9 +806,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ArrayInitializationStatementWithType()
+        public async Task ArrayInitializationStatementWithTypeAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer() {1, 2, 3}
     End Sub
@@ -823,9 +823,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ArrayInitializationStatementWithLength()
+        public async Task ArrayInitializationStatementWithLengthAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer(2) {1, 2, 3}
     End Sub
@@ -840,9 +840,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ArrayInitializationStatementWithLengthAndNoValues()
+        public async Task ArrayInitializationStatementWithLengthAndNoValuesAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer(2) { }
     End Sub
@@ -860,9 +860,9 @@ internal partial class TestClass
         /// Inspired by: https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/arrays/
         /// </summary>
         [Fact]
-        public async Task LotsOfArrayInitialization()
+        public async Task LotsOfArrayInitializationAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         ' Declare a single-dimension array of 5 numbers.
         Dim numbers1(4) As Integer
@@ -913,9 +913,9 @@ CS8751: Internal error in the C# compiler.");
         }
 
         [Fact]
-        public async Task MultidimensionalArrayDeclarationStatement()
+        public async Task MultidimensionalArrayDeclarationStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,)
     End Sub
@@ -930,9 +930,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task MultidimensionalArrayInitializationStatement()
+        public async Task MultidimensionalArrayInitializationStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = {{1, 2}, {3, 4}}
     End Sub
@@ -949,9 +949,9 @@ CS8751: Internal error in the C# compiler.");
         }
 
         [Fact]
-        public async Task MultidimensionalArrayInitializationStatementWithType()
+        public async Task MultidimensionalArrayInitializationStatementWithTypeAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = New Integer(,) {{1, 2}, {3, 4}}
     End Sub
@@ -968,9 +968,9 @@ CS8751: Internal error in the C# compiler.");
         }
 
         [Fact]
-        public async Task MultidimensionalArrayInitializationStatementWithAndWithoutLengths()
+        public async Task MultidimensionalArrayInitializationStatementWithAndWithoutLengthsAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim a As Integer(,) = New Integer(,) {{1, 2}, {3, 4}}
         Dim b As Integer(,) = New Integer(1, 1) {{1, 2}, {3, 4}}
@@ -999,9 +999,9 @@ CS8751: Internal error in the C# compiler.");
         }
 
         [Fact]
-        public async Task JaggedArrayDeclarationStatement()
+        public async Task JaggedArrayDeclarationStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()()
     End Sub
@@ -1016,9 +1016,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task JaggedArrayInitializationStatement()
+        public async Task JaggedArrayInitializationStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
@@ -1033,9 +1033,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task JaggedArrayInitializationStatementWithType()
+        public async Task JaggedArrayInitializationStatementWithTypeAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b = New Integer()() {New Integer() {1}}
     End Sub
@@ -1050,9 +1050,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task JaggedArrayInitializationStatementWithLength()
+        public async Task JaggedArrayInitializationStatementWithLengthAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
@@ -1067,9 +1067,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task DeclarationStatements()
+        public async Task DeclarationStatementsAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Test
     Private Sub TestMethod()
 the_beginning:
@@ -1094,9 +1094,9 @@ internal partial class Test
 }");
         }
         [Fact]
-        public async Task DeclarationStatementTwoVariables()
+        public async Task DeclarationStatementTwoVariablesAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Test
     Private Sub TestMethod()
         Dim x, y As Date
@@ -1117,10 +1117,10 @@ internal partial class Test
         }
 
         [Fact]
-        public async Task DeclareStatementLong()
+        public async Task DeclareStatementLongAsync()
         {
             // Intentionally uses a type name with a different casing as the loop variable, i.e. "process" to test name resolution
-            await TestConversionVisualBasicToCSharp(@"Imports System.Diagnostics
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Diagnostics
 Imports System.Threading
 
 Public Class AcmeClass
@@ -1157,10 +1157,10 @@ CS1547: Keyword 'void' cannot be used in this context");
         }
 
         [Fact]
-        public async Task DeclareStatementVoid()
+        public async Task DeclareStatementVoidAsync()
         {
             // Intentionally uses a type name with a different casing as the loop variable, i.e. "process" to test name resolution
-            await TestConversionVisualBasicToCSharp($@"Imports System.Diagnostics
+            await TestConversionVisualBasicToCSharpAsync($@"Imports System.Diagnostics
 Imports System.Threading
 
 Public Class AcmeClass
@@ -1195,9 +1195,9 @@ public partial class AcmeClass
         }
 
         [Fact]
-        public async Task DeclareStatementWithAttributes()
+        public async Task DeclareStatementWithAttributesAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class AcmeClass
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class AcmeClass
     Friend Declare Ansi Function GetNumDevices Lib ""CP210xManufacturing.dll"" Alias ""CP210x_GetNumDevices"" (ByRef NumDevices As String) As Integer
 End Class"
                 , @"using System.Runtime.InteropServices;
@@ -1210,9 +1210,9 @@ public partial class AcmeClass
         }
 
         [Fact]
-        public async Task IfStatement()
+        public async Task IfStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal a As Integer)
         Dim b As Integer
 
@@ -1253,9 +1253,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task IfStatementWithMultiStatementLine()
+        public async Task IfStatementWithMultiStatementLineAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Public Shared Sub MultiStatement(a As Integer)
         If a = 0 Then Console.WriteLine(1) : Console.WriteLine(2) : Return
         Console.WriteLine(3)
@@ -1279,9 +1279,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task NestedBlockStatementsKeepSameNesting()
+        public async Task NestedBlockStatementsKeepSameNestingAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Shared Function FindTextInCol(w As String, pTitleRow As Integer, startCol As Integer, needle As String) As Integer
 
         For c As Integer = startCol To w.Length
@@ -1325,9 +1325,9 @@ CS0103: The name 'string' does not exist in the current context");
         }
 
         [Fact]
-        public async Task SyncLockStatement()
+        public async Task SyncLockStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal nullObject As Object)
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
 
@@ -1350,9 +1350,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ThrowStatement()
+        public async Task ThrowStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal nullObject As Object)
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
     End Sub
@@ -1369,9 +1369,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task CallStatement()
+        public async Task CallStatementAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Call (Sub() Console.Write(""Hello""))
         Call (Sub() Console.Write(""Hello""))()
@@ -1395,9 +1395,9 @@ CS0149: Method name expected");
         }
 
         [Fact]
-        public async Task AddRemoveHandler()
+        public async Task AddRemoveHandlerAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Public Event MyEvent As EventHandler
 
     Private Sub TestMethod(ByVal e As EventHandler)
@@ -1437,9 +1437,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task SelectCase1()
+        public async Task SelectCase1Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal number As Integer)
         Select Case number
             Case 0, 1, 2
@@ -1483,9 +1483,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task SelectCaseWithExpression()
+        public async Task SelectCaseWithExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class TestClass
     Shared Function TimeAgo(daysAgo As Integer) As String
         Select Case daysAgo
             Case 0 To 3, 4, Is >= 5, Is < 6, Is <= 7
@@ -1527,9 +1527,9 @@ public partial class TestClass
         }
 
         [Fact]
-        public async Task SelectCaseWithString()
+        public async Task SelectCaseWithStringAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class TestClass
     Shared Function TimeAgo(x As String) As String
         Select Case UCase(x)
             Case UCase(""a""), UCase(""b"")
@@ -1579,9 +1579,9 @@ CS0825: The contextual keyword 'var' may only appear within a local variable dec
         }
 
         [Fact]
-        public async Task SelectCaseWithExpression2()
+        public async Task SelectCaseWithExpression2Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class TestClass2
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class TestClass2
     Function CanDoWork(Something As Object) As Boolean
         Select Case True
             Case Today.DayOfWeek = DayOfWeek.Saturday Or Today.DayOfWeek = DayOfWeek.Sunday
@@ -1647,9 +1647,9 @@ public partial class TestClass2
         }
 
         [Fact]
-        public async Task SelectCaseWithNonDeterministicExpression()
+        public async Task SelectCaseWithNonDeterministicExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class TestClass2
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class TestClass2
     Sub DoesNotThrow()
         Dim rand As New Random
         Select Case rand.Next(8)
@@ -1696,9 +1696,9 @@ public partial class TestClass2
         }
 
         [Fact]
-        public async Task SelectCaseWithExplicitExit()
+        public async Task SelectCaseWithExplicitExitAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class A
+            await TestConversionVisualBasicToCSharpAsync(@"Class A
     Public Function Add(ByVal x As Integer) As Integer
         Select Case x
             Case 1
@@ -1725,9 +1725,9 @@ internal partial class A
         }
 
         [Fact]
-        public async Task TryCatch()
+        public async Task TryCatchAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Shared Function Log(ByVal message As String) As Boolean
         Console.WriteLine(message)
         Return False
@@ -1813,9 +1813,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task Yield()
+        public async Task YieldAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
         If number < 0 Then Return
         If number < 1 Then Exit Function

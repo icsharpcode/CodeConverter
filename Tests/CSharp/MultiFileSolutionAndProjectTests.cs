@@ -20,16 +20,16 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp
         }
 
         [Fact]
-        public async Task ConvertWholeSolution()
+        public async Task ConvertWholeSolutionAsync()
         {
 
-            await _multiFileTestFixture.ConvertProjectsWhere(p => true, Language.CS);
+            await _multiFileTestFixture.ConvertProjectsWhereAsync(p => true, Language.CS);
         }
 
         [Fact]
-        public async Task ConvertVbLibraryOnly()
+        public async Task ConvertVbLibraryOnlyAsync()
         {
-            await _multiFileTestFixture.ConvertProjectsWhere(p => p.Name == "VbLibrary", Language.CS);
+            await _multiFileTestFixture.ConvertProjectsWhereAsync(p => p.Name == "VbLibrary", Language.CS);
         }
     }
 }

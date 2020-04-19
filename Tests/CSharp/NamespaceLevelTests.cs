@@ -7,9 +7,9 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp
     public class NamespaceLevelTests : ConverterTestBase
     {
         [Fact]
-        public async Task TestNamespace()
+        public async Task TestNamespaceAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Namespace Test
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace Test
 End Namespace", @"
 namespace Test
 {
@@ -17,9 +17,9 @@ namespace Test
         }
 
         [Fact]
-        public async Task TestLongNamespace()
+        public async Task TestLongNamespaceAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Namespace Test1.Test2.Test3
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace Test1.Test2.Test3
 End Namespace", @"
 namespace Test1.Test2.Test3
 {
@@ -27,9 +27,9 @@ namespace Test1.Test2.Test3
         }
 
         [Fact]
-        public async Task TestGlobalNamespace()
+        public async Task TestGlobalNamespaceAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Namespace Global.Test
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace Global.Test
 End Namespace", @"
 namespace Test
 {
@@ -37,9 +37,9 @@ namespace Test
         }
 
         [Fact]
-        public async Task TestGenericInheritanceInGlobalNamespace()
+        public async Task TestGenericInheritanceInGlobalNamespaceAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class A(Of T)
+            await TestConversionVisualBasicToCSharpAsync(@"Class A(Of T)
 End Class
 Class B
     Inherits A(Of String)
@@ -55,9 +55,9 @@ internal partial class B : A<string>
         }
 
         [Fact]
-        public async Task TestTopLevelAttribute()
+        public async Task TestTopLevelAttributeAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"<Assembly: CLSCompliant(True)>",
                 @"using System;
 
@@ -65,9 +65,9 @@ internal partial class B : A<string>
         }
 
         [Fact]
-        public async Task AliasedImports()
+        public async Task AliasedImportsAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Imports tr = System.IO.TextReader
 
 Public Class Test
@@ -82,9 +82,9 @@ public partial class Test
         }
 
         [Fact]
-        public async Task UnaliasedImports()
+        public async Task UnaliasedImportsAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Imports UnrecognizedNamespace",
                 @"using UnrecognizedNamespace;
 
@@ -94,9 +94,9 @@ CS0246: The type or namespace name 'UnrecognizedNamespace' could not be found (a
         }
 
         [Fact]
-        public async Task TestClass()
+        public async Task TestClassAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Namespace Test.[class]
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace Test.[class]
     Class TestClass(Of T)
     End Class
 End Namespace", @"
@@ -109,9 +109,9 @@ namespace Test.@class
         }
 
         [Fact]
-        public async Task TestMixedCaseNamespace()
+        public async Task TestMixedCaseNamespaceAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Namespace [Aaa]
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace [Aaa]
     Friend Class A
         Shared Sub Foo()
         End Sub
@@ -227,9 +227,9 @@ internal static partial class C
         }
 
         [Fact]
-        public async Task TestInternalStaticClass()
+        public async Task TestInternalStaticClassAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Namespace Test.[class]
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace Test.[class]
     Friend Module TestClass
         Sub Test()
         End Sub
@@ -254,9 +254,9 @@ namespace Test.@class
         }
 
         [Fact]
-        public async Task TestAbstractClass()
+        public async Task TestAbstractClassAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Namespace Test.[class]
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace Test.[class]
     MustInherit Class TestClass
     End Class
 End Namespace", @"
@@ -269,9 +269,9 @@ namespace Test.@class
         }
 
         [Fact]
-        public async Task TestSealedClass()
+        public async Task TestSealedClassAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Namespace Test.[class]
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace Test.[class]
     NotInheritable Class TestClass
     End Class
 End Namespace", @"
@@ -284,9 +284,9 @@ namespace Test.@class
         }
 
         [Fact]
-        public async Task TestInterface()
+        public async Task TestInterfaceAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Interface ITest
     Inherits System.IDisposable
 
@@ -300,9 +300,9 @@ internal partial interface ITest : IDisposable
         }
 
         [Fact]
-        public async Task TestEnum()
+        public async Task TestEnumAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Friend Enum ExceptionResource
     Argument_ImplementIComparable
     ArgumentOutOfRange_NeedNonNegNum
@@ -319,9 +319,9 @@ internal enum ExceptionResource
         }
 
         [Fact]
-        public async Task TestClassInheritanceList1()
+        public async Task TestClassInheritanceList1Async()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"MustInherit Class ClassA
     Implements System.IDisposable
 
@@ -337,9 +337,9 @@ internal abstract partial class ClassA : IDisposable
         }
 
         [Fact]
-        public async Task TestClassInheritanceList2()
+        public async Task TestClassInheritanceList2Async()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"MustInherit Class ClassA
     Inherits System.EventArgs
     Implements System.IDisposable
@@ -356,9 +356,9 @@ internal abstract partial class ClassA : EventArgs, IDisposable
         }
 
         [Fact]
-        public async Task TestStruct()
+        public async Task TestStructAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Structure MyType
     Implements System.IComparable(Of MyType)
 
@@ -379,34 +379,34 @@ CS0535: 'MyType' does not implement interface member 'IComparable<MyType>.Compar
         }
 
         [Fact]
-        public async Task TestDelegate()
+        public async Task TestDelegateAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Public Delegate Sub Test()",
                 @"public delegate void Test();");
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Public Delegate Function Test() As Integer",
                 @"public delegate int Test();");
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Public Delegate Sub Test(ByVal x As Integer)",
                 @"public delegate void Test(int x);");
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Public Delegate Sub Test(ByRef x As Integer)",
                 @"public delegate void Test(ref int x);");
         }
 
         [Fact]
-        public async Task TestDelegateWithOmittedParameterType()
+        public async Task TestDelegateWithOmittedParameterTypeAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Public Delegate Sub Test(x)",
                 @"public delegate void Test(object x);");
         }
 
         [Fact]
-        public async Task ClassImplementsInterface()
+        public async Task ClassImplementsInterfaceAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class test
+            await TestConversionVisualBasicToCSharpAsync(@"Class test
     Implements IComparable
 End Class",
                 @"using System;
@@ -421,9 +421,9 @@ CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object
         }
 
         [Fact]
-        public async Task ClassImplementsInterface2()
+        public async Task ClassImplementsInterface2Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Class ClassImplementsInterface2
+            await TestConversionVisualBasicToCSharpAsync(@"Class ClassImplementsInterface2
     Implements System.IComparable
 End Class",
                 @"using System;
@@ -438,9 +438,9 @@ CS0535: 'ClassImplementsInterface2' does not implement interface member 'ICompar
         }
 
         [Fact]
-        public async Task ClassInheritsClass()
+        public async Task ClassInheritsClassAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System.IO
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.IO
 
 Class ClassInheritsClass
     Inherits InvalidDataException
@@ -457,9 +457,9 @@ CS0509: 'ClassInheritsClass': cannot derive from sealed type 'InvalidDataExcepti
         }
 
         [Fact]
-        public async Task ClassInheritsClass2()
+        public async Task ClassInheritsClass2Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Class ClassInheritsClass2
+            await TestConversionVisualBasicToCSharpAsync(@"Class ClassInheritsClass2
     Inherits System.IO.InvalidDataException
 End Class",
                 @"using System.IO;
@@ -474,9 +474,9 @@ CS0509: 'ClassInheritsClass2': cannot derive from sealed type 'InvalidDataExcept
         }
 
         [Fact]
-        public async Task ClassInheritsClassWithNoParenthesesOnBaseCall()
+        public async Task ClassInheritsClassWithNoParenthesesOnBaseCallAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class DataSet1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class DataSet1
     Inherits Global.System.Data.DataSet
     Public Sub New()
         MyBase.New
@@ -493,9 +493,9 @@ public partial class DataSet1 : System.Data.DataSet
         }
 
         [Fact]
-        public async Task MultilineDocComment()
+        public async Task MultilineDocCommentAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class MyTestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class MyTestClass
     ''' <summary>
     ''' Returns empty
     ''' </summary>
@@ -517,9 +517,9 @@ public partial class MyTestClass
         }
 
         [Fact]
-        public async Task MultilineCommentRootOfFile()
+        public async Task MultilineCommentRootOfFileAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"''' <summary>
+            await TestConversionVisualBasicToCSharpAsync(@"''' <summary>
 ''' Class xml doc
 ''' </summary>
 Public Class MyTestClass
@@ -554,9 +554,9 @@ internal partial class Program
         }
 
         [Fact (Skip ="This test currently fails.  The initial line is trimmed. Not sure of importance")]
-        public async Task MultilineCommentRootOfFileLeadingSpaces()
+        public async Task MultilineCommentRootOfFileLeadingSpacesAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"    ''' <summary>
+            await TestConversionVisualBasicToCSharpAsync(@"    ''' <summary>
     ''' Class xml doc with leading spaces
     ''' </summary>
 Public Class MyTestClass
@@ -576,9 +576,9 @@ public partial class MyTestClass
 }");
         }
         [Fact]
-        public async Task EnumConversion()
+        public async Task EnumConversionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Enum ESByte As SByte
+            await TestConversionVisualBasicToCSharpAsync(@"Enum ESByte As SByte
     M1 = 0
 End Enum
 Enum EByte As Byte
@@ -882,9 +882,9 @@ internal static partial class Module1
         }
 
         [Fact]
-        public async Task NewConstraintLast()
+        public async Task NewConstraintLastAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Interface Foo
+            await TestConversionVisualBasicToCSharpAsync(@"Public Interface Foo
 End Interface
 
 Public Class Bar(Of x As {New, Foo})
@@ -901,9 +901,9 @@ public partial class Bar<x> where x : Foo, new()
         }
 
         [Fact]
-        public async Task MyClassVirtualCallMethod()
+        public async Task MyClassVirtualCallMethodAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class A
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class A
     Overridable Function F1() As Integer
         Return 1
     End Function
@@ -942,9 +942,9 @@ CS0513: 'A.F2()' is abstract but it is contained in non-abstract class 'A'");
         }
 
         [Fact]
-        public async Task MyClassVirtualCallProperty()
+        public async Task MyClassVirtualCallPropertyAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class A
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class A
     Overridable Property P1() As Integer = 1
     MustOverride Property P2() As Integer
     Public Sub TestMethod()

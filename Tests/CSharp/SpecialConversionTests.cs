@@ -7,9 +7,9 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp
     public class SpecialConversionTests : ConverterTestBase
     {
         [Fact]
-        public async Task RaiseEvent()
+        public async Task RaiseEventAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class TestClass
     Private Event MyEvent As EventHandler
 
@@ -30,9 +30,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task TestCustomEvent()
+        public async Task TestCustomEventAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Class TestClass45
     Private Event backingField As EventHandler
 
@@ -83,9 +83,9 @@ internal partial class TestClass45
         }
 
         [Fact]
-        public async Task TestFullWidthCharacterCustomEvent()
+        public async Task TestFullWidthCharacterCustomEventAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Ｃｌａｓｓ　ＴｅｓｔＣｌａｓｓ４５
 　　　　Ｐｒｉｖａｔｅ　Ｅｖｅｎｔ　ｂａｃｋｉｎｇＦｉｅｌｄ　Ａｓ　EventHandler
 
@@ -136,9 +136,9 @@ internal partial class ＴｅｓｔＣｌａｓｓ４５
         }
 
         [Fact]
-        public async Task HexAndBinaryLiterals()
+        public async Task HexAndBinaryLiteralsAsync()
         {
-        await TestConversionVisualBasicToCSharp(
+        await TestConversionVisualBasicToCSharpAsync(
         @"Class Test
     Public CR As Integer = &HD * &B1
 End Class", @"
@@ -149,9 +149,9 @@ internal partial class Test
         }
 
         [Fact]
-        public async Task Issue483_HexAndBinaryLiterals()
+        public async Task Issue483_HexAndBinaryLiteralsAsync()
         {
-        await TestConversionVisualBasicToCSharp(
+        await TestConversionVisualBasicToCSharpAsync(
         @"Public Class Issue483
     Public Test1 as Integer = &H7A
     Public Test2 as Integer = &H7B

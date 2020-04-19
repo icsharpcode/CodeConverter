@@ -7,9 +7,9 @@ namespace ICSharpCode.CodeConverter.Tests.VB
     public class TriviaTests : ConverterTestBase
     {
         [Fact]
-        public async Task MethodWithComments()
+        public async Task MethodWithCommentsAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"using System;
 using System.Diagnostics; //Using statement
 
@@ -87,9 +87,9 @@ End Namespace' Last line comment");
         }
 
         [Fact]
-        public async Task TrailingAndEndOfFileLineComments()
+        public async Task TrailingAndEndOfFileLineCommentsAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"//leading
 namespace ANamespace //namespace
 { // start of block - namespace

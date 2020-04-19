@@ -7,9 +7,9 @@ namespace ICSharpCode.CodeConverter.Tests.VB
     public class ExpressionTests : ConverterTestBase
     {
         [Fact]
-        public async Task MultilineString()
+        public async Task MultilineStringAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -25,9 +25,9 @@ End Class");
         }
 
         [Fact]
-        public async Task StringInterpolationWithDoubleQuotes()
+        public async Task StringInterpolationWithDoubleQuotesAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"using System; //Not required in VB due to global imports
 
 namespace global::InnerNamespace
@@ -65,9 +65,9 @@ CS7000: Unexpected use of an aliased name");
         }
 
         [Fact]
-        public async Task ConditionalExpression()
+        public async Task ConditionalExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -81,9 +81,9 @@ End Class");
         }
 
         [Fact]
-        public async Task DefaultLiteralExpression()
+        public async Task DefaultLiteralExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"public class DefaultLiteralExpression {
+            await TestConversionCSharpToVisualBasicAsync(@"public class DefaultLiteralExpression {
 
     public bool Foo {
         get {
@@ -105,9 +105,9 @@ End Class");
         }
 
         [Fact]
-        public async Task IsNullExpression()
+        public async Task IsNullExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"public class Test {
+            await TestConversionCSharpToVisualBasicAsync(@"public class Test {
 
     public bool Foo {
         get {
@@ -129,9 +129,9 @@ End Class");
         }
 
         [Fact]
-        public async Task IfIsPatternExpression()
+        public async Task IfIsPatternExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     private static int GetLength(object node)
     {
@@ -167,9 +167,9 @@ BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to it
         }
 
         [Fact]
-        public async Task DeclarationExpression()
+        public async Task DeclarationExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"using System.Collections.Generic;
+            await TestConversionCSharpToVisualBasicAsync(@"using System.Collections.Generic;
 
 class TestClass
 {
@@ -190,9 +190,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ThrowExpression()
+        public async Task ThrowExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"using System;
+            await TestConversionCSharpToVisualBasicAsync(@"using System;
 
 class TestClass
 {
@@ -220,9 +220,9 @@ BC30451: 'CSharpImpl.__Throw' is not declared. It may be inaccessible due to its
         }
 
         [Fact]
-        public async Task NameOf()
+        public async Task NameOfAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     private string n = nameof(TestMethod);
 
@@ -238,9 +238,9 @@ End Class");
         }
 
         [Fact]
-        public async Task NullCoalescingExpression()
+        public async Task NullCoalescingExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -256,9 +256,9 @@ End Class
 CS0103: The name 'Console' does not exist in the current context");
         }
         [Fact]
-        public async Task CoalescingExpression_Assignment()
+        public async Task CoalescingExpression_AssignmentAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
 @"class TestClass {
     string prop;
     string prop2;
@@ -296,9 +296,9 @@ CS0149: Method name expected");
         }
 
         [Fact]
-        public async Task MemberAccessAndInvocationExpression()
+        public async Task MemberAccessAndInvocationExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -321,9 +321,9 @@ CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
-        public async Task CallInvoke()
+        public async Task CallInvokeAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -344,9 +344,9 @@ BC30491: Expression does not produce a value.");
         }
 
         [Fact]
-        public async Task ShiftOperators()
+        public async Task ShiftOperatorsAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"public class Test
+            await TestConversionCSharpToVisualBasicAsync(@"public class Test
 {
     public static void Main()
     {
@@ -367,8 +367,8 @@ BC30491: Expression does not produce a value.");
 End Class");
         }
         [Fact]
-        public async Task CompoundAssignmentTest() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task CompoundAssignmentTestAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public class TestClass {
     void TestMethod() {
         int x = 10;
@@ -386,9 +386,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ElvisOperatorExpression()
+        public async Task ElvisOperatorExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -414,9 +414,9 @@ BC30451: 'context' is not declared. It may be inaccessible due to its protection
         }
 
         [Fact]
-        public async Task ObjectInitializerExpression()
+        public async Task ObjectInitializerExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"
+            await TestConversionCSharpToVisualBasicAsync(@"
 class StudentName
 {
     public string LastName, FirstName;
@@ -446,9 +446,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ObjectInitializerExpression2()
+        public async Task ObjectInitializerExpression2Async()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(string str)
     {
@@ -468,9 +468,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ObjectInitializerExpression3()
+        public async Task ObjectInitializerExpression3Async()
         {
-            await TestConversionCSharpToVisualBasic(@"using System.Collections.Generic;
+            await TestConversionCSharpToVisualBasicAsync(@"using System.Collections.Generic;
 
 internal class SomeSettings
 {
@@ -497,9 +497,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ThisMemberAccessExpression()
+        public async Task ThisMemberAccessExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     private int member;
 
@@ -517,9 +517,9 @@ End Class");
         }
 
         [Fact]
-        public async Task BaseMemberAccessExpression()
+        public async Task BaseMemberAccessExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class BaseTestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class BaseTestClass
 {
     public int member;
 }
@@ -544,9 +544,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ReferenceTypeComparison()
+        public async Task ReferenceTypeComparisonAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"public static bool AreTwoObjectsReferenceEqual()
+            await TestConversionCSharpToVisualBasicAsync(@"public static bool AreTwoObjectsReferenceEqual()
 {
     return new object() == new object();
 }", @"Public Shared Function AreTwoObjectsReferenceEqual() As Boolean
@@ -555,9 +555,9 @@ End Function");
         }
 
         [Fact]
-        public async Task TupleType()
+        public async Task TupleTypeAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"public interface ILanguageConversion
+            await TestConversionCSharpToVisualBasicAsync(@"public interface ILanguageConversion
 {
     IReadOnlyCollection<(string, string)> GetProjectTypeGuidMappings();
     IEnumerable<(string, string)> GetProjectFileReplacementRegexes();
@@ -572,9 +572,9 @@ CS0246: The type or namespace name 'IEnumerable<>' could not be found (are you m
         }
 
         [Fact]
-        public async Task ValueTupleType()
+        public async Task ValueTupleTypeAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"using System;
+            await TestConversionCSharpToVisualBasicAsync(@"using System;
 using System.Collections.Generic;
 
 namespace PreHOPL
@@ -608,9 +608,9 @@ End Namespace");
         }
 
         [Fact]
-        public async Task DelegateExpression()
+        public async Task DelegateExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
 
     private static Action<int> m_Event1 = delegate { };
@@ -637,9 +637,9 @@ CS0246: The type or namespace name 'Action<>' could not be found (are you missin
         }
 
         [Fact]
-        public async Task ExpressionSub()
+        public async Task ExpressionSubAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"using System;
+            await TestConversionCSharpToVisualBasicAsync(@"using System;
 
 static class Program
 {
@@ -657,9 +657,9 @@ End Module");
         }
 
         [Fact]
-        public async Task LambdaBodyExpression()
+        public async Task LambdaBodyExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -688,9 +688,9 @@ CS0815: Cannot assign lambda expression to an implicitly-typed variable");
         }
 
         [Fact]
-        public async Task Await()
+        public async Task AwaitAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     Task<int> SomeAsyncMethod()
     {
@@ -720,9 +720,9 @@ CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
-        public async Task Linq1()
+        public async Task Linq1Async()
         {
-            await TestConversionCSharpToVisualBasic(@"static void SimpleQuery()
+            await TestConversionCSharpToVisualBasicAsync(@"static void SimpleQuery()
 {
     int[] numbers = { 7, 9, 5, 3, 6 };
 
@@ -748,9 +748,9 @@ CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
-        public async Task Linq2()
+        public async Task Linq2Async()
         {
-            await TestConversionCSharpToVisualBasic(@"public static void Linq40()
+            await TestConversionCSharpToVisualBasicAsync(@"public static void Linq40()
     {
         int[] numbers = { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };
 
@@ -793,9 +793,9 @@ CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
-        public async Task Linq3()
+        public async Task Linq3Async()
         {
-            await TestConversionCSharpToVisualBasic(@"class Product {
+            await TestConversionCSharpToVisualBasicAsync(@"class Product {
     public string Category;
     public string ProductName;
 }
@@ -853,9 +853,9 @@ BC30451: 'GetProductList' is not declared. It may be inaccessible due to its pro
         }
 
         [Fact]
-        public async Task Linq4()
+        public async Task Linq4Async()
         {
-            await TestConversionCSharpToVisualBasic(@"public void Linq103()
+            await TestConversionCSharpToVisualBasicAsync(@"public void Linq103()
 {
     string[] categories = new string[]{
         ""Beverages"",
@@ -909,8 +909,8 @@ BC36593: Expression of type '?' is not queryable. Make sure you are not missing 
 BC32023: Expression is of type '?', which is not a collection type.");
         }
         [Fact]
-        public async Task MultilineSubExpressionWithSingleStatement() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task MultilineSubExpressionWithSingleStatementAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public class TestClass : System.Collections.ObjectModel.ObservableCollection<string> {
     public TestClass() {
         PropertyChanged += (o, e) => {
@@ -936,8 +936,8 @@ BC32023: Expression is of type '?', which is not a collection type.");
 End Class");
         }
         [Fact]
-        public async Task MultilineFunctionExpressionWithSingleStatement() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task MultilineFunctionExpressionWithSingleStatementAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"using System;
 public class TestClass {
     Func<object, string> create = o => {
@@ -967,8 +967,8 @@ Public Class TestClass
 End Class");
         }
         [Fact]
-        public async Task PrefixUnaryExpression_SingleLineFunction() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task PrefixUnaryExpression_SingleLineFunctionAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public class TestClass {
     public TestClass() {
         System.Func<string, bool> func = o => !string.IsNullOrEmpty(""test"");
@@ -981,8 +981,8 @@ End Class");
 End Class");
         }
         [Fact]
-        public async Task EqualsExpression() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task EqualsExpressionAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public class TestClass {
     public TestClass() {
         int i = 0;

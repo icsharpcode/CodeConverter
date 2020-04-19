@@ -16,7 +16,7 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp
     public class SelfVerifyingTests
     {
         [Theory, MemberData(nameof(GetVisualBasicToCSharpTestData))]
-        public async Task VisualBasicToCSharp(NamedFact verifyConvertedTestPasses)
+        public async Task VisualBasicToCSharpAsync(NamedFact verifyConvertedTestPasses)
         {
             await verifyConvertedTestPasses.Execute();
         }

@@ -7,9 +7,9 @@ namespace ICSharpCode.CodeConverter.Tests.VB
     public class NamespaceLevelTests : ConverterTestBase
     {
         [Fact]
-        public async Task TestNamespace()
+        public async Task TestNamespaceAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"namespace Test
+            await TestConversionCSharpToVisualBasicAsync(@"namespace Test
 {
 
 }", @"Namespace Test
@@ -17,9 +17,9 @@ End Namespace");
         }
 
         [Fact]
-        public async Task TestTopLevelAttribute()
+        public async Task TestTopLevelAttributeAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"[assembly: CLSCompliant(true)]",
                 @"
 <Assembly: CLSCompliant(True)>
@@ -30,9 +30,9 @@ CS0246: The type or namespace name 'CLSCompliant' could not be found (are you mi
         }
 
         [Fact]
-        public async Task NamedImport()
+        public async Task NamedImportAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"using s = System.String;
 
 public class X
@@ -52,9 +52,9 @@ End Class");
         }
 
         [Fact]
-        public async Task TestClass()
+        public async Task TestClassAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"namespace Test.@class
+            await TestConversionCSharpToVisualBasicAsync(@"namespace Test.@class
 {
     class TestClass<T>
     {
@@ -66,9 +66,9 @@ End Namespace");
         }
 
         [Fact]
-        public async Task TestInternalStaticClass()
+        public async Task TestInternalStaticClassAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"namespace Test.@class
+            await TestConversionCSharpToVisualBasicAsync(@"namespace Test.@class
 {
     internal static class TestClass
     {
@@ -87,9 +87,9 @@ End Namespace");
         }
 
         [Fact]
-        public async Task TestAbstractClass()
+        public async Task TestAbstractClassAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
 @"namespace Test.@class
 {
     public abstract class TestClass
@@ -116,9 +116,9 @@ End Namespace");
         }
 
         [Fact]
-        public async Task TestSealedClass()
+        public async Task TestSealedClassAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"namespace Test.@class
+            await TestConversionCSharpToVisualBasicAsync(@"namespace Test.@class
 {
     sealed class TestClass
     {
@@ -130,9 +130,9 @@ End Namespace");
         }
 
         [Fact]
-        public async Task TestInterface()
+        public async Task TestInterfaceAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"interface ITest : System.IDisposable
 {
     void Test ();
@@ -144,9 +144,9 @@ End Interface");
         }
 
         [Fact]
-        public async Task TestInterfaceWithTwoMembers()
+        public async Task TestInterfaceWithTwoMembersAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"interface ITest : System.IDisposable
 {
     void Test ();
@@ -160,9 +160,9 @@ End Interface");
         }
 
         [Fact]
-        public async Task TestEnum()
+        public async Task TestEnumAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
     @"internal enum ExceptionResource
 {
     Argument_ImplementIComparable,
@@ -178,9 +178,9 @@ End Enum");
         }
 
         [Fact]
-        public async Task TestEnumWithExplicitBaseType()
+        public async Task TestEnumWithExplicitBaseTypeAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
     @"public enum ExceptionResource : byte
 {
     Argument_ImplementIComparable
@@ -190,9 +190,9 @@ End Enum");
         }
 
         [Fact]
-        public async Task TestClassInheritanceList()
+        public async Task TestClassInheritanceListAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
     @"abstract class ClassA : System.IDisposable
 {
     protected abstract void Test();
@@ -207,7 +207,7 @@ CS0535: 'ClassA' does not implement interface member 'IDisposable.Dispose()'
 1 target compilation errors:
 BC30149: Class 'ClassA' must implement 'Sub Dispose()' for interface 'IDisposable'.");
 
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"abstract class ClassA : System.EventArgs, System.IDisposable
 {
     protected abstract void Test();
@@ -225,9 +225,9 @@ BC30149: Class 'ClassA' must implement 'Sub Dispose()' for interface 'IDisposabl
         }
 
         [Fact]
-        public async Task TestStruct()
+        public async Task TestStructAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
     @"struct MyType : System.IComparable<MyType>
 {
     void Test() {}
@@ -245,26 +245,26 @@ BC30149: Structure 'MyType' must implement 'Function CompareTo(other As MyType) 
         }
 
         [Fact]
-        public async Task TestDelegate()
+        public async Task TestDelegateAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"public delegate void Test();",
                 @"Public Delegate Sub Test()");
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"public delegate int Test();",
                 @"Public Delegate Function Test() As Integer");
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"public delegate void Test(int x);",
                 @"Public Delegate Sub Test(ByVal x As Integer)");
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"public delegate void Test(ref int x);",
                 @"Public Delegate Sub Test(ByRef x As Integer)");
         }
 
         [Fact]
-        public async Task GlobalImportsStatement()
+        public async Task GlobalImportsStatementAsync()
         {
-               await AssertConvertedCodeResultEquals<CSToVBWithoutSimplifierConversion>(@"using MyAlias = global::System.Data.SqlClient;
+               await AssertConvertedCodeResultEqualsAsync<CSToVBWithoutSimplifierConversion>(@"using MyAlias = global::System.Data.SqlClient;
 using SO = global::System.Data.SqlClient.SqlCommandBuilder;
 
 class ThisUri
@@ -282,9 +282,9 @@ End Class");
         }
 
         [Fact]
-        public async Task MoveImportsStatement()
+        public async Task MoveImportsStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic("namespace test { using SomeNamespace; }",
+            await TestConversionCSharpToVisualBasicAsync("namespace test { using SomeNamespace; }",
                 @"Imports SomeNamespace
 
 Namespace test
@@ -295,9 +295,9 @@ CS0246: The type or namespace name 'SomeNamespace' could not be found (are you m
         }
 
         [Fact]
-        public async Task InnerNamespace_MoveImportsStatement()
+        public async Task InnerNamespace_MoveImportsStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
 @"namespace System {
     using Collections; // Moves outside namespace
     public class TestClass {
@@ -312,8 +312,8 @@ Namespace System
 End Namespace", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
         [Fact]
-        public async Task Namespace_Duplicates() {
-            await AssertConvertedCodeResultEquals<CSToVBWithoutSimplifierConversion>(
+        public async Task Namespace_DuplicatesAsync() {
+            await AssertConvertedCodeResultEqualsAsync<CSToVBWithoutSimplifierConversion>(
 @"using System.Linq;
 namespace System {
     using Linq;
@@ -325,9 +325,9 @@ End Namespace");
         }
 
         [Fact]
-        public async Task ClassImplementsInterface()
+        public async Task ClassImplementsInterfaceAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"public class ToBeDisplayed : iDisplay
+            await TestConversionCSharpToVisualBasicAsync(@"public class ToBeDisplayed : iDisplay
 {
     public string Name { get; set; }
 
@@ -357,9 +357,9 @@ End Interface");
         }
 
         [Fact]
-        public async Task ClassExplicitlyImplementsInterface()
+        public async Task ClassExplicitlyImplementsInterfaceAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
 @"public class ToBeDisplayed : iDisplay
 {
     string iDisplay.Name { get; set; }
@@ -392,9 +392,9 @@ CS0106: The modifier 'private' is not valid for this item");
         }
 
         [Fact]
-        public async Task ClassExplicitlyImplementsInterface_Indexer()
+        public async Task ClassExplicitlyImplementsInterface_IndexerAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
 @"public class ToBeDisplayed : iDisplay {
     object iDisplay.this[int i] {
         get { throw new System.NotImplementedException(); }
@@ -423,9 +423,9 @@ End Interface");
         }
 
         [Fact]
-        public async Task ClassImplementsInterface2()
+        public async Task ClassImplementsInterface2Async()
         {
-            await TestConversionCSharpToVisualBasic("class test : System.IComparable { }",
+            await TestConversionCSharpToVisualBasicAsync("class test : System.IComparable { }",
                 @"Friend Class test
     Implements IComparable
 End Class
@@ -437,9 +437,9 @@ BC30149: Class 'test' must implement 'Function CompareTo(obj As Object) As Integ
         }
 
         [Fact]
-        public async Task ClassInheritsClass()
+        public async Task ClassInheritsClassAsync()
         {
-            await TestConversionCSharpToVisualBasic("using System.IO; class ClassInheritsClass : InvalidDataException { }",
+            await TestConversionCSharpToVisualBasicAsync("using System.IO; class ClassInheritsClass : InvalidDataException { }",
                 @"Imports System.IO
 
 Friend Class ClassInheritsClass
@@ -453,9 +453,9 @@ BC30299: 'ClassInheritsClass' cannot inherit from class 'InvalidDataException' b
         }
 
         [Fact]
-        public async Task ClassInheritsClass2()
+        public async Task ClassInheritsClass2Async()
         {
-            await TestConversionCSharpToVisualBasic("class ClassInheritsClass2 : System.IO.InvalidDataException { }",
+            await TestConversionCSharpToVisualBasicAsync("class ClassInheritsClass2 : System.IO.InvalidDataException { }",
                 @"Friend Class ClassInheritsClass2
     Inherits InvalidDataException
 End Class
@@ -467,8 +467,8 @@ BC30299: 'ClassInheritsClass2' cannot inherit from class 'InvalidDataException' 
         }
 
         [Fact]
-        public async Task StaticGenericClass() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task StaticGenericClassAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"using System.Threading.Tasks;
 
 public abstract class Class1 {
@@ -500,8 +500,8 @@ End Class");
         }
 
         [Fact]
-        public async Task NestedStaticClass() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task NestedStaticClassAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public static class Factory {
     static class Generator {
         public static void Initialize() { }
@@ -515,8 +515,8 @@ End Class");
 End Module");
         }
         [Fact]
-        public async Task VisibilityStaticClass() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task VisibilityStaticClassAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public static class Factory {
     private const string Name = ""a"";
     internal const string Name1 = ""b"";
@@ -541,9 +541,9 @@ End Module");
 End Module");
         }
         [Fact]
-        public async Task ImplementsGenericInterface()
+        public async Task ImplementsGenericInterfaceAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
 @"public interface ITestInterface<T> {
     void Method(List<T> list);
 }
@@ -566,8 +566,8 @@ End Class
 CS0246: The type or namespace name 'List<>' could not be found (are you missing a using directive or an assembly reference?)");
         }
         [Fact]
-        public async Task ImplementsEvent() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task ImplementsEventAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"using System.ComponentModel;
 public class TestClass : INotifyPropertyChanged {
     public event PropertyChangedEventHandler PropertyChanged;
@@ -581,8 +581,8 @@ Public Class TestClass
 End Class");
         }
         [Fact]
-        public async Task FullQualificationInImplements() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task FullQualificationInImplementsAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public class TestClass : System.ComponentModel.INotifyPropertyChanged {
     public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
 }",
@@ -593,8 +593,8 @@ End Class");
 End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
         [Fact]
-        public async Task PartialClass_OmitedModifier() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task PartialClass_OmitedModifierAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"public partial class Entities {
 }
 partial class Entities {

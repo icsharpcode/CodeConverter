@@ -8,9 +8,9 @@ namespace ICSharpCode.CodeConverter.Tests.VB
     public class StatementTests : ConverterTestBase
     {
         [Fact]
-        public async Task EmptyStatement()
+        public async Task EmptyStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -38,8 +38,8 @@ End Class");
         }
 
         [Fact]
-        public async Task ForConvertedToWhile_Break() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task ForConvertedToWhile_BreakAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"class TestClass {
     void TestMethod() {
         for (;;)
@@ -55,8 +55,8 @@ End Class");
         }
 
         [Fact]
-        public async Task ForConvertedToWhile_BreakContinue() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task ForConvertedToWhile_BreakContinueAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"class TestClass {
     void TestMethod(int arg) {
         for (;;) //Becomes while loop
@@ -103,9 +103,9 @@ End Class");
         }
 
         [Fact]
-        public async Task AssignmentStatement()
+        public async Task AssignmentStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -121,9 +121,9 @@ End Class");
         }
 
         [Fact]
-        public async Task AssignmentStatementInDeclaration()
+        public async Task AssignmentStatementInDeclarationAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -137,9 +137,9 @@ End Class");
         }
 
         [Fact]
-        public async Task AssignmentStatementInVarDeclaration()
+        public async Task AssignmentStatementInVarDeclarationAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -153,9 +153,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ObjectInitializationStatement()
+        public async Task ObjectInitializationStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -174,9 +174,9 @@ CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         }
 
         [Fact]
-        public async Task ObjectInitializationStatementInDeclaration()
+        public async Task ObjectInitializationStatementInDeclarationAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -193,9 +193,9 @@ CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         }
 
         [Fact]
-        public async Task ObjectInitializationStatementInVarDeclaration()
+        public async Task ObjectInitializationStatementInVarDeclarationAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -212,9 +212,9 @@ CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         }
 
         [Fact]
-        public async Task ArrayDeclarationStatement()
+        public async Task ArrayDeclarationStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -228,9 +228,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ArrayInitializationStatement()
+        public async Task ArrayInitializationStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -244,9 +244,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ArrayInitializationStatementInVarDeclaration()
+        public async Task ArrayInitializationStatementInVarDeclarationAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -263,9 +263,9 @@ CS0820: Cannot initialize an implicitly-typed variable with an array initializer
         }
 
         [Fact]
-        public async Task ArrayInitializationStatementWithType()
+        public async Task ArrayInitializationStatementWithTypeAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -279,9 +279,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ArrayInitializationStatementWithLength()
+        public async Task ArrayInitializationStatementWithLengthAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -295,9 +295,9 @@ End Class");
         }
 
         [Fact]
-        public async Task MultidimensionalArrayDeclarationStatement()
+        public async Task MultidimensionalArrayDeclarationStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -311,9 +311,9 @@ End Class");
         }
 
         [Fact]
-        public async Task MultidimensionalArrayInitializationStatement()
+        public async Task MultidimensionalArrayInitializationStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -332,9 +332,9 @@ End Class");
         }
 
         [Fact]
-        public async Task MultidimensionalArrayInitializationStatementWithType()
+        public async Task MultidimensionalArrayInitializationStatementWithTypeAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -353,9 +353,9 @@ End Class");
         }
 
         [Fact]
-        public async Task MultidimensionalArrayInitializationStatementWithLengths()
+        public async Task MultidimensionalArrayInitializationStatementWithLengthsAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -377,9 +377,9 @@ CS1002: ; expected");
         }
 
         [Fact]
-        public async Task JaggedArrayDeclarationStatement()
+        public async Task JaggedArrayDeclarationStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -393,9 +393,9 @@ End Class");
         }
 
         [Fact]
-        public async Task JaggedArrayInitializationStatement()
+        public async Task JaggedArrayInitializationStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -409,9 +409,9 @@ End Class");
         }
 
         [Fact]
-        public async Task JaggedArrayInitializationStatementWithType()
+        public async Task JaggedArrayInitializationStatementWithTypeAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -425,9 +425,9 @@ End Class");
         }
 
         [Fact]
-        public async Task JaggedArrayInitializationStatementWithLength()
+        public async Task JaggedArrayInitializationStatementWithLengthAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -441,9 +441,9 @@ End Class");
         }
 
         [Fact]
-        public async Task DeclarationStatements()
+        public async Task DeclarationStatementsAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class Test {
     void TestMethod()
     {
@@ -465,9 +465,9 @@ End Class");
         }
 
         [Fact]
-        public async Task IfStatementWithoutBlock()
+        public async Task IfStatementWithoutBlockAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod (int a)
     {
@@ -491,9 +491,9 @@ End Class");
         }
 
         [Fact]
-        public async Task IfStatement()
+        public async Task IfStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod (int a)
     {
@@ -526,9 +526,9 @@ End Class");
         }
 
         [Fact]
-        public async Task BlockStatement()
+        public async Task BlockStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     public static void TestMethod()
     {
@@ -561,9 +561,9 @@ CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
-        public async Task WhileStatement()
+        public async Task WhileStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -593,9 +593,9 @@ End Class");
         }
 
         [Fact]
-        public async Task UnsafeStatementsWithNoVbEquivalentShowErrorInlineCharacterization()
+        public async Task UnsafeStatementsWithNoVbEquivalentShowErrorInlineCharacterizationAsync()
         {
-            string convertedCode = await Convert<CSToVBConversion>(@"class TestClass
+            string convertedCode = await ConvertAsync<CSToVBConversion>(@"class TestClass
 {
     void TestMethod()
     {
@@ -627,9 +627,9 @@ End Class");
         }
 
         [Fact]
-        public async Task DoWhileStatement()
+        public async Task DoWhileStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -660,9 +660,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ForEachStatementWithExplicitType()
+        public async Task ForEachStatementWithExplicitTypeAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(int[] values)
     {
@@ -685,9 +685,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ForEachStatementWithVar()
+        public async Task ForEachStatementWithVarAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(int[] values)
     {
@@ -713,9 +713,9 @@ BC30516: Overload resolution failed because no accessible 'Val' accepts this num
         }
 
         [Fact]
-        public async Task SyncLockStatement()
+        public async Task SyncLockStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(object nullObject)
     {
@@ -741,9 +741,9 @@ CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
-        public async Task ForWithUnknownConditionAndSingleStatement()
+        public async Task ForWithUnknownConditionAndSingleStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -774,9 +774,9 @@ BC30451: 's' is not declared. It may be inaccessible due to its protection level
         }
 
         [Fact]
-        public async Task ForWithUnknownConditionAndBlock()
+        public async Task ForWithUnknownConditionAndBlockAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -806,9 +806,9 @@ BC30451: 's' is not declared. It may be inaccessible due to its protection level
         }
 
         [Fact]
-        public async Task ForWithSingleStatement()
+        public async Task ForWithSingleStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -834,9 +834,9 @@ BC30451: 's' is not declared. It may be inaccessible due to its protection level
         }
 
         [Fact]
-        public async Task ForWithBlock()
+        public async Task ForWithBlockAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -864,9 +864,9 @@ BC30451: 's' is not declared. It may be inaccessible due to its protection level
         }
 
         [Fact]
-        public async Task ForWithBlockDecrement()
+        public async Task ForWithBlockDecrementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -893,8 +893,8 @@ BC30451: 'b' is not declared. It may be inaccessible due to its protection level
 BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
         }
         [Fact]
-        public async Task ForWithDateTimeVariables() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task ForWithDateTimeVariablesAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"class TestClass {
     void TestMethod() {
         int summary = 0;
@@ -914,8 +914,8 @@ BC30451: 's' is not declared. It may be inaccessible due to its protection level
 End Class");
         }
         [Fact(Skip = "Should we rename, or add If True End If block?")]
-        public async Task Conflict_DeclarationsAfterConvertionForToWhile() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task Conflict_DeclarationsAfterConvertionForToWhileAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"class TestClass {
     double height;
     void TestMethod() {
@@ -951,8 +951,8 @@ End Class");
 End Class");
         }
         [Fact]
-        public async Task SubWithForEach_Multiline() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task SubWithForEach_MultilineAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"class TestClass {
     void TestMethod(IEnumerable<int> counts) {
         int summary = 0;
@@ -982,9 +982,9 @@ CS0246: The type or namespace name 'Action' could not be found (are you missing 
         }
 
         [Fact]
-        public async Task ForTupleDeconstruction()
+        public async Task ForTupleDeconstructionAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"public class SolutionConverter
+            await TestConversionCSharpToVisualBasicAsync(@"public class SolutionConverter
 {
     private static string ApplyReplacements(string originalText, IEnumerable<(string, string)> replacements)
     {
@@ -1019,9 +1019,9 @@ BC30451: 'RegexOptions' is not declared. It may be inaccessible due to its prote
         }
 
         [Fact]
-        public async Task LabeledAndForStatement()
+        public async Task LabeledAndForStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class GotoTest1
+            await TestConversionCSharpToVisualBasicAsync(@"class GotoTest1
 {
     static void Main()
     {
@@ -1103,9 +1103,9 @@ CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
-        public async Task ThrowStatement()
+        public async Task ThrowStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(object nullObject)
     {
@@ -1123,9 +1123,9 @@ CS0246: The type or namespace name 'ArgumentNullException' could not be found (a
         }
 
         [Fact]
-        public async Task AddRemoveHandler()
+        public async Task AddRemoveHandlerAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"using System;
+            await TestConversionCSharpToVisualBasicAsync(@"using System;
 
 class TestClass
 {
@@ -1167,8 +1167,8 @@ Friend Class TestClass
 End Class");
         }
         [Fact]
-        public async Task AddHandlerInSimpleLambda() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task AddHandlerInSimpleLambdaAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"using System;
 using System.ComponentModel;
 using System.Collections.Generic;
@@ -1200,9 +1200,9 @@ End Class");
         
 
         [Fact]
-        public async Task SelectCase1()
+        public async Task SelectCase1Async()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(int number)
     {
@@ -1253,9 +1253,9 @@ CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
-        public async Task SelectCase_WithDotInCaseLabel()
+        public async Task SelectCase_WithDotInCaseLabelAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(double number)
     {
@@ -1286,9 +1286,9 @@ CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
-        public async Task SelectCase_WithVarWhenClause()
+        public async Task SelectCase_WithVarWhenClauseAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     public bool IsFive(int aNum)
     {
@@ -1314,9 +1314,9 @@ End Class");
         }
 
         [Fact]
-        public async Task TryCatch()
+        public async Task TryCatchAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     static bool Log(string message)
     {
@@ -1387,9 +1387,9 @@ CS0246: The type or namespace name 'Exception' could not be found (are you missi
         }
 
         [Fact]
-        public async Task Yield()
+        public async Task YieldAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     IEnumerable<int> TestMethod(int number)
     {
@@ -1412,8 +1412,8 @@ End Class
 CS0246: The type or namespace name 'IEnumerable<>' could not be found (are you missing a using directive or an assembly reference?)");
         }
         [Fact]
-        public async Task ObjectCreationExpressionInInvocationExpression() {
-            await TestConversionCSharpToVisualBasic(
+        public async Task ObjectCreationExpressionInInvocationExpressionAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
 @"class TestClass {
     int field;
     TestClass(int param) {

@@ -7,9 +7,9 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
     public class BinaryExpressionTests : ConverterTestBase
     {
         [Fact]
-        public async Task OmitsConversionForEnumBinaryExpression()
+        public async Task OmitsConversionForEnumBinaryExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Friend Enum RankEnum As SByte
+            await TestConversionVisualBasicToCSharpAsync(@"Friend Enum RankEnum As SByte
     First = 1
     Second = 2
 End Enum
@@ -37,9 +37,9 @@ public partial class TestClass
         }
 
         [Fact]
-        public async Task BinaryOperatorsIsIsNotLeftShiftRightShift()
+        public async Task BinaryOperatorsIsIsNotLeftShiftRightShiftAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private bIs as Boolean = New Object Is New Object
     Private bIsNot as Boolean = New Object IsNot New Object
     Private bLeftShift as Integer = 1 << 3
@@ -55,9 +55,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task LikeOperator()
+        public async Task LikeOperatorAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim x = """" Like ""*x*""
     End Sub
@@ -74,9 +74,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task ShiftAssignment()
+        public async Task ShiftAssignmentAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 1
         x <<= 4
@@ -95,9 +95,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task IntegerArithmetic()
+        public async Task IntegerArithmeticAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 7 ^ 6 Mod 5 \ 4 + 3 * 2
         x += 1
@@ -123,9 +123,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ImplicitConversions()
+        public async Task ImplicitConversionsAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim x As Double = 1
         Dim y As Decimal = 2
@@ -154,9 +154,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task FloatingPointDivisionIsForced()
+        public async Task FloatingPointDivisionIsForcedAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 10 / 3
         x /= 2
@@ -183,9 +183,9 @@ CS0266: Cannot implicitly convert type 'double' to 'int'. An explicit conversion
         }
 
         [Fact]
-        public async Task ConditionalExpressionInBinaryExpression()
+        public async Task ConditionalExpressionInBinaryExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Integer = 5 - If((str = """"), 1, 2)
     End Sub

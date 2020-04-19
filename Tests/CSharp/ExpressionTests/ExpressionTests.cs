@@ -7,9 +7,9 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
     public class ExpressionTests : ConverterTestBase
     {
         [Fact]
-        public async Task ConversionOfNotUsesParensIfNeeded()
+        public async Task ConversionOfNotUsesParensIfNeededAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim rslt = Not 1 = 2
         Dim rslt2 = Not True
@@ -30,9 +30,9 @@ BC30021: 'TypeOf ... Is' requires its left operand to have a reference type, but
         }
 
         [Fact]
-        public async Task DateLiterals()
+        public async Task DateLiteralsAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal date As Date = #1/1/1900#)
         Dim rslt = #1/1/1900#
         Dim rslt2 = #8/13/2002 12:14 PM#
@@ -55,9 +55,9 @@ BC32024: Default values cannot be supplied for parameters that are not declared 
         }
 
         [Fact]
-        public async Task DateConsts()
+        public async Task DateConstsAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Issue213
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue213
     Const x As Date = #1990-1-1#
 
     Private Sub Y(Optional ByVal opt As Date = x)
@@ -77,9 +77,9 @@ public partial class Issue213
         }
 
         [Fact]
-        public async Task OptionalRefDateConstsWithOmittedArgList()
+        public async Task OptionalRefDateConstsWithOmittedArgListAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Issue213
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue213
     Const x As Date = #1990-1-1#
 
     Private Sub Y(Optional ByRef opt As Date = x)
@@ -109,9 +109,9 @@ public partial class Issue213
         }
 
         [Fact]
-        public async Task NullInlineRefArgument()
+        public async Task NullInlineRefArgumentAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class VisualBasicClass
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
   Public Sub UseStuff()
     Stuff(Nothing)
   End Sub
@@ -134,9 +134,9 @@ public partial class VisualBasicClass
         }
 
         [Fact]
-        public async Task RefArgumentRValue()
+        public async Task RefArgumentRValueAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Private Property C1 As Class1
     Private _c2 As Class1
     Private _o1 As Object
@@ -184,9 +184,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task RefArgumentRValue2()
+        public async Task RefArgumentRValue2Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim x = True
         Bar(x = True)
@@ -307,9 +307,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task RefArgumentUsing()
+        public async Task RefArgumentUsingAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System.Data.SqlClient
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data.SqlClient
 
 Public Class Class1
     Sub Foo()
@@ -340,9 +340,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task RefOptionalArgument()
+        public async Task RefOptionalArgumentAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class OptionalRefIssue91
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class OptionalRefIssue91
     Public Shared Function TestSub(Optional ByRef IsDefault As Boolean = False) As Boolean
     End Function
 
@@ -368,9 +368,9 @@ public partial class OptionalRefIssue91
         }
 
         [Fact]
-        public async Task RefArgumentPropertyInitializer()
+        public async Task RefArgumentPropertyInitializerAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Private _p1 As Class1 = Foo(New Class1)
     Public Shared Function Foo(ByRef c1 As Class1) As Class1
         Return c1
@@ -394,9 +394,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task MethodCallWithImplicitConversion()
+        public async Task MethodCallWithImplicitConversionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Bar(True)
         Me.Bar(""4"")
@@ -425,9 +425,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task IntToEnumArg()
+        public async Task IntToEnumArgAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo(ByVal arg As TriState)
     End Sub
 
@@ -451,9 +451,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task EnumToIntCast()
+        public async Task EnumToIntCastAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class MyTest
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class MyTest
     Public Enum TestEnum As Integer
         Test1 = 0
         Test2 = 1
@@ -483,9 +483,9 @@ public partial class MyTest
         }
 
         [Fact]
-        public async Task FlagsEnum()
+        public async Task FlagsEnumAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"<Flags()> Public Enum FilePermissions As Integer
+            await TestConversionVisualBasicToCSharpAsync(@"<Flags()> Public Enum FilePermissions As Integer
     None = 0
     Create = 1
     Read = 2
@@ -514,9 +514,9 @@ public partial class MyTest
         }
 
         [Fact]
-        public async Task EnumSwitch()
+        public async Task EnumSwitchAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Enum E
         A
     End Enum
@@ -566,9 +566,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task DuplicateCaseDiscarded()
+        public async Task DuplicateCaseDiscardedAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System
     Friend Module Module1
     Sub Main()
         Select Case 1
@@ -609,9 +609,9 @@ CS0825: The contextual keyword 'var' may only appear within a local variable dec
         }
 
         [Fact]
-        public async Task MethodCallWithoutParens()
+        public async Task MethodCallWithoutParensAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim w = Bar
         Dim x = Me.Bar
@@ -644,9 +644,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task ConversionOfCTypeUsesParensIfNeeded()
+        public async Task ConversionOfCTypeUsesParensIfNeededAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim rslt = Ctype(true, Object).ToString()
         Dim rslt2 = Ctype(true, Object)
@@ -663,9 +663,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task DateKeyword()
+        public async Task DateKeywordAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private DefaultDate as Date = Nothing
 End Class", @"using System;
 
@@ -676,9 +676,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task AccessSharedThroughInstance()
+        public async Task AccessSharedThroughInstanceAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class A
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class A
     Public Shared x As Integer = 2
     Public Sub Test()
         Dim tmp = Me
@@ -700,9 +700,9 @@ public partial class A
         }
 
         [Fact]
-        public async Task EmptyArrayExpression()
+        public async Task EmptyArrayExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"
+            await TestConversionVisualBasicToCSharpAsync(@"
 Public Class Issue495
     Public Function Empty() As Integer()
         Return {}
@@ -719,9 +719,9 @@ public partial class Issue495
         }
 
         [Fact]
-        public async Task ReducedTypeParametersInferrable()
+        public async Task ReducedTypeParametersInferrableAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System.Linq
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
 
 Public Class Class1
     Sub Foo()
@@ -739,9 +739,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task ReducedTypeParametersNonInferrable()
+        public async Task ReducedTypeParametersNonInferrableAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System.Linq
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
 
 Public Class Class1
     Sub Foo()
@@ -759,9 +759,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task EnumNullableConversion()
+        public async Task EnumNullableConversionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Main()
         Dim x = DayOfWeek.Monday
         Foo(x)
@@ -787,9 +787,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task UninitializedVariable()
+        public async Task UninitializedVariableAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub New()
         Dim needsInitialization As Integer
         Dim notUsed As Integer
@@ -891,9 +891,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task FullyTypeInferredEnumerableCreation()
+        public async Task FullyTypeInferredEnumerableCreationAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim strings = { ""1"", ""2"" }
     End Sub
@@ -908,9 +908,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task GetTypeExpression()
+        public async Task GetTypeExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim typ = GetType(String)
     End Sub
@@ -925,9 +925,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task NullableInteger()
+        public async Task NullableIntegerAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Public Function Bar(value As String) As Integer?
         Dim result As Integer
         If Integer.TryParse(value, result) Then
@@ -955,9 +955,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task NothingInvokesDefaultForValueTypes()
+        public async Task NothingInvokesDefaultForValueTypesAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Public Sub Bar()
         Dim number As Integer
         number = Nothing
@@ -979,9 +979,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ConditionalExpression()
+        public async Task ConditionalExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = If((str = """"), True, False)
     End Sub
@@ -998,9 +998,9 @@ CS0103: The name 'string' does not exist in the current context");
         }
 
         [Fact]
-        public async Task ConditionalExpressionInUnaryExpression()
+        public async Task ConditionalExpressionInUnaryExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = Not If((str = """"), True, False)
     End Sub
@@ -1017,9 +1017,9 @@ CS0103: The name 'string' does not exist in the current context");
         }
 
         [Fact]
-        public async Task NullCoalescingExpression()
+        public async Task NullCoalescingExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Console.WriteLine(If(str, ""<null>""))
     End Sub
@@ -1035,9 +1035,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task OmittedArgumentInInvocation()
+        public async Task OmittedArgumentInInvocationAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports System
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System
 
 Public Module MyExtensions
     public sub NewColumn(type As Type , Optional strV1 As String = nothing, optional code As String = ""code"")
@@ -1066,9 +1066,9 @@ public static partial class MyExtensions
         }
 
         [Fact]
-        public async Task OmittedArgumentInCallInvocation()
+        public async Task OmittedArgumentInCallInvocationAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Issue445MissingParameter
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue445MissingParameter
     Public Sub First(a As String, b As String, c As Integer)
         Call mySuperFunction(7, , New Object())
     End Sub
@@ -1094,9 +1094,9 @@ public partial class Issue445MissingParameter
         }
 
         [Fact]
-        public async Task ExternalReferenceToOutParameter()
+        public async Task ExternalReferenceToOutParameterAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim d = New Dictionary(Of string, string)
         Dim s As String
@@ -1116,9 +1116,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ElvisOperatorExpression()
+        public async Task ElvisOperatorExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass3
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass3
     Private Class Rec
         Public ReadOnly Property Prop As New Rec
     End Class
@@ -1148,9 +1148,9 @@ internal partial class TestClass3
         }
 
         [Fact]
-        public async Task ObjectInitializerExpression()
+        public async Task ObjectInitializerExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class StudentName
+            await TestConversionVisualBasicToCSharpAsync(@"Class StudentName
     Public LastName, FirstName As String
 End Class
 
@@ -1174,9 +1174,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ObjectInitializerWithInferredName()
+        public async Task ObjectInitializerWithInferredNameAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class Issue480
+            await TestConversionVisualBasicToCSharpAsync(@"Class Issue480
     Public Foo As Integer
 
     Sub Test()
@@ -1196,9 +1196,9 @@ internal partial class Issue480
         }
 
         [Fact]
-        public async Task ObjectInitializerExpression2()
+        public async Task ObjectInitializerExpression2Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 = New With {Key .FirstName = ""Craig"", Key .LastName = ""Playstead""}
     End Sub
@@ -1212,9 +1212,9 @@ internal partial class TestClass
 }");
         }
         [Fact]
-        public async Task CollectionInitializers()
+        public async Task CollectionInitializersAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub DoStuff(a As Object)
     End Sub
     Private Sub TestMethod()
@@ -1242,9 +1242,9 @@ CS7036: There is no argument given that corresponds to the required formal param
         }
 
         [Fact]
-        public async Task DelegateExpression()
+        public async Task DelegateExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim test As Func(Of Integer, Integer) = Function(ByVal a As Integer) a * 2
         test(3)
@@ -1262,9 +1262,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task LambdaBodyExpression()
+        public async Task LambdaBodyExpressionAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim test As Func(Of Integer, Integer) = Function(a) a * 2
         Dim test2 As Func(Of Integer, Integer, Double) = Function(a, b)
@@ -1295,14 +1295,14 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task TypeInferredLambdaBodyExpression()
+        public async Task TypeInferredLambdaBodyExpressionAsync()
         {
             // BUG: Should actually call:
             // * Operators::DivideObject(object, object)
             // * Operators::ConditionalCompareObjectGreater(object, object, bool)
             // * Operators::MultiplyObject(object, object)
             // * Operators::ModObject(object, object)
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim test = Function(a) a * 2
         Dim test2 = Function(a, b)
@@ -1338,9 +1338,9 @@ CS0019: Operator '%' cannot be applied to operands of type 'object' and 'object'
         }
 
         [Fact]
-        public async Task SingleLineLambdaWithStatementBody()
+        public async Task SingleLineLambdaWithStatementBodyAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 1
         Dim simpleAssignmentAction As System.Action = Sub() x = 1
@@ -1362,9 +1362,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task Await()
+        public async Task AwaitAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Function SomeAsyncMethod() As Task(Of Integer)
         Return Task.FromResult(0)
     End Function
@@ -1392,9 +1392,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task NameQualifyingHandlesInheritance()
+        public async Task NameQualifyingHandlesInheritanceAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClassBase
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClassBase
     Sub DoStuff()
     End Sub
 End Class
@@ -1421,9 +1421,9 @@ internal partial class TestClass : TestClassBase
         }
 
         [Fact]
-        public async Task UsingGlobalImport()
+        public async Task UsingGlobalImportAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Public Function TestMethod() As String
          Return vbCrLf
     End Function
@@ -1439,9 +1439,9 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ValueCapitalisation()
+        public async Task ValueCapitalisationAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"public Enum TestState
+            await TestConversionVisualBasicToCSharpAsync(@"public Enum TestState
 one
 two
 end enum
@@ -1487,9 +1487,9 @@ public partial class test
         }
 
         [Fact]
-        public async Task ConstLiteralConversionIssue329()
+        public async Task ConstLiteralConversionIssue329Async()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Module Module1
     Const a As Boolean = 1
     Const b As Char = ChrW(1)
@@ -1536,9 +1536,9 @@ internal static partial class Module1
         }
 
         [Fact]
-        public async Task SelectCaseIssue361()
+        public async Task SelectCaseIssue361Async()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Module Module1
     Enum E
         A = 1
@@ -1576,9 +1576,9 @@ internal static partial class Module1
         }
 
         [Fact]
-        public async Task Tuple()
+        public async Task TupleAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Public Function GetString(yourBoolean as Boolean) As Boolean
     Return 1 <> 1 OrElse if (yourBoolean, True, False)
 End Function",
@@ -1589,9 +1589,9 @@ End Function",
         }
 
         [Fact]
-        public async Task UseEventBackingField()
+        public async Task UseEventBackingFieldAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Public Class Foo
     Public Event Bar As EventHandler(Of EventArgs)
 
@@ -1625,9 +1625,9 @@ public partial class Foo
         }
 
         [Fact]
-        public async Task DateTimeToDateAndTime()
+        public async Task DateTimeToDateAndTimeAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim x = DateAdd(""m"", 5, Now)
     End Sub
@@ -1643,9 +1643,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task BaseFinalizeRemoved()
+        public async Task BaseFinalizeRemovedAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Protected Overrides Sub Finalize()
         MyBase.Finalize()
     End Sub
@@ -1659,9 +1659,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task GlobalNameIssue375()
+        public async Task GlobalNameIssue375Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Module Module1
+            await TestConversionVisualBasicToCSharpAsync(@"Module Module1
     Sub Main()
         Dim x = Microsoft.VisualBasic.Timer
     End Sub
@@ -1677,9 +1677,9 @@ internal static partial class Module1
         }
 
         [Fact]
-        public async Task TernaryConversionIssue363()
+        public async Task TernaryConversionIssue363Async()
         {
-            await TestConversionVisualBasicToCSharp(@"Module Module1
+            await TestConversionVisualBasicToCSharpAsync(@"Module Module1
     Sub Main()
         Dim x As Short = If(True, CShort(50), 100S)
     End Sub
@@ -1696,9 +1696,9 @@ internal static partial class Module1
         }
 
         [Fact]
-        public async Task GenericMethodCalledWithAnonymousType()
+        public async Task GenericMethodCalledWithAnonymousTypeAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Public Class MoreParsing
     Sub DoGet()
         Dim anon = New With {

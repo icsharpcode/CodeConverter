@@ -8,9 +8,9 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp
     public class TypeCastTests : ConverterTestBase
     {
         [Fact]
-        public async Task CIntObjectToInteger()
+        public async Task CIntObjectToIntegerAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5
@@ -29,9 +29,9 @@ internal partial class Class1
         }
 
         [Fact]
-        public async Task CDate()
+        public async Task CDateAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Public Class Class1
     Sub Foo()
         Dim x = CDate(""2019-09-04"")
@@ -49,9 +49,9 @@ public partial class Class1
         }
 
         [Fact]
-        public async Task CastObjectToString()
+        public async Task CastObjectToStringAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = ""Test""
@@ -69,9 +69,9 @@ internal partial class Class1
 }" + Environment.NewLine);
         }
         [Fact]
-        public async Task ImplicitCastObjectToString()
+        public async Task ImplicitCastObjectToStringAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = ""Test""
@@ -89,9 +89,9 @@ internal partial class Class1
 }" + Environment.NewLine);
         }
         [Fact]
-        public async Task CastArrayListAssignmentToString()
+        public async Task CastArrayListAssignmentToStringAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim x As New ArrayList
@@ -116,9 +116,9 @@ internal partial class Class1
 }" + Environment.NewLine);
         }
         [Fact]
-        public async Task ImplicitCastObjecStringToString()
+        public async Task ImplicitCastObjecStringToStringAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = ""Test""
@@ -136,9 +136,9 @@ internal partial class Class1
 }" + Environment.NewLine);
         }
         [Fact]
-        public async Task CTypeDoubleToInt()
+        public async Task CTypeDoubleToIntAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim q = 2.37
@@ -157,9 +157,9 @@ internal partial class Class1
         }
 
         [Fact]
-        public async Task CastObjectToGenericList()
+        public async Task CastObjectToGenericListAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = New System.Collections.Generic.List(Of Integer)()
@@ -179,9 +179,9 @@ internal partial class Class1
         }
 
         [Fact]
-        public async Task CTypeObjectToInteger()
+        public async Task CTypeObjectToIntegerAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5
@@ -203,9 +203,9 @@ internal partial class Class1
         }
 
         [Fact]
-        public async Task TryCastObjectToGenericList()
+        public async Task TryCastObjectToGenericListAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = New System.Collections.Generic.List(Of Integer)()
@@ -225,9 +225,9 @@ internal partial class Class1
         }
 
         [Fact]
-        public async Task CastConstantNumberToLong()
+        public async Task CastConstantNumberToLongAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5L
@@ -244,9 +244,9 @@ internal partial class Class1
         }
 
         [Fact]
-        public async Task CastConstantNumberToFloat()
+        public async Task CastConstantNumberToFloatAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5F
@@ -263,9 +263,9 @@ internal partial class Class1
         }
 
         [Fact]
-        public async Task CastConstantNumberToDecimal()
+        public async Task CastConstantNumberToDecimalAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5.0D
@@ -281,9 +281,9 @@ internal partial class Class1
         }
 
         [Fact]
-        public async Task CastConstantNumberToCharacterW()
+        public async Task CastConstantNumberToCharacterWAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Private Sub Test()
     Dim CR = ChrW(&HD)
 End Sub
@@ -295,9 +295,9 @@ End Sub
         }
 
         [Fact]
-        public async Task CastConstantNumberToCharacter()
+        public async Task CastConstantNumberToCharacterAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Private Sub Test()
     Dim CR As Char = Chr(&HD)
 End Sub
@@ -309,9 +309,9 @@ End Sub
         }
 
         [Fact]
-        public async Task TestSingleCharacterStringLiteralBecomesCharWhenNeeded()
+        public async Task TestSingleCharacterStringLiteralBecomesCharWhenNeededAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Class CharTestClass
     Private Function QuoteSplit(ByVal text As String) As String()
         Return text.Split("""""""")
@@ -327,9 +327,9 @@ internal partial class CharTestClass
         }
 
         [Fact]
-        public async Task TestCastHasBracketsWhenElementAccess()
+        public async Task TestCastHasBracketsWhenElementAccessAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Class TestCastHasBracketsWhenElementAccess
     Private Function Casting(ByVal sender As Object) As Integer
         Return CInt(DirectCast(sender, Object())(0))

@@ -27,7 +27,7 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
         }
 
         [Fact]
-        public async Task ExceptionDoesNotHaltPipelineSync()
+        public async Task ExceptionDoesNotHaltPipelineSyncAsync()
         {
             var asyncEnumerable = Input.ParallelSelectAwait(
                 async i => i > 3 ? i : throw new ObjectDisposedException("Original")

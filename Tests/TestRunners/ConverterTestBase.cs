@@ -40,14 +40,14 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
             };
         }
 
-        public async Task TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, bool expectCompilationErrors = false, TextConversionOptions conversionOptions = null, bool hasLineCommentConversionIssue = false)
+        public async Task TestConversionCSharpToVisualBasicAsync(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, bool expectCompilationErrors = false, TextConversionOptions conversionOptions = null, bool hasLineCommentConversionIssue = false)
         {
             expectedVisualBasicCode = AddSurroundingMethodBlock(expectedVisualBasicCode, expectSurroundingMethodBlock);
 
             conversionOptions ??= new TextConversionOptions(DefaultReferences.NetStandard2) { ShowCompilationErrors = !expectSurroundingMethodBlock };
-            await AssertConvertedCodeResultEquals<CSToVBConversion>(csharpCode, expectedVisualBasicCode, conversionOptions);
+            await AssertConvertedCodeResultEqualsAsync<CSToVBConversion>(csharpCode, expectedVisualBasicCode, conversionOptions);
             if (_testCstoVbCommentsByDefault && !hasLineCommentConversionIssue) {
-                await AssertLineCommentsConvertedInSameOrder<CSToVBConversion>(csharpCode, conversionOptions, "//", LineCanHaveCSharpComment);
+                await AssertLineCommentsConvertedInSameOrderAsync<CSToVBConversion>(csharpCode, conversionOptions, "//", LineCanHaveCSharpComment);
             }
         }
 
@@ -60,11 +60,11 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
         /// Lines that already have comments aren't automatically tested, so if a line changes order in a conversion, just add a comment to that line.
         /// If there's a comment conversion issue, set the optional hasLineCommentConversionIssue to true
         /// </summary>
-        private async Task AssertLineCommentsConvertedInSameOrder<TLanguageConversion>(string source, TextConversionOptions conversion, string singleLineCommentStart, Func<string, bool> lineCanHaveComment) where TLanguageConversion : ILanguageConversion, new()
+        private async Task AssertLineCommentsConvertedInSameOrderAsync<TLanguageConversion>(string source, TextConversionOptions conversion, string singleLineCommentStart, Func<string, bool> lineCanHaveComment) where TLanguageConversion : ILanguageConversion, new()
         {
             var (sourceLinesWithComments, lineNumbersAdded) = AddLineNumberComments(source, singleLineCommentStart, AutoTestCommentPrefix, lineCanHaveComment);
             string sourceWithComments = string.Join(Environment.NewLine, sourceLinesWithComments);
-            var convertedCode = await Convert<TLanguageConversion>(sourceWithComments, conversion);
+            var convertedCode = await ConvertAsync<TLanguageConversion>(sourceWithComments, conversion);
             var convertedCommentLineNumbers = convertedCode.Split(new[] { AutoTestCommentPrefix }, StringSplitOptions.None)
                 .Skip(1).Select(afterPrefix => afterPrefix.Split('\n')[0].TrimEnd()).ToList();
             var missingSourceLineNumbers = lineNumbersAdded.Except(convertedCommentLineNumbers);
@@ -95,14 +95,14 @@ End Sub";
         /// <summary>
         /// <paramref name="missingSemanticInfo"/> is currently unused but acts as documentation, and in future will be used to decide whether to check if the input/output compiles
         /// </summary>
-        public async Task TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool expectSurroundingBlock = false, bool missingSemanticInfo = false, bool hasLineCommentConversionIssue = false)
+        public async Task TestConversionVisualBasicToCSharpAsync(string visualBasicCode, string expectedCsharpCode, bool expectSurroundingBlock = false, bool missingSemanticInfo = false, bool hasLineCommentConversionIssue = false)
         {
             if (expectSurroundingBlock) expectedCsharpCode = SurroundWithBlock(expectedCsharpCode);
             var conversionOptions = new TextConversionOptions(DefaultReferences.NetStandard2) { RootNamespaceOverride = _rootNamespace, ShowCompilationErrors = !expectSurroundingBlock };
-            await AssertConvertedCodeResultEquals<VBToCSConversion>(visualBasicCode, expectedCsharpCode, conversionOptions);
+            await AssertConvertedCodeResultEqualsAsync<VBToCSConversion>(visualBasicCode, expectedCsharpCode, conversionOptions);
 
             if (_testVbtoCsCommentsByDefault && !hasLineCommentConversionIssue) {
-                await AssertLineCommentsConvertedInSameOrder<VBToCSConversion>(visualBasicCode, null, "'", _ => true);
+                await AssertLineCommentsConvertedInSameOrderAsync<VBToCSConversion>(visualBasicCode, null, "'", _ => true);
             }
         }
 
@@ -112,16 +112,16 @@ End Sub";
             return $"{{\r\n    {indentedStatements}\r\n}}";
         }
 
-        protected async Task<string> Convert<TLanguageConversion>(string inputCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
+        protected async Task<string> ConvertAsync<TLanguageConversion>(string inputCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
         {
             var textConversionOptions = conversionOptions ?? new TextConversionOptions(DefaultReferences.NetStandard2) { RootNamespaceOverride = _rootNamespace, ShowCompilationErrors = true };
             var conversionResult = await ProjectConversion.ConvertText<TLanguageConversion>(inputCode, textConversionOptions);
             return (conversionResult.ConvertedCode ?? "") + (conversionResult.GetExceptionsAsString() ?? "");
         }
 
-        protected async Task AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
+        protected async Task AssertConvertedCodeResultEqualsAsync<TLanguageConversion>(string inputCode, string expectedConvertedCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
         {
-            string convertedTextFollowedByExceptions = await Convert<TLanguageConversion>(inputCode, conversionOptions);
+            string convertedTextFollowedByExceptions = await ConvertAsync<TLanguageConversion>(inputCode, conversionOptions);
             AssertConvertedCodeResultEquals(convertedTextFollowedByExceptions, expectedConvertedCode, inputCode);
         }
 
