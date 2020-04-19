@@ -30,6 +30,8 @@ Currently, the VB -> C# conversion quality is higher than the C# -> VB conversio
 
 * Online snippet converter: [https://codeconverter.icsharpcode.net/](https://codeconverter.icsharpcode.net/) (less accurate due to lack of project context)
 
+* Command line `dotnet tool install ICSharpCode.CodeConverter.codeconv --global`
+
 * NuGet package: [https://www.nuget.org/packages/ICSharpCode.CodeConverter/](https://www.nuget.org/packages/ICSharpCode.CodeConverter/)
 
   * Check out the [CodeConversion class](https://github.com/icsharpcode/CodeConverter/blob/8226313a8d46d5dd73bd35f07af2212e6155d0fd/Vsix/CodeConversion.cs#L226) in the VSIX project.
