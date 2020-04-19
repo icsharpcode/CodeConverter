@@ -18,7 +18,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web", "Web\Web.csproj", "{0
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommandLine", "CommandLine", "{926D43FE-D6AE-45E7-A933-8A0F866E7876}"
 	ProjectSection(SolutionItems) = preProject
-		CommandLine\CodeConv.NetFramework\README.md = CommandLine\CodeConv.NetFramework\README.md
+		CommandLine\README.md = CommandLine\README.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeConv.NetFramework", "CommandLine\CodeConv.NetFramework\CodeConv.NetFramework.csproj", "{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D}"

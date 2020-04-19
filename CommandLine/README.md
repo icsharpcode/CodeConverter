@@ -38,3 +38,12 @@ Remarks:
   We recommend running the conversion in-place (i.e. not specifying an output directory) for best performance.
   See https://github.com/icsharpcode/CodeConverter for the source code, issues, Visual Studio extension and other info.
 ```
+
+## Design
+
+The tool can run in both netcore and netframework because:
+-   The conversion needs to be able run in a dot net core process so it works cross platform
+    -   So linux users can convert dot net core projects
+-   The conversion needs to be able to run in a net framework process because:
+    -   Dot net core msbuild can't load framework projects (i.e. 95% of the world's VB and C#)
+    -   Dot net core processes can't load net framework msbuild ([not planned to change](https://github.com/icsharpcode/CodeConverter/blob/master/CommandLine/CodeConv.Shared/CodeConvProgram.cs#L73-L81))
