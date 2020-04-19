@@ -141,7 +141,7 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
         {
             string languagePrefix = targetLanguage == Language.CS ? "VBToCS" : "CSToVB";
             string conversionDirectionFolderName = languagePrefix + "Results";
-            var path = Path.Combine(MultiFileCharacterizationDir, conversionDirectionFolderName, testFolderName);
+            var path = Path.Combine(MultiFileCharacterizationDir, conversionDirectionFolderName, testFolderName.Replace("Async", ""));
             return new DirectoryInfo(path);
         }
     }
