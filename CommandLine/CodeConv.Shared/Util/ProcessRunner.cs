@@ -11,41 +11,33 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
 {
     internal static class ProcessRunner
     {
-        public static Task<int> RedirectConsoleAndGetExitCodeAsync(DirectoryInfo workingDirectory, string command, params string[] args)
+
+        public static Task<int> ConnectConsoleGetExitCodeAsync(string command, params string[] args) =>
+            new ProcessStartInfo(command, ArgumentEscaper.EscapeAndConcatenate(args)).GetExitCodeAsync();
+
+        public static async Task<(int ExitCode, string StdOut, string StdErr)> GetOutputAsync(this ProcessStartInfo psi)
         {
-            return new ProcessStartInfo(Environment.ExpandEnvironmentVariables(command), ArgumentEscaper.EscapeAndConcatenate(args)) {
-                WorkingDirectory = workingDirectory.FullName
-            }.RedirectConsoleGetExitCodeAsync();
+            var stdOutStringBuilder = new StringBuilder();
+            using var stdOut = new StringWriter(stdOutStringBuilder);
+            var stdErrStringBuilder = new StringBuilder();
+            using var stdErr = new StringWriter(stdErrStringBuilder);
+            var exitCode = await GetExitCodeAsync(psi, stdOut, stdErr);
+            return (exitCode, stdOutStringBuilder.ToString(), stdErrStringBuilder.ToString());
         }
 
-        public static Task<int> RedirectConsoleAndGetExitCodeAsync(string command, params string[] args) =>
-            new ProcessStartInfo(Environment.ExpandEnvironmentVariables(command), ArgumentEscaper.EscapeAndConcatenate(args))
-            .RedirectConsoleGetExitCodeAsync();
-
-        public static async Task<string?> RedirectConsoleGetStdOutAsync(string command, params string[] args)
+        /// <param name="psi">Process is started from this information</param>
+        /// <param name="stdOut">Defaults to Console.Out</param>
+        /// <param name="stdErr">Defaults to Console.Error</param>
+        private static async Task<int> GetExitCodeAsync(this ProcessStartInfo psi, TextWriter? stdOut = null, TextWriter? stdErr = null)
         {
-            var sb = new StringBuilder();
-            string fullFilePath = Environment.ExpandEnvironmentVariables(command);
-            var psi = new ProcessStartInfo(fullFilePath, ArgumentEscaper.EscapeAndConcatenate(args));
-            if (Path.IsPathRooted(command)) {
-                if (!File.Exists(fullFilePath)) return null;
-                psi.WorkingDirectory = Path.GetDirectoryName(psi.FileName);
-            }
-
-            var exitCode = await psi.RedirectConsoleGetExitCodeAsync(stdOut: sb);
-            if (exitCode == 0 && !string.IsNullOrWhiteSpace(sb.ToString())) return sb.ToString().Trim('\r', '\n');
-
-            return null;
-        }
-
-        private static async Task<int> RedirectConsoleGetExitCodeAsync(this ProcessStartInfo psi, StringBuilder? stdOut = null)
-        {
+            stdOut ??= Console.Out;
+            stdErr ??= Console.Error;
             psi.UseShellExecute = false;
             psi.RedirectStandardError = true;
             psi.RedirectStandardOutput = true;
             using var process = new Process() { StartInfo = psi };
-            process.OutputDataReceived += (sender, e) => { Console.WriteLine(e.Data); stdOut?.AppendLine(e.Data); };
-            process.ErrorDataReceived += (sender, e) => Console.Error.WriteLine(e.Data);
+            process.OutputDataReceived += (sender, e) => stdOut.WriteLine(e.Data);
+            process.ErrorDataReceived += (sender, e) => stdErr.WriteLine(e.Data);
             try {
                 process.Start();
             } catch (Win32Exception win32Exception) {
@@ -54,9 +46,9 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
             await process.WaitForExitAsync();
-            for(int i = 0; process.ExitCode == 0 && stdOut != null && stdOut.Length == 0 && i < 500; i++) {
-                await Task.Delay(20);
-            }
+            await stdOut.FlushAsync();
+            await stdErr.FlushAsync();
+
             return process.ExitCode;
         }
     }

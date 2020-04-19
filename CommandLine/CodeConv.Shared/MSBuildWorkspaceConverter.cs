@@ -76,15 +76,15 @@ namespace ICSharpCode.CodeConverter.CommandLine
 
             var errorString = await GetCompilationErrorsAsync(solution.Projects);
             if (string.IsNullOrEmpty(errorString)) return solution;
-            progress.Report($"Compilation errors found before conversion:{Environment.NewLine}{errorString}");
+            progress.Report($"Compilation errors found before conversion.:{Environment.NewLine}{errorString}");
 
             bool wrongFramework = new[] { "Type 'System.Void' is not defined", "is missing from assembly" }.Any(errorString.Contains);
             if (_bestEffortConversion) {
                 progress.Report("Attempting best effort conversion on broken input due to override");
             } else if (wrongFramework && _isNetCore) {
-                throw new ValidationException("Compiling with dotnet core caused compilation errors, ensure a version of MSBuild is installed if this is a .NET framework project, or use --core-only false option");
+                throw new ValidationException($"Compiling with dotnet core caused compilation errors, install VS2019+ or use the option `{CodeConvProgram.CoreOptionDefinition} false` to force attempted conversion with older versions (not recommended)");
             } else if (wrongFramework && !_isNetCore) {
-                throw new ValidationException("Compiling with .NET Framework MSBuild caused compilation errors, use the --core-only true option if this is a .NET core only solution.");
+                throw new ValidationException($"Compiling with .NET Framework MSBuild caused compilation errors, use the {CodeConvProgram.CoreOptionDefinition} true option if this is a .NET core only solution");
             } else {
                 var mainMessage = "Fix compilation erorrs before conversion for an accurate conversion, or as a last resort, use the best effort conversion option";
                 throw new ValidationException($"{mainMessage}:{Environment.NewLine}{errorString}{Environment.NewLine}{mainMessage}");
@@ -106,7 +106,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
 
         private static async Task RestorePackagesForSolutionAsync(string solutionFile)
         {
-            var restoreExitCode = await ProcessRunner.RedirectConsoleAndGetExitCodeAsync(DotNetExe.FullPathOrDefault(), "restore", solutionFile);
+            var restoreExitCode = await ProcessRunner.ConnectConsoleGetExitCodeAsync(DotNetExe.FullPathOrDefault(), "restore", solutionFile);
             if (restoreExitCode != 0) throw new ValidationException("dotnet restore had a non-zero exit code.");
         }
 

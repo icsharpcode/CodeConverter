@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.DotNetTool.Util;
 using ICSharpCode.CodeConverter.Util;
+using McMaster.Extensions.CommandLineUtils;
 
 namespace ICSharpCode.CodeConverter.CommandLine.Util
 {
@@ -57,9 +59,14 @@ namespace ICSharpCode.CodeConverter.CommandLine.Util
 
         public static async Task<bool> IsGitDiffEmptyAsync(this DirectoryInfo outputDirectory)
         {
-            var args = new[] { "diff", "--exit-code", "--relative", "--summary", "--diff-filter=ACMRTUXB*" };
-            var gitDiff = await ProcessRunner.RedirectConsoleAndGetExitCodeAsync(outputDirectory, "git", args);
-            return gitDiff != 0;
+            var gitDiff = new ProcessStartInfo("git") {
+                Arguments = ArgumentEscaper.EscapeAndConcatenate(new[] { "diff", "--exit-code", "--relative", "--summary", "--diff-filter=ACMRTUXB*" }),
+                WorkingDirectory = outputDirectory.FullName
+            };
+
+            var (exitCode, stdErr, _) = await gitDiff.GetOutputAsync();
+            if (exitCode == 1) Console.WriteLine(stdErr);
+            return exitCode == 0;
         }
 
         public static bool ContainsDataOtherThanGitDir(this DirectoryInfo outputDirectory)

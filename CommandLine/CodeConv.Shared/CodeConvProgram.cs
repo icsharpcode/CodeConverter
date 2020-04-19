@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis;
 using ICSharpCode.CodeConverter.CommandLine.Util;
 using CodeConv.Shared.Util;
 using System.Reflection;
+using System.Diagnostics;
 
 namespace ICSharpCode.CodeConverter.CommandLine
 {
@@ -27,7 +28,7 @@ Remarks:
     [HelpOption("-h|--help")]
     public partial class CodeConvProgram
     {
-        private const string CoreOptionDefinition = "--core-only";
+        public const string CoreOptionDefinition = "--core-only";
 
         /// <remarks>Calls <see cref="OnExecuteAsync(CommandLineApplication)"/> by reflection</remarks>
         public static async Task<int> Main(string[] args) => await CommandLineApplication.ExecuteAsync<CodeConvProgram>(args);
@@ -75,7 +76,7 @@ Remarks:
                 if (await GetLatestMsBuildExePathAsync() is string latestMsBuildExePath) {
                     return await RunNetFrameworkExeAsync(latestMsBuildExePath);
                 } else {
-                    Console.WriteLine("WARNING: Could not find a recent version of Visual Studio MSBuild. Attempting to use dot net SDK MSBuild.");
+                    Console.WriteLine($"Using dot net SDK MSBuild which only works for dot net core projects.");
                 }
             }
 
@@ -112,7 +113,7 @@ Remarks:
             var args = Environment.GetCommandLineArgs().Skip(1).ToArray();
             if (string.IsNullOrWhiteSpace(assemblyPath)) throw new InvalidOperationException("Could not retrieve executing assembly directory");
             var netFrameworkExe = Path.Combine(assemblyPath, "NetFramework", "ICSharpCode.CodeConverter.CodeConv.NetFramework.exe");
-            var exitCode = await ProcessRunner.RedirectConsoleAndGetExitCodeAsync(netFrameworkExe, args);
+            var exitCode = await ProcessRunner.ConnectConsoleGetExitCodeAsync(netFrameworkExe, args);
             return exitCode;
         }
 
@@ -142,7 +143,7 @@ Remarks:
         private static async Task<bool> CouldOverwriteUncomittedFilesAsync(DirectoryInfo outputDirectory)
         {
             if (!outputDirectory.Exists || !outputDirectory.ContainsDataOtherThanGitDir()) return false;
-            return await outputDirectory.IsGitDiffEmptyAsync();
+            return !await outputDirectory.IsGitDiffEmptyAsync();
         }
 
         private Dictionary<string, string> ParsedProperties()
@@ -164,7 +165,15 @@ Remarks:
 
         private static async Task<string?> GetLatestMsBuildExePathAsync()
         {
-            return await ProcessRunner.RedirectConsoleGetStdOutAsync(@"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe", "-latest", "-prerelease", "-products", "*", "-requires", "Microsoft.Component.MSBuild", "-version", "[16.0,]", "-find", @"MSBuild\**\Bin\MSBuild.exe");
+            var vsWhereExe = Environment.ExpandEnvironmentVariables(@"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe");
+            var args = new[] { "-latest", "-prerelease", "-products", "*", "-requires", "Microsoft.Component.MSBuild", "-version", "[16.0,]", "-find", @"MSBuild\**\Bin\MSBuild.exe" };
+            
+            var (exitCode, stdOut, stdErr) = await new ProcessStartInfo(vsWhereExe) {
+                Arguments = ArgumentEscaper.EscapeAndConcatenate(args)
+            }.GetOutputAsync();
+
+            if (exitCode == 0 && !string.IsNullOrWhiteSpace(stdOut)) return stdOut;
+            return null;
         }
     }
 }
