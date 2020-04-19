@@ -24,6 +24,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
+    <NoWarn>NU5100</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -42,6 +43,7 @@
     <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.6.13" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.7.0" />
     <PackageReference Include="NuGet.Build.Tasks" Version="5.4.0" />
+    <PackageReference Include="System.CodeDom" Version="4.7.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.7.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.1" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />

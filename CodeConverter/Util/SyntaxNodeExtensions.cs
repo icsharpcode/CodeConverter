@@ -339,7 +339,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxToken? otherToken, TriviaKinds triviaKinds = null)
         {
-            triviaKinds = triviaKinds ?? TriviaKinds.All;
+            triviaKinds ??= TriviaKinds.All;
             if (!otherToken.HasValue || !otherToken.Value.HasTrailingTrivia) return node;
             var convertedTrivia = ConvertTrivia(otherToken.Value.TrailingTrivia.Where(triviaKinds.ShouldAccept).ToArray());
             return node.WithTrailingTrivia(node.ImportantTrailingTrivia().Concat(convertedTrivia));

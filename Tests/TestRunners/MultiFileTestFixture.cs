@@ -132,10 +132,9 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
 
         private static Encoding GetEncoding(string filePath)
         {
-            using (var reader = new StreamReader(filePath, true)) {
-                reader.Peek();
-                return reader.CurrentEncoding;
-            }
+            using var reader = new StreamReader(filePath, true);
+            reader.Peek();
+            return reader.CurrentEncoding;
         }
 
         private static DirectoryInfo GetExpectedResultDirectory(string testFolderName, Language targetLanguage)

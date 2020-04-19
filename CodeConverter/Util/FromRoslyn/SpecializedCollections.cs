@@ -91,7 +91,7 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
 
             HashSet<T> result = null;
             foreach (var item in values) {
-                result = result ?? new HashSet<T>();
+                result ??= new HashSet<T>();
                 result.Add(item);
             }
 

@@ -92,7 +92,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static string GetFullMetadataName(this INamespaceSymbol ns, StringBuilder sb = null)
         {
-            sb = sb ?? new StringBuilder();
+            sb ??= new StringBuilder();
             while (ns != null && !ns.IsGlobalNamespace) {
                 if (sb.Length > 0) sb.Insert(0, '.');
                 sb.Insert(0, ns.MetadataName);

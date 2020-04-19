@@ -40,7 +40,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         public static async Task<ConversionResult> ConvertText<TLanguageConversion>(string text, TextConversionOptions conversionOptions, IProgress<ConversionProgress> progress = null, CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
         {
-            progress = progress ?? new Progress<ConversionProgress>();
+            progress ??= new Progress<ConversionProgress>();
             using var roslynEntryPoint = await RoslynEntryPoint(progress);
 
             var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
@@ -52,7 +52,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         public static async Task<ConversionResult> ConvertSingle<TLanguageConversion>(Document document, SingleConversionOptions conversionOptions, IProgress<ConversionProgress> progress = null, CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
         {
-            progress = progress ?? new Progress<ConversionProgress>();
+            progress ??= new Progress<ConversionProgress>();
             using var roslynEntryPoint = await RoslynEntryPoint(progress);
 
             var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
@@ -68,10 +68,10 @@ namespace ICSharpCode.CodeConverter.Shared
 
             var conversion = new ProjectConversion(projectContentsConverter, new[] { document }, Enumerable.Empty<TextDocument>(), languageConversion, cancellationToken, conversionOptions.ShowCompilationErrors, returnSelectedNode);
             var conversionResults = await conversion.Convert(progress).ToArrayAsync();
-            return GetSingleResultForDocument(conversionResults, document, progress);
+            return GetSingleResultForDocument(conversionResults, document);
         }
 
-        private static ConversionResult GetSingleResultForDocument(ConversionResult[] conversionResults, Document document, IProgress<ConversionProgress> progress)
+        private static ConversionResult GetSingleResultForDocument(ConversionResult[] conversionResults, Document document)
         {
             var codeResult = conversionResults.First(r => r.SourcePathOrNull == document.FilePath);
             codeResult.Exceptions = conversionResults.SelectMany(x => x.Exceptions).ToArray();
@@ -82,7 +82,7 @@ namespace ICSharpCode.CodeConverter.Shared
             ILanguageConversion languageConversion, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken cancellationToken,
             params (string Find, string Replace, bool FirstOnly)[] replacements)
         {
-            progress = progress ?? new Progress<ConversionProgress>();
+            progress ??= new Progress<ConversionProgress>();
             using var roslynEntryPoint = await RoslynEntryPoint(progress);
 
             var projectContentsConverter = await languageConversion.CreateProjectContentsConverter(project, progress, cancellationToken);

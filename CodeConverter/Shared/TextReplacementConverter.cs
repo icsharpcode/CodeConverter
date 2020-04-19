@@ -9,7 +9,7 @@ namespace ICSharpCode.CodeConverter.Shared
     {
         public static ConversionResult ConversionResultFromReplacements(this FileInfo filePath, IEnumerable<(string Find, string Replace, bool FirstOnly)> replacements, Func<string, string> postReplacementTransform = null)
         {
-            postReplacementTransform = postReplacementTransform ?? (s => s);
+            postReplacementTransform ??= (s => s);
             var newProjectText = File.ReadAllText(filePath.FullName);
             newProjectText = newProjectText.Replace(replacements);
             string withReplacements = postReplacementTransform(newProjectText);

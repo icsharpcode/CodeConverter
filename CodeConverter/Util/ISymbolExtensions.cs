@@ -23,7 +23,7 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static TSymbol ExtractBestMatch<TSymbol>(this SymbolInfo info, Func<TSymbol, bool> isMatch = null) where TSymbol : class, ISymbol
         {
-            isMatch = isMatch ?? (_ => true);
+            isMatch ??= (_ => true);
             if (info.Symbol == null && info.CandidateSymbols.Length == 0)
                 return null;
             if (info.Symbol != null)

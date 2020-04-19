@@ -7,10 +7,11 @@ namespace CodeConv.Shared.Util
     {
         public static void UseVersionAgnosticAssemblyResolution(this AppDomain appDomain) => appDomain.AssemblyResolve += LoadAnyVersion;
 
-        private static Assembly? LoadAnyVersion(object sender, ResolveEventArgs args)
+        private static Assembly? LoadAnyVersion(object? sender, ResolveEventArgs? args)
         {
+            if (args?.Name == null) return null;
             var requestedAssemblyName = new AssemblyName(args.Name);
-            if (requestedAssemblyName.Version != null) {
+            if (requestedAssemblyName.Version != null && requestedAssemblyName.Name != null) {
                 try {
                     return Assembly.Load(new AssemblyName(requestedAssemblyName.Name) { CultureName = requestedAssemblyName.CultureName });
                 } catch (Exception) {

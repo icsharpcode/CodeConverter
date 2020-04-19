@@ -33,7 +33,7 @@ Remarks:
         /// <remarks>Calls <see cref="OnExecuteAsync(CommandLineApplication)"/> by reflection</remarks>
         public static async Task<int> Main(string[] args) => await CommandLineApplication.ExecuteAsync<CodeConvProgram>(args);
         /// <remarks>Used by reflection in CommandLineApplication.ExecuteAsync</remarks>
-        private async Task<int> OnExecuteAsync(CommandLineApplication app) => await ExecuteAsync();
+        private async Task<int> OnExecuteAsync(CommandLineApplication _) => await ExecuteAsync();
 
         [FileExists]
         [Required]
@@ -88,8 +88,8 @@ Remarks:
 
                 if (!(ex is ValidationException)) {
                     await Console.Error.WriteLineAsync(Environment.NewLine + ex.GetType() + ex.StackTrace);
-                    if (ex is ReflectionTypeLoadException rtle) {
-                        foreach (var e in rtle.LoaderExceptions) {
+                    if (ex is ReflectionTypeLoadException rtle && rtle.LoaderExceptions is IEnumerable<Exception> loaderExceptions) {
+                        foreach (var e in loaderExceptions) {
                             await Console.Error.WriteLineAsync(e.Message);
                         }
                     }
@@ -168,7 +168,7 @@ Remarks:
             var vsWhereExe = Environment.ExpandEnvironmentVariables(@"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe");
             var args = new[] { "-latest", "-prerelease", "-products", "*", "-requires", "Microsoft.Component.MSBuild", "-version", "[16.0,]", "-find", @"MSBuild\**\Bin\MSBuild.exe" };
             
-            var (exitCode, stdOut, stdErr) = await new ProcessStartInfo(vsWhereExe) {
+            var (exitCode, stdOut, _) = await new ProcessStartInfo(vsWhereExe) {
                 Arguments = ArgumentEscaper.EscapeAndConcatenate(args)
             }.GetOutputAsync();
 
