@@ -29,9 +29,7 @@
 
   <ItemGroup>
     <None Include="CodeConvNuGetPackageIcon.png" Pack="true" PackagePath="" />
-    <Content Include="$(SolutionDir)CommandLine\CodeConv.NetFramework\bin\$(Configuration)\net472\**" LinkBase="NetFramework" Pack="true">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <None Include="$(SolutionDir)CommandLine\CodeConv.NetFramework\bin\$(Configuration)\net472\**" LinkBase="NetFramework" PackagePath="tools\$(TargetFramework)\any\NetFramework" Pack="true" />
   </ItemGroup>
 
   <ItemGroup>
