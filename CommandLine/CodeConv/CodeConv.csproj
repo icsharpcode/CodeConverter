@@ -9,9 +9,9 @@
     <AssemblyName>ICSharpCode.CodeConverter.CodeConv</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter.CodeConv</RootNamespace>
     <ToolCommandName>codeconv</ToolCommandName>
-    <AssemblyVersion>8.1.0.0</AssemblyVersion>
-    <FileVersion>8.1.0.0</FileVersion>
-    <Version>8.1.0</Version>
+    <AssemblyVersion>8.1.1.0</AssemblyVersion>
+    <FileVersion>8.1.1.0</FileVersion>
+    <Version>8.1.1</Version>
     <Description>Bidirectional code converter for VB and C#</Description>
     <Copyright>Copyright 2011-2020 AlphaSierraPapa</Copyright>
     <PackageProjectUrl>https://github.com/icsharpcode/CodeConverter/</PackageProjectUrl>

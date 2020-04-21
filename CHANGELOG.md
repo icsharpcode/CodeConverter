@@ -14,11 +14,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### C# -> VB
 
 
-## [8.1.0] - 2020-04-19
+## [8.1.1] - 2020-04-21
 
 
 ### Vsix
 
+* Fixes conversion in VS2017
 
 ### VB -> C#
 
@@ -26,7 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### C# -> VB
 
 
-## [8.0.5] - 2020-04-19
+## [8.1.0] - 2020-04-19
 
 
 ### Vsix
