@@ -1,4 +1,5 @@
 * text eol=crlf
+*.dll binary
 *.png binary
 *.jpeg binary
 *.jpg binary
