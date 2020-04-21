@@ -60,35 +60,6 @@ namespace ICSharpCode.CodeConverter.Util
             yield return value;
         }
 
-        public static bool IsEmpty<T>(this IEnumerable<T> source)
-        {
-            var readOnlyCollection = source as IReadOnlyCollection<T>;
-            if (readOnlyCollection != null) {
-                return readOnlyCollection.Count == 0;
-            }
-
-            var genericCollection = source as ICollection<T>;
-            if (genericCollection != null) {
-                return genericCollection.Count == 0;
-            }
-
-            var collection = source as ICollection;
-            if (collection != null) {
-                return collection.Count == 0;
-            }
-
-            var str = source as string;
-            if (str != null) {
-                return str.Length == 0;
-            }
-
-            foreach (var t in source) {
-                return false;
-            }
-
-            return true;
-        }
-
         public static bool IsEmpty<T>(this IReadOnlyCollection<T> source)
         {
             return source.Count == 0;

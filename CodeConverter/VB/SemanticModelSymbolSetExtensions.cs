@@ -45,7 +45,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static IEnumerable<CSS.BlockSyntax> GetDeepestBlocks(CS.CSharpSyntaxNode body)
         {
-            return body.DescendantNodesAndSelf().OfType<CSS.BlockSyntax>().Where(x => x.DescendantNodes().OfType<CSS.BlockSyntax>().IsEmpty());
+            return body.DescendantNodesAndSelf().OfType<CSS.BlockSyntax>().Where(x => !x.DescendantNodes().OfType<CSS.BlockSyntax>().Any());
         }
 
         private static IEnumerable<TResult> DeclarationWhereNotNull<TNode, TResult>(ISymbol symbol, Func<TNode, TResult> selectWhereNotNull)
