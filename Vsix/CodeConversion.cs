@@ -25,7 +25,6 @@ namespace ICSharpCode.CodeConverter.VsExtension
         private readonly IAsyncServiceProvider _serviceProvider;
         private readonly JoinableTaskFactory _joinableTaskFactory;
         private readonly VisualStudioWorkspace _visualStudioWorkspace;
-        public static readonly string ConverterTitle = "Code converter";
         private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine;
         private readonly OutputWindow _outputWindow;
         private readonly Cancellation _packageCancellation;

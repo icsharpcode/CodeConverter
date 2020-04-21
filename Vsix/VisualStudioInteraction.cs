@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using EnvDTE;
 using EnvDTE80;
+using ICSharpCode.CodeConverter.Shared;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
@@ -35,6 +38,24 @@ namespace ICSharpCode.CodeConverter.VsExtension
         internal static DTE2 Dte => m_Dte ?? (m_Dte = Package.GetGlobalService(typeof(DTE)) as DTE2);
 
         private static CancellationToken CancelAllToken;
+        private static readonly Version m_LowestSupportedVersion = new Version(15, 7, 0, 0);
+        private static readonly Version m_FullVsVersion = GetFullVsVersion();
+        private static readonly string m_Title = "Code converter " + new AssemblyName(typeof(CodeConversion).Assembly.FullName).Version.ToString(3) + " - Visual Studio " + m_FullVsVersion;
+
+        private static Version GetFullVsVersion()
+        {
+            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "msenv.dll");
+
+            if (File.Exists(path)) {
+                var fvi = FileVersionInfo.GetVersionInfo(path);
+                return new Version(fvi.ProductMajorPart, fvi.ProductMinorPart, fvi.ProductBuildPart,
+                    fvi.ProductPrivatePart);
+            } else {
+                return null;
+            }
+        }
+
+
         internal static void Initialize(Cancellation packageCancellation)
         {
             CancelAllToken = packageCancellation.CancelAll;
@@ -86,12 +107,19 @@ namespace ICSharpCode.CodeConverter.VsExtension
             return textDocument;
         }
 
-        public static async Task ShowExceptionAsync(IAsyncServiceProvider serviceProvider, string title, Exception ex)
+        public static async Task ShowExceptionAsync(Exception ex)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
             if (!CancelAllToken.IsCancellationRequested) {
-                MessageBox.Show($"An error has occured during conversion - press Ctrl+C to copy the details: {ex}",
-                    title, MessageBoxButton.OK, MessageBoxImage.Error);
+                var versionMessageSuffix = "";
+                if (m_FullVsVersion < m_LowestSupportedVersion) {
+                    versionMessageSuffix = $"{Environment.NewLine}This extension only supports VS {m_LowestSupportedVersion}+, you are currently using {m_FullVsVersion}";
+                }
+                if (m_FullVsVersion.Major < 16) {
+                    versionMessageSuffix = $"{Environment.NewLine}Support for VS2017 (15.*) is likely to end this year. You're using: {m_FullVsVersion}";
+                }
+                MessageBox.Show($"An error has occured during conversion - press Ctrl+C to copy the details: {ex}{versionMessageSuffix}",
+                    m_Title, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

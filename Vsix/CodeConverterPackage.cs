@@ -84,56 +84,15 @@ namespace ICSharpCode.CodeConverter.VsExtension
 
         internal Cancellation PackageCancellation { get; } = new Cancellation();
 
-        private readonly AssemblyName _thisAssemblyName;
-        private readonly HashSet<string> _ourAssemblyNames;
         /// <summary>
         /// Initializes a new instance of package class.
         /// </summary>
         public CodeConverterPackage()
         {
-            var thisAssembly = GetType().Assembly;
-            _thisAssemblyName = thisAssembly.GetName();
-            _ourAssemblyNames = new HashSet<string>(new[] { _thisAssemblyName }.Concat(thisAssembly.GetReferencedAssemblies().Where(a => a.Name.StartsWith("ICSharpCode"))).Select(a => a.FullName));
             // Inside this method you can place any initialization code that does not require
             // any Visual Studio service because at this point the package object is created but
             // not sited yet inside Visual Studio environment. The place to do all the other
             // initialization is the Initialize method.
-        }
-
-        // System.Threading.Tasks.Dataflow 4.5.24.0 shipped with VS2017 15.9.21+28307.1064 but we want to target 4.6.0.0
-        private Assembly LoadWithoutVersionForOurDependencies(object sender, ResolveEventArgs args)
-        {
-            var requestedAssemblyName = new AssemblyName(args.Name);
-            if (requestedAssemblyName.Version != null && IsThisExtensionRequestingAssembly()) {
-                return LoadAnyVersionOfAssembly(requestedAssemblyName);
-            }
-            return null;
-
-        }
-
-        private static Assembly LoadAnyVersionOfAssembly(AssemblyName assemblyName)
-        {
-            try {
-                return Assembly.Load(new AssemblyName(assemblyName.Name){CultureName = assemblyName.CultureName});
-            } catch (FileNotFoundException e) when (e.FileName.Contains("Microsoft.VisualStudio.LanguageServices") && ProbablyRequiresVsUpgrade) {
-                MessageBox.Show(
-                    "Code Converter cannot find `Microsoft.VisualStudio.LanguageServices`. Please upgrade Visual Studio to version 15.9.3 or above.\r\n\r\n" +
-                    "If after upgrading you still see this error, attach your activity log %AppData%\\Microsoft\\VisualStudio\\<version>\\ActivityLog.xml to a GitHub issue at https://github.com/icsharpcode/CodeConverter \r\n\r\n" +
-                    "You can press Ctrl + C to copy this message",
-                    "Upgrade Visual Studio", MessageBoxButton.OK);
-                return null;
-            }
-        }
-
-        private bool IsThisExtensionRequestingAssembly()
-        {
-            return GetPossibleRequestingAssemblies().Any(requesting => _ourAssemblyNames.Contains(requesting.FullName));
-        }
-
-        private IEnumerable<AssemblyName> GetPossibleRequestingAssemblies()
-        {
-            return new StackTrace().GetFrames().Select(f => f.GetMethod().DeclaringType?.Assembly)
-                .Select(a => a.GetName()).SkipWhile(a => Equals(a, _thisAssemblyName));
         }
 
         /// <summary>
@@ -153,25 +112,6 @@ namespace ICSharpCode.CodeConverter.VsExtension
             VisualStudioInteraction.Initialize(PackageCancellation);
             await TaskScheduler.Default;
             await base.InitializeAsync(cancellationToken, progress);
-        }
-
-        public static bool ProbablyRequiresVsUpgrade {
-            get {
-                var version = FullVsVersion;
-                return version == null || version < new Version(15, 9, 3, 0);
-            }
-        }
-
-        private static Version FullVsVersion {
-            get {
-                string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "msenv.dll");
-
-                if (File.Exists(path)) {
-                    var fvi = FileVersionInfo.GetVersionInfo(path);
-                    return new Version(fvi.ProductMajorPart, fvi.ProductMinorPart, fvi.ProductBuildPart,
-                        fvi.ProductPrivatePart);
-                } else return null;
-            }
         }
 
         internal OleMenuCommandWithBlockingStatus CreateCommand(Func<CancellationToken, Task> callbackAsync, CommandID menuCommandId)
