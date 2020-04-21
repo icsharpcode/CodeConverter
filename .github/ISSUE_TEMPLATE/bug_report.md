@@ -13,7 +13,9 @@ assignees: ''
 3. 
 
 ### Error message shown
-Copy and paste any error messages / relevant text and/or screenshot the incorrect behaviour.
+* Follow the steps on the [wiki](https://github.com/icsharpcode/CodeConverter/wiki) - where do things go wrong?
+* Copy and paste any error messages / relevant text and/or screenshot the incorrect behaviour.
+
 
 If there's no error message, try the [Visual Studio Activity log](https://docs.microsoft.com/en-us/visualstudio/extensibility/how-to-use-the-activity-log?view=vs-2019#to-examine-the-activity-log):
 > Run Visual Studio with the /Log command line switch to write ActivityLog.xml to disk during your session.
