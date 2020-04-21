@@ -146,3 +146,6 @@ dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity:non
 
 # RCS1123: Add parentheses according to operator precedence.
 dotnet_diagnostic.RCS1123.severity = none
+
+# Default severity for analyzer diagnostics with category 'Performance' - turn this up to warn when looking for performance issues
+dotnet_analyzer_diagnostic.category-Performance.severity = suggestion
