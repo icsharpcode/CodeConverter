@@ -1,6 +1,10 @@
 # Code Converter [![Build Status](https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_apis/build/status/icsharpcode.CodeConverter?branchName=master)](https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_build/latest?definitionId=2&branchName=master)
 
-Convert code from VB.NET to C# and vice versa via Roslyn using a [Visual Studio Extension](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter) or [Online snippet converter](https://codeconverter.icsharpcode.net/)
+Convert code from VB.NET to C# and vice versa using Roslyn - all free and open source:
+* [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter)
+* Command line `dotnet tool install ICSharpCode.CodeConverter.codeconv --global`
+* [Online snippet converter](https://codeconverter.icsharpcode.net/)
+* [Nuget library](https://www.nuget.org/packages/ICSharpCode.CodeConverter/) (this underpins all other free converters you'll find online)
 
 ## Visual Studio Extension
 Adds context menu items to convert projects/files between VB.NET and C#. See the [wiki documentation](https://github.com/icsharpcode/CodeConverter/wiki) for help using it.
@@ -27,15 +31,9 @@ Currently, the VB -> C# conversion quality is higher than the C# -> VB conversio
 * Latest CI build (potentially less stable):
   * https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_build/latest?definitionId=2&branchName=master&status=succeeded
   * Uninstall current version, then install VSIX file inside "1 published" artifact
-
-* Online snippet converter: [https://codeconverter.icsharpcode.net/](https://codeconverter.icsharpcode.net/) (less accurate due to lack of project context)
-
-* Command line `dotnet tool install ICSharpCode.CodeConverter.codeconv --global`
-
-* NuGet package: [https://www.nuget.org/packages/ICSharpCode.CodeConverter/](https://www.nuget.org/packages/ICSharpCode.CodeConverter/)
-
+* Integrating the NuGet library
   * Check out the [CodeConversion class](https://github.com/icsharpcode/CodeConverter/blob/8226313a8d46d5dd73bd35f07af2212e6155d0fd/Vsix/CodeConversion.cs#L226) in the VSIX project.
-  * Or check out the [ConverterController](https://github.com/icsharpcode/CodeConverter/blob/master/CodeConverter.Web/ConverterController.cs) for a more web-focused API.
+  * Or check out the [ConverterController](https://github.com/icsharpcode/CodeConverter/blob/master/Web/ConverterController.cs) for a more web-focused API.
 
 ## Building/running from source
 1. Ensure you have [.NET Core SDK 3.1+](https://dotnet.microsoft.com/download/dotnet-core/3.1)
