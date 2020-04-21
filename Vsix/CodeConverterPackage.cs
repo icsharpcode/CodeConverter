@@ -29,6 +29,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
     /// <remarks>
     /// Until the package is loaded, converting a multiple selection of projects won't work because there's no way to set a ProvideUIContextRule that covers that case
     /// </remarks>
+    [ProvideBindingPath] // Resolve assemblies in our folder i.e. System.Threading.Tasks.Dataflow
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.0")] // Info on this package for Help/About
     [ProvideMenuResource("Menus.ctmenu", 1)]
@@ -93,7 +94,6 @@ namespace ICSharpCode.CodeConverter.VsExtension
             var thisAssembly = GetType().Assembly;
             _thisAssemblyName = thisAssembly.GetName();
             _ourAssemblyNames = new HashSet<string>(new[] { _thisAssemblyName }.Concat(thisAssembly.GetReferencedAssemblies().Where(a => a.Name.StartsWith("ICSharpCode"))).Select(a => a.FullName));
-            AppDomain.CurrentDomain.AssemblyResolve += LoadWithoutVersionForOurDependencies;
             // Inside this method you can place any initialization code that does not require
             // any Visual Studio service because at this point the package object is created but
             // not sited yet inside Visual Studio environment. The place to do all the other

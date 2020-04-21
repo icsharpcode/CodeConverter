@@ -38,6 +38,8 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <CopyVsixExtensionLocation>$(LocalAppData)\Microsoft\VisualStudio\15.0_8bd9890a\Extensions\frc3cnfo.23z</CopyVsixExtensionLocation>
+    <CopyVsixExtensionFiles Condition="Exists($(CopyVsixExtensionLocation))">True</CopyVsixExtensionFiles>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -67,6 +69,10 @@
       <ResourceName>Menus.ctmenu</ResourceName>
       <SubType>Designer</SubType>
     </VSCTCompile>
+    <Content Include="..\CommandLine\CodeConv.NetFramework\$(OutputPath)\System.Threading.Tasks.Dataflow.dll">
+      <Link>System.Threading.Tasks.Dataflow.dll</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="Images\refactoringessentials-logo90.png">
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -100,6 +106,7 @@
     <Compile Include="..\CodeConverter\Shared\DefaultReferences.cs">
       <Link>DefaultReferences.cs</Link>
     </Compile>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="OleMenuCommandWithBlockingStatus.cs" />
     <Compile Include="CodeConversion.cs" />
     <Compile Include="ConvertCSToVBCommand.cs" />
