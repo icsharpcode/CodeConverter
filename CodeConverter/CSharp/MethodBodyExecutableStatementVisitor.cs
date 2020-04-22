@@ -539,17 +539,23 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             TypeSyntax type;
             SyntaxToken id;
+            List<StatementSyntax> statements = new List<StatementSyntax>();
             if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax vds) {
                 var declaration = (await CommonConversions.SplitVariableDeclarations(vds)).Variables.Single().Decl;
                 type = declaration.Type;
                 id = declaration.Variables.Single().Identifier;
+            } else if (_semanticModel.GetSymbolInfo(stmt.ControlVariable).Symbol is ISymbol varSymbol) {
+                var v = (IdentifierNameSyntax) await stmt.ControlVariable.AcceptAsync(_expressionVisitor);
+                id = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "current" + varSymbol.Name.ToPascalCase()));
+                statements.Add(SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, v, SyntaxFactory.IdentifierName(id))));
+                type = CommonConversions.GetTypeSyntax(varSymbol.GetSymbolType());
             } else {
                 var v = (IdentifierNameSyntax) await stmt.ControlVariable.AcceptAsync(_expressionVisitor);
                 id = v.Identifier;
                 type = SyntaxFactory.ParseTypeName("var");
             }
 
-            var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
+            var block = SyntaxFactory.Block(statements.Concat(await ConvertStatements(node.Statements)));
             var csExpression = (ExpressionSyntax)await stmt.Expression.AcceptAsync(_expressionVisitor);
             return SingleStatement(SyntaxFactory.ForEachStatement(
                 type,

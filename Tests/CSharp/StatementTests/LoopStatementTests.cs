@@ -138,9 +138,9 @@ internal partial class TestClass
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
-        For Each val As Integer In values
-            If val = 2 Then Continue For
-            If val = 3 Then Exit For
+        For Each v As Integer In values
+            If v = 2 Then Continue For
+            If v = 3 Then Exit For
         Next
     End Sub
 End Class", @"
@@ -148,11 +148,11 @@ internal partial class TestClass
 {
     private void TestMethod(int[] values)
     {
-        foreach (int val in values)
+        foreach (int v in values)
         {
-            if (val == 2)
+            if (v == 2)
                 continue;
-            if (val == 3)
+            if (v == 3)
                 break;
         }
     }
@@ -164,6 +164,33 @@ internal partial class TestClass
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
+        For Each v In values
+            If v = 2 Then Continue For
+            If v = 3 Then Exit For
+        Next
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(int[] values)
+    {
+        foreach (var v in values)
+        {
+            if (v == 2)
+                continue;
+            if (v == 3)
+                break;
+        }
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ForEachStatementWithOuterDeclarationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(ByVal values As Integer())
+        Dim val As Integer
         For Each val In values
             If val = 2 Then Continue For
             If val = 3 Then Exit For
@@ -174,17 +201,17 @@ internal partial class TestClass
 {
     private void TestMethod(int[] values)
     {
-        foreach (var val in values)
+        int val;
+        foreach (int currentVal in values)
         {
+            val = currentVal;
             if (val == 2)
                 continue;
             if (val == 3)
                 break;
         }
     }
-}
-1 source compilation errors:
-BC30516: Overload resolution failed because no accessible 'Val' accepts this number of arguments.");
+}");
         }
 
         [Fact]
