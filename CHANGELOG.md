@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Improve multi-declaration field conversion for arrrays - [#559](https://github.com/icsharpcode/CodeConverter/issues/559)
 * Add parentheses around ternary statement - [#565](https://github.com/icsharpcode/CodeConverter/issues/565)
 * When converting ForEach loop, avoid duplicate variable compilation issue [#558](https://github.com/icsharpcode/CodeConverter/issues/558)
+* Improvements to for loop with missing semantic info - [#482](https://github.com/icsharpcode/CodeConverter/issues/482)
 
 ### C# -> VB
 

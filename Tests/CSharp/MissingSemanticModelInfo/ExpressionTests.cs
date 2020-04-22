@@ -32,6 +32,7 @@ BC32016: 'Public Property SomeProperty As System.Some.UnknownType' has no parame
 1 target compilation errors:
 CS0234: The type or namespace name 'Some' does not exist in the namespace 'System' (are you missing an assembly reference?)");
         }
+
         [Fact]
         public async Task InvokeMethodWithUnknownReturnTypeAsync()
         {

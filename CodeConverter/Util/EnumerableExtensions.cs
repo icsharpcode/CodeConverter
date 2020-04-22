@@ -77,6 +77,18 @@ namespace ICSharpCode.CodeConverter.Util
             return count == 1 ? previous : default(T);
         }
 
+        public static T SelectFirst<T>(this IEnumerable<T> source, Func<T, bool> predicate = null)
+        {
+            if (predicate != null) source = source.Where(predicate);
+            T previous = default(T);
+            int count = 0;
+            foreach (var element in source) {
+                previous = element;
+                if (++count > 1) return default(T);
+            }
+            return count == 1 ? previous : default(T);
+        }
+
         public static IEnumerable<T> Yield<T>(this T singleElement)
         {
             yield return singleElement;

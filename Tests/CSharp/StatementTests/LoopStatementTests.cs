@@ -380,6 +380,41 @@ internal partial class Issue453
         }
 
         [Fact]
+        public async Task ForEnumAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Friend Enum MyEnum
+    Zero,
+    One
+End Enum
+
+Friend Class ForEnumAsync
+    Sub PrintLoop(startIndex As MyEnum, endIndex As MyEnum, [step] As MyEnum)
+      For i = startIndex To endIndex Step [step]
+        Debug.WriteLine(i)
+      Next
+      For i2 As MyEnum = startIndex To endIndex Step [step]
+        Debug.WriteLine(i2)
+      Next
+      For i3 As MyEnum = startIndex To endIndex Step 3
+        Debug.WriteLine(i3)
+      Next
+      For i4 As MyEnum = startIndex To 4
+        Debug.WriteLine(i4)
+      Next
+    End Sub
+End Class", @"using System.Diagnostics;
+
+internal partial class ForEnumAsync
+{
+    public void PrintLoop(int startIndex, int endIndex, int step)
+    {
+        for (int i = startIndex, loopTo = endIndex; step >= 0 ? i <= loopTo : i >= loopTo; i += step)
+            Debug.WriteLine(i);
+    }
+}");
+        }
+
+        [Fact]
         public async Task ForeachWithObjectCollectionAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program

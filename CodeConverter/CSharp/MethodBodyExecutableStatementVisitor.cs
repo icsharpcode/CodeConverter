@@ -462,7 +462,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             VariableDeclarationSyntax declaration = null;
             ExpressionSyntax id;
             var controlVarOp = _semanticModel.GetOperation(stmt.ControlVariable) as IVariableDeclaratorOperation;
-            var controlVarType = controlVarOp?.Symbol.Type;
+            var controlVarSymbol = controlVarOp?.Symbol;
+            var controlVarType = controlVarSymbol?.Type;
             var initializers = new List<ExpressionSyntax>();
             if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                 var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
@@ -471,9 +472,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 id = SyntaxFactory.IdentifierName(declaration.Variables[0].Identifier);
             } else {
                 id = (ExpressionSyntax) await stmt.ControlVariable.AcceptAsync(_expressionVisitor);
-                var controlVarSymbol = controlVarOp?.Symbol;
+
+                // If missing semantic info, the compiler just guesses object. In this branch there was no explicit type, so let's try to improve on that guess:
+                var bestType = controlVarType.Yield()
+                    .Concat(new[] { stmt.FromValue, stmt.ToValue, stmt.StepClause?.StepValue }.Select(exp => _semanticModel.GetTypeInfo(exp).Type))
+                    .FirstOrDefault(t => t != null && t.SpecialType != SpecialType.System_Object);
+
                 if (controlVarSymbol != null && controlVarSymbol.DeclaringSyntaxReferences.Any(r => r.Span.OverlapsWith(stmt.ControlVariable.Span))) {
-                    declaration = CommonConversions.CreateVariableDeclarationAndAssignment(controlVarSymbol.Name, startValue, CommonConversions.GetTypeSyntax(controlVarType));
+                    declaration = CommonConversions.CreateVariableDeclarationAndAssignment(controlVarSymbol.Name, startValue, CommonConversions.GetTypeSyntax(bestType));
                 } else {
                     startValue = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, id, startValue);
                     initializers.Add(startValue);
