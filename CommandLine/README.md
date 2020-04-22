@@ -1,7 +1,7 @@
 # codeconv
 
 ```
-dotnet tool install codeconv -g
+dotnet tool install ICSharpCode.CodeConverter.CodeConv -g
 ```
 
 .NET Core 3.1 Tool 
@@ -41,7 +41,7 @@ Remarks:
 
 ## Design
 
-The tool can run in both netcore and netframework because:
+The tool can run in both netcore and netframeworkÂ because:
 -   The conversion needs to be able run in a dot net core process so it works cross platform
     -   So linux users can convert dot net core projects
 -   The conversion needs to be able to run in a net framework process because:
