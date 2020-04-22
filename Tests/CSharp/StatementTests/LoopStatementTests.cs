@@ -174,7 +174,7 @@ internal partial class TestClass
 {
     private void TestMethod(int[] values)
     {
-        foreach (var v in values)
+        foreach (int v in values)
         {
             if (v == 2)
                 continue;
@@ -186,7 +186,41 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ForEachStatementWithOuterDeclarationAsync()
+        public async Task ForEachStatementWithUsedOuterDeclarationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(ByVal values As Integer())
+        Dim val As Integer
+        For Each val In values
+            If val = 2 Then Continue For
+            If val = 3 Then Exit For
+        Next
+
+        Console.WriteLine(val)
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod(int[] values)
+    {
+        var val = default(int);
+        foreach (int currentVal in values)
+        {
+            val = currentVal;
+            if (val == 2)
+                continue;
+            if (val == 3)
+                break;
+        }
+
+        Console.WriteLine(val);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ForEachStatementWithUnusedOuterDeclarationAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
@@ -201,14 +235,55 @@ internal partial class TestClass
 {
     private void TestMethod(int[] values)
     {
-        int val;
-        foreach (int currentVal in values)
+        foreach (int val in values)
         {
-            val = currentVal;
             if (val == 2)
                 continue;
             if (val == 3)
                 break;
+        }
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ForEachStatementWithUnusedNestedDeclarationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(ByVal values As Integer())
+        Dim inline1, inline2, keep1, keep2 As Integer
+        For Each inline1 In values
+            For Each keep1 In values
+                For Each inline2 In values
+                    If inline2 = 2 Then Continue For
+                    If inline2 = 3 Then Exit For
+                Next
+            Next
+            Console.WriteLine(keep1)
+        Next
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod(int[] values)
+    {
+        int keep1 = default, keep2;
+        foreach (int inline1 in values)
+        {
+            foreach (int currentKeep1 in values)
+            {
+                keep1 = currentKeep1;
+                foreach (int inline2 in values)
+                {
+                    if (inline2 == 2)
+                        continue;
+                    if (inline2 == 3)
+                        break;
+                }
+            }
+
+            Console.WriteLine(keep1);
         }
     }
 }");
@@ -322,7 +397,7 @@ internal partial class Program
     public static void Main(string[] args)
     {
         object zs = new[] { 1, 2, 3 };
-        foreach (var z in (IEnumerable)zs)
+        foreach (object z in (IEnumerable)zs)
             Console.WriteLine(z);
     }
 }");

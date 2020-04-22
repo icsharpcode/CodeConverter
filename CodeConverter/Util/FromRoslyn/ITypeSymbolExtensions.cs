@@ -144,7 +144,7 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
                 return InheritsFromOrEquals(type, baseType);
             }
 
-            return type.GetBaseTypesAndThis().Concat(type.AllInterfaces).Contains(t => SymbolEquivalenceComparer.Instance.Equals(t, baseType));
+            return type.GetBaseTypesAndThis().Concat(type.AllInterfaces).Any(t => SymbolEquivalenceComparer.Instance.Equals(t, baseType));
         }
 
         // Determine if "type" inherits from "baseType", ignoring constructed types and interfaces, dealing
@@ -152,7 +152,7 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
         public static bool InheritsFromOrEquals(
             this ITypeSymbol type, ITypeSymbol baseType)
         {
-            return type.GetBaseTypesAndThis().Contains(t => SymbolEquivalenceComparer.Instance.Equals(t, baseType));
+            return type.GetBaseTypesAndThis().Any(t => SymbolEquivalenceComparer.Instance.Equals(t, baseType));
         }
 
         // Determine if "type" inherits from or implements "baseType", ignoring constructed types, and dealing
@@ -168,7 +168,7 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
             }
 
             IEnumerable<ITypeSymbol> baseTypes = (baseType.TypeKind == TypeKind.Interface) ? type.AllInterfaces : type.GetBaseTypes();
-            return baseTypes.Contains(t => SymbolEquivalenceComparer.Instance.Equals(t.OriginalDefinition, originalBaseType));
+            return baseTypes.Any(t => SymbolEquivalenceComparer.Instance.Equals(t.OriginalDefinition, originalBaseType));
         }
 
         // Determine if "type" inherits from "baseType", ignoring constructed types, and dealing
@@ -203,7 +203,7 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
         public static bool Implements(
             this ITypeSymbol type, ITypeSymbol interfaceType)
         {
-            return type.AllInterfaces.Contains(t => SymbolEquivalenceComparer.Instance.Equals(t, interfaceType));
+            return type.AllInterfaces.Any(t => SymbolEquivalenceComparer.Instance.Equals(t, interfaceType));
         }
 
         public static bool IsAttribute(this ITypeSymbol symbol)
