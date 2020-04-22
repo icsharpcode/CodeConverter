@@ -561,7 +561,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 type = declaration.Type;
                 id = declaration.Variables.Single().Identifier;
             } else if (_semanticModel.GetSymbolInfo(stmt.ControlVariable).Symbol is ISymbol varSymbol) {
-                type = CommonConversions.GetTypeSyntax(varSymbol.GetSymbolType(), varSymbol.GetSymbolType()?.SpecialType == SpecialType.System_Object);
+                var variableType = varSymbol.GetSymbolType();
+                var useVar = variableType?.SpecialType == SpecialType.System_Object || _semanticModel.GetTypeInfo(stmt.Expression).ConvertedType.IsEnumerableOfExactType(variableType);
+                type = CommonConversions.GetTypeSyntax(varSymbol.GetSymbolType(), useVar);
                 var v = (IdentifierNameSyntax)await stmt.ControlVariable.AcceptAsync(_expressionVisitor);
                 if (_localsToInlineInLoop.Contains(varSymbol)) {
                     id = v.Identifier;

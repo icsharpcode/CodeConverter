@@ -174,7 +174,7 @@ internal partial class TestClass
 {
     private void TestMethod(int[] values)
     {
-        foreach (int v in values)
+        foreach (var v in values)
         {
             if (v == 2)
                 continue;
@@ -205,7 +205,7 @@ internal partial class TestClass
     private void TestMethod(int[] values)
     {
         var val = default(int);
-        foreach (int currentVal in values)
+        foreach (var currentVal in values)
         {
             val = currentVal;
             if (val == 2)
@@ -235,7 +235,7 @@ internal partial class TestClass
 {
     private void TestMethod(int[] values)
     {
-        foreach (int val in values)
+        foreach (var val in values)
         {
             if (val == 2)
                 continue;
@@ -269,12 +269,12 @@ internal partial class TestClass
     private void TestMethod(int[] values)
     {
         int keep1 = default, keep2;
-        foreach (int inline1 in values)
+        foreach (var inline1 in values)
         {
-            foreach (int currentKeep1 in values)
+            foreach (var currentKeep1 in values)
             {
                 keep1 = currentKeep1;
-                foreach (int inline2 in values)
+                foreach (var inline2 in values)
                 {
                     if (inline2 == 2)
                         continue;
@@ -397,7 +397,7 @@ internal partial class Program
     public static void Main(string[] args)
     {
         object zs = new[] { 1, 2, 3 };
-        foreach (object z in (IEnumerable)zs)
+        foreach (var z in (IEnumerable)zs)
             Console.WriteLine(z);
     }
 }");

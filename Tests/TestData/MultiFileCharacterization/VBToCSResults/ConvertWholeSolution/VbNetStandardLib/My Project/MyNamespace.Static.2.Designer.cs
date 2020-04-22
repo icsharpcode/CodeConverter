@@ -1123,13 +1123,9 @@ namespace Microsoft.VisualBasic
             MisMatch:
                 ;
                 OutNumberFormat = (System.Globalization.NumberFormatInfo)InNumberFormat.Clone();
-                {
-                    var withBlock = OutNumberFormat;
-                    withBlock.CurrencyDecimalSeparator = withBlock.NumberDecimalSeparator;
-                    withBlock.CurrencyGroupSeparator = withBlock.NumberGroupSeparator;
-                    withBlock.CurrencyDecimalDigits = withBlock.NumberDecimalDigits;
-                }
-
+                OutNumberFormat.CurrencyDecimalSeparator = OutNumberFormat.NumberDecimalSeparator;
+                OutNumberFormat.CurrencyGroupSeparator = OutNumberFormat.NumberGroupSeparator;
+                OutNumberFormat.CurrencyDecimalDigits = OutNumberFormat.NumberDecimalDigits;
                 return OutNumberFormat;
             }
 
