@@ -996,6 +996,26 @@ CS0103: The name 'string' does not exist in the current context");
         }
 
         [Fact]
+        public async Task ConditionalExpressionInStringConcatAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class ConditionalExpressionInStringConcat
+    Private Sub TestMethod(ByVal str As String)
+        Dim appleCount as integer = 42
+        Console.WriteLine(""I have "" & appleCount & If(appleCount = 1, "" apple"", "" apples""))
+    End Sub
+End Class", @"using System;
+
+internal partial class ConditionalExpressionInStringConcat
+{
+    private void TestMethod(string str)
+    {
+        int appleCount = 42;
+        Console.WriteLine(""I have "" + appleCount + (appleCount == 1 ? "" apple"" : "" apples""));
+    }
+}");
+        }
+
+        [Fact]
         public async Task ConditionalExpressionInUnaryExpressionAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass

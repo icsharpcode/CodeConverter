@@ -9,7 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
+
 * Improve multi-declaration field conversion for arrrays - [#559](https://github.com/icsharpcode/CodeConverter/issues/559)
+* Add parentheses around ternary statement - [#565](https://github.com/icsharpcode/CodeConverter/issues/565)
 
 ### C# -> VB
 
