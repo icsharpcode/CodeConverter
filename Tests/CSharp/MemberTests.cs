@@ -25,6 +25,21 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task TestMultiArrayFieldAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Class TestClass
+    Dim Parts(), Taxes(), Deposits()(), Prepaid()(), FromDate, ToDate As String
+End Class", @"
+internal partial class TestClass
+{
+    private string[] Parts, Taxes;
+    private string[][] Deposits, Prepaid;
+    private string FromDate, ToDate;
+}");
+        }
+
+        [Fact]
         public async Task TestConstantFieldInModuleAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(

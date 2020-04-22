@@ -179,7 +179,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             var filter = (CatchFilterClauseSyntax) await stmt.WhenClause.AcceptAsync(TriviaConvertingExpressionVisitor);
-            var methodBodyVisitor = CreateMethodBodyVisitor(node); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
+            var methodBodyVisitor = await CreateMethodBodyVisitor(node); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
             var stmts = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor));
             return SyntaxFactory.CatchClause(
                 catcher,
@@ -202,7 +202,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitFinallyBlock(VBasic.Syntax.FinallyBlockSyntax node)
         {
-            var methodBodyVisitor = CreateMethodBodyVisitor(node); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
+            var methodBodyVisitor = await CreateMethodBodyVisitor(node); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
             var stmts = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor));
             return SyntaxFactory.FinallyClause(SyntaxFactory.Block(stmts));
         }
@@ -864,7 +864,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             IReadOnlyCollection<StatementSyntax> convertedStatements;
             if (node.Body is VBasic.Syntax.StatementSyntax statement) {
-                convertedStatements = await statement.Accept(CreateMethodBodyVisitor(node));
+                convertedStatements = await statement.Accept(await CreateMethodBodyVisitor(node));
             } else {
                 var csNode = await node.Body.AcceptAsync(TriviaConvertingExpressionVisitor);
                 convertedStatements = new[] { SyntaxFactory.ExpressionStatement((ExpressionSyntax)csNode)};
@@ -875,7 +875,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitMultiLineLambdaExpression(VBasic.Syntax.MultiLineLambdaExpressionSyntax node)
         {
-            var methodBodyVisitor = CreateMethodBodyVisitor(node);
+            var methodBodyVisitor = await CreateMethodBodyVisitor(node);
             var body = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor));
             var param = (ParameterListSyntax) await node.SubOrFunctionHeader.ParameterList.AcceptAsync(TriviaConvertingExpressionVisitor);
             return await _lambdaConverter.Convert(node, param, body.ToList());
@@ -1170,12 +1170,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(args));
         }
 
-        public VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
+        public async Task<VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
         {
-            var methodBodyVisitor = new MethodBodyExecutableStatementVisitor(node, _semanticModel, TriviaConvertingExpressionVisitor, CommonConversions, _withBlockLhs, _extraUsingDirectives, _additionalLocals, _methodsWithHandles) {
-                IsIterator = isIterator,
-                ReturnVariable = csReturnVariable,
-            };
+            var methodBodyVisitor = await MethodBodyExecutableStatementVisitor.CreateAsync(node, _semanticModel, TriviaConvertingExpressionVisitor, CommonConversions, _withBlockLhs, _extraUsingDirectives, _additionalLocals, _methodsWithHandles, isIterator, csReturnVariable);
             return methodBodyVisitor.CommentConvertingVisitor;
         }
 

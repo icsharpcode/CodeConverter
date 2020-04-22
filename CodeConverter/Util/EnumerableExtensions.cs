@@ -65,14 +65,21 @@ namespace ICSharpCode.CodeConverter.Util
             return source.Count == 0;
         }
 
+        public static T OnlyOrDefault<T>(this IEnumerable<T> source, Func<T, bool> predicate = null)
+        {
+            if (predicate != null) source = source.Where(predicate);
+            T previous = default(T);
+            int count = 0;
+            foreach (var element in source) {
+                previous = element;
+                if (++count > 1) return default(T);
+            }
+            return count == 1 ? previous : default(T);
+        }
+
         public static IEnumerable<T> Yield<T>(this T singleElement)
         {
             yield return singleElement;
-        }
-
-        public static bool Contains<T>(this IEnumerable<T> sequence, Func<T, bool> predicate)
-        {
-            return sequence.Any(predicate);
         }
 
         public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> items)

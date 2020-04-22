@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Util
@@ -47,6 +48,20 @@ namespace ICSharpCode.CodeConverter.Util
         public static bool IsArrayOf(this ITypeSymbol t, SpecialType specialType)
         {
             return t is IArrayTypeSymbol ats && ats.ElementType.SpecialType == specialType;
+        }
+
+        public static bool IsEnumerableOfExactType(this ITypeSymbol symbol, ITypeSymbol typeArg)
+        {
+            return SymbolEquivalenceComparer.Instance.Equals(GetEnumerableElementTypeOrDefault(symbol), typeArg);
+        }
+
+        private static ITypeSymbol GetEnumerableElementTypeOrDefault(ITypeSymbol symbol)
+        {
+            if (symbol is IArrayTypeSymbol ats) return ats.ElementType;
+            if (symbol is INamedTypeSymbol nt) return nt.Yield().Concat(nt.AllInterfaces).OfType<INamedTypeSymbol>()
+                .OnlyOrDefault(impl => impl.MetadataName == "IEnumerable`1")
+                ?.TypeArguments.OnlyOrDefault();
+            return null;
         }
     }
 }

@@ -49,7 +49,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private string _topAncestorNamespace;
 
         private CommonConversions CommonConversions { get; }
-        private Func<VisualBasicSyntaxNode, bool, IdentifierNameSyntax, VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>> _createMethodBodyVisitor { get; }
+        private Func<VisualBasicSyntaxNode, bool, IdentifierNameSyntax, Task<VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>>> _createMethodBodyVisitorAsync { get; }
 
         public DeclarationNodeVisitor(Document document, Compilation compilation, SemanticModel semanticModel,
             CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator)
@@ -66,13 +66,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             _additionalInitializers = new AdditionalInitializers();
             var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _methodsWithHandles, CommonConversions, _extraUsingDirectives);
             _triviaConvertingExpressionVisitor = expressionNodeVisitor.TriviaConvertingExpressionVisitor;
-            _createMethodBodyVisitor = expressionNodeVisitor.CreateMethodBodyVisitor;
+            _createMethodBodyVisitorAsync = expressionNodeVisitor.CreateMethodBodyVisitor;
             CommonConversions.TriviaConvertingExpressionVisitor = _triviaConvertingExpressionVisitor;
         }
 
-        public VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
+        public async Task<VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
         {
-            return _createMethodBodyVisitor(node, isIterator, csReturnVariable);
+            return await _createMethodBodyVisitorAsync(node, isIterator, csReturnVariable);
         }
 
         public override async Task<CSharpSyntaxNode> DefaultVisit(SyntaxNode node)
@@ -809,7 +809,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             Microsoft.CodeAnalysis.CSharp.SyntaxKind blockKind;
             bool isIterator = node.IsIterator();
             var csReturnVariableOrNull = CommonConversions.GetRetVariableNameOrNull(node);
-            var convertedStatements = await ConvertStatements(node.Statements, CreateMethodBodyVisitor(node, isIterator));
+            var convertedStatements = await ConvertStatements(node.Statements, await CreateMethodBodyVisitor(node, isIterator));
             var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
             var attributes = await CommonConversions.ConvertAttributes(node.AccessorStatement.AttributeLists);
             var modifiers = CommonConversions.ConvertModifiers(node, node.AccessorStatement.Modifiers, TokenContext.Local);
@@ -889,7 +889,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return methodBlock;
             }
             var csReturnVariableOrNull = CommonConversions.GetRetVariableNameOrNull(node);
-            var visualBasicSyntaxVisitor = CreateMethodBodyVisitor(node, node.IsIterator(), csReturnVariableOrNull);
+            var visualBasicSyntaxVisitor = await CreateMethodBodyVisitor(node, node.IsIterator(), csReturnVariableOrNull);
             var convertedStatements = await ConvertStatements(node.Statements, visualBasicSyntaxVisitor);
 
             if (node.SubOrFunctionStatement.Identifier.Text == "InitializeComponent" && node.SubOrFunctionStatement.IsKind(VBasic.SyntaxKind.SubStatement) && declaredSymbol.ContainingType.IsDesignerGeneratedTypeWithInitializeComponent(_compilation)) {
@@ -1140,7 +1140,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var attributeList = SyntaxFactory.List(attributes);
             var returnType = (TypeSyntax) await (node.AsClause?.Type).AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VoidKeyword));
             var parameterList = (ParameterListSyntax) await node.ParameterList.AcceptAsync(_triviaConvertingExpressionVisitor);
-            var methodBodyVisitor = CreateMethodBodyVisitor(node);
+            var methodBodyVisitor = await CreateMethodBodyVisitor(node);
             var body = SyntaxFactory.Block(await containingBlock.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor)));
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, GetMemberContext(node));
 
@@ -1181,7 +1181,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 ctorCall = null;
             }
 
-            var methodBodyVisitor = CreateMethodBodyVisitor(node);
+            var methodBodyVisitor = await CreateMethodBodyVisitor(node);
             return SyntaxFactory.ConstructorDeclaration(
                 SyntaxFactory.List(attributes),
                 modifiers, 

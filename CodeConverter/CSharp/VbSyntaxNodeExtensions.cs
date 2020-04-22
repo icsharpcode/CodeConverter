@@ -20,20 +20,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public static bool PrecedenceCouldChange(this VisualBasicSyntaxNode node)
         {
-            bool parentIsSameBinaryKind = node is BinaryExpressionSyntax && node.Parent is BinaryExpressionSyntax parent && parent.Kind() == node.Kind();
+            bool parentIsBinaryExpression = node is BinaryExpressionSyntax;
             bool parentIsReturn = node.Parent is ReturnStatementSyntax;
             bool parentIsLambda = node.Parent is LambdaExpressionSyntax;
             bool parentIsNonArgumentExpression = node.Parent is Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax && !(node.Parent is ArgumentSyntax);
             bool parentIsParenthesis = node.Parent is ParenthesizedExpressionSyntax;
 
-            // Could be a full C# precedence table - this is just a common case
-            bool parentIsAndOr = node.Parent.IsKind(SyntaxKind.AndAlsoExpression, SyntaxKind.OrElseExpression);
-            bool nodeIsRelationalOrEqual = node.IsKind(SyntaxKind.EqualsExpression, SyntaxKind.NotEqualsExpression,
-                SyntaxKind.LessThanExpression, SyntaxKind.LessThanOrEqualExpression,
-                SyntaxKind.GreaterThanExpression, SyntaxKind.GreaterThanOrEqualExpression);
-            bool csharpPrecedenceSame = parentIsAndOr && nodeIsRelationalOrEqual;
-
-            return parentIsNonArgumentExpression && !parentIsSameBinaryKind && !parentIsReturn && !parentIsLambda && !parentIsParenthesis && !csharpPrecedenceSame;
+            return parentIsNonArgumentExpression && !parentIsBinaryExpression && !parentIsReturn && !parentIsLambda && !parentIsParenthesis;
         }
     }
 }

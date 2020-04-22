@@ -13,7 +13,7 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
     Private Sub TestMethod()
         Dim rslt = Not 1 = 2
         Dim rslt2 = Not True
-        Dim rslt3 = TypeOf True IsNot Boolean
+        Dim rslt3 = TypeOf New Object() IsNot Boolean
     End Sub
 End Class", @"
 internal partial class TestClass
@@ -22,11 +22,9 @@ internal partial class TestClass
     {
         bool rslt = !(1 == 2);
         bool rslt2 = !true;
-        bool rslt3 = !(true is bool);
+        bool rslt3 = !(new object() is bool);
     }
-}
-1 source compilation errors:
-BC30021: 'TypeOf ... Is' requires its left operand to have a reference type, but this operand has the value type 'Boolean'.");
+}");
         }
 
         [Fact]
@@ -995,6 +993,26 @@ internal partial class TestClass
 }
 1 target compilation errors:
 CS0103: The name 'string' does not exist in the current context");
+        }
+
+        [Fact]
+        public async Task ConditionalExpressionInStringConcatAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class ConditionalExpressionInStringConcat
+    Private Sub TestMethod(ByVal str As String)
+        Dim appleCount as integer = 42
+        Console.WriteLine(""I have "" & appleCount & If(appleCount = 1, "" apple"", "" apples""))
+    End Sub
+End Class", @"using System;
+
+internal partial class ConditionalExpressionInStringConcat
+{
+    private void TestMethod(string str)
+    {
+        int appleCount = 42;
+        Console.WriteLine(""I have "" + appleCount + (appleCount == 1 ? "" apple"" : "" apples""));
+    }
+}");
         }
 
         [Fact]

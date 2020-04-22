@@ -138,9 +138,9 @@ internal partial class TestClass
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
-        For Each val As Integer In values
-            If val = 2 Then Continue For
-            If val = 3 Then Exit For
+        For Each v As Integer In values
+            If v = 2 Then Continue For
+            If v = 3 Then Exit For
         Next
     End Sub
 End Class", @"
@@ -148,11 +148,11 @@ internal partial class TestClass
 {
     private void TestMethod(int[] values)
     {
-        foreach (int val in values)
+        foreach (int v in values)
         {
-            if (val == 2)
+            if (v == 2)
                 continue;
-            if (val == 3)
+            if (v == 3)
                 break;
         }
     }
@@ -164,6 +164,67 @@ internal partial class TestClass
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
+        For Each v In values
+            If v = 2 Then Continue For
+            If v = 3 Then Exit For
+        Next
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(int[] values)
+    {
+        foreach (var v in values)
+        {
+            if (v == 2)
+                continue;
+            if (v == 3)
+                break;
+        }
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ForEachStatementWithUsedOuterDeclarationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(ByVal values As Integer())
+        Dim val As Integer
+        For Each val In values
+            If val = 2 Then Continue For
+            If val = 3 Then Exit For
+        Next
+
+        Console.WriteLine(val)
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod(int[] values)
+    {
+        var val = default(int);
+        foreach (var currentVal in values)
+        {
+            val = currentVal;
+            if (val == 2)
+                continue;
+            if (val == 3)
+                break;
+        }
+
+        Console.WriteLine(val);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ForEachStatementWithUnusedOuterDeclarationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(ByVal values As Integer())
+        Dim val As Integer
         For Each val In values
             If val = 2 Then Continue For
             If val = 3 Then Exit For
@@ -182,9 +243,50 @@ internal partial class TestClass
                 break;
         }
     }
-}
-1 source compilation errors:
-BC30516: Overload resolution failed because no accessible 'Val' accepts this number of arguments.");
+}");
+        }
+
+        [Fact]
+        public async Task ForEachStatementWithUnusedNestedDeclarationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(ByVal values As Integer())
+        Dim inline1, inline2, keep1, keep2 As Integer
+        For Each inline1 In values
+            For Each keep1 In values
+                For Each inline2 In values
+                    If inline2 = 2 Then Continue For
+                    If inline2 = 3 Then Exit For
+                Next
+            Next
+            Console.WriteLine(keep1)
+        Next
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod(int[] values)
+    {
+        int keep1 = default, keep2;
+        foreach (var inline1 in values)
+        {
+            foreach (var currentKeep1 in values)
+            {
+                keep1 = currentKeep1;
+                foreach (var inline2 in values)
+                {
+                    if (inline2 == 2)
+                        continue;
+                    if (inline2 == 3)
+                        break;
+                }
+            }
+
+            Console.WriteLine(keep1);
+        }
+    }
+}");
         }
 
         [Fact]

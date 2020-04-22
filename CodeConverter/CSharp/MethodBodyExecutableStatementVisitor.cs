@@ -13,8 +13,6 @@ using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.CodeAnalysis.Text;
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
-using Microsoft.VisualBasic.CompilerServices;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -31,7 +29,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly HashSet<string> _extraUsingDirectives;
         private readonly MethodsWithHandles _methodsWithHandles;
         private readonly HashSet<string> _generatedNames = new HashSet<string>();
+        private readonly HashSet<VBSyntax.StatementSyntax> _redundantSourceStatements = new HashSet<VBSyntax.StatementSyntax>();
         private INamedTypeSymbol _vbBooleanTypeSymbol;
+        private readonly HashSet<ILocalSymbol> _localsToInlineInLoop;
 
         public bool IsIterator { get; set; }
         public IdentifierNameSyntax ReturnVariable { get; set; }
@@ -40,10 +40,20 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CommonConversions CommonConversions { get; }
 
-        public MethodBodyExecutableStatementVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
+        public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VBasic.VisualBasicSyntaxNode node, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives, AdditionalLocals additionalLocals, MethodsWithHandles methodsWithHandles, bool isIterator, IdentifierNameSyntax csReturnVariable)
+        {
+            var solution = commonConversions.Document.Project.Solution;
+            var declarationsToInlineInLoop = await solution.GetDescendantsToInlineInLoopAsync(semanticModel, node);
+            return new MethodBodyExecutableStatementVisitor(node, semanticModel, triviaConvertingExpressionVisitor, commonConversions, withBlockLhs, extraUsingDirectives, additionalLocals, methodsWithHandles, declarationsToInlineInLoop) {
+                IsIterator = isIterator,
+                ReturnVariable = csReturnVariable,
+            };
+        }
+
+        private MethodBodyExecutableStatementVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
             CommentConvertingVisitorWrapper expressionVisitor, CommonConversions commonConversions,
             Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
-            AdditionalLocals additionalLocals, MethodsWithHandles methodsWithHandles)
+            AdditionalLocals additionalLocals, MethodsWithHandles methodsWithHandles, HashSet<ILocalSymbol> localsToInlineInLoop)
         {
             _methodNode = methodNode;
             _semanticModel = semanticModel;
@@ -55,6 +65,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var byRefParameterVisitor = new ByRefParameterVisitor(this, additionalLocals, semanticModel, _generatedNames);
             CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor);
             _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
+            _localsToInlineInLoop = localsToInlineInLoop;
         }
 
         public override async Task<SyntaxList<StatementSyntax>> DefaultVisit(SyntaxNode node)
@@ -90,7 +101,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var declarations = new List<StatementSyntax>();
 
             foreach (var declarator in node.Declarators) {
-                var splitVariableDeclarations = await CommonConversions.SplitVariableDeclarations(declarator, preferExplicitType: isConst);
+                var splitVariableDeclarations = await SplitVariableDeclarations(declarator, preferExplicitType: isConst);
                 var localDeclarationStatementSyntaxs = splitVariableDeclarations.Variables.Select(declAndType => SyntaxFactory.LocalDeclarationStatement(modifiers, declAndType.Decl));
                 declarations.AddRange(localDeclarationStatementSyntaxs);
                 var localFunctions = splitVariableDeclarations.Methods.Cast<LocalFunctionStatementSyntax>();
@@ -455,7 +466,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var initializers = new List<ExpressionSyntax>();
             if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                 var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
-                declaration = (await CommonConversions.SplitVariableDeclarations(v)).Variables.Single().Decl;
+                declaration = (await SplitVariableDeclarations(v)).Variables.Single().Decl;
                 declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(declaration.Variables[0].WithInitializer(SyntaxFactory.EqualsValueClause(startValue))));
                 id = SyntaxFactory.IdentifierName(declaration.Variables[0].Identifier);
             } else {
@@ -503,6 +514,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.List(preLoopStatements.Concat(new[] { forStatementSyntax }));
         }
 
+        private async Task<(IReadOnlyCollection<(VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarations(VBSyntax.VariableDeclaratorSyntax v, bool preferExplicitType = false)
+        {
+            return await CommonConversions.SplitVariableDeclarations(v, _localsToInlineInLoop, preferExplicitType);
+        }
+
         private async Task<(ExpressionSyntax, ExpressionSyntax)> ConvertConditionAndStepClause(VBSyntax.ForStatementSyntax stmt, ExpressionSyntax id, ExpressionSyntax csToValue)
         {
             var vbStepValue = stmt.StepClause?.StepValue;
@@ -539,17 +555,29 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             TypeSyntax type;
             SyntaxToken id;
+            List<StatementSyntax> statements = new List<StatementSyntax>();
             if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax vds) {
-                var declaration = (await CommonConversions.SplitVariableDeclarations(vds)).Variables.Single().Decl;
+                var declaration = (await SplitVariableDeclarations(vds)).Variables.Single().Decl;
                 type = declaration.Type;
                 id = declaration.Variables.Single().Identifier;
+            } else if (_semanticModel.GetSymbolInfo(stmt.ControlVariable).Symbol is ISymbol varSymbol) {
+                var variableType = varSymbol.GetSymbolType();
+                var useVar = variableType?.SpecialType == SpecialType.System_Object || _semanticModel.GetTypeInfo(stmt.Expression).ConvertedType.IsEnumerableOfExactType(variableType);
+                type = CommonConversions.GetTypeSyntax(varSymbol.GetSymbolType(), useVar);
+                var v = (IdentifierNameSyntax)await stmt.ControlVariable.AcceptAsync(_expressionVisitor);
+                if (_localsToInlineInLoop.Contains(varSymbol)) {
+                    id = v.Identifier;
+                } else {
+                    id = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "current" + varSymbol.Name.ToPascalCase()));
+                    statements.Add(SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, v, SyntaxFactory.IdentifierName(id))));
+                }
             } else {
                 var v = (IdentifierNameSyntax) await stmt.ControlVariable.AcceptAsync(_expressionVisitor);
                 id = v.Identifier;
                 type = SyntaxFactory.ParseTypeName("var");
             }
 
-            var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
+            var block = SyntaxFactory.Block(statements.Concat(await ConvertStatements(node.Statements)));
             var csExpression = (ExpressionSyntax)await stmt.Expression.AcceptAsync(_expressionVisitor);
             return SingleStatement(SyntaxFactory.ForEachStatement(
                 type,
@@ -729,7 +757,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (node.UsingStatement.Expression == null) {
                 StatementSyntax stmt = statementSyntax;
                 foreach (var v in node.UsingStatement.Variables.Reverse())
-                foreach (var declaration in (await CommonConversions.SplitVariableDeclarations(v)).Variables.Reverse())
+                foreach (var declaration in (await SplitVariableDeclarations(v)).Variables.Reverse())
                     stmt = SyntaxFactory.UsingStatement(declaration.Decl, null, stmt);
                 return SingleStatement(stmt);
             }
@@ -795,74 +823,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         private SyntaxList<StatementSyntax> SingleStatement(ExpressionSyntax expression)
         {
             return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ExpressionStatement(expression));
-        }
-    }
-
-    internal static class Extensions
-    {
-        /// <summary>
-        /// Returns the single statement in a block if it has no nested statements.
-        /// If it has nested statements, and the surrounding block was removed, it could be ambiguous,
-        /// e.g. if (...) { if (...) return null; } else return "";
-        /// Unbundling the middle if statement would bind the else to it, rather than the outer if statement
-        /// </summary>
-        public static StatementSyntax UnpackNonNestedBlock(this BlockSyntax block)
-        {
-            return block.Statements.Count == 1 && !block.ContainsNestedStatements() ? block.Statements[0] : block;
-        }
-
-        /// <summary>
-        /// Returns the single statement in a block
-        /// </summary>
-        public static bool TryUnpackSingleStatement(this IReadOnlyCollection<StatementSyntax> statements, out StatementSyntax singleStatement)
-        {
-            singleStatement = statements.Count == 1 ? statements.Single() : null;
-            if (singleStatement is BlockSyntax block && TryUnpackSingleStatement(block.Statements, out var s)) {
-                singleStatement = s;
-            }
-
-            return singleStatement != null;
-        }
-
-        /// <summary>
-        /// Returns the single expression in a statement
-        /// </summary>
-        public static bool TryUnpackSingleExpressionFromStatement(this StatementSyntax statement, out ExpressionSyntax singleExpression)
-        {
-            switch(statement){
-                case BlockSyntax blockSyntax:
-                    singleExpression = null;
-                    return TryUnpackSingleStatement(blockSyntax.Statements, out var nestedStmt) &&
-                           TryUnpackSingleExpressionFromStatement(nestedStmt, out singleExpression);
-                case ExpressionStatementSyntax expressionStatementSyntax:
-                    singleExpression = expressionStatementSyntax.Expression;
-                    return singleExpression != null;
-                case ReturnStatementSyntax returnStatementSyntax:
-                    singleExpression = returnStatementSyntax.Expression;
-                    return singleExpression != null;
-                default:
-                    singleExpression = null;
-                    return false;
-            }
-        }
-
-        /// <summary>
-        /// Only use this over <see cref="UnpackNonNestedBlock"/> in special cases where it will display more neatly and where you're sure nested statements don't introduce ambiguity
-        /// </summary>
-        public static StatementSyntax UnpackPossiblyNestedBlock(this BlockSyntax block)
-        {
-            SyntaxList<StatementSyntax> statementSyntaxs = block.Statements;
-            return statementSyntaxs.Count == 1 ? statementSyntaxs[0] : block;
-        }
-
-        private static bool ContainsNestedStatements(this BlockSyntax block)
-        {
-            return block.Statements.Any(HasDescendantCSharpStatement);
-        }
-
-        private static bool HasDescendantCSharpStatement(this StatementSyntax c)
-        {
-            return c.DescendantNodes().OfType<StatementSyntax>().Any();
         }
     }
 }

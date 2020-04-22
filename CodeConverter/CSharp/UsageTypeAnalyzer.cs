@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -16,15 +17,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public static async Task<bool> ContainsWriteUsagesFor(Solution solution, ISymbol symbol, Location outsideLocation = null)
         {
-            var references = await SymbolFinder.FindReferencesAsync(symbol, solution);
-            var operationsReferencing = references.SelectMany(r => r.Locations).GroupBy(l => (Doc: l.Document, Tree: l.Location.SourceTree)).Select(async g => {
-                var document = g.Key.Doc;
-                var locations = g.Where(l => l.Location.SourceTree != outsideLocation?.SourceTree || !l.Location.SourceSpan.OverlapsWith(outsideLocation.SourceSpan)).ToArray();
-                if (locations.Length == 0) return Enumerable.Empty<IOperation>();
-
-                var semanticModel = await document.GetSemanticModelAsync();
-                var syntaxRoot = await document.GetSyntaxRootAsync();
-                return g.Select(l => syntaxRoot.FindNode(l.Location.SourceSpan))
+            var references = await GetUsagesAsync(solution, symbol, outsideLocation);
+            var operationsReferencing = references.Select(async g => {
+                var semanticModel = await g.Doc.GetSemanticModelAsync();
+                var syntaxRoot = await g.Doc.GetSyntaxRootAsync();
+                return g.Usages.Select(l => syntaxRoot.FindNode(l.Location.SourceSpan))
                         .Select(syntaxNode => semanticModel.GetOperation(syntaxNode));
             });
             foreach (var documentUsages in operationsReferencing) {
@@ -32,6 +29,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (usages.Any(IsWriteUsage)) return true;
             }
             return false;
+        }
+
+        public static async Task<IEnumerable<(Document Doc, ReferenceLocation[] Usages)>> GetUsagesAsync(this Solution solution, ISymbol symbol, Location outsideLocation = null)
+        {
+            var references = await SymbolFinder.FindReferencesAsync(symbol, solution);
+            return references.SelectMany(r => r.Locations).GroupBy(l => (Doc: l.Document, Tree: l.Location.SourceTree))
+                .Select(g => (Doc: g.Key.Doc, Usages: g.Where(l => l.Location.SourceTree != outsideLocation?.SourceTree || !l.Location.SourceSpan.OverlapsWith(outsideLocation.SourceSpan)).ToArray()))
+                .Where(g => g.Usages.Any());
         }
 
         private static bool IsWriteUsage(IOperation operation)

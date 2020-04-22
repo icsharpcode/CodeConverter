@@ -58,7 +58,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public async Task<(IReadOnlyCollection<(VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarations(
-            VariableDeclaratorSyntax declarator, bool preferExplicitType = false)
+            VariableDeclaratorSyntax declarator, HashSet<ILocalSymbol> symbolsToSkip = null, bool preferExplicitType = false)
         {
             var vbInitValue = GetInitializerToConvert(declarator);
             var initializerOrMethodDecl = await vbInitValue.AcceptAsync(TriviaConvertingExpressionVisitor);
@@ -81,6 +81,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             foreach (var name in declarator.Names) {
 
                 var declaredSymbol = _semanticModel.GetDeclaredSymbol(name);
+                if (symbolsToSkip?.Contains(declaredSymbol) == true) continue;
                 var declaredSymbolType = declaredSymbol.GetSymbolType();
                 var equalsValueClauseSyntax = await ConvertEqualsValueClauseSyntax(declarator, name, vbInitValue, declaredSymbolType, declaredSymbol, initializerOrMethodDecl);
                 var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier), null, equalsValueClauseSyntax);
