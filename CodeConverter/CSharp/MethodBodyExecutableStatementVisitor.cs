@@ -13,6 +13,7 @@ using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -474,12 +475,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 id = (ExpressionSyntax) await stmt.ControlVariable.AcceptAsync(_expressionVisitor);
 
                 // If missing semantic info, the compiler just guesses object. In this branch there was no explicit type, so let's try to improve on that guess:
-                var bestType = controlVarType.Yield()
+                controlVarType = controlVarType.Yield()
                     .Concat(new[] { stmt.FromValue, stmt.ToValue, stmt.StepClause?.StepValue }.Select(exp => _semanticModel.GetTypeInfo(exp).Type))
                     .FirstOrDefault(t => t != null && t.SpecialType != SpecialType.System_Object);
 
                 if (controlVarSymbol != null && controlVarSymbol.DeclaringSyntaxReferences.Any(r => r.Span.OverlapsWith(stmt.ControlVariable.Span))) {
-                    declaration = CommonConversions.CreateVariableDeclarationAndAssignment(controlVarSymbol.Name, startValue, CommonConversions.GetTypeSyntax(bestType));
+                    declaration = CommonConversions.CreateVariableDeclarationAndAssignment(controlVarSymbol.Name, startValue, CommonConversions.GetTypeSyntax(controlVarType));
                 } else {
                     startValue = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, id, startValue);
                     initializers.Add(startValue);
@@ -498,6 +499,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var loopToAssignment = CommonConversions.CreateVariableDeclarator(loopToVariableName, csToValue);
                     declaration = declaration.AddVariables(loopToAssignment);
                 } else {
+                    csToValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.ToValue, csToValue, forceTargetType: controlVarType);
                     var loopEndDeclaration = SyntaxFactory.LocalDeclarationStatement(
                         CommonConversions.CreateVariableDeclarationAndAssignment(loopToVariableName, csToValue));
                     // Does not do anything about porting newline trivia upwards to maintain spacing above the loop
@@ -507,8 +509,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 csToValue = toVariableId;
             };
 
-
-            var (csCondition, csStep) = await ConvertConditionAndStepClause(stmt, id, csToValue);
+            var (csCondition, csStep) = await ConvertConditionAndStepClause(stmt, id, csToValue, controlVarType);
 
             var block = SyntaxFactory.Block(await ConvertStatements(node.Statements));
             var forStatementSyntax = SyntaxFactory.ForStatement(
@@ -525,11 +526,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             return await CommonConversions.SplitVariableDeclarations(v, _localsToInlineInLoop, preferExplicitType);
         }
 
-        private async Task<(ExpressionSyntax, ExpressionSyntax)> ConvertConditionAndStepClause(VBSyntax.ForStatementSyntax stmt, ExpressionSyntax id, ExpressionSyntax csToValue)
+        private async Task<(ExpressionSyntax, ExpressionSyntax)> ConvertConditionAndStepClause(VBSyntax.ForStatementSyntax stmt, ExpressionSyntax id, ExpressionSyntax csToValue, ITypeSymbol controlVarType)
         {
             var vbStepValue = stmt.StepClause?.StepValue;
             var csStepValue = (ExpressionSyntax)await (stmt.StepClause?.StepValue).AcceptAsync(_expressionVisitor);
-            csStepValue = csStepValue?.SkipParens();
+            // For an enum, you need to add on an integer for example:
+            var forceStepType = controlVarType is INamedTypeSymbol nt && nt.IsEnumType() ? nt.EnumUnderlyingType : controlVarType;
+            csStepValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbStepValue, csStepValue?.SkipParens(), forceTargetType: forceStepType);
+            csToValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.ToValue, csToValue?.SkipParens(), forceTargetType: controlVarType);
+
             var nonNegativeCondition = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, id, csToValue);
             var negativeCondition = SyntaxFactory.BinaryExpression(SyntaxKind.GreaterThanOrEqualExpression, id, csToValue);
             if (csStepValue == null) {
