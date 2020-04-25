@@ -669,7 +669,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (forceVariable || !await CanEvaluateMultipleTimesAsync(vbExpr)) {
                 var contextNode = vbExpr.GetAncestor<VBSyntax.MethodBlockBaseSyntax>() ?? (VBasic.VisualBasicSyntaxNode) vbExpr.Parent;
                 var varName = GetUniqueVariableNameInScope(contextNode, variableNameBase);
-                var stmt = CreateLocalVariableDeclarationAndAssignment(varName, expr);
+                var stmt = CommonConversions.CreateLocalVariableDeclarationAndAssignment(varName, expr);
                 stmts = stmts.Add(stmt);
                 exprWithoutSideEffects = SyntaxFactory.IdentifierName(varName);
                 reusableExprWithoutSideEffects = exprWithoutSideEffects;
@@ -730,11 +730,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             } finally {
                 _withBlockLhs.Pop();
             }
-        }
-
-        private LocalDeclarationStatementSyntax CreateLocalVariableDeclarationAndAssignment(string variableName, ExpressionSyntax initValue)
-        {
-            return SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(variableName, initValue));
         }
 
         private string GetUniqueVariableNameInScope(VBasic.VisualBasicSyntaxNode node, string variableNameBase)
