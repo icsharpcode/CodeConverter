@@ -327,5 +327,44 @@ public partial class Class1
     }
 }");
         }
+
+        [Fact]
+        public async Task AssignsBackToPropertyAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class RefTestClass
+
+    Private Property Prop1 As Integer
+    Private Property Prop2 As Integer = 1
+
+    Private Sub TakesRef(ByRef vrbTst As Integer) As Boolean
+        vrbTst = vrbTst + Prop2
+        Return vrbTst > 1
+    End Sub
+    
+    Private Sub UsesRef(someInt As Integer)
+        If TakesRef(Prop1) OrElse TakesRef(Prop2) AndAlso TakesRef(Prop1)
+            someInt += 1
+        End If
+    End Sub
+End Class", @"public class RefTestClass
+{
+    private int Prop1 { get; set; }
+    private int Prop2 { get; set; }
+
+    private bool TakesRef(ref int vrbTst)
+    {
+        vrbTst = vrbTst + Prop2;
+        return vrbTst > 1;
+    }
+
+    private void UsesRef(int someInt)
+    {
+        var argvrbTst = Prop;
+        TakesRef(ref argvrbTst);
+        Prop = argvrbTst; // Need to set value of property afterwards to maintain logic
+        someInt += 1;
+    }
+}");
+        }
     }
 }
