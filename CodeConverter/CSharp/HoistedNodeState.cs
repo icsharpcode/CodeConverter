@@ -8,6 +8,8 @@ using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using System;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -57,15 +59,26 @@ namespace ICSharpCode.CodeConverter.CSharp
             return _hoistedNodesPerScope.Peek().OfType<AdditionalAssignment>().ToArray();
         }
 
-        public IReadOnlyCollection<HoistedStatement> GetStatements()
+        public IReadOnlyCollection<HoistedLocalFunction> GetStatements()
         {
-            return _hoistedNodesPerScope.Peek().OfType<HoistedStatement>().ToArray();
+            return _hoistedNodesPerScope.Peek().OfType<HoistedLocalFunction>().ToArray();
         }
 
-        public async Task<SyntaxList<CS.Syntax.StatementSyntax>> CreateLocals(VBasic.VisualBasicSyntaxNode vbNode, IEnumerable<CS.Syntax.StatementSyntax> csNodes, HashSet<string> generatedNames, SemanticModel semanticModel)
+        public SyntaxList<StatementSyntax> CreateStatements(VBasic.VisualBasicSyntaxNode vbNode, IEnumerable<StatementSyntax> statements, HashSet<string> generatedNames, SemanticModel semanticModel)
         {
-            var preDeclarations = new List<CS.Syntax.StatementSyntax>();
-            var postAssignments = new List<CS.Syntax.StatementSyntax>();
+            var localFunctions = GetStatements(); 
+            var newNames = localFunctions.ToDictionary(f => f.Id, f =>
+                NameGenerator.GetUniqueVariableNameInScope(semanticModel, generatedNames, vbNode, f.Prefix)
+            );
+            statements = ReplaceNames(statements, newNames);
+            var functions = localFunctions.Select(f => f.LocalFunction(newNames[f.Id]));
+            return SyntaxFactory.List(functions.Concat(statements));
+        }
+
+        public async Task<SyntaxList<StatementSyntax>> CreateLocals(VBasic.VisualBasicSyntaxNode vbNode, IEnumerable<StatementSyntax> csNodes, HashSet<string> generatedNames, SemanticModel semanticModel)
+        {
+            var preDeclarations = new List<StatementSyntax>();
+            var postAssignments = new List<StatementSyntax>();
 
             var additionalDeclarationInfo = GetDeclarations();
             var newNames = additionalDeclarationInfo.ToDictionary(l => l.Id, l =>
@@ -82,9 +95,26 @@ namespace ICSharpCode.CodeConverter.CSharp
                 postAssignments.Add(CS.SyntaxFactory.ExpressionStatement(assign));
             }
 
-            var statementsWithUpdatedIds = AdditionalDeclaration.ReplaceNames(preDeclarations.Concat(csNodes).Concat(postAssignments), newNames);
+            var statementsWithUpdatedIds = ReplaceNames(preDeclarations.Concat(csNodes).Concat(postAssignments), newNames);
 
             return CS.SyntaxFactory.List(statementsWithUpdatedIds);
+        }
+
+        public static IEnumerable<StatementSyntax> ReplaceNames(IEnumerable<StatementSyntax> csNodes, Dictionary<string, string> newNames)
+        {
+            csNodes = csNodes.Select(csNode => ReplaceNames(csNode, newNames)).ToList();
+            return csNodes;
+        }
+
+        public static T ReplaceNames<T>(T csNode, Dictionary<string, string> newNames) where T : SyntaxNode
+        {
+            return csNode.ReplaceNodes(csNode.GetAnnotatedNodes(Annotation), (_, withReplaced) => {
+                var idns = (IdentifierNameSyntax)withReplaced;
+                if (newNames.TryGetValue(idns.Identifier.ValueText, out var newName)) {
+                    return idns.WithoutAnnotations(Annotation).WithIdentifier(CS.SyntaxFactory.Identifier(newName));
+                }
+                return idns;
+            });
         }
     }
 }

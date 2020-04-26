@@ -398,9 +398,9 @@ public partial class MyTestClass
         int argvrbTst3 = Prop;
         bool c = TakesRef(ref argvrbTst3);
         Prop = argvrbTst3; // Requires variable before, and to assign back after
-        bool localTakesRef1() { int argvrbTst = Prop; var ret = TakesRef(ref argvrbTst); Prop = argvrbTst; return ret; }
+        bool localTakesRef() { int argvrbTst = Prop; var ret = TakesRef(ref argvrbTst); Prop = argvrbTst; return ret; }
 
-        bool localTakesRef2() { int argvrbTst = 3; var ret = TakesRef(ref argvrbTst); return ret; }
+        bool localTakesRef1() { int argvrbTst = 3; var ret = TakesRef(ref argvrbTst); return ret; }
 
         if (16 > someInt || TakesRef(ref someInt)) // Convert directly
         {
@@ -410,7 +410,7 @@ public partial class MyTestClass
         {
             someInt += 1;
         }
-        else if (localTakesRef2()) // Requires variable before, and to assign back after (in local function)
+        else if (localTakesRef()) // Requires variable before, and to assign back after (in local function)
         {
             someInt -= 2;
         }

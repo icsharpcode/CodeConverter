@@ -555,7 +555,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             // This should probably use a unique name like in MethodBodyVisitor - a collision is far less likely here
             var newNames = declarationInfo.ToDictionary(l => l.Id, l => l.Prefix);
-            var newInitializer = AdditionalDeclaration.ReplaceNames(v.Initializer.Value, newNames);
+            var newInitializer = HoistedNodeState.ReplaceNames(v.Initializer.Value, newNames);
 
             var body = SyntaxFactory.Block(localVars.Concat(SyntaxFactory.ReturnStatement(newInitializer).Yield()));
             // Method calls in initializers must be static in C# - Supporting this is #281

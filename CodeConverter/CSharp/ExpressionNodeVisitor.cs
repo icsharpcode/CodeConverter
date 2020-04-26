@@ -930,15 +930,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var statements = await _additionalLocals.CreateLocals(invocation, new[] { callAndStoreResult }, generatedNames, _semanticModel);
 
-            var localFuncId = SyntaxFactory.IdentifierName(localFuncName);
-
             var block = SyntaxFactory.Block(
                 statements.Concat(SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName(retVariableName)).Yield())
             );
-            var localFunction = SyntaxFactory.LocalFunctionStatement(CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType),
-                localFuncId.Identifier).WithBody(block);
-            _additionalLocals.Hoist(new HoistedStatement(localFunction));
-            return SyntaxFactory.InvocationExpression(localFuncId, SyntaxFactory.ArgumentList());
+            var returnType = CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType);
+            
+            var localFunc = _additionalLocals.Hoist(new HoistedLocalFunction(localFuncName, returnType, block));
+            return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList());
         }
 
         private bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)

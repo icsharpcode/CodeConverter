@@ -46,7 +46,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             try {
                 var csNodes = await _wrappedVisitor.Visit(node);
                 var statements = await _additionalLocals.CreateLocals(node, csNodes, _generatedNames, _semanticModel);
-                return statements.InsertRange(0, _additionalLocals.GetStatements().Select(s => s.Statement));
+                return _additionalLocals.CreateStatements(node, statements, _generatedNames, _semanticModel);
             } finally {
                 _additionalLocals.PopScope();
             }
