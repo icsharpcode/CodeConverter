@@ -63,7 +63,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _withBlockLhs = withBlockLhs;
             _extraUsingDirectives = extraUsingDirectives;
             _methodsWithHandles = methodsWithHandles;
-            var byRefParameterVisitor = new ByRefParameterVisitor(this, additionalLocals, semanticModel, _generatedNames);
+            var byRefParameterVisitor = new HoistedDeclarationStateVisitor(this, additionalLocals, semanticModel, _generatedNames);
             CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor);
             _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
             _localsToInlineInLoop = localsToInlineInLoop;

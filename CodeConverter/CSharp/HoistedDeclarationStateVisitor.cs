@@ -12,14 +12,20 @@ using ICSharpCode.CodeConverter.Shared;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    public class ByRefParameterVisitor : VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>
+    /// <summary>
+    /// Allows adding a declaration to the surrounding scope (by sharing an instance of AdditionalLocals)
+    /// e.g. Add a local variable declaration in the scope immediately before the expression currently being visited.
+    /// e.g. Add a member declaration in the scope immediately before the member currently being visited.
+    /// The current implementation uses a guid variable name, then replaces it later with a unique name by tracking the annotation added to it.
+    /// </summary>
+    public class HoistedDeclarationStateVisitor : VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>
     {
         private readonly VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> _wrappedVisitor;
         private readonly AdditionalLocals _additionalLocals;
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _generatedNames;
 
-        public ByRefParameterVisitor(VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> wrappedVisitor, AdditionalLocals additionalLocals,
+        public HoistedDeclarationStateVisitor(VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> wrappedVisitor, AdditionalLocals additionalLocals,
             SemanticModel semanticModel, HashSet<string> generatedNames)
         {
             _wrappedVisitor = wrappedVisitor;
