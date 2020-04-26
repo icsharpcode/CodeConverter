@@ -408,18 +408,21 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxToken token = default(SyntaxToken);
             string argName = null;
             RefKind refKind = RefKind.None;
-            AdditionalLocal local = null;
+            AdditionalDeclaration local = null;
             if (symbol is IMethodSymbol methodSymbol) {
                 var parameters = (CommonConversions.GetCsOriginalSymbolOrNull(methodSymbol.OriginalDefinition) ?? methodSymbol).GetParameters();
                 var refType = GetRefType(node, argList, parameters, out argName, out refKind);
                 var expression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, (ExpressionSyntax)await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor), defaultToCast: refKind != RefKind.None);
 
+                string prefix = $"arg{argName}";
                 if (refType != RefConversion.Inline) {
                     var expressionTypeInfo = _semanticModel.GetTypeInfo(node.Expression);
                     bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType) == true && !CommonConversions.ShouldPreferExplicitType(node.Expression, expressionTypeInfo.ConvertedType, out var _);
                     var typeSyntax = CommonConversions.GetTypeSyntax(expressionTypeInfo.ConvertedType, useVar);
-                    string prefix = $"arg{argName}";
-                    local = _additionalLocals.AddAdditionalLocal(new AdditionalLocal(prefix, expression, typeSyntax));
+                    local = _additionalLocals.Hoist(new AdditionalDeclaration(prefix, expression, typeSyntax));
+                }
+                if (refType == RefConversion.PreAndPostAssignment) {
+                    _additionalLocals.Hoist(new AdditionalAssignment(local.IdentifierName, expression));
                 }
             }
 
@@ -815,6 +818,25 @@ namespace ICSharpCode.CodeConverter.CSharp
             VBasic.Syntax.InvocationExpressionSyntax node)
         {
             var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch<ISymbol>();
+            var withinLocalFunction = RequiresLocalFunction(node, invocationSymbol as IMethodSymbol);
+            if (withinLocalFunction) {
+                _additionalLocals.PushScope();
+            }
+            try {
+                var convertedInvocation = await ConvertInvocation(node, invocationSymbol);
+                if (withinLocalFunction) {
+                    
+                }
+                return await ConvertInvocation(node, invocationSymbol);
+            } finally {
+                if (withinLocalFunction) {
+                    _additionalLocals.PopScope();
+                }
+            }
+        }
+
+        private async Task<CSharpSyntaxNode> ConvertInvocation(VBSyntax.InvocationExpressionSyntax node, ISymbol invocationSymbol)
+        {
             var expressionSymbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch<ISymbol>();
             var expressionReturnType =
                 expressionSymbol?.GetReturnType() ?? _semanticModel.GetTypeInfo(node.Expression).Type;
@@ -841,7 +863,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
             //TODO: Decide if the above override should be subject to the rest of this method's adjustments (probably)
 
-            CreateLocalByRefFunction(node, invocationSymbol);
 
             // VB doesn't have a specialized node for element access because the syntax is ambiguous. Instead, it just uses an invocation expression or dictionary access expression, then figures out using the semantic model which one is most likely intended.
             // https://github.com/dotnet/roslyn/blob/master/src/Workspaces/VisualBasic/Portable/LanguageServices/VisualBasicSyntaxFactsService.vb#L768
@@ -891,46 +912,52 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        
+
         /// <summary>
         /// If we need a local function,
         /// </summary>
         /// <param name="invocation"></param>
         /// <param name="invocationSymbol"></param>
         /// <returns></returns>
-        private async Task<(string Id, StatementSyntax FunctionDeclaration)> CreateLocalByRefFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
+        //private async Task<(string Id, StatementSyntax FunctionDeclaration)> CreateLocalByRefFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
+        //{
+        //    RequiresLocalFunction(invocation, invocationSymbol);
+
+        //    var localFuncName = $"local{invocationSymbol.Name}";
+        //    const string retVariableName = "ret";
+        //    var localFuncId = SyntaxFactory.IdentifierName(localFuncName);
+        //    // Need essentially the original invocation with any byref args swapped out for temporaries
+        //    var callAndStoreResult = CommonConversions.CreateLocalVariableDeclarationAndAssignment(retVariableName,
+        //        SyntaxFactory.InvocationExpression(expression,
+        //    );
+
+        //    var block = SyntaxFactory.Block(
+        //        callAndStoreResult,
+        //        AssignStmt(expression, tempArg),
+        //        SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName(retVariableName))
+        //    );
+        //    var localfunction = SyntaxFactory.LocalFunctionStatement(CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType),
+        //        localFuncId.Identifier).WithBody(block);
+        //    return (localFuncName, localfunction);
+        //}
+
+        private bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
         {
+            if (invocationSymbol == null) return false;
+
             var originalArgsWithRefTypes = invocation.ArgumentList.Arguments
-                .Select(a => (Arg: (VBSyntax.SimpleArgumentSyntax)a, RefType: GetRefType((VBSyntax.SimpleArgumentSyntax)a, invocation.ArgumentList, invocationSymbol.Parameters, out var argName, out var refKind), Name: argName, RefKind: refKind))
-                .ToArray();
+                .Select(a => (Arg: (VBSyntax.SimpleArgumentSyntax)a, RefType: GetRefType((VBSyntax.SimpleArgumentSyntax)a, invocation.ArgumentList, invocationSymbol.Parameters, out var argName, out var refKind), Name: argName, RefKind: refKind));
 
-            var isDefinitelyExecuted = IsDefinitelyExecutedInStatement(invocation);
-
-            var localFuncName = $"local{invocationSymbol.Name}";
-            const string retVariableName = "ret";
-            var localFuncId = SyntaxFactory.IdentifierName(localFuncName);
-            // Need essentially the original invocation with any byref args swapped out for temporaries
-            var callAndStoreResult = CommonConversions.CreateLocalVariableDeclarationAndAssignment(retVariableName,
-                SyntaxFactory.InvocationExpression(expression,
-            );
-
-            var block = SyntaxFactory.Block(
-                callAndStoreResult,
-                AssignStmt(expression, tempArg),
-                SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName(retVariableName))
-            );
-            var localfunction = SyntaxFactory.LocalFunctionStatement(CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType),
-                localFuncId.Identifier).WithBody(block);
-            return (localFuncName, localfunction);
+            return originalArgsWithRefTypes.Any(x => x.RefType != RefConversion.Inline) && !IsDefinitelyExecutedInStatement(invocation);
         }
 
         private static bool IsDefinitelyExecutedInStatement(VBSyntax.InvocationExpressionSyntax invocation)
         {
-            VBSyntax.StatementSyntax parentStatement;
+            SyntaxNode parentStatement = invocation;
             do {
-                parentStatement = invocation.GetAncestor<VBSyntax.StatementSyntax>();
+                parentStatement = parentStatement.GetAncestor<VBSyntax.StatementSyntax>();
             } while (parentStatement is VBSyntax.ElseIfStatementSyntax);
-            return parentStatement.FollowProperty<SyntaxNode>(n => n.ChildNodes().FirstOrDefault()).Contains(invocation);
+            return parentStatement.FollowProperty(n => n.ChildNodes().FirstOrDefault()).Contains(invocation);
         }
 
         public override async Task<CSharpSyntaxNode> VisitSingleLineLambdaExpression(VBasic.Syntax.SingleLineLambdaExpressionSyntax node)
@@ -1360,12 +1387,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         private ArgumentSyntax CreateOptionalRefArg(IParameterSymbol p)
         {
             string prefix = $"arg{p.Name}";
-            var local = _additionalLocals.AddAdditionalLocal(new AdditionalLocal(prefix, CommonConversions.Literal(p.ExplicitDefaultValue), CommonConversions.GetTypeSyntax(p.Type)));
+            var local = _additionalLocals.Hoist(new AdditionalDeclaration(prefix, CommonConversions.Literal(p.ExplicitDefaultValue), CommonConversions.GetTypeSyntax(p.Type)));
             return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, p.RefKind, local.IdentifierName);
         }
 
         private RefConversion NeedsVariableForArgument(VBasic.Syntax.SimpleArgumentSyntax node, RefKind refKind)
         {
+            if (refKind == RefKind.None) return RefConversion.Inline;
             bool isIdentifier = node.Expression is VBasic.Syntax.IdentifierNameSyntax;
             bool isMemberAccess = node.Expression is VBasic.Syntax.MemberAccessExpressionSyntax;
 

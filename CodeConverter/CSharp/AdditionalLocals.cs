@@ -1,50 +1,45 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    public class AdditionalLocals : IEnumerable<KeyValuePair<string, AdditionalLocal>>
+    internal class AdditionalLocals
     {
         public static SyntaxAnnotation Annotation = new SyntaxAnnotation("CodeconverterAdditionalLocal");
 
-        private readonly Stack<Dictionary<string, AdditionalLocal>> _additionalLocals;
+        private readonly Stack<List<IHoistedNode>> _hoistedNodesPerScope;
 
         public AdditionalLocals()
         {
-            _additionalLocals = new Stack<Dictionary<string, AdditionalLocal>>();
+            _hoistedNodesPerScope = new Stack<List<IHoistedNode>>();
         }
 
         public void PushScope()
         {
-            _additionalLocals.Push(new Dictionary<string, AdditionalLocal>());
+            _hoistedNodesPerScope.Push(new List<IHoistedNode>());
         }
 
         public void PopScope()
         {
-            _additionalLocals.Pop();
+            _hoistedNodesPerScope.Pop();
         }
 
-        public AdditionalLocal AddAdditionalLocal(AdditionalLocal additionalLocal)
+        public T Hoist<T>(T additionalLocal) where T: IHoistedNode
         {
-            _additionalLocals.Peek().Add(additionalLocal.Id, additionalLocal);
+            _hoistedNodesPerScope.Peek().Add(additionalLocal);
             return additionalLocal;
         }
 
-        public IEnumerator<KeyValuePair<string, AdditionalLocal>> GetEnumerator()
+        public IReadOnlyCollection<AdditionalDeclaration> GetDeclarations()
         {
-            return _additionalLocals.Peek().GetEnumerator();
+            return _hoistedNodesPerScope.Peek().OfType<AdditionalDeclaration>().ToArray();
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
+        public IReadOnlyCollection<AdditionalAssignment> GetPostAssignments()
         {
-            return _additionalLocals.Peek().GetEnumerator();
-        }
-
-        public AdditionalLocal this[string id] {
-            get {
-                return _additionalLocals.Peek()[id];
-            }
+            return _hoistedNodesPerScope.Peek().OfType<AdditionalAssignment>().ToArray();
         }
     }
 }
