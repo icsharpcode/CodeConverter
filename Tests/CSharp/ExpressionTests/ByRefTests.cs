@@ -331,38 +331,97 @@ public partial class Class1
         [Fact]
         public async Task AssignsBackToPropertyAsync()
         {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class RefTestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System
 
-    Private Property Prop1 As Integer
-    Private Property Prop2 As Integer = 1
+Public Class MyTestClass
 
-    Private Sub TakesRef(ByRef vrbTst As Integer) As Boolean
-        vrbTst = vrbTst + Prop2
-        Return vrbTst > 1
+    Private Property Prop As Integer
+    Private Property Prop2 As Integer
+        
+    Private Function TakesRef(ByRef vrbTst As Integer) As Boolean
+        vrbTst = Prop + 1
+            Return vrbTst > 3
+    End Function
+        
+    Private Sub TakesRefVoid(ByRef vrbTst As Integer)
+        vrbTst = vrbTst + 1
     End Sub
-    
-    Private Sub UsesRef(someInt As Integer)
-        If TakesRef(Prop1) OrElse TakesRef(Prop2) AndAlso TakesRef(Prop1)
+
+    Public Sub UsesRef(someBool As Boolean, someInt As Integer)
+
+        TakesRefVoid(someInt) ' Convert directly
+        TakesRefVoid(1) 'Requires variable before
+        TakesRefVoid(Prop2) ' Requires variable before, and to assign back after
+                
+        Dim a =TakesRef(someInt) ' Convert directly
+        Dim b = TakesRef(2) 'Requires variable before
+        Dim c = TakesRef(Prop) ' Requires variable before, and to assign back after
+
+        If 16 > someInt OrElse TakesRef(someInt) ' Convert directly
+            Console.WriteLine(1)    
+        Else If someBool AndAlso TakesRef(3) 'Requires variable before (in local function)
             someInt += 1
+        Else If TakesRef(Prop) ' Requires variable before, and to assign back after (in local function)
+            someInt -=2
         End If
+        Console.WriteLine(someInt)
     End Sub
-End Class", @"public class RefTestClass
+End Class", @"
+public partial class MyTestClass
 {
-    private int Prop1 { get; set; }
+    private int Prop { get; set; }
     private int Prop2 { get; set; }
 
     private bool TakesRef(ref int vrbTst)
     {
-        vrbTst = vrbTst + Prop2;
-        return vrbTst > 1;
+        vrbTst = Prop + 1;
+        return vrbTst > 3;
     }
 
-    private void UsesRef(int someInt)
+    private void TakesRefVoid(ref int vrbTst)
     {
-        var argvrbTst = Prop;
-        TakesRef(ref argvrbTst);
-        Prop = argvrbTst; // Need to set value of property afterwards to maintain logic
-        someInt += 1;
+        vrbTst = vrbTst + 1;
+    }
+
+    public void UsesRef(bool someBool, int someInt)
+    {
+        TakesRefVoid(ref someInt); // Convert directly
+        int argvrbTst = 1;
+        TakesRefVoid(ref argvrbTst); // Requires variable before
+        int argvrbTst1 = Prop2;
+        TakesRefVoid(ref argvrbTst1); // Requires variable before, and to assign back after
+        bool a = TakesRef(ref someInt); // Convert directly
+        int argvrbTst2 = 2;
+        bool b = TakesRef(ref argvrbTst2); // Requires variable before
+        int argvrbTst3 = Prop;
+        bool c = TakesRef(ref argvrbTst3); // Requires variable before, and to assign back after
+
+        bool localTakesRef1() {
+            int argvrbTst4 = 3;
+            var ret = TakesRef(ref argvrbTst4);
+            return ret;
+        }
+        bool localTakesRef2() {
+            int argvrbTst5 = Prop;
+            var ret = TakesRef(ref argvrbTst5);
+            Prop = argvrbTst5;
+            return ret;
+        }
+            
+        if (16 > someInt || TakesRef(ref someInt)) // Convert directly
+        {
+            Console.WriteLine(1);
+        }
+        else if (someBool && localTakesRef1()) // Requires variable before (in local function)
+        {
+            someInt += 1;
+        }
+        else if (localTakesRef2()) // Requires variable before, and to assign back after (in local function)
+        {
+            someInt -= 2;
+        }
+
+        Console.WriteLine(someInt);
     }
 }");
         }
