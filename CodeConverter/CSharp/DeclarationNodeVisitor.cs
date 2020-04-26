@@ -37,7 +37,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly MethodsWithHandles _methodsWithHandles = new MethodsWithHandles();
         private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
         private readonly AdditionalInitializers _additionalInitializers;
-        private readonly AdditionalLocals _additionalLocals = new AdditionalLocals();
+        private readonly HoistedNodeState _additionalLocals = new HoistedNodeState();
         private uint _failedMemberConversionMarkerCount;
         private readonly HashSet<string> _extraUsingDirectives = new HashSet<string>();
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
@@ -490,8 +490,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     foreach (var f in fieldDecls) yield return f;
                 } else
                 {
-                    var additionalDeclarationInfo = _additionalLocals.GetDeclarations();
-                    if (additionalDeclarationInfo.Count() > 0) {
+                    if (_additionalLocals.GetDeclarations().Count() > 0) {
                         foreach (var additionalDecl in CreateAdditionalLocalMembers(convertedModifiers, attributes, decl)) {
                             yield return additionalDecl;
                         }

@@ -21,11 +21,11 @@ namespace ICSharpCode.CodeConverter.CSharp
     internal class HoistedNodeStateVisitor : VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>
     {
         private readonly VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> _wrappedVisitor;
-        private readonly AdditionalLocals _additionalLocals;
+        private readonly HoistedNodeState _additionalLocals;
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _generatedNames;
 
-        public HoistedNodeStateVisitor(VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> wrappedVisitor, AdditionalLocals additionalLocals,
+        public HoistedNodeStateVisitor(VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> wrappedVisitor, HoistedNodeState additionalLocals,
             SemanticModel semanticModel, HashSet<string> generatedNames)
         {
             _wrappedVisitor = wrappedVisitor;
@@ -44,44 +44,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             _additionalLocals.PushScope();
             try {
-                return await CreateLocals(node);
+                var csNodes = await _wrappedVisitor.Visit(node);
+                var statements = await _additionalLocals.CreateLocals(node, csNodes, _generatedNames, _semanticModel);
+                return statements.InsertRange(0, _additionalLocals.GetStatements().Select(s => s.Statement));
             } finally {
                 _additionalLocals.PopScope();
             }
-        }
-
-        private async Task<SyntaxList<StatementSyntax>> CreateLocals(VBasic.VisualBasicSyntaxNode node)
-        {
-            IEnumerable<StatementSyntax> csNodes = await _wrappedVisitor.Visit(node);
-
-            var preDeclarations = new List<StatementSyntax>();
-            var postAssignments = new List<StatementSyntax>();
-
-            var additionalDeclarationInfo = _additionalLocals.GetDeclarations();
-            var newNames = additionalDeclarationInfo.ToDictionary(l => l.Id, l =>
-                NameGenerator.GetUniqueVariableNameInScope(_semanticModel, _generatedNames, node, l.Prefix)
-            );
-            if (additionalDeclarationInfo.Count() > 0) {
-                foreach (var additionalLocal in additionalDeclarationInfo) {
-                    var decl = CommonConversions.CreateVariableDeclarationAndAssignment(newNames[additionalLocal.Id],
-                        additionalLocal.Initializer, additionalLocal.Type);
-                    preDeclarations.Add(SyntaxFactory.LocalDeclarationStatement(decl));
-                }
-            }
-            var additionalAssignmentInfo = _additionalLocals.GetPostAssignments();
-            if (additionalAssignmentInfo.Count() > 0)
-            {
-
-                foreach (var additionalAssignment in additionalAssignmentInfo)
-                {
-                    var assign = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, additionalAssignment.Expression, additionalAssignment.IdentifierName);
-                    postAssignments.Add(SyntaxFactory.ExpressionStatement(assign));
-                }
-            }
-
-            var statementsWithUpdatedIds = AdditionalDeclaration.ReplaceNames(preDeclarations.Concat(csNodes).Concat(postAssignments), newNames);
-
-            return SyntaxFactory.List(statementsWithUpdatedIds);
         }
 
         public override Task<SyntaxList<StatementSyntax>> VisitAddRemoveHandlerStatement(VBSyntax.AddRemoveHandlerStatementSyntax node) => AddLocalVariables(node);

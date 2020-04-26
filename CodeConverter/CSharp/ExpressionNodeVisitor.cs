@@ -34,7 +34,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly bool _optionCompareText = false;
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
         private readonly Stack<ExpressionSyntax> _withBlockLhs = new Stack<ExpressionSyntax>();
-        private readonly AdditionalLocals _additionalLocals;
+        private readonly HoistedNodeState _additionalLocals;
         private readonly MethodsWithHandles _methodsWithHandles;
         private readonly QueryConverter _queryConverter;
         private readonly Lazy<IDictionary<ITypeSymbol, string>> _convertMethodsLookupByReturnType;
@@ -43,7 +43,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private INamedTypeSymbol _vbBooleanTypeSymbol;
 
         public ExpressionNodeVisitor(SemanticModel semanticModel,
-            VisualBasicEqualityComparison visualBasicEqualityComparison, AdditionalLocals additionalLocals,
+            VisualBasicEqualityComparison visualBasicEqualityComparison, HoistedNodeState additionalLocals,
             Compilation csCompilation, MethodsWithHandles methodsWithHandles, CommonConversions commonConversions,
             HashSet<string> extraUsingDirectives)
         {
@@ -817,20 +817,20 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitInvocationExpression(
             VBasic.Syntax.InvocationExpressionSyntax node)
         {
-            var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch<ISymbol>();
-            var withinLocalFunction = RequiresLocalFunction(node, invocationSymbol as IMethodSymbol);
+            var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch<IMethodSymbol>();
+            var withinLocalFunction = RequiresLocalFunction(node, invocationSymbol);
             if (withinLocalFunction) {
                 _additionalLocals.PushScope();
             }
             try {
                 var convertedInvocation = await ConvertInvocation(node, invocationSymbol);
                 if (withinLocalFunction) {
-                    
+                    return await HoistAndCallLocalFunction(node, invocationSymbol, (ExpressionSyntax)convertedInvocation);
                 }
                 return await ConvertInvocation(node, invocationSymbol);
             } finally {
                 if (withinLocalFunction) {
-                    _additionalLocals.PopScope();
+                    _additionalLocals.PopExpressionScope();
                 }
             }
         }
@@ -919,27 +919,26 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <param name="invocation"></param>
         /// <param name="invocationSymbol"></param>
         /// <returns></returns>
-        //private async Task<(string Id, StatementSyntax FunctionDeclaration)> CreateLocalByRefFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
-        //{
-        //    RequiresLocalFunction(invocation, invocationSymbol);
+        private async Task<InvocationExpressionSyntax> HoistAndCallLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol, ExpressionSyntax csExpression)
+        {
+            const string retVariableName = "ret";
+            var localFuncName = $"local{invocationSymbol.Name}";
+            var generatedNames = new HashSet<string>();//TODO: Populate from local scope
 
-        //    var localFuncName = $"local{invocationSymbol.Name}";
-        //    const string retVariableName = "ret";
-        //    var localFuncId = SyntaxFactory.IdentifierName(localFuncName);
-        //    // Need essentially the original invocation with any byref args swapped out for temporaries
-        //    var callAndStoreResult = CommonConversions.CreateLocalVariableDeclarationAndAssignment(retVariableName,
-        //        SyntaxFactory.InvocationExpression(expression,
-        //    );
+            var callAndStoreResult = CommonConversions.CreateLocalVariableDeclarationAndAssignment(retVariableName, csExpression);
 
-        //    var block = SyntaxFactory.Block(
-        //        callAndStoreResult,
-        //        AssignStmt(expression, tempArg),
-        //        SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName(retVariableName))
-        //    );
-        //    var localfunction = SyntaxFactory.LocalFunctionStatement(CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType),
-        //        localFuncId.Identifier).WithBody(block);
-        //    return (localFuncName, localfunction);
-        //}
+            var statements = await _additionalLocals.CreateLocals(invocation, new[] { callAndStoreResult }, generatedNames, _semanticModel);
+
+            var localFuncId = SyntaxFactory.IdentifierName(localFuncName);
+
+            var block = SyntaxFactory.Block(
+                statements.Concat(SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName(retVariableName)).Yield())
+            );
+            var localFunction = SyntaxFactory.LocalFunctionStatement(CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType),
+                localFuncId.Identifier).WithBody(block);
+            _additionalLocals.Hoist(new HoistedStatement(localFunction));
+            return SyntaxFactory.InvocationExpression(localFuncId, SyntaxFactory.ArgumentList());
+        }
 
         private bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
         {
