@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -827,7 +828,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (withinLocalFunction) {
                     return await HoistAndCallLocalFunction(node, invocationSymbol, (ExpressionSyntax)convertedInvocation);
                 }
-                return await ConvertInvocation(node, invocationSymbol);
+                return convertedInvocation;
             } finally {
                 if (withinLocalFunction) {
                     _additionalLocals.PopExpressionScope();
@@ -956,8 +957,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             do {
                 parentStatement = parentStatement.GetAncestor<VBSyntax.StatementSyntax>();
             } while (parentStatement is VBSyntax.ElseIfStatementSyntax);
-            return parentStatement.FollowProperty(n => n.ChildNodes().FirstOrDefault()).Contains(invocation);
+            return parentStatement.FollowProperty(n => GetLeftMostWithPossibleExitPoints(n)).Contains(invocation);
         }
+
+        /// <summary>
+        /// It'd be great to use _semanticModel.AnalyzeControlFlow(invocation).ExitPoints, but that doesn't account for the possibility of exceptions
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
+        private static SyntaxNode GetLeftMostWithPossibleExitPoints(SyntaxNode n) => n switch
+        {
+            VBSyntax.VariableDeclaratorSyntax vds => vds.Initializer,
+            _ => n.ChildNodes().FirstOrDefault()
+        };
 
         public override async Task<CSharpSyntaxNode> VisitSingleLineLambdaExpression(VBasic.Syntax.SingleLineLambdaExpressionSyntax node)
         {

@@ -353,7 +353,7 @@ Public Class MyTestClass
         TakesRefVoid(1) 'Requires variable before
         TakesRefVoid(Prop2) ' Requires variable before, and to assign back after
                 
-        Dim a =TakesRef(someInt) ' Convert directly
+        Dim a = TakesRef(someInt) ' Convert directly
         Dim b = TakesRef(2) 'Requires variable before
         Dim c = TakesRef(Prop) ' Requires variable before, and to assign back after
 
@@ -366,7 +366,8 @@ Public Class MyTestClass
         End If
         Console.WriteLine(someInt)
     End Sub
-End Class", @"
+End Class", @"using System;
+
 public partial class MyTestClass
 {
     private int Prop { get; set; }
@@ -389,25 +390,18 @@ public partial class MyTestClass
         int argvrbTst = 1;
         TakesRefVoid(ref argvrbTst); // Requires variable before
         int argvrbTst1 = Prop2;
-        TakesRefVoid(ref argvrbTst1); // Requires variable before, and to assign back after
+        TakesRefVoid(ref argvrbTst1);
+        Prop2 = argvrbTst1; // Requires variable before, and to assign back after
         bool a = TakesRef(ref someInt); // Convert directly
         int argvrbTst2 = 2;
         bool b = TakesRef(ref argvrbTst2); // Requires variable before
         int argvrbTst3 = Prop;
-        bool c = TakesRef(ref argvrbTst3); // Requires variable before, and to assign back after
+        bool c = TakesRef(ref argvrbTst3);
+        Prop = argvrbTst3; // Requires variable before, and to assign back after
+        bool localTakesRef1() { int argvrbTst = Prop; var ret = TakesRef(ref argvrbTst); Prop = argvrbTst; return ret; }
 
-        bool localTakesRef1() {
-            int argvrbTst4 = 3;
-            var ret = TakesRef(ref argvrbTst4);
-            return ret;
-        }
-        bool localTakesRef2() {
-            int argvrbTst5 = Prop;
-            var ret = TakesRef(ref argvrbTst5);
-            Prop = argvrbTst5;
-            return ret;
-        }
-            
+        bool localTakesRef2() { int argvrbTst = 3; var ret = TakesRef(ref argvrbTst); return ret; }
+
         if (16 > someInt || TakesRef(ref someInt)) // Convert directly
         {
             Console.WriteLine(1);
