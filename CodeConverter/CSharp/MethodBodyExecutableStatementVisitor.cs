@@ -424,15 +424,21 @@ namespace ICSharpCode.CodeConverter.CSharp
             var elseClause = await ConvertElseClause(node.ElseBlock);
             elseClause = elseClause.WithVbSourceMappingFrom(node.ElseBlock); //Special case where explicit mapping is needed since block becomes clause so cannot be easily visited
 
-            foreach (var elseIf in node.ElseIfBlocks.Reverse()) {
-                var elseBlock = SyntaxFactory.Block(await ConvertStatements(elseIf.Statements));
-                var elseIfCondition = (ExpressionSyntax) await elseIf.ElseIfStatement.Condition.AcceptAsync(_expressionVisitor);
-                elseIfCondition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(elseIf.ElseIfStatement.Condition, elseIfCondition, forceTargetType: _vbBooleanTypeSymbol);
-                var ifStmt = SyntaxFactory.IfStatement(elseIfCondition, elseBlock, elseClause);
+            var elseIfBlocks = await node.ElseIfBlocks.SelectAsync(async elseIf => await ConvertElseIf(elseIf));
+            foreach (var elseIf in elseIfBlocks.Reverse()) {
+                var ifStmt = SyntaxFactory.IfStatement(elseIf.ElseIfCondition, elseIf.ElseBlock, elseClause);
                 elseClause = SyntaxFactory.ElseClause(ifStmt);
             }
 
             return SingleStatement(SyntaxFactory.IfStatement(condition, block, elseClause));
+        }
+
+        private async Task<(ExpressionSyntax ElseIfCondition, BlockSyntax ElseBlock)> ConvertElseIf(VBSyntax.ElseIfBlockSyntax elseIf)
+        {
+            var elseBlock = SyntaxFactory.Block(await ConvertStatements(elseIf.Statements));
+            var elseIfCondition = (ExpressionSyntax)await elseIf.ElseIfStatement.Condition.AcceptAsync(_expressionVisitor);
+            elseIfCondition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(elseIf.ElseIfStatement.Condition, elseIfCondition, forceTargetType: _vbBooleanTypeSymbol);
+            return (elseIfCondition, elseBlock);
         }
 
         private async Task<ElseClauseSyntax> ConvertElseClause(VBSyntax.ElseBlockSyntax elseBlock)
