@@ -894,8 +894,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             async Task<(ExpressionSyntax, bool isElementAccess)> ConvertInvocationSubExpression()
             {
-                var isElementAccess = IsPropertyElementAccess(operation) ||
-                                      IsArrayElementAccess(operation) ||
+                var isElementAccess = operation.IsPropertyElementAccess() ||
+                                      operation.IsArrayElementAccess() ||
                                       ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
 
                 var expr = await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
@@ -1411,19 +1411,38 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             if (refKind == RefKind.None) return RefConversion.Inline;
             if (!(node is VBSyntax.SimpleArgumentSyntax sas)) return RefConversion.PreAssigment;
-            bool isIdentifier = sas.Expression is VBasic.Syntax.IdentifierNameSyntax;
-            bool isMemberAccess = sas.Expression is VBasic.Syntax.MemberAccessExpressionSyntax;
+            var expression = sas.Expression.SkipParens();
 
-            var symbolInfo = GetSymbolInfoInDocument<ISymbol>(sas.Expression);
-            bool isProperty = symbolInfo != null && symbolInfo.IsKind(SymbolKind.Property);
-            bool isUsing = symbolInfo?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()?.Parent?.Parent?.IsKind(VBasic.SyntaxKind.UsingStatement) == true;
+            return GetRefConversion(expression);
 
-            var typeInfo = _semanticModel.GetTypeInfo(sas.Expression);
-            bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType);
+            RefConversion GetRefConversion(VBSyntax.ExpressionSyntax expression)
+            {
+                var symbolInfo = GetSymbolInfoInDocument<ISymbol>(expression);
+                if (symbolInfo.IsKind(SymbolKind.Property)) return RefConversion.PreAndPostAssignment;
 
-            if (isProperty) return RefConversion.PreAndPostAssignment;
-            if ((!isIdentifier && !isMemberAccess) || isTypeMismatch || isUsing) return RefConversion.PreAssigment;
-            return RefConversion.Inline;
+                var typeInfo = _semanticModel.GetTypeInfo(expression);
+                bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType);
+
+                if (isTypeMismatch || DeclaredInUsing(symbolInfo)) return RefConversion.PreAssigment;
+
+                if (expression is VBasic.Syntax.IdentifierNameSyntax || expression is VBSyntax.MemberAccessExpressionSyntax ||
+                    IsRefArrayAcces(expression)) {
+                    return RefConversion.Inline;
+                }
+
+                return RefConversion.PreAssigment;
+            }
+
+            bool IsRefArrayAcces(VBSyntax.ExpressionSyntax expression)
+            {
+                if (!(expression is VBSyntax.InvocationExpressionSyntax ies)) return false;
+                return _semanticModel.GetOperation(ies).IsArrayElementAccess() && GetRefConversion(ies.Expression) == RefConversion.Inline;
+            }
+        }
+
+        private static bool DeclaredInUsing(ISymbol symbolInfo)
+        {
+            return symbolInfo?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()?.Parent?.Parent?.IsKind(VBasic.SyntaxKind.UsingStatement) == true;
         }
 
         /// <summary>
@@ -1479,16 +1498,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static CSharpSyntaxNode ReplaceRightmostIdentifierText(CSharpSyntaxNode expr, SyntaxToken idToken, string overrideIdentifier)
         {
             return expr.ReplaceToken(idToken, SyntaxFactory.Identifier(overrideIdentifier).WithTriviaFrom(idToken).WithAdditionalAnnotations(idToken.GetAnnotations()));
-        }
-
-        private static bool IsPropertyElementAccess(IOperation operation)
-        {
-            return operation is IPropertyReferenceOperation pro && pro.Arguments.Any() && VBasic.VisualBasicExtensions.IsDefault(pro.Property);
-        }
-
-        private static bool IsArrayElementAccess(IOperation operation)
-        {
-            return operation != null && operation.Kind == OperationKind.ArrayElementReference;
         }
 
         /// <summary>

@@ -422,5 +422,46 @@ public partial class MyTestClass
     }
 }");
         }
+
+        [Fact]
+        public async Task Issue567()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue567
+    Dim arr(,) As String
+    Dim lst As List(Of String) = New List(Of String)({1.ToString(), 2.ToString(), 3.ToString()})
+
+    Sub DoSomething(ByRef str As String)
+        str = ""test""
+    End Sub
+
+    Sub Main()
+        DoSomething(arr(2, 2))
+        DoSomething(lst(1))
+        Debug.Assert(arr(2, 2) = ""test"")
+    End Sub
+
+End Class", @"using System.Collections.Generic;
+using System.Diagnostics;
+
+public partial class Issue567
+{
+    private string[,] arr;
+    private List<string> lst = new List<string>(new[] { 1.ToString(), 2.ToString(), 3.ToString() });
+
+    public void DoSomething(ref string str)
+    {
+        str = ""test"";
+    }
+
+    public void Main()
+    {
+        DoSomething(ref arr[2, 2]);
+        string argstr = lst[1];
+        DoSomething(ref argstr);
+        lst[1] = argstr;
+        Debug.Assert((arr[2, 2] ?? """") == ""test"");
+    }
+}");
+        }
     }
 }
