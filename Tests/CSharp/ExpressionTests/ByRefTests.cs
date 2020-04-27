@@ -427,26 +427,26 @@ public partial class MyTestClass
         public async Task Issue567()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue567
-    Dim arr(,) As String
-    Dim lst As List(Of String) = New List(Of String)({1.ToString(), 2.ToString(), 3.ToString()})
+    Dim arr() As String
+    Dim arr2(,) As String
 
     Sub DoSomething(ByRef str As String)
         str = ""test""
     End Sub
 
     Sub Main()
-        DoSomething(arr(2, 2))
-        DoSomething(lst(1))
-        Debug.Assert(arr(2, 2) = ""test"")
+        DoSomething(arr(1))
+        Debug.Assert(arr(1) = ""test"")
+        DoSomething(arr2(2, 2))
+        Debug.Assert(arr2(2, 2) = ""test"")
     End Sub
 
-End Class", @"using System.Collections.Generic;
-using System.Diagnostics;
+End Class", @"using System.Diagnostics;
 
 public partial class Issue567
 {
-    private string[,] arr;
-    private List<string> lst = new List<string>(new[] { 1.ToString(), 2.ToString(), 3.ToString() });
+    private string[] arr;
+    private string[,] arr2;
 
     public void DoSomething(ref string str)
     {
@@ -455,12 +455,56 @@ public partial class Issue567
 
     public void Main()
     {
-        DoSomething(ref arr[2, 2]);
-        string argstr = lst[1];
-        DoSomething(ref argstr);
-        lst[1] = argstr;
-        Debug.Assert((arr[2, 2] ?? """") == ""test"");
+        DoSomething(ref arr[1]);
+        Debug.Assert((arr[1] ?? """") == ""test"");
+        DoSomething(ref arr2[2, 2]);
+        Debug.Assert((arr2[2, 2] ?? """") == ""test"");
     }
+}");
+        }
+
+        [Fact]
+        public async Task Issue567Extended()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue567
+    Sub DoSomething(ByRef str As String)
+        lst = New List(Of String)({4.ToString(), 5.ToString(), 6.ToString()})
+        str = 999.ToString()
+    End Sub
+
+    Sub Main()
+        DoSomething(lst(1))
+        Debug.Assert(lst(1) = 4.ToString())
+    End Sub
+
+End Class
+
+Friend Module Other
+    Public lst As List(Of String) = New List(Of String)({ 1.ToString(), 2.ToString(), 3.ToString()})
+End Module", @"using System.Collections.Generic;
+using System.Diagnostics;
+
+public partial class Issue567
+{
+    public void DoSomething(ref string str)
+    {
+        Other.lst = new List<string>(new[] { 4.ToString(), 5.ToString(), 6.ToString() });
+        str = 999.ToString();
+    }
+
+    public void Main()
+    {
+        var tmp = Other.lst;
+        string argstr = tmp[1];
+        DoSomething(ref argstr);
+        tmp[1] = argstr;
+        Debug.Assert((Other.lst[1] ?? """") == (4.ToString() ?? """"));
+    }
+}
+
+internal static partial class Other
+{
+    public static List<string> lst = new List<string>(new[] { 1.ToString(), 2.ToString(), 3.ToString() });
 }");
         }
     }

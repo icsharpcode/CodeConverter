@@ -29,7 +29,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static readonly Type DllImportType = typeof(DllImportAttribute);
         private static readonly Type CharSetType = typeof(CharSet);
         private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SemicolonToken);
-        private static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
         private readonly CSharpCompilation _csCompilation;
         private readonly SyntaxGenerator _csSyntaxGenerator;
         private readonly Compilation _compilation;
@@ -1081,7 +1080,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var attributes = await block.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttribute);
             var modifiers = CommonConversions.ConvertModifiers(block, block.Modifiers, GetMemberContext(node));
 
-            var rawType = (TypeSyntax) await (block.AsClause?.Type).AcceptAsync(_triviaConvertingExpressionVisitor) ?? VarType;
+            var rawType = (TypeSyntax) await (block.AsClause?.Type).AcceptAsync(_triviaConvertingExpressionVisitor) ?? ValidSyntaxFactory.VarType;
 
             var convertedAccessors = await node.Accessors.SelectAsync(async a => await a.AcceptAsync(TriviaConvertingDeclarationVisitor));
             _additionalDeclarations.Add(node, convertedAccessors.OfType<MemberDeclarationSyntax>().ToArray());

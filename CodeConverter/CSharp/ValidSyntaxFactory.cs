@@ -13,6 +13,8 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// </summary>
     public static class ValidSyntaxFactory
     {
+        public static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
+
         /// <summary>
         /// As of VS2019 Preview 3 this is required since not passing these arguments now means "I don't want any parentheses"
         /// https://github.com/dotnet/roslyn/issues/33685
