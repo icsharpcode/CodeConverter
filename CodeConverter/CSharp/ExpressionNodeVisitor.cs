@@ -407,32 +407,35 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
             var symbol = GetInvocationSymbol(invocation);
             SyntaxToken token = default(SyntaxToken);
-            var convertedArgExpression = (ExpressionSyntax)await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
+            var convertedArgExpression = ((ExpressionSyntax)await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor)).SkipParens();
             if (symbol is IMethodSymbol methodSymbol) {
                 var parameters = (CommonConversions.GetCsOriginalSymbolOrNull(methodSymbol.OriginalDefinition) ?? methodSymbol).GetParameters();
                 var refType = GetRefConversionType(node, argList, parameters, out var argName, out var refKind);
-                var convertedExpressionWithoutCast = convertedArgExpression;
-                convertedArgExpression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, convertedArgExpression, defaultToCast: refKind != RefKind.None);
 
                 if (refType != RefConversion.Inline) {
                     string prefix = $"arg{argName}";
+                    var refLhs = convertedArgExpression;
                     var expressionTypeInfo = _semanticModel.GetTypeInfo(node.Expression);
                     bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType) == true && !CommonConversions.ShouldPreferExplicitType(node.Expression, expressionTypeInfo.ConvertedType, out var _);
                     var typeSyntax = CommonConversions.GetTypeSyntax(expressionTypeInfo.ConvertedType, useVar);
 
-                    if (convertedExpressionWithoutCast.SkipParens() is ElementAccessExpressionSyntax eae) {
+                    if (convertedArgExpression is ElementAccessExpressionSyntax eae) {
                         //Hoist out the container so we can assign back to the same one after (like VB does)
                         var tmpContainer = _additionalLocals.Hoist(new AdditionalDeclaration("tmp", eae.Expression, ValidSyntaxFactory.VarType));
-                        convertedExpressionWithoutCast = eae.WithExpression(tmpContainer.IdentifierName);
-                        convertedArgExpression = convertedArgExpression.ReplaceNode(eae, convertedExpressionWithoutCast);
+                        convertedArgExpression = eae.WithExpression(tmpContainer.IdentifierName);
                     }
+
+                    convertedArgExpression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, convertedArgExpression, defaultToCast: refKind != RefKind.None);
+
                     var local = _additionalLocals.Hoist(new AdditionalDeclaration(prefix, convertedArgExpression, typeSyntax));
+                    convertedArgExpression = local.IdentifierName;
 
                     if (refType == RefConversion.PreAndPostAssignment) {
                         var convertedLocalIdentifier = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, local.IdentifierName, forceSourceType: expressionTypeInfo.ConvertedType, forceTargetType: expressionTypeInfo.Type);
-                        _additionalLocals.Hoist(new AdditionalAssignment(convertedExpressionWithoutCast, convertedLocalIdentifier));
+                        _additionalLocals.Hoist(new AdditionalAssignment(refLhs, convertedLocalIdentifier));
                     }
-                    convertedArgExpression = local.IdentifierName;
+                } else {
+                    convertedArgExpression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, convertedArgExpression, defaultToCast: refKind != RefKind.None);
                 }
                 token = GetRefToken(refKind);
             } else {
