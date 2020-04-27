@@ -506,7 +506,7 @@ public partial class Issue567
         tmp[1] = argstr;
         Debug.Assert((Other.lst[1] ?? """") == (4.ToString() ?? """"));
         var tmp1 = Other.lst2;
-        string argstr1 = Conversions.ToString(Other.lst2[1]);
+        string argstr1 = Conversions.ToString(tmp1[1]);
         DoSomething(ref argstr1);
         tmp1[1] = argstr1;
         Debug.Assert(Conversions.ToBoolean(Operators.ConditionalCompareObjectEqual(Other.lst2[1], 5.ToString(), false)));
