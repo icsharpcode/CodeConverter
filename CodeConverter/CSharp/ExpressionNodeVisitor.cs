@@ -407,26 +407,38 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
             var symbol = GetInvocationSymbol(invocation);
             SyntaxToken token = default(SyntaxToken);
-            string argName = null;
-            RefKind refKind = RefKind.None;
-            AdditionalDeclaration local = null;
+            var convertedExpression = (ExpressionSyntax)await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
             if (symbol is IMethodSymbol methodSymbol) {
                 var parameters = (CommonConversions.GetCsOriginalSymbolOrNull(methodSymbol.OriginalDefinition) ?? methodSymbol).GetParameters();
-                var refType = GetRefType(node, argList, parameters, out argName, out refKind);
-                var expression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, (ExpressionSyntax)await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor), defaultToCast: refKind != RefKind.None);
+                var refType = GetRefConversionType(node, argList, parameters, out var argName, out var refKind);
+                var convertedExpressionWithoutCast = convertedExpression;
+                convertedExpression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, convertedExpression, defaultToCast: refKind != RefKind.None);
 
-                string prefix = $"arg{argName}";
                 if (refType != RefConversion.Inline) {
+                    string prefix = $"arg{argName}";
                     var expressionTypeInfo = _semanticModel.GetTypeInfo(node.Expression);
                     bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType) == true && !CommonConversions.ShouldPreferExplicitType(node.Expression, expressionTypeInfo.ConvertedType, out var _);
                     var typeSyntax = CommonConversions.GetTypeSyntax(expressionTypeInfo.ConvertedType, useVar);
-                    local = _additionalLocals.Hoist(new AdditionalDeclaration(prefix, expression, typeSyntax));
+                    var local = _additionalLocals.Hoist(new AdditionalDeclaration(prefix, convertedExpression, typeSyntax));
+
+                    if (refType == RefConversion.PreAndPostAssignment) {
+                        var convertedLocalIdentifier = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, local.IdentifierName, forceSourceType: expressionTypeInfo.ConvertedType, forceTargetType: expressionTypeInfo.Type);
+                        _additionalLocals.Hoist(new AdditionalAssignment(convertedExpressionWithoutCast, convertedLocalIdentifier));
+                    }
+                    convertedExpression = local.IdentifierName;
                 }
-                if (refType == RefConversion.PreAndPostAssignment) {
-                    _additionalLocals.Hoist(new AdditionalAssignment(local.IdentifierName, expression));
-                }
+                token = GetRefToken(refKind);
+            } else {
+                convertedExpression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, convertedExpression);
             }
 
+            var nameColon = node.IsNamed ? SyntaxFactory.NameColon((IdentifierNameSyntax)await node.NameColonEquals.Name.AcceptAsync(TriviaConvertingExpressionVisitor)) : null;
+            return SyntaxFactory.Argument(nameColon, token, convertedExpression);
+        }
+
+        private static SyntaxToken GetRefToken(RefKind refKind)
+        {
+            SyntaxToken token;
             switch (refKind) {
                 case RefKind.None:
                     token = default(SyntaxToken);
@@ -440,22 +452,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            var simpleExpression = await ConvertArgExpression(node, refKind);
 
-            var nameColon = node.IsNamed ? SyntaxFactory.NameColon((IdentifierNameSyntax)await node.NameColonEquals.Name.AcceptAsync(TriviaConvertingExpressionVisitor)) : null;
-            if (local == null) {
-                return SyntaxFactory.Argument(nameColon, token, simpleExpression);
-            } else {
-                return SyntaxFactory.Argument(nameColon, token, local.IdentifierName);
-            }
+            return token;
         }
 
-        private async Task<ExpressionSyntax> ConvertArgExpression(VBSyntax.SimpleArgumentSyntax node, RefKind refKind)
-        {
-            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, (ExpressionSyntax)await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor), defaultToCast: refKind != RefKind.None);
-        }
-
-        private RefConversion GetRefType(VBSyntax.ArgumentSyntax node, VBSyntax.ArgumentListSyntax argList, System.Collections.Immutable.ImmutableArray<IParameterSymbol> parameters, out string argName, out RefKind refKind)
+        private RefConversion GetRefConversionType(VBSyntax.ArgumentSyntax node, VBSyntax.ArgumentListSyntax argList, System.Collections.Immutable.ImmutableArray<IParameterSymbol> parameters, out string argName, out RefKind refKind)
         {
             var parameter = node.IsNamed && node is VBSyntax.SimpleArgumentSyntax sas 
                 ? parameters.FirstOrDefault(p => p.Name.Equals(sas.NameColonEquals.Name.Identifier.Text, StringComparison.OrdinalIgnoreCase))
@@ -918,11 +919,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
 
         /// <summary>
-        /// If we need a local function,
+        /// The VB compiler actually just hoists the conditions within the same method, but that leads to the original logic looking very different.
+        /// This should be equivalent but keep closer to the look of the original source code.
+        /// See https://github.com/icsharpcode/CodeConverter/issues/310 and https://github.com/icsharpcode/CodeConverter/issues/324
         /// </summary>
-        /// <param name="invocation"></param>
-        /// <param name="invocationSymbol"></param>
-        /// <returns></returns>
         private async Task<InvocationExpressionSyntax> HoistAndCallLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol, ExpressionSyntax csExpression)
         {
             const string retVariableName = "ret";
@@ -945,8 +945,17 @@ namespace ICSharpCode.CodeConverter.CSharp
         private bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
         {
             if (invocation.ArgumentList == null || IsDefinitelyExecutedInStatement(invocation)) return false;
-            return invocation.ArgumentList.Arguments
-                .Any(a => RefConversion.Inline != GetRefType(a, invocation.ArgumentList, invocationSymbol.Parameters, out var argName, out var refKind));
+            return invocation.ArgumentList.Arguments.Any(a => RequiresLocalFunction(invocation, invocationSymbol, a));
+
+            bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol, VBSyntax.ArgumentSyntax a)
+            {
+                var refConversion = GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out var argName, out var refKind);
+                if (RefConversion.Inline == refConversion) return false;
+                if (!(a is VBSyntax.SimpleArgumentSyntax sas)) return false;
+                var argExpression = sas.Expression.SkipParens();
+                if (argExpression is VBSyntax.InstanceExpressionSyntax) return false;
+                return !_semanticModel.GetConstantValue(argExpression).HasValue;
+            }
         }
 
         private static bool IsDefinitelyExecutedInStatement(VBSyntax.InvocationExpressionSyntax invocation)
@@ -961,8 +970,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <summary>
         /// It'd be great to use _semanticModel.AnalyzeControlFlow(invocation).ExitPoints, but that doesn't account for the possibility of exceptions
         /// </summary>
-        /// <param name="n"></param>
-        /// <returns></returns>
         private static SyntaxNode GetLeftMostWithPossibleExitPoints(SyntaxNode n) => n switch
         {
             VBSyntax.VariableDeclaratorSyntax vds => vds.Initializer,

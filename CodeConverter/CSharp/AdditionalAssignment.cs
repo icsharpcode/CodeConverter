@@ -4,13 +4,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal class AdditionalAssignment : IHoistedNode
     {
-        public AdditionalAssignment(IdentifierNameSyntax identifierName, ExpressionSyntax expression)
+        public AdditionalAssignment(ExpressionSyntax lhs, ExpressionSyntax rhs)
         {
-            IdentifierName = identifierName ?? throw new System.ArgumentNullException(nameof(identifierName));
-            Expression = expression ?? throw new System.ArgumentNullException(nameof(expression));
+            RightHandSide = rhs ?? throw new System.ArgumentNullException(nameof(rhs));
+            LeftHandSide = lhs ?? throw new System.ArgumentNullException(nameof(lhs));
         }
 
-        public ExpressionSyntax Expression { get; set; }
-        public IdentifierNameSyntax IdentifierName { get; }
+        public ExpressionSyntax LeftHandSide { get; set; }
+        public ExpressionSyntax RightHandSide { get; }
     }
 }

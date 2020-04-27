@@ -102,8 +102,10 @@ public partial class Class1
         Bar(ref argclass1);
         object argclass11 = C1;
         Bar(ref argclass11);
+        C1 = (Class1)argclass11;
         object argclass12 = C1;
         Bar(ref argclass12);
+        C1 = (Class1)argclass12;
         object argclass13 = _c2;
         Bar(ref argclass13);
         object argclass14 = _c2;
@@ -359,7 +361,7 @@ Public Class MyTestClass
 
         If 16 > someInt OrElse TakesRef(someInt) ' Convert directly
             Console.WriteLine(1)    
-        Else If someBool AndAlso TakesRef(3) 'Requires variable before (in local function)
+        Else If someBool AndAlso TakesRef(3 * a) 'Requires variable before (in local function)
             someInt += 1
         Else If TakesRef(Prop) ' Requires variable before, and to assign back after (in local function)
             someInt -=2
@@ -367,6 +369,7 @@ Public Class MyTestClass
         Console.WriteLine(someInt)
     End Sub
 End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices;
 
 public partial class MyTestClass
 {
@@ -398,7 +401,7 @@ public partial class MyTestClass
         int argvrbTst3 = Prop;
         bool c = TakesRef(ref argvrbTst3);
         Prop = argvrbTst3; // Requires variable before, and to assign back after
-        bool localTakesRef() { int argvrbTst = 3; var ret = TakesRef(ref argvrbTst); return ret; }
+        bool localTakesRef() { int argvrbTst = 3 * Conversions.ToInteger(a); var ret = TakesRef(ref argvrbTst); return ret; }
 
         bool localTakesRef1() { int argvrbTst = Prop; var ret = TakesRef(ref argvrbTst); Prop = argvrbTst; return ret; }
 

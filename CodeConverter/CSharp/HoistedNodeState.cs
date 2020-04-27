@@ -91,7 +91,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             foreach (var additionalAssignment in GetPostAssignments()) {
-                var assign = CS.SyntaxFactory.AssignmentExpression(CS.SyntaxKind.SimpleAssignmentExpression, additionalAssignment.Expression, additionalAssignment.IdentifierName);
+                var assign = CS.SyntaxFactory.AssignmentExpression(CS.SyntaxKind.SimpleAssignmentExpression, additionalAssignment.LeftHandSide, additionalAssignment.RightHandSide);
                 postAssignments.Add(CS.SyntaxFactory.ExpressionStatement(assign));
             }
 
