@@ -455,9 +455,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, (ExpressionSyntax)await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor), defaultToCast: refKind != RefKind.None);
         }
 
-        private RefConversion GetRefType(VBSyntax.SimpleArgumentSyntax node, VBSyntax.ArgumentListSyntax argList, System.Collections.Immutable.ImmutableArray<IParameterSymbol> parameters, out string argName, out RefKind refKind)
+        private RefConversion GetRefType(VBSyntax.ArgumentSyntax node, VBSyntax.ArgumentListSyntax argList, System.Collections.Immutable.ImmutableArray<IParameterSymbol> parameters, out string argName, out RefKind refKind)
         {
-            var parameter = !node.IsNamed ? parameters.ElementAtOrDefault(argList.Arguments.IndexOf(node)) : parameters.FirstOrDefault(p => p.Name.Equals(node.NameColonEquals.Name.Identifier.Text, StringComparison.OrdinalIgnoreCase));
+            var parameter = node.IsNamed && node is VBSyntax.SimpleArgumentSyntax sas 
+                ? parameters.FirstOrDefault(p => p.Name.Equals(sas.NameColonEquals.Name.Identifier.Text, StringComparison.OrdinalIgnoreCase))
+                : parameters.ElementAtOrDefault(argList.Arguments.IndexOf(node));
             if (parameter != null) {
                 refKind = parameter.RefKind;
                 argName = parameter.Name;
@@ -942,10 +944,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
         {
-            var originalArgsWithRefTypes = invocation.ArgumentList.Arguments
-                .Select(a => (Arg: (VBSyntax.SimpleArgumentSyntax)a, RefType: GetRefType((VBSyntax.SimpleArgumentSyntax)a, invocation.ArgumentList, invocationSymbol.Parameters, out var argName, out var refKind), Name: argName, RefKind: refKind));
-
-            return originalArgsWithRefTypes.Any(x => x.RefType != RefConversion.Inline) && !IsDefinitelyExecutedInStatement(invocation);
+            if (invocation.ArgumentList == null || IsDefinitelyExecutedInStatement(invocation)) return false;
+            return invocation.ArgumentList.Arguments
+                .Any(a => RefConversion.Inline != GetRefType(a, invocation.ArgumentList, invocationSymbol.Parameters, out var argName, out var refKind));
         }
 
         private static bool IsDefinitelyExecutedInStatement(VBSyntax.InvocationExpressionSyntax invocation)
@@ -1399,17 +1400,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, p.RefKind, local.IdentifierName);
         }
 
-        private RefConversion NeedsVariableForArgument(VBasic.Syntax.SimpleArgumentSyntax node, RefKind refKind)
+        private RefConversion NeedsVariableForArgument(VBasic.Syntax.ArgumentSyntax node, RefKind refKind)
         {
             if (refKind == RefKind.None) return RefConversion.Inline;
-            bool isIdentifier = node.Expression is VBasic.Syntax.IdentifierNameSyntax;
-            bool isMemberAccess = node.Expression is VBasic.Syntax.MemberAccessExpressionSyntax;
+            if (!(node is VBSyntax.SimpleArgumentSyntax sas)) return RefConversion.PreAssigment;
+            bool isIdentifier = sas.Expression is VBasic.Syntax.IdentifierNameSyntax;
+            bool isMemberAccess = sas.Expression is VBasic.Syntax.MemberAccessExpressionSyntax;
 
-            var symbolInfo = GetSymbolInfoInDocument<ISymbol>(node.Expression);
+            var symbolInfo = GetSymbolInfoInDocument<ISymbol>(sas.Expression);
             bool isProperty = symbolInfo != null && symbolInfo.IsKind(SymbolKind.Property);
             bool isUsing = symbolInfo?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax()?.Parent?.Parent?.IsKind(VBasic.SyntaxKind.UsingStatement) == true;
 
-            var typeInfo = _semanticModel.GetTypeInfo(node.Expression);
+            var typeInfo = _semanticModel.GetTypeInfo(sas.Expression);
             bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType);
 
             if (isProperty) return RefConversion.PreAndPostAssignment;
