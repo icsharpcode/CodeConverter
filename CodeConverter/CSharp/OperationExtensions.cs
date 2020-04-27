@@ -1,6 +1,10 @@
-﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
+﻿using System.Linq;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
+using VBasic = Microsoft.CodeAnalysis.VisualBasic;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
+
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -31,6 +35,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                         return operation;
                 }
             }
+        }
+
+        public static bool IsPropertyElementAccess(this IOperation operation)
+        {
+            return operation is IPropertyReferenceOperation pro && pro.Arguments.Any() && VBasic.VisualBasicExtensions.IsDefault(pro.Property);
+        }
+
+        public static bool IsArrayElementAccess(this IOperation operation)
+        {
+            return operation != null && operation.Kind == OperationKind.ArrayElementReference;
         }
     }
 }

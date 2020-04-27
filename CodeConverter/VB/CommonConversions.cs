@@ -322,9 +322,9 @@ namespace ICSharpCode.CodeConverter.VB
             return CreateLambdaExpression(singleLineExpressionKind, multiLineExpressionKind, header, statements, endBlock);
 
         }
-        StatementSyntax GetStatementSyntax(VisualBasicSyntaxNode node, Func<ExpressionSyntax, StatementSyntax> create) {
-            if (node is StatementSyntax)
-                return (StatementSyntax)node;
+
+        private StatementSyntax GetStatementSyntax(VisualBasicSyntaxNode node, Func<ExpressionSyntax, StatementSyntax> create) {
+            if (node is StatementSyntax syntax) return syntax;
             return create(node as ExpressionSyntax);
         }
 

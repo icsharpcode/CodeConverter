@@ -46,20 +46,20 @@ namespace ICSharpCode.CodeConverter.CSharp
             _expressionEvaluator = expressionEvaluator;
         }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceTargetType = null)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
         {
             if (csNode == null) return null;
-            var conversionKind = AnalyzeConversion(vbNode, defaultToCast, isConst, forceTargetType);
+            var conversionKind = AnalyzeConversion(vbNode, defaultToCast, isConst, forceSourceType, forceTargetType);
             csNode = addParenthesisIfNeeded && (conversionKind == TypeConversionKind.DestructiveCast || conversionKind == TypeConversionKind.NonDestructiveCast)
                 ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
                 : csNode;
-            return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded, isConst, forceTargetType: forceTargetType);
+            return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded, isConst, forceSourceType: forceSourceType, forceTargetType: forceTargetType);
         }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false, bool isConst = false, ITypeSymbol forceTargetType = null)
+        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
         {
             var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, vbNode);
-            var vbType = typeInfo.Type;
+            var vbType = forceSourceType ?? typeInfo.Type;
             var vbConvertedType = forceTargetType ?? typeInfo.ConvertedType;
 
             if (isConst && _expressionEvaluator.GetConstantOrNull(vbNode, vbConvertedType, csNode) is ExpressionSyntax constLiteral) {
@@ -98,10 +98,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             return ValidSyntaxFactory.CastExpression(typeName, csNode);
         }
 
-        public TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool isConst = false, ITypeSymbol forceTargetType = null)
+        public TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
         {
             var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, vbNode);
-            var vbType = typeInfo.Type;
+            var vbType = forceSourceType ?? typeInfo.Type;
             var vbConvertedType = forceTargetType ?? typeInfo.ConvertedType;
             if (vbType is null || vbConvertedType is null)
             {

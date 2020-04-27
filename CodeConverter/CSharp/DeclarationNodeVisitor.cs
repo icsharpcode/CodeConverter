@@ -29,7 +29,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static readonly Type DllImportType = typeof(DllImportAttribute);
         private static readonly Type CharSetType = typeof(CharSet);
         private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SemicolonToken);
-        private static readonly TypeSyntax VarType = SyntaxFactory.ParseTypeName("var");
         private readonly CSharpCompilation _csCompilation;
         private readonly SyntaxGenerator _csSyntaxGenerator;
         private readonly Compilation _compilation;
@@ -37,7 +36,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly MethodsWithHandles _methodsWithHandles = new MethodsWithHandles();
         private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
         private readonly AdditionalInitializers _additionalInitializers;
-        private readonly AdditionalLocals _additionalLocals = new AdditionalLocals();
+        private readonly HoistedNodeState _additionalLocals = new HoistedNodeState();
         private uint _failedMemberConversionMarkerCount;
         private readonly HashSet<string> _extraUsingDirectives = new HashSet<string>();
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
@@ -490,7 +489,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     foreach (var f in fieldDecls) yield return f;
                 } else
                 {
-                    if (_additionalLocals.Count() > 0) {
+                    if (_additionalLocals.GetDeclarations().Count() > 0) {
                         foreach (var additionalDecl in CreateAdditionalLocalMembers(convertedModifiers, attributes, decl)) {
                             yield return additionalDecl;
                         }
@@ -547,26 +546,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             var methodName = invocationExpressionSyntax.Expression
                 .ChildNodes().OfType<SimpleNameSyntax>().Last();
             var newMethodName = $"{methodName.Identifier.ValueText}_{v.Identifier.ValueText}";
-            var localVars = _additionalLocals.Select(l => l.Value)
-                .Select(al =>
-                    SyntaxFactory.LocalDeclarationStatement(
-                        CommonConversions.CreateVariableDeclarationAndAssignment(al.Prefix, al.Initializer)))
-                .Cast<StatementSyntax>().ToList();
-            var newInitializer = v.Initializer.Value.ReplaceNodes(
-                v.Initializer.Value.GetAnnotatedNodes(AdditionalLocals.Annotation), (an, _) => {
-                                // This should probably use a unique name like in MethodBodyVisitor - a collision is far less likely here
-                                var id = ((IdentifierNameSyntax)an).Identifier.ValueText;
-                    return SyntaxFactory.IdentifierName(_additionalLocals[id].Prefix);
-                });
-            var body = SyntaxFactory.Block(
-                localVars.Concat(SyntaxFactory.SingletonList(SyntaxFactory.ReturnStatement(newInitializer))));
-            var methodAttrs = SyntaxFactory.List<AttributeListSyntax>();
+            var declarationInfo = _additionalLocals.GetDeclarations();
+            
+            var localVars = declarationInfo
+                .Select(al => CommonConversions.CreateLocalVariableDeclarationAndAssignment(al.Prefix, al.Initializer))
+                .ToArray<StatementSyntax>();
+
+            // This should probably use a unique name like in MethodBodyVisitor - a collision is far less likely here
+            var newNames = declarationInfo.ToDictionary(l => l.Id, l => l.Prefix);
+            var newInitializer = HoistedNodeState.ReplaceNames(v.Initializer.Value, newNames);
+
+            var body = SyntaxFactory.Block(localVars.Concat(SyntaxFactory.ReturnStatement(newInitializer).Yield()));
             // Method calls in initializers must be static in C# - Supporting this is #281
-            var modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
-            var typeConstraints = SyntaxFactory.List<TypeParameterConstraintClauseSyntax>();
-            var parameterList = SyntaxFactory.ParameterList();
-            var methodDecl = SyntaxFactory.MethodDeclaration(methodAttrs, modifiers, decl.Type, null,
-                SyntaxFactory.Identifier(newMethodName), null, parameterList, typeConstraints, body, null);
+            var methodDecl = CreateParameterlessMethod(newMethodName, decl.Type, body);
             yield return methodDecl;
 
             var newVar =
@@ -576,6 +568,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxFactory.VariableDeclaration(decl.Type, SyntaxFactory.SingletonSeparatedList(newVar));
 
             yield return SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, newVarDecl);
+        }
+
+        private static MethodDeclarationSyntax CreateParameterlessMethod(string newMethodName, TypeSyntax type, BlockSyntax body)
+        {
+            var modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
+            var typeConstraints = SyntaxFactory.List<TypeParameterConstraintClauseSyntax>();
+            var parameterList = SyntaxFactory.ParameterList();
+            var methodAttrs = SyntaxFactory.List<AttributeListSyntax>();
+            var methodDecl = SyntaxFactory.MethodDeclaration(methodAttrs, modifiers, type, null,
+                SyntaxFactory.Identifier(newMethodName), null, parameterList, typeConstraints, body, null);
+            return methodDecl;
         }
 
         private List<MethodWithHandles> GetMethodWithHandles(VBSyntax.TypeBlockSyntax parentType)
@@ -1077,7 +1080,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var attributes = await block.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttribute);
             var modifiers = CommonConversions.ConvertModifiers(block, block.Modifiers, GetMemberContext(node));
 
-            var rawType = (TypeSyntax) await (block.AsClause?.Type).AcceptAsync(_triviaConvertingExpressionVisitor) ?? VarType;
+            var rawType = (TypeSyntax) await (block.AsClause?.Type).AcceptAsync(_triviaConvertingExpressionVisitor) ?? ValidSyntaxFactory.VarType;
 
             var convertedAccessors = await node.Accessors.SelectAsync(async a => await a.AcceptAsync(TriviaConvertingDeclarationVisitor));
             _additionalDeclarations.Add(node, convertedAccessors.OfType<MemberDeclarationSyntax>().ToArray());

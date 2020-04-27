@@ -41,7 +41,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CommonConversions CommonConversions { get; }
 
-        public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VBasic.VisualBasicSyntaxNode node, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives, AdditionalLocals additionalLocals, MethodsWithHandles methodsWithHandles, bool isIterator, IdentifierNameSyntax csReturnVariable)
+        public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VBasic.VisualBasicSyntaxNode node, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives, HoistedNodeState additionalLocals, MethodsWithHandles methodsWithHandles, bool isIterator, IdentifierNameSyntax csReturnVariable)
         {
             var solution = commonConversions.Document.Project.Solution;
             var declarationsToInlineInLoop = await solution.GetDescendantsToInlineInLoopAsync(semanticModel, node);
@@ -54,7 +54,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private MethodBodyExecutableStatementVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
             CommentConvertingVisitorWrapper expressionVisitor, CommonConversions commonConversions,
             Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
-            AdditionalLocals additionalLocals, MethodsWithHandles methodsWithHandles, HashSet<ILocalSymbol> localsToInlineInLoop)
+            HoistedNodeState additionalLocals, MethodsWithHandles methodsWithHandles, HashSet<ILocalSymbol> localsToInlineInLoop)
         {
             _methodNode = methodNode;
             _semanticModel = semanticModel;
@@ -63,7 +63,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _withBlockLhs = withBlockLhs;
             _extraUsingDirectives = extraUsingDirectives;
             _methodsWithHandles = methodsWithHandles;
-            var byRefParameterVisitor = new ByRefParameterVisitor(this, additionalLocals, semanticModel, _generatedNames);
+            var byRefParameterVisitor = new HoistedNodeStateVisitor(this, additionalLocals, semanticModel, _generatedNames);
             CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor);
             _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
             _localsToInlineInLoop = localsToInlineInLoop;
@@ -424,15 +424,21 @@ namespace ICSharpCode.CodeConverter.CSharp
             var elseClause = await ConvertElseClause(node.ElseBlock);
             elseClause = elseClause.WithVbSourceMappingFrom(node.ElseBlock); //Special case where explicit mapping is needed since block becomes clause so cannot be easily visited
 
-            foreach (var elseIf in node.ElseIfBlocks.Reverse()) {
-                var elseBlock = SyntaxFactory.Block(await ConvertStatements(elseIf.Statements));
-                var elseIfCondition = (ExpressionSyntax) await elseIf.ElseIfStatement.Condition.AcceptAsync(_expressionVisitor);
-                elseIfCondition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(elseIf.ElseIfStatement.Condition, elseIfCondition, forceTargetType: _vbBooleanTypeSymbol);
-                var ifStmt = SyntaxFactory.IfStatement(elseIfCondition, elseBlock, elseClause);
+            var elseIfBlocks = await node.ElseIfBlocks.SelectAsync(async elseIf => await ConvertElseIf(elseIf));
+            foreach (var elseIf in elseIfBlocks.Reverse()) {
+                var ifStmt = SyntaxFactory.IfStatement(elseIf.ElseIfCondition, elseIf.ElseBlock, elseClause);
                 elseClause = SyntaxFactory.ElseClause(ifStmt);
             }
 
             return SingleStatement(SyntaxFactory.IfStatement(condition, block, elseClause));
+        }
+
+        private async Task<(ExpressionSyntax ElseIfCondition, BlockSyntax ElseBlock)> ConvertElseIf(VBSyntax.ElseIfBlockSyntax elseIf)
+        {
+            var elseBlock = SyntaxFactory.Block(await ConvertStatements(elseIf.Statements));
+            var elseIfCondition = (ExpressionSyntax)await elseIf.ElseIfStatement.Condition.AcceptAsync(_expressionVisitor);
+            elseIfCondition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(elseIf.ElseIfStatement.Condition, elseIfCondition, forceTargetType: _vbBooleanTypeSymbol);
+            return (elseIfCondition, elseBlock);
         }
 
         private async Task<ElseClauseSyntax> ConvertElseClause(VBSyntax.ElseBlockSyntax elseBlock)
@@ -669,7 +675,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (forceVariable || !await CanEvaluateMultipleTimesAsync(vbExpr)) {
                 var contextNode = vbExpr.GetAncestor<VBSyntax.MethodBlockBaseSyntax>() ?? (VBasic.VisualBasicSyntaxNode) vbExpr.Parent;
                 var varName = GetUniqueVariableNameInScope(contextNode, variableNameBase);
-                var stmt = CreateLocalVariableDeclarationAndAssignment(varName, expr);
+                var stmt = CommonConversions.CreateLocalVariableDeclarationAndAssignment(varName, expr);
                 stmts = stmts.Add(stmt);
                 exprWithoutSideEffects = SyntaxFactory.IdentifierName(varName);
                 reusableExprWithoutSideEffects = exprWithoutSideEffects;
@@ -730,11 +736,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             } finally {
                 _withBlockLhs.Pop();
             }
-        }
-
-        private LocalDeclarationStatementSyntax CreateLocalVariableDeclarationAndAssignment(string variableName, ExpressionSyntax initValue)
-        {
-            return SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(variableName, initValue));
         }
 
         private string GetUniqueVariableNameInScope(VBasic.VisualBasicSyntaxNode node, string variableNameBase)
