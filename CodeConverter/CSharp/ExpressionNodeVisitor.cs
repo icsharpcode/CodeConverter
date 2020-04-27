@@ -818,15 +818,16 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitInvocationExpression(
             VBasic.Syntax.InvocationExpressionSyntax node)
         {
-            var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch<IMethodSymbol>();
-            var withinLocalFunction = RequiresLocalFunction(node, invocationSymbol);
+            var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch<ISymbol>();
+            var methodInvocationSymbol = invocationSymbol as IMethodSymbol;
+            var withinLocalFunction = methodInvocationSymbol != null && RequiresLocalFunction(node, methodInvocationSymbol);
             if (withinLocalFunction) {
                 _additionalLocals.PushScope();
             }
             try {
                 var convertedInvocation = await ConvertInvocation(node, invocationSymbol);
                 if (withinLocalFunction) {
-                    return await HoistAndCallLocalFunction(node, invocationSymbol, (ExpressionSyntax)convertedInvocation);
+                    return await HoistAndCallLocalFunction(node, methodInvocationSymbol, (ExpressionSyntax)convertedInvocation);
                 }
                 return convertedInvocation;
             } finally {
@@ -873,7 +874,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             if (expressionSymbol != null && expressionSymbol.IsKind(SymbolKind.Property) &&
-                invocationSymbol.GetParameters().Length == 0) {
+                invocationSymbol != null && invocationSymbol.GetParameters().Length == 0) {
                 return convertedExpression; //Parameterless property access
             }
 
@@ -941,8 +942,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
         {
-            if (invocationSymbol == null) return false;
-
             var originalArgsWithRefTypes = invocation.ArgumentList.Arguments
                 .Select(a => (Arg: (VBSyntax.SimpleArgumentSyntax)a, RefType: GetRefType((VBSyntax.SimpleArgumentSyntax)a, invocation.ArgumentList, invocationSymbol.Parameters, out var argName, out var refKind), Name: argName, RefKind: refKind));
 
