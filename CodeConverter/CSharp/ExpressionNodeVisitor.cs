@@ -36,7 +36,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
         private readonly Stack<ExpressionSyntax> _withBlockLhs = new Stack<ExpressionSyntax>();
         private readonly HoistedNodeState _additionalLocals;
-        private readonly MethodsWithHandles _methodsWithHandles;
+        private readonly TypeContext _typeContext;
         private readonly QueryConverter _queryConverter;
         private readonly Lazy<IDictionary<ITypeSymbol, string>> _convertMethodsLookupByReturnType;
         private readonly Compilation _csCompilation;
@@ -45,7 +45,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public ExpressionNodeVisitor(SemanticModel semanticModel,
             VisualBasicEqualityComparison visualBasicEqualityComparison, HoistedNodeState additionalLocals,
-            Compilation csCompilation, MethodsWithHandles methodsWithHandles, CommonConversions commonConversions,
+            Compilation csCompilation, TypeContext typeContext, CommonConversions commonConversions,
             HashSet<string> extraUsingDirectives)
         {
             CommonConversions = commonConversions;
@@ -56,7 +56,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             TriviaConvertingExpressionVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
             _queryConverter = new QueryConverter(commonConversions, TriviaConvertingExpressionVisitor);
             _csCompilation = csCompilation;
-            _methodsWithHandles = methodsWithHandles;
+            _typeContext = typeContext;
             _extraUsingDirectives = extraUsingDirectives;
 
             // If this isn't needed, the assembly with Conversions may not be referenced, so this must be done lazily
@@ -1303,7 +1303,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public async Task<VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
         {
-            var methodBodyVisitor = await MethodBodyExecutableStatementVisitor.CreateAsync(node, _semanticModel, TriviaConvertingExpressionVisitor, CommonConversions, _withBlockLhs, _extraUsingDirectives, _additionalLocals, _methodsWithHandles, isIterator, csReturnVariable);
+            var methodBodyVisitor = await MethodBodyExecutableStatementVisitor.CreateAsync(node, _semanticModel, TriviaConvertingExpressionVisitor, CommonConversions, _withBlockLhs, _extraUsingDirectives, _additionalLocals, _typeContext, isIterator, csReturnVariable);
             return methodBodyVisitor.CommentConvertingVisitor;
         }
 

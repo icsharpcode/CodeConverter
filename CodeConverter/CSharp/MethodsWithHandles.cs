@@ -15,12 +15,19 @@ namespace ICSharpCode.CodeConverter.CSharp
         private List<MethodWithHandles> _methodWithHandleses;
         private ILookup<string, MethodWithHandles> _handledMethodsFromPropertyWithEventName;
 
-        public void Initialize(List<MethodWithHandles> methodWithHandleses)
+
+        public MethodsWithHandles(List<MethodWithHandles> methodWithHandleses, ILookup<string, MethodWithHandles> handledMethodsFromPropertyWithEventName)
         {
             _methodWithHandleses = methodWithHandleses;
-            _handledMethodsFromPropertyWithEventName = methodWithHandleses
+            _handledMethodsFromPropertyWithEventName = handledMethodsFromPropertyWithEventName;
+        }
+
+        public static MethodsWithHandles Create(List<MethodWithHandles> methodWithHandleses)
+        {
+            var handledMethodsFromPropertyWithEventName = methodWithHandleses
                 .SelectMany(m => m.HandledPropertyEventCSharpIds.Select(h => (EventPropertyName: h.Item1.Text, MethodWithHandles: m)))
                 .ToLookup(m => m.EventPropertyName, m => m.MethodWithHandles);
+            return new MethodsWithHandles(methodWithHandleses, handledMethodsFromPropertyWithEventName);
         }
 
         public bool Any()

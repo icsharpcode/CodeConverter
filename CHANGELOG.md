@@ -10,12 +10,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
-* Improve multi-declaration field conversion for arrrays - [#559](https://github.com/icsharpcode/CodeConverter/issues/559)
+* Improve multi-declaration field conversion for arrays - [#559](https://github.com/icsharpcode/CodeConverter/issues/559)
 * Add parentheses around ternary statement - [#565](https://github.com/icsharpcode/CodeConverter/issues/565)
 * When converting ForEach loop, avoid duplicate variable compilation issue [#558](https://github.com/icsharpcode/CodeConverter/issues/558)
 * Improvements to for loop with missing semantic info - [#482](https://github.com/icsharpcode/CodeConverter/issues/482)
 * Fix logic issue when converting property passed byref - [#324](https://github.com/icsharpcode/CodeConverter/issues/324)
 * Fix logic issue when converting expression passed in byref within conditional expression - [#310](https://github.com/icsharpcode/CodeConverter/issues/310)
+* Added constructors now only added to the relevant type - not other types in the same file
 
 ### C# -> VB
 

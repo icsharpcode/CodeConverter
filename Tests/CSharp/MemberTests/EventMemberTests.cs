@@ -240,6 +240,9 @@ Class Class1
 
     Sub PrintTestMessage3() Handles NonSharedEventClassInstance.TestEvent
     End Sub
+
+    Public Class NestedShouldNotGainConstructor
+    End Class
 End Class
 
 Public Class ShouldNotGainConstructor
@@ -339,20 +342,19 @@ internal partial class Class1
     public void PrintTestMessage3()
     {
     }
+
+    public partial class NestedShouldNotGainConstructor
+    {
+    }
 }
 
 public partial class ShouldNotGainConstructor
 {
-    static ShouldNotGainConstructor()
-    {
-        SharedEventClassInstance = new MyEventClass();
-    }
 }
 1 source compilation errors:
 BC30516: Overload resolution failed because no accessible 'New' accepts this number of arguments.
-2 target compilation errors:
-CS1547: Keyword 'void' cannot be used in this context
-CS0103: The name 'SharedEventClassInstance' does not exist in the current context", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
+1 target compilation errors:
+CS1547: Keyword 'void' cannot be used in this context", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
         }
 
         [Fact]

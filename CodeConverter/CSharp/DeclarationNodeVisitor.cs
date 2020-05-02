@@ -19,6 +19,7 @@ using ICSharpCode.CodeConverter.Util.FromRoslyn;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
+
     /// <summary>
     /// Declaration nodes, and nodes only used directly in that declaration (i.e. never within an expression)
     /// e.g. Class, Enum, TypeConstraint
@@ -33,9 +34,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly SyntaxGenerator _csSyntaxGenerator;
         private readonly Compilation _compilation;
         private readonly SemanticModel _semanticModel;
-        private readonly MethodsWithHandles _methodsWithHandles = new MethodsWithHandles();
         private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
-        private readonly AdditionalInitializers _additionalInitializers;
+        private readonly TypeContext _typeContext = new TypeContext();
         private readonly HoistedNodeState _additionalLocals = new HoistedNodeState();
         private uint _failedMemberConversionMarkerCount;
         private readonly HashSet<string> _extraUsingDirectives = new HashSet<string>();
@@ -43,8 +43,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         private HashSet<string> _accessedThroughMyClass;
         public CommentConvertingVisitorWrapper TriviaConvertingDeclarationVisitor { get; }
         private readonly CommentConvertingVisitorWrapper _triviaConvertingExpressionVisitor;
-
-
         private string _topAncestorNamespace;
 
         private CommonConversions CommonConversions { get; }
@@ -62,8 +60,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var expressionEvaluator = new ExpressionEvaluator(semanticModel, _visualBasicEqualityComparison);
             var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator, expressionEvaluator);
             CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, csCompilation);
-            _additionalInitializers = new AdditionalInitializers();
-            var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _methodsWithHandles, CommonConversions, _extraUsingDirectives);
+            var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _typeContext, CommonConversions, _extraUsingDirectives);
             _triviaConvertingExpressionVisitor = expressionNodeVisitor.TriviaConvertingExpressionVisitor;
             _createMethodBodyVisitorAsync = expressionNodeVisitor.CreateMethodBodyVisitor;
             CommonConversions.TriviaConvertingExpressionVisitor = _triviaConvertingExpressionVisitor;
@@ -196,15 +193,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<IEnumerable<MemberDeclarationSyntax>> ConvertMembers(VBSyntax.TypeBlockSyntax parentType)
         {
             var members = parentType.Members;
+            var additionalInitializers = new AdditionalInitializers();
+            var methodsWithHandles = MethodsWithHandles.Create(GetMethodWithHandles(parentType));
 
-            //TODO: Store these per-type so nested classes aren't affected
-            _methodsWithHandles.Initialize(GetMethodWithHandles(parentType));
-            _additionalInitializers.AdditionalInstanceInitializers.Clear();
-            _additionalInitializers.AdditionalInstanceInitializers.Clear();
+            if (methodsWithHandles.Any()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
 
-            if (_methodsWithHandles.Any()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
-
-            var directlyConvertedMembers = await GetDirectlyConvertMembers();
+            IEnumerable<MemberDeclarationSyntax> directlyConvertedMembers = await GetDirectlyConvertedMembers(additionalInitializers, methodsWithHandles);
 
             var namedTypeSymbol = _semanticModel.GetDeclaredSymbol(parentType);
             bool shouldAddTypeWideInitToThisPart = ShouldAddTypeWideInitToThisPart(parentType, namedTypeSymbol);
@@ -213,19 +207,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (shouldAddTypeWideInitToThisPart) {
                 if (requiresInitializeComponent) {
                     // Constructor event handlers not required since they'll be inside InitializeComponent
-                    directlyConvertedMembers = directlyConvertedMembers.Concat(_methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
+                    directlyConvertedMembers = directlyConvertedMembers.Concat(methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
                 } else {
-                    _additionalInitializers.AdditionalInstanceInitializers.AddRange(_methodsWithHandles.GetConstructorEventHandlers());
+                    additionalInitializers.AdditionalInstanceInitializers.AddRange(methodsWithHandles.GetConstructorEventHandlers());
                 }
             }
 
-            return _additionalInitializers.WithAdditionalInitializers(namedTypeSymbol, directlyConvertedMembers.ToList(), CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier), shouldAddTypeWideInitToThisPart, requiresInitializeComponent);
+            return additionalInitializers.WithAdditionalInitializers(namedTypeSymbol, directlyConvertedMembers.ToList(), CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier), shouldAddTypeWideInitToThisPart, requiresInitializeComponent);
 
-            async Task<IEnumerable<MemberDeclarationSyntax>> GetDirectlyConvertMembers()
+            async Task<MemberDeclarationSyntax[]> GetDirectlyConvertedMembers(AdditionalInitializers additionalInitializers, MethodsWithHandles methodsWithHandles)
             {
-                return await members.SelectManyAsync(async member =>
-                    new[]{await ConvertMember(member)}.Concat(GetAdditionalDeclarations(member)));
-
+                _typeContext.Push(methodsWithHandles, additionalInitializers);
+                try {
+                    var convertedMembers = await members.SelectManyAsync(async member =>
+                        new[] { await ConvertMember(member) }.Concat(GetAdditionalDeclarations(member)));
+                    return convertedMembers.ToArray();
+                } finally {
+                    _typeContext.Pop();
+                }
             }
         }
 
@@ -515,14 +514,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Where(a => a.Initializer != null)
                 .ToDictionary(v => v.Identifier.Text, v => v.Initializer);
             var fieldDecl = decl.RemoveNodes(initializers.Values, SyntaxRemoveOptions.KeepNoTrivia);
+            var initializerState = _typeContext.Initializers;
             var initializerCollection = convertedModifiers.Any(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword))
-                ? _additionalInitializers.AdditionalStaticInitializers
-                : _additionalInitializers.AdditionalInstanceInitializers;
+                ? initializerState.AdditionalStaticInitializers
+                : initializerState.AdditionalInstanceInitializers;
             foreach (var initializer in initializers) {
                 initializerCollection.Add((SyntaxFactory.IdentifierName(initializer.Key), Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression, initializer.Value.Value));
             }
 
-            var fieldDecls = _methodsWithHandles.GetDeclarationsForFieldBackedProperty(fieldDecl,
+            var fieldDecls = _typeContext.MethodsWithHandles.GetDeclarationsForFieldBackedProperty(fieldDecl,
                 convertedModifiers, SyntaxFactory.List(attributes));
             return fieldDecls;
         }
@@ -897,7 +897,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (node.SubOrFunctionStatement.Identifier.Text == "InitializeComponent" && node.SubOrFunctionStatement.IsKind(VBasic.SyntaxKind.SubStatement) && declaredSymbol.ContainingType.IsDesignerGeneratedTypeWithInitializeComponent(_compilation)) {
                 var firstResumeLayout = convertedStatements.Statements.FirstOrDefault(IsThisResumeLayoutInvocation) ?? convertedStatements.Statements.Last();
-                convertedStatements = convertedStatements.InsertNodesBefore(firstResumeLayout, _methodsWithHandles.GetInitializeComponentClassEventHandlers());
+                convertedStatements = convertedStatements.InsertNodesBefore(firstResumeLayout, _typeContext.MethodsWithHandles.GetInitializeComponentClassEventHandlers());
             }
 
             var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
