@@ -1,20 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using ICSharpCode.CodeConverter.Util;
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Editing;
-using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
-using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.VisualBasic.CompilerServices;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Linq.Expressions;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {

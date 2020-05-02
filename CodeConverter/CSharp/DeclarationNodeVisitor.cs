@@ -59,7 +59,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             TriviaConvertingDeclarationVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
             var expressionEvaluator = new ExpressionEvaluator(semanticModel, _visualBasicEqualityComparison);
             var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator, expressionEvaluator);
-            CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, csCompilation);
+            CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, csCompilation, _typeContext);
             var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _additionalLocals, csCompilation, _typeContext, CommonConversions, _extraUsingDirectives);
             _triviaConvertingExpressionVisitor = expressionNodeVisitor.TriviaConvertingExpressionVisitor;
             _createMethodBodyVisitorAsync = expressionNodeVisitor.CreateMethodBodyVisitor;
@@ -188,20 +188,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             return namespaceToDeclare;
         }
 
-        #region Namespace Members
-
         private async Task<IEnumerable<MemberDeclarationSyntax>> ConvertMembers(VBSyntax.TypeBlockSyntax parentType)
         {
             var members = parentType.Members;
-            var additionalInitializers = new AdditionalInitializers();
+
+            var namedTypeSymbol = _semanticModel.GetDeclaredSymbol(parentType);
+            bool shouldAddTypeWideInitToThisPart = ShouldAddTypeWideInitToThisPart(parentType, namedTypeSymbol);
+            var additionalInitializers = new AdditionalInitializers(shouldAddTypeWideInitToThisPart);
             var methodsWithHandles = MethodsWithHandles.Create(GetMethodWithHandles(parentType));
 
             if (methodsWithHandles.Any()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
 
             IEnumerable<MemberDeclarationSyntax> directlyConvertedMembers = await GetDirectlyConvertedMembers(additionalInitializers, methodsWithHandles);
 
-            var namedTypeSymbol = _semanticModel.GetDeclaredSymbol(parentType);
-            bool shouldAddTypeWideInitToThisPart = ShouldAddTypeWideInitToThisPart(parentType, namedTypeSymbol);
             var requiresInitializeComponent = namedTypeSymbol.IsDesignerGeneratedTypeWithInitializeComponent(_compilation);
 
             if (shouldAddTypeWideInitToThisPart) {
@@ -213,7 +212,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            return additionalInitializers.WithAdditionalInitializers(namedTypeSymbol, directlyConvertedMembers.ToList(), CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier), shouldAddTypeWideInitToThisPart, requiresInitializeComponent);
+            return additionalInitializers.WithAdditionalInitializers(namedTypeSymbol, directlyConvertedMembers.ToList(), CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier), requiresInitializeComponent);
 
             async Task<MemberDeclarationSyntax[]> GetDirectlyConvertedMembers(AdditionalInitializers additionalInitializers, MethodsWithHandles methodsWithHandles)
             {
@@ -441,10 +440,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
-        #endregion
-
-        #region Type Members
-
         public override async Task<CSharpSyntaxNode> VisitFieldDeclaration(VBSyntax.FieldDeclarationSyntax node)
         {
             _additionalLocals.PushScope();
@@ -452,7 +447,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             try {
                 declarations = await GetMemberDeclarations(node);
             } finally {
-                _additionalLocals.PopScope();
+                _additionalLocals.PopExpressionScope();
             }
             _additionalDeclarations.Add(node, declarations.Skip(1).ToArray());
             return declarations.First();
@@ -1229,9 +1224,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxFactory.SeparatedList(await node.Parameters.SelectAsync(async p => (TypeParameterSyntax) await p.AcceptAsync(TriviaConvertingDeclarationVisitor)))
             );
         }
-
-        #endregion
-
 
         private async Task<(TypeParameterListSyntax parameters, SyntaxList<TypeParameterConstraintClauseSyntax> constraints)> SplitTypeParameters(VBSyntax.TypeParameterListSyntax typeParameterList)
         {

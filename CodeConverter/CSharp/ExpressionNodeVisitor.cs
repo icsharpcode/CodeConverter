@@ -36,7 +36,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
         private readonly Stack<ExpressionSyntax> _withBlockLhs = new Stack<ExpressionSyntax>();
         private readonly HoistedNodeState _additionalLocals;
-        private readonly TypeContext _typeContext;
+        private readonly ITypeContext _typeContext;
         private readonly QueryConverter _queryConverter;
         private readonly Lazy<IDictionary<ITypeSymbol, string>> _convertMethodsLookupByReturnType;
         private readonly Compilation _csCompilation;
@@ -45,7 +45,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public ExpressionNodeVisitor(SemanticModel semanticModel,
             VisualBasicEqualityComparison visualBasicEqualityComparison, HoistedNodeState additionalLocals,
-            Compilation csCompilation, TypeContext typeContext, CommonConversions commonConversions,
+            Compilation csCompilation, ITypeContext typeContext, CommonConversions commonConversions,
             HashSet<string> extraUsingDirectives)
         {
             CommonConversions = commonConversions;

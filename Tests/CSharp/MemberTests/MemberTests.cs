@@ -720,6 +720,25 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task FieldWithNonStaticInitializerAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class A
+    Private x As Integer = 2
+    Private y(x) As Integer
+End Class", @"
+public partial class A
+{
+    public A()
+    {
+        y = new int[x + 1];
+    }
+
+    private int x = 2;
+    private int[] y;
+}");
+        }
+
+        [Fact]
         public async Task ParamArrayAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass

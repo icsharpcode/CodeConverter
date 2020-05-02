@@ -11,11 +11,17 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     public class AdditionalInitializers
     {
+        public AdditionalInitializers(bool shouldAddTypeWideInitToThisPart)
+        {
+            ShouldAddTypeWideInitToThisPart = shouldAddTypeWideInitToThisPart;
+        }
+
         public List<(ExpressionSyntax Field, SyntaxKind AssignmentKind, ExpressionSyntax Initializer)> AdditionalStaticInitializers { get; } = new List<(ExpressionSyntax, SyntaxKind, ExpressionSyntax)>();
         public List<(ExpressionSyntax Field, SyntaxKind AssignmentKind, ExpressionSyntax Initializer)> AdditionalInstanceInitializers { get; } = new List<(ExpressionSyntax, SyntaxKind, ExpressionSyntax)>();
+        public bool ShouldAddTypeWideInitToThisPart { get; }
 
         public IReadOnlyCollection<MemberDeclarationSyntax> WithAdditionalInitializers(ITypeSymbol parentType,
-            List<MemberDeclarationSyntax> convertedMembers, SyntaxToken parentTypeName, bool shouldAddTypeWideInitToThisPart, bool requiresInitializeComponent)
+            List<MemberDeclarationSyntax> convertedMembers, SyntaxToken parentTypeName, bool requiresInitializeComponent)
         {
             var constructorsInAllParts = parentType?.GetMembers().OfType<IMethodSymbol>().Where(m => m.IsConstructor()).ToList();
             var parameterlessConstructorsInAllParts = constructorsInAllParts?.Where(c => !c.IsImplicitlyDeclared && !c.Parameters.Any()) ?? Array.Empty<IMethodSymbol>();
@@ -25,7 +31,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Where(cds => !cds.Initializer.IsKind(SyntaxKind.ThisConstructorInitializer))
                 .ToLookup(cds => cds.IsInStaticCsContext());
 
-            convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)), rootConstructors[false], shouldAddTypeWideInitToThisPart && requiresInstanceConstructor, requiresInitializeComponent);
+            convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)), rootConstructors[false], ShouldAddTypeWideInitToThisPart && requiresInstanceConstructor, requiresInitializeComponent);
 
             convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName,
                 AdditionalStaticInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword)), rootConstructors[true], requiresStaticConstructor, false);

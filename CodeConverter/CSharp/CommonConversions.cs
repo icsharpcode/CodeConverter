@@ -43,18 +43,21 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly SemanticModel _semanticModel;
         public SyntaxGenerator CsSyntaxGenerator { get; }
         private readonly CSharpCompilation _csCompilation;
+        private readonly ITypeContext _typeContext;
+
         public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; set; }
         public TypeConversionAnalyzer TypeConversionAnalyzer { get; }
 
         public CommonConversions(Document document, SemanticModel semanticModel,
             TypeConversionAnalyzer typeConversionAnalyzer, SyntaxGenerator csSyntaxGenerator,
-            CSharpCompilation csCompilation)
+            CSharpCompilation csCompilation, ITypeContext typeContext)
         {
             TypeConversionAnalyzer = typeConversionAnalyzer;
             Document = document;
             _semanticModel = semanticModel;
             CsSyntaxGenerator = csSyntaxGenerator;
             _csCompilation = csCompilation;
+            _typeContext = typeContext;
         }
 
         public async Task<(IReadOnlyCollection<(VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarations(
@@ -136,7 +139,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var convertedInitializer = vbInitValue != null
                     ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr, isConst: declaredConst)
                     : adjustedInitializerExpr;
-                equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
+
+                if (isField && !declaredSymbol.IsStatic && !IsDefinitelyStatic(vbName, vbInitValue)) {
+                    //TODO If not the part where we're doing type wide init, convert this declaration into an arrow property called "initial<FieldName>", then call it from the other part
+                    // Assuming this is the part for type wide init
+                    var lhs = SyntaxFactory.IdentifierName(ConvertIdentifier(vbName.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None));
+                    _typeContext.Initializers.AdditionalInstanceInitializers.Add((lhs, CSSyntaxKind.SimpleAssignmentExpression, adjustedInitializerExpr));
+                    equalsValueClauseSyntax = null;
+                } else {
+                    equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
+                }
             }
             else if (isField || declaredSymbol != null && _semanticModel.IsDefinitelyAssignedBeforeRead(declaredSymbol, vbName))
             {
@@ -149,6 +161,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return equalsValueClauseSyntax;
+        }
+
+        /// <summary>
+        /// Returns true only if expressions static (i.e. doesn't reference the containing instance)
+        /// </summary>
+        private bool IsDefinitelyStatic(ModifiedIdentifierSyntax vbName, VBSyntax.ExpressionSyntax vbInitValue)
+        {
+            var arrayBoundExpressions = vbName.ArrayBounds != null ? vbName.ArrayBounds.Arguments.Select(a => a.GetExpression()).Where(x => x != null) : Enumerable.Empty<VBSyntax.ExpressionSyntax>();
+            var expressions = vbInitValue.Yield().Concat(arrayBoundExpressions).ToArray();
+            return expressions.All(IsDefinitelyStatic);
+        }
+
+        /// <summary>
+        /// Returns true only if expression is static (i.e. doesn't reference the containing instance)
+        /// </summary>
+        private bool IsDefinitelyStatic(VBSyntax.ExpressionSyntax e)
+        {
+            return _semanticModel.GetOperation(e).DescendantsAndSelf().OfType<IInstanceReferenceOperation>().Any() == false;
         }
 
         private VariableDeclarationSyntax CreateVariableDeclaration(VariableDeclaratorSyntax vbDeclarator, bool preferExplicitType,

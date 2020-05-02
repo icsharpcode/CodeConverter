@@ -41,7 +41,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CommonConversions CommonConversions { get; }
 
-        public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VBasic.VisualBasicSyntaxNode node, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives, HoistedNodeState additionalLocals, TypeContext typeContext, bool isIterator, IdentifierNameSyntax csReturnVariable)
+        public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VBasic.VisualBasicSyntaxNode node, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives, HoistedNodeState additionalLocals, ITypeContext typeContext, bool isIterator, IdentifierNameSyntax csReturnVariable)
         {
             var solution = commonConversions.Document.Project.Solution;
             var declarationsToInlineInLoop = await solution.GetDescendantsToInlineInLoopAsync(semanticModel, node);
@@ -54,7 +54,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private MethodBodyExecutableStatementVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
             CommentConvertingVisitorWrapper expressionVisitor, CommonConversions commonConversions,
             Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
-            HoistedNodeState additionalLocals, TypeContext typeContext, HashSet<ILocalSymbol> localsToInlineInLoop)
+            HoistedNodeState additionalLocals, ITypeContext typeContext, HashSet<ILocalSymbol> localsToInlineInLoop)
         {
             _methodNode = methodNode;
             _semanticModel = semanticModel;
