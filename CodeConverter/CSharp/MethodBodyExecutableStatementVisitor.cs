@@ -591,7 +591,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             } else {
                 var v = (IdentifierNameSyntax) await stmt.ControlVariable.AcceptAsync(_expressionVisitor);
                 id = v.Identifier;
-                type = SyntaxFactory.ParseTypeName("var");
+                type = ValidSyntaxFactory.VarType;
             }
 
             var block = SyntaxFactory.Block(statements.Concat(await ConvertStatements(node.Statements)));
@@ -712,7 +712,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             } else {
                 var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
                 patternMatch = SyntaxFactory.DeclarationPattern(
-                    SyntaxFactory.ParseTypeName("var"), SyntaxFactory.SingleVariableDesignation(varName));
+                    ValidSyntaxFactory.VarType, SyntaxFactory.SingleVariableDesignation(varName));
                 expression = SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, SyntaxFactory.IdentifierName(varName), expression);
             }
 

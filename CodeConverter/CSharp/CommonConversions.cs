@@ -126,15 +126,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csTypeSyntax = GetTypeSyntax(declaredSymbolType);
 
             bool isField = vbDeclarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
-            bool isConst = declaredSymbol is IFieldSymbol fieldSymbol && fieldSymbol.IsConst ||
-                           declaredSymbol is ILocalSymbol localSymbol && localSymbol.IsConst;
+            bool declaredConst = declaredSymbol is IFieldSymbol fieldSymbol && fieldSymbol.IsConst ||
+                                 declaredSymbol is ILocalSymbol localSymbol && localSymbol.IsConst;
 
             EqualsValueClauseSyntax equalsValueClauseSyntax;
             if (await GetInitializerFromNameAndType(declaredSymbolType, vbName, initializerOrMethodDecl) is ExpressionSyntax
                 adjustedInitializerExpr)
             {
                 var convertedInitializer = vbInitValue != null
-                    ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr, isConst: isConst)
+                    ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr, isConst: declaredConst)
                     : adjustedInitializerExpr;
                 equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
             }
@@ -178,7 +178,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public TypeSyntax GetTypeSyntax(ITypeSymbol typeSymbol, bool useImplicitType = false)
         {
-            if (useImplicitType || typeSymbol == null) return CreateVarTypeName();
+            if (useImplicitType || typeSymbol == null) return ValidSyntaxFactory.VarType;
             var syntax = (TypeSyntax)CsSyntaxGenerator.TypeExpression(typeSymbol);
 
             return WithDeclarationCasing(syntax, typeSymbol);
@@ -200,11 +200,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var originalName = originalNames.FirstOrDefault(on => string.Equals(@on, oldNode.ToString(), StringComparison.OrdinalIgnoreCase));
                 return originalName != null ? SyntaxFactory.IdentifierName(originalName) : oldNode;
             });
-        }
-
-        private static TypeSyntax CreateVarTypeName()
-        {
-            return SyntaxFactory.ParseTypeName("var");
         }
 
         private static VBSyntax.ExpressionSyntax GetInitializerToConvert(VariableDeclaratorSyntax declarator)
@@ -518,7 +513,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             CSSyntax.VariableDeclaratorSyntax variableDeclaratorSyntax = CreateVariableDeclarator(variableName, initValue);
             var variableDeclarationSyntax = SyntaxFactory.VariableDeclaration(
-                explicitType ?? SyntaxFactory.IdentifierName("var"),
+                explicitType ?? ValidSyntaxFactory.VarType,
                 SyntaxFactory.SingletonSeparatedList(variableDeclaratorSyntax));
             return variableDeclarationSyntax;
         }

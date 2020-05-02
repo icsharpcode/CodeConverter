@@ -486,8 +486,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (isWithEvents) {
                     var fieldDecls = CreateWithEventsMembers(convertedModifiers, attributes, decl);
                     foreach (var f in fieldDecls) yield return f;
-                } else
-                {
+                } else {
                     if (_additionalLocals.GetDeclarations().Count() > 0) {
                         foreach (var additionalDecl in CreateAdditionalLocalMembers(convertedModifiers, attributes, decl)) {
                             yield return additionalDecl;
@@ -501,8 +500,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                         }
                         yield return SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, decl);
                     }
-
-                    
                 }
             }
         }
