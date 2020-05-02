@@ -9,6 +9,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         public AdditionalInitializers Initializers => _contextStack.Peek().Initializers;
         public MethodsWithHandles MethodsWithHandles => _contextStack.Peek().Methods;
 
+        public HoistedNodeState HoistedState { get; internal set; } = new HoistedNodeState();
+
         public void Push(MethodsWithHandles methodWithHandles, AdditionalInitializers additionalInitializers)
         {
             _contextStack.Push((additionalInitializers, methodWithHandles));

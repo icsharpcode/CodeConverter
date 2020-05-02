@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Fix logic issue when converting property passed byref - [#324](https://github.com/icsharpcode/CodeConverter/issues/324)
 * Fix logic issue when converting expression passed in byref within conditional expression - [#310](https://github.com/icsharpcode/CodeConverter/issues/310)
 * Added constructors now only added to the relevant type - not other types in the same file
-* Converted field initializers moved to constructor in most cases - [#281](https://github.com/icsharpcode/CodeConverter/issues/281)
+* Converted non-static field initializers moved to constructor - [#281](https://github.com/icsharpcode/CodeConverter/issues/281)
 
 ### C# -> VB
 

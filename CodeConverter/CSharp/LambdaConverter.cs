@@ -60,11 +60,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             ParameterListSyntax param, BlockSyntax block,
             ArrowExpressionClauseSyntax arrow)
         {
-            if (!(_semanticModel.GetOperation(vbNode) is IAnonymousFunctionOperation anonFuncOp)) {
+            if (!(_semanticModel.GetOperation(vbNode) is IAnonymousFunctionOperation anonFuncOp) || anonFuncOp.GetParentIgnoringConversions() is IDelegateCreationOperation dco && !dco.IsImplicit) {
                 return null;
             }
 
-            var potentialAncestorDeclarationOperation = anonFuncOp.GetParentIgnoringConversions();
+            var potentialAncestorDeclarationOperation = anonFuncOp.GetParentIgnoringConversions().GetParentIgnoringConversions();
             // Could do: See if we can improve upon returning "object" for pretty much everything (which is what the symbols say)
             // I believe that in general, special VB functions such as MultiplyObject are designed to work the same as integer when given two integers for example.
             // If all callers currently pass an integer, perhaps it'd be more idiomatic in C# to specify "int", than to have Operators
@@ -79,7 +79,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             if (potentialAncestorDeclarationOperation is IVariableInitializerOperation vio) {
-                if (vio.GetParentIgnoringConversions() is IVariableDeclarationGroupOperation go) {
+                if (vio.GetParentIgnoringConversions().GetParentIgnoringConversions() is IVariableDeclarationGroupOperation go) {
                     potentialAncestorDeclarationOperation = go.Declarations.First(d => d.Syntax.FullSpan.Contains(vbNode.FullSpan));
                 } else {
                     potentialAncestorDeclarationOperation = vio.Parent;

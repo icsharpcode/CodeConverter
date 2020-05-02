@@ -1,8 +1,9 @@
-﻿using ICSharpCode.CodeConverter.Util;
+﻿using System.Linq;
+using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
-using Microsoft.CodeAnalysis.VisualBasic;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using VBasic = Microsoft.CodeAnalysis.VisualBasic;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -13,9 +14,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// The caller should default to outputting an initializer which is always safe for equivalence/correctness.
         /// </summary>
         public static bool IsDefinitelyAssignedBeforeRead(this SemanticModel semanticModel,
-            ISymbol locallyDeclaredSymbol, ModifiedIdentifierSyntax syntaxForSymbol)
+            ISymbol locallyDeclaredSymbol, VBSyntax.ModifiedIdentifierSyntax syntaxForSymbol)
         {
-            var methodBlockBaseSyntax = syntaxForSymbol.GetAncestor<MethodBlockBaseSyntax>();
+            var methodBlockBaseSyntax = syntaxForSymbol.GetAncestor<VBSyntax.MethodBlockBaseSyntax>();
             var methodFlow = semanticModel.AnalyzeDataFlow(methodBlockBaseSyntax.Statements.First(), methodBlockBaseSyntax.Statements.Last());
             return DefiniteAssignmentAnalyzer.IsDefinitelyAssignedBeforeRead(locallyDeclaredSymbol, methodFlow);
         }
@@ -38,6 +39,24 @@ namespace ICSharpCode.CodeConverter.CSharp
                         return op;
                 }
             }
+        }
+
+        /// <summary>
+        /// Returns true only if expressions static (i.e. doesn't reference the containing instance)
+        /// </summary>
+        public static bool IsDefinitelyStatic(this SemanticModel semanticModel, VBSyntax.ModifiedIdentifierSyntax vbName, VBSyntax.ExpressionSyntax vbInitValue)
+        {
+            var arrayBoundExpressions = vbName.ArrayBounds != null ? vbName.ArrayBounds.Arguments.Select(a => a.GetExpression()) : Enumerable.Empty<VBSyntax.ExpressionSyntax>();
+            var expressions = vbInitValue.Yield().Concat(arrayBoundExpressions).Where(x => x != null).ToArray();
+            return expressions.All(e => semanticModel.IsDefinitelyStatic(e));
+        }
+
+        /// <summary>
+        /// Returns true only if expression is static (i.e. doesn't reference the containing instance)
+        /// </summary>
+        private static bool IsDefinitelyStatic(this SemanticModel semanticModel, VBSyntax.ExpressionSyntax e)
+        {
+            return semanticModel.GetOperation(e).DescendantsAndSelf().OfType<IInstanceReferenceOperation>().Any() == false;
         }
     }
 }

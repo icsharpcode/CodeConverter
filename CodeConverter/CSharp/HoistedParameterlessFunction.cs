@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    internal class HoistedLocalFunction : IHoistedNode
+    internal class HoistedParameterlessFunction : IHoistedNode
     {
         private readonly TypeSyntax _returnType;
         private readonly BlockSyntax _block;
@@ -13,7 +13,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public string Id { get; }
         public string Prefix { get; }
 
-        public HoistedLocalFunction(string localFuncName, TypeSyntax returnType, BlockSyntax block)
+        public HoistedParameterlessFunction(string localFuncName, TypeSyntax returnType, BlockSyntax block)
         {
             Id = $"hs{Guid.NewGuid().ToString("N")}";
             Prefix = localFuncName;
@@ -22,6 +22,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public IdentifierNameSyntax TempIdentifier => SyntaxFactory.IdentifierName(Id).WithAdditionalAnnotations(HoistedNodeState.Annotation);
-        public LocalFunctionStatementSyntax LocalFunction(string functionName) => SyntaxFactory.LocalFunctionStatement(_returnType, SyntaxFactory.Identifier(functionName)).WithBody(_block);
+        public LocalFunctionStatementSyntax AsLocalFunction(string functionName) => SyntaxFactory.LocalFunctionStatement(_returnType, SyntaxFactory.Identifier(functionName)).WithBody(_block);
+        public MethodDeclarationSyntax AsInstanceMethod(string functionName) => ValidSyntaxFactory.CreateParameterlessMethod(functionName, _returnType, _block);
     }
 }

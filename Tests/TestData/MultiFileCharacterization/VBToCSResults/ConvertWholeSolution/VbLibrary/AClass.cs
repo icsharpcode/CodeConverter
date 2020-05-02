@@ -6,12 +6,20 @@ namespace VbLibrary
 {
     internal partial class AClass
     {
+        public AClass()
+        {
+            anIntWithNonStaticInitializerReferencingOtherPart = anArrayWithNonStaticInitializerReferencingOtherPart.Length;
+            anArrayWithNonStaticInitializerReferencingOtherPart = initialAnArrayWithNonStaticInitializerReferencingOtherPart();
+        }
+
         public enum NestedEnum
         {
             First
         }
 
         private Dictionary<int, int> dict = new Dictionary<int, int>();
+        private int anInt = 2;
+        private int anIntWithNonStaticInitializerReferencingOtherPart;
 
         private void UseOutParameterInClass()
         {

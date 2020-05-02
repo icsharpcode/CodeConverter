@@ -424,7 +424,7 @@ public partial class MyTestClass
         }
 
         [Fact]
-        public async Task Issue567()
+        public async Task Issue567Async()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue567
     Dim arr() As String
@@ -464,7 +464,7 @@ public partial class Issue567
         }
 
         [Fact]
-        public async Task Issue567Extended()
+        public async Task Issue567ExtendedAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue567
     Sub DoSomething(ByRef str As String)

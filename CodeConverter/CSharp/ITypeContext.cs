@@ -4,5 +4,6 @@
     {
         AdditionalInitializers Initializers { get; }
         MethodsWithHandles MethodsWithHandles { get; }
+        HoistedNodeState HoistedState { get; }
     }
 }

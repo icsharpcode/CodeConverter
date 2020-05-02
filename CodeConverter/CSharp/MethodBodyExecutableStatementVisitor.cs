@@ -41,11 +41,11 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CommonConversions CommonConversions { get; }
 
-        public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VBasic.VisualBasicSyntaxNode node, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives, HoistedNodeState additionalLocals, ITypeContext typeContext, bool isIterator, IdentifierNameSyntax csReturnVariable)
+        public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VBasic.VisualBasicSyntaxNode node, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives, ITypeContext typeContext, bool isIterator, IdentifierNameSyntax csReturnVariable)
         {
             var solution = commonConversions.Document.Project.Solution;
             var declarationsToInlineInLoop = await solution.GetDescendantsToInlineInLoopAsync(semanticModel, node);
-            return new MethodBodyExecutableStatementVisitor(node, semanticModel, triviaConvertingExpressionVisitor, commonConversions, withBlockLhs, extraUsingDirectives, additionalLocals, typeContext, declarationsToInlineInLoop) {
+            return new MethodBodyExecutableStatementVisitor(node, semanticModel, triviaConvertingExpressionVisitor, commonConversions, withBlockLhs, extraUsingDirectives, typeContext, declarationsToInlineInLoop) {
                 IsIterator = isIterator,
                 ReturnVariable = csReturnVariable,
             };
@@ -54,7 +54,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private MethodBodyExecutableStatementVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
             CommentConvertingVisitorWrapper expressionVisitor, CommonConversions commonConversions,
             Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
-            HoistedNodeState additionalLocals, ITypeContext typeContext, HashSet<ILocalSymbol> localsToInlineInLoop)
+            ITypeContext typeContext, HashSet<ILocalSymbol> localsToInlineInLoop)
         {
             _methodNode = methodNode;
             _semanticModel = semanticModel;
@@ -63,7 +63,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _withBlockLhs = withBlockLhs;
             _extraUsingDirectives = extraUsingDirectives;
             _methodsWithHandles = typeContext.MethodsWithHandles;
-            var byRefParameterVisitor = new HoistedNodeStateVisitor(this, additionalLocals, semanticModel, _generatedNames);
+            var byRefParameterVisitor = new HoistedNodeStateVisitor(this, typeContext.HoistedState, semanticModel, _generatedNames);
             CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor);
             _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
             _localsToInlineInLoop = localsToInlineInLoop;

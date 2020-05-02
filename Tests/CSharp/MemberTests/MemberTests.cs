@@ -3,7 +3,7 @@ using ICSharpCode.CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.CSharp;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp
+namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests
 {
     public class MemberTests : ConverterTestBase
     {
@@ -735,6 +735,37 @@ public partial class A
 
     private int x = 2;
     private int[] y;
+}");
+        }
+
+        [Fact]
+        public async Task Issue281FieldWithNonStaticLambdaInitializerAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.IO
+
+Public Class Issue281
+    Private lambda As System.Delegate = New ErrorEventHandler(Sub(a, b) Len(0))
+    Private nonShared As System.Delegate = New ErrorEventHandler(AddressOf OnError)
+
+    Sub OnError(s As Object, e As ErrorEventArgs)
+    End Sub
+End Class", @"using System;
+using System.IO;
+using Microsoft.VisualBasic;
+
+public partial class Issue281
+{
+    public Issue281()
+    {
+        nonShared = new ErrorEventHandler(OnError);
+    }
+
+    private Delegate lambda = new ErrorEventHandler((a, b) => Strings.Len(0));
+    private Delegate nonShared;
+
+    public void OnError(object s, ErrorEventArgs e)
+    {
+    }
 }");
         }
 

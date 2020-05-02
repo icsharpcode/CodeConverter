@@ -12,10 +12,10 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         public static IOperation GetParentIgnoringConversions(this IOperation operation)
         {
-            var parent = operation?.Parent; //TODO This appears to skip up two layers, rename or change logic
-            do {
+            var parent = operation?.Parent;
+            while (parent is IConversionOperation || parent is IParenthesizedOperation) {
                 parent = parent?.Parent;
-            } while (parent is IConversionOperation || parent is IParenthesizedOperation);
+            }
 
             return parent;
         }

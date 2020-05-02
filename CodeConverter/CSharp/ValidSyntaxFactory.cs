@@ -9,7 +9,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// <summary>
     /// As of VS2019 Preview 3, Roslyn's SyntaxFactory no longer aims to provide a valid syntax tree in the default case.
     /// Not passing some elements no longer always means "use the thing that works in most cases", but "don't use one at all" for some special cases.
-    /// I'll add those special methods here as they come up.
+    /// I'll add those special methods here as they come up alongside other helper methods.
     /// </summary>
     public static class ValidSyntaxFactory
     {
@@ -68,6 +68,25 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return expressionSyntax;
+        }
+
+        public static MethodDeclarationSyntax CreateParameterlessMethod(string newMethodName, TypeSyntax type, BlockSyntax body)
+        {
+            var modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
+            var typeConstraints = SyntaxFactory.List<TypeParameterConstraintClauseSyntax>();
+            var parameterList = SyntaxFactory.ParameterList();
+            var methodAttrs = SyntaxFactory.List<AttributeListSyntax>();
+
+            ArrowExpressionClauseSyntax arrowExpression = null;
+            if (body.Statements.TryUnpackSingleStatement(out var singleStatement) && singleStatement.TryUnpackSingleExpressionFromStatement(out var expression)) {
+                body = null;
+                arrowExpression = SyntaxFactory.ArrowExpressionClause(expression);
+            }
+            var methodDecl = SyntaxFactory.MethodDeclaration(methodAttrs, modifiers, type, null,
+                SyntaxFactory.Identifier(newMethodName), null, parameterList, typeConstraints, body, arrowExpression);
+
+            if (arrowExpression != null) methodDecl = methodDecl.WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken));
+            return methodDecl;
         }
     }
 }

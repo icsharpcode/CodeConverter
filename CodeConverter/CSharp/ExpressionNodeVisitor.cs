@@ -35,7 +35,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly bool _optionCompareText = false;
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
         private readonly Stack<ExpressionSyntax> _withBlockLhs = new Stack<ExpressionSyntax>();
-        private readonly HoistedNodeState _additionalLocals;
         private readonly ITypeContext _typeContext;
         private readonly QueryConverter _queryConverter;
         private readonly Lazy<IDictionary<ITypeSymbol, string>> _convertMethodsLookupByReturnType;
@@ -44,7 +43,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private INamedTypeSymbol _vbBooleanTypeSymbol;
 
         public ExpressionNodeVisitor(SemanticModel semanticModel,
-            VisualBasicEqualityComparison visualBasicEqualityComparison, HoistedNodeState additionalLocals,
+            VisualBasicEqualityComparison visualBasicEqualityComparison,
             Compilation csCompilation, ITypeContext typeContext, CommonConversions commonConversions,
             HashSet<string> extraUsingDirectives)
         {
@@ -52,7 +51,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             _semanticModel = semanticModel;
             _lambdaConverter = new LambdaConverter(commonConversions, semanticModel);
             _visualBasicEqualityComparison = visualBasicEqualityComparison;
-            _additionalLocals = additionalLocals;
             TriviaConvertingExpressionVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
             _queryConverter = new QueryConverter(commonConversions, TriviaConvertingExpressionVisitor);
             _csCompilation = csCompilation;
@@ -435,17 +433,17 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (refLValue is ElementAccessExpressionSyntax eae) {
                 //Hoist out the container so we can assign back to the same one after (like VB does)
-                var tmpContainer = _additionalLocals.Hoist(new AdditionalDeclaration("tmp", eae.Expression, ValidSyntaxFactory.VarType));
+                var tmpContainer = _typeContext.HoistedState.Hoist(new AdditionalDeclaration("tmp", eae.Expression, ValidSyntaxFactory.VarType));
                 refLValue = eae.WithExpression(tmpContainer.IdentifierName);
             }
 
             var withCast = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, refLValue, defaultToCast: refKind != RefKind.None);
 
-            var local = _additionalLocals.Hoist(new AdditionalDeclaration(prefix, withCast, typeSyntax));
+            var local = _typeContext.HoistedState.Hoist(new AdditionalDeclaration(prefix, withCast, typeSyntax));
 
             if (refType == RefConversion.PreAndPostAssignment) {
                 var convertedLocalIdentifier = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, local.IdentifierName, forceSourceType: expressionTypeInfo.ConvertedType, forceTargetType: expressionTypeInfo.Type);
-                _additionalLocals.Hoist(new AdditionalAssignment(refLValue, convertedLocalIdentifier));
+                _typeContext.HoistedState.Hoist(new AdditionalAssignment(refLValue, convertedLocalIdentifier));
             }
 
             return local.IdentifierName;
@@ -840,7 +838,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var methodInvocationSymbol = invocationSymbol as IMethodSymbol;
             var withinLocalFunction = methodInvocationSymbol != null && RequiresLocalFunction(node, methodInvocationSymbol);
             if (withinLocalFunction) {
-                _additionalLocals.PushScope();
+                _typeContext.HoistedState.PushScope();
             }
             try {
                 var convertedInvocation = await ConvertInvocation(node, invocationSymbol);
@@ -850,7 +848,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return convertedInvocation;
             } finally {
                 if (withinLocalFunction) {
-                    _additionalLocals.PopExpressionScope();
+                    _typeContext.HoistedState.PopExpressionScope();
                 }
             }
         }
@@ -946,14 +944,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var callAndStoreResult = CommonConversions.CreateLocalVariableDeclarationAndAssignment(retVariableName, csExpression);
 
-            var statements = await _additionalLocals.CreateLocals(invocation, new[] { callAndStoreResult }, generatedNames, _semanticModel);
+            var statements = await _typeContext.HoistedState.CreateLocals(invocation, new[] { callAndStoreResult }, generatedNames, _semanticModel);
 
             var block = SyntaxFactory.Block(
                 statements.Concat(SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName(retVariableName)).Yield())
             );
             var returnType = CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType);
             
-            var localFunc = _additionalLocals.Hoist(new HoistedLocalFunction(localFuncName, returnType, block));
+            var localFunc = _typeContext.HoistedState.Hoist(new HoistedParameterlessFunction(localFuncName, returnType, block));
             return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList());
         }
 
@@ -1303,7 +1301,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public async Task<VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>> CreateMethodBodyVisitor(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
         {
-            var methodBodyVisitor = await MethodBodyExecutableStatementVisitor.CreateAsync(node, _semanticModel, TriviaConvertingExpressionVisitor, CommonConversions, _withBlockLhs, _extraUsingDirectives, _additionalLocals, _typeContext, isIterator, csReturnVariable);
+            var methodBodyVisitor = await MethodBodyExecutableStatementVisitor.CreateAsync(node, _semanticModel, TriviaConvertingExpressionVisitor, CommonConversions, _withBlockLhs, _extraUsingDirectives, _typeContext, isIterator, csReturnVariable);
             return methodBodyVisitor.CommentConvertingVisitor;
         }
 
@@ -1418,7 +1416,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private ArgumentSyntax CreateOptionalRefArg(IParameterSymbol p)
         {
             string prefix = $"arg{p.Name}";
-            var local = _additionalLocals.Hoist(new AdditionalDeclaration(prefix, CommonConversions.Literal(p.ExplicitDefaultValue), CommonConversions.GetTypeSyntax(p.Type)));
+            var local = _typeContext.HoistedState.Hoist(new AdditionalDeclaration(prefix, CommonConversions.Literal(p.ExplicitDefaultValue), CommonConversions.GetTypeSyntax(p.Type)));
             return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, p.RefKind, local.IdentifierName);
         }
 

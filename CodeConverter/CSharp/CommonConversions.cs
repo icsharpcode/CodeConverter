@@ -14,8 +14,8 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
-using Microsoft.CodeAnalysis.VisualBasic;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using VBasic = Microsoft.CodeAnalysis.VisualBasic;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using ArgumentListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax;
 using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankSpecifierSyntax;
 using ArrayTypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayTypeSyntax;
@@ -27,7 +27,6 @@ using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 using VariableDeclaratorSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax;
 using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
-using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using ITypeSymbol = Microsoft.CodeAnalysis.ITypeSymbol;
@@ -121,7 +120,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         private async Task<EqualsValueClauseSyntax> ConvertEqualsValueClauseSyntax(
-            VariableDeclaratorSyntax vbDeclarator, ModifiedIdentifierSyntax vbName,
+            VariableDeclaratorSyntax vbDeclarator, VBSyntax.ModifiedIdentifierSyntax vbName,
             VBSyntax.ExpressionSyntax vbInitValue,
             ITypeSymbol declaredSymbolType,
             ISymbol declaredSymbol, CSharpSyntaxNode initializerOrMethodDecl)
@@ -140,12 +139,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                     ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr, isConst: declaredConst)
                     : adjustedInitializerExpr;
 
-                if (isField && !declaredSymbol.IsStatic && !IsDefinitelyStatic(vbName, vbInitValue)) {
-                    //TODO If not the part where we're doing type wide init, convert this declaration into an arrow property called "initial<FieldName>", then call it from the other part
-                    // Assuming this is the part for type wide init
-                    var lhs = SyntaxFactory.IdentifierName(ConvertIdentifier(vbName.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None));
-                    _typeContext.Initializers.AdditionalInstanceInitializers.Add((lhs, CSSyntaxKind.SimpleAssignmentExpression, adjustedInitializerExpr));
-                    equalsValueClauseSyntax = null;
+                if (isField && !declaredSymbol.IsStatic && !_semanticModel.IsDefinitelyStatic(vbName, vbInitValue)) {
+                    if (_typeContext.Initializers.ShouldAddTypeWideInitToThisPart) {
+                        var lhs = SyntaxFactory.IdentifierName(ConvertIdentifier(vbName.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None));
+                        _typeContext.Initializers.AdditionalInstanceInitializers.Add((lhs, CSSyntaxKind.SimpleAssignmentExpression, adjustedInitializerExpr));
+                        equalsValueClauseSyntax = null;
+                    } else {
+                        var returnBlock = SyntaxFactory.Block(SyntaxFactory.ReturnStatement(adjustedInitializerExpr));
+                        _typeContext.HoistedState.Hoist<HoistedParameterlessFunction>(new HoistedParameterlessFunction(GetInitialValueFunctionName(vbName), csTypeSyntax, returnBlock));
+                        equalsValueClauseSyntax = null;
+                    }
                 } else {
                     equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
                 }
@@ -163,22 +166,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             return equalsValueClauseSyntax;
         }
 
-        /// <summary>
-        /// Returns true only if expressions static (i.e. doesn't reference the containing instance)
-        /// </summary>
-        private bool IsDefinitelyStatic(ModifiedIdentifierSyntax vbName, VBSyntax.ExpressionSyntax vbInitValue)
+        /// <remarks>
+        /// In CS we need to lift non-static initializers to the constructor. But for partial classes these can be in different files.
+        /// Rather than re-architect to allow communication between files, we create an initializer function, and call it from the other part, and just hope the name doesn't clash.
+        /// </remarks>
+        public static string GetInitialValueFunctionName(VBSyntax.ModifiedIdentifierSyntax vbName)
         {
-            var arrayBoundExpressions = vbName.ArrayBounds != null ? vbName.ArrayBounds.Arguments.Select(a => a.GetExpression()).Where(x => x != null) : Enumerable.Empty<VBSyntax.ExpressionSyntax>();
-            var expressions = vbInitValue.Yield().Concat(arrayBoundExpressions).ToArray();
-            return expressions.All(IsDefinitelyStatic);
-        }
-
-        /// <summary>
-        /// Returns true only if expression is static (i.e. doesn't reference the containing instance)
-        /// </summary>
-        private bool IsDefinitelyStatic(VBSyntax.ExpressionSyntax e)
-        {
-            return _semanticModel.GetOperation(e).DescendantsAndSelf().OfType<IInstanceReferenceOperation>().Any() == false;
+            return "initial" + vbName.Identifier.ValueText.ToPascalCase();
         }
 
         private VariableDeclarationSyntax CreateVariableDeclaration(VariableDeclaratorSyntax vbDeclarator, bool preferExplicitType,
@@ -235,13 +229,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static VBSyntax.ExpressionSyntax GetInitializerToConvert(VariableDeclaratorSyntax declarator)
         {
             return declarator.AsClause?.TypeSwitch(
-                       (SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
-                       (AsNewClauseSyntax c) => c.NewExpression
+                       (VBSyntax.SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
+                       (VBSyntax.AsNewClauseSyntax c) => c.NewExpression
                    ) ?? declarator.Initializer?.Value;
         }
 
         private async Task<CSharpSyntaxNode> GetInitializerFromNameAndType(ITypeSymbol typeSymbol,
-            ModifiedIdentifierSyntax name, CSharpSyntaxNode initializer)
+            VBSyntax.ModifiedIdentifierSyntax name, CSharpSyntaxNode initializer)
         {
             if (!SyntaxTokenExtensions.IsKind(name.Nullable, SyntaxKind.None))
             {
@@ -333,7 +327,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public static bool InMethodCalledInitializeComponent(SyntaxNode anyNodePossiblyWithinMethod)
         {
-            return anyNodePossiblyWithinMethod.GetAncestor<MethodBlockSyntax>()?.SubOrFunctionStatement.Identifier.Text == "InitializeComponent";
+            return anyNodePossiblyWithinMethod.GetAncestor<VBSyntax.MethodBlockSyntax>()?.SubOrFunctionStatement.Identifier.Text == "InitializeComponent";
         }
 
         public static SyntaxToken CsEscapedIdentifier(string text)
@@ -489,8 +483,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<IEnumerable<ExpressionSyntax>> ConvertArrayBounds(SeparatedSyntaxList<VBSyntax.ArgumentSyntax> arguments)
         {
             return await arguments.SelectAsync(a => {
-                VBSyntax.ExpressionSyntax upperBoundExpression = a is SimpleArgumentSyntax sas ? sas.Expression
-                    : a is RangeArgumentSyntax ras ? ras.UpperBound
+                VBSyntax.ExpressionSyntax upperBoundExpression = a is VBSyntax.SimpleArgumentSyntax sas ? sas.Expression
+                    : a is VBSyntax.RangeArgumentSyntax ras ? ras.UpperBound
                     : throw new ArgumentOutOfRangeException(nameof(a), a, null);
 
                 return IncreaseArrayUpperBoundExpression(upperBoundExpression);
@@ -559,7 +553,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public async Task<(string, ExpressionSyntax extraArg)> GetParameterizedPropertyAccessMethod(IOperation operation)
         {
             if (operation is IPropertyReferenceOperation pro && pro.Arguments.Any() &&
-                !pro.Property.IsDefault()) {
+                !VBasic.VisualBasicExtensions.IsDefault(pro.Property)) {
                 var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.Children.First() == pro;
                 var extraArg = isSetter
                     ? (ExpressionSyntax) await operation.Parent.Syntax.ChildNodes().ElementAt(1).AcceptAsync(TriviaConvertingExpressionVisitor)
@@ -615,7 +609,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public static bool IsDefaultIndexer(SyntaxNode node)
         {
-            return node is PropertyStatementSyntax pss && pss.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DefaultKeyword));
+            return node is VBSyntax.PropertyStatementSyntax pss && pss.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DefaultKeyword));
         }
 
 
@@ -641,7 +635,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                        ?.Equals(OutAttributeType.FullName) == true;
         }
 
-        public ISymbol GetDeclaredCsOriginalSymbolOrNull(VisualBasicSyntaxNode node)
+        public ISymbol GetDeclaredCsOriginalSymbolOrNull(VBasic.VisualBasicSyntaxNode node)
         {
             var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
             return declaredSymbol != null ? GetCsOriginalSymbolOrNull(declaredSymbol) : null;

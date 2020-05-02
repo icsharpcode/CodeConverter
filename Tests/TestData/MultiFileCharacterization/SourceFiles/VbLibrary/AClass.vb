@@ -4,6 +4,8 @@
     End Enum
 
     Private dict As New Dictionary(Of Integer, Integer)
+    Private anInt As Integer = 2
+    Private anIntWithNonStaticInitializerReferencingOtherPart As Integer = anArrayWithNonStaticInitializerReferencingOtherPart.Length
 
     Private Sub UseOutParameterInClass()
         Dim x

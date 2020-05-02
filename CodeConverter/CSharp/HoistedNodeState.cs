@@ -36,7 +36,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public void PopExpressionScope()
         {
-            var statements = GetStatements();
+            var statements = GetParameterlessFunctions();
             PopScope();
             foreach (var statement in statements) {
                 Hoist(statement);
@@ -59,19 +59,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             return _hoistedNodesPerScope.Peek().OfType<AdditionalAssignment>().ToArray();
         }
 
-        public IReadOnlyCollection<HoistedLocalFunction> GetStatements()
+        public IReadOnlyCollection<HoistedParameterlessFunction> GetParameterlessFunctions()
         {
-            return _hoistedNodesPerScope.Peek().OfType<HoistedLocalFunction>().ToArray();
+            return _hoistedNodesPerScope.Peek().OfType<HoistedParameterlessFunction>().ToArray();
         }
 
         public SyntaxList<StatementSyntax> CreateStatements(VBasic.VisualBasicSyntaxNode vbNode, IEnumerable<StatementSyntax> statements, HashSet<string> generatedNames, SemanticModel semanticModel)
         {
-            var localFunctions = GetStatements(); 
+            var localFunctions = GetParameterlessFunctions(); 
             var newNames = localFunctions.ToDictionary(f => f.Id, f =>
                 NameGenerator.GetUniqueVariableNameInScope(semanticModel, generatedNames, vbNode, f.Prefix)
             );
             statements = ReplaceNames(statements, newNames);
-            var functions = localFunctions.Select(f => f.LocalFunction(newNames[f.Id]));
+            var functions = localFunctions.Select(f => f.AsLocalFunction(newNames[f.Id]));
             return SyntaxFactory.List(functions.Concat(statements));
         }
 
