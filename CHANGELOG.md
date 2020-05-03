@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [8.1.2] - 2020-05-03
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Improve multi-declaration field conversion for arrays - [#559](https://github.com/icsharpcode/CodeConverter/issues/559)
 * Add parentheses around ternary statement - [#565](https://github.com/icsharpcode/CodeConverter/issues/565)
 * When converting ForEach loop, avoid duplicate variable compilation issue [#558](https://github.com/icsharpcode/CodeConverter/issues/558)
