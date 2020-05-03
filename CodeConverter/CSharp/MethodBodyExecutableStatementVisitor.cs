@@ -143,6 +143,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<SyntaxList<StatementSyntax>> VisitAssignmentStatement(VBSyntax.AssignmentStatementSyntax node)
         {
+            if (node.IsKind(VBasic.SyntaxKind.MidAssignmentStatement) && node.Left is VBSyntax.MidExpressionSyntax mes) {
+                return await ConvertMidAssignment(node, mes);
+            }
+
             var lhs = (ExpressionSyntax) await node.Left.AcceptAsync(_expressionVisitor);
             var lOperation = _semanticModel.GetOperation(node.Left);
 
@@ -160,7 +164,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
                 rhs = SyntaxFactory.InvocationExpression(
-                    SyntaxFactory.ParseExpression($"{nameof(Math)}.{nameof(Math.Pow)}"),
+                    ValidSyntaxFactory.MemberAccess(nameof(Math), nameof(Math.Pow)),
                     ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
             }
             var kind = node.Kind().ConvertToken(TokenContext.Local);
@@ -170,6 +174,21 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var postAssignment = GetPostAssignmentStatements(node);
             return postAssignment.Insert(0, SyntaxFactory.ExpressionStatement(assignment));
+        }
+
+        private async Task<SyntaxList<StatementSyntax>> ConvertMidAssignment(VBSyntax.AssignmentStatementSyntax node, VBSyntax.MidExpressionSyntax mes)
+        {
+            _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
+            var midFunction = ValidSyntaxFactory.MemberAccess("StringType", "MidStmtStr");
+            var midArgList = (ArgumentListSyntax)await mes.ArgumentList.AcceptAsync(_expressionVisitor);
+            var (reusable, statements, _) = await GetExpressionWithoutSideEffectsAsync(node.Right, "midTmp");
+            if (midArgList.Arguments.Count == 2) {
+                var length = ValidSyntaxFactory.MemberAccess(reusable, "Length");
+                midArgList = midArgList.AddArguments(SyntaxFactory.Argument(length));
+            }
+            midArgList = midArgList.AddArguments(SyntaxFactory.Argument(reusable));
+            var invokeMid = SyntaxFactory.InvocationExpression(midFunction, midArgList);
+            return statements.Add(SyntaxFactory.ExpressionStatement(invokeMid));
         }
 
         /// <remarks>
@@ -214,7 +233,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (!preserve) return SingleStatement(newArrayAssignment);
 
             var lastIdentifierText = node.Expression.DescendantNodesAndSelf().OfType<VBSyntax.IdentifierNameSyntax>().Last().Identifier.Text;
-            var (oldTargetExpression, stmts, _) = await GetExpressionWithoutSideEffects(node.Expression, "old" + lastIdentifierText.ToPascalCase(), true);
+            var (oldTargetExpression, stmts, _) = await GetExpressionWithoutSideEffectsAsync(node.Expression, "old" + lastIdentifierText.ToPascalCase(), true);
             var arrayCopyIfNotNull = CreateConditionalArrayCopy(node, (IdentifierNameSyntax) oldTargetExpression, csTargetArrayExpression, convertedBounds);
 
             return stmts.AddRange(new StatementSyntax[] {newArrayAssignment, arrayCopyIfNotNull});
@@ -618,7 +637,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<SyntaxList<StatementSyntax>> VisitSelectBlock(VBSyntax.SelectBlockSyntax node)
         {
             var vbExpr = node.SelectStatement.Expression;
-            var (csExpr, stmts, csExprWithSourceMapping) = await GetExpressionWithoutSideEffects(vbExpr, "switchExpr");
+            var (csExpr, stmts, csExprWithSourceMapping) = await GetExpressionWithoutSideEffectsAsync(vbExpr, "switchExpr");
             var usedConstantValues = new HashSet<object>();
             var sections = new List<SwitchSectionSyntax>();
             foreach (var block in node.CaseBlocks) {
@@ -666,9 +685,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             return stmts.Add(switchStatementSyntax);
         }
 
-        private async Task<(ExpressionSyntax Reusable, SyntaxList<StatementSyntax> Statements, ExpressionSyntax SingleUse)> GetExpressionWithoutSideEffects(VBSyntax.ExpressionSyntax vbExpr, string variableNameBase, bool forceVariable = false)
+        private async Task<(ExpressionSyntax Reusable, SyntaxList<StatementSyntax> Statements, ExpressionSyntax SingleUse)> GetExpressionWithoutSideEffectsAsync(VBSyntax.ExpressionSyntax vbExpr, string variableNameBase, bool forceVariable = false)
         {
             var expr = (ExpressionSyntax)await vbExpr.AcceptAsync(_expressionVisitor);
+            expr = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbExpr, expr);
             SyntaxList<StatementSyntax> stmts = SyntaxFactory.List<StatementSyntax>();
             ExpressionSyntax exprWithoutSideEffects;
             ExpressionSyntax reusableExprWithoutSideEffects;
@@ -723,7 +743,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<SyntaxList<StatementSyntax>> VisitWithBlock(VBSyntax.WithBlockSyntax node)
         {
-            var (lhsExpression, prefixDeclarations, _) = await GetExpressionWithoutSideEffects(node.WithStatement.Expression, "withBlock");
+            var (lhsExpression, prefixDeclarations, _) = await GetExpressionWithoutSideEffectsAsync(node.WithStatement.Expression, "withBlock");
 
             _withBlockLhs.Push(lhsExpression);
             try {

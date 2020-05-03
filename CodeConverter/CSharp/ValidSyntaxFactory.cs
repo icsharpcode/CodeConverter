@@ -28,9 +28,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxFactory.List(sections), SyntaxFactory.Token(SyntaxKind.CloseBraceToken));
         }
 
-        public static ExpressionSyntax MemberAccess(params string[] nameParts)
+        public static ExpressionSyntax MemberAccess(params string[] nameParts) => MemberAccess(null, nameParts);
+
+        public static ExpressionSyntax MemberAccess(ExpressionSyntax lhs, params string[] nameParts)
         {
-            ExpressionSyntax lhs = null;
             foreach (var namePart in nameParts) {
                 if (lhs == null) lhs = SyntaxFactory.IdentifierName(namePart);
                 else {

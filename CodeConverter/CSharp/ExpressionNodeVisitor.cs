@@ -1483,9 +1483,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         private ISymbol GetInvocationSymbol(SyntaxNode invocation)
         {
             var symbol = invocation.TypeSwitch(
-                (VBasic.Syntax.InvocationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
-                (VBasic.Syntax.ObjectCreationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
-                (VBasic.Syntax.RaiseEventStatementSyntax e) => _semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch<ISymbol>(),
+                (VBSyntax.InvocationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
+                (VBSyntax.ObjectCreationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
+                (VBSyntax.RaiseEventStatementSyntax e) => _semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch<ISymbol>(),
+                (VBSyntax.MidExpressionSyntax e) => _semanticModel.Compilation.GetTypeByMetadataName("Microsoft.VisualBasic.CompilerServices.StringType")?.GetMembers("MidStmtStr").FirstOrDefault(),
                 _ => { throw new NotSupportedException(); }
             );
             return symbol;

@@ -170,5 +170,43 @@ public partial class Issue483
     public int Test6 = 0x7F;
 }");
         }
+
+        [Fact]
+        public async Task Issue544_AssignUsingMid()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+        @"Public Class Issue483
+    Private Function numstr(ByVal aDouble As Double) As String
+        Dim str_Txt As String = Format(aDouble, ""0.000000"")
+        Mid(str_Txt, Len(str_Txt) - 6, 1) = "".""
+        Mid(str_Txt, Len(str_Txt) - 6) = "".""
+        Mid(str_Txt, Len(str_Txt) - 6) = aDouble
+        Console.WriteLine(aDouble)
+        If aDouble > 5.0 Then Mid(str_Txt, Len(str_Txt) - 6) = numstr(aDouble - 1.0)
+        Return str_Txt
+    End Function
+End Class", @"using System;
+using Microsoft.VisualBasic;
+using Microsoft.VisualBasic.CompilerServices;
+
+public partial class Issue483
+{
+    private string numstr(double aDouble)
+    {
+        string str_Txt = Strings.Format(aDouble, ""0.000000"");
+        StringType.MidStmtStr(ref str_Txt, Strings.Len(str_Txt) - 6, 1, ""."");
+        StringType.MidStmtStr(ref str_Txt, Strings.Len(str_Txt) - 6, ""."".Length, ""."");
+        StringType.MidStmtStr(ref str_Txt, Strings.Len(str_Txt) - 6, aDouble.ToString().Length, aDouble.ToString());
+        Console.WriteLine(aDouble);
+        if (aDouble > 5.0)
+        {
+            var midTmp = numstr(aDouble - 1.0);
+            StringType.MidStmtStr(ref str_Txt, Strings.Len(str_Txt) - 6, midTmp.Length, midTmp);
+        }
+
+        return str_Txt;
+    }
+}");
+        }
     }
 }
