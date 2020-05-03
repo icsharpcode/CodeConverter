@@ -1195,6 +1195,29 @@ public partial class AcmeClass
         }
 
         [Fact]
+        public async Task SplitArrayDeclarationsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync($@"Imports System.Diagnostics
+Imports System.Threading
+
+Public Class AcmeClass
+    Public Shared Sub Main()
+        Dim i_Test, i_Tab(), bearb(,) As Integer
+    End Sub
+End Class"
+                , @"
+public partial class AcmeClass
+{
+    public static void Main()
+    {
+        int i_Test;
+        int[] i_Tab;
+        int[,] bearb;
+    }
+}");
+        }
+
+        [Fact]
         public async Task DeclareStatementWithAttributesAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Class AcmeClass

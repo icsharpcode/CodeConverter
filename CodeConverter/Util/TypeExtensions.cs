@@ -67,7 +67,7 @@ namespace ICSharpCode.CodeConverter.Util
         public static string GetFullMetadataName(this ITypeSymbol symbol)
         {
             if (symbol is IArrayTypeSymbol ats) {
-                return GetFullMetadataName(ats.ElementType) + "[" + Enumerable.Repeat(',', ats.Rank - 1) + "]";
+                return GetFullMetadataName(ats.ElementType) + "[" + new string(Enumerable.Repeat(',', ats.Rank - 1).ToArray()) + "]";
             }
             //This is for comaptibility with NR5 reflection name in case of generic types like T1, T2...
             var namedTypeSymbol = symbol as INamedTypeSymbol;
