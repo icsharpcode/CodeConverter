@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Added constructors now only added to the relevant type - not other types in the same file
 * Converted non-static field initializers moved to constructor - [#281](https://github.com/icsharpcode/CodeConverter/issues/281)
 * Convert assignments using "Mid" built-in function
-
+* Improve conversion of array initializer types
 
 ### C# -> VB
 

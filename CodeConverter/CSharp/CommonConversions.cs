@@ -249,11 +249,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (rankSpecifiers.Count > 0)
             {
                 var rankSpecifiersWithSizes = await ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds);
-                if (rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).Any(e => !e.IsKind(CSSyntaxKind.OmittedArraySizeExpression)))
-                {
-                    var arrayTypeSyntax = (ArrayTypeSyntax) GetTypeSyntax(typeSymbol);
-                    arrayTypeSyntax = arrayTypeSyntax.WithRankSpecifiers(rankSpecifiersWithSizes);
+                var arrayTypeSyntax = ((ArrayTypeSyntax)GetTypeSyntax(typeSymbol)).WithRankSpecifiers(rankSpecifiersWithSizes);
+                if (rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).Any(e => !e.IsKind(CSSyntaxKind.OmittedArraySizeExpression))) {
                     initializer = SyntaxFactory.ArrayCreationExpression(arrayTypeSyntax);
+                } else if (initializer is ImplicitArrayCreationExpressionSyntax iaces && iaces.Initializer != null) {
+                    initializer = SyntaxFactory.ArrayCreationExpression(arrayTypeSyntax, iaces.Initializer);
                 }
             }
 

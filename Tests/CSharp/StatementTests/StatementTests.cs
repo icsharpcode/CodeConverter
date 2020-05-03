@@ -823,6 +823,39 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task Issue554_AvoidImplicitArrayTypeAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Net
+Imports System.Net.Sockets
+
+Public Class Issue554_ImplicitArrayType
+    Public Shared Sub Main()
+        Dim msg() As Byte = {2}
+        Dim ep As IPEndPoint = New IPEndPoint(IPAddress.Loopback, 1434)
+        Dim l_socket As Socket = New Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp)
+        Dim i_Test, i_Tab(), bearb(,) As Integer
+        l_socket.SendTo(msg, ep)
+    End Sub
+End Class"
+                , @"using System.Net;
+using System.Net.Sockets;
+
+public partial class Issue554_ImplicitArrayType
+{
+    public static void Main()
+    {
+        var msg = new byte[] { 2 };
+        var ep = new IPEndPoint(IPAddress.Loopback, 1434);
+        var l_socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+        int i_Test;
+        int[] i_Tab;
+        int[,] bearb;
+        l_socket.SendTo(msg, ep);
+    }
+}");
+        }
+
+        [Fact]
         public async Task ArrayInitializationStatementWithLengthAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
@@ -1197,16 +1230,13 @@ public partial class AcmeClass
         [Fact]
         public async Task SplitArrayDeclarationsAsync()
         {
-            await TestConversionVisualBasicToCSharpAsync($@"Imports System.Diagnostics
-Imports System.Threading
-
-Public Class AcmeClass
+            await TestConversionVisualBasicToCSharpAsync($@"Public Class SplitArrayDeclarations
     Public Shared Sub Main()
         Dim i_Test, i_Tab(), bearb(,) As Integer
     End Sub
 End Class"
                 , @"
-public partial class AcmeClass
+public partial class SplitArrayDeclarations
 {
     public static void Main()
     {
