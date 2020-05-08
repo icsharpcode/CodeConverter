@@ -2,13 +2,15 @@
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
         <Identity Id="7e2a69d6-193b-4cdf-878d-3370d5931942" Version="8.1.2.0" Language="en-US" Publisher="IC#Code"/>
-        <DisplayName>Code Converter C# to/from VB.NET</DisplayName>
-        <Description xml:space="preserve">Based on Roslyn, this converter allows you to convert C# code to VB.NET and vice versa</Description>
+        <DisplayName>Code Converter (VB - C#)</DisplayName>
+        <Description xml:space="preserve">Convert VB.NET to C# and vice versa with this roslyn based converter</Description>
+        <MoreInfo>https://github.com/icsharpcode/CodeConverter</MoreInfo>
         <License>license.txt</License>
-        <GettingStartedGuide>https://github.com/icsharpcode/CodeConverter</GettingStartedGuide>
+        <GettingStartedGuide>https://github.com/icsharpcode/CodeConverter/wiki</GettingStartedGuide>
         <ReleaseNotes>https://github.com/icsharpcode/CodeConverter/blob/master/CHANGELOG.md</ReleaseNotes>
         <Icon>Images\refactoringessentials-logo90.png</Icon>
         <PreviewImage>Images\refactoringessentials-preview.png</PreviewImage>
+        <Tags>code converter vb csharp visual basic csharp net translate</Tags>
     </Metadata>
     <Installation>
         <InstallationTarget Version="[15.0,17.0)" Id="Microsoft.VisualStudio.Pro" />
