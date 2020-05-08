@@ -43,20 +43,26 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Where(g => g.Count() == 1).SelectMany(ms => ms);
         }
 
-        public ExpressionSyntax GetConstantOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol type, ExpressionSyntax csNode)
+        public (ExpressionSyntax Expr, bool IsCorrectType) GetConstantOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol type, TypeConversionAnalyzer.TypeConversionKind analyzedConversionKind, ExpressionSyntax csNode)
         {
             var vbOperation = _semanticModel.GetOperation(vbNode).SkipParens(true);
 
             // Guideline tradeoff: Usually would aim for erring on the side of correct runtime behaviour. But making lots of simple constants unreadable for the sake of an edge case that will turn into an easily fixed compile error seems overkill.
             // See https://github.com/icsharpcode/CodeConverter/blob/master/.github/CONTRIBUTING.md#deciding-what-the-output-should-be
-            if (Equals(vbOperation.Type, type) && IsProbablyConstExpression(vbOperation)) return csNode;
+            bool isExactType = analyzedConversionKind == TypeConversionAnalyzer.TypeConversionKind.Identity;
+            if ((isExactType || analyzedConversionKind == TypeConversionAnalyzer.TypeConversionKind.NonDestructiveCast)
+                && IsProbablyConstExpression(vbOperation)) return (csNode, isExactType);
 
-            if (TryCompileTimeEvaluate(vbOperation, out var result) && ConversionsTypeFullNames.TryGetValue(type.GetFullMetadataName(), out var method)) {
-                result = method.Invoke(null, new[] { result });
-                return LiteralConversions.GetLiteralExpression(result, convertedType: type);
+            if (TryCompileTimeEvaluate(vbOperation, out var result)) {
+                if (type.Name == "Char" && result is int resultInt) {
+                    result = Strings.ChrW(resultInt);
+                } else if (ConversionsTypeFullNames.TryGetValue(type.GetFullMetadataName(), out var method)) {
+                    result = method.Invoke(null, new[] { result });
+                }
+                return (LiteralConversions.GetLiteralExpression(result, convertedType: type), true);
             }
 
-            return null;
+            return (null, false);
         }
 
         /// <remarks>Deal with cases like "2*PI" without inlining the const</remarks>
@@ -68,8 +74,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return true;
             }
 
-            if (op is IBinaryOperation bo && IsProbablyConstExpression(bo.LeftOperand) && IsProbablyConstExpression(bo.RightOperand)) {
-                return true;
+            if (op is IBinaryOperation bo) {
+                return IsProbablyConstExpression(bo.LeftOperand) && IsProbablyConstExpression(bo.RightOperand);
+            }
+
+            if (op is IUnaryOperation uo) {
+                return IsProbablyConstExpression(uo.Operand);
             }
 
             return false;
@@ -77,7 +87,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private bool TryCompileTimeEvaluate(IOperation vbOperation, out object result)
         {
-            result = null;
             if (vbOperation.ConstantValue.HasValue) {
                 result = vbOperation.ConstantValue.Value;
                 return true;

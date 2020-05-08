@@ -647,16 +647,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                         var originalExpressionSyntax = (ExpressionSyntax)await s.Value.AcceptAsync(_expressionVisitor);
                         // CSharp requires an explicit cast from the base type (e.g. int) in most cases switching on an enum
                         var typeConversionKind = CommonConversions.TypeConversionAnalyzer.AnalyzeConversion(s.Value);
-                        var expressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax, typeConversionKind, true);
-                        SwitchLabelSyntax caseSwitchLabelSyntax = SyntaxFactory.CaseSwitchLabel(expressionSyntax);
+                        var correctTypeExpressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax, typeConversionKind, true, true);
                         var constantValue = _semanticModel.GetConstantValue(s.Value);
-                        var isRepeatedConstantValue = constantValue.HasValue && !usedConstantValues.Add(constantValue);
-                        if (!constantValue.HasValue || isRepeatedConstantValue ||
-                            (typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.NonDestructiveCast &&
-                             typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.Identity)) {
-                            caseSwitchLabelSyntax =
-                                WrapInCasePatternSwitchLabelSyntax(node, expressionSyntax);
-                        }
+                        var notAlreadyUsed = !constantValue.HasValue || usedConstantValues.Add(constantValue.Value);
+                        var caseSwitchLabelSyntax = correctTypeExpressionSyntax.IsConst && notAlreadyUsed
+                            ? (SwitchLabelSyntax)SyntaxFactory.CaseSwitchLabel(correctTypeExpressionSyntax.Expr)
+                            : WrapInCasePatternSwitchLabelSyntax(node, correctTypeExpressionSyntax.Expr);
                         labels.Add(caseSwitchLabelSyntax);
                     } else if (c is VBSyntax.ElseCaseClauseSyntax) {
                         labels.Add(SyntaxFactory.DefaultSwitchLabel());
@@ -731,6 +727,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.DiscardDesignation());
             } else {
                 var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
+                //CodeAnalysis upgrade to 3.0.0 needed for VarPattern. Correct text comes out, but tree is invalid so the tests this will generate "CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code"
                 patternMatch = SyntaxFactory.DeclarationPattern(
                     ValidSyntaxFactory.VarType, SyntaxFactory.SingleVariableDesignation(varName));
                 expression = SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, SyntaxFactory.IdentifierName(varName), expression);

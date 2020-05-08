@@ -1537,12 +1537,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<CSharpSyntaxNode> SubstituteVisualBasicMethodOrNullAsync(VBasic.Syntax.InvocationExpressionSyntax node)
         {
-            CastExpressionSyntax cSharpSyntaxNode = null;
+            ExpressionSyntax cSharpSyntaxNode = null;
             var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch<ISymbol>();
             if (symbol?.Name == "ChrW" || symbol?.Name == "Chr") {
-                var args = await ConvertArgumentsAsync(node.ArgumentList);
-                cSharpSyntaxNode = ValidSyntaxFactory.CastExpression(SyntaxFactory.ParseTypeName("char"),
-                    args.Single().Expression);
+                var vbArg = node.ArgumentList.Arguments.Single().GetExpression();
+                var csArg = (ExpressionSyntax) await vbArg.AcceptAsync(TriviaConvertingExpressionVisitor);
+                cSharpSyntaxNode = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbArg, csArg, true, true, true, forceTargetType: _semanticModel.GetTypeInfo(node).Type);
             }
 
             return cSharpSyntaxNode;

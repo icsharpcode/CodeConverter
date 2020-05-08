@@ -259,6 +259,44 @@ CS0246: The type or namespace name 'MissingType' could not be found (are you mis
         }
 
         [Fact]
+        public async Task CastToSameTypeAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class CastToSameTypeTest
+
+    Sub PositionEnumFromString(ByVal c As Char)
+        Select Case c
+            Case CChar(""."")
+                Console.WriteLine(1)
+            Case CChar("","")
+                Console.WriteLine(2)
+        End Select
+    End Sub
+End Class",
+    @"using System;
+
+public partial class CastToSameTypeTest
+{
+    public void PositionEnumFromString(char c)
+    {
+        switch (c)
+        {
+            case '.':
+                {
+                    Console.WriteLine(1);
+                    break;
+                }
+
+            case ',':
+                {
+                    Console.WriteLine(2);
+                    break;
+                }
+        }
+    }
+}") ;
+        }
+
+        [Fact]
         public async Task UnknownTypeInvocationAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass

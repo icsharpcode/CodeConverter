@@ -289,7 +289,7 @@ internal partial class Class1
 End Sub
 ", @"private void Test()
 {
-    char CR = (char)0xF;
+    char CR = '\u000f';
 }
 ");
         }
@@ -303,7 +303,7 @@ End Sub
 End Sub
 ", @"private void Test()
 {
-    char CR = (char)0xF;
+    char CR = '\u000f';
 }
 ");
         }
