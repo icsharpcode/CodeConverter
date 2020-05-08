@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Host.Mef;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
     internal static class CompilationOptionsExtensions
     {
-        private static Lazy<Workspace> Workspace = new Lazy<Workspace>(() => new AdhocWorkspace());
-
         public static Document AddDocumentFromTree(this Project project, SyntaxTree tree)
         {
             return project.AddDocument("CodeToConvert", tree.GetRoot(), filePath: Path.Combine(Directory.GetCurrentDirectory(), "TempCodeToConvert.txt"));
@@ -21,7 +19,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             string projFileExtension = parseOptions.Language == LanguageNames.CSharp ? ".csproj" : ".vbproj";
             var projectFilePath = Path.Combine(Directory.GetCurrentDirectory() + singleDocumentAssemblyName + projFileExtension);
-            var solution = Workspace.Value.CurrentSolution.AddProject(projectId, singleDocumentAssemblyName,
+            var solution = WorkspaceFactory.AdhocSolution.AddProject(projectId, singleDocumentAssemblyName,
                 singleDocumentAssemblyName, options.Language)
                 .WithProjectFilePath(projectId, projectFilePath);
 
