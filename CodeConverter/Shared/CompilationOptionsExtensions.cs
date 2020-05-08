@@ -19,7 +19,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             string projFileExtension = parseOptions.Language == LanguageNames.CSharp ? ".csproj" : ".vbproj";
             var projectFilePath = Path.Combine(Directory.GetCurrentDirectory() + singleDocumentAssemblyName + projFileExtension);
-            var solution = WorkspaceFactory.AdhocSolution.AddProject(projectId, singleDocumentAssemblyName,
+            var solution = ThreadSafeWorkspaceHelper.EmptyAdhocSolution.AddProject(projectId, singleDocumentAssemblyName,
                 singleDocumentAssemblyName, options.Language)
                 .WithProjectFilePath(projectId, projectFilePath);
 

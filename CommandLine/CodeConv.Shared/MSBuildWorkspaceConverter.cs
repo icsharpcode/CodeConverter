@@ -119,9 +119,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
                 MSBuildLocator.RegisterInstance(instance);
                 AppDomain.CurrentDomain.UseVersionAgnosticAssemblyResolution();
             }
-            lock (WorkspaceFactory.WorkspaceCreationLock) {
-                return MSBuildWorkspace.Create(buildProps);
-            }
+            return MSBuildWorkspace.Create(buildProps, ThreadSafeWorkspaceHelper.HostServices);
         }
 
         public void Dispose()
