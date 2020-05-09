@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Immutable;
+using System.Reflection;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Util.FromRoslynSdk;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Host;
 using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.VisualStudio.Composition;
+using Microsoft.VisualStudio.Threading;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
@@ -15,33 +18,23 @@ namespace ICSharpCode.CodeConverter.Shared
     public static class ThreadSafeWorkspaceHelper
     {
         /// <summary>
-        /// Use this in all workspace creation
-        /// </summary>
-        public static HostServices HostServices {
-            get {
-                var exportProvider = ExportProviderFactory.Value.CreateExportProvider();
-                return MefHostServices.Create(exportProvider.AsCompositionContext());
-            }
-        }
-
-        /// <summary>
         /// Empty solution in an adhoc workspace
         /// </summary>
-        public static Solution EmptyAdhocSolution => LazyAdhocSolution.Value;
+        public static Solution EmptyAdhocSolution => _emptyAdhocSolution.GetAwaiter().GetResult();
 
-        private static readonly Lazy<IExportProviderFactory> ExportProviderFactory = new Lazy<IExportProviderFactory>(CreateExportProviderFactory);
-
-        private static IExportProviderFactory CreateExportProviderFactory()
+        /// <summary>
+        /// Use this in all workspace creation
+        /// </summary>
+        public static async Task<HostServices> CreateHostServicesAsync(ImmutableArray<Assembly> assemblies)
         {
-#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits - Consider making a joinable task factory available so we can use AsyncLazy
-            return Task.Run(async () => await CreateExportProviderFactoryAsync()).GetAwaiter().GetResult();
-#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
+            var exportProvider = await CreateExportProviderFactoryAsync(assemblies);
+            return MefHostServices.Create(exportProvider.CreateExportProvider().AsCompositionContext());
         }
 
-        private static async Task<IExportProviderFactory> CreateExportProviderFactoryAsync()
+        private static async Task<IExportProviderFactory> CreateExportProviderFactoryAsync(ImmutableArray<Assembly> assemblies)
         {
             var discovery = new AttributedPartDiscovery(Resolver.DefaultInstance, isNonPublicSupported: true);
-            var parts = await discovery.CreatePartsAsync(MefHostServices.DefaultAssemblies);
+            var parts = await discovery.CreatePartsAsync(assemblies);
             var catalog = ComposableCatalog.Create(Resolver.DefaultInstance).AddParts(parts);
 
             var configuration = CompositionConfiguration.Create(catalog);
@@ -49,9 +42,14 @@ namespace ICSharpCode.CodeConverter.Shared
             return runtimeComposition.CreateExportProviderFactory();
         }
 
-        private static Lazy<Solution> LazyAdhocSolution = new Lazy<Solution>(() => {
-            return new AdhocWorkspace(HostServices).CurrentSolution;
-        });
+        /// <summary>
+        /// Empty solution in an adhoc workspace
+        /// </summary>
+        private static Task<Solution> _emptyAdhocSolution =
+            Task.Run(async () => {
+                var hostServices = await CreateHostServicesAsync(MefHostServices.DefaultAssemblies);
+                return new AdhocWorkspace(hostServices).CurrentSolution;
+            });
         
     }
 }
