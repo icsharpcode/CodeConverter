@@ -11,7 +11,7 @@ using System.Reflection.Metadata;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    public class MethodWithHandles
+    internal class MethodWithHandles
     {
         private IdentifierNameSyntax _methodId;
         private readonly SyntaxGenerator _csSyntaxGenerator;
@@ -173,10 +173,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                             eventSource, SyntaxFactory.IdentifierName(e.EventSymbolName));
         }
 
-        public IEnumerable<(ExpressionSyntax EventField, SyntaxKind AssignmentKind, ExpressionSyntax HandlerId)> GetConstructorEventHandlers()
+        public IEnumerable<Assignment> GetConstructorEventHandlers()
         {
             return HandledClassEventCSharpIds.Select(e =>
-                (MemberAccess(SyntaxFactory.IdentifierName(e.EventContainerName), e), SyntaxKind.AddAssignmentExpression, Invocable(_methodId, e.ParametersToDiscard))
+                new Assignment(MemberAccess(SyntaxFactory.IdentifierName(e.EventContainerName), e), SyntaxKind.AddAssignmentExpression, Invocable(_methodId, e.ParametersToDiscard))
             );
         }
 

@@ -525,6 +525,7 @@ public partial class TestHandlesAdded
     public TestHandlesAdded()
     {
         InitializeComponent();
+        _POW_btnV2DBM.Name = ""POW_btnV2DBM"";
     }
 
     public void InitializeComponent()

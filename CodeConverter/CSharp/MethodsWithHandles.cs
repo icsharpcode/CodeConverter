@@ -67,7 +67,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return _methodWithHandleses.SelectMany(m => m.GetInitializeComponentClassEventHandlers()).ToArray();
         }
 
-        public (ExpressionSyntax EventField, SyntaxKind AssignmentKind, ExpressionSyntax HandlerId)[] GetConstructorEventHandlers()
+        public Assignment[] GetConstructorEventHandlers()
         {
             return _methodWithHandleses.SelectMany(m => m.GetConstructorEventHandlers()).ToArray();
         }

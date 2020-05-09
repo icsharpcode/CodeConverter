@@ -1,6 +1,10 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
@@ -18,7 +22,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public static bool InMethodCalledInitializeComponent(SyntaxNode anyNodePossiblyWithinMethod)
         {
-            return anyNodePossiblyWithinMethod.GetAncestor<VBSyntax.MethodBlockSyntax>()?.SubOrFunctionStatement.Identifier.Text == "InitializeComponent";
+            var methodBlockSyntax = anyNodePossiblyWithinMethod.GetAncestor<VBSyntax.MethodBlockSyntax>();
+            return IsInitializeComponent(methodBlockSyntax);
+        }
+
+        private static bool IsInitializeComponent(VBSyntax.MethodBlockSyntax methodBlockSyntax)
+        {
+            return methodBlockSyntax?.SubOrFunctionStatement.Identifier.Text == "InitializeComponent";
         }
 
         /// <summary>
@@ -31,6 +41,33 @@ namespace ICSharpCode.CodeConverter.CSharp
                             assignment.Left is VBSyntax.MemberAccessExpressionSyntax maes &&
                                 !(maes.Expression is VBSyntax.MeExpressionSyntax) &&
                             maes.Name.ToString() == "Name";
+        }
+
+        private static T LastOrDefaultDescendant<T>(this VBasic.VisualBasicSyntaxNode syntaxNode) {
+            return syntaxNode.DescendantNodes().OfType<T>().LastOrDefault();
+        }
+
+        internal static IEnumerable<Assignment> GetNameAssignments((VBSyntax.TypeBlockSyntax Type, SemanticModel SemanticModel)[] otherPartsOfType)
+        {
+            return otherPartsOfType.SelectMany(typePart => 
+                typePart.Type.Members.OfType<VBSyntax.MethodBlockSyntax>()
+                    .Where(IsInitializeComponent)
+                    .SelectMany(GetAssignments)
+            );
+        }
+
+        private static IEnumerable<Assignment> GetAssignments(VBSyntax.MethodBlockSyntax initializeComponent)
+        {
+            return initializeComponent.Statements
+                .OfType<VBSyntax.AssignmentStatementSyntax>()
+                .Where(ShouldPrefixAssignedNameWithUnderscore)
+                .Select(s => (s.Left as VBSyntax.MemberAccessExpressionSyntax)?.Expression.LastOrDefaultDescendant<VBSyntax.IdentifierNameSyntax>())
+                .Where(s => s != null)
+                .Select(id => {
+                    var nameAccess = ValidSyntaxFactory.MemberAccess(SyntaxFactory.IdentifierName("_" + id.Identifier.Text), "Name");
+                    var originalRuntimeNameToRestore = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(id.Identifier.Text));
+                    return new Assignment(nameAccess, SyntaxKind.SimpleAssignmentExpression, originalRuntimeNameToRestore, true);
+                });
         }
     }
 }
