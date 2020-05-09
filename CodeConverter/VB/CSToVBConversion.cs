@@ -25,7 +25,7 @@ namespace ICSharpCode.CodeConverter.VB
         private IProgress<ConversionProgress> _progress;
         private CancellationToken _cancellationToken;
 
-        public async Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
+        public async Task<IProjectContentsConverter> CreateProjectContentsConverterAsync(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
             _progress = progress;
             _cancellationToken = cancellationToken;
@@ -33,9 +33,9 @@ namespace ICSharpCode.CodeConverter.VB
             await _csToVbProjectContentsConverter.InitializeSourceAsync(project);
             return _csToVbProjectContentsConverter;
         }
-        public async Task<Document> SingleSecondPass(Document doc)
+        public async Task<Document> SingleSecondPassAsync(Document doc)
         {
-            return await doc.SimplifyStatements<VBSyntax.ImportsStatementSyntax, VBSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId, _cancellationToken);
+            return await doc.SimplifyStatementsAsync<VBSyntax.ImportsStatementSyntax, VBSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId, _cancellationToken);
         }
 
         public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
@@ -152,9 +152,10 @@ namespace ICSharpCode.CodeConverter.VB
             return new CSharpCompiler().CreateTree(text);
         }
 
-        public Document CreateProjectDocumentFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
+        public async Task<Document> CreateProjectDocumentFromTreeAsync(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
-            return CSharpCompiler.CreateCompilationOptions().CreateProject(references, CSharpParseOptions.Default).AddDocumentFromTree(tree);
+            return (await CSharpCompiler.CreateCompilationOptions().CreateProjectAsync(references, CSharpParseOptions.Default))
+                .AddDocumentFromTree(tree);
         }
     }
 }

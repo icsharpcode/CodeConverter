@@ -52,7 +52,7 @@ namespace ICSharpCode.CodeConverter.VB
         public async Task InitializeSourceAsync(Project project)
         {
             // TODO: Don't throw away solution-wide effects - write them to referencing files, and use in conversion of any other projects being converted at the same time.
-            project = await CaseConflictResolver.RenameClashingSymbols(project);
+            project = await CaseConflictResolver.RenameClashingSymbolsAsync(project);
             _sourceCsProject = project;
             _convertedVbProject = project.ToProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
             _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
@@ -60,13 +60,13 @@ namespace ICSharpCode.CodeConverter.VB
             Project = project;
         }
 
-        public async Task<SyntaxNode> SingleFirstPass(Document document)
+        public async Task<SyntaxNode> SingleFirstPassAsync(Document document)
         {
-            return await CSharpConverter.ConvertCompilationTree(document, _vbViewOfCsSymbols, _vbReferenceProject, _cancellationToken);
+            return await CSharpConverter.ConvertCompilationTreeAsync(document, _vbViewOfCsSymbols, _vbReferenceProject, _cancellationToken);
         }
 
         public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)>
-            GetConvertedProject(WipFileConversion<SyntaxNode>[] firstPassResults)
+            GetConvertedProjectAsync(WipFileConversion<SyntaxNode>[] firstPassResults)
         {
             return _convertedVbProject.WithDocuments(firstPassResults);
         }

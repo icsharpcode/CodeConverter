@@ -33,7 +33,7 @@ namespace ICSharpCode.CodeConverter.Web
                 .WithTypeReferences(DefaultReferences.NetStandard2)
                 .SetFromLanguage(fromLanguage, fromVersion)
                 .SetToLanguage(toLanguage, toVersion);
-            var result = await CodeConverter.Convert(codeWithOptions);
+            var result = await CodeConverter.ConvertAsync(codeWithOptions);
 
             var response = new ConvertResponse() {
                 conversionOk = result.Success,

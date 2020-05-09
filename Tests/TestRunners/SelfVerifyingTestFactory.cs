@@ -36,7 +36,7 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
         {
             // Lazy to avoid confusing test runner on error, but also avoid calculating multiple times
             var conversionResultAsync = new AsyncLazy<ConversionResult>(() =>
-                ProjectConversion.ConvertText<TLanguageConversion>(sourceFileText, new TextConversionOptions(DefaultReferences.NetStandard2))
+                ProjectConversion.ConvertTextAsync<TLanguageConversion>(sourceFileText, new TextConversionOptions(DefaultReferences.NetStandard2))
             );
 
             var runnableTestsInTarget = new AsyncLazy<Dictionary<string, NamedFact>>(async () => GetConvertedNamedFacts<TTargetCompiler>(runnableTestsInSource,

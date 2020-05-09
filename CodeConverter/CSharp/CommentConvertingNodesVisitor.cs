@@ -18,17 +18,17 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
         public override async Task<CSharpSyntaxNode> DefaultVisit(SyntaxNode node)
         {
-            return await DefaultVisitInner(node);
+            return await DefaultVisitInnerAsync(node);
         }
 
-        private async Task<CSharpSyntaxNode> DefaultVisitInner(SyntaxNode node)
+        private async Task<CSharpSyntaxNode> DefaultVisitInnerAsync(SyntaxNode node)
         {
             return await _wrappedVisitor.Visit(node);
         }
 
         public override async Task<CSharpSyntaxNode> VisitCompilationUnit(VbSyntax.CompilationUnitSyntax node)
         {
-            var convertedNode = (CsSyntax.CompilationUnitSyntax)await DefaultVisitInner(node);
+            var convertedNode = (CsSyntax.CompilationUnitSyntax)await DefaultVisitInnerAsync(node);
             // Special case where we need to map manually because it's a special zero-width token that just has leading trivia that isn't at the start of the line necessarily
             return convertedNode.WithEndOfFileToken(
                 convertedNode.EndOfFileToken.WithSourceMappingFrom(node.EndOfFileToken)

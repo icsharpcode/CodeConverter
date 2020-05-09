@@ -18,6 +18,7 @@ using ICSharpCode.CodeConverter.CommandLine.Util;
 using Microsoft.VisualStudio.Threading;
 using CodeConv.Shared.Util;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.CodeAnalysis.Host.Mef;
 
 namespace ICSharpCode.CodeConverter.CommandLine
 {
@@ -26,11 +27,11 @@ namespace ICSharpCode.CodeConverter.CommandLine
         private readonly bool _bestEffortConversion;
         private readonly string _solutionFilePath;
         private readonly Dictionary<string, string> _buildProps;
-        private readonly Lazy<MSBuildWorkspace> _workspace; //Cached to avoid NullRef from OptionsService when initialized concurrently (e.g. in our tests)
+        private readonly AsyncLazy<MSBuildWorkspace> _workspace; //Cached to avoid NullRef from OptionsService when initialized concurrently (e.g. in our tests)
         private AsyncLazy<Solution>? _cachedSolution; //Cached for performance of tests
         private readonly bool _isNetCore;
 
-        public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetCore, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null)
+        public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetCore, JoinableTaskFactory joinableTaskFactory, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null)
         {
             _bestEffortConversion = bestEffortConversion;
             _buildProps = buildProps ?? new Dictionary<string, string>();
@@ -38,7 +39,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
             _buildProps.TryAdd("Platform", "AnyCPU");
             _solutionFilePath = solutionFilePath;
             _isNetCore = isNetCore;
-            _workspace = new Lazy<MSBuildWorkspace>(() => CreateWorkspace(_buildProps));
+            _workspace = new AsyncLazy<MSBuildWorkspace>(() => CreateWorkspaceAsync(_buildProps), joinableTaskFactory);
         }
 
         public async IAsyncEnumerable<ConversionResult> ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, Language? targetLanguage, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken token)
@@ -70,7 +71,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
             progress.Report($"Running dotnet restore on {projectOrSolutionFile}");
             await RestorePackagesForSolutionAsync(projectOrSolutionFile);
 
-            var workspace = _workspace.Value;
+            var workspace = await _workspace.GetValueAsync();
             var solution = string.Equals(Path.GetExtension(projectOrSolutionFile), ".sln", StringComparison.OrdinalIgnoreCase) ? await workspace.OpenSolutionAsync(projectOrSolutionFile)
                 : (await workspace.OpenProjectAsync(projectOrSolutionFile)).Solution;
 
@@ -95,7 +96,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
         private async Task<string> GetCompilationErrorsAsync(
             IEnumerable<Project> projectsToConvert)
         {
-            var workspaceErrors = _workspace.Value.Diagnostics.GetErrorString();
+            var workspaceErrors = (await _workspace.GetValueAsync()).Diagnostics.GetErrorString();
             var errors = await projectsToConvert.ParallelSelectAwait(async x => {
                 var c = await x.GetCompilationAsync() ?? throw new InvalidOperationException($"Compilation could not be created for {x.Language}");
                 return new[] { CompilationWarnings.WarningsForCompilation(c, c.AssemblyName) };
@@ -110,7 +111,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
             if (restoreExitCode != 0) throw new ValidationException("dotnet restore had a non-zero exit code.");
         }
 
-        private static MSBuildWorkspace CreateWorkspace(Dictionary<string, string> buildProps)
+        private static async Task<MSBuildWorkspace> CreateWorkspaceAsync(Dictionary<string, string> buildProps)
         {
             if (MSBuildLocator.CanRegister) {
                 var instances = MSBuildLocator.QueryVisualStudioInstances().ToArray();
@@ -119,12 +120,14 @@ namespace ICSharpCode.CodeConverter.CommandLine
                 MSBuildLocator.RegisterInstance(instance);
                 AppDomain.CurrentDomain.UseVersionAgnosticAssemblyResolution();
             }
-            return MSBuildWorkspace.Create(buildProps);
+
+            var hostServices = await ThreadSafeWorkspaceHelper.CreateHostServicesAsync(MSBuildMefHostServices.DefaultAssemblies);
+            return MSBuildWorkspace.Create(buildProps, hostServices);
         }
 
         public void Dispose()
         {
-            if (_workspace.IsValueCreated) _workspace.Value.Dispose();
+            if (_workspace.IsValueCreated) _workspace.GetValueAsync().Dispose();
         }
     }
 }

@@ -14,7 +14,7 @@ namespace ICSharpCode.CodeConverter.VB
 {
     internal static class CSharpConverter
     {
-        public static async Task<SyntaxNode> ConvertCompilationTree(Document document,
+        public static async Task<SyntaxNode> ConvertCompilationTreeAsync(Document document,
             VisualBasicCompilation vbViewOfCsSymbols, Project vbReferenceProject, CancellationToken cancellationToken)
         {
             document = await document.WithExpandedRootAsync(cancellationToken);

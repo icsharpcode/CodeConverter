@@ -8,7 +8,7 @@ namespace ICSharpCode.CodeConverter
 {
     public static class CodeConverter
     {
-        public static async Task<ConversionResult> Convert(CodeWithOptions code)
+        public static async Task<ConversionResult> ConvertAsync(CodeWithOptions code)
         {
             if (!IsSupportedSource(code.FromLanguage, code.FromLanguageVersion))
                 return new ConversionResult(new NotSupportedException($"Source language {code.FromLanguage} {code.FromLanguageVersion} is not supported!"));
@@ -21,13 +21,13 @@ namespace ICSharpCode.CodeConverter
                 case "C#":
                     switch (code.ToLanguage) {
                         case "Visual Basic":
-                            return await ProjectConversion.ConvertText<CSToVBConversion>(code.Text, new TextConversionOptions(code.References));
+                            return await ProjectConversion.ConvertTextAsync<CSToVBConversion>(code.Text, new TextConversionOptions(code.References));
                     }
                     break;
                 case "Visual Basic":
                     switch (code.ToLanguage) {
                         case "C#":
-                            return await ProjectConversion.ConvertText<VBToCSConversion>(code.Text, new TextConversionOptions(code.References));
+                            return await ProjectConversion.ConvertTextAsync<VBToCSConversion>(code.Text, new TextConversionOptions(code.References));
                     }
                     break;
 

@@ -222,7 +222,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             }
             var document = _visualStudioWorkspace.CurrentSolution.GetDocument(documentId);
             var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
-            return await ProjectConversion.ConvertSingle<TLanguageConversion>(document, new SingleConversionOptions {SelectedTextSpan = selectedTextSpan}, CreateOutputWindowProgress(), cancellationToken);
+            return await ProjectConversion.ConvertSingleAsync<TLanguageConversion>(document, new SingleConversionOptions {SelectedTextSpan = selectedTextSpan}, CreateOutputWindowProgress(), cancellationToken);
         }
 
         private async Task<ConversionResult> ConvertTextOnlyAsync<TLanguageConversion>(string documentPath, Span selected, CancellationToken cancellationToken)
@@ -234,7 +234,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                 documentText = documentText.Substring(selected.Start, selected.Length);
             }
 
-            var convertTextOnly = await ProjectConversion.ConvertText<TLanguageConversion>(documentText, new TextConversionOptions(DefaultReferences.NetStandard2), CreateOutputWindowProgress(), cancellationToken);
+            var convertTextOnly = await ProjectConversion.ConvertTextAsync<TLanguageConversion>(documentText, new TextConversionOptions(DefaultReferences.NetStandard2), CreateOutputWindowProgress(), cancellationToken);
             convertTextOnly.SourcePathOrNull = documentPath;
             return convertTextOnly;
         }

@@ -115,7 +115,7 @@ End Sub";
         protected async Task<string> ConvertAsync<TLanguageConversion>(string inputCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
         {
             var textConversionOptions = conversionOptions ?? new TextConversionOptions(DefaultReferences.NetStandard2) { RootNamespaceOverride = _rootNamespace, ShowCompilationErrors = true };
-            var conversionResult = await ProjectConversion.ConvertText<TLanguageConversion>(inputCode, textConversionOptions);
+            var conversionResult = await ProjectConversion.ConvertTextAsync<TLanguageConversion>(inputCode, textConversionOptions);
             return (conversionResult.ConvertedCode ?? "") + (conversionResult.GetExceptionsAsString() ?? "");
         }
 
@@ -179,13 +179,13 @@ End Sub";
             return baseConversion.CanBeContainedByMethod(node);
         }
 
-        async Task<IProjectContentsConverter> ILanguageConversion.CreateProjectContentsConverter(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken) {
-            return await baseConversion.CreateProjectContentsConverter(project, progress, cancellationToken);
+        async Task<IProjectContentsConverter> ILanguageConversion.CreateProjectContentsConverterAsync(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken) {
+            return await baseConversion.CreateProjectContentsConverterAsync(project, progress, cancellationToken);
         }
 
-        Document ILanguageConversion.CreateProjectDocumentFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
+        async Task<Document> ILanguageConversion.CreateProjectDocumentFromTreeAsync(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
-            return baseConversion.CreateProjectDocumentFromTree(tree, references);
+            return await baseConversion.CreateProjectDocumentFromTreeAsync(tree, references);
         }
 
         SyntaxTree ILanguageConversion.CreateTree(string text) {
@@ -216,7 +216,7 @@ End Sub";
             return baseConversion.PostTransformProjectFile(xml);
         }
 
-        async Task<Document> ILanguageConversion.SingleSecondPass(Document doc) {
+        async Task<Document> ILanguageConversion.SingleSecondPassAsync(Document doc) {
             return doc;
         }
 
