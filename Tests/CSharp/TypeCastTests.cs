@@ -285,11 +285,11 @@ internal partial class Class1
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"Private Sub Test()
-    Dim CR = ChrW(&HD)
+    Dim CR = ChrW(&HF)
 End Sub
 ", @"private void Test()
 {
-    char CR = (char)0xD;
+    char CR = (char)0xF;
 }
 ");
         }
@@ -299,11 +299,11 @@ End Sub
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"Private Sub Test()
-    Dim CR As Char = Chr(&HD)
+    Dim CR As Char = Chr(&HF)
 End Sub
 ", @"private void Test()
 {
-    char CR = (char)0xD;
+    char CR = (char)0xF;
 }
 ");
         }
