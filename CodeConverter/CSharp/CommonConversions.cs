@@ -59,7 +59,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _typeContext = typeContext;
         }
 
-        public async Task<(IReadOnlyCollection<(VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarations(
+        public async Task<(IReadOnlyCollection<(VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(
             VariableDeclaratorSyntax declarator, HashSet<ILocalSymbol> symbolsToSkip = null, bool preferExplicitType = false)
         {
             var vbInitValue = GetInitializerToConvert(declarator);
@@ -85,7 +85,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var declaredSymbol = _semanticModel.GetDeclaredSymbol(name);
                 if (symbolsToSkip?.Contains(declaredSymbol) == true) continue;
                 var declaredSymbolType = declaredSymbol.GetSymbolType();
-                var equalsValueClauseSyntax = await ConvertEqualsValueClauseSyntax(declarator, name, vbInitValue, declaredSymbolType, declaredSymbol, initializerOrMethodDecl);
+                var equalsValueClauseSyntax = await ConvertEqualsValueClauseSyntaxAsync(declarator, name, vbInitValue, declaredSymbolType, declaredSymbol, initializerOrMethodDecl);
                 var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier), null, equalsValueClauseSyntax);
                 string k = declaredSymbolType?.GetFullMetadataName() ?? name.ToString();//Use likely unique key if the type symbol isn't available
 
@@ -119,7 +119,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return shouldPreferExplicitType;
         }
 
-        private async Task<EqualsValueClauseSyntax> ConvertEqualsValueClauseSyntax(
+        private async Task<EqualsValueClauseSyntax> ConvertEqualsValueClauseSyntaxAsync(
             VariableDeclaratorSyntax vbDeclarator, VBSyntax.ModifiedIdentifierSyntax vbName,
             VBSyntax.ExpressionSyntax vbInitValue,
             ITypeSymbol declaredSymbolType,
@@ -132,7 +132,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                  declaredSymbol is ILocalSymbol localSymbol && localSymbol.IsConst;
 
             EqualsValueClauseSyntax equalsValueClauseSyntax;
-            if (await GetInitializerFromNameAndType(declaredSymbolType, vbName, initializerOrMethodDecl) is ExpressionSyntax
+            if (await GetInitializerFromNameAndTypeAsync(declaredSymbolType, vbName, initializerOrMethodDecl) is ExpressionSyntax
                 adjustedInitializerExpr)
             {
                 var convertedInitializer = vbInitValue != null
@@ -210,7 +210,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         /// <summary>
         /// Semantic model merges the symbols, but the compiled form retains multiple namespaces, which (when referenced from C#) need to keep the correct casing.
-        /// <seealso cref="DeclarationNodeVisitor.WithDeclarationCasing(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
+        /// <seealso cref="DeclarationNodeVisitor.WithDeclarationCasingAsync(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
         /// <seealso cref="CommonConversions.WithDeclarationCasing(SyntaxToken, ISymbol, string)"/>
         /// </summary>
         private static TypeSyntax WithDeclarationCasing(TypeSyntax syntax, ITypeSymbol typeSymbol)
@@ -234,7 +234,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                    ) ?? declarator.Initializer?.Value;
         }
 
-        private async Task<CSharpSyntaxNode> GetInitializerFromNameAndType(ITypeSymbol typeSymbol,
+        private async Task<CSharpSyntaxNode> GetInitializerFromNameAndTypeAsync(ITypeSymbol typeSymbol,
             VBSyntax.ModifiedIdentifierSyntax name, CSharpSyntaxNode initializer)
         {
             if (!SyntaxTokenExtensions.IsKind(name.Nullable, SyntaxKind.None))
@@ -245,10 +245,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            var rankSpecifiers = await ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds, false);
+            var rankSpecifiers = await ConvertArrayRankSpecifierSyntaxesAsync(name.ArrayRankSpecifiers, name.ArrayBounds, false);
             if (rankSpecifiers.Count > 0)
             {
-                var rankSpecifiersWithSizes = await ConvertArrayRankSpecifierSyntaxes(name.ArrayRankSpecifiers, name.ArrayBounds);
+                var rankSpecifiersWithSizes = await ConvertArrayRankSpecifierSyntaxesAsync(name.ArrayRankSpecifiers, name.ArrayBounds);
                 var arrayTypeSyntax = ((ArrayTypeSyntax)GetTypeSyntax(typeSymbol)).WithRankSpecifiers(rankSpecifiersWithSizes);
                 if (rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).Any(e => !e.IsKind(CSSyntaxKind.OmittedArraySizeExpression))) {
                     initializer = SyntaxFactory.ArrayCreationExpression(arrayTypeSyntax);
@@ -299,7 +299,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         /// <summary>
         /// Semantic model merges the symbols, but the compiled form retains multiple namespaces, which (when referenced from C#) need to keep the correct casing.
-        /// <seealso cref="DeclarationNodeVisitor.WithDeclarationCasing(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
+        /// <seealso cref="DeclarationNodeVisitor.WithDeclarationCasingAsync(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
         /// <seealso cref="CommonConversions.WithDeclarationCasing(TypeSyntax, ITypeSymbol)"/>
         /// </summary>
         private static string WithDeclarationCasing(SyntaxToken id, ISymbol idSymbol, string text)
@@ -451,28 +451,28 @@ namespace ICSharpCode.CodeConverter.CSharp
             return isConvOp;
         }
 
-        internal async Task<SyntaxList<ArrayRankSpecifierSyntax>> ConvertArrayRankSpecifierSyntaxes(
+        internal async Task<SyntaxList<ArrayRankSpecifierSyntax>> ConvertArrayRankSpecifierSyntaxesAsync(
             SyntaxList<VBSyntax.ArrayRankSpecifierSyntax> arrayRankSpecifierSyntaxs,
             ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
         {
             var bounds = SyntaxFactory.List(await arrayRankSpecifierSyntaxs.SelectAsync(async r => (ArrayRankSpecifierSyntax) await r.AcceptAsync(TriviaConvertingExpressionVisitor)));
 
             if (nodeArrayBounds != null) {
-                ArrayRankSpecifierSyntax arrayRankSpecifierSyntax = await ConvertArrayBounds(nodeArrayBounds, withSizes);
+                ArrayRankSpecifierSyntax arrayRankSpecifierSyntax = await ConvertArrayBoundsAsync(nodeArrayBounds, withSizes);
                 bounds = bounds.Insert(0, arrayRankSpecifierSyntax);
             }
 
             return bounds;
         }
 
-        public async Task<ArrayRankSpecifierSyntax> ConvertArrayBounds(ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
+        public async Task<ArrayRankSpecifierSyntax> ConvertArrayBoundsAsync(ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
         {
             SeparatedSyntaxList<VBSyntax.ArgumentSyntax> arguments = nodeArrayBounds.Arguments;
             var sizesSpecified = arguments.Any(a => !a.IsOmitted);
             var rank = arguments.Count;
             if (!sizesSpecified) rank += 1;
 
-            var convertedArrayBounds = withSizes && sizesSpecified ? await ConvertArrayBounds(arguments)
+            var convertedArrayBounds = withSizes && sizesSpecified ? await ConvertArrayBoundsAsync(arguments)
                 : Enumerable.Repeat(SyntaxFactory.OmittedArraySizeExpression(), rank);
             var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(
                 SyntaxFactory.SeparatedList(
@@ -480,18 +480,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             return arrayRankSpecifierSyntax;
         }
 
-        private async Task<IEnumerable<ExpressionSyntax>> ConvertArrayBounds(SeparatedSyntaxList<VBSyntax.ArgumentSyntax> arguments)
+        private async Task<IEnumerable<ExpressionSyntax>> ConvertArrayBoundsAsync(SeparatedSyntaxList<VBSyntax.ArgumentSyntax> arguments)
         {
             return await arguments.SelectAsync(a => {
                 VBSyntax.ExpressionSyntax upperBoundExpression = a is VBSyntax.SimpleArgumentSyntax sas ? sas.Expression
                     : a is VBSyntax.RangeArgumentSyntax ras ? ras.UpperBound
                     : throw new ArgumentOutOfRangeException(nameof(a), a, null);
 
-                return IncreaseArrayUpperBoundExpression(upperBoundExpression);
+                return IncreaseArrayUpperBoundExpressionAsync(upperBoundExpression);
             });
         }
 
-        private async Task<ExpressionSyntax> IncreaseArrayUpperBoundExpression(VBSyntax.ExpressionSyntax expr)
+        private async Task<ExpressionSyntax> IncreaseArrayUpperBoundExpressionAsync(VBSyntax.ExpressionSyntax expr)
         {
             var op = _semanticModel.GetOperation(expr);
             var constant = op.ConstantValue;
@@ -510,12 +510,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 convertedExpression, SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
         }
 
-        public async Task<SyntaxList<CSSyntax.AttributeListSyntax>> ConvertAttributes(SyntaxList<VBSyntax.AttributeListSyntax> attributeListSyntaxs)
+        public async Task<SyntaxList<CSSyntax.AttributeListSyntax>> ConvertAttributesAsync(SyntaxList<VBSyntax.AttributeListSyntax> attributeListSyntaxs)
         {
-            return SyntaxFactory.List(await attributeListSyntaxs.SelectManyAsync(ConvertAttribute));
+            return SyntaxFactory.List(await attributeListSyntaxs.SelectManyAsync(ConvertAttributeAsync));
         }
 
-        public async Task<IEnumerable<CSSyntax.AttributeListSyntax>> ConvertAttribute(VBSyntax.AttributeListSyntax attributeList)
+        public async Task<IEnumerable<CSSyntax.AttributeListSyntax>> ConvertAttributeAsync(VBSyntax.AttributeListSyntax attributeList)
         {
             // These attributes' semantic effects are expressed differently in CSharp.
             return await attributeList.Attributes.Where(a => !IsExtensionAttribute(a) && !IsOutAttribute(a))
@@ -550,7 +550,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return variableDeclaratorSyntax;
         }
 
-        public async Task<(string, ExpressionSyntax extraArg)> GetParameterizedPropertyAccessMethod(IOperation operation)
+        public async Task<(string, ExpressionSyntax extraArg)> GetParameterizedPropertyAccessMethodAsync(IOperation operation)
         {
             if (operation is IPropertyReferenceOperation pro && pro.Arguments.Any() &&
                 !VBasic.VisualBasicExtensions.IsDefault(pro.Property)) {

@@ -16,12 +16,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static async Task<TOut> AcceptAsync<TOut>(this SyntaxNode node, CommentConvertingVisitorWrapper visitorWrapper, SourceTriviaMapKind sourceTriviaMap = SourceTriviaMapKind.All) where TOut : CSharpSyntaxNode
         {
             if (node == null) return null;
-            return await visitorWrapper.Accept<TOut>(node, sourceTriviaMap);
+            return await visitorWrapper.AcceptAsync<TOut>(node, sourceTriviaMap);
         }
 
         public static async Task<SeparatedSyntaxList<TOut>> AcceptSeparatedListAsync<TIn, TOut>(this SeparatedSyntaxList<TIn> nodes, CommentConvertingVisitorWrapper visitorWrapper, SourceTriviaMapKind sourceTriviaMap = SourceTriviaMapKind.All) where TIn: VisualBasicSyntaxNode where TOut : CSharpSyntaxNode
         {
-            return await visitorWrapper.Accept<TIn, TOut>(nodes, sourceTriviaMap);
+            return await visitorWrapper.AcceptAsync<TIn, TOut>(nodes, sourceTriviaMap);
         }
     }
 }

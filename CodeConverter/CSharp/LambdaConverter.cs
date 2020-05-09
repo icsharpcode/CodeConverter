@@ -24,7 +24,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public CommonConversions CommonConversions { get; }
 
-        public async Task<CSharpSyntaxNode> Convert(VBSyntax.LambdaExpressionSyntax vbNode,
+        public async Task<CSharpSyntaxNode> ConvertAsync(VBSyntax.LambdaExpressionSyntax vbNode,
             ParameterListSyntax param, IReadOnlyCollection<StatementSyntax> convertedStatements)
         {
             BlockSyntax block = null;
@@ -39,7 +39,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 block = SyntaxFactory.Block(singleStatement);
             }
 
-            var functionStatement = await ConvertToFunctionDeclarationOrNull(vbNode, param, block, arrow);
+            var functionStatement = await ConvertToFunctionDeclarationOrNullAsync(vbNode, param, block, arrow);
             if (functionStatement != null) {
                 return functionStatement;
             }
@@ -56,7 +56,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
 
-        private async Task<CSharpSyntaxNode> ConvertToFunctionDeclarationOrNull(VBSyntax.LambdaExpressionSyntax vbNode,
+        private async Task<CSharpSyntaxNode> ConvertToFunctionDeclarationOrNullAsync(VBSyntax.LambdaExpressionSyntax vbNode,
             ParameterListSyntax param, BlockSyntax block,
             ArrowExpressionClauseSyntax arrow)
         {
@@ -73,7 +73,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var paramListWithTypes = param.WithParameters(SyntaxFactory.SeparatedList(paramsWithTypes));
             if (potentialAncestorDeclarationOperation is IFieldInitializerOperation fieldInit) {
                 var fieldSymbol = fieldInit.InitializedFields.Single();
-                if (fieldSymbol.GetResultantVisibility() != SymbolVisibility.Public && !fieldSymbol.Type.IsDelegateReferencableByName() && await _solution.IsNeverWritten(fieldSymbol)) {
+                if (fieldSymbol.GetResultantVisibility() != SymbolVisibility.Public && !fieldSymbol.Type.IsDelegateReferencableByName() && await _solution.IsNeverWrittenAsync(fieldSymbol)) {
                     return CreateMethodDeclaration(anonFuncOp, fieldSymbol, block, arrow);
                 }
             }
@@ -88,7 +88,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (potentialAncestorDeclarationOperation is IVariableDeclarationOperation variableDeclaration) {
                     var variableDeclaratorOperation = variableDeclaration.Declarators.Single();
                     if (!variableDeclaratorOperation.Symbol.Type.IsDelegateReferencableByName() &&
-                        await _solution.IsNeverWritten(variableDeclaratorOperation.Symbol)) {
+                        await _solution.IsNeverWrittenAsync(variableDeclaratorOperation.Symbol)) {
                         //Should do: Check no (other) write usages exist: SymbolFinder.FindReferencesAsync + checking if they're an assignment LHS or out parameter
                         return CreateLocalFunction(anonFuncOp, variableDeclaratorOperation, paramListWithTypes, block,
                             arrow);

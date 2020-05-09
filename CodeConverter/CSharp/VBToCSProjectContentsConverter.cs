@@ -47,23 +47,23 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csharpViewOfVbSymbols = (CSharpCompilation) await _csharpReferenceProject.GetCompilationAsync(_cancellationToken);
             _designerToResxRelativePath = project.ReadVbEmbeddedResources().ToDictionary(r => r.LastGenOutput, r => r.RelativePath);
             Project = await project.WithAdditionalDocs(_designerToResxRelativePath.Values)
-                        .WithRenamedMergedMyNamespace(_cancellationToken);
+                        .WithRenamedMergedMyNamespaceAsync(_cancellationToken);
         }
 
         public string LanguageVersion { get { return LangVersion.Latest.ToDisplayString(); } }
 
         public Project Project { get; private set; }
 
-        public async Task<SyntaxNode> SingleFirstPass(Document document)
+        public async Task<SyntaxNode> SingleFirstPassAsync(Document document)
         {
-            return await VisualBasicConverter.ConvertCompilationTree(document, _csharpViewOfVbSymbols, _csharpReferenceProject, _cancellationToken);
+            return await VisualBasicConverter.ConvertCompilationTreeAsync(document, _csharpViewOfVbSymbols, _csharpReferenceProject, _cancellationToken);
         }
 
-        public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProject(WipFileConversion<SyntaxNode>[] firstPassResults)
+        public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProjectAsync(WipFileConversion<SyntaxNode>[] firstPassResults)
         {
             var projDirPath = Project.GetDirectoryPath();
             var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults.Select(r => r.WithTargetPath(GetTargetPath(projDirPath, r))).ToArray());
-            return (await project.RenameMergedNamespaces(_cancellationToken), docIds);
+            return (await project.RenameMergedNamespacesAsync(_cancellationToken), docIds);
         }
 
         private string GetTargetPath(string projDirPath, WipFileConversion<SyntaxNode> r)

@@ -10,12 +10,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class UsageTypeAnalyzer
     {
-        public static async Task<bool> IsNeverWritten(this Solution solution, ISymbol symbol, Location outsideLocation = null)
+        public static async Task<bool> IsNeverWrittenAsync(this Solution solution, ISymbol symbol, Location outsideLocation = null)
         {
-            return symbol.AllWriteUsagesKnowable() && !await ContainsWriteUsagesFor(solution, symbol, outsideLocation);
+            return symbol.AllWriteUsagesKnowable() && !await ContainsWriteUsagesForAsync(solution, symbol, outsideLocation);
         }
 
-        public static async Task<bool> ContainsWriteUsagesFor(Solution solution, ISymbol symbol, Location outsideLocation = null)
+        public static async Task<bool> ContainsWriteUsagesForAsync(Solution solution, ISymbol symbol, Location outsideLocation = null)
         {
             var references = await GetUsagesAsync(solution, symbol, outsideLocation);
             var operationsReferencing = references.Select(async g => {

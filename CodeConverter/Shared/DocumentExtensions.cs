@@ -15,7 +15,7 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     internal static class DocumentExtensions
     {
-        public static async Task<Document> SimplifyStatements<TUsingDirectiveSyntax, TExpressionSyntax>(this Document convertedDocument, string unresolvedTypeDiagnosticId, CancellationToken cancellationToken)
+        public static async Task<Document> SimplifyStatementsAsync<TUsingDirectiveSyntax, TExpressionSyntax>(this Document convertedDocument, string unresolvedTypeDiagnosticId, CancellationToken cancellationToken)
         where TUsingDirectiveSyntax : SyntaxNode where TExpressionSyntax : SyntaxNode
         {
             Func<SyntaxNode, bool> wouldBeSimplifiedIncorrectly =

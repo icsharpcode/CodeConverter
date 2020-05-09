@@ -9,7 +9,7 @@ namespace ICSharpCode.CodeConverter
 {
     public interface ILanguageConversion
     {
-        Task<Document> SingleSecondPass(Document doc);
+        Task<Document> SingleSecondPassAsync(Document doc);
         SyntaxTree CreateTree(string text);
         List<SyntaxNode> FindSingleImportantChild(SyntaxNode annotatedNode);
         bool CanBeContainedByMethod(SyntaxNode node);
@@ -24,7 +24,7 @@ namespace ICSharpCode.CodeConverter
         string TargetLanguage { get; }
         ConversionOptions ConversionOptions { get; set; }
 
-        Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken);
+        Task<IProjectContentsConverter> CreateProjectContentsConverterAsync(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken);
         string PostTransformProjectFile(string xml);
 
         Task<Document> CreateProjectDocumentFromTreeAsync(SyntaxTree tree, IEnumerable<MetadataReference> references);

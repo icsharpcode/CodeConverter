@@ -29,7 +29,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public ConversionOptions ConversionOptions { get; set; }
 
 
-        public async Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
+        public async Task<IProjectContentsConverter> CreateProjectContentsConverterAsync(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
             _progress = progress;
             _cancellationToken = cancellationToken;
@@ -149,9 +149,9 @@ End Class";
             return children;
         }
 
-        public async Task<Document> SingleSecondPass(Document doc)
+        public async Task<Document> SingleSecondPassAsync(Document doc)
         {
-            return await doc.SimplifyStatements<CSSyntax.UsingDirectiveSyntax, CSSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId, _cancellationToken);
+            return await doc.SimplifyStatementsAsync<CSSyntax.UsingDirectiveSyntax, CSSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId, _cancellationToken);
         }
 
         public SyntaxTree CreateTree(string text)

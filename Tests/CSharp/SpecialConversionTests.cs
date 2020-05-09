@@ -172,7 +172,7 @@ public partial class Issue483
         }
 
         [Fact]
-        public async Task Issue544_AssignUsingMid()
+        public async Task Issue544_AssignUsingMidAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
         @"Public Class Issue483

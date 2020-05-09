@@ -25,14 +25,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             _syntaxTree = syntaxTree;
         }
 
-        public async Task<T> Accept<T>(SyntaxNode vbNode, SourceTriviaMapKind sourceTriviaMap) where T : CS.CSharpSyntaxNode
+        public async Task<T> AcceptAsync<T>(SyntaxNode vbNode, SourceTriviaMapKind sourceTriviaMap) where T : CS.CSharpSyntaxNode
         {
-            return await ConvertHandled<T>(vbNode, sourceTriviaMap);
+            return await ConvertHandledAsync<T>(vbNode, sourceTriviaMap);
         }
 
-        public async Task<SeparatedSyntaxList<TOut>> Accept<TIn, TOut>(SeparatedSyntaxList<TIn> vbNodes, SourceTriviaMapKind sourceTriviaMap) where TIn : VBasic.VisualBasicSyntaxNode where TOut : CS.CSharpSyntaxNode
+        public async Task<SeparatedSyntaxList<TOut>> AcceptAsync<TIn, TOut>(SeparatedSyntaxList<TIn> vbNodes, SourceTriviaMapKind sourceTriviaMap) where TIn : VBasic.VisualBasicSyntaxNode where TOut : CS.CSharpSyntaxNode
         {
-            var convertedNodes = await vbNodes.SelectAsync(n => ConvertHandled<TOut>(n, sourceTriviaMap));
+            var convertedNodes = await vbNodes.SelectAsync(n => ConvertHandledAsync<TOut>(n, sourceTriviaMap));
             var convertedSeparators = vbNodes.GetSeparators().Select(s =>
                 CS.SyntaxFactory.Token(CS.SyntaxKind.CommaToken)
                     .WithConvertedTrailingTriviaFrom(s, TriviaKinds.FormattingOnly)
@@ -41,7 +41,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return CS.SyntaxFactory.SeparatedList(convertedNodes, convertedSeparators);
         }
 
-        private async Task<T> ConvertHandled<T>(SyntaxNode vbNode, SourceTriviaMapKind sourceTriviaMap) where T : CS.CSharpSyntaxNode
+        private async Task<T> ConvertHandledAsync<T>(SyntaxNode vbNode, SourceTriviaMapKind sourceTriviaMap) where T : CS.CSharpSyntaxNode
         {
             try {
                 var converted = (T)await _wrappedVisitor.Visit(vbNode);

@@ -13,7 +13,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class VisualBasicConverter
     {
-        public static async Task<SyntaxNode> ConvertCompilationTree(Document document,
+        public static async Task<SyntaxNode> ConvertCompilationTreeAsync(Document document,
             CSharpCompilation csharpViewOfVbSymbols, Project csharpReferenceProject, CancellationToken cancellationToken)
         {
             document = await document.WithExpandedRootAsync(cancellationToken);

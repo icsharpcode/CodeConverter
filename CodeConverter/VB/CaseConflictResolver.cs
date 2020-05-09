@@ -20,12 +20,12 @@ namespace ICSharpCode.CodeConverter.VB
         /// Cases in different named scopes should be dealt with by <seealso cref="DocumentExtensions.ExpandVbAsync"/>.
         /// For names scoped within a type member, see <seealso cref="GetCsLocalSymbolsPerScope"/>.
         /// </remarks>
-        public static async Task<Project> RenameClashingSymbols(Project project)
+        public static async Task<Project> RenameClashingSymbolsAsync(Project project)
         {
             var compilation = await project.GetCompilationAsync();
             var memberRenames = compilation.GlobalNamespace.FollowProperty((INamespaceOrTypeSymbol n) => n.GetMembers().OfType<INamespaceOrTypeSymbol>().Where(s => s.IsDefinedInSource()))
                 .SelectMany(x => GetSymbolsWithNewNames(x, compilation));
-            return await PerformRenames(project, memberRenames.ToList());
+            return await PerformRenamesAsync(project, memberRenames.ToList());
         }
 
         private static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(INamespaceOrTypeSymbol containerSymbol, Compilation compilation)
@@ -107,7 +107,7 @@ namespace ICSharpCode.CodeConverter.VB
             return symbolsWithNewNames;
         }
 
-        private static async Task<Project> PerformRenames(Project project, IReadOnlyCollection<(ISymbol Original, string NewName)> symbolsWithNewNames)
+        private static async Task<Project> PerformRenamesAsync(Project project, IReadOnlyCollection<(ISymbol Original, string NewName)> symbolsWithNewNames)
         {
             var solution = project.Solution;
             foreach (var (originalSymbol, newName) in symbolsWithNewNames) {

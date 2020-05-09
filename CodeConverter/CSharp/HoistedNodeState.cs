@@ -75,7 +75,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.List(functions.Concat(statements));
         }
 
-        public async Task<SyntaxList<StatementSyntax>> CreateLocals(VBasic.VisualBasicSyntaxNode vbNode, IEnumerable<StatementSyntax> csNodes, HashSet<string> generatedNames, SemanticModel semanticModel)
+        public async Task<SyntaxList<StatementSyntax>> CreateLocalsAsync(VBasic.VisualBasicSyntaxNode vbNode, IEnumerable<StatementSyntax> csNodes, HashSet<string> generatedNames, SemanticModel semanticModel)
         {
             var preDeclarations = new List<StatementSyntax>();
             var postAssignments = new List<StatementSyntax>();
