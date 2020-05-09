@@ -47,7 +47,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         public SyntaxList<StatementSyntax> GetPostAssignmentStatements(Microsoft.CodeAnalysis.VisualBasic.Syntax.AssignmentStatementSyntax node, ISymbol potentialPropertySymbol)
         {
-            if (CommonConversions.MustInlinePropertyWithEventsAccess(node, potentialPropertySymbol))
+            if (WinformsConversions.MustInlinePropertyWithEventsAccess(node, potentialPropertySymbol))
             {
                 var fieldName = SyntaxFactory.IdentifierName("_" + potentialPropertySymbol.Name);
                 var handledMethods = _handledMethodsFromPropertyWithEventName[potentialPropertySymbol.Name].ToArray();
