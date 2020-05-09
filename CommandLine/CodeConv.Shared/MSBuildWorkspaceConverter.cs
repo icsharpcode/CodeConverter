@@ -31,7 +31,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
         private AsyncLazy<Solution>? _cachedSolution; //Cached for performance of tests
         private readonly bool _isNetCore;
 
-        public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetCore, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null)
+        public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetCore, JoinableTaskFactory joinableTaskFactory, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null)
         {
             _bestEffortConversion = bestEffortConversion;
             _buildProps = buildProps ?? new Dictionary<string, string>();
@@ -39,7 +39,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
             _buildProps.TryAdd("Platform", "AnyCPU");
             _solutionFilePath = solutionFilePath;
             _isNetCore = isNetCore;
-            _workspace = new AsyncLazy<MSBuildWorkspace>(() => CreateWorkspaceAsync(_buildProps));
+            _workspace = new AsyncLazy<MSBuildWorkspace>(() => CreateWorkspaceAsync(_buildProps), joinableTaskFactory);
         }
 
         public async IAsyncEnumerable<ConversionResult> ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, Language? targetLanguage, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken token)

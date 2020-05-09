@@ -14,6 +14,7 @@ using ICSharpCode.CodeConverter.CommandLine.Util;
 using CodeConv.Shared.Util;
 using System.Reflection;
 using System.Diagnostics;
+using Microsoft.VisualStudio.Threading;
 
 namespace ICSharpCode.CodeConverter.CommandLine
 {
@@ -134,7 +135,8 @@ Remarks:
             }
 
             var properties = ParsedProperties();
-            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionPath, CoreOnlyProjects, BestEffort, properties);
+            var joinableTaskFactory = new JoinableTaskFactory(new JoinableTaskContext());
+            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionPath, CoreOnlyProjects, joinableTaskFactory, BestEffort, properties);
 
             var converterResultsEnumerable = msbuildWorkspaceConverter.ConvertProjectsWhereAsync(ShouldIncludeProject, TargetLanguage, progress, cancellationToken);
             await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, SolutionPath, outputDirectory, Force, true, strProgress, cancellationToken);
