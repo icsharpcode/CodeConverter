@@ -319,6 +319,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         /// <remarks>
         /// Co-ordinates inlining property events, see <see cref="MethodBodyExecutableStatementVisitor.GetPostAssignmentStatements"/>
+        /// Also see usages of IsDesignerGeneratedTypeWithInitializeComponent
         /// </remarks>
         public static bool MustInlinePropertyWithEventsAccess(SyntaxNode anyNodePossiblyWithinMethod, ISymbol potentialPropertySymbol)
         {

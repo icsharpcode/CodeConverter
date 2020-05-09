@@ -533,7 +533,7 @@ public partial class TestHandlesAdded
         // POW_btnV2DBM
         // 
         _POW_btnV2DBM.Location = new System.Drawing.Point(207, 15);
-        _POW_btnV2DBM.Name = ""POW_btnV2DBM"";
+        _POW_btnV2DBM.Name = ""_POW_btnV2DBM"";
         _POW_btnV2DBM.Size = new System.Drawing.Size(42, 23);
         _POW_btnV2DBM.TabIndex = 3;
         _POW_btnV2DBM.Text = "">>"";

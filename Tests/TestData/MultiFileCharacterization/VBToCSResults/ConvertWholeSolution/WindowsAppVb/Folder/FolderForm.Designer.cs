@@ -61,7 +61,7 @@ namespace WindowsAppVb
             // 
             _ToolStrip1.Items.AddRange(new ToolStripItem[] { _ToolStripButton1, _ToolStripButton2, _ToolStripButton3, _ToolStripButton4, _ToolStripButton5, _ToolStripButton6, _ToolStripButton7, _ToolStripButton8, _ToolStripButton9, _ToolStripButton10, _ToolStripButton11, _ToolStripButton12, _ToolStripButton13, _ToolStripButton14, _ToolStripButton15 });
             _ToolStrip1.Location = new Point(0, 0);
-            _ToolStrip1.Name = "ToolStrip1";
+            _ToolStrip1.Name = "_ToolStrip1";
             _ToolStrip1.Size = new Size(621, 25);
             _ToolStrip1.TabIndex = 0;
             _ToolStrip1.Text = "ToolStrip1";
@@ -71,7 +71,7 @@ namespace WindowsAppVb
             _ToolStripButton1.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton1.Image = My.Resources.Resources.test;
             _ToolStripButton1.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton1.Name = "ToolStripButton1";
+            _ToolStripButton1.Name = "_ToolStripButton1";
             _ToolStripButton1.Size = new Size(23, 22);
             _ToolStripButton1.Text = "ToolStripButton1";
             // 
@@ -80,7 +80,7 @@ namespace WindowsAppVb
             _ToolStripButton2.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton2.Image = My.Resources.Resources.test2;
             _ToolStripButton2.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton2.Name = "ToolStripButton2";
+            _ToolStripButton2.Name = "_ToolStripButton2";
             _ToolStripButton2.Size = new Size(23, 22);
             _ToolStripButton2.Text = "ToolStripButton2";
             // 
@@ -89,7 +89,7 @@ namespace WindowsAppVb
             _ToolStripButton3.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton3.Image = My.Resources.Resources.test3;
             _ToolStripButton3.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton3.Name = "ToolStripButton3";
+            _ToolStripButton3.Name = "_ToolStripButton3";
             _ToolStripButton3.Size = new Size(23, 22);
             _ToolStripButton3.Text = "ToolStripButton3";
             // 
@@ -98,7 +98,7 @@ namespace WindowsAppVb
             _ToolStripButton4.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton4.Image = My.Resources.Resource1.test;
             _ToolStripButton4.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton4.Name = "ToolStripButton4";
+            _ToolStripButton4.Name = "_ToolStripButton4";
             _ToolStripButton4.Size = new Size(23, 22);
             _ToolStripButton4.Text = "ToolStripButton4";
             // 
@@ -107,7 +107,7 @@ namespace WindowsAppVb
             _ToolStripButton5.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton5.Image = My.Resources.Resource1.test2;
             _ToolStripButton5.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton5.Name = "ToolStripButton5";
+            _ToolStripButton5.Name = "_ToolStripButton5";
             _ToolStripButton5.Size = new Size(23, 22);
             _ToolStripButton5.Text = "ToolStripButton5";
             // 
@@ -116,7 +116,7 @@ namespace WindowsAppVb
             _ToolStripButton6.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton6.Image = My.Resources.Resource1.test3;
             _ToolStripButton6.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton6.Name = "ToolStripButton6";
+            _ToolStripButton6.Name = "_ToolStripButton6";
             _ToolStripButton6.Size = new Size(23, 22);
             _ToolStripButton6.Text = "ToolStripButton6";
             // 
@@ -125,7 +125,7 @@ namespace WindowsAppVb
             _ToolStripButton7.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton7.Image = (Image)resources.GetObject("ToolStripButton7.Image");
             _ToolStripButton7.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton7.Name = "ToolStripButton7";
+            _ToolStripButton7.Name = "_ToolStripButton7";
             _ToolStripButton7.Size = new Size(23, 22);
             _ToolStripButton7.Text = "ToolStripButton7";
             // 
@@ -134,7 +134,7 @@ namespace WindowsAppVb
             _ToolStripButton8.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton8.Image = (Image)resources.GetObject("ToolStripButton8.Image");
             _ToolStripButton8.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton8.Name = "ToolStripButton8";
+            _ToolStripButton8.Name = "_ToolStripButton8";
             _ToolStripButton8.Size = new Size(23, 22);
             _ToolStripButton8.Text = "ToolStripButton8";
             // 
@@ -143,7 +143,7 @@ namespace WindowsAppVb
             _ToolStripButton9.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton9.Image = (Image)resources.GetObject("ToolStripButton9.Image");
             _ToolStripButton9.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton9.Name = "ToolStripButton9";
+            _ToolStripButton9.Name = "_ToolStripButton9";
             _ToolStripButton9.Size = new Size(23, 22);
             _ToolStripButton9.Text = "ToolStripButton9";
             // 
@@ -152,7 +152,7 @@ namespace WindowsAppVb
             _ToolStripButton10.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton10.Image = (Image)resources.GetObject("ToolStripButton10.Image");
             _ToolStripButton10.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton10.Name = "ToolStripButton10";
+            _ToolStripButton10.Name = "_ToolStripButton10";
             _ToolStripButton10.Size = new Size(23, 22);
             _ToolStripButton10.Text = "ToolStripButton10";
             // 
@@ -161,7 +161,7 @@ namespace WindowsAppVb
             _ToolStripButton11.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton11.Image = (Image)resources.GetObject("ToolStripButton11.Image");
             _ToolStripButton11.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton11.Name = "ToolStripButton11";
+            _ToolStripButton11.Name = "_ToolStripButton11";
             _ToolStripButton11.Size = new Size(23, 22);
             _ToolStripButton11.Text = "ToolStripButton11";
             // 
@@ -170,7 +170,7 @@ namespace WindowsAppVb
             _ToolStripButton12.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton12.Image = (Image)resources.GetObject("ToolStripButton12.Image");
             _ToolStripButton12.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton12.Name = "ToolStripButton12";
+            _ToolStripButton12.Name = "_ToolStripButton12";
             _ToolStripButton12.Size = new Size(23, 22);
             _ToolStripButton12.Text = "ToolStripButton12";
             // 
@@ -179,7 +179,7 @@ namespace WindowsAppVb
             _ToolStripButton13.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton13.Image = (Image)resources.GetObject("ToolStripButton13.Image");
             _ToolStripButton13.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton13.Name = "ToolStripButton13";
+            _ToolStripButton13.Name = "_ToolStripButton13";
             _ToolStripButton13.Size = new Size(23, 22);
             _ToolStripButton13.Text = "ToolStripButton13";
             // 
@@ -188,7 +188,7 @@ namespace WindowsAppVb
             _ToolStripButton14.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton14.Image = (Image)resources.GetObject("ToolStripButton14.Image");
             _ToolStripButton14.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton14.Name = "ToolStripButton14";
+            _ToolStripButton14.Name = "_ToolStripButton14";
             _ToolStripButton14.Size = new Size(23, 22);
             _ToolStripButton14.Text = "ToolStripButton14";
             // 
@@ -197,7 +197,7 @@ namespace WindowsAppVb
             _ToolStripButton15.DisplayStyle = ToolStripItemDisplayStyle.Image;
             _ToolStripButton15.Image = (Image)resources.GetObject("ToolStripButton15.Image");
             _ToolStripButton15.ImageTransparentColor = Color.Magenta;
-            _ToolStripButton15.Name = "ToolStripButton15";
+            _ToolStripButton15.Name = "_ToolStripButton15";
             _ToolStripButton15.Size = new Size(23, 22);
             _ToolStripButton15.Text = "ToolStripButton15";
             // 

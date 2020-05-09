@@ -209,7 +209,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var constructorFieldInitializersFromOtherParts = GetConstructorFieldInitializersFromOtherParts(namedTypeSymbol);
                 additionalInitializers.AdditionalInstanceInitializers.AddRange(constructorFieldInitializersFromOtherParts);
                 if (requiresInitializeComponent) {
-                    // Constructor event handlers not required since they'll be inside InitializeComponent
+                    // Constructor event handlers not required since they'll be inside InitializeComponent - see other use of IsDesignerGeneratedTypeWithInitializeComponent
                     directlyConvertedMembers = directlyConvertedMembers.Concat(methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
                 } else {
                     additionalInitializers.AdditionalInstanceInitializers.AddRange(methodsWithHandles.GetConstructorEventHandlers());
@@ -929,6 +929,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var visualBasicSyntaxVisitor = await CreateMethodBodyVisitorAsync(node, node.IsIterator(), csReturnVariableOrNull);
             var convertedStatements = await ConvertStatementsAsync(node.Statements, visualBasicSyntaxVisitor);
 
+            //  Just class events - for property events, see other use of IsDesignerGeneratedTypeWithInitializeComponent
             if (node.SubOrFunctionStatement.Identifier.Text == "InitializeComponent" && node.SubOrFunctionStatement.IsKind(VBasic.SyntaxKind.SubStatement) && declaredSymbol.ContainingType.IsDesignerGeneratedTypeWithInitializeComponent(_vbCompilation)) {
                 var firstResumeLayout = convertedStatements.Statements.FirstOrDefault(IsThisResumeLayoutInvocation) ?? convertedStatements.Statements.Last();
                 convertedStatements = convertedStatements.InsertNodesBefore(firstResumeLayout, _typeContext.MethodsWithHandles.GetInitializeComponentClassEventHandlers());

@@ -53,7 +53,7 @@ namespace WindowsAppVb
             // Button1
             // 
             _Button1.Location = new Point(95, 80);
-            _Button1.Name = "Button1";
+            _Button1.Name = "_Button1";
             _Button1.Size = new Size(75, 23);
             _Button1.TabIndex = 0;
             _Button1.Text = "Button1";
@@ -63,7 +63,7 @@ namespace WindowsAppVb
             // 
             _CheckBox1.AutoSize = true;
             _CheckBox1.Location = new Point(89, 28);
-            _CheckBox1.Name = "CheckBox1";
+            _CheckBox1.Name = "_CheckBox1";
             _CheckBox1.Size = new Size(81, 17);
             _CheckBox1.TabIndex = 1;
             _CheckBox1.Text = "CheckBox1";
@@ -72,7 +72,7 @@ namespace WindowsAppVb
             // Button2
             // 
             _Button2.Location = new Point(95, 110);
-            _Button2.Name = "Button2";
+            _Button2.Name = "_Button2";
             _Button2.Size = new Size(75, 23);
             _Button2.TabIndex = 2;
             _Button2.Text = "Show resources";

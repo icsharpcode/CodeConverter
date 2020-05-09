@@ -272,7 +272,20 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (TypeConversionAnalyzer.ConvertStringToCharLiteral(node, typeInfo.Type, convertedType, out char chr)) {
                 return CommonConversions.Literal(chr);
             }
-            return CommonConversions.Literal(node.Token.Value, node.Token.Text, convertedType);
+
+
+            var val = node.Token.Value;
+            var text = node.Token.Text;
+            if (node.Parent is VBSyntax.AssignmentStatementSyntax assignment && CommonConversions.InMethodCalledInitializeComponent(node.Parent) &&
+                assignment.Left is VBSyntax.MemberAccessExpressionSyntax maes && !(maes.Expression is VBSyntax.MeExpressionSyntax) &&
+                maes.Name.ToString() == "Name" &&
+                val is string valStr) {
+                    // Update name so field is regenerated correctly by winforms designer
+                    val = "_" + valStr;
+                    text = "\"_" + valStr + "\"";
+            }
+
+            return CommonConversions.Literal(val, text, convertedType);
         }
 
         public override async Task<CSharpSyntaxNode> VisitInterpolation(VBasic.Syntax.InterpolationSyntax node)
