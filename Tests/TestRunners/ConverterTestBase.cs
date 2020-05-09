@@ -183,9 +183,9 @@ End Sub";
             return await baseConversion.CreateProjectContentsConverter(project, progress, cancellationToken);
         }
 
-        Document ILanguageConversion.CreateProjectDocumentFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
+        async Task<Document> ILanguageConversion.CreateProjectDocumentFromTreeAsync(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
-            return baseConversion.CreateProjectDocumentFromTree(tree, references);
+            return await baseConversion.CreateProjectDocumentFromTreeAsync(tree, references);
         }
 
         SyntaxTree ILanguageConversion.CreateTree(string text) {

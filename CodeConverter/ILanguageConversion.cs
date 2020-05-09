@@ -27,6 +27,6 @@ namespace ICSharpCode.CodeConverter
         Task<IProjectContentsConverter> CreateProjectContentsConverter(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken);
         string PostTransformProjectFile(string xml);
 
-        Document CreateProjectDocumentFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references);
+        Task<Document> CreateProjectDocumentFromTreeAsync(SyntaxTree tree, IEnumerable<MetadataReference> references);
     }
 }

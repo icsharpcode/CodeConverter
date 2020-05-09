@@ -12,6 +12,7 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.VisualStudio.Threading;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
@@ -46,7 +47,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
             var syntaxTree = languageConversion.MakeFullCompilationUnit(text, out var textSpan);
             if (textSpan.HasValue) conversionOptions.SelectedTextSpan = textSpan.Value;
-            var document = languageConversion.CreateProjectDocumentFromTree(syntaxTree, conversionOptions.References);
+            var document = await languageConversion.CreateProjectDocumentFromTreeAsync(syntaxTree, conversionOptions.References);
             return await ConvertSingle<TLanguageConversion>(document, conversionOptions, progress, cancellationToken);
         }
 
@@ -343,6 +344,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private static async Task<IDisposable> RoslynEntryPoint(IProgress<ConversionProgress> progress)
         {
+            JoinableTaskFactorySingleton.EnsureInitialized();
             await new SynchronizationContextRemover();
             return RoslynCrashPreventer.Create(LogError);
 

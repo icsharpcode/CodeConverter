@@ -164,16 +164,16 @@ End Class";
             return new VisualBasicCompiler(ConversionOptions.RootNamespaceOverride);
         }
 
-        public Document CreateProjectDocumentFromTree(SyntaxTree tree, IEnumerable<MetadataReference> references)
+        public async Task<Document> CreateProjectDocumentFromTreeAsync(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
-            var project = CreateEmptyVbProject(references);
+            var project = await CreateEmptyVbProjectAsync(references);
             return project.AddDocumentFromTree(tree);
         }
 
-        private Project CreateEmptyVbProject(IEnumerable<MetadataReference> references)
+        private async Task<Project> CreateEmptyVbProjectAsync(IEnumerable<MetadataReference> references)
         {
-            return VisualBasicCompiler.CreateCompilationOptions(ConversionOptions.RootNamespaceOverride)
-                            .CreateProject(references, VisualBasicParseOptions.Default, ISymbolExtensions.ForcePartialTypesAssemblyName);
+            return await VisualBasicCompiler.CreateCompilationOptions(ConversionOptions.RootNamespaceOverride)
+                            .CreateProjectAsync(references, VisualBasicParseOptions.Default, ISymbolExtensions.ForcePartialTypesAssemblyName);
         }
     }
 }

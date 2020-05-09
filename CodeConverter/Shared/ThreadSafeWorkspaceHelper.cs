@@ -20,7 +20,10 @@ namespace ICSharpCode.CodeConverter.Shared
         /// <summary>
         /// Empty solution in an adhoc workspace
         /// </summary>
-        public static Solution EmptyAdhocSolution => _emptyAdhocSolution.GetAwaiter().GetResult();
+        public static AsyncLazy<Solution> EmptyAdhocSolution { get; } = new AsyncLazy<Solution>(async () => {
+            var hostServices = await CreateHostServicesAsync(MefHostServices.DefaultAssemblies);
+            return new AdhocWorkspace(hostServices).CurrentSolution;
+        }, JoinableTaskFactorySingleton.Instance);
 
         /// <summary>
         /// Use this in all workspace creation
@@ -41,15 +44,5 @@ namespace ICSharpCode.CodeConverter.Shared
             var runtimeComposition = RuntimeComposition.CreateRuntimeComposition(configuration);
             return runtimeComposition.CreateExportProviderFactory();
         }
-
-        /// <summary>
-        /// Empty solution in an adhoc workspace
-        /// </summary>
-        private static Task<Solution> _emptyAdhocSolution =
-            Task.Run(async () => {
-                var hostServices = await CreateHostServicesAsync(MefHostServices.DefaultAssemblies);
-                return new AdhocWorkspace(hostServices).CurrentSolution;
-            });
-        
     }
 }
