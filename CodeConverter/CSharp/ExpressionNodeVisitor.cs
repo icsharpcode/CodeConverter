@@ -237,15 +237,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.Argument(expressionSyntax))));
             }
 
-            var convertMethodForKeywordOrNull = GetConvertMethodForKeywordOrNull(node);
-
-            return convertMethodForKeywordOrNull != null ? (ExpressionSyntax)
-                SyntaxFactory.InvocationExpression(convertMethodForKeywordOrNull,
-                    SyntaxFactory.ArgumentList(
-                        SyntaxFactory.SingletonSeparatedList(
-                            SyntaxFactory.Argument(expressionSyntax)))
-                ) // Hopefully will be a compile error if it's wrong
-                : ValidSyntaxFactory.CastExpression(SyntaxFactory.PredefinedType(node.Keyword.ConvertToken()), expressionSyntax);
+            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, expressionSyntax, true, false, forceTargetType: _semanticModel.GetTypeInfo(node).Type);
         }
 
         public override async Task<CSharpSyntaxNode> VisitTryCastExpression(VBasic.Syntax.TryCastExpressionSyntax node)

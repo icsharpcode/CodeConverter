@@ -512,7 +512,6 @@ public partial class Class1
         Next
     End Sub
 End Class", @"using System;
-using Microsoft.VisualBasic.CompilerServices;
 
 internal partial class TestClass
 {
@@ -521,7 +520,7 @@ internal partial class TestClass
         string stringValue = ""42"";
         for (int i = 1, loopTo = 10 - stringValue.Length; i <= loopTo; i++)
         {
-            stringValue = stringValue + "" "" + Conversions.ToString(i);
+            stringValue = stringValue + "" "" + i.ToString();
             Console.WriteLine(stringValue);
         }
     }

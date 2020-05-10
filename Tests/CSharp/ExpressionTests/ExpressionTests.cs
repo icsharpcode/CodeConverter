@@ -1023,7 +1023,7 @@ internal partial class TestClass
         object test(object a) => a * 2;
         object test2(object a, object b)
         {
-            if (Conversions.ToBoolean(b > 0))
+            if (Conversions.ToBoolean(b > (object)0))
                 return a / b;
             return 0;
         };
@@ -1032,8 +1032,8 @@ internal partial class TestClass
     }
 }
 4 target compilation errors:
-CS0019: Operator '*' cannot be applied to operands of type 'object' and 'int'
-CS0019: Operator '>' cannot be applied to operands of type 'object' and 'int'
+CS0019: Operator '*' cannot be applied to operands of type 'object' and 'object'
+CS0019: Operator '>' cannot be applied to operands of type 'object' and 'object'
 CS0019: Operator '/' cannot be applied to operands of type 'object' and 'object'
 CS0019: Operator '%' cannot be applied to operands of type 'object' and 'object'");
         }

@@ -196,7 +196,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 // e.g. sbyte * ulong uses the decimal * operator in VB. In C# it's ambiguous - see ExpressionTests.vb "TestMul".
                 typeConversionKind = TypeConversionKind.NonDestructiveCast;
                 return true;
-            } else if (csConversion.IsExplicit && csConversion.IsEnumeration) {
+            } else if (csConversion.IsExplicit && csConversion.IsEnumeration || csConversion.IsBoxing) {
                 typeConversionKind = TypeConversionKind.NonDestructiveCast;
                 return true;
             } else if (isArithmetic) {

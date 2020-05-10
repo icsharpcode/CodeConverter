@@ -327,6 +327,19 @@ internal partial class CharTestClass
         }
 
         [Fact]
+        public async Task TestSingleCharacterStringLiteralBecomesChar_WhenExplictCastAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Class ExplicitCastClass
+    Dim wordArray As String() = 1.ToString().Split(CChar("",""))
+End Class", @"
+internal partial class ExplicitCastClass
+{
+    private string[] wordArray = 1.ToString().Split(',');
+}");
+        }
+
+        [Fact]
         public async Task TestCastHasBracketsWhenElementAccessAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
@@ -341,6 +354,52 @@ internal partial class TestCastHasBracketsWhenElementAccess
     private int Casting(object sender)
     {
         return Conversions.ToInteger(((object[])sender)[0]);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task MultipleNestedCastsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class MultipleCasts
+    Public Shared Function ToGenericParameter(Of T)(Value As Object) As T
+        If Value Is Nothing Then
+            Return Nothing
+        End If
+        Dim reflectedType As Global.System.Type = GetType(T)
+        If Global.System.Type.Equals(reflectedType, GetType(Global.System.Int16)) Then
+            Return DirectCast(CObj(CShort(Value)), T)
+        ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.UInt64)) Then
+            Return DirectCast(CObj(CULng(Value)), T)
+        Else
+            Return DirectCast(Value, T)
+        End If
+    End Function
+End Class", @"using Microsoft.VisualBasic.CompilerServices;
+
+public partial class MultipleCasts
+{
+    public static T ToGenericParameter<T>(object Value)
+    {
+        if (Value is null)
+        {
+            return default;
+        }
+
+        var reflectedType = typeof(T);
+        if (Equals(reflectedType, typeof(short)))
+        {
+            return (T)(object)Conversions.ToShort(Value);
+        }
+        else if (Equals(reflectedType, typeof(ulong)))
+        {
+            return (T)(object)Conversions.ToULong(Value);
+        }
+        else
+        {
+            return (T)Value;
+        }
     }
 }");
         }

@@ -95,7 +95,7 @@ namespace ICSharpCode.CodeConverter.Shared
             await foreach (var result in results) yield return result;
         }
 
-        /// <remarks>Perf: Keep lazy so that we don't keep all files in memory at once</remarks>
+        /// <remarks>Perf: Keep lazy so that we don't keep an extra copy of all files in memory at once</remarks>
         private static async IAsyncEnumerable<ConversionResult> WithProjectFile(IProjectContentsConverter projectContentsConverter, ILanguageConversion languageConversion, ImmutableHashSet<string> originalSourcePaths, IAsyncEnumerable<ConversionResult> convertProjectContents, (string Find, string Replace, bool FirstOnly)[] replacements)
         {
             var project = projectContentsConverter.Project;
