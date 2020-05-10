@@ -276,13 +276,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var val = node.Token.Value;
             var text = node.Token.Text;
-            if (node.Parent is VBSyntax.AssignmentStatementSyntax assignment && CommonConversions.InMethodCalledInitializeComponent(node.Parent) &&
-                assignment.Left is VBSyntax.MemberAccessExpressionSyntax maes && !(maes.Expression is VBSyntax.MeExpressionSyntax) &&
-                maes.Name.ToString() == "Name" &&
-                val is string valStr) {
-                    // Update name so field is regenerated correctly by winforms designer
-                    val = "_" + valStr;
-                    text = "\"_" + valStr + "\"";
+            if (WinformsConversions.ShouldPrefixAssignedNameWithUnderscore(node.Parent as VBSyntax.AssignmentStatementSyntax) && val is string valStr) {
+                val = "_" + valStr;
+                text = "\"_" + valStr + "\"";
             }
 
             return CommonConversions.Literal(val, text, convertedType);

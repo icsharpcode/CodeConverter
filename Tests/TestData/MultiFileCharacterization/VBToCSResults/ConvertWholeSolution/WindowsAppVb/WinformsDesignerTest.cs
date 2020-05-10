@@ -8,6 +8,9 @@ namespace WindowsAppVb
         public WinformsDesignerTest()
         {
             InitializeComponent();
+            _Button1.Name = "Button1";
+            _CheckBox1.Name = "CheckBox1";
+            _Button2.Name = "Button2";
         }
 
         private void Button1_Click(object sender, EventArgs e)

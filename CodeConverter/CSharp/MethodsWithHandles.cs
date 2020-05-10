@@ -47,7 +47,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         public SyntaxList<StatementSyntax> GetPostAssignmentStatements(Microsoft.CodeAnalysis.VisualBasic.Syntax.AssignmentStatementSyntax node, ISymbol potentialPropertySymbol)
         {
-            if (CommonConversions.MustInlinePropertyWithEventsAccess(node, potentialPropertySymbol))
+            if (WinformsConversions.MustInlinePropertyWithEventsAccess(node, potentialPropertySymbol))
             {
                 var fieldName = SyntaxFactory.IdentifierName("_" + potentialPropertySymbol.Name);
                 var handledMethods = _handledMethodsFromPropertyWithEventName[potentialPropertySymbol.Name].ToArray();
@@ -67,7 +67,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return _methodWithHandleses.SelectMany(m => m.GetInitializeComponentClassEventHandlers()).ToArray();
         }
 
-        public (ExpressionSyntax EventField, SyntaxKind AssignmentKind, ExpressionSyntax HandlerId)[] GetConstructorEventHandlers()
+        public Assignment[] GetConstructorEventHandlers()
         {
             return _methodWithHandleses.SelectMany(m => m.GetConstructorEventHandlers()).ToArray();
         }

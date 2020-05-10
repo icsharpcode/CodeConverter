@@ -5,19 +5,18 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    public class AdditionalInitializers
+    internal class AdditionalInitializers
     {
         public AdditionalInitializers(bool shouldAddTypeWideInitToThisPart)
         {
             ShouldAddTypeWideInitToThisPart = shouldAddTypeWideInitToThisPart;
         }
 
-        public List<(ExpressionSyntax Field, SyntaxKind AssignmentKind, ExpressionSyntax Initializer)> AdditionalStaticInitializers { get; } = new List<(ExpressionSyntax, SyntaxKind, ExpressionSyntax)>();
-        public List<(ExpressionSyntax Field, SyntaxKind AssignmentKind, ExpressionSyntax Initializer)> AdditionalInstanceInitializers { get; } = new List<(ExpressionSyntax, SyntaxKind, ExpressionSyntax)>();
+        public List<Assignment> AdditionalStaticInitializers { get; } = new List<Assignment>();
+        public List<Assignment> AdditionalInstanceInitializers { get; } = new List<Assignment>();
         public bool ShouldAddTypeWideInitToThisPart { get; }
 
         public IReadOnlyCollection<MemberDeclarationSyntax> WithAdditionalInitializers(ITypeSymbol parentType,
@@ -40,7 +39,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         private List<MemberDeclarationSyntax> WithAdditionalInitializers(List<MemberDeclarationSyntax> convertedMembers,
-            SyntaxToken convertIdentifier, IReadOnlyCollection<(ExpressionSyntax Field, SyntaxKind AssignmentKind, ExpressionSyntax Initializer)> additionalInitializers,
+            SyntaxToken convertIdentifier, IReadOnlyCollection<Assignment> additionalInitializers,
             SyntaxTokenList modifiers, IEnumerable<ConstructorDeclarationSyntax> constructorsEnumerable, bool addConstructor, bool addedConstructorRequiresInitializeComponent)
         {
             if (!additionalInitializers.Any() && (!addConstructor || !addedConstructorRequiresInitializeComponent)) return convertedMembers;
@@ -64,17 +63,23 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         private ConstructorDeclarationSyntax WithAdditionalInitializers(ConstructorDeclarationSyntax oldConstructor,
-            IReadOnlyCollection<(ExpressionSyntax Field, SyntaxKind AssignmentKind, ExpressionSyntax Initializer)> additionalConstructorAssignments)
+            IReadOnlyCollection<Assignment> additionalConstructorAssignments)
         {
-            var initializerStatements = additionalConstructorAssignments.Select(assignment =>
-                SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(
-                    assignment.AssignmentKind, assignment.Field, assignment.Initializer))
-            ).ToList();
+            var preInitializerStatements = CreateAssignmentStatement(additionalConstructorAssignments.Where(x => !x.PostAssignment));
+            var postInitializerStatements = CreateAssignmentStatement(additionalConstructorAssignments.Where(x => x.PostAssignment));
             var oldConstructorBody = oldConstructor.Body ?? SyntaxFactory.Block(SyntaxFactory.ExpressionStatement(oldConstructor.ExpressionBody.Expression));
             var newConstructor = oldConstructor.WithBody(oldConstructorBody.WithStatements(
-                oldConstructorBody.Statements.InsertRange(0, initializerStatements)));
+                oldConstructorBody.Statements.InsertRange(0, preInitializerStatements).AddRange(postInitializerStatements)));
 
             return newConstructor;
+        }
+
+        private static List<ExpressionStatementSyntax> CreateAssignmentStatement(IEnumerable<Assignment> additionalConstructorAssignments)
+        {
+            return additionalConstructorAssignments.Select(assignment =>
+                            SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(
+                                assignment.AssignmentKind, assignment.Field, assignment.Initializer))
+                        ).ToList();
         }
     }
 }

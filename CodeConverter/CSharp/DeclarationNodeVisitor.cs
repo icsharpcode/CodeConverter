@@ -206,11 +206,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             var requiresInitializeComponent = namedTypeSymbol.IsDesignerGeneratedTypeWithInitializeComponent(_vbCompilation);
 
             if (shouldAddTypeWideInitToThisPart) {
-                var constructorFieldInitializersFromOtherParts = GetConstructorFieldInitializersFromOtherParts(namedTypeSymbol);
+                var otherPartsOfType = GetAllPartsOfType(parentType, namedTypeSymbol).ToArray();
+                var constructorFieldInitializersFromOtherParts = otherPartsOfType
+                    .Where(t => (!Equals(t.Type.SyntaxTree.FilePath, _semanticModel.SyntaxTree.FilePath) || !t.Type.Span.Equals(parentType.Span)))
+                    .SelectMany(r => GetFieldsIdentifiersWithInitializer(r.Type, r.SemanticModel));
                 additionalInitializers.AdditionalInstanceInitializers.AddRange(constructorFieldInitializersFromOtherParts);
                 if (requiresInitializeComponent) {
                     // Constructor event handlers not required since they'll be inside InitializeComponent - see other use of IsDesignerGeneratedTypeWithInitializeComponent
-                    directlyConvertedMembers = directlyConvertedMembers.Concat(methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
+                    directlyConvertedMembers = directlyConvertedMembers
+                        .Concat(methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
+                    additionalInitializers.AdditionalInstanceInitializers
+                        .AddRange(WinformsConversions.GetNameAssignments(otherPartsOfType));
                 } else {
                     additionalInitializers.AdditionalInstanceInitializers.AddRange(methodsWithHandles.GetConstructorEventHandlers());
                 }
@@ -231,16 +237,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        private IEnumerable<(ExpressionSyntax, CSSyntaxKind SimpleAssignmentExpression, ExpressionSyntax)> GetConstructorFieldInitializersFromOtherParts(ITypeSymbol parentType)
+        private IEnumerable<(VBSyntax.TypeBlockSyntax Type, SemanticModel SemanticModel)> GetAllPartsOfType(VBSyntax.TypeBlockSyntax parentTypeBlock, ITypeSymbol parentType)
         {
             return parentType.DeclaringSyntaxReferences
-                .Where(r => !Equals(r.SyntaxTree.FilePath, _semanticModel.SyntaxTree.FilePath))
-                .Select(t => (Type: t.GetSyntax().Parent as VBSyntax.TypeBlockSyntax, SemanticModel: _vbCompilation.GetSemanticModel(t.SyntaxTree)))
-                .Where(t => t.Type != null)
-                .SelectMany(r => GetFieldsIdentifiersWithInitializer(r.Type, r.SemanticModel));
+                            .Select(t => t.GetSyntax().Parent as VBSyntax.TypeBlockSyntax)
+                            .Where(t => t != null)
+                            .Select(t => (Type: t, SemanticModel: _vbCompilation.GetSemanticModel(t.SyntaxTree)));
         }
 
-        private IEnumerable<(ExpressionSyntax, CSSyntaxKind SimpleAssignmentExpression, ExpressionSyntax)> GetFieldsIdentifiersWithInitializer(VBSyntax.TypeBlockSyntax tbs, SemanticModel semanticModel)
+        private IEnumerable<Assignment> GetFieldsIdentifiersWithInitializer(VBSyntax.TypeBlockSyntax tbs, SemanticModel semanticModel)
         {
             return tbs.Members.OfType<VBSyntax.FieldDeclarationSyntax>()
                 .SelectMany(f => f.Declarators.SelectMany(d => d.Names.Select(n => (n, d.Initializer))))
@@ -248,7 +253,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Select(f => CreateInitializer(f));
         }
 
-        private (ExpressionSyntax, CSSyntaxKind SimpleAssignmentExpression, ExpressionSyntax) CreateInitializer((VBSyntax.ModifiedIdentifierSyntax n, VBSyntax.EqualsValueSyntax Initializer) f)
+        private Assignment CreateInitializer((VBSyntax.ModifiedIdentifierSyntax n, VBSyntax.EqualsValueSyntax Initializer) f)
         {
             var csId = CommonConversions.ConvertIdentifier(f.n.Identifier);
             string initializerFunctionName = CommonConversions.GetInitialValueFunctionName(f.n);

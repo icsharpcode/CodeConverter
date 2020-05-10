@@ -12,6 +12,22 @@ namespace WindowsAppVb
         public FolderForm()
         {
             InitializeComponent();
+            _ToolStrip1.Name = "ToolStrip1";
+            _ToolStripButton1.Name = "ToolStripButton1";
+            _ToolStripButton2.Name = "ToolStripButton2";
+            _ToolStripButton3.Name = "ToolStripButton3";
+            _ToolStripButton4.Name = "ToolStripButton4";
+            _ToolStripButton5.Name = "ToolStripButton5";
+            _ToolStripButton6.Name = "ToolStripButton6";
+            _ToolStripButton7.Name = "ToolStripButton7";
+            _ToolStripButton8.Name = "ToolStripButton8";
+            _ToolStripButton9.Name = "ToolStripButton9";
+            _ToolStripButton10.Name = "ToolStripButton10";
+            _ToolStripButton11.Name = "ToolStripButton11";
+            _ToolStripButton12.Name = "ToolStripButton12";
+            _ToolStripButton13.Name = "ToolStripButton13";
+            _ToolStripButton14.Name = "ToolStripButton14";
+            _ToolStripButton15.Name = "ToolStripButton15";
         }
 
         private void FolderForm_Load(object sender, EventArgs e)
