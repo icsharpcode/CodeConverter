@@ -87,7 +87,7 @@ public partial class Issue213
 
     Sub Bar(x as Integer)
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {
@@ -116,7 +116,7 @@ public partial class Class1
         Foo(0)
     End Sub
 End Class",
-@"using Microsoft.VisualBasic;
+@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {
@@ -1014,7 +1014,7 @@ internal partial class TestClass
         Dim test3 = Function(a, b) a Mod b
         test(3)
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestClass
 {
@@ -1128,7 +1128,7 @@ internal partial class TestClass : TestClassBase
     Public Function TestMethod() As String
          Return vbCrLf
     End Function
-End Class", @"using Microsoft.VisualBasic;
+End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestClass
 {
@@ -1332,7 +1332,7 @@ public partial class Foo
     Sub Foo()
         Dim x = DateAdd(""m"", 5, Now)
     End Sub
-End Class", @"using Microsoft.VisualBasic;
+End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {
@@ -1366,7 +1366,7 @@ public partial class Class1
     Sub Main()
         Dim x = Microsoft.VisualBasic.Timer
     End Sub
-End Module", @"using Microsoft.VisualBasic;
+End Module", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 internal static partial class Module1
 {
@@ -1384,7 +1384,7 @@ internal static partial class Module1
     Sub Main()
         Dim x As Short = If(True, CShort(50), 100S)
     End Sub
-End Module", @"using Microsoft.VisualBasic.CompilerServices;
+End Module", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal static partial class Module1
 {

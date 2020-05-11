@@ -445,7 +445,7 @@ internal partial class TestClass
             End If
         End Set
     End Property
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {

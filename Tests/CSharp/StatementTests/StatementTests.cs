@@ -1595,7 +1595,7 @@ public partial class TestClass
                 Return ""e""
         End Select
     End Function
-End Class", @"using Microsoft.VisualBasic;
+End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class TestClass
 {
@@ -1657,7 +1657,7 @@ CS0825: The contextual keyword 'var' may only appear within a local variable dec
         Return True
     End Function
 End Class", @"using System;
-using Microsoft.VisualBasic;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class TestClass2
 {

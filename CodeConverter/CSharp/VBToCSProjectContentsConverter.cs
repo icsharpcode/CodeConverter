@@ -37,7 +37,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public string RootNamespace => _conversionOptions.RootNamespaceOverride ??
-                                       ((VisualBasicCompilationOptions)Project.CompilationOptions).RootNamespace;
+                                       ((VisualBasicCompilationOptions)SourceProject.CompilationOptions).RootNamespace;
 
         public async Task InitializeSourceAsync(Project project)
         {
@@ -46,13 +46,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csharpReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(cSharpCompilationOptions, CSharpCompiler.ParseOptions);
             _csharpViewOfVbSymbols = (CSharpCompilation) await _csharpReferenceProject.GetCompilationAsync(_cancellationToken);
             _designerToResxRelativePath = project.ReadVbEmbeddedResources().ToDictionary(r => r.LastGenOutput, r => r.RelativePath);
-            Project = await project.WithAdditionalDocs(_designerToResxRelativePath.Values)
+            SourceProject = await project.WithAdditionalDocs(_designerToResxRelativePath.Values)
                         .WithRenamedMergedMyNamespaceAsync(_cancellationToken);
         }
 
         public string LanguageVersion { get { return LangVersion.Latest.ToDisplayString(); } }
 
-        public Project Project { get; private set; }
+        public Project SourceProject { get; private set; }
 
         public async Task<SyntaxNode> SingleFirstPassAsync(Document document)
         {
@@ -61,7 +61,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProjectAsync(WipFileConversion<SyntaxNode>[] firstPassResults)
         {
-            var projDirPath = Project.GetDirectoryPath();
+            var projDirPath = SourceProject.GetDirectoryPath();
             var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults.Select(r => r.WithTargetPath(GetTargetPath(projDirPath, r))).ToArray());
             return (await project.RenameMergedNamespacesAsync(_cancellationToken), docIds);
         }
@@ -78,7 +78,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public async IAsyncEnumerable<ConversionResult> GetAdditionalConversionResults(IReadOnlyCollection<TextDocument> additionalDocumentsToConvert, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            string projDirPath = Project.GetDirectoryPath();
+            string projDirPath = SourceProject.GetDirectoryPath();
             foreach (var doc in additionalDocumentsToConvert) {
                 string newPath = Path.Combine(projDirPath, Path.GetFileName(doc.FilePath));
                 if (newPath != doc.FilePath) {

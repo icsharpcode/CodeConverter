@@ -44,7 +44,7 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
         public string RootNamespace { get; }
-        public Project Project { get; private set; }
+        public Project SourceProject { get; private set; }
 
         public string LanguageVersion { get { return _vbParseOptions.LanguageVersion.ToDisplayString(); } }
 
@@ -57,7 +57,7 @@ namespace ICSharpCode.CodeConverter.VB
             _convertedVbProject = project.ToProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
             _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
             _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync(_cancellationToken);
-            Project = project;
+            SourceProject = project;
         }
 
         public async Task<SyntaxNode> SingleFirstPassAsync(Document document)

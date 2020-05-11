@@ -542,7 +542,7 @@ Public Class TestIssue479
   End Sub
 End Class",
                 @"using System;
-using Microsoft.VisualBasic;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Issue479
 {
@@ -591,8 +591,8 @@ End Class",
                 @"using System;
 using System.IO;
 using SIO = System.IO;
-using Microsoft.VisualBasic;
-using VB = Microsoft.VisualBasic;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using VB = Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Test
 {

@@ -166,7 +166,7 @@ public partial class Class1
         Return """"
     End Function
 
-End Class", @"using Microsoft.VisualBasic;
+End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {
@@ -369,7 +369,7 @@ Public Class MyTestClass
         Console.WriteLine(someInt)
     End Sub
 End Class", @"using System;
-using Microsoft.VisualBasic.CompilerServices;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class MyTestClass
 {
@@ -487,7 +487,7 @@ Friend Module Other
     Public lst2 As List(Of Object) = New List(Of Object)({ 1.ToString(), 2.ToString(), 3.ToString()})
 End Module", @"using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.VisualBasic.CompilerServices;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Issue567
 {

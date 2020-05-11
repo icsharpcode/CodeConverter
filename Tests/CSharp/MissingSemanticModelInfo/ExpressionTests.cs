@@ -180,8 +180,8 @@ CS0246: The type or namespace name 'MissingType' could not be found (are you mis
         Return tS
     End Function
 End Class",
-@"using Microsoft.VisualBasic;
-using Microsoft.VisualBasic.CompilerServices;
+@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class EnumAndValTest
 {
@@ -360,7 +360,7 @@ CS0201: Only assignment, call, increment, decrement, await, and new object expre
 
         End If
     End Sub
-End Class", @"using Microsoft.VisualBasic;
+End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 internal partial class A
 {

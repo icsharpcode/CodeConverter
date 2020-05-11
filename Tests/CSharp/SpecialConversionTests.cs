@@ -186,8 +186,8 @@ public partial class Issue483
         Return str_Txt
     End Function
 End Class", @"using System;
-using Microsoft.VisualBasic;
-using Microsoft.VisualBasic.CompilerServices;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Issue483
 {

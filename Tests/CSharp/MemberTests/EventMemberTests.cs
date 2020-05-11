@@ -517,7 +517,7 @@ Partial Public Class TestHandlesAdded
 
     End Sub
 End Class", @"using System.Runtime.CompilerServices;
-using Microsoft.VisualBasic.CompilerServices;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 [DesignerGenerated]
 public partial class TestHandlesAdded

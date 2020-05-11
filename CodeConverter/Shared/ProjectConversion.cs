@@ -65,7 +65,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(document.Project, progress, cancellationToken);
 
-            document = projectContentsConverter.Project.GetDocument(document.Id);
+            document = projectContentsConverter.SourceProject.GetDocument(document.Id);
 
             var conversion = new ProjectConversion(projectContentsConverter, new[] { document }, Enumerable.Empty<TextDocument>(), languageConversion, cancellationToken, conversionOptions.ShowCompilationErrors, returnSelectedNode);
             var conversionResults = await conversion.Convert(progress).ToArrayAsync();
@@ -87,8 +87,8 @@ namespace ICSharpCode.CodeConverter.Shared
             using var roslynEntryPoint = await RoslynEntryPointAsync(progress);
 
             var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(project, progress, cancellationToken);
-            var sourceFilePaths = project.Documents.Concat(projectContentsConverter.Project.AdditionalDocuments).Select(d => d.FilePath).ToImmutableHashSet();
-            project = projectContentsConverter.Project;
+            var sourceFilePaths = project.Documents.Concat(projectContentsConverter.SourceProject.AdditionalDocuments).Select(d => d.FilePath).ToImmutableHashSet();
+            project = projectContentsConverter.SourceProject;
             var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress, cancellationToken);
 
             var results = WithProjectFile(projectContentsConverter, languageConversion, sourceFilePaths, convertProjectContents, replacements);
@@ -98,7 +98,7 @@ namespace ICSharpCode.CodeConverter.Shared
         /// <remarks>Perf: Keep lazy so that we don't keep an extra copy of all files in memory at once</remarks>
         private static async IAsyncEnumerable<ConversionResult> WithProjectFile(IProjectContentsConverter projectContentsConverter, ILanguageConversion languageConversion, ImmutableHashSet<string> originalSourcePaths, IAsyncEnumerable<ConversionResult> convertProjectContents, (string Find, string Replace, bool FirstOnly)[] replacements)
         {
-            var project = projectContentsConverter.Project;
+            var project = projectContentsConverter.SourceProject;
             var projectDir = project.GetDirectoryPath();
             var addedTargetFiles = new List<string>();
             var sourceToTargetMap = new List<(string, string)>();
@@ -161,14 +161,14 @@ namespace ICSharpCode.CodeConverter.Shared
             IProjectContentsConverter projectContentsConverter, ILanguageConversion languageConversion,
             IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            var documentsWithLengths = await projectContentsConverter.Project.Documents
+            var documentsWithLengths = await projectContentsConverter.SourceProject.Documents
                 .Where(d => !BannedPaths.Any(d.FilePath.Contains))
                 .SelectAsync(async d => (Doc: d, Length: (await d.GetTextAsync()).Length));
 
             //Perf heuristic: Decrease memory pressure on the simplification phase by converting large files first https://github.com/icsharpcode/CodeConverter/issues/524#issuecomment-590301594
             var documentsToConvert = documentsWithLengths.OrderByDescending(d => d.Length).Select(d => d.Doc);
 
-            var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, projectContentsConverter.Project.AdditionalDocuments, languageConversion, cancellationToken, false);
+            var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, projectContentsConverter.SourceProject.AdditionalDocuments, languageConversion, cancellationToken, false);
 
             var results = projectConversion.Convert(progress);
             await foreach (var result in results) yield return result;
@@ -181,9 +181,9 @@ namespace ICSharpCode.CodeConverter.Shared
             var firstPassResults = _documentsToConvert.ParallelSelectAwait(d => FirstPassLoggedAsync(d, phaseProgress), Env.MaxDop, _cancellationToken);
             var (proj1, docs1) = await _projectContentsConverter.GetConvertedProjectAsync(await firstPassResults.ToArrayAsync());
 
-            var warnings = await GetProjectWarningsAsync(_projectContentsConverter.Project, proj1);
+            var warnings = await GetProjectWarningsAsync(_projectContentsConverter.SourceProject, proj1);
             if (!string.IsNullOrWhiteSpace(warnings)) {
-                var warningPath = Path.Combine(_projectContentsConverter.Project.GetDirectoryPath(), "ConversionWarnings.txt");
+                var warningPath = Path.Combine(_projectContentsConverter.SourceProject.GetDirectoryPath(), "ConversionWarnings.txt");
                 yield return new ConversionResult() { SourcePathOrNull = warningPath, Exceptions = new[] { warnings } };
             }
 
@@ -339,7 +339,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private string PathRelativeToSolutionDir(string path)
         {
-            return path.Replace(this._projectContentsConverter.Project.Solution.GetDirectoryPath() + Path.DirectorySeparatorChar, "");
+            return path.Replace(this._projectContentsConverter.SourceProject.Solution.GetDirectoryPath() + Path.DirectorySeparatorChar, "");
         }
 
         private static async Task<IDisposable> RoslynEntryPointAsync(IProgress<ConversionProgress> progress)

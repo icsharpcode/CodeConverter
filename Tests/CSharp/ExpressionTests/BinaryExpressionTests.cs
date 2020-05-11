@@ -61,8 +61,8 @@ internal partial class TestClass
     Sub Foo()
         Dim x = """" Like ""*x*""
     End Sub
-End Class", @"using Microsoft.VisualBasic;
-using Microsoft.VisualBasic.CompilerServices;
+End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {
@@ -135,7 +135,7 @@ internal partial class TestClass
         Dim z = x + y
         Dim z2 = y + x
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestClass
 {

@@ -719,7 +719,7 @@ Module Module1
         Dim vObjectULong As Object = EULong.M1
     End Sub
 
-End Module", @"using Microsoft.VisualBasic.CompilerServices;
+End Module", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal enum ESByte : sbyte
 {

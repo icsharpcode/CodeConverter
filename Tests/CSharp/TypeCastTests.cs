@@ -16,7 +16,7 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp
         Dim o As Object = 5
         Dim i As Integer = CInt(o)
     End Sub
-End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
+End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -37,7 +37,7 @@ internal partial class Class1
         Dim x = CDate(""2019-09-04"")
     End Sub
 End Class", @"using System;
-using Microsoft.VisualBasic.CompilerServices;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {
@@ -57,7 +57,7 @@ public partial class Class1
         Dim o As Object = ""Test""
         Dim s As String = CStr(o)
     End Sub
-End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
+End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -77,7 +77,7 @@ internal partial class Class1
         Dim o As Object = ""Test""
         Dim s As String = o
     End Sub
-End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
+End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -102,7 +102,7 @@ internal partial class Class1
         xs(0) = x(0)
     End Sub
 End Class" + Environment.NewLine, @"using System.Collections;
-using Microsoft.VisualBasic.CompilerServices;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -124,7 +124,7 @@ internal partial class Class1
         Dim o As Object = ""Test""
         Dim s As String = o
     End Sub
-End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
+End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -144,7 +144,7 @@ internal partial class Class1
         Dim q = 2.37
         Dim j = CType(q, Integer)
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -189,7 +189,7 @@ internal partial class Class1
         Dim s As String = CType(o, Integer).ToString()
     End Sub
 End Class",
-@"using Microsoft.VisualBasic.CompilerServices;
+@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -347,7 +347,7 @@ internal partial class ExplicitCastClass
     Private Function Casting(ByVal sender As Object) As Integer
         Return CInt(DirectCast(sender, Object())(0))
     End Function
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestCastHasBracketsWhenElementAccess
 {
@@ -376,7 +376,7 @@ internal partial class TestCastHasBracketsWhenElementAccess
             Return DirectCast(Value, T)
         End If
     End Function
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class MultipleCasts
 {

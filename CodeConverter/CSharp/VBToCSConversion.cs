@@ -4,6 +4,7 @@ using System.Linq;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using CS = Microsoft.CodeAnalysis.CSharp;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -21,7 +22,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     public class VBToCSConversion : ILanguageConversion
     {
         private const string UnresolvedNamespaceDiagnosticId = "CS0246";
-
+        private const string FabricatedAssemblyName = ISymbolExtensions.ForcePartialTypesAssemblyName;
         private VBToCSProjectContentsConverter _vbToCsProjectContentsConverter;
         private IProgress<ConversionProgress> _progress;
         private CancellationToken _cancellationToken;
@@ -151,7 +152,16 @@ End Class";
 
         public async Task<Document> SingleSecondPassAsync(Document doc)
         {
-            return await doc.SimplifyStatementsAsync<CSSyntax.UsingDirectiveSyntax, CSSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId, _cancellationToken);
+            var simplifiedDocument = await doc.SimplifyStatementsAsync<CSSyntax.UsingDirectiveSyntax, CSSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId, _cancellationToken);
+
+            // Can't add a reference to Microsoft.VisualBasic if there's no project file, so hint to install the package
+            if (_vbToCsProjectContentsConverter.SourceProject.AssemblyName == FabricatedAssemblyName) {
+                var simpleRoot = await simplifiedDocument.GetSyntaxRootAsync();
+                var vbUsings = simpleRoot.ChildNodes().OfType<CSSyntax.UsingDirectiveSyntax>().Where(u => u.Name.ToString().Contains("Microsoft.VisualBasic"));
+                var commentedRoot = simpleRoot.ReplaceNodes(vbUsings, (_, r) => r.WithTrailingTrivia(CS.SyntaxFactory.Comment(" // Install-Package Microsoft.VisualBasic").Yield().Concat(r.GetTrailingTrivia())));
+                simplifiedDocument = simplifiedDocument.WithSyntaxRoot(commentedRoot);
+            }
+            return simplifiedDocument;
         }
 
         public SyntaxTree CreateTree(string text)
@@ -173,7 +183,7 @@ End Class";
         private async Task<Project> CreateEmptyVbProjectAsync(IEnumerable<MetadataReference> references)
         {
             return await VisualBasicCompiler.CreateCompilationOptions(ConversionOptions.RootNamespaceOverride)
-                            .CreateProjectAsync(references, VisualBasicParseOptions.Default, ISymbolExtensions.ForcePartialTypesAssemblyName);
+                            .CreateProjectAsync(references, VisualBasicParseOptions.Default, FabricatedAssemblyName);
         }
     }
 }

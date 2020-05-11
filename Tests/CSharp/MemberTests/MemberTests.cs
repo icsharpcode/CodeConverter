@@ -120,7 +120,7 @@ internal partial class TestClass
     Public Sub AMethod()
         Dim t1 As Integer = EnumVariable
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestClass
 {
@@ -751,7 +751,7 @@ Public Class Issue281
     End Sub
 End Class", @"using System;
 using System.IO;
-using Microsoft.VisualBasic;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Issue281
 {
