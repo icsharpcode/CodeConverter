@@ -34,7 +34,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             _progress = progress;
             _cancellationToken = cancellationToken;
-            _vbToCsProjectContentsConverter = new VBToCSProjectContentsConverter(ConversionOptions, progress, cancellationToken);
+            bool useProjectLevelWinformsAdjustments = project.AssemblyName != FabricatedAssemblyName;
+            _vbToCsProjectContentsConverter = new VBToCSProjectContentsConverter(ConversionOptions, useProjectLevelWinformsAdjustments, progress, cancellationToken);
             await _vbToCsProjectContentsConverter.InitializeSourceAsync(project);
             return _vbToCsProjectContentsConverter;
         }

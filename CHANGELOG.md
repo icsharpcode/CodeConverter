@@ -3,13 +3,13 @@ All notable changes to the code converter will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
-* Optimize away some redundant casts and conversions with strings/chars - [#388](https://github.com/icsharpcode/CodeConverter/issues/388)
 
 ### Vsix
 
 
 ### VB -> C#
-
+* Optimize away some redundant casts and conversions with strings/chars - [#388](https://github.com/icsharpcode/CodeConverter/issues/388)
+* Improve performance of single file conversion
 
 ### C# -> VB
 

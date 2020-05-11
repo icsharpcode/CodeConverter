@@ -21,6 +21,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     internal class VBToCSProjectContentsConverter : IProjectContentsConverter
     {
         private readonly ConversionOptions _conversionOptions;
+        private readonly bool _useProjectLevelWinformsAdjustments;
         private CSharpCompilation _csharpViewOfVbSymbols;
         private Dictionary<string, string> _designerToResxRelativePath;
         private Project _convertedCsProject;
@@ -29,9 +30,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly IProgress<ConversionProgress> _progress;
         private readonly CancellationToken _cancellationToken;
 
-        public VBToCSProjectContentsConverter(ConversionOptions conversionOptions, IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
+        public VBToCSProjectContentsConverter(ConversionOptions conversionOptions, bool useProjectLevelWinformsAdjustments, IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
             _conversionOptions = conversionOptions;
+            this._useProjectLevelWinformsAdjustments = useProjectLevelWinformsAdjustments;
             _progress = progress;
             _cancellationToken = cancellationToken;
         }
@@ -44,10 +46,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             var cSharpCompilationOptions = CSharpCompiler.CreateCompilationOptions();
             _convertedCsProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, CSharpCompiler.ParseOptions);
             _csharpReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(cSharpCompilationOptions, CSharpCompiler.ParseOptions);
-            _csharpViewOfVbSymbols = (CSharpCompilation) await _csharpReferenceProject.GetCompilationAsync(_cancellationToken);
+            _csharpViewOfVbSymbols = (CSharpCompilation)await _csharpReferenceProject.GetCompilationAsync(_cancellationToken);
             _designerToResxRelativePath = project.ReadVbEmbeddedResources().ToDictionary(r => r.LastGenOutput, r => r.RelativePath);
-            SourceProject = await project.WithAdditionalDocs(_designerToResxRelativePath.Values)
-                        .WithRenamedMergedMyNamespaceAsync(_cancellationToken);
+            SourceProject = await WithProjectLevelWinformsAdjustmentsAsync(project);
+        }
+
+        private async Task<Project> WithProjectLevelWinformsAdjustmentsAsync(Project project)
+        {
+            if (!_useProjectLevelWinformsAdjustments) return project;
+            return await project.WithAdditionalDocs(_designerToResxRelativePath.Values)
+                                    .WithRenamedMergedMyNamespaceAsync(_cancellationToken);
         }
 
         public string LanguageVersion { get { return LangVersion.Latest.ToDisplayString(); } }
@@ -63,7 +71,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var projDirPath = SourceProject.GetDirectoryPath();
             var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults.Select(r => r.WithTargetPath(GetTargetPath(projDirPath, r))).ToArray());
-            return (await project.RenameMergedNamespacesAsync(_cancellationToken), docIds);
+            if (_useProjectLevelWinformsAdjustments) project = await project.RenameMergedNamespacesAsync(_cancellationToken);
+            return (project, docIds);
         }
 
         private string GetTargetPath(string projDirPath, WipFileConversion<SyntaxNode> r)
