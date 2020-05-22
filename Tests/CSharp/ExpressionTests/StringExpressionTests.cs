@@ -126,12 +126,12 @@ public partial class Class1
             throw new Exception();
         }
 
-        if ((s1 ?? """") == ""something"")
+        if (s1 == ""something"")
         {
             throw new Exception();
         }
 
-        if (""something"" == (s1 ?? """"))
+        if (""something"" == s1)
         {
             throw new Exception();
         }
@@ -317,6 +317,29 @@ public partial class Issue508
     public void Foo()
     {
         string x = ""x"" + 4 + ""y"";
+    }
+}");
+        }
+
+        [Fact]
+        public async Task EmptyStringCoalesceSkippedForLiteralComparisonAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Public Class VisualBasicClass
+
+    Sub Foo()
+        Dim x = """"
+        Dim y = x = ""something""
+    End Sub
+
+End Class",
+@"
+public partial class VisualBasicClass
+{
+    public void Foo()
+    {
+        string x = """";
+        bool y = x == ""something"";
     }
 }");
         }

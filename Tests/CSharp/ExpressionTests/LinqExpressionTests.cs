@@ -189,7 +189,7 @@ End Function", @"private static string FindPicFilePath(List<FileInfo> AList, str
         }
 
         [Fact]
-        public async Task LinqAsEnumerable()
+        public async Task LinqAsEnumerableAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
 

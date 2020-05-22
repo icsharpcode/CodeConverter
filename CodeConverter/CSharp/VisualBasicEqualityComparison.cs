@@ -65,7 +65,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public (ExpressionSyntax lhs, ExpressionSyntax rhs) VbCoerceToString(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, TypeInfo lhsTypeInfo, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, TypeInfo rhsTypeInfo)
         {
+            if (IsNonEmptyStringLiteral(vbLeft) || IsNonEmptyStringLiteral(vbRight)) {
+                return (csLeft, csRight);
+            }
             return (VbCoerceToString(vbLeft, csLeft, lhsTypeInfo), VbCoerceToString(vbRight, csRight, rhsTypeInfo));
+        }
+
+        private static bool IsNonEmptyStringLiteral(VBSyntax.ExpressionSyntax vbExpr)
+        {
+            return vbExpr.SkipParens().IsKind(VBSyntaxKind.StringLiteralExpression) && vbExpr is VBSyntax.LiteralExpressionSyntax literal && !IsEmptyString(literal);
         }
 
         private ExpressionSyntax VbCoerceToString(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo)
@@ -163,10 +171,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             if (expressionSyntax is VBSyntax.LiteralExpressionSyntax les &&
                 (les.IsKind(VBSyntaxKind.NothingLiteralExpression) ||
-                 (les.IsKind(VBSyntaxKind.StringLiteralExpression) &&
-                  String.IsNullOrEmpty(les.Token.ValueText)))) return true;
+                 IsEmptyString(les))) return true;
             var constantAnalysis = _semanticModel.GetConstantValue(expressionSyntax);
             return constantAnalysis.HasValue && (constantAnalysis.Value == null || constantAnalysis.Value as string == "");
+        }
+
+        private static bool IsEmptyString(VBSyntax.LiteralExpressionSyntax les)
+        {
+            return les.IsKind(VBSyntaxKind.StringLiteralExpression) && string.IsNullOrEmpty(les.Token.ValueText);
         }
 
         private static ExpressionSyntax NegateIfNeeded(VBSyntax.BinaryExpressionSyntax node, InvocationExpressionSyntax positiveExpression)
