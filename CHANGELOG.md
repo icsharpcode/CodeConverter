@@ -8,8 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
+* Improve post-conversion experience for designer files - [#569](https://github.com/icsharpcode/CodeConverter/issues/569)
 * Optimize away some redundant casts and conversions with strings/chars - [#388](https://github.com/icsharpcode/CodeConverter/issues/388)
-* Improve performance of single file conversion
+* Improve performance of single file conversion - [#546](https://github.com/icsharpcode/CodeConverter/issues/546)
 * Add AsEnumerable where needed in linq "in" clause - [#544](https://github.com/icsharpcode/CodeConverter/issues/544)
 * Remove redundant empty string coalesce in string comparison - [#500](https://github.com/icsharpcode/CodeConverter/issues/500)
 
