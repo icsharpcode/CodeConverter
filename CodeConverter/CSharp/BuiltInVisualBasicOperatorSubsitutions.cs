@@ -81,59 +81,65 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            private Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax RewriteLikeOperator(VBSyntax.BinaryExpressionSyntax node, WellKnownMember member)
+            private async Task<ExpressionSyntax> ConvertToLikeOperatorAsync(VBSyntax.BinaryExpressionSyntax node, WellKnownMember member)
             {
                 return null;
             }
 
-            private Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax RewriteConcatenateOperator(VBSyntax.BinaryExpressionSyntax node)
+            private async Task<ExpressionSyntax> ConvertToConcatenateOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
             {
                 return null;
             }
 
-            private Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax RewritePowOperator(VBSyntax.BinaryExpressionSyntax node)
+            private async Task<ExpressionSyntax> ConvertToPowOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
+            {
+                var (lhs, rhs) = await AcceptSidesAsync(node);
+                return SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Math), nameof(Math.Pow)), ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
+            }
+
+            private async Task<ExpressionSyntax> ConvertToObjectShortCircuitOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
             {
                 return null;
             }
 
-            private Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax RewriteObjectShortCircuitOperator(VBSyntax.BinaryExpressionSyntax node)
+            private async Task<ExpressionSyntax> ConvertToDecimalBinaryOperatorAsync(VBSyntax.BinaryExpressionSyntax node, SpecialMember member)
             {
                 return null;
             }
 
-            private Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax RewriteDecimalBinaryOperator(VBSyntax.BinaryExpressionSyntax node, SpecialMember member)
+            private async Task<ExpressionSyntax> ConvertToObjectBinaryOperatorAsync(VBSyntax.BinaryExpressionSyntax node, WellKnownMember member)
             {
                 return null;
             }
 
-            private Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax RewriteObjectBinaryOperator(VBSyntax.BinaryExpressionSyntax node, WellKnownMember member)
+            private async Task<ExpressionSyntax> ConvertToDateComparisonOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
             {
                 return null;
             }
 
-            private Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax RewriteDateComparisonOperator(VBSyntax.BinaryExpressionSyntax node)
+            private async Task<ExpressionSyntax> ConvertToDecimalComparisonOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
             {
                 return null;
             }
 
-            private Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax RewriteDecimalComparisonOperator(VBSyntax.BinaryExpressionSyntax node)
+            private async Task<ExpressionSyntax> ConvertToStringComparisonOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
             {
                 return null;
             }
 
-            private Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax RewriteStringComparisonOperator(VBSyntax.BinaryExpressionSyntax node)
+            private async Task<ExpressionSyntax> ConvertToObjectComparisonOperatorAsync(VBSyntax.BinaryExpressionSyntax node, WellKnownMember member)
             {
                 return null;
             }
 
-            private Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax RewriteObjectComparisonOperator(VBSyntax.BinaryExpressionSyntax node, WellKnownMember member)
+            private async Task<(ExpressionSyntax, ExpressionSyntax)> AcceptSidesAsync(VBSyntax.BinaryExpressionSyntax node)
             {
-                return null;
+                return (await _triviaConvertingVisitor.AcceptAsync<ExpressionSyntax>(node.Left, SourceTriviaMapKind.All), await _triviaConvertingVisitor.AcceptAsync<ExpressionSyntax>(node.Right, SourceTriviaMapKind.All));
             }
 
             /// <summary>
             /// Started as a paste of:
-            /// https://github.com/dotnet/roslyn/blob/master/src/Compilers/VisualBasic/Portable/Lowering/LocalRewriter/LocalRewriter_BinaryOperators.vb#L233-L464
+            /// https://github.com/dotnet/roslyn/blob/master/src/Compilers/VisualBasic/Portable/Lowering/LocalConvertTor/LocalConvertTor_BinaryOperators.vb#L233-L464
             /// See file history to understand any changes
             /// </summary>
             public async Task<ExpressionSyntax> ConvertRewrittenBinaryOperatorOrNullAsync(VBSyntax.BinaryExpressionSyntax node, bool inExpressionLambda = false)
@@ -148,20 +154,20 @@ namespace ICSharpCode.CodeConverter.CSharp
                             break;
                         }
 
-                    case BinaryOperatorKind.ConcatenateExpression:  // Concat needs to be done before expr trees, so in LocalRewriter instead of VBSemanticsRewriter
+                    case BinaryOperatorKind.ConcatenateExpression:  // Concat needs to be done before expr trees, so in LocalConvertTor instead of VBSemanticsConvertTor
                         {
                             if (nodeType.IsObjectType()) {
-                                return RewriteObjectBinaryOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConcatenateObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConcatenateObjectObjectObject);
                             } else {
-                                return RewriteConcatenateOperator(node);
+                                return await ConvertToConcatenateOperatorAsync(node);
                             }
                         }
 
                     case BinaryOperatorKind.LikeExpression: {
                             if (leftType.IsObjectType()) {
-                                return RewriteLikeOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_LikeOperator__LikeObjectObjectObjectCompareMethod);
+                                return await ConvertToLikeOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_LikeOperator__LikeObjectObjectObjectCompareMethod);
                             } else {
-                                return RewriteLikeOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_LikeOperator__LikeStringStringStringCompareMethod);
+                                return await ConvertToLikeOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_LikeOperator__LikeStringStringStringCompareMethod);
                             }
                         }
 
@@ -172,16 +178,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                             // TODO: Recheck
 
                             if (nodeType.IsObjectType() || inExpressionLambda && leftType.IsObjectType()) {
-                                return RewriteObjectComparisonOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectEqualObjectObjectBoolean);
+                                return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectEqualObjectObjectBoolean);
                             } else if (nodeType.IsBooleanType()) {
                                 if (leftType.IsObjectType()) {
-                                    return RewriteObjectComparisonOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectEqualObjectObjectBoolean);
+                                    return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectEqualObjectObjectBoolean);
                                 } else if (leftType.IsStringType()) {
-                                    return RewriteStringComparisonOperator(node);
+                                    return await ConvertToStringComparisonOperatorAsync(node);
                                 } else if (leftType.IsDecimalType()) {
-                                    return RewriteDecimalComparisonOperator(node);
+                                    return await ConvertToDecimalComparisonOperatorAsync(node);
                                 } else if (leftType.IsDateTimeType()) {
-                                    return RewriteDateComparisonOperator(node);
+                                    return await ConvertToDateComparisonOperatorAsync(node);
                                 }
                             }
 
@@ -192,16 +198,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                             // NOTE: See comment above
 
                             if (nodeType.IsObjectType() || inExpressionLambda && leftType.IsObjectType()) {
-                                return RewriteObjectComparisonOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectNotEqualObjectObjectBoolean);
+                                return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectNotEqualObjectObjectBoolean);
                             } else if (nodeType.IsBooleanType()) {
                                 if (leftType.IsObjectType()) {
-                                    return RewriteObjectComparisonOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectNotEqualObjectObjectBoolean);
+                                    return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectNotEqualObjectObjectBoolean);
                                 } else if (leftType.IsStringType()) {
-                                    return RewriteStringComparisonOperator(node);
+                                    return await ConvertToStringComparisonOperatorAsync(node);
                                 } else if (leftType.IsDecimalType()) {
-                                    return RewriteDecimalComparisonOperator(node);
+                                    return await ConvertToDecimalComparisonOperatorAsync(node);
                                 } else if (leftType.IsDateTimeType()) {
-                                    return RewriteDateComparisonOperator(node);
+                                    return await ConvertToDateComparisonOperatorAsync(node);
                                 }
                             }
 
@@ -212,16 +218,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                             // NOTE: See comment above
 
                             if (nodeType.IsObjectType() || inExpressionLambda && leftType.IsObjectType()) {
-                                return RewriteObjectComparisonOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectLessEqualObjectObjectBoolean);
+                                return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectLessEqualObjectObjectBoolean);
                             } else if (nodeType.IsBooleanType()) {
                                 if (leftType.IsObjectType()) {
-                                    return RewriteObjectComparisonOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectLessEqualObjectObjectBoolean);
+                                    return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectLessEqualObjectObjectBoolean);
                                 } else if (leftType.IsStringType()) {
-                                    return RewriteStringComparisonOperator(node);
+                                    return await ConvertToStringComparisonOperatorAsync(node);
                                 } else if (leftType.IsDecimalType()) {
-                                    return RewriteDecimalComparisonOperator(node);
+                                    return await ConvertToDecimalComparisonOperatorAsync(node);
                                 } else if (leftType.IsDateTimeType()) {
-                                    return RewriteDateComparisonOperator(node);
+                                    return await ConvertToDateComparisonOperatorAsync(node);
                                 }
                             }
 
@@ -232,16 +238,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                             // NOTE: See comment above
 
                             if (nodeType.IsObjectType() || inExpressionLambda && leftType.IsObjectType()) {
-                                return RewriteObjectComparisonOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectGreaterEqualObjectObjectBoolean);
+                                return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectGreaterEqualObjectObjectBoolean);
                             } else if (nodeType.IsBooleanType()) {
                                 if (leftType.IsObjectType()) {
-                                    return RewriteObjectComparisonOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectGreaterEqualObjectObjectBoolean);
+                                    return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectGreaterEqualObjectObjectBoolean);
                                 } else if (leftType.IsStringType()) {
-                                    return RewriteStringComparisonOperator(node);
+                                    return await ConvertToStringComparisonOperatorAsync(node);
                                 } else if (leftType.IsDecimalType()) {
-                                    return RewriteDecimalComparisonOperator(node);
+                                    return await ConvertToDecimalComparisonOperatorAsync(node);
                                 } else if (leftType.IsDateTimeType()) {
-                                    return RewriteDateComparisonOperator(node);
+                                    return await ConvertToDateComparisonOperatorAsync(node);
                                 }
                             }
 
@@ -252,16 +258,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                             // NOTE: See comment above
 
                             if (nodeType.IsObjectType() || inExpressionLambda && leftType.IsObjectType()) {
-                                return RewriteObjectComparisonOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectLessObjectObjectBoolean);
+                                return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectLessObjectObjectBoolean);
                             } else if (nodeType.IsBooleanType()) {
                                 if (leftType.IsObjectType()) {
-                                    return RewriteObjectComparisonOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectLessObjectObjectBoolean);
+                                    return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectLessObjectObjectBoolean);
                                 } else if (leftType.IsStringType()) {
-                                    return RewriteStringComparisonOperator(node);
+                                    return await ConvertToStringComparisonOperatorAsync(node);
                                 } else if (leftType.IsDecimalType()) {
-                                    return RewriteDecimalComparisonOperator(node);
+                                    return await ConvertToDecimalComparisonOperatorAsync(node);
                                 } else if (leftType.IsDateTimeType()) {
-                                    return RewriteDateComparisonOperator(node);
+                                    return await ConvertToDateComparisonOperatorAsync(node);
                                 }
                             }
 
@@ -272,16 +278,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                             // NOTE: See comment above
 
                             if (nodeType.IsObjectType() || inExpressionLambda && leftType.IsObjectType()) {
-                                return RewriteObjectComparisonOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectGreaterObjectObjectBoolean);
+                                return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectGreaterObjectObjectBoolean);
                             } else if (nodeType.IsBooleanType()) {
                                 if (leftType.IsObjectType()) {
-                                    return RewriteObjectComparisonOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectGreaterObjectObjectBoolean);
+                                    return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectGreaterObjectObjectBoolean);
                                 } else if (leftType.IsStringType()) {
-                                    return RewriteStringComparisonOperator(node);
+                                    return await ConvertToStringComparisonOperatorAsync(node);
                                 } else if (leftType.IsDecimalType()) {
-                                    return RewriteDecimalComparisonOperator(node);
+                                    return await ConvertToDecimalComparisonOperatorAsync(node);
                                 } else if (leftType.IsDateTimeType()) {
-                                    return RewriteDateComparisonOperator(node);
+                                    return await ConvertToDateComparisonOperatorAsync(node);
                                 }
                             }
 
@@ -290,9 +296,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.AddExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return RewriteObjectBinaryOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__AddObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__AddObjectObjectObject);
                             } else if (nodeType.IsDecimalType()) {
-                                return RewriteDecimalBinaryOperator(node, SpecialMember.System_Decimal__AddDecimalDecimal);
+                                return await ConvertToDecimalBinaryOperatorAsync(node, SpecialMember.System_Decimal__AddDecimalDecimal);
                             }
 
                             break;
@@ -300,9 +306,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.SubtractExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return RewriteObjectBinaryOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__SubtractObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__SubtractObjectObjectObject);
                             } else if (nodeType.IsDecimalType()) {
-                                return RewriteDecimalBinaryOperator(node, SpecialMember.System_Decimal__SubtractDecimalDecimal);
+                                return await ConvertToDecimalBinaryOperatorAsync(node, SpecialMember.System_Decimal__SubtractDecimalDecimal);
                             }
 
                             break;
@@ -310,9 +316,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.MultiplyExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return RewriteObjectBinaryOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__MultiplyObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__MultiplyObjectObjectObject);
                             } else if (nodeType.IsDecimalType()) {
-                                return RewriteDecimalBinaryOperator(node, SpecialMember.System_Decimal__MultiplyDecimalDecimal);
+                                return await ConvertToDecimalBinaryOperatorAsync(node, SpecialMember.System_Decimal__MultiplyDecimalDecimal);
                             }
 
                             break;
@@ -320,9 +326,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.ModuloExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return RewriteObjectBinaryOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ModObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ModObjectObjectObject);
                             } else if (nodeType.IsDecimalType()) {
-                                return RewriteDecimalBinaryOperator(node, SpecialMember.System_Decimal__RemainderDecimalDecimal);
+                                return await ConvertToDecimalBinaryOperatorAsync(node, SpecialMember.System_Decimal__RemainderDecimalDecimal);
                             }
 
                             break;
@@ -330,9 +336,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.DivideExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return RewriteObjectBinaryOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__DivideObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__DivideObjectObjectObject);
                             } else if (nodeType.IsDecimalType()) {
-                                return RewriteDecimalBinaryOperator(node, SpecialMember.System_Decimal__DivideDecimalDecimal);
+                                return await ConvertToDecimalBinaryOperatorAsync(node, SpecialMember.System_Decimal__DivideDecimalDecimal);
                             }
 
                             break;
@@ -340,7 +346,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.IntegerDivideExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return RewriteObjectBinaryOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__IntDivideObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__IntDivideObjectObjectObject);
                             }
 
                             break;
@@ -348,15 +354,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.ExponentiateExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return RewriteObjectBinaryOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ExponentObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ExponentObjectObjectObject);
                             } else {
-                                return RewritePowOperator(node);
+                                return await ConvertToPowOperatorAsync(node);
                             }
                         }
 
                     case BinaryOperatorKind.LeftShiftExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return RewriteObjectBinaryOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__LeftShiftObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__LeftShiftObjectObjectObject);
                             }
 
                             break;
@@ -364,7 +370,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.RightShiftExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return RewriteObjectBinaryOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__RightShiftObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__RightShiftObjectObjectObject);
                             }
 
                             break;
@@ -373,7 +379,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     case BinaryOperatorKind.OrElseExpression:
                     case BinaryOperatorKind.AndAlsoExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return RewriteObjectShortCircuitOperator(node);
+                                return await ConvertToObjectShortCircuitOperatorAsync(node);
                             }
 
                             break;
@@ -381,7 +387,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case var _ when node.OperatorToken.IsKind(BinaryOperatorKind.XorKeyword): {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return RewriteObjectBinaryOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__XorObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__XorObjectObjectObject);
                             }
 
                             break;
@@ -389,7 +395,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.OrExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return RewriteObjectBinaryOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__OrObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__OrObjectObjectObject);
                             }
 
                             break;
@@ -397,7 +403,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.AndExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return RewriteObjectBinaryOperator(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__AndObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__AndObjectObjectObject);
                             }
 
                             break;
