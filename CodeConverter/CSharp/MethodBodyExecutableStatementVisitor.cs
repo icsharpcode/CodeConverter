@@ -598,8 +598,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 id = declaration.Variables.Single().Identifier;
             } else if (_semanticModel.GetSymbolInfo(stmt.ControlVariable).Symbol is ISymbol varSymbol) {
                 var variableType = varSymbol.GetSymbolType();
-                var useVar = variableType?.SpecialType == SpecialType.System_Object || _semanticModel.GetTypeInfo(stmt.Expression).ConvertedType.IsEnumerableOfExactType(variableType);
-                type = CommonConversions.GetTypeSyntax(varSymbol.GetSymbolType(), useVar);
+                var explicitCastWouldHaveNoEffect = variableType?.SpecialType == SpecialType.System_Object || _semanticModel.GetTypeInfo(stmt.Expression).ConvertedType.IsEnumerableOfExactType(variableType);
+                type = CommonConversions.GetTypeSyntax(varSymbol.GetSymbolType(), explicitCastWouldHaveNoEffect);
                 var v = (IdentifierNameSyntax)await stmt.ControlVariable.AcceptAsync(_expressionVisitor);
                 if (_localsToInlineInLoop.Contains(varSymbol)) {
                     id = v.Identifier;

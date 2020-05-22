@@ -6,6 +6,7 @@ using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -18,11 +19,13 @@ namespace ICSharpCode.CodeConverter.CSharp
     internal class QueryConverter
     {
         private readonly CommentConvertingVisitorWrapper _triviaConvertingVisitor;
+        private SemanticModel _semanticModel;
 
-        public QueryConverter(CommonConversions commonConversions, CommentConvertingVisitorWrapper triviaConvertingVisitor)
+        public QueryConverter(CommonConversions commonConversions, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor)
         {
             CommonConversions = commonConversions;
-            _triviaConvertingVisitor = triviaConvertingVisitor;
+            _semanticModel = semanticModel;
+            _triviaConvertingVisitor = triviaConvertingExpressionVisitor;
         }
 
         private CommonConversions CommonConversions { get; }
@@ -239,9 +242,15 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<CSSyntax.FromClauseSyntax> ConvertFromClauseSyntaxAsync(VBSyntax.FromClauseSyntax vbFromClause)
         {
             var collectionRangeVariableSyntax = vbFromClause.Variables.Single();
+            var expression = (CSSyntax.ExpressionSyntax)await collectionRangeVariableSyntax.Expression.AcceptAsync(_triviaConvertingVisitor);
+            var parentOperation = _semanticModel.GetOperation(collectionRangeVariableSyntax.Expression)?.Parent;
+            if (parentOperation.IsImplicit && parentOperation is IInvocationOperation io &&
+                io.TargetMethod.MethodKind == MethodKind.ReducedExtension && io.TargetMethod.Name == nameof(Enumerable.AsEnumerable)) {
+                expression = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(expression, io.TargetMethod.Name), SyntaxFactory.ArgumentList());
+            }
             var fromClauseSyntax = SyntaxFactory.FromClause(
                 CommonConversions.ConvertIdentifier(collectionRangeVariableSyntax.Identifier.Identifier),
-                (CSSyntax.ExpressionSyntax) await collectionRangeVariableSyntax.Expression.AcceptAsync(_triviaConvertingVisitor));
+                expression);
             return fromClauseSyntax;
         }
 

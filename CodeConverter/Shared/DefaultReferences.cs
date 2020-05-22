@@ -24,6 +24,7 @@ namespace ICSharpCode.CodeConverter.Shared
             typeof(System.ComponentModel.BrowsableAttribute),
             typeof(System.Dynamic.DynamicObject),
             typeof(System.Data.DataRow),
+            typeof(System.Data.DataTableExtensions),
             typeof(System.Net.Http.HttpClient),
             typeof(System.Web.HttpUtility),
             typeof(System.Xml.XmlElement),

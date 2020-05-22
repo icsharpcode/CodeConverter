@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### VB -> C#
 * Optimize away some redundant casts and conversions with strings/chars - [#388](https://github.com/icsharpcode/CodeConverter/issues/388)
 * Improve performance of single file conversion
+* Add AsEnumerable where needed in linq "in" clause - [#544](https://github.com/icsharpcode/CodeConverter/issues/544)
 
 ### C# -> VB
 

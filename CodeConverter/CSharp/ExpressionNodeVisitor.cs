@@ -52,7 +52,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _lambdaConverter = new LambdaConverter(commonConversions, semanticModel);
             _visualBasicEqualityComparison = visualBasicEqualityComparison;
             TriviaConvertingExpressionVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
-            _queryConverter = new QueryConverter(commonConversions, TriviaConvertingExpressionVisitor);
+            _queryConverter = new QueryConverter(commonConversions, _semanticModel, TriviaConvertingExpressionVisitor);
             _csCompilation = csCompilation;
             _typeContext = typeContext;
             _extraUsingDirectives = extraUsingDirectives;

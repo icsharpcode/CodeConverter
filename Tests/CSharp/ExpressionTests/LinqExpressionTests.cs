@@ -189,6 +189,35 @@ End Function", @"private static string FindPicFilePath(List<FileInfo> AList, str
         }
 
         [Fact]
+        public async Task LinqAsEnumerable()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
+
+Public Class AsEnumerableTest
+    Public Sub FillImgColor()
+        Dim dtsMain As New DataSet
+        For Each i_ColCode As Integer In 
+            From CurRow In dtsMain.Tables(""tb_Color"") Select CInt(CurRow.Item(""i_ColCode""))
+        Next
+    End Sub
+End Class", @"using System.Data;
+using System.Linq;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class AsEnumerableTest
+{
+    public void FillImgColor()
+    {
+        var dtsMain = new DataSet();
+        foreach (int i_ColCode in from CurRow in dtsMain.Tables[""tb_Color""].AsEnumerable()
+                                  select Conversions.ToInteger(CurRow[""i_ColCode""]))
+        {
+        }
+    }
+}");
+        }
+
+        [Fact]
         public async Task LinqMultipleFromsAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub LinqSub()
