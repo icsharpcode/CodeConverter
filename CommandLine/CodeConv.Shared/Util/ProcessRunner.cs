@@ -36,8 +36,20 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
             psi.RedirectStandardError = true;
             psi.RedirectStandardOutput = true;
             using var process = new Process() { StartInfo = psi };
-            process.OutputDataReceived += (sender, e) => stdOut.WriteLine(e.Data);
-            process.ErrorDataReceived += (sender, e) => stdErr.WriteLine(e.Data);
+            var stdOutComplete = new TaskCompletionSource<object?>();
+            var stdErrComplete = new TaskCompletionSource<object?>();
+            process.OutputDataReceived += (sender, e) => {
+                if (e.Data != null)
+                    stdOut.WriteLine(e.Data);
+                else
+                    stdOutComplete.SetResult(null);
+            };
+            process.ErrorDataReceived += (sender, e) => {
+                if (e.Data != null)
+                    stdErr.WriteLine(e.Data);
+                else
+                    stdErrComplete.SetResult(null);
+            };
             try {
                 process.Start();
             } catch (Win32Exception win32Exception) {
@@ -45,9 +57,7 @@ namespace ICSharpCode.CodeConverter.DotNetTool.Util
             }
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
-            await process.WaitForExitAsync();
-            await stdOut.FlushAsync();
-            await stdErr.FlushAsync();
+            await Task.WhenAll(process.WaitForExitAsync(), stdOutComplete.Task, stdErrComplete.Task);
 
             return process.ExitCode;
         }
