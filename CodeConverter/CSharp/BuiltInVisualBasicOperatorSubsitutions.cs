@@ -83,7 +83,15 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private async Task<ExpressionSyntax> ConvertToLikeOperatorAsync(VBSyntax.BinaryExpressionSyntax node, WellKnownMember member)
             {
-                return null;
+                var (lhs, rhs) = await AcceptSidesAsync(node);
+                var compareText = ValidSyntaxFactory.MemberAccess("CompareMethod", _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive ? "Text" : "Binary");
+                var likeString = ValidSyntaxFactory.MemberAccess("LikeOperator", "LikeString");
+                _visualBasicEqualityComparison.ExtraUsingDirectives.Add("Microsoft.VisualBasic");
+                _visualBasicEqualityComparison.ExtraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
+                return SyntaxFactory.InvocationExpression(
+                    likeString,
+                    ExpressionSyntaxExtensions.CreateArgList(lhs, rhs, compareText)
+                );
             }
 
             private async Task<ExpressionSyntax> ConvertToConcatenateOperatorAsync(VBSyntax.BinaryExpressionSyntax node)

@@ -26,11 +26,10 @@ namespace ICSharpCode.CodeConverter.CSharp
     internal class VisualBasicEqualityComparison
     {
         private readonly SemanticModel _semanticModel;
-        private readonly HashSet<string> _extraUsingDirectives;
 
         public VisualBasicEqualityComparison(SemanticModel semanticModel, HashSet<string> extraUsingDirectives)
         {
-            _extraUsingDirectives = extraUsingDirectives;
+            ExtraUsingDirectives = extraUsingDirectives;
             _semanticModel = semanticModel;
         }
 
@@ -42,6 +41,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public bool OptionCompareTextCaseInsensitive { get; set; }
+
+        public HashSet<string> ExtraUsingDirectives { get; }
 
         public RequiredType GetObjectEqualityType(VBSyntax.BinaryExpressionSyntax node, TypeInfo leftType, TypeInfo rightType)
         {
@@ -191,7 +192,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public (ExpressionSyntax csLeft, ExpressionSyntax csRight) AdjustForVbStringComparison(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, TypeInfo lhsTypeInfo, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, TypeInfo rhsTypeInfo)
         {
                 if (OptionCompareTextCaseInsensitive) {
-                    _extraUsingDirectives.Add("System.Globalization");
+                    ExtraUsingDirectives.Add("System.Globalization");
                     var compareOptions = SyntaxFactory.Argument(GetCompareTextCaseInsensitiveCompareOptions());
                     var compareString = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(CultureInfo), nameof(CultureInfo.CurrentCulture),
                             nameof(CultureInfo.CompareInfo), nameof(CompareInfo.Compare)),
@@ -209,7 +210,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public ExpressionSyntax GetFullExpressionForVbObjectComparison(VBSyntax.BinaryExpressionSyntax node, ExpressionSyntax lhs, ExpressionSyntax rhs)
         {
-                _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
+                ExtraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
                 var optionCompareTextCaseInsensitive = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(OptionCompareTextCaseInsensitive ? SyntaxKind.TrueKeyword : SyntaxKind.FalseLiteralExpression));
                 var compareObject = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Operators), nameof(Operators.ConditionalCompareObjectEqual)),
                     SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]

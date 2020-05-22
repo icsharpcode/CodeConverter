@@ -737,17 +737,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
 
 
-            if (node.IsKind(VBasic.SyntaxKind.LikeExpression)) {
-                var compareText = ValidSyntaxFactory.MemberAccess("CompareMethod", _optionCompareText ? "Text" : "Binary");
-                var likeString = ValidSyntaxFactory.MemberAccess("LikeOperator", "LikeString");
-                _extraUsingDirectives.Add("Microsoft.VisualBasic");
-                _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
-                return SyntaxFactory.InvocationExpression(
-                    likeString,
-                    ExpressionSyntaxExtensions.CreateArgList(lhs, rhs, compareText)
-                );
-            }
-
             var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
             var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
 
