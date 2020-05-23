@@ -415,9 +415,7 @@ public partial class MultipleCasts
         public async Task ObjectComparisonIsConvertedToBoolRatherThanLateBoundAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
-                @"Imports System
-
-Public Class CopiedFromTheSelfVerifyingBooleanTests
+                @"Public Class CopiedFromTheSelfVerifyingBooleanTests
     Public Sub VisualBasicEqualityOfNormalObjectsNotSubjectToSpecialStringConversionRules()
         Dim a1 As Object = 3
         Dim a2 As Object = 3
