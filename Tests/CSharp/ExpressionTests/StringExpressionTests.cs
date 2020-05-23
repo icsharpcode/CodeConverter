@@ -358,7 +358,7 @@ public partial class Issue396ComparisonOperatorForStringsAsync
 {
     public Issue396ComparisonOperatorForStringsAsync()
     {
-        b = Operators.CompareObjectGreater(str, """", false);
+        b = Operators.ConditionalCompareObjectGreater(str, """", false);
     }
 
     private object str = 1.ToString();

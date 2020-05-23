@@ -108,6 +108,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             private async Task<ExpressionSyntax> ConvertToObjectComparisonOperatorAsync(VBSyntax.BinaryExpressionSyntax node, KnownMethod member)
             {
                 var (lhs, rhs) = await AcceptSidesAsync(node);
+                member = (member.Import, member.TypeName, "Conditional" + member.MethodName); //The VB compiler would late bind, but this should provide identical results in most cases I think
                 var compareTextKind = _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression;
                 return member.Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives, lhs, rhs, SyntaxFactory.LiteralExpression(compareTextKind));
             }

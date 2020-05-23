@@ -43,24 +43,33 @@ Public Class BooleanTests
     End Sub
 
     <Fact>
-     Public Sub NullableBoolsTrue()
+    Public Sub NullableBoolsTrue()
         Dim x As Object = 4
         Dim res = 1
 
-        If (Not x?.Equals(4))' x != 4
+        If (Not x?.Equals(4)) Then ' x != 4
             res *= 2
         Else
             res *= 3 'Branch taken
         End If
 
 
-        If (x?.Equals(4))' x == 4
+        If (x?.Equals(4)) Then ' x == 4
             res *= 5 'Branch taken
         Else
             res *= 7
         End If
 
         Assert.Equal(15, res)
+    End Sub
+
+    <Fact>
+    Public Sub VisualBasicEqualityOfNormalObjectsNotSubjectToSpecialStringConversionRules()
+        Dim a1 As Object = 3
+        Dim a2 As Object = 3
+        Dim b As Object = 4
+        Assert.True(a1 = a2, "Identical values stored in objects should be equal")
+        Assert.False(a1 = b, "Different values stored in objects should not be equal")
     End Sub
 End Class
 

@@ -14,16 +14,7 @@ Public Class StringEqualityTests
 
     <Fact>
     Public Sub VisualBasicEqualityOfCharArrays()
-        Assert.True(New Char(){} = New Char(){}, "Char arrays should be compared as strings because that's what happens in VB")
-    End Sub
-
-    <Fact>
-    Public Sub VisualBasicEqualityOfNormalObjectsNotSubjectToSpecialStringConversionRules()
-        Dim a1 As Object = 3
-        Dim a2 As Object = 3
-        Dim b As Object = 4
-        Assert.True(a1 = a2, "Identical values stored in objects should be equal")
-        Assert.False(a1 = b, "Different values stored in objects should not be equal")
+        Assert.True(New Char() {} = New Char() {}, "Char arrays should be compared as strings because that's what happens in VB")
     End Sub
 
     Private nullObject As Object = Nothing

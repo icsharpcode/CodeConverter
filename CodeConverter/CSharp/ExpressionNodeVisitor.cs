@@ -696,7 +696,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax node)
         {
-            if (await _operatorConverter.ConvertRewrittenBinaryOperatorOrNullAsync(node) is CSharpSyntaxNode nothingComparison) return nothingComparison;
+            if (await _operatorConverter.ConvertRewrittenBinaryOperatorOrNullAsync(node) is ExpressionSyntax operatorNode) {
+                return operatorNode;
+            }
 
             var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
             var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
