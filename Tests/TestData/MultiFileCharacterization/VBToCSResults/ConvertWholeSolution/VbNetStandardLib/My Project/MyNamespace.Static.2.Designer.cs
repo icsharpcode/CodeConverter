@@ -25,7 +25,7 @@ namespace Microsoft.VisualBasic
                     return 0;
                 }
 
-                if (Left is null)
+                if (Left == null)
                 {
                     if (Right.Length == 0)
                     {
@@ -35,7 +35,7 @@ namespace Microsoft.VisualBasic
                     return -1;
                 }
 
-                if (Right is null)
+                if (Right == null)
                 {
                     if (Left.Length == 0)
                     {
@@ -124,7 +124,7 @@ namespace Microsoft.VisualBasic
 
             public static bool ToBoolean(string Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     Value = "";
                 }
@@ -157,7 +157,7 @@ namespace Microsoft.VisualBasic
 
             public static bool ToBoolean(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return false;
                 }
@@ -225,7 +225,7 @@ namespace Microsoft.VisualBasic
 
             public static byte ToByte(string Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -248,7 +248,7 @@ namespace Microsoft.VisualBasic
 
             public static byte ToByte(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -317,7 +317,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static sbyte ToSByte(string Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -341,7 +341,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static sbyte ToSByte(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -409,7 +409,7 @@ namespace Microsoft.VisualBasic
 
             public static short ToShort(string Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -432,7 +432,7 @@ namespace Microsoft.VisualBasic
 
             public static short ToShort(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -501,7 +501,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static ushort ToUShort(string Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -525,7 +525,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static ushort ToUShort(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -593,7 +593,7 @@ namespace Microsoft.VisualBasic
 
             public static int ToInteger(string Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -616,7 +616,7 @@ namespace Microsoft.VisualBasic
 
             public static int ToInteger(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -685,7 +685,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static uint ToUInteger(string Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -709,7 +709,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static uint ToUInteger(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -777,7 +777,7 @@ namespace Microsoft.VisualBasic
 
             public static long ToLong(string Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -800,7 +800,7 @@ namespace Microsoft.VisualBasic
 
             public static long ToLong(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -869,7 +869,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static ulong ToULong(string Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -893,7 +893,7 @@ namespace Microsoft.VisualBasic
             [CLSCompliant(false)]
             public static ulong ToULong(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -973,7 +973,7 @@ namespace Microsoft.VisualBasic
 
             public static decimal ToDecimal(string Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0M;
                 }
@@ -1000,7 +1000,7 @@ namespace Microsoft.VisualBasic
 
             public static decimal ToDecimal(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0M;
                 }
@@ -1070,7 +1070,7 @@ namespace Microsoft.VisualBasic
             {
                 System.Globalization.NumberFormatInfo NormalizedNumberFormat;
                 var culture = GetCultureInfo();
-                if (NumberFormat is null)
+                if (NumberFormat == null)
                 {
                     NumberFormat = culture.NumberFormat;
                 }
@@ -1131,7 +1131,7 @@ namespace Microsoft.VisualBasic
 
             public static float ToSingle(string Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -1160,7 +1160,7 @@ namespace Microsoft.VisualBasic
 
             public static float ToSingle(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -1228,7 +1228,7 @@ namespace Microsoft.VisualBasic
 
             public static double ToDouble(string Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -1251,7 +1251,7 @@ namespace Microsoft.VisualBasic
 
             public static double ToDouble(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return 0;
                 }
@@ -1357,7 +1357,7 @@ namespace Microsoft.VisualBasic
 
             public static DateTime ToDate(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return default;
                 }
@@ -1376,7 +1376,7 @@ namespace Microsoft.VisualBasic
 
             public static char ToChar(string Value)
             {
-                if (Value is null || Value.Length == 0)
+                if (Value == null || Value.Length == 0)
                 {
                     return Convert.ToChar(0 & 0xFFFF);
                 }
@@ -1386,7 +1386,7 @@ namespace Microsoft.VisualBasic
 
             public static char ToChar(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return Convert.ToChar(0 & 0xFFFF);
                 }
@@ -1405,7 +1405,7 @@ namespace Microsoft.VisualBasic
 
             public static char[] ToCharArrayRankOne(string Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     Value = "";
                 }
@@ -1415,7 +1415,7 @@ namespace Microsoft.VisualBasic
 
             public static char[] ToCharArrayRankOne(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return "".ToCharArray();
                 }
@@ -1494,7 +1494,7 @@ namespace Microsoft.VisualBasic
 
             public static new string ToString(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return null;
                 }
@@ -1702,7 +1702,7 @@ namespace Microsoft.VisualBasic
 
             public static T ToGenericParameter<T>(object Value)
             {
-                if (Value is null)
+                if (Value == null)
                 {
                     return default;
                 }
@@ -1810,7 +1810,7 @@ namespace Microsoft.VisualBasic
 
             public static Array CopyArray(Array arySrc, Array aryDest)
             {
-                if (arySrc is null)
+                if (arySrc == null)
                 {
                     return aryDest;
                 }
@@ -1992,7 +1992,7 @@ namespace Microsoft.VisualBasic
 
         public static int AscW(string String)
         {
-            if (String is null || String.Length == 0)
+            if (String == null || String.Length == 0)
             {
                 throw new ArgumentException();
             }

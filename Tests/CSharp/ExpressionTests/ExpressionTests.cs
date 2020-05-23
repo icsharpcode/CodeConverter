@@ -357,6 +357,24 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task GenericComparisonAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class GenericComparison
+    Public Sub m(Of T)(p As T)
+        If p Is Nothing Then Return
+    End Sub
+End Class", @"
+public partial class GenericComparison
+{
+    public void m<T>(T p)
+    {
+        if (p == null)
+            return;
+    }
+}");
+        }
+
+        [Fact]
         public async Task AccessSharedThroughInstanceAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Class A
@@ -1308,7 +1326,7 @@ public partial class Foo
 
     protected void OnBar(EventArgs e)
     {
-        if (Bar is null)
+        if (Bar == null)
         {
             Debug.WriteLine(""No subscriber"");
         }

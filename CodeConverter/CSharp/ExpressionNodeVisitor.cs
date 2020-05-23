@@ -675,7 +675,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<ExpressionSyntax> NegateAndSimplifyOrNullAsync(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr)
         {
-            if (await _operatorConverter.ConvertNothingComparisonOrNullAsync(node.Operand, true) is ExpressionSyntax nothingComparison) {
+            if (await _operatorConverter.ConvertNothingComparisonOrNullAsync(node.Operand.SkipParens(), true) is ExpressionSyntax nothingComparison) {
                 return nothingComparison;
             } else if (expr is BinaryExpressionSyntax bes && bes.OperatorToken.IsKind(SyntaxKind.EqualsToken)) {
                 return bes.WithOperatorToken(SyntaxFactory.Token(SyntaxKind.ExclamationEqualsToken));

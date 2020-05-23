@@ -68,7 +68,7 @@ namespace VbLibrary.My
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static XAttribute CreateAttribute(XName name, object value)
         {
-            if (value is null)
+            if (value == null)
             {
                 return null;
             }

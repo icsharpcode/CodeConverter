@@ -1390,7 +1390,7 @@ internal partial class TestClass
 {
     private void TestMethod(object nullObject)
     {
-        if (nullObject is null)
+        if (nullObject == null)
             throw new ArgumentNullException(nameof(nullObject));
         lock (nullObject)
             Console.WriteLine(nullObject);
@@ -1411,7 +1411,7 @@ internal partial class TestClass
 {
     private void TestMethod(object nullObject)
     {
-        if (nullObject is null)
+        if (nullObject == null)
             throw new ArgumentNullException(nameof(nullObject));
     }
 }");
