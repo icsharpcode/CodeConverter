@@ -509,7 +509,7 @@ public partial class Issue567
         string argstr1 = Conversions.ToString(tmp1[1]);
         DoSomething(ref argstr1);
         tmp1[1] = argstr1;
-        Debug.Assert(Conversions.ToBoolean(Operators.ConditionalCompareObjectEqual(Other.lst2[1], 5.ToString(), false)));
+        Debug.Assert(Conversions.ToBoolean(Operators.CompareObjectEqual(Other.lst2[1], 5.ToString(), false)));
     }
 }
 

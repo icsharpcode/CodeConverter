@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Improve performance of single file conversion - [#546](https://github.com/icsharpcode/CodeConverter/issues/546)
 * Add AsEnumerable where needed in linq "in" clause - [#544](https://github.com/icsharpcode/CodeConverter/issues/544)
 * Remove redundant empty string coalesce in string comparison - [#500](https://github.com/icsharpcode/CodeConverter/issues/500)
+* Convert VB comparison operators - [#396](https://github.com/icsharpcode/CodeConverter/issues/396)
 
 ### C# -> VB
 

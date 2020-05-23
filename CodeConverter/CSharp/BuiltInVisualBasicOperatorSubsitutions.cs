@@ -29,6 +29,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private class BuiltInVisualBasicOperatorSubsitutions : IOperatorConverter
         {
+            private const string _compilerServices = nameof(Microsoft) + "." + nameof(Microsoft.VisualBasic) + "." + nameof(Microsoft.VisualBasic.CompilerServices);
+            private const string _operators = nameof(Operators);
             private readonly SemanticModel _semanticModel;
             private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
             private readonly CommentConvertingVisitorWrapper _triviaConvertingVisitor;
@@ -81,17 +83,33 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            private async Task<ExpressionSyntax> ConvertToLikeOperatorAsync(VBSyntax.BinaryExpressionSyntax node, WellKnownMember member)
+            private async Task<ExpressionSyntax> ConvertToLikeOperatorAsync(VBSyntax.BinaryExpressionSyntax node, KnownMethod member)
             {
                 var (lhs, rhs) = await AcceptSidesAsync(node);
                 var compareText = ValidSyntaxFactory.MemberAccess("CompareMethod", _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive ? "Text" : "Binary");
-                var likeString = ValidSyntaxFactory.MemberAccess("LikeOperator", "LikeString");
                 _visualBasicEqualityComparison.ExtraUsingDirectives.Add("Microsoft.VisualBasic");
-                _visualBasicEqualityComparison.ExtraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
-                return SyntaxFactory.InvocationExpression(
-                    likeString,
-                    ExpressionSyntaxExtensions.CreateArgList(lhs, rhs, compareText)
-                );
+                return member.Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives, lhs, rhs, compareText);
+            }
+
+            private async Task<ExpressionSyntax> ConvertToPowOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
+            {
+                 var (lhs, rhs) = await AcceptSidesAsync(node);
+                return new KnownMethod(nameof(System), nameof(Math), nameof(Math.Pow))
+                    .Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives, lhs, rhs);
+            }
+
+            /// <remarks>No need to implement these since this is only called for things that are already decimal and hence will resolve operator in C#</remakrs>
+            private async Task<ExpressionSyntax> ConvertToDecimalBinaryOperatorAsync(VBSyntax.BinaryExpressionSyntax node, KnownMethod member) =>
+                default;
+
+            private async Task<ExpressionSyntax> ConvertToObjectBinaryOperatorAsync(VBSyntax.BinaryExpressionSyntax node, KnownMethod member) =>
+                await ConvertToMethodAsync(node, member);
+
+            private async Task<ExpressionSyntax> ConvertToObjectComparisonOperatorAsync(VBSyntax.BinaryExpressionSyntax node, KnownMethod member)
+            {
+                var (lhs, rhs) = await AcceptSidesAsync(node);
+                var compareTextKind = _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression;
+                return member.Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives, lhs, rhs, SyntaxFactory.LiteralExpression(compareTextKind));
             }
 
             private async Task<ExpressionSyntax> ConvertToConcatenateOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
@@ -99,23 +117,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return null;
             }
 
-            private async Task<ExpressionSyntax> ConvertToPowOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
-            {
-                var (lhs, rhs) = await AcceptSidesAsync(node);
-                return SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Math), nameof(Math.Pow)), ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
-            }
-
             private async Task<ExpressionSyntax> ConvertToObjectShortCircuitOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
-            {
-                return null;
-            }
-
-            private async Task<ExpressionSyntax> ConvertToDecimalBinaryOperatorAsync(VBSyntax.BinaryExpressionSyntax node, SpecialMember member)
-            {
-                return null;
-            }
-
-            private async Task<ExpressionSyntax> ConvertToObjectBinaryOperatorAsync(VBSyntax.BinaryExpressionSyntax node, WellKnownMember member)
             {
                 return null;
             }
@@ -135,9 +137,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return null;
             }
 
-            private async Task<ExpressionSyntax> ConvertToObjectComparisonOperatorAsync(VBSyntax.BinaryExpressionSyntax node, WellKnownMember member)
+            private async Task<ExpressionSyntax> ConvertToMethodAsync(VBSyntax.BinaryExpressionSyntax node, KnownMethod member)
             {
-                return null;
+                var (lhs, rhs) = await AcceptSidesAsync(node);
+                return member.Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives, lhs, rhs);
             }
 
             private async Task<(ExpressionSyntax, ExpressionSyntax)> AcceptSidesAsync(VBSyntax.BinaryExpressionSyntax node)
@@ -165,7 +168,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     case BinaryOperatorKind.ConcatenateExpression:  // Concat needs to be done before expr trees, so in LocalConvertTor instead of VBSemanticsConvertTor
                         {
                             if (nodeType.IsObjectType()) {
-                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConcatenateObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, (_compilerServices, _operators, "ConcatenateObject"));
                             } else {
                                 return await ConvertToConcatenateOperatorAsync(node);
                             }
@@ -173,9 +176,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.LikeExpression: {
                             if (leftType.IsObjectType()) {
-                                return await ConvertToLikeOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_LikeOperator__LikeObjectObjectObjectCompareMethod);
+                                return await ConvertToLikeOperatorAsync(node, (_compilerServices, "LikeOperator", "LikeObject"));
                             } else {
-                                return await ConvertToLikeOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_LikeOperator__LikeStringStringStringCompareMethod);
+                                return await ConvertToLikeOperatorAsync(node, (_compilerServices, "LikeOperator", "LikeString"));
                             }
                         }
 
@@ -186,10 +189,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                             // TODO: Recheck
 
                             if (nodeType.IsObjectType() || inExpressionLambda && leftType.IsObjectType()) {
-                                return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectEqualObjectObjectBoolean);
+                                return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "CompareObjectEqual"));
                             } else if (nodeType.IsBooleanType()) {
                                 if (leftType.IsObjectType()) {
-                                    return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectEqualObjectObjectBoolean);
+                                    return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "ConditionalCompareObjectEqual"));
                                 } else if (leftType.IsStringType()) {
                                     return await ConvertToStringComparisonOperatorAsync(node);
                                 } else if (leftType.IsDecimalType()) {
@@ -206,10 +209,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                             // NOTE: See comment above
 
                             if (nodeType.IsObjectType() || inExpressionLambda && leftType.IsObjectType()) {
-                                return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectNotEqualObjectObjectBoolean);
+                                return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "CompareObjectNotEqual"));
                             } else if (nodeType.IsBooleanType()) {
                                 if (leftType.IsObjectType()) {
-                                    return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectNotEqualObjectObjectBoolean);
+                                    return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "ConditionalCompareObjectNotEqual"));
                                 } else if (leftType.IsStringType()) {
                                     return await ConvertToStringComparisonOperatorAsync(node);
                                 } else if (leftType.IsDecimalType()) {
@@ -226,10 +229,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                             // NOTE: See comment above
 
                             if (nodeType.IsObjectType() || inExpressionLambda && leftType.IsObjectType()) {
-                                return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectLessEqualObjectObjectBoolean);
+                                return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "CompareObjectLessEqual"));
                             } else if (nodeType.IsBooleanType()) {
                                 if (leftType.IsObjectType()) {
-                                    return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectLessEqualObjectObjectBoolean);
+                                    return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "ConditionalCompareObjectLessEqual"));
                                 } else if (leftType.IsStringType()) {
                                     return await ConvertToStringComparisonOperatorAsync(node);
                                 } else if (leftType.IsDecimalType()) {
@@ -246,10 +249,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                             // NOTE: See comment above
 
                             if (nodeType.IsObjectType() || inExpressionLambda && leftType.IsObjectType()) {
-                                return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectGreaterEqualObjectObjectBoolean);
+                                return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "CompareObjectGreaterEqual"));
                             } else if (nodeType.IsBooleanType()) {
                                 if (leftType.IsObjectType()) {
-                                    return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectGreaterEqualObjectObjectBoolean);
+                                    return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "ConditionalCompareObjectGreaterEqual"));
                                 } else if (leftType.IsStringType()) {
                                     return await ConvertToStringComparisonOperatorAsync(node);
                                 } else if (leftType.IsDecimalType()) {
@@ -266,10 +269,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                             // NOTE: See comment above
 
                             if (nodeType.IsObjectType() || inExpressionLambda && leftType.IsObjectType()) {
-                                return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectLessObjectObjectBoolean);
+                                return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "CompareObjectLess"));
                             } else if (nodeType.IsBooleanType()) {
                                 if (leftType.IsObjectType()) {
-                                    return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectLessObjectObjectBoolean);
+                                    return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "ConditionalCompareObjectLess"));
                                 } else if (leftType.IsStringType()) {
                                     return await ConvertToStringComparisonOperatorAsync(node);
                                 } else if (leftType.IsDecimalType()) {
@@ -286,10 +289,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                             // NOTE: See comment above
 
                             if (nodeType.IsObjectType() || inExpressionLambda && leftType.IsObjectType()) {
-                                return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__CompareObjectGreaterObjectObjectBoolean);
+                                return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "CompareObjectGreater"));
                             } else if (nodeType.IsBooleanType()) {
                                 if (leftType.IsObjectType()) {
-                                    return await ConvertToObjectComparisonOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ConditionalCompareObjectGreaterObjectObjectBoolean);
+                                    return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "ConditionalCompareObjectGreater"));
                                 } else if (leftType.IsStringType()) {
                                     return await ConvertToStringComparisonOperatorAsync(node);
                                 } else if (leftType.IsDecimalType()) {
@@ -304,19 +307,18 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.AddExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__AddObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, (_compilerServices, _operators, "AddObject"));
                             } else if (nodeType.IsDecimalType()) {
-                                return await ConvertToDecimalBinaryOperatorAsync(node, SpecialMember.System_Decimal__AddDecimalDecimal);
+                                return await ConvertToDecimalBinaryOperatorAsync(node, (nameof(System), nameof(Decimal), nameof(Decimal.Add)));
                             }
-
                             break;
                         }
 
                     case BinaryOperatorKind.SubtractExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__SubtractObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, (_compilerServices, _operators, "SubtractObject"));
                             } else if (nodeType.IsDecimalType()) {
-                                return await ConvertToDecimalBinaryOperatorAsync(node, SpecialMember.System_Decimal__SubtractDecimalDecimal);
+                                return await ConvertToDecimalBinaryOperatorAsync(node, (nameof(System), nameof(Decimal), nameof(Decimal.Subtract)));
                             }
 
                             break;
@@ -324,9 +326,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.MultiplyExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__MultiplyObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, (_compilerServices, _operators, "MultiplyObject"));
                             } else if (nodeType.IsDecimalType()) {
-                                return await ConvertToDecimalBinaryOperatorAsync(node, SpecialMember.System_Decimal__MultiplyDecimalDecimal);
+                                return await ConvertToDecimalBinaryOperatorAsync(node, (nameof(System), nameof(Decimal), nameof(Decimal.Multiply)));
                             }
 
                             break;
@@ -334,9 +336,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.ModuloExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ModObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, (_compilerServices, _operators, "ModObject"));
                             } else if (nodeType.IsDecimalType()) {
-                                return await ConvertToDecimalBinaryOperatorAsync(node, SpecialMember.System_Decimal__RemainderDecimalDecimal);
+                                return await ConvertToDecimalBinaryOperatorAsync(node, (nameof(System), nameof(Decimal), nameof(Decimal.Remainder)));
                             }
 
                             break;
@@ -344,9 +346,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.DivideExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__DivideObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, (_compilerServices, _operators, "DivideObject"));
                             } else if (nodeType.IsDecimalType()) {
-                                return await ConvertToDecimalBinaryOperatorAsync(node, SpecialMember.System_Decimal__DivideDecimalDecimal);
+                                return await ConvertToDecimalBinaryOperatorAsync(node, (nameof(System), nameof(Decimal), nameof(Decimal.Divide)));
                             }
 
                             break;
@@ -354,7 +356,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.IntegerDivideExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__IntDivideObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, (_compilerServices, _operators, "IntDivideObject"));
                             }
 
                             break;
@@ -362,7 +364,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.ExponentiateExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__ExponentObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, (_compilerServices, _operators, "ExponentObject"));
                             } else {
                                 return await ConvertToPowOperatorAsync(node);
                             }
@@ -370,7 +372,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.LeftShiftExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__LeftShiftObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, (_compilerServices, _operators, "LeftShiftObject"));
                             }
 
                             break;
@@ -378,7 +380,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.RightShiftExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__RightShiftObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, (_compilerServices, _operators, "RightShiftObject"));
                             }
 
                             break;
@@ -395,7 +397,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case var _ when node.OperatorToken.IsKind(BinaryOperatorKind.XorKeyword): {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__XorObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, (_compilerServices, _operators, "XorObject"));
                             }
 
                             break;
@@ -403,7 +405,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.OrExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__OrObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, (_compilerServices, _operators, "OrObject"));
                             }
 
                             break;
@@ -411,7 +413,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     case BinaryOperatorKind.AndExpression: {
                             if (nodeType.IsObjectType() && !inExpressionLambda) {
-                                return await ConvertToObjectBinaryOperatorAsync(node, WellKnownMember.Microsoft_VisualBasic_CompilerServices_Operators__AndObjectObjectObject);
+                                return await ConvertToObjectBinaryOperatorAsync(node, (_compilerServices, _operators, "AndObject"));
                             }
 
                             break;
