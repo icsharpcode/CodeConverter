@@ -13,17 +13,22 @@ namespace ICSharpCode.CodeConverter.Util
     {
         public static ArgumentListSyntax CreateArgList(params ExpressionSyntax[] args)
         {
-            return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(args.Select(SyntaxFactory.Argument)));
+            return CreateCsArgList(args);
         }
 
         public static VBSyntax.ArgumentListSyntax CreateArgList<T>(params T[] args) where T : VBSyntax.ExpressionSyntax
         {
-            return CreateArgList((IEnumerable<T>) args);
+            return CreateVbArgList((IEnumerable<T>) args);
         }
 
-        public static VBSyntax.ArgumentListSyntax CreateArgList<T>(this IEnumerable<T> argExpressions) where T : VBSyntax.ExpressionSyntax
+        public static VBSyntax.ArgumentListSyntax CreateVbArgList<T>(this IEnumerable<T> argExpressions) where T : VBSyntax.ExpressionSyntax
         {
             return VBasic.SyntaxFactory.ArgumentList(VBasic.SyntaxFactory.SeparatedList(argExpressions.Select(e => (VBSyntax.ArgumentSyntax) VBasic.SyntaxFactory.SimpleArgument(e))));
+        }
+
+        public static ArgumentListSyntax CreateCsArgList<T>(this IEnumerable<T> argExpressions) where T : ExpressionSyntax
+        {
+            return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(argExpressions.Select(SyntaxFactory.Argument)));
         }
 
         /// <summary>

@@ -634,7 +634,7 @@ namespace ICSharpCode.CodeConverter.VB
                     var invocationExpression =
                         SyntaxFactory.InvocationExpression(
                             SyntaxFactory.ParseExpression(eventFieldIdentifier.Identifier.ValueText + "?"), //I think this syntax tree is the wrong shape, but using the right shape causes the simplifier to fail
-                            raiseEventParameters.Select(x => SyntaxFactory.IdentifierName(x.Identifier.Identifier)).CreateArgList()
+                            raiseEventParameters.Select(x => SyntaxFactory.IdentifierName(x.Identifier.Identifier)).CreateVbArgList()
                         );
                     riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ExpressionStatement(invocationExpression)));
                 }
@@ -1005,7 +1005,7 @@ namespace ICSharpCode.CodeConverter.VB
                                     ExpressionSyntaxExtensions.CreateArgList((ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor))
                                 ),
                             SyntaxFactory.BinaryExpression(op, (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor), SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(op)), _commonConversions.Literal(1))
-                    }.CreateArgList()
+                    }.CreateVbArgList()
                 );
             }
         }
@@ -1334,7 +1334,7 @@ namespace ICSharpCode.CodeConverter.VB
                 SyntaxFactory.Token(SyntaxKind.NewKeyword),
                 SyntaxFactory.List<AttributeListSyntax>(),
                 (TypeSyntax)node.Type.ElementType.Accept(TriviaConvertingVisitor),
-                upperBoundArguments.Any() ? upperBoundArguments.CreateArgList() : null,
+                upperBoundArguments.Any() ? upperBoundArguments.CreateVbArgList() : null,
                 upperBoundArguments.Any() ? SyntaxFactory.List(rankSpecifiers.Skip(1)) : SyntaxFactory.List(rankSpecifiers),
                 (CollectionInitializerSyntax)node.Initializer?.Accept(TriviaConvertingVisitor) ?? SyntaxFactory.CollectionInitializer()
             );

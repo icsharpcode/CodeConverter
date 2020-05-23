@@ -483,14 +483,8 @@ public partial class TestClass
         numArray = new int[4];
         numArray = null;
         numArray2[1] = 1;
-        var oldNumArray = numArray;
-        numArray = new int[6];
-        if (oldNumArray is object)
-            Array.Copy(oldNumArray, numArray, Math.Min(6, oldNumArray.Length));
-        var oldNumArray2 = numArray2;
-        numArray2 = new int[6];
-        if (oldNumArray2 is object)
-            Array.Copy(oldNumArray2, numArray2, Math.Min(6, oldNumArray2.Length));
+        Array.Resize(numArray, 6);
+        Array.Resize(numArray2, 6);
         var y = new int[7, 6];
         y[2, 3] = 1;
         var oldY = y;
@@ -500,7 +494,9 @@ public partial class TestClass
                 Array.Copy(oldY, i * oldY.GetLength(1), y, i * y.GetLength(1), Math.Min(oldY.GetLength(1), y.GetLength(1)));
         return numArray2;
     }
-}");
+}
+1 target compilation errors:
+CS1620: Argument 1 must be passed with the 'ref' keyword");
         }
 
         [Fact]

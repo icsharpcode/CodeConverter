@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Add AsEnumerable where needed in linq "in" clause - [#544](https://github.com/icsharpcode/CodeConverter/issues/544)
 * Remove redundant empty string coalesce in string comparison - [#500](https://github.com/icsharpcode/CodeConverter/issues/500)
 * Convert VB comparison operators - [#396](https://github.com/icsharpcode/CodeConverter/issues/396)
+* Convert Redim Preserve of 1D array to Array.Resize - [#501](https://github.com/icsharpcode/CodeConverter/issues/501)
 
 ### C# -> VB
 

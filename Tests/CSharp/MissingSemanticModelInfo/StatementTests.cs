@@ -38,5 +38,20 @@ BC30002: Type 'Asadf' is not defined.
 1 target compilation errors:
 CS0246: The type or namespace name 'Asadf' could not be found (are you missing a using directive or an assembly reference?)", missingSemanticInfo: true);
         }
+
+        [Fact]
+        public async Task RedimOfUnknownVariableAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"ReDim Preserve UnknownArray(unknownIntIdentifer)", @"{
+    Array.Resize(UnknownArray, unknownIntIdentifer + 1);
+}
+
+2 source compilation errors:
+BC30451: 'UnknownArray' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'unknownIntIdentifer' is not declared. It may be inaccessible due to its protection level.
+2 target compilation errors:
+CS0103: The name 'UnknownArray' does not exist in the current context
+CS0103: The name 'unknownIntIdentifer' does not exist in the current context", missingSemanticInfo: true);
+        }
     }
 }

@@ -228,7 +228,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var csTargetArrayExpression = (ExpressionSyntax) await node.Expression.AcceptAsync(_expressionVisitor);
             var convertedBounds = (await CommonConversions.ConvertArrayBoundsAsync(node.ArrayBounds)).Sizes.ToList();
-
+            if (preserve && convertedBounds.Count == 1) {
+                var arrayResize = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Array), nameof(Array.Resize)), new[] { csTargetArrayExpression, convertedBounds.Single() }.CreateCsArgList());
+                return SingleStatement(arrayResize);
+            }
             var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds, node.SpanStart);
             if (!preserve) return SingleStatement(newArrayAssignment);
 
