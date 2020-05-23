@@ -32,6 +32,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; }
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _extraUsingDirectives;
+        private readonly IOperatorConverter _operatorConverter;
         private readonly bool _optionCompareText = false;
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
         private readonly Stack<ExpressionSyntax> _withBlockLhs = new Stack<ExpressionSyntax>();
@@ -56,7 +57,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csCompilation = csCompilation;
             _typeContext = typeContext;
             _extraUsingDirectives = extraUsingDirectives;
-
+            _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison);
             // If this isn't needed, the assembly with Conversions may not be referenced, so this must be done lazily
             _convertMethodsLookupByReturnType =
                 new Lazy<IDictionary<ITypeSymbol, string>>(() => CreateConvertMethodsLookupByReturnType(semanticModel));
@@ -674,7 +675,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<ExpressionSyntax> NegateAndSimplifyOrNullAsync(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr)
         {
-            if (await ConvertNothingComparisonOrNullAsync(node.Operand, true) is ExpressionSyntax nothingComparison) {
+            if (await _operatorConverter.ConvertNothingComparisonOrNullAsync(node.Operand, true) is ExpressionSyntax nothingComparison) {
                 return nothingComparison;
             } else if (expr is BinaryExpressionSyntax bes && bes.OperatorToken.IsKind(SyntaxKind.EqualsToken)) {
                 return bes.WithOperatorToken(SyntaxFactory.Token(SyntaxKind.ExclamationEqualsToken));
@@ -695,7 +696,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax node)
         {
-            if (await ConvertNothingComparisonOrNullAsync(node) is CSharpSyntaxNode nothingComparison) return nothingComparison;
+            if (await _operatorConverter.ConvertRewrittenBinaryOperatorOrNullAsync(node) is ExpressionSyntax operatorNode) {
+                return operatorNode;
+            }
 
             var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
             var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
@@ -731,76 +734,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             omitConversion |= lhsTypeInfo.Type != null && rhsTypeInfo.Type != null &&
                                  lhsTypeInfo.Type.IsEnumType() && Equals(lhsTypeInfo.Type, rhsTypeInfo.Type)
-                                 && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression);
+                                 && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression, VBasic.SyntaxKind.ModuloExpression);
             lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType);
             rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
 
-
-            if (node.IsKind(VBasic.SyntaxKind.ExponentiateExpression,
-                VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
-                return SyntaxFactory.InvocationExpression(
-                    ValidSyntaxFactory.MemberAccess(nameof(Math), nameof(Math.Pow)),
-                    ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
-            }
-
-            if (node.IsKind(VBasic.SyntaxKind.LikeExpression)) {
-                var compareText = ValidSyntaxFactory.MemberAccess("CompareMethod", _optionCompareText ? "Text" : "Binary");
-                var likeString = ValidSyntaxFactory.MemberAccess("LikeOperator", "LikeString");
-                _extraUsingDirectives.Add("Microsoft.VisualBasic");
-                _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
-                return SyntaxFactory.InvocationExpression(
-                    likeString,
-                    ExpressionSyntaxExtensions.CreateArgList(lhs, rhs, compareText)
-                );
-            }
 
             var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
             var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
 
             var csBinExp = SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
             return node.Parent.IsKind(VBasic.SyntaxKind.SimpleArgument) ? csBinExp : csBinExp.AddParens();
-        }
-
-        private async Task<ExpressionSyntax> ConvertNothingComparisonOrNullAsync(VBSyntax.ExpressionSyntax exprNode, bool negateExpression = false)
-        {
-            if (!(exprNode is VBSyntax.BinaryExpressionSyntax node) || !node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression)) {
-                return null;
-            }
-            ExpressionSyntax otherArgument;
-            if (node.Left.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArgAsync(node.Right);
-            } else if (node.Right.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArgAsync(node.Left);
-            } else {
-                return null;
-            }
-
-            var isReference = node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.IsNotExpression);
-            var notted = node.IsKind(VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression) || negateExpression;
-            return notted ? CommonConversions.NotNothingComparison(otherArgument, isReference) : CommonConversions.NothingComparison(otherArgument, isReference);
-        }
-
-        private async Task<CSharpSyntaxNode> ConvertIsOrIsNotExpressionArgAsync(VBSyntax.ExpressionSyntax binaryExpressionArg)
-        {
-            return await ConvertMyGroupCollectionPropertyGetWithUnderlyingFieldAsync(binaryExpressionArg)
-                   ?? await binaryExpressionArg.AcceptAsync(TriviaConvertingExpressionVisitor);
-        }
-
-        private async Task<ExpressionSyntax> ConvertMyGroupCollectionPropertyGetWithUnderlyingFieldAsync(SyntaxNode node)
-        {
-            var operation = _semanticModel.GetOperation(node);
-            switch (operation)
-            {
-                case IConversionOperation co:
-                    return await ConvertMyGroupCollectionPropertyGetWithUnderlyingFieldAsync(co.Operand.Syntax);
-                case IPropertyReferenceOperation pro when pro.Property.IsMyGroupCollectionProperty():
-                    var associatedField = pro.Property.GetAssociatedField();
-                    var propertyReferenceOperation = ((IPropertyReferenceOperation) pro.Instance);
-                    var qualification = (ExpressionSyntax) await propertyReferenceOperation.Syntax.AcceptAsync(TriviaConvertingExpressionVisitor);
-                    return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, qualification, SyntaxFactory.IdentifierName(associatedField.Name));
-                default:
-                    return null;
-            }
         }
 
         private async Task<CSharpSyntaxNode> WithRemovedRedundantConversionOrNullAsync(VBSyntax.InvocationExpressionSyntax conversionNode, ISymbol invocationSymbol)
@@ -1521,7 +1464,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         private static bool ProbablyNotAMethodCall(VBasic.Syntax.InvocationExpressionSyntax node, ISymbol symbol, ITypeSymbol symbolReturnType)
         {
-            return !node.IsParentKind(VBasic.SyntaxKind.CallStatement) && !(symbol is IMethodSymbol) && symbolReturnType.IsErrorType() && node.Expression is VBasic.Syntax.IdentifierNameSyntax && node.ArgumentList?.Arguments.Any() == true;
+            return !node.IsParentKind(VBasic.SyntaxKind.CallStatement) && !(symbol is IMethodSymbol) && symbolReturnType.IsErrorType() && node.Expression is VBasic.Syntax.IdentifierNameSyntax && node.ArgumentList?.Arguments.Count() == 1;
         }
 
         private async Task<ArgumentListSyntax> ConvertArgumentListOrEmptyAsync(SyntaxNode node, VBSyntax.ArgumentListSyntax argumentList)

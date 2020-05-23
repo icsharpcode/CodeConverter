@@ -12,7 +12,7 @@ namespace ICSharpCode.CodeConverter.Shared
     /// <summary>
     /// This file requires net standard 2.0 or above. Therefore it should be linked into projects referencing the converter to get a wider range of references.
     /// </summary>
-    public class DefaultReferences
+    public static class DefaultReferences
     {
         private static readonly Assembly[] DefaultAssemblies = new []{
             typeof(object),

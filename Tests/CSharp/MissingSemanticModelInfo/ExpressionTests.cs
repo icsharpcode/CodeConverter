@@ -311,7 +311,7 @@ internal partial class TestClass
 
     private void TestMethod()
     {
-        var a = DefaultDate[1, 2, 3].Blawer(1, 2, 3);
+        var a = DefaultDate.Blawer(1, 2, 3);
     }
 }
 2 source compilation errors:
@@ -338,14 +338,13 @@ internal partial class TestClass
     private void TestMethod()
     {
         if (MyEvent is object)
-            MyEvent[this, EventArgs.Empty];
+            MyEvent(this, EventArgs.Empty);
     }
 }
 1 source compilation errors:
 BC30451: 'MyEvent' is not declared. It may be inaccessible due to its protection level.
-2 target compilation errors:
-CS0103: The name 'MyEvent' does not exist in the current context
-CS0201: Only assignment, call, increment, decrement, await, and new object expressions can be used as a statement");
+1 target compilation errors:
+CS0103: The name 'MyEvent' does not exist in the current context");
         }
 
         [Fact]

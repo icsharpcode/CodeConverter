@@ -403,5 +403,49 @@ public partial class MultipleCasts
     }
 }");
         }
+
+        /// <summary>
+        /// We just use ConditionalCompareObjectEqual to make it a bool, but VB emits a late binding call something like this:
+        /// array[0] = Operators.CompareObjectEqual(left, right, false);
+        /// array[1] = "Identical values stored in objects should be equal";
+        /// NewLateBinding.LateCall(this, null, "AssertTrue", array, null, null, null, true);
+        /// This will likely be the same in the vast majority of cases
+        /// </summary>
+        [Fact]
+        public async Task ObjectComparisonIsConvertedToBoolRatherThanLateBoundAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class CopiedFromTheSelfVerifyingBooleanTests
+    Public Sub VisualBasicEqualityOfNormalObjectsNotSubjectToSpecialStringConversionRules()
+        Dim a1 As Object = 3
+        Dim a2 As Object = 3
+        AssertTrue(a1 = a2, ""Identical values stored in objects should be equal"")
+    End Sub
+
+    Private Sub AssertTrue(v1 As Nullable(Of Boolean), v2 As String)
+    End Sub
+
+    Private Sub AssertTrue(v1 As Boolean, v2 As String)
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class CopiedFromTheSelfVerifyingBooleanTests
+{
+    public void VisualBasicEqualityOfNormalObjectsNotSubjectToSpecialStringConversionRules()
+    {
+        object a1 = 3;
+        object a2 = 3;
+        AssertTrue(Operators.ConditionalCompareObjectEqual(a1, a2, false), ""Identical values stored in objects should be equal"");
+    }
+
+    private void AssertTrue(bool? v1, string v2)
+    {
+    }
+
+    private void AssertTrue(bool v1, string v2)
+    {
+    }
+}");
+        }
     }
 }

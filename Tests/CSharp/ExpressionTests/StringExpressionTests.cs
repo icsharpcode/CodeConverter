@@ -136,7 +136,7 @@ public partial class Class1
             throw new Exception();
         }
 
-        if (s1 == default)
+        if (s1 == null)
         {
             // 
         }
@@ -199,7 +199,7 @@ public partial class Class1
             throw new Exception();
         }
 
-        if (s1 == default)
+        if (s1 == null)
         {
             // 
         }
@@ -341,6 +341,28 @@ public partial class VisualBasicClass
         string x = """";
         bool y = x == ""something"";
     }
+}");
+        }
+
+        [Fact]
+        public async Task Issue396ComparisonOperatorForStringsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Public Class Issue396ComparisonOperatorForStringsAsync
+    Private str = 1.ToString()
+    Private b = str > """"
+End Class",
+@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class Issue396ComparisonOperatorForStringsAsync
+{
+    public Issue396ComparisonOperatorForStringsAsync()
+    {
+        b = Operators.ConditionalCompareObjectGreater(str, """", false);
+    }
+
+    private object str = 1.ToString();
+    private object b;
 }");
         }
     }
