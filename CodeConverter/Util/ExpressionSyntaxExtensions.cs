@@ -26,9 +26,13 @@ namespace ICSharpCode.CodeConverter.Util
             return VBasic.SyntaxFactory.ArgumentList(VBasic.SyntaxFactory.SeparatedList(argExpressions.Select(e => (VBSyntax.ArgumentSyntax) VBasic.SyntaxFactory.SimpleArgument(e))));
         }
 
-        public static ArgumentListSyntax CreateCsArgList<T>(this IEnumerable<T> argExpressions) where T : ExpressionSyntax
+        public static ArgumentListSyntax CreateCsArgList<T>(this IEnumerable<T> argExpressions, params SyntaxKind[] refTokenKinds) where T : ExpressionSyntax
         {
-            return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(argExpressions.Select(SyntaxFactory.Argument)));
+            return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(argExpressions.Select((e, i) => {
+                var arg = SyntaxFactory.Argument(e);
+                if (i < refTokenKinds.Length) arg = arg.WithRefKindKeyword(SyntaxFactory.Token(refTokenKinds[i]));
+                return arg;
+            })));
         }
 
         /// <summary>

@@ -43,7 +43,7 @@ CS0246: The type or namespace name 'Asadf' could not be found (are you missing a
         public async Task RedimOfUnknownVariableAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"ReDim Preserve UnknownArray(unknownIntIdentifer)", @"{
-    Array.Resize(UnknownArray, unknownIntIdentifer + 1);
+    Array.Resize(ref UnknownArray, unknownIntIdentifer + 1);
 }
 
 2 source compilation errors:
