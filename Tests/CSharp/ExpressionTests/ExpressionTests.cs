@@ -1009,11 +1009,6 @@ internal partial class TestClass
         [Fact]
         public async Task TypeInferredLambdaBodyExpressionAsync()
         {
-            // BUG: Should actually call:
-            // * Operators::DivideObject(object, object)
-            // * Operators::ConditionalCompareObjectGreater(object, object, bool)
-            // * Operators::MultiplyObject(object, object)
-            // * Operators::ModObject(object, object)
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim test = Function(a) a * 2

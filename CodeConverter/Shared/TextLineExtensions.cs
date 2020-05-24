@@ -35,7 +35,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var toReplace = target.FindNonZeroWidthToken(targetLine.Start);
             if (toReplace.Span.End < targetLine.Start) {
-                toReplace = toReplace.GetNextToken(); //TODO: Find out why FindToken is off by one from what I want sometimes, is there a better alternative?
+                toReplace = toReplace.GetNextToken();
             }
 
             return toReplace;
