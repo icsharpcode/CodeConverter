@@ -1439,6 +1439,7 @@ internal partial class TestClass
 }
 1 target compilation errors:
 CS0149: Method name expected");
+            //BUG: Requires new Action wrapper
         }
 
         [Fact]
@@ -1623,6 +1624,7 @@ public partial class TestClass
 }
 1 target compilation errors:
 CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
+            //BUG: Correct textual output, but requires var pattern syntax construct not available before CodeAnalysis 3
         }
 
         [Fact]

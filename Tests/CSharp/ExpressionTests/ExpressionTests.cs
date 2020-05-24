@@ -31,7 +31,7 @@ internal partial class TestClass
         public async Task DateLiteralsAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod(ByVal date As Date = #1/1/1900#)
+    Private Sub TestMethod(Optional ByVal pDate As Date = #1/1/1900#)
         Dim rslt = #1/1/1900#
         Dim rslt2 = #8/13/2002 12:14 PM#
     End Sub
@@ -41,15 +41,12 @@ using System.Runtime.InteropServices;
 
 internal partial class TestClass
 {
-    private void TestMethod([Optional, DateTimeConstant(599266080000000000/* #1/1/1900# */)] DateTime date)
+    private void TestMethod([Optional, DateTimeConstant(599266080000000000/* #1/1/1900# */)] DateTime pDate)
     {
         var rslt = DateTime.Parse(""1900-01-01"");
         var rslt2 = DateTime.Parse(""2002-08-13 12:14:00"");
     }
-}
-2 source compilation errors:
-BC30183: Keyword is not valid as an identifier.
-BC32024: Default values cannot be supplied for parameters that are not declared 'Optional'.");
+}");
         }
 
         [Fact]
