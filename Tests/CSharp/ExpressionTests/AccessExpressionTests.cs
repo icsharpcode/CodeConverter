@@ -608,9 +608,7 @@ public partial class Test
     public static void OnError(object s, ErrorEventArgs e)
     {
     }
-}
-1 target compilation errors:
-CS8082: Sub-expression cannot be used in an argument to nameof.");
+}");
         }
 
         [Fact]

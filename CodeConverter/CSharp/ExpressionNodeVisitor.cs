@@ -486,11 +486,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             return NeedsVariableForArgument(node, refKind);
         }
 
-        private static StatementSyntax AssignStmt(ExpressionSyntax left, IdentifierNameSyntax right)
-        {
-            return SyntaxFactory.ExpressionStatement(Assign(left, right));
-        }
-
         private static AssignmentExpressionSyntax Assign(ExpressionSyntax left, IdentifierNameSyntax right)
         {
             return SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, left, right);
@@ -1165,7 +1160,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
             var partOfNamespaceDeclaration = topLevelName.Parent.IsKind(VBasic.SyntaxKind.NamespaceStatement);
             var leftIsGlobal = node.Left.IsKind(VBasic.SyntaxKind.GlobalName);
-
+            var isPartOfNameOfExpression = node.GetAncestor<VBSyntax.NameOfExpressionSyntax>() != null;
             ExpressionSyntax qualifiedName;
             if (partOfNamespaceDeclaration || !(lhsSyntax is SimpleNameSyntax sns)) {
                 if (leftIsGlobal) return rhsSyntax;
@@ -1174,9 +1169,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 qualifiedName = QualifyNode(node.Left, sns);
             }
 
-            return leftIsGlobal
-                ? (CSharpSyntaxNode)SyntaxFactory.AliasQualifiedName((IdentifierNameSyntax)lhsSyntax, rhsSyntax)
-                : SyntaxFactory.QualifiedName((NameSyntax)qualifiedName, rhsSyntax);
+            return leftIsGlobal ? SyntaxFactory.AliasQualifiedName((IdentifierNameSyntax)lhsSyntax, rhsSyntax) :
+                isPartOfNameOfExpression ? SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, (NameSyntax)qualifiedName, rhsSyntax) :
+                (CSharpSyntaxNode)SyntaxFactory.QualifiedName((NameSyntax)qualifiedName, rhsSyntax);
         }
 
         public override async Task<CSharpSyntaxNode> VisitGenericName(VBasic.Syntax.GenericNameSyntax node)
