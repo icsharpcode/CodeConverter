@@ -43,9 +43,7 @@ public partial class TestEventWithNoType
     {
         OnCakeChange?.Invoke();
     }
-}
-1 target compilation errors:
-CS1547: Keyword 'void' cannot be used in this context");
+}");
         }
 
         [Fact]
@@ -150,9 +148,7 @@ internal static partial class Module1
     public static void PrintTestMessage3()
     {
     }
-}
-1 target compilation errors:
-CS1547: Keyword 'void' cannot be used in this context");
+}");
         }
 
         [Fact]
@@ -207,8 +203,6 @@ internal partial class Class1
     {
     }
 }
-1 target compilation errors:
-CS1547: Keyword 'void' cannot be used in this context
 ");
         }
 
@@ -352,9 +346,7 @@ public partial class ShouldNotGainConstructor
 {
 }
 1 source compilation errors:
-BC30516: Overload resolution failed because no accessible 'New' accepts this number of arguments.
-1 target compilation errors:
-CS1547: Keyword 'void' cannot be used in this context", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
+BC30516: Overload resolution failed because no accessible 'New' accepts this number of arguments.", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
         }
 
         [Fact]
@@ -483,9 +475,7 @@ public partial class Class1
     public void PrintTestMessage3()
     {
     }
-}
-1 target compilation errors:
-CS1547: Keyword 'void' cannot be used in this context", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
+}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
         }
 
         [Fact]

@@ -1180,9 +1180,7 @@ public partial class AcmeClass
             Thread.Sleep(1000);
         }
     }
-}
-1 target compilation errors:
-CS1547: Keyword 'void' cannot be used in this context");
+}");
         }
 
         [Fact]

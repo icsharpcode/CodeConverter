@@ -1145,7 +1145,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var delegateDecl = SyntaxFactory.DelegateDeclaration(
                     SyntaxFactory.List<AttributeListSyntax>(),
                     modifiers,
-                    SyntaxFactory.ParseTypeName("void"),
+                    SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword)),
                     delegateName,
                     null,
                     (ParameterListSyntax) await node.ParameterList.AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList(),
@@ -1258,7 +1258,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var attributeLists = (await CommonConversions.ConvertAttributesAsync(node.AttributeLists)).Add(dllImportAttributeList);
 
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers).Add(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)).Add(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ExternKeyword));
-            var returnType = (TypeSyntax) await (node.AsClause?.Type).AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParseTypeName("void");
+            var returnType = (TypeSyntax) await (node.AsClause?.Type).AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword));
             var parameterListSyntax = (ParameterListSyntax) await (node.ParameterList).AcceptAsync(_triviaConvertingExpressionVisitor) ??
                                       SyntaxFactory.ParameterList();
 
