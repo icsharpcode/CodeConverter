@@ -923,6 +923,7 @@ internal partial class TestClass
     }
 }");
         }
+
         [Fact]
         public async Task CollectionInitializersAsync()
         {
@@ -948,9 +949,7 @@ internal partial class TestClass
         var intList = new List<int>() { 1 };
         var dict = new Dictionary<int, int>() { { 1, 2 }, { 3, 4 } };
     }
-}
-1 target compilation errors:
-CS7036: There is no argument given that corresponds to the required formal parameter 'value' of 'Dictionary<int, int>.Add(int, int)'");
+}");
         }
 
         [Fact]

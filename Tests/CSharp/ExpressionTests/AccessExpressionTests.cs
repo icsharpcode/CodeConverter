@@ -74,9 +74,7 @@ public partial class A
         var dict = new Dictionary<string, string>() { { ""a"", ""AAA"" }, { ""b"", ""bbb"" } };
         string v = dict?[""a""];
     }
-}
-1 target compilation errors:
-CS7036: There is no argument given that corresponds to the required formal parameter 'value' of 'Dictionary<string, string>.Add(string, string)'");
+}");
         }
 
         [Fact]

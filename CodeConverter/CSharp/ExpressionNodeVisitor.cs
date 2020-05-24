@@ -558,7 +558,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             var isExplicitCollectionInitializer = node.Parent is VBasic.Syntax.ObjectCollectionInitializerSyntax
                                                   || node.Parent is VBasic.Syntax.CollectionInitializerSyntax
                                                   || node.Parent is VBasic.Syntax.ArrayCreationExpressionSyntax;
-            var initializerKind = isExplicitCollectionInitializer ? SyntaxKind.CollectionInitializerExpression : SyntaxKind.ArrayInitializerExpression;
+            var initializerKind = node.IsParentKind(VBasic.SyntaxKind.ObjectCollectionInitializer) || node.IsParentKind(VBasic.SyntaxKind.ObjectCreationExpression) ?
+                SyntaxKind.CollectionInitializerExpression :
+                node.IsParentKind(VBasic.SyntaxKind.CollectionInitializer) && IsComplexInitializer(node) ? SyntaxKind.ComplexElementInitializerExpression :
+                SyntaxKind.ArrayInitializerExpression;
             var initializers = (await node.Initializers.SelectAsync(i => i.AcceptAsync(TriviaConvertingExpressionVisitor))).Cast<ExpressionSyntax>();
             var initializer = SyntaxFactory.InitializerExpression(initializerKind, SyntaxFactory.SeparatedList(initializers));
             if (isExplicitCollectionInitializer) return initializer;
@@ -574,6 +577,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
             var commas = Enumerable.Repeat(SyntaxFactory.Token(SyntaxKind.CommaToken), arrayType.Rank - 1);
             return SyntaxFactory.ImplicitArrayCreationExpression(SyntaxFactory.TokenList(commas), initializer);
+        }
+
+        private bool IsComplexInitializer(VBSyntax.CollectionInitializerSyntax node)
+        {
+            return _semanticModel.GetOperation(node.Parent.Parent) is IObjectOrCollectionInitializerOperation initializer &&
+                initializer.Initializers.OfType<IInvocationOperation>().Any();
         }
 
         public override async Task<CSharpSyntaxNode> VisitQueryExpression(VBasic.Syntax.QueryExpressionSyntax node)

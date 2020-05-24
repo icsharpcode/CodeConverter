@@ -934,9 +934,7 @@ internal partial class TestClass
         // Declare a jagged array
         var sales = new double[12][];
     }
-}
-1 target compilation errors:
-CS8751: Internal error in the C# compiler.");
+}");
         }
 
         [Fact]
@@ -970,9 +968,7 @@ internal partial class TestClass
     {
         var b = new[,] { { 1, 2 }, { 3, 4 } };
     }
-}
-1 target compilation errors:
-CS8751: Internal error in the C# compiler.");
+}");
         }
 
         [Fact]
@@ -989,9 +985,7 @@ internal partial class TestClass
     {
         var b = new int[,] { { 1, 2 }, { 3, 4 } };
     }
-}
-1 target compilation errors:
-CS8751: Internal error in the C# compiler.");
+}");
         }
 
         [Fact]
@@ -1020,9 +1014,7 @@ internal partial class TestClass
         var f = new int[0][,];
         var g = new int[1][,];
     }
-}
-1 target compilation errors:
-CS8751: Internal error in the C# compiler.");
+}");
         }
 
         [Fact]
