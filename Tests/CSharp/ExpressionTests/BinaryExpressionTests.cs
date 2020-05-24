@@ -180,6 +180,7 @@ internal partial class TestClass
 }
 1 target compilation errors:
 CS0266: Cannot implicitly convert type 'double' to 'int'. An explicit conversion exists (are you missing a cast?)");
+            //BUG: To avoid compilation error, should be z = (int)Math.Round(z / 3d);
         }
 
         [Fact]

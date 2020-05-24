@@ -13,8 +13,8 @@ namespace ConsoleApp4.My
 {
     [Embedded()]
     [DebuggerNonUserCode()]
-    [System.Runtime.CompilerServices.CompilerGenerated()]
-    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [global::System.Runtime.CompilerServices.CompilerGenerated()]
+    [global::System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     internal sealed class InternalXmlHelper
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]

@@ -1174,26 +1174,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var symbol = GetSymbolInfoInDocument<ISymbol>(node);
             var genericNameSyntax = await GenericNameAccountingForReducedParametersAsync(node, symbol);
-            ExpressionSyntax name = genericNameSyntax;
-
-
-            if (symbol?.IsStatic == true && symbol.ContainingSymbol != null) {
-
-                if (!node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName)) {
-
-                    string lhs;
-                    if (symbol.ContainingSymbol.IsType()) {
-                        lhs = CommonConversions.GetTypeSyntax(symbol.ContainingSymbol.GetSymbolType()).ToString();
-                    } else if (symbol.ContainingSymbol.IsNamespace() && symbol.ContainingNamespace.IsGlobalNamespace) {
-                        return SyntaxFactory.AliasQualifiedName("global", genericNameSyntax);
-                    } else {
-                        lhs = symbol.ContainingSymbol.ToString();
-                    }
-                    name = SyntaxFactory.QualifiedName(SyntaxFactory.ParseName(lhs), genericNameSyntax);
-                }
-            }
-
-            return AddEmptyArgumentListIfImplicit(node, name);
+            return AddEmptyArgumentListIfImplicit(node, genericNameSyntax);
         }
 
         /// <summary>

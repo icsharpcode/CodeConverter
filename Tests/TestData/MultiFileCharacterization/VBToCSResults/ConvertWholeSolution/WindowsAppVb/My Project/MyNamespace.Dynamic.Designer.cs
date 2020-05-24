@@ -16,7 +16,7 @@ namespace WindowsAppVb.My
                 [DebuggerHidden]
                 get
                 {
-                    m_FolderForm = MyForms.Create__Instance__(m_FolderForm);
+                    m_FolderForm = Create__Instance__(m_FolderForm);
                     return m_FolderForm;
                 }
 
@@ -39,7 +39,7 @@ namespace WindowsAppVb.My
                 [DebuggerHidden]
                 get
                 {
-                    m_WinformsDesignerTest = MyForms.Create__Instance__(m_WinformsDesignerTest);
+                    m_WinformsDesignerTest = Create__Instance__(m_WinformsDesignerTest);
                     return m_WinformsDesignerTest;
                 }
 
