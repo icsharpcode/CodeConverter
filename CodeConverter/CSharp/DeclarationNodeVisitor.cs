@@ -685,7 +685,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var convertibleModifiers = node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword, VBasic.SyntaxKind.WriteOnlyKeyword, VBasic.SyntaxKind.DefaultKeyword));
             var modifiers = CommonConversions.ConvertModifiers(node, convertibleModifiers.ToList(), GetMemberContext(node));
             var isIndexer = CommonConversions.IsDefaultIndexer(node);
-            var accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, ModelExtensions.GetDeclaredSymbol(_semanticModel, node));
+            var nodeSymbol = ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
+            var accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, nodeSymbol);
             bool hasImplementation = !node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.MustOverrideKeyword)) && node.GetAncestor<VBSyntax.InterfaceBlockSyntax>() == null;
 
             var initializer = (EqualsValueClauseSyntax) await node.Initializer.AcceptAsync(_triviaConvertingExpressionVisitor);
@@ -730,7 +731,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         )
                     ));
             } else {
-                accessors = ConvertSimpleAccessors(isWriteOnly, isReadonly, hasImplementation);
+                accessors = ConvertSimpleAccessors(isWriteOnly, isReadonly, hasImplementation, nodeSymbol.DeclaredAccessibility);
             }
 
 
@@ -806,19 +807,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             return csIndentifierName;
         }
 
-        private static AccessorListSyntax ConvertSimpleAccessors(bool isWriteOnly, bool isReadonly, bool hasImplementation)
+        private static AccessorListSyntax ConvertSimpleAccessors(bool isWriteOnly, bool isReadonly, bool hasImplementation, Accessibility declaredAccessibility)
         {
             AccessorListSyntax accessors;
             var getAccessor = SyntaxFactory.AccessorDeclaration(Microsoft.CodeAnalysis.CSharp.SyntaxKind.GetAccessorDeclaration)
                 .WithSemicolonToken(SemicolonToken);
             var setAccessor = SyntaxFactory.AccessorDeclaration(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SetAccessorDeclaration)
                 .WithSemicolonToken(SemicolonToken);
-            if (isWriteOnly)
+            if (isWriteOnly && declaredAccessibility != Accessibility.Private)
             {
                 getAccessor = getAccessor.AddModifiers(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword));
             }
 
-            if (isReadonly)
+            if (isReadonly && declaredAccessibility != Accessibility.Private)
             {
                 setAccessor = setAccessor.AddModifiers(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword));
             }

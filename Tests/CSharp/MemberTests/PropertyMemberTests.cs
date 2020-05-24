@@ -267,11 +267,9 @@ End Class", @"using System.Collections.Generic;
 
 internal partial class TestClass
 {
-    private List<string> First { get; private set; } = new List<string>();
+    private List<string> First { get; set; } = new List<string>();
     private int Second { get; set; } = 0;
-}
-1 target compilation errors:
-CS0273: The accessibility modifier of the 'TestClass.First.set' accessor must be more restrictive than the property or indexer 'TestClass.First'");
+}");
         }
 
         [Fact]
