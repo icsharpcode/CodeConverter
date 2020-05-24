@@ -1177,7 +1177,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             ExpressionSyntax name = genericNameSyntax;
 
 
-            if (symbol?.ContainingSymbol != null) {
+            if (symbol?.IsStatic == true && symbol.ContainingSymbol != null) {
 
                 if (!node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName)) {
 

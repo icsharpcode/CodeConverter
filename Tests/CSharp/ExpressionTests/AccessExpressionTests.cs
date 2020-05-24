@@ -649,16 +649,14 @@ public partial class MoreParsing
 {
     public void DoGet()
     {
-        var anon = new { TheType = MoreParsing.GetEnumValues<TheType>() };
+        var anon = new { TheType = GetEnumValues<TheType>() };
     }
 
     private IDictionary<int, string> GetEnumValues<TEnum>()
     {
         return Enum.GetValues(typeof(TEnum)).Cast<TEnum>().ToDictionary(enumValue => (int)(object)enumValue, enumValue => enumValue.ToString());
     }
-}
-1 target compilation errors:
-CS0120: An object reference is required for the non-static field, method, or property 'MoreParsing.GetEnumValues<TheType>()'");
+}");
         }
 
         [Fact]
