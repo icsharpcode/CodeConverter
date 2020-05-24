@@ -1368,9 +1368,7 @@ internal partial class TestClass
 
         return -1;
     }
-}
-1 target compilation errors:
-CS0103: The name 'string' does not exist in the current context");
+}");
         }
 
         [Fact]

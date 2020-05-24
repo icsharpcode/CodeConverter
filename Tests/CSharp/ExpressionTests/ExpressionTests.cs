@@ -691,9 +691,7 @@ internal partial class TestClass
     {
         bool result = string.IsNullOrEmpty(str) ? true : false;
     }
-}
-1 target compilation errors:
-CS0103: The name 'string' does not exist in the current context");
+}");
         }
 
         [Fact]
@@ -730,9 +728,7 @@ internal partial class TestClass
     {
         bool result = !(string.IsNullOrEmpty(str) ? true : false);
     }
-}
-1 target compilation errors:
-CS0103: The name 'string' does not exist in the current context");
+}");
         }
 
         [Fact]

@@ -196,9 +196,7 @@ internal partial class TestClass
     {
         int result = 5 - (string.IsNullOrEmpty(str) ? 1 : 2);
     }
-}
-1 target compilation errors:
-CS0103: The name 'string' does not exist in the current context");
+}");
         }
     }
 }
