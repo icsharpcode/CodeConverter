@@ -16,6 +16,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [8.1.3] - 2020-05-23
 
+### Known issues
+* Need to replace "Array.Resize(" with "Array.Resize(ref "
+
 ### Vsix
 
 
