@@ -98,7 +98,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     .Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives, lhs, rhs);
             }
 
-            /// <remarks>No need to implement these since this is only called for things that are already decimal and hence will resolve operator in C#</remakrs>
+            /// <remarks>No need to implement these since this is only called for things that are already decimal and hence will resolve operator in C#</remarks>
             private async Task<ExpressionSyntax> ConvertToDecimalBinaryOperatorAsync(VBSyntax.BinaryExpressionSyntax node, KnownMethod member) =>
                 default;
 
