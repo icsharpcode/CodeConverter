@@ -1141,7 +1141,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             //PERF: AddEmptyArgumentListIfImplicit calls GetOperation, which is expensive, avoid it when it's easy to do so
-            var couldBeMethodCall = node.Parent is VBSyntax.QualifiedNameSyntax name && name.Right == node;
+            var couldBeMethodCall = !(node.Parent is VBSyntax.QualifiedNameSyntax);
             return couldBeMethodCall ? AddEmptyArgumentListIfImplicit(node, qualifiedIdentifier) : qualifiedIdentifier;
         }
 
