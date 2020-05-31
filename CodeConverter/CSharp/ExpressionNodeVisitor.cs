@@ -1479,6 +1479,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(SyntaxNode node, ExpressionSyntax id)
         {
+            if (_semanticModel.SyntaxTree != node.SyntaxTree) return id;
             return _semanticModel.GetOperation(node) is IInvocationOperation invocation
                 ? SyntaxFactory.InvocationExpression(id, CreateArgList(invocation.TargetMethod))
                 : id;

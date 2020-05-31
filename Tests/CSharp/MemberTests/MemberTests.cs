@@ -1102,5 +1102,128 @@ BC30002: Type 'AccessMask' is not defined.
 1 target compilation errors:
 CS0246: The type or namespace name 'AccessMask' could not be found (are you missing a using directive or an assembly reference?)");
         }
+
+        [Fact]
+        public async Task Issue443_FixCaseForIntefaceMembersAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Interface IFoo
+    Function FooDifferentCase(<Out> ByRef str2 As String) As Integer
+End Interface
+
+Public Class Foo
+    Implements IFoo
+    Function fooDifferentCase(<Out> ByRef str2 As String) As Integer Implements IFoo.FOODIFFERENTCASE
+        str2 = 2.ToString()
+        Return 3
+    End Function
+End Class", @"
+public partial interface IFoo
+{
+    int FooDifferentCase(out string str2);
+}
+
+public partial class Foo : IFoo
+{
+    public int FooDifferentCase(out string str2)
+    {
+        str2 = 2.ToString();
+        return 3;
+    }
+}
+");
+        }
+
+        [Fact]
+        public async Task Issue444_FixNameForRenamedInterfaceMembersAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Interface IFoo
+    Function FooDifferentName(ByRef str As String, i As Integer) As Integer
+End Interface
+
+Public Class Foo
+    Implements IFoo
+
+    Function BarDifferentName(ByRef str As String, i As Integer) As Integer Implements IFoo.FooDifferentName
+        Return 4
+    End Function
+End Class", @"
+public partial interface IFoo
+{
+    int FooDifferentName(ref string str, int i);
+}
+
+public partial class Foo : IFoo
+{
+    public int FooDifferentName(ref string str, int i)
+    {
+        return 4;
+    }
+
+    public int BarDifferentName(ref string str, int i) => FooDifferentName(ref str, i);
+}
+");
+        }
+
+        [Fact]
+        public async Task ExplicitInterfaceImplementationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Interface IFoo
+    Function ExplicitImpl(ByRef str As String, i As Integer) As Integer
+End Interface
+
+Public Class Foo
+    Implements IFoo
+
+    Private Function ExplicitImpl(ByRef str As String, i As Integer) As Integer Implements IFoo.ExplicitImpl
+        Return 5
+    End Function
+End Class", @"
+public partial interface IFoo
+{
+    int ExplicitImpl(ref string str, int i);
+}
+
+public partial class Foo : IFoo
+{
+    int IFoo.ExplicitImpl(ref string str, int i)
+    {
+        return 5;
+    }
+}
+");
+        }
+
+        [Fact]
+        public async Task Issue444_InternalMemberDoesNotRequireDelegatingMethodAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Interface IFoo
+    Function FooDifferentName(ByRef str As String, i As Integer) As Integer
+End Interface
+
+Friend Class Foo
+    Implements IFoo
+
+    Function BarDifferentName(ByRef str As String, i As Integer) As Integer Implements IFoo.FooDifferentName
+        Return 4
+    End Function
+End Class", @"
+public partial interface IFoo
+{
+    int FooDifferentName(ref string str, int i);
+}
+
+internal partial class Foo : IFoo
+{
+    public int FooDifferentName(ref string str, int i)
+    {
+        return 4;
+    }
+}
+");
+        }
     }
 }

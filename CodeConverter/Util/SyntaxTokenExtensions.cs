@@ -138,5 +138,12 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return token.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind);
         }
+
+        public static SyntaxTokenList RemoveOnly(this SyntaxTokenList list, Func<SyntaxToken, bool> where)
+        {
+            var toRemove = list.OnlyOrDefault(where);
+            if (toRemove != default) list = list.Remove(toRemove);
+            return list;
+        }
     }
 }

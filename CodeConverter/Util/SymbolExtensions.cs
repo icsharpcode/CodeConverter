@@ -160,6 +160,12 @@ namespace ICSharpCode.CodeConverter.Util
             return symbol is INamedTypeSymbol && ((INamedTypeSymbol)symbol).IsAnonymousType;
         }
 
+
+        public static ISymbol BaseMember(this ISymbol symbol)
+        {
+            return symbol.ExplicitInterfaceImplementations().FirstOrDefault() ?? symbol.OverriddenMember();
+        }
+
         public static ISymbol OverriddenMember(this ISymbol symbol)
         {
             switch (symbol.Kind) {

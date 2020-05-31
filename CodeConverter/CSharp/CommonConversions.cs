@@ -205,15 +205,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (useImplicitType || typeSymbol == null) return ValidSyntaxFactory.VarType;
             var syntax = (TypeSyntax)CsSyntaxGenerator.TypeExpression(typeSymbol);
 
-            return WithDeclarationCasing(syntax, typeSymbol);
+            return WithDeclarationNameCasing(syntax, typeSymbol);
         }
 
         /// <summary>
         /// Semantic model merges the symbols, but the compiled form retains multiple namespaces, which (when referenced from C#) need to keep the correct casing.
-        /// <seealso cref="DeclarationNodeVisitor.WithDeclarationCasingAsync(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
-        /// <seealso cref="CommonConversions.WithDeclarationCasing(SyntaxToken, ISymbol, string)"/>
+        /// <seealso cref="DeclarationNodeVisitor.WithDeclarationNameCasingAsync(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
+        /// <seealso cref="CommonConversions.WithDeclarationName(SyntaxToken, ISymbol, string)"/>
         /// </summary>
-        private static TypeSyntax WithDeclarationCasing(TypeSyntax syntax, ITypeSymbol typeSymbol)
+        private static TypeSyntax WithDeclarationNameCasing(TypeSyntax syntax, ITypeSymbol typeSymbol)
         {
             var vbType = SyntaxFactory.ParseTypeName(typeSymbol.ToDisplayString());
             var originalNames = vbType.DescendantNodes().OfType<CSSyntax.IdentifierNameSyntax>()
@@ -269,7 +269,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
                 var idSymbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol ?? _semanticModel.GetDeclaredSymbol(id.Parent);
                 if (idSymbol != null && !String.IsNullOrWhiteSpace(idSymbol.Name)) {
-                    text = WithDeclarationCasing(id, idSymbol, text);
+                    text = WithDeclarationName(id, idSymbol, text);
                     var normalizedText = text.WithHalfWidthLatinCharacters();
                     if (idSymbol.IsConstructor() && isAttribute) {
                         text = idSymbol.ContainingType.Name;
@@ -299,17 +299,17 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         /// <summary>
         /// Semantic model merges the symbols, but the compiled form retains multiple namespaces, which (when referenced from C#) need to keep the correct casing.
-        /// <seealso cref="DeclarationNodeVisitor.WithDeclarationCasingAsync(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
-        /// <seealso cref="CommonConversions.WithDeclarationCasing(TypeSyntax, ITypeSymbol)"/>
+        /// <seealso cref="DeclarationNodeVisitor.WithDeclarationNameCasingAsync(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
+        /// <seealso cref="CommonConversions.WithDeclarationNameCasing(TypeSyntax, ITypeSymbol)"/>
         /// </summary>
-        private static string WithDeclarationCasing(SyntaxToken id, ISymbol idSymbol, string text)
+        private static string WithDeclarationName(SyntaxToken id, ISymbol idSymbol, string text)
         {
-            //TODO: Consider what happens when the names aren't equal for overridden members (I think in VB you can have X implements Y)
-            var baseSymbol = idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property) ? idSymbol.FollowProperty(s => s.OverriddenMember()).Last() : idSymbol;
+            //This also covers the case when the name is different (in VB you can have method X implements IFoo.Y), but doesn't resolve any resulting name clashes
+            var baseSymbol = idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property) ? idSymbol.FollowProperty(s => s.BaseMember()).Last() : idSymbol;
             bool isDeclaration = baseSymbol.Locations.Any(l => l.SourceSpan == id.Span);
             bool isPartial = baseSymbol.IsPartialClassDefinition() || baseSymbol.IsPartialMethodDefinition() ||
                              baseSymbol.IsPartialMethodImplementation();
-            if (isPartial || (!isDeclaration && text.WithHalfWidthLatinCharacters().Equals(baseSymbol.Name, StringComparison.OrdinalIgnoreCase)))
+            if (isPartial || !isDeclaration)
             {
                 text = baseSymbol.Name;
             }
