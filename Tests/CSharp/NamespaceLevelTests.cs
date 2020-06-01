@@ -903,48 +903,45 @@ public partial class Bar<x> where x : Foo, new()
         [Fact]
         public async Task MyClassVirtualCallMethodAsync()
         {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class A
-    Overridable Function F1() As Integer
+            await TestConversionVisualBasicToCSharpAsync(@"Public MustInherit Class A
+    Overridable Function F1(x As Integer) As Integer ' Comment ends up out of order, but attached to correct method
         Return 1
     End Function
     MustOverride Function F2() As Integer
     Public Sub TestMethod()
-        Dim w = MyClass.f1()"/* Intentionally access with the wrong case which is valid VB */ + @"
-        Dim x = Me.F1()
+        Dim w = MyClass.f1(1)"/* Intentionally access with the wrong case which is valid VB */ + @"
+        Dim x = Me.F1(2)
         Dim y = MyClass.F2()
         Dim z = Me.F2()
     End Sub
 End Class",
                 @"
-public partial class A
+public abstract partial class A
 {
-    public int MyClassF1()
+    public int MyClassF1(int x)
     {
         return 1;
     }
 
-    public virtual int F1() => MyClassF1();
+    public virtual int F1(int x) => MyClassF1(x); // Comment ends up out of order, but attached to correct method
     public abstract int F2();
 
     public void TestMethod()
     {
-        int w = MyClassF1();
-        int x = F1();
+        int w = MyClassF1(1);
+        int x = F1(2);
         int y = F2();
         int z = F2();
     }
 }
-2 source compilation errors:
-BC31411: 'A' must be declared 'MustInherit' because it contains methods declared 'MustOverride'.
-BC30614: 'MustOverride' method 'Public MustOverride Function F2() As Integer' cannot be called with 'MyClass'.
-1 target compilation errors:
-CS0513: 'A.F2()' is abstract but it is contained in non-abstract class 'A'");
+1 source compilation errors:
+BC30614: 'MustOverride' method 'Public MustOverride Function F2() As Integer' cannot be called with 'MyClass'.");
         }
 
         [Fact]
         public async Task MyClassVirtualCallPropertyAsync()
         {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class A
+            await TestConversionVisualBasicToCSharpAsync(@"Public MustInherit Class A
     Overridable Property P1() As Integer = 1
     MustOverride Property P2() As Integer
     Public Sub TestMethod()
@@ -955,7 +952,7 @@ CS0513: 'A.F2()' is abstract but it is contained in non-abstract class 'A'");
     End Sub
 End Class",
                 @"
-public partial class A
+public abstract partial class A
 {
     public int MyClassP1 { get; set; } = 1;
 
@@ -982,12 +979,8 @@ public partial class A
         int z = P2;
     }
 }
-2 source compilation errors:
-BC31411: 'A' must be declared 'MustInherit' because it contains methods declared 'MustOverride'.
-BC30614: 'MustOverride' method 'Public MustOverride Property P2 As Integer' cannot be called with 'MyClass'.
-2 target compilation errors:
-CS0513: 'A.P2.get' is abstract but it is contained in non-abstract class 'A'
-CS0513: 'A.P2.set' is abstract but it is contained in non-abstract class 'A'");
+1 source compilation errors:
+BC30614: 'MustOverride' method 'Public MustOverride Property P2 As Integer' cannot be called with 'MyClass'.");
         }
     }
 }
