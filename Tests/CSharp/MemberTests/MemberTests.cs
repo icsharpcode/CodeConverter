@@ -1171,26 +1171,46 @@ public partial class Foo : IFoo
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"Public Interface IFoo
-    Function ExplicitImpl(ByRef str As String, i As Integer) As Integer
+    Property ExplicitProp(str As String) As Integer
+    Function ExplicitFunc(ByRef str2 As String, i2 As Integer) As Integer
 End Interface
 
 Public Class Foo
     Implements IFoo
 
-    Private Function ExplicitImpl(ByRef str As String, i As Integer) As Integer Implements IFoo.ExplicitImpl
+    Private Function ExplicitFunc(ByRef str As String, i As Integer) As Integer Implements IFoo.ExplicitFunc
         Return 5
     End Function
+    
+    Private Property ExplicitProp(str As String) As Integer Implements IFoo.ExplicitProp
+        Get
+            Return 5
+        End Get
+        Set(value As Integer)
+        End Set
+    End Property
 End Class", @"
 public partial interface IFoo
 {
-    int ExplicitImpl(ref string str, int i);
+    int get_ExplicitProp(string str);
+    void set_ExplicitProp(string str, int value);
+    int ExplicitFunc(ref string str2, int i2);
 }
 
 public partial class Foo : IFoo
 {
-    int IFoo.ExplicitImpl(ref string str, int i)
+    int IFoo.ExplicitFunc(ref string str, int i)
     {
         return 5;
+    }
+
+    int IFoo.get_ExplicitProp(string str)
+    {
+        return 5;
+    }
+
+    void IFoo.set_ExplicitProp(string str, int value)
+    {
     }
 }
 ");

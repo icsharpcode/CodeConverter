@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -8,6 +9,7 @@ using System.Threading.Tasks.Dataflow;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
+    [DebuggerStepThrough]
     public static class AsyncEnumerableTaskExtensions
     {
         public static async Task<TResult[]> SelectManyAsync<TArg, TResult>(this IEnumerable<TArg> nodes,
