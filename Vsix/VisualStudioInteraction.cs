@@ -169,6 +169,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
             var span = await GetFirstSelectedSpanInCurrentViewAsync(asyncServiceProvider, predicate, mustHaveFocus);
             var currentViewHostAsync =
                 await GetCurrentViewHostAsync(asyncServiceProvider, predicate, mustHaveFocus);
+            if (currentViewHostAsync == null) return (null, null);
             using (var textDocumentAsync = await currentViewHostAsync.GetTextDocumentAsync())
             {
                 var result = (textDocumentAsync?.FilePath, span);
