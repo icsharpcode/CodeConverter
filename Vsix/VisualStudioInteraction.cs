@@ -34,13 +34,13 @@ namespace ICSharpCode.CodeConverter.VsExtension
     {
         private static DTE2 m_Dte;
 
-        /// <remarks>All calls and usages must from from the main thread</remarks>>
-        internal static DTE2 Dte => m_Dte ?? (m_Dte = Package.GetGlobalService(typeof(DTE)) as DTE2);
+        /// <remarks>All calls and usages must be from the main thread</remarks>>
+        internal static DTE2 Dte => m_Dte ??= Package.GetGlobalService(typeof(DTE)) as DTE2;
 
         private static CancellationToken CancelAllToken;
         private static readonly Version m_LowestSupportedVersion = new Version(15, 7, 0, 0);
         private static readonly Version m_FullVsVersion = GetFullVsVersion();
-        private static readonly string m_Title = "Code converter " + new AssemblyName(typeof(CodeConversion).Assembly.FullName).Version.ToString(3) + " - Visual Studio " + m_FullVsVersion;
+        private static readonly string m_Title = "Code converter " + new AssemblyName(typeof(ProjectConversion).Assembly.FullName).Version.ToString(3) + " - Visual Studio " + m_FullVsVersion;
 
         private static Version GetFullVsVersion()
         {
