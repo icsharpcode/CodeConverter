@@ -11,7 +11,7 @@ namespace ICSharpCode.CodeConverter.Shared
     {
         public static Document AddDocumentFromTree(this Project project, SyntaxTree tree)
         {
-            return project.AddDocument("CodeToConvert", tree.GetRoot(), filePath: Path.Combine(Directory.GetCurrentDirectory(), "TempCodeToConvert.txt"));
+            return project.AddDocument("CodeToConvert", tree.GetRoot(), filePath: Path.Combine(Path.GetTempPath(), "TempCodeToConvert.txt"));
         }
 
         public static async Task<Project> CreateProjectAsync(this CompilationOptions options, IEnumerable<MetadataReference> references, ParseOptions parseOptions, string singleDocumentAssemblyName = "ProjectToBeConverted")
