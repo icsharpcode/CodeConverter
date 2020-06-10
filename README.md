@@ -29,7 +29,7 @@ Currently, the VB -> C# conversion quality is higher than the C# -> VB conversio
 
 ## Other ways to use the converter
 * Latest CI build (potentially less stable):
-  * https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_build/latest?definitionId=2&branchName=master&status=succeeded
+  * [See latest build](https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_build?definitionId=2&statusFilter=succeeded&repositoryFilter=2&branchFilter=32)
   * Uninstall current version, then install VSIX file inside "1 published" artifact
 * Integrating the NuGet library
   * Check out the [CodeConversion class](https://github.com/icsharpcode/CodeConverter/blob/8226313a8d46d5dd73bd35f07af2212e6155d0fd/Vsix/CodeConversion.cs#L226) in the VSIX project.
