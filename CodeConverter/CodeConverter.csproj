@@ -7,7 +7,10 @@
     <Description>Convert VB.NET to/from C#
 * Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
 * Actively developed: User feedback helps us continuously strive for a more accurate conversion.
-* Completely free and open source: Check out [GitHub](https://github.com/icsharpcode/CodeConverter#code-converter-).</Description>
+* Completely free and open source
+This nuget package is useful if you're building a tool which converts code, or if you want finer-grained control over what's converted.
+See https://github.com/icsharpcode/CodeConverter for a pre-built command line, visual studio extension and web converter.
+</Description>
     <Product>Code Converter for C# to/from VB.NET</Product>
     <Copyright>Copyright (c) 2017-2020 AlphaSierraPapa for the CodeConverter team</Copyright>
     <AssemblyVersion>8.1.3.0</AssemblyVersion>
