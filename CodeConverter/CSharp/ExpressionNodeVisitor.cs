@@ -730,6 +730,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         return visitBinaryExpression;
                     }
                     (lhs, rhs) = _visualBasicEqualityComparison.AdjustForVbStringComparison(node.Left, lhs, lhsTypeInfo, node.Right, rhs, rhsTypeInfo);
+                    omitConversion = true; // Already handled within for the appropriate types (rhs can become int in comparison)
                     break;
                 case VisualBasicEqualityComparison.RequiredType.Object:
                     return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(node, lhs, rhs);
