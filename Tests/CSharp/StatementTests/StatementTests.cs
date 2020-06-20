@@ -1762,6 +1762,44 @@ internal partial class A
         }
 
         [Fact]
+        public async Task Issue579SelectCaseWithCaseInsensitiveTextCompareAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Option Compare Text
+
+Class Issue579SelectCaseWithCaseInsensitiveTextCompare
+Private Function Test(astr_Temp As String) As Boolean
+    Select Case astr_Temp
+        Case ""Test""
+            Return True
+        Case Else
+            Return False
+    End Select
+End Function
+End Class", @"
+internal partial class Issue579SelectCaseWithCaseInsensitiveTextCompare
+{
+    private bool Test(string astr_Temp)
+    {
+        switch (astr_Temp)
+        {
+            case var @case when @case == ""Test"":
+                {
+                    return true;
+                }
+
+            default:
+                {
+                    return false;
+                }
+        }
+    }
+}
+1 target compilation errors:
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
+        }
+
+        [Fact]
         public async Task TryCatchAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass

@@ -641,6 +641,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<SyntaxList<StatementSyntax>> VisitSelectBlock(VBSyntax.SelectBlockSyntax node)
         {
             var vbExpr = node.SelectStatement.Expression;
+            var wrapAllCases = CommonConversions.VisualBasicEqualityComparison.OptionCompareTextCaseInsensitive &&
+                _semanticModel.GetTypeInfo(vbExpr).ConvertedType?.SpecialType == SpecialType.System_String;
             var (csExpr, stmts, csExprWithSourceMapping) = await GetExpressionWithoutSideEffectsAsync(vbExpr, "switchExpr");
             var usedConstantValues = new HashSet<object>();
             var sections = new List<SwitchSectionSyntax>();
@@ -654,7 +656,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         var correctTypeExpressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax, typeConversionKind, true, true);
                         var constantValue = _semanticModel.GetConstantValue(s.Value);
                         var notAlreadyUsed = !constantValue.HasValue || usedConstantValues.Add(constantValue.Value);
-                        var caseSwitchLabelSyntax = correctTypeExpressionSyntax.IsConst && notAlreadyUsed
+                        var caseSwitchLabelSyntax = !wrapAllCases && correctTypeExpressionSyntax.IsConst && notAlreadyUsed
                             ? (SwitchLabelSyntax)SyntaxFactory.CaseSwitchLabel(correctTypeExpressionSyntax.Expr)
                             : WrapInCasePatternSwitchLabelSyntax(node, correctTypeExpressionSyntax.Expr);
                         labels.Add(caseSwitchLabelSyntax);
