@@ -33,7 +33,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _extraUsingDirectives;
         private readonly IOperatorConverter _operatorConverter;
-        private readonly bool _optionCompareText = false;
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
         private readonly Stack<ExpressionSyntax> _withBlockLhs = new Stack<ExpressionSyntax>();
         private readonly ITypeContext _typeContext;

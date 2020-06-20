@@ -109,8 +109,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var (lhs, rhs) = await AcceptSidesAsync(node);
                 member = (member.Import, member.TypeName, "Conditional" + member.MethodName); //The VB compiler would late bind, but this should provide identical results in most cases I think
-                var compareTextKind = _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression;
-                return member.Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives, lhs, rhs, SyntaxFactory.LiteralExpression(compareTextKind));
+                var optionaCompareTextBoolLiteralExpression = _visualBasicEqualityComparison.OptionCompareTextCaseInsensitiveBoolExpression;
+                return member.Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives, lhs, rhs, optionaCompareTextBoolLiteralExpression);
             }
 
             private async Task<ExpressionSyntax> ConvertToConcatenateOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
