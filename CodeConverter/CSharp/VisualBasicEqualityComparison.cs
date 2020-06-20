@@ -72,7 +72,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
 
 
-        public (ExpressionSyntax lhs, ExpressionSyntax rhs) VbCoerceToString(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, TypeInfo lhsTypeInfo, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, TypeInfo rhsTypeInfo)
+        public (ExpressionSyntax lhs, ExpressionSyntax rhs) VbCoerceToNonNullString(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, TypeInfo lhsTypeInfo, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, TypeInfo rhsTypeInfo)
         {
             if (IsNonEmptyStringLiteral(vbLeft) || IsNonEmptyStringLiteral(vbRight)) {
                 return (csLeft, csRight);
@@ -206,7 +206,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             if (OptionCompareTextCaseInsensitive) {
                 ExtraUsingDirectives.Add("System.Globalization");
-                (csLeft, csRight) = (VbCoerceToString(csLeft, lhsTypeInfo), VbCoerceToString(csRight, rhsTypeInfo));
+                (csLeft, csRight) = VbCoerceToNonNullString(vbLeft, csLeft, lhsTypeInfo, vbLeft, csRight, rhsTypeInfo);
                 var compareOptions = SyntaxFactory.Argument(GetCompareTextCaseInsensitiveCompareOptions());
                 var compareString = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(CultureInfo), nameof(CultureInfo.CurrentCulture),
                         nameof(CultureInfo.CompareInfo), nameof(CompareInfo.Compare)),
@@ -217,7 +217,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 csRight = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression,
                     SyntaxFactory.Literal(0));
             } else {
-                (csLeft, csRight) = VbCoerceToString(vbLeft, csLeft, lhsTypeInfo, vbRight, csRight, rhsTypeInfo);
+                (csLeft, csRight) = VbCoerceToNonNullString(vbLeft, csLeft, lhsTypeInfo, vbRight, csRight, rhsTypeInfo);
             }
 
             return (csLeft, csRight);
