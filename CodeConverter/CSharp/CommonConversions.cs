@@ -41,6 +41,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         public Document Document { get; }
         private readonly SemanticModel _semanticModel;
         public SyntaxGenerator CsSyntaxGenerator { get; }
+        public VisualBasicEqualityComparison VisualBasicEqualityComparison { get; }
+
         private readonly CSharpCompilation _csCompilation;
         private readonly ITypeContext _typeContext;
 
@@ -49,7 +51,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public CommonConversions(Document document, SemanticModel semanticModel,
             TypeConversionAnalyzer typeConversionAnalyzer, SyntaxGenerator csSyntaxGenerator,
-            CSharpCompilation csCompilation, ITypeContext typeContext)
+            CSharpCompilation csCompilation, ITypeContext typeContext, VisualBasicEqualityComparison visualBasicEqualityComparison)
         {
             TypeConversionAnalyzer = typeConversionAnalyzer;
             Document = document;
@@ -57,6 +59,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             CsSyntaxGenerator = csSyntaxGenerator;
             _csCompilation = csCompilation;
             _typeContext = typeContext;
+            VisualBasicEqualityComparison = visualBasicEqualityComparison;
         }
 
         public async Task<(IReadOnlyCollection<(VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(

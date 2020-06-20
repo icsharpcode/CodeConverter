@@ -61,7 +61,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             TriviaConvertingDeclarationVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
             var expressionEvaluator = new ExpressionEvaluator(semanticModel, _visualBasicEqualityComparison);
             var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator, expressionEvaluator);
-            CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, csCompilation, _typeContext);
+            CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, csCompilation, _typeContext, _visualBasicEqualityComparison);
             var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, csCompilation, _typeContext, CommonConversions, _extraUsingDirectives);
             _triviaConvertingExpressionVisitor = expressionNodeVisitor.TriviaConvertingExpressionVisitor;
             _createMethodBodyVisitorAsync = expressionNodeVisitor.CreateMethodBodyVisitorAsync;
