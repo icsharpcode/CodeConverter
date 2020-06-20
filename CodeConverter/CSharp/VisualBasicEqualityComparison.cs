@@ -204,23 +204,23 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public (ExpressionSyntax csLeft, ExpressionSyntax csRight) AdjustForVbStringComparison(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, TypeInfo lhsTypeInfo, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, TypeInfo rhsTypeInfo)
         {
-                if (OptionCompareTextCaseInsensitive) {
-                    ExtraUsingDirectives.Add("System.Globalization");
-                    (csLeft, csRight) = (VbCoerceToString(csLeft, lhsTypeInfo), VbCoerceToString(csRight, rhsTypeInfo));
-                    var compareOptions = SyntaxFactory.Argument(GetCompareTextCaseInsensitiveCompareOptions());
-                    var compareString = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(CultureInfo), nameof(CultureInfo.CurrentCulture),
-                            nameof(CultureInfo.CompareInfo), nameof(CompareInfo.Compare)),
-                        SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
-                            {SyntaxFactory.Argument(csLeft), SyntaxFactory.Argument(csRight), compareOptions})));
+            if (OptionCompareTextCaseInsensitive) {
+                ExtraUsingDirectives.Add("System.Globalization");
+                (csLeft, csRight) = (VbCoerceToString(csLeft, lhsTypeInfo), VbCoerceToString(csRight, rhsTypeInfo));
+                var compareOptions = SyntaxFactory.Argument(GetCompareTextCaseInsensitiveCompareOptions());
+                var compareString = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(CultureInfo), nameof(CultureInfo.CurrentCulture),
+                        nameof(CultureInfo.CompareInfo), nameof(CompareInfo.Compare)),
+                    SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
+                        {SyntaxFactory.Argument(csLeft), SyntaxFactory.Argument(csRight), compareOptions})));
 
                 csLeft = compareString;
-                    csRight = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                        SyntaxFactory.Literal(0));
-                } else {
-                    (csLeft, csRight) = VbCoerceToString(vbLeft, csLeft, lhsTypeInfo, vbRight, csRight, rhsTypeInfo);
-                }
+                csRight = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression,
+                    SyntaxFactory.Literal(0));
+            } else {
+                (csLeft, csRight) = VbCoerceToString(vbLeft, csLeft, lhsTypeInfo, vbRight, csRight, rhsTypeInfo);
+            }
 
-                return (csLeft, csRight);
+            return (csLeft, csRight);
         }
 
         public ExpressionSyntax GetFullExpressionForVbObjectComparison(VBSyntax.BinaryExpressionSyntax node, ExpressionSyntax lhs, ExpressionSyntax rhs)
