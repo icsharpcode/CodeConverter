@@ -1585,15 +1585,15 @@ public partial class TestClass
     public static string TimeAgo(string x)
     {
         var switchExpr = Strings.UCase(x);
-        switch (switchExpr)
+        switch (switchExpr ?? """")
         {
-            case var @case when @case == Strings.UCase(""a""):
-            case var case1 when case1 == Strings.UCase(""b""):
+            case var @case when @case == (Strings.UCase(""a"") ?? """"):
+            case var case1 when case1 == (Strings.UCase(""b"") ?? """"):
                 {
                     return ""ab"";
                 }
 
-            case var case2 when case2 == Strings.UCase(""c""):
+            case var case2 when case2 == (Strings.UCase(""c"") ?? """"):
                 {
                     return ""c"";
                 }
@@ -1768,30 +1768,37 @@ internal partial class A
 Option Compare Text
 
 Class Issue579SelectCaseWithCaseInsensitiveTextCompare
-Private Function Test(astr_Temp As String) As Boolean
+Private Function Test(astr_Temp As String) As Nullable(Of Boolean)
     Select Case astr_Temp
         Case ""Test""
             Return True
-        Case Else
+        Case astr_Temp
             Return False
+        Case Else
+            Return Nothing
     End Select
 End Function
 End Class", @"using System.Globalization;
 
 internal partial class Issue579SelectCaseWithCaseInsensitiveTextCompare
 {
-    private bool Test(string astr_Temp)
+    private bool? Test(string astr_Temp)
     {
-        switch (astr_Temp)
+        switch (astr_Temp ?? """")
         {
-            case var @case when CultureInfo.CurrentCulture.CompareInfo.Compare(@case ?? """", ""Test"" ?? """", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0:
+            case var @case when CultureInfo.CurrentCulture.CompareInfo.Compare(@case, ""Test"", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0:
                 {
                     return true;
                 }
 
-            default:
+            case var case1 when CultureInfo.CurrentCulture.CompareInfo.Compare(case1, astr_Temp ?? """", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0:
                 {
                     return false;
+                }
+
+            default:
+                {
+                    return default;
                 }
         }
     }

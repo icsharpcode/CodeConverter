@@ -199,7 +199,7 @@ public partial class EnumAndValTest
     {
         var tPos = default(PositionEnum);
         var switchExpr = pS.ToUpper();
-        switch (switchExpr)
+        switch (switchExpr ?? """")
         {
             case ""NONE"":
             case ""0"":

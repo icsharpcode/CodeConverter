@@ -72,12 +72,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
 
 
-        public (ExpressionSyntax lhs, ExpressionSyntax rhs) VbCoerceToNonNullString(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, TypeInfo lhsTypeInfo, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, TypeInfo rhsTypeInfo)
+        public (ExpressionSyntax lhs, ExpressionSyntax rhs) VbCoerceToNonNullString(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, TypeInfo lhsTypeInfo, bool leftKnownNotNull, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, TypeInfo rhsTypeInfo, bool rightKnownNotNull)
         {
             if (IsNonEmptyStringLiteral(vbLeft) || IsNonEmptyStringLiteral(vbRight)) {
+                // If one of the strings is "foo", the other string won't equal it if it's null or empty, so it doesn't matter which one we use in comparison
                 return (csLeft, csRight);
             }
-            return (VbCoerceToNonNullString(vbLeft, csLeft, lhsTypeInfo), VbCoerceToNonNullString(vbRight, csRight, rhsTypeInfo));
+            return (VbCoerceToNonNullString(vbLeft, csLeft, lhsTypeInfo, leftKnownNotNull), VbCoerceToNonNullString(vbRight, csRight, rhsTypeInfo, rightKnownNotNull));
         }
 
         private static bool IsNonEmptyStringLiteral(VBSyntax.ExpressionSyntax vbExpr)
@@ -85,7 +86,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return vbExpr.SkipParens().IsKind(VBSyntaxKind.StringLiteralExpression) && vbExpr is VBSyntax.LiteralExpressionSyntax literal && !IsEmptyString(literal);
         }
 
-        public ExpressionSyntax VbCoerceToNonNullString(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo)
+        public ExpressionSyntax VbCoerceToNonNullString(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo, bool knownNotNull = false)
         {
             bool isStringType = typeInfo.Type.SpecialType == SpecialType.System_String;
 
@@ -93,7 +94,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return EmptyStringExpression();
             }
 
-            if (!CanBeNull(vbNode)) {
+            if (knownNotNull || !CanBeNull(vbNode)) {
                 return csNode;
             }
 
@@ -202,9 +203,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, positiveExpression);
         }
 
-        public (ExpressionSyntax csLeft, ExpressionSyntax csRight) AdjustForVbStringComparison(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, TypeInfo lhsTypeInfo, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, TypeInfo rhsTypeInfo)
+        public (ExpressionSyntax csLeft, ExpressionSyntax csRight) AdjustForVbStringComparison(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, TypeInfo lhsTypeInfo, bool leftKnownNotNull, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, TypeInfo rhsTypeInfo, bool rightKnownNotNull)
         {
-            (csLeft, csRight) = VbCoerceToNonNullString(vbLeft, csLeft, lhsTypeInfo, vbLeft, csRight, rhsTypeInfo);
+            (csLeft, csRight) = VbCoerceToNonNullString(vbLeft, csLeft, lhsTypeInfo, leftKnownNotNull, vbRight, csRight, rhsTypeInfo, rightKnownNotNull);
             if (OptionCompareTextCaseInsensitive) {
                 ExtraUsingDirectives.Add("System.Globalization");
                 var compareOptions = SyntaxFactory.Argument(GetCompareTextCaseInsensitiveCompareOptions());

@@ -729,7 +729,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         _visualBasicEqualityComparison.TryConvertToNullOrEmptyCheck(node, lhs, rhs, out CSharpSyntaxNode visitBinaryExpression)) {
                         return visitBinaryExpression;
                     }
-                    (lhs, rhs) = _visualBasicEqualityComparison.AdjustForVbStringComparison(node.Left, lhs, lhsTypeInfo, node.Right, rhs, rhsTypeInfo);
+                    (lhs, rhs) = _visualBasicEqualityComparison.AdjustForVbStringComparison(node.Left, lhs, lhsTypeInfo, false, node.Right, rhs, rhsTypeInfo, false);
                     omitConversion = true; // Already handled within for the appropriate types (rhs can become int in comparison)
                     break;
                 case VisualBasicEqualityComparison.RequiredType.Object:
