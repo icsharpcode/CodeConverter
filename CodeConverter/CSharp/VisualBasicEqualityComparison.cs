@@ -85,7 +85,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return vbExpr.SkipParens().IsKind(VBSyntaxKind.StringLiteralExpression) && vbExpr is VBSyntax.LiteralExpressionSyntax literal && !IsEmptyString(literal);
         }
 
-        private ExpressionSyntax VbCoerceToNonNullString(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo)
+        public ExpressionSyntax VbCoerceToNonNullString(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo)
         {
             bool isStringType = typeInfo.Type.SpecialType == SpecialType.System_String;
 
@@ -204,9 +204,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public (ExpressionSyntax csLeft, ExpressionSyntax csRight) AdjustForVbStringComparison(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, TypeInfo lhsTypeInfo, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, TypeInfo rhsTypeInfo)
         {
+            (csLeft, csRight) = VbCoerceToNonNullString(vbLeft, csLeft, lhsTypeInfo, vbLeft, csRight, rhsTypeInfo);
             if (OptionCompareTextCaseInsensitive) {
                 ExtraUsingDirectives.Add("System.Globalization");
-                (csLeft, csRight) = VbCoerceToNonNullString(vbLeft, csLeft, lhsTypeInfo, vbLeft, csRight, rhsTypeInfo);
                 var compareOptions = SyntaxFactory.Argument(GetCompareTextCaseInsensitiveCompareOptions());
                 var compareString = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(CultureInfo), nameof(CultureInfo.CurrentCulture),
                         nameof(CultureInfo.CompareInfo), nameof(CompareInfo.Compare)),
@@ -216,8 +216,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 csLeft = compareString;
                 csRight = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression,
                     SyntaxFactory.Literal(0));
-            } else {
-                (csLeft, csRight) = VbCoerceToNonNullString(vbLeft, csLeft, lhsTypeInfo, vbRight, csRight, rhsTypeInfo);
             }
 
             return (csLeft, csRight);

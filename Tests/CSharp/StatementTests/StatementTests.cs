@@ -1776,14 +1776,15 @@ Private Function Test(astr_Temp As String) As Boolean
             Return False
     End Select
 End Function
-End Class", @"
+End Class", @"using System.Globalization;
+
 internal partial class Issue579SelectCaseWithCaseInsensitiveTextCompare
 {
     private bool Test(string astr_Temp)
     {
         switch (astr_Temp)
         {
-            case var @case when @case == ""Test"":
+            case var @case when CultureInfo.CurrentCulture.CompareInfo.Compare(@case ?? """", ""Test"" ?? """", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0:
                 {
                     return true;
                 }
