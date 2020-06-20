@@ -13,6 +13,7 @@ using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
+using System.Diagnostics.Tracing;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -76,7 +77,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (IsNonEmptyStringLiteral(vbLeft) || IsNonEmptyStringLiteral(vbRight)) {
                 return (csLeft, csRight);
             }
-            return (VbCoerceToString(vbLeft, csLeft, lhsTypeInfo), VbCoerceToString(vbRight, csRight, rhsTypeInfo));
+            return (VbCoerceToNonNullString(vbLeft, csLeft, lhsTypeInfo), VbCoerceToNonNullString(vbRight, csRight, rhsTypeInfo));
         }
 
         private static bool IsNonEmptyStringLiteral(VBSyntax.ExpressionSyntax vbExpr)
@@ -84,7 +85,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return vbExpr.SkipParens().IsKind(VBSyntaxKind.StringLiteralExpression) && vbExpr is VBSyntax.LiteralExpressionSyntax literal && !IsEmptyString(literal);
         }
 
-        private ExpressionSyntax VbCoerceToString(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo)
+        private ExpressionSyntax VbCoerceToNonNullString(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo)
         {
             bool isStringType = typeInfo.Type.SpecialType == SpecialType.System_String;
 
@@ -100,7 +101,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 ? SyntaxFactory.ParenthesizedExpression(Coalesce(csNode, EmptyStringExpression()))
                 : Coalesce(csNode, EmptyCharArrayExpression());
 
-            return !isStringType ? NewStringFromArg(csNode) : csNode;
+            return VbCoerceToString(csNode, typeInfo);
+        }
+
+        private static ExpressionSyntax VbCoerceToString(ExpressionSyntax csNode, TypeInfo typeInfo)
+        {
+            return typeInfo.Type.SpecialType == SpecialType.System_String ? csNode : NewStringFromArg(csNode);
         }
 
         private bool CanBeNull(VBSyntax.ExpressionSyntax vbNode)
@@ -200,12 +206,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
                 if (OptionCompareTextCaseInsensitive) {
                     ExtraUsingDirectives.Add("System.Globalization");
+                    (csLeft, csRight) = (VbCoerceToString(csLeft, lhsTypeInfo), VbCoerceToString(csRight, rhsTypeInfo));
                     var compareOptions = SyntaxFactory.Argument(GetCompareTextCaseInsensitiveCompareOptions());
                     var compareString = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(CultureInfo), nameof(CultureInfo.CurrentCulture),
                             nameof(CultureInfo.CompareInfo), nameof(CompareInfo.Compare)),
                         SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
                             {SyntaxFactory.Argument(csLeft), SyntaxFactory.Argument(csRight), compareOptions})));
-                    csLeft = compareString;
+
+                csLeft = compareString;
                     csRight = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression,
                         SyntaxFactory.Literal(0));
                 } else {
