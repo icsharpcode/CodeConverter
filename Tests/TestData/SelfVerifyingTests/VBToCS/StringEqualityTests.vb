@@ -115,4 +115,183 @@ Public Class StringEqualityTests
         If nullCharArray = nullCharArray Then record &= "1" Else record &= "0"
         Assert.Equal("1111011", record)
     End Sub
+
+    <Fact> 'https://github.com/icsharpcode/CodeConverter/issues/579
+    Public Sub VisualBasicEqualityInSelectStatementPreservedForNullObject()
+        Assert.Equal("1111011", GetVisualBasicEqualitySelectStatementMap(nullObject))
+    End Sub
+
+    <Fact> 'https://github.com/icsharpcode/CodeConverter/issues/579
+    Public Sub VisualBasicEqualityInSelectStatementPreservedForNullString()
+        Assert.Equal("1111011", GetVisualBasicEqualitySelectStatementMap(nullString))
+    End Sub
+
+    <Fact> 'https://github.com/icsharpcode/CodeConverter/issues/579
+    Public Sub VisualBasicEqualityInSelectStatementPreservedForEmptyStringObject()
+        Assert.Equal("1111011", GetVisualBasicEqualitySelectStatementMap(emptyStringObject))
+    End Sub
+
+    <Fact> 'https://github.com/icsharpcode/CodeConverter/issues/579
+    Public Sub VisualBasicEqualityInSelectStatementPreservedForEmptyString()
+        Assert.Equal("1111011", GetVisualBasicEqualitySelectStatementMap(emptyString))
+    End Sub
+
+    <Fact> 'https://github.com/icsharpcode/CodeConverter/issues/579
+    Public Sub VisualBasicEqualityInSelectStatementPreservedForNonEmptyString()
+        Assert.Equal("0000100", GetVisualBasicEqualitySelectStatementMap(nonEmptyString))
+    End Sub
+
+    <Fact> 'https://github.com/icsharpcode/CodeConverter/issues/579
+    Public Sub VisualBasicEqualityInSelectStatementPreservedForEmptyCharArray()
+        Assert.Equal("1111011", GetVisualBasicEqualitySelectStatementMap(emptyCharArray))
+    End Sub
+
+    <Fact> 'https://github.com/icsharpcode/CodeConverter/issues/579
+    Public Sub VisualBasicEqualityInSelectStatementPreservedForNullCharArary()
+        Assert.Equal("1111011", GetVisualBasicEqualitySelectStatementMap(nullCharArray))
+    End Sub
+
+    Public Overloads Function GetVisualBasicEqualitySelectStatementMap(toTest As String)
+        Dim record = ""
+        Select Case toTest
+            Case nullObject
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case nullString
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case emptyStringObject
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case emptyString
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case nonEmptyString
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case emptyCharArray
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case nullCharArray
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+
+        Return record
+    End Function
+
+    Public Overloads Function GetVisualBasicEqualitySelectStatementMap(toTest As Char())
+        Dim record = ""
+        Select Case toTest
+            Case nullObject
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case nullString
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case emptyStringObject
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case emptyString
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case nonEmptyString
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case emptyCharArray
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case nullCharArray
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+
+        Return record
+    End Function
+
+    Public Overloads Function GetVisualBasicEqualitySelectStatementMap(toTest As Object)
+        Dim record = ""
+        Select Case toTest
+            Case nullObject
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case nullString
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case emptyStringObject
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case emptyString
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case nonEmptyString
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case emptyCharArray
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+        Select Case toTest
+            Case nullCharArray
+                record &= "1"
+            Case Else
+                record &= "0"
+        End Select
+
+        Return record
+    End Function
 End Class
