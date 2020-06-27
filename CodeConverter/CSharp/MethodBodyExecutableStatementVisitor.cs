@@ -671,7 +671,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             vbEquality.VbCoerceToNonNullString(vbExpr, csSwitchExpr, switchExprTypeInfo, true, s.Value, originalExpressionSyntax, caseTypeInfo, false).rhs != originalExpressionSyntax);
 
                         // CSharp requires an explicit cast from the base type (e.g. int) in most cases switching on an enum
-                        var csExpressionToUse = wrapForStringComparison || switchExprTypeInfo.ConvertedType?.IsEnumType() == false || caseTypeInfo.Type?.IsEnumType() == true ? originalExpressionSyntax : correctTypeExpressionSyntax.Expr;
+                        var csExpressionToUse = switchExprTypeInfo.ConvertedType?.IsEnumType() == true ^ caseTypeInfo.Type?.IsEnumType() == true ? correctTypeExpressionSyntax.Expr : originalExpressionSyntax;
 
                         var caseSwitchLabelSyntax = !wrapForStringComparison && correctTypeExpressionSyntax.IsConst && notAlreadyUsed
                             ? (SwitchLabelSyntax)SyntaxFactory.CaseSwitchLabel(csExpressionToUse)
