@@ -198,8 +198,7 @@ public partial class EnumAndValTest
     public PositionEnum PositionEnumFromString(string pS, MissingType missing)
     {
         var tPos = default(PositionEnum);
-        var switchExpr = pS.ToUpper();
-        switch (switchExpr ?? """")
+        switch (pS.ToUpper() ?? """")
         {
             case ""NONE"":
             case ""0"":

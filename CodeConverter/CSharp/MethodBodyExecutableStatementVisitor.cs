@@ -642,13 +642,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var vbExpr = node.SelectStatement.Expression;
             var vbEquality = CommonConversions.VisualBasicEqualityComparison;
-            var (csExprToReuse, stmts, csSwitchExpr) = await GetExpressionWithoutSideEffectsAsync(vbExpr, "switchExpr");
+
+            var csSwitchExpr = (ExpressionSyntax)await vbExpr.AcceptAsync(_expressionVisitor);
+            csSwitchExpr = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbExpr, csSwitchExpr);
             var switchExprTypeInfo = _semanticModel.GetTypeInfo(vbExpr);
             var isStringComparison = switchExprTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String || switchExprTypeInfo.ConvertedType?.IsArrayOf(SpecialType.System_Char) == true;
             var caseInsensitiveStringComparison = vbEquality.OptionCompareTextCaseInsensitive &&
                 isStringComparison;
             if (isStringComparison) {
-                csExprToReuse = vbEquality.VbCoerceToNonNullString(vbExpr, csExprToReuse, switchExprTypeInfo);
                 csSwitchExpr = vbEquality.VbCoerceToNonNullString(vbExpr, csSwitchExpr, switchExprTypeInfo);
             }
 
@@ -668,26 +669,31 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                         // Pass both halves in case we can optimize away the check based on the switch expr
                         var wrapForStringComparison = isStringComparison && (caseInsensitiveStringComparison ||
-                            vbEquality.VbCoerceToNonNullString(vbExpr, csExprToReuse, switchExprTypeInfo, true, s.Value, originalExpressionSyntax, caseTypeInfo, false).rhs != originalExpressionSyntax);
+                            vbEquality.VbCoerceToNonNullString(vbExpr, csSwitchExpr, switchExprTypeInfo, true, s.Value, originalExpressionSyntax, caseTypeInfo, false).rhs != originalExpressionSyntax);
 
                         var csExpressionToUse = wrapForStringComparison ? originalExpressionSyntax : correctTypeExpressionSyntax.Expr;
 
                         var caseSwitchLabelSyntax = !wrapForStringComparison && correctTypeExpressionSyntax.IsConst && notAlreadyUsed
                             ? (SwitchLabelSyntax)SyntaxFactory.CaseSwitchLabel(csExpressionToUse)
-                            : WrapInCasePatternSwitchLabelSyntax(node, s.Value, csExpressionToUse, caseInsensitiveStringComparison);
+                            : WrapInCasePatternSwitchLabelSyntax(node, s.Value, csExpressionToUse);
                         labels.Add(caseSwitchLabelSyntax);
                     } else if (c is VBSyntax.ElseCaseClauseSyntax) {
                         labels.Add(SyntaxFactory.DefaultSwitchLabel());
                     } else if (c is VBSyntax.RelationalCaseClauseSyntax relational) {
+
+                        var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
+                        ExpressionSyntax csLeft = SyntaxFactory.IdentifierName(varName);
                         var operatorKind = VBasic.VisualBasicExtensions.Kind(relational);
                         var relationalValue = (ExpressionSyntax)await relational.Value.AcceptAsync(_expressionVisitor);
-                        var binaryExp = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(TokenContext.Local), csExprToReuse, relationalValue);
-                        labels.Add(WrapInCasePatternSwitchLabelSyntax(node, relational.Value, binaryExp, caseInsensitiveStringComparison, treatAsBoolean: true));
+                        var binaryExp = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(TokenContext.Local), csLeft, relationalValue);
+                        labels.Add(VarWhen(varName, binaryExp));
                     } else if (c is VBSyntax.RangeCaseClauseSyntax range) {
-                        var lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, (ExpressionSyntax)await range.LowerBound.AcceptAsync(_expressionVisitor), csExprToReuse);
-                        var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, csExprToReuse, (ExpressionSyntax)await range.UpperBound.AcceptAsync(_expressionVisitor));
+                        var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
+                        ExpressionSyntax csLeft = SyntaxFactory.IdentifierName(varName);
+                        var lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, (ExpressionSyntax)await range.LowerBound.AcceptAsync(_expressionVisitor), csLeft);
+                        var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, csLeft, (ExpressionSyntax)await range.UpperBound.AcceptAsync(_expressionVisitor));
                         var withinBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LogicalAndExpression, lowerBoundCheck, upperBoundCheck);
-                        labels.Add(WrapInCasePatternSwitchLabelSyntax(node, range.LowerBound, withinBounds, caseInsensitiveStringComparison, treatAsBoolean: true));
+                        labels.Add(VarWhen(varName, withinBounds));
                     } else throw new NotSupportedException(c.Kind().ToString());
                 }
 
@@ -701,7 +707,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             var switchStatementSyntax = ValidSyntaxFactory.SwitchStatement(csSwitchExpr, sections);
-            return stmts.Add(switchStatementSyntax);
+            return SingleStatement(switchStatementSyntax);
+        }
+
+        private static CasePatternSwitchLabelSyntax VarWhen(SyntaxToken varName, ExpressionSyntax binaryExp)
+        {
+            var patternMatch = ValidSyntaxFactory.VarPattern(varName);
+            return SyntaxFactory.CasePatternSwitchLabel(patternMatch,
+                SyntaxFactory.WhenClause(binaryExp), SyntaxFactory.Token(SyntaxKind.ColonToken));
         }
 
         private async Task<(ExpressionSyntax Reusable, SyntaxList<StatementSyntax> Statements, ExpressionSyntax SingleUse)> GetExpressionWithoutSideEffectsAsync(VBSyntax.ExpressionSyntax vbExpr, string variableNameBase, bool forceVariable = false)
@@ -739,7 +752,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return symbol.MatchesKind(SymbolKind.Parameter, SymbolKind.Local) && await CommonConversions.Document.Project.Solution.IsNeverWrittenAsync(symbol, allowedLocation);
         }
 
-        private CasePatternSwitchLabelSyntax WrapInCasePatternSwitchLabelSyntax(VBSyntax.SelectBlockSyntax node, VBSyntax.ExpressionSyntax vbCase, ExpressionSyntax expression, bool caseInsensitiveTextComparison, bool treatAsBoolean = false)
+        private CasePatternSwitchLabelSyntax WrapInCasePatternSwitchLabelSyntax(VBSyntax.SelectBlockSyntax node, VBSyntax.ExpressionSyntax vbCase, ExpressionSyntax expression, bool treatAsBoolean = false)
         {
             var typeInfo = _semanticModel.GetTypeInfo(node.SelectStatement.Expression);
 
@@ -750,9 +763,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.DiscardDesignation());
             } else {
                 var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
-                //CodeAnalysis upgrade to 3.0.0 needed for VarPattern. Correct text comes out, but tree is invalid so the tests this will generate "CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code"
-                patternMatch = SyntaxFactory.DeclarationPattern(
-                    ValidSyntaxFactory.VarType, SyntaxFactory.SingleVariableDesignation(varName));
+                patternMatch = ValidSyntaxFactory.VarPattern(varName);
                 ExpressionSyntax csLeft = SyntaxFactory.IdentifierName(varName), csRight = expression;
                 var caseTypeInfo = _semanticModel.GetTypeInfo(vbCase);
                 var vbEquality = CommonConversions.VisualBasicEqualityComparison;

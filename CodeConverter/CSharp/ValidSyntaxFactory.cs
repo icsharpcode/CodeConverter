@@ -73,7 +73,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public static MethodDeclarationSyntax CreateParameterlessMethod(string newMethodName, TypeSyntax type, BlockSyntax body)
         {
-            var modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
+            var modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword));
             var typeConstraints = SyntaxFactory.List<TypeParameterConstraintClauseSyntax>();
             var parameterList = SyntaxFactory.ParameterList();
             var methodAttrs = SyntaxFactory.List<AttributeListSyntax>();
@@ -88,6 +88,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (arrowExpression != null) methodDecl = methodDecl.WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken));
             return methodDecl;
+        }
+
+
+        /// <remarks>
+        /// CodeAnalysis upgrade to 3.0.0 needed for VarPattern. Correct text comes out, but tree is invalid so the tests this will generate "CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code"
+        /// </remarks>
+        public static DeclarationPatternSyntax VarPattern(SyntaxToken varName)
+        {
+            return SyntaxFactory.DeclarationPattern(
+                ValidSyntaxFactory.VarType, SyntaxFactory.SingleVariableDesignation(varName));
         }
     }
 }
