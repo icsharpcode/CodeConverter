@@ -9,6 +9,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
+
+
+### C# -> VB
+
+
+## [8.1.4] - 2020-06-26
+
+
+### Vsix
+* Fixed UnauthorizedAccessException when converting single file/snippet
+
+### VB -> C#
 * When converting ReDim Preserve to Array.Resize, "ref" is now added
 * Create delegating method for renamed implementations [#443](https://github.com/icsharpcode/CodeConverter/issues/443), [#444](https://github.com/icsharpcode/CodeConverter/issues/444)
 
