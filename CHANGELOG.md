@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 * Handle Option Compare Text case insensitive comparisons in switch statements [#579](https://github.com/icsharpcode/CodeConverter/issues/579)
+* Fix compilation error when switching with enum cases [#549](https://github.com/icsharpcode/CodeConverter/issues/549)
 
 ### C# -> VB
 

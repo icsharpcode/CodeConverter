@@ -660,18 +660,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                 foreach (var c in block.CaseStatement.Cases) {
                     if (c is VBSyntax.SimpleCaseClauseSyntax s) {
                         var originalExpressionSyntax = (ExpressionSyntax)await s.Value.AcceptAsync(_expressionVisitor);
-                        // CSharp requires an explicit cast from the base type (e.g. int) in most cases switching on an enum
+                        var caseTypeInfo = _semanticModel.GetTypeInfo(s.Value);
                         var typeConversionKind = CommonConversions.TypeConversionAnalyzer.AnalyzeConversion(s.Value);
                         var correctTypeExpressionSyntax = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(s.Value, originalExpressionSyntax, typeConversionKind, true, true);
                         var constantValue = _semanticModel.GetConstantValue(s.Value);
-                        var caseTypeInfo = _semanticModel.GetTypeInfo(s.Value);
                         var notAlreadyUsed = !constantValue.HasValue || usedConstantValues.Add(constantValue.Value);
 
                         // Pass both halves in case we can optimize away the check based on the switch expr
                         var wrapForStringComparison = isStringComparison && (caseInsensitiveStringComparison ||
                             vbEquality.VbCoerceToNonNullString(vbExpr, csSwitchExpr, switchExprTypeInfo, true, s.Value, originalExpressionSyntax, caseTypeInfo, false).rhs != originalExpressionSyntax);
 
-                        var csExpressionToUse = wrapForStringComparison ? originalExpressionSyntax : correctTypeExpressionSyntax.Expr;
+                        // CSharp requires an explicit cast from the base type (e.g. int) in most cases switching on an enum
+                        var csExpressionToUse = wrapForStringComparison || switchExprTypeInfo.ConvertedType?.IsEnumType() == false || caseTypeInfo.Type?.IsEnumType() == true ? originalExpressionSyntax : correctTypeExpressionSyntax.Expr;
 
                         var caseSwitchLabelSyntax = !wrapForStringComparison && correctTypeExpressionSyntax.IsConst && notAlreadyUsed
                             ? (SwitchLabelSyntax)SyntaxFactory.CaseSwitchLabel(csExpressionToUse)
