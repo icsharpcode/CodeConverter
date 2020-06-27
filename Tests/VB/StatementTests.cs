@@ -1389,7 +1389,9 @@ CS0246: The type or namespace name 'Exception' could not be found (are you missi
         [Fact]
         public async Task YieldAsync()
         {
-            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"using System.Collections.Generic;
+
+class TestClass
 {
     IEnumerable<int> TestMethod(int number)
     {
@@ -1398,7 +1400,9 @@ CS0246: The type or namespace name 'Exception' could not be found (are you missi
         for (int i = 0; i < number; i++)
             yield return i;
     }
-}", @"Friend Class TestClass
+}", @"Imports System.Collections.Generic
+
+Friend Class TestClass
     Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
         If number < 0 Then Return
 
@@ -1406,11 +1410,9 @@ CS0246: The type or namespace name 'Exception' could not be found (are you missi
             Yield i
         Next
     End Function
-End Class
-
-1 source compilation errors:
-CS0246: The type or namespace name 'IEnumerable<>' could not be found (are you missing a using directive or an assembly reference?)");
+End Class");
         }
+
         [Fact]
         public async Task ObjectCreationExpressionInInvocationExpressionAsync() {
             await TestConversionCSharpToVisualBasicAsync(

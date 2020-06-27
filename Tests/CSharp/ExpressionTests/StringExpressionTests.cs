@@ -182,7 +182,7 @@ public partial class Class1
     {
         string s1 = null;
         string s2 = """";
-        if (CultureInfo.CurrentCulture.CompareInfo.Compare(s1, s2, CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) != 0)
+        if (CultureInfo.CurrentCulture.CompareInfo.Compare(s1 ?? """", s2 ?? """", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) != 0)
         {
             throw new Exception();
         }

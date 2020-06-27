@@ -1,4 +1,6 @@
-﻿Imports System
+﻿Option Compare Text 'Copy paste of StringEqualityTests.vb with just this line added at the top
+
+Imports System
 Imports System.Linq
 Imports Xunit
 
@@ -22,7 +24,7 @@ Public Class StringEqualityTests
     Private emptyStringObject As Object = ""
     Private emptyString As String = ""
     Private nonEmptyString As String = "a"
-    Private emptyCharArray As Char() = New Char(){}
+    Private emptyCharArray As Char() = New Char() {}
     Private nullCharArray As Char() = Nothing
 
     <Fact> 'https://github.com/icsharpcode/CodeConverter/issues/105

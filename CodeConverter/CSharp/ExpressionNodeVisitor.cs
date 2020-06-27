@@ -33,7 +33,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _extraUsingDirectives;
         private readonly IOperatorConverter _operatorConverter;
-        private readonly bool _optionCompareText = false;
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
         private readonly Stack<ExpressionSyntax> _withBlockLhs = new Stack<ExpressionSyntax>();
         private readonly ITypeContext _typeContext;
@@ -730,10 +729,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                         _visualBasicEqualityComparison.TryConvertToNullOrEmptyCheck(node, lhs, rhs, out CSharpSyntaxNode visitBinaryExpression)) {
                         return visitBinaryExpression;
                     }
-                    (lhs, rhs) = _visualBasicEqualityComparison.AdjustForVbStringComparison(node.Left, lhs, lhsTypeInfo, node.Right, rhs, rhsTypeInfo);
+                    (lhs, rhs) = _visualBasicEqualityComparison.AdjustForVbStringComparison(node.Left, lhs, lhsTypeInfo, false, node.Right, rhs, rhsTypeInfo, false);
+                    omitConversion = true; // Already handled within for the appropriate types (rhs can become int in comparison)
                     break;
                 case VisualBasicEqualityComparison.RequiredType.Object:
-                    return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(node, lhs, rhs);
+                    return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(lhs, rhs, node.IsKind(VBasic.SyntaxKind.NotEqualsExpression));
             }
 
             omitConversion |= lhsTypeInfo.Type != null && rhsTypeInfo.Type != null &&

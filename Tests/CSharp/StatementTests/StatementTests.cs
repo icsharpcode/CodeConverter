@@ -1539,16 +1539,16 @@ public partial class TestClass
     {
         switch (daysAgo)
         {
-            case object _ when 0 <= daysAgo && daysAgo <= 3:
+            case var @case when 0 <= @case && @case <= 3:
             case 4:
-            case object _ when daysAgo >= 5:
-            case object _ when daysAgo < 6:
-            case object _ when daysAgo <= 7:
+            case var case1 when case1 >= 5:
+            case var case2 when case2 < 6:
+            case var case3 when case3 <= 7:
                 {
                     return ""this week"";
                 }
 
-            case object _ when daysAgo > 0:
+            case var case4 when case4 > 0:
                 {
                     return daysAgo / 7 + "" weeks ago"";
                 }
@@ -1559,7 +1559,9 @@ public partial class TestClass
                 }
         }
     }
-}");
+}
+1 target compilation errors:
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
         }
 
         [Fact]
@@ -1584,16 +1586,15 @@ public partial class TestClass
 {
     public static string TimeAgo(string x)
     {
-        var switchExpr = Strings.UCase(x);
-        switch (switchExpr)
+        switch (Strings.UCase(x) ?? """")
         {
-            case var @case when @case == Strings.UCase(""a""):
-            case var case1 when case1 == Strings.UCase(""b""):
+            case var @case when @case == (Strings.UCase(""a"") ?? """"):
+            case var case1 when case1 == (Strings.UCase(""b"") ?? """"):
                 {
                     return ""ab"";
                 }
 
-            case var case2 when case2 == Strings.UCase(""c""):
+            case var case2 when case2 == (Strings.UCase(""c"") ?? """"):
                 {
                     return ""c"";
                 }
@@ -1704,10 +1705,9 @@ public partial class TestClass2
     public void DoesNotThrow()
     {
         var rand = new Random();
-        var switchExpr = rand.Next(8);
-        switch (switchExpr)
+        switch (rand.Next(8))
         {
-            case object _ when switchExpr < 4:
+            case var @case when @case < 4:
                 {
                     break;
                 }
@@ -1717,7 +1717,7 @@ public partial class TestClass2
                     break;
                 }
 
-            case object _ when switchExpr > 4:
+            case var case1 when case1 > 4:
                 {
                     break;
                 }
@@ -1729,7 +1729,9 @@ public partial class TestClass2
                 }
         }
     }
-}");
+}
+1 target compilation errors:
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
         }
 
         [Fact]
@@ -1759,6 +1761,52 @@ internal partial class A
         return 3;
     }
 }");
+        }
+
+        [Fact]
+        public async Task Issue579SelectCaseWithCaseInsensitiveTextCompareAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Option Compare Text ' Comments lost
+
+Class Issue579SelectCaseWithCaseInsensitiveTextCompare
+Private Function Test(astr_Temp As String) As Nullable(Of Boolean)
+    Select Case astr_Temp
+        Case ""Test""
+            Return True
+        Case astr_Temp
+            Return False
+        Case Else
+            Return Nothing
+    End Select
+End Function
+End Class", @"using System.Globalization;
+
+internal partial class Issue579SelectCaseWithCaseInsensitiveTextCompare
+{
+    private bool? Test(string astr_Temp)
+    {
+        switch (astr_Temp ?? """")
+        {
+            case var @case when CultureInfo.CurrentCulture.CompareInfo.Compare(@case, ""Test"", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0:
+                {
+                    return true;
+                }
+
+            case var case1 when CultureInfo.CurrentCulture.CompareInfo.Compare(case1, astr_Temp ?? """", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0:
+                {
+                    return false;
+                }
+
+            default:
+                {
+                    return default;
+                }
+        }
+    }
+}
+1 target compilation errors:
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
         }
 
         [Fact]
@@ -1874,6 +1922,53 @@ internal partial class TestClass
         for (int i = 0, loopTo = number - 1; i <= loopTo; i++)
             yield return i;
         yield break;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task SwitchIntToEnumAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Module Main
+    Public Enum EWhere As Short
+        None = 0
+        Bottom = 1
+    End Enum
+
+    Friend Function prtWhere(ByVal aWhere As EWhere) As String
+        Select Case aWhere
+            Case EWhere.None
+                Return "" ""
+            Case EWhere.Bottom
+                Return ""_ ""
+        End Select
+
+    End Function
+End Module", @"
+internal static partial class Main
+{
+    public enum EWhere : short
+    {
+        None = 0,
+        Bottom = 1
+    }
+
+    internal static string prtWhere(EWhere aWhere)
+    {
+        switch (aWhere)
+        {
+            case EWhere.None:
+                {
+                    return "" "";
+                }
+
+            case EWhere.Bottom:
+                {
+                    return ""_ "";
+                }
+        }
+
+        return default;
     }
 }");
         }

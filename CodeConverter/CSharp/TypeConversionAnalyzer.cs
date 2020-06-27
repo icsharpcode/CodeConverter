@@ -59,7 +59,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public (ExpressionSyntax Expr, bool IsConst) AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false, bool requiresConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
         {
-            var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, vbNode);
+            var typeInfo = _semanticModel.GetTypeInfo(vbNode);
             var vbType = forceSourceType ?? typeInfo.Type;
             var vbConvertedType = forceTargetType ?? typeInfo.ConvertedType;
             bool resultConst = false;

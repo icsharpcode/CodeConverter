@@ -13,6 +13,7 @@ using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
+using System.Diagnostics.Tracing;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -42,15 +43,26 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public bool OptionCompareTextCaseInsensitive { get; set; }
 
+        public LiteralExpressionSyntax OptionCompareTextCaseInsensitiveBoolExpression {
+            get {
+                var compareTextKind = OptionCompareTextCaseInsensitive ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression;
+                return SyntaxFactory.LiteralExpression(compareTextKind);
+            }
+        }
+
         public HashSet<string> ExtraUsingDirectives { get; }
 
         public RequiredType GetObjectEqualityType(VBSyntax.BinaryExpressionSyntax node, TypeInfo leftType, TypeInfo rightType)
         {
-            var typeInfos = new[] {leftType, rightType};
+            var typeInfos = new[] { leftType, rightType };
             if (!node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression)) {
                 return RequiredType.None;
             }
+            return GetObjectEqualityType(typeInfos);
+        }
 
+        public RequiredType GetObjectEqualityType(params TypeInfo[] typeInfos)
+        {
             bool requiresVbEqualityCheck = typeInfos.Any(t => t.Type?.SpecialType == SpecialType.System_Object);
 
             if (typeInfos.All(t => t.Type != null) && typeInfos.All(
@@ -63,13 +75,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
 
-
-        public (ExpressionSyntax lhs, ExpressionSyntax rhs) VbCoerceToString(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, TypeInfo lhsTypeInfo, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, TypeInfo rhsTypeInfo)
+        public (ExpressionSyntax lhs, ExpressionSyntax rhs) VbCoerceToNonNullString(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, TypeInfo lhsTypeInfo, bool leftKnownNotNull, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, TypeInfo rhsTypeInfo, bool rightKnownNotNull)
         {
             if (IsNonEmptyStringLiteral(vbLeft) || IsNonEmptyStringLiteral(vbRight)) {
+                // If one of the strings is "foo", the other string won't equal it if it's null or empty, so it doesn't matter which one we use in comparison
                 return (csLeft, csRight);
             }
-            return (VbCoerceToString(vbLeft, csLeft, lhsTypeInfo), VbCoerceToString(vbRight, csRight, rhsTypeInfo));
+            return (VbCoerceToNonNullString(vbLeft, csLeft, lhsTypeInfo, leftKnownNotNull), VbCoerceToNonNullString(vbRight, csRight, rhsTypeInfo, rightKnownNotNull));
         }
 
         private static bool IsNonEmptyStringLiteral(VBSyntax.ExpressionSyntax vbExpr)
@@ -77,7 +89,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return vbExpr.SkipParens().IsKind(VBSyntaxKind.StringLiteralExpression) && vbExpr is VBSyntax.LiteralExpressionSyntax literal && !IsEmptyString(literal);
         }
 
-        private ExpressionSyntax VbCoerceToString(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo)
+        public ExpressionSyntax VbCoerceToNonNullString(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo, bool knownNotNull = false)
         {
             bool isStringType = typeInfo.Type.SpecialType == SpecialType.System_String;
 
@@ -85,7 +97,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return EmptyStringExpression();
             }
 
-            if (!CanBeNull(vbNode)) {
+            if (knownNotNull || !CanBeNull(vbNode)) {
                 return csNode;
             }
 
@@ -93,7 +105,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 ? SyntaxFactory.ParenthesizedExpression(Coalesce(csNode, EmptyStringExpression()))
                 : Coalesce(csNode, EmptyCharArrayExpression());
 
-            return !isStringType ? NewStringFromArg(csNode) : csNode;
+            return VbCoerceToString(csNode, typeInfo);
+        }
+
+        private static ExpressionSyntax VbCoerceToString(ExpressionSyntax csNode, TypeInfo typeInfo)
+        {
+            return typeInfo.Type.SpecialType == SpecialType.System_String ? csNode : NewStringFromArg(csNode);
         }
 
         private bool CanBeNull(VBSyntax.ExpressionSyntax vbNode)
@@ -184,38 +201,43 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static ExpressionSyntax NegateIfNeeded(VBSyntax.BinaryExpressionSyntax node, InvocationExpressionSyntax positiveExpression)
         {
-            return node.IsKind(VBasic.SyntaxKind.EqualsExpression)
-                ? (ExpressionSyntax) positiveExpression
-                : SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, positiveExpression);
+            return node.IsKind(VBasic.SyntaxKind.NotEqualsExpression)
+               ? Negate(positiveExpression)
+               : (ExpressionSyntax)positiveExpression;
         }
 
-        public (ExpressionSyntax csLeft, ExpressionSyntax csRight) AdjustForVbStringComparison(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, TypeInfo lhsTypeInfo, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, TypeInfo rhsTypeInfo)
+        private static PrefixUnaryExpressionSyntax Negate(InvocationExpressionSyntax positiveExpression)
         {
-                if (OptionCompareTextCaseInsensitive) {
-                    ExtraUsingDirectives.Add("System.Globalization");
-                    var compareOptions = SyntaxFactory.Argument(GetCompareTextCaseInsensitiveCompareOptions());
-                    var compareString = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(CultureInfo), nameof(CultureInfo.CurrentCulture),
-                            nameof(CultureInfo.CompareInfo), nameof(CompareInfo.Compare)),
-                        SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
-                            {SyntaxFactory.Argument(csLeft), SyntaxFactory.Argument(csRight), compareOptions})));
-                    csLeft = compareString;
-                    csRight = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                        SyntaxFactory.Literal(0));
-                } else {
-                    (csLeft, csRight) = VbCoerceToString(vbLeft, csLeft, lhsTypeInfo, vbRight, csRight, rhsTypeInfo);
-                }
-
-                return (csLeft, csRight);
+            return SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, positiveExpression);
         }
 
-        public ExpressionSyntax GetFullExpressionForVbObjectComparison(VBSyntax.BinaryExpressionSyntax node, ExpressionSyntax lhs, ExpressionSyntax rhs)
+        public (ExpressionSyntax csLeft, ExpressionSyntax csRight) AdjustForVbStringComparison(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, TypeInfo lhsTypeInfo, bool leftKnownNotNull, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, TypeInfo rhsTypeInfo, bool rightKnownNotNull)
+        {
+            (csLeft, csRight) = VbCoerceToNonNullString(vbLeft, csLeft, lhsTypeInfo, leftKnownNotNull, vbRight, csRight, rhsTypeInfo, rightKnownNotNull);
+            if (OptionCompareTextCaseInsensitive) {
+                ExtraUsingDirectives.Add("System.Globalization");
+                var compareOptions = SyntaxFactory.Argument(GetCompareTextCaseInsensitiveCompareOptions());
+                var compareString = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(CultureInfo), nameof(CultureInfo.CurrentCulture),
+                        nameof(CultureInfo.CompareInfo), nameof(CompareInfo.Compare)),
+                    SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
+                        {SyntaxFactory.Argument(csLeft), SyntaxFactory.Argument(csRight), compareOptions})));
+
+                csLeft = compareString;
+                csRight = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression,
+                    SyntaxFactory.Literal(0));
+            }
+
+            return (csLeft, csRight);
+        }
+
+        public ExpressionSyntax GetFullExpressionForVbObjectComparison(ExpressionSyntax lhs, ExpressionSyntax rhs, bool negate = false)
         {
                 ExtraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
-                var optionCompareTextCaseInsensitive = SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(OptionCompareTextCaseInsensitive ? SyntaxKind.TrueKeyword : SyntaxKind.FalseLiteralExpression));
+                var optionCompareTextCaseInsensitive = SyntaxFactory.Argument(OptionCompareTextCaseInsensitiveBoolExpression);
                 var compareObject = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Operators), nameof(Operators.ConditionalCompareObjectEqual)),
                     SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
                         {SyntaxFactory.Argument(lhs), SyntaxFactory.Argument(rhs), optionCompareTextCaseInsensitive})));
-                return NegateIfNeeded(node, compareObject);
+                return negate ? (ExpressionSyntax)Negate(compareObject) : compareObject;
         }
 
         private static BinaryExpressionSyntax GetCompareTextCaseInsensitiveCompareOptions()
