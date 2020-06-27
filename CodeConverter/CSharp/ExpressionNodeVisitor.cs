@@ -733,7 +733,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     omitConversion = true; // Already handled within for the appropriate types (rhs can become int in comparison)
                     break;
                 case VisualBasicEqualityComparison.RequiredType.Object:
-                    return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(node, lhs, rhs);
+                    return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(lhs, rhs, node.IsKind(VBasic.SyntaxKind.NotEqualsExpression));
             }
 
             omitConversion |= lhsTypeInfo.Type != null && rhsTypeInfo.Type != null &&

@@ -1765,7 +1765,7 @@ internal partial class A
         public async Task Issue579SelectCaseWithCaseInsensitiveTextCompareAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"
-Option Compare Text
+Option Compare Text ' Comments lost
 
 Class Issue579SelectCaseWithCaseInsensitiveTextCompare
 Private Function Test(astr_Temp As String) As Nullable(Of Boolean)

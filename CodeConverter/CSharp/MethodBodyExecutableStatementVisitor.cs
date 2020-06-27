@@ -642,14 +642,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var vbExpr = node.SelectStatement.Expression;
             var vbEquality = CommonConversions.VisualBasicEqualityComparison;
-            var (csSwitchExpr, stmts, csExprToReuse) = await GetExpressionWithoutSideEffectsAsync(vbExpr, "switchExpr");
+            var (csExprToReuse, stmts, csSwitchExpr) = await GetExpressionWithoutSideEffectsAsync(vbExpr, "switchExpr");
             var switchExprTypeInfo = _semanticModel.GetTypeInfo(vbExpr);
-            var isStringComparison = switchExprTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String;
+            var isStringComparison = switchExprTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String || switchExprTypeInfo.ConvertedType?.IsArrayOf(SpecialType.System_Char) == true;
             var caseInsensitiveStringComparison = vbEquality.OptionCompareTextCaseInsensitive &&
                 isStringComparison;
             if (isStringComparison) {
-                csSwitchExpr = vbEquality.VbCoerceToNonNullString(vbExpr, csSwitchExpr, switchExprTypeInfo);
                 csExprToReuse = vbEquality.VbCoerceToNonNullString(vbExpr, csExprToReuse, switchExprTypeInfo);
+                csSwitchExpr = vbEquality.VbCoerceToNonNullString(vbExpr, csSwitchExpr, switchExprTypeInfo);
             }
 
             var usedConstantValues = new HashSet<object>();
@@ -665,15 +665,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                         var constantValue = _semanticModel.GetConstantValue(s.Value);
                         var caseTypeInfo = _semanticModel.GetTypeInfo(s.Value);
                         var notAlreadyUsed = !constantValue.HasValue || usedConstantValues.Add(constantValue.Value);
-                        var csCase = correctTypeExpressionSyntax.Expr;
 
                         // Pass both halves in case we can optimize away the check based on the switch expr
-                        if (isStringComparison && !caseInsensitiveStringComparison) {
-                            csCase = vbEquality.VbCoerceToNonNullString(vbExpr, csExprToReuse, switchExprTypeInfo, true, s.Value, correctTypeExpressionSyntax.Expr, caseTypeInfo, false).rhs;
-                        }
-                        var caseSwitchLabelSyntax = !caseInsensitiveStringComparison && correctTypeExpressionSyntax.IsConst && notAlreadyUsed
-                            ? (SwitchLabelSyntax)SyntaxFactory.CaseSwitchLabel(csCase)
-                            : WrapInCasePatternSwitchLabelSyntax(node, s.Value, csCase, caseInsensitiveStringComparison);
+                        var wrapForStringComparison = isStringComparison && (caseInsensitiveStringComparison ||
+                            vbEquality.VbCoerceToNonNullString(vbExpr, csExprToReuse, switchExprTypeInfo, true, s.Value, originalExpressionSyntax, caseTypeInfo, false).rhs != originalExpressionSyntax);
+
+                        var csExpressionToUse = wrapForStringComparison ? originalExpressionSyntax : correctTypeExpressionSyntax.Expr;
+
+                        var caseSwitchLabelSyntax = !wrapForStringComparison && correctTypeExpressionSyntax.IsConst && notAlreadyUsed
+                            ? (SwitchLabelSyntax)SyntaxFactory.CaseSwitchLabel(csExpressionToUse)
+                            : WrapInCasePatternSwitchLabelSyntax(node, s.Value, csExpressionToUse, caseInsensitiveStringComparison);
                         labels.Add(caseSwitchLabelSyntax);
                     } else if (c is VBSyntax.ElseCaseClauseSyntax) {
                         labels.Add(SyntaxFactory.DefaultSwitchLabel());
@@ -753,13 +754,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                 patternMatch = SyntaxFactory.DeclarationPattern(
                     ValidSyntaxFactory.VarType, SyntaxFactory.SingleVariableDesignation(varName));
                 ExpressionSyntax csLeft = SyntaxFactory.IdentifierName(varName), csRight = expression;
-                if (caseInsensitiveTextComparison) {
+                var caseTypeInfo = _semanticModel.GetTypeInfo(vbCase);
+                var vbEquality = CommonConversions.VisualBasicEqualityComparison;
+                if (vbEquality.GetObjectEqualityType(typeInfo, caseTypeInfo) == VisualBasicEqualityComparison.RequiredType.Object) {
+                    expression = vbEquality.GetFullExpressionForVbObjectComparison(csLeft, csRight);
+                } else {
                     // We know lhs isn't null, because we always coalesce it in the switch expression
-                    (csLeft, csRight) = CommonConversions.VisualBasicEqualityComparison
-                        .AdjustForVbStringComparison(node.SelectStatement.Expression, csLeft, typeInfo, true, vbCase, csRight, _semanticModel.GetTypeInfo(vbCase), false);
+                    (csLeft, csRight) = vbEquality
+                        .AdjustForVbStringComparison(node.SelectStatement.Expression, csLeft, typeInfo, true, vbCase, csRight, caseTypeInfo, false);
+                    expression = SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, csLeft, csRight);
                 }
-                expression = SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, csLeft, csRight);
-                
             }
 
             var casePatternSwitchLabelSyntax = SyntaxFactory.CasePatternSwitchLabel(patternMatch,
