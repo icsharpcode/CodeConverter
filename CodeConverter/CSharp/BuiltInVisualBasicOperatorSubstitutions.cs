@@ -22,24 +22,26 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class VbOperatorConversion
     {
-        public static IOperatorConverter Create(CommentConvertingVisitorWrapper expressionVisitor, SemanticModel semanticModel, VisualBasicEqualityComparison visualBasicEqualityComparison)
+        public static IOperatorConverter Create(CommentConvertingVisitorWrapper expressionVisitor, SemanticModel semanticModel, VisualBasicEqualityComparison visualBasicEqualityComparison, TypeConversionAnalyzer typeConversionAnalyzer)
         {
-            return new BuiltInVisualBasicOperatorSubsitutions(expressionVisitor, semanticModel, visualBasicEqualityComparison);
+            return new BuiltInVisualBasicOperatorSubstitutions(expressionVisitor, semanticModel, visualBasicEqualityComparison, typeConversionAnalyzer);
         }
 
-        private class BuiltInVisualBasicOperatorSubsitutions : IOperatorConverter
+        private class BuiltInVisualBasicOperatorSubstitutions : IOperatorConverter
         {
             private const string _compilerServices = nameof(Microsoft) + "." + nameof(Microsoft.VisualBasic) + "." + nameof(Microsoft.VisualBasic.CompilerServices);
             private const string _operators = nameof(Operators);
             private readonly SemanticModel _semanticModel;
             private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
             private readonly CommentConvertingVisitorWrapper _triviaConvertingVisitor;
+            private readonly TypeConversionAnalyzer _typeConversionAnalyzer;
 
-            public BuiltInVisualBasicOperatorSubsitutions(CommentConvertingVisitorWrapper triviaConvertingVisitor, SemanticModel semanticModel, VisualBasicEqualityComparison visualBasicEqualityComparison)
+            public BuiltInVisualBasicOperatorSubstitutions(CommentConvertingVisitorWrapper triviaConvertingVisitor, SemanticModel semanticModel, VisualBasicEqualityComparison visualBasicEqualityComparison, TypeConversionAnalyzer typeConversionAnalyzer)
             {
                 _semanticModel = semanticModel;
                 _visualBasicEqualityComparison = visualBasicEqualityComparison;
                 _triviaConvertingVisitor = triviaConvertingVisitor;
+                _typeConversionAnalyzer = typeConversionAnalyzer;
             }
 
             public async Task<ExpressionSyntax> ConvertNothingComparisonOrNullAsync(VBSyntax.ExpressionSyntax exprNode, bool negateExpression = false)
@@ -93,9 +95,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             private async Task<ExpressionSyntax> ConvertToPowOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
             {
-                 var (lhs, rhs) = await AcceptSidesAsync(node);
+                var (lhs, rhs) = await AcceptSidesAsync(node);
+                lhs = ConvertTo(node.Left, lhs, SpecialType.System_Double);
+                rhs = ConvertTo(node.Right, rhs, SpecialType.System_Double);
                 return new KnownMethod(nameof(System), nameof(Math), nameof(Math.Pow))
                     .Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives, lhs, rhs);
+            }
+
+            private ExpressionSyntax ConvertTo(VBSyntax.ExpressionSyntax node, ExpressionSyntax lhs, SpecialType targetType)
+            {
+                return _typeConversionAnalyzer.AddExplicitConversion(node, lhs, forceTargetType: _semanticModel.Compilation.GetSpecialType(targetType));
             }
 
             /// <remarks>No need to implement these since this is only called for things that are already decimal and hence will resolve operator in C#</remarks>

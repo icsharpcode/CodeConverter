@@ -103,6 +103,39 @@ public partial class Class1
         }
 
         [Fact]
+        public async Task Issue580_EnumCastsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Public Class EnumToString
+    Enum Tes As Short
+        None = 0
+        TEST2 = 2
+    End Enum
+    Private Sub TEest2(aEnum As Tes)
+        Dim sxtr_Tmp As String = ""Use"" & CShort(aEnum).ToString
+        Dim si_Txt As Short = CShort(2 ^ Tes.TEST2)
+    End Sub
+End Class",
+@"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class EnumToString
+{
+    public enum Tes : short
+    {
+        None = 0,
+        TEST2 = 2
+    }
+
+    private void TEest2(Tes aEnum)
+    {
+        string sxtr_Tmp = ""Use"" + ((short)aEnum).ToString();
+        short si_Txt = Conversions.ToShort(Math.Pow(2, (double)Tes.TEST2));
+    }
+}");
+        }
+
+        [Fact]
         public async Task IntToEnumArgAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1

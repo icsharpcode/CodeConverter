@@ -56,7 +56,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csCompilation = csCompilation;
             _typeContext = typeContext;
             _extraUsingDirectives = extraUsingDirectives;
-            _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison);
+            _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison, commonConversions.TypeConversionAnalyzer);
             // If this isn't needed, the assembly with Conversions may not be referenced, so this must be done lazily
             _convertMethodsLookupByReturnType =
                 new Lazy<IDictionary<ITypeSymbol, string>>(() => CreateConvertMethodsLookupByReturnType(semanticModel));
@@ -237,12 +237,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                         SyntaxFactory.Argument(expressionSyntax))));
             }
 
-            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, expressionSyntax, true, false, forceTargetType: _semanticModel.GetTypeInfo(node).Type);
+            var withConversion = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, expressionSyntax, false, false, forceTargetType: _semanticModel.GetTypeInfo(node).Type);
+            return node.ParenthesizeIfPrecedenceCouldChange(withConversion); // Use context of outer node, rather than just its exprssion, as the above method call would do if allowed to add parenthesis
         }
 
         public override async Task<CSharpSyntaxNode> VisitTryCastExpression(VBasic.Syntax.TryCastExpressionSyntax node)
         {
-            return VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(node, SyntaxFactory.BinaryExpression(
+            return node.ParenthesizeIfPrecedenceCouldChange(SyntaxFactory.BinaryExpression(
                 SyntaxKind.AsExpression,
                 (ExpressionSyntax) await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor),
                 (TypeSyntax) await node.Type.AcceptAsync(TriviaConvertingExpressionVisitor)

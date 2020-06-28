@@ -1,32 +1,26 @@
-﻿using ICSharpCode.CodeConverter.Util;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.VisualBasic;
-using ArgumentSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentSyntax;
-using BinaryExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.BinaryExpressionSyntax;
-using LambdaExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.LambdaExpressionSyntax;
-using ParenthesizedExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ParenthesizedExpressionSyntax;
-using ReturnStatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ReturnStatementSyntax;
+﻿using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class VbSyntaxNodeExtensions
     {
-        public static ExpressionSyntax ParenthesizeIfPrecedenceCouldChange(this VisualBasicSyntaxNode node, ExpressionSyntax expression)
+        public static CSSyntax.ExpressionSyntax ParenthesizeIfPrecedenceCouldChange(this VBasic.VisualBasicSyntaxNode node, CSSyntax.ExpressionSyntax expression)
         {
             return PrecedenceCouldChange(node) ? SyntaxFactory.ParenthesizedExpression(expression) : expression;
         }
 
-        public static bool PrecedenceCouldChange(this VisualBasicSyntaxNode node)
+        public static bool PrecedenceCouldChange(this VBasic.VisualBasicSyntaxNode node)
         {
-            bool parentIsBinaryExpression = node is BinaryExpressionSyntax;
-            bool parentIsReturn = node.Parent is ReturnStatementSyntax;
-            bool parentIsLambda = node.Parent is LambdaExpressionSyntax;
-            bool parentIsNonArgumentExpression = node.Parent is Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax && !(node.Parent is ArgumentSyntax);
-            bool parentIsParenthesis = node.Parent is ParenthesizedExpressionSyntax;
+            bool parentIsBinaryExpression = node is VBSyntax.BinaryExpressionSyntax;
+            bool parentIsLambda = node.Parent is VBSyntax.LambdaExpressionSyntax;
+            bool parentIsNonArgumentExpression = node.Parent is VBSyntax.ExpressionSyntax && !(node.Parent is VBSyntax.ArgumentSyntax);
+            bool parentIsParenthesis = node.Parent is VBSyntax.ParenthesizedExpressionSyntax;
+            bool parentIsMemberAccessExpression = node.Parent is VBSyntax.MemberAccessExpressionSyntax;
 
-            return parentIsNonArgumentExpression && !parentIsBinaryExpression && !parentIsReturn && !parentIsLambda && !parentIsParenthesis;
+            return parentIsMemberAccessExpression || parentIsNonArgumentExpression && !parentIsBinaryExpression && !parentIsLambda && !parentIsParenthesis;
         }
     }
 }
