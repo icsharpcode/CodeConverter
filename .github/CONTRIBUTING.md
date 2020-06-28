@@ -27,13 +27,18 @@ In ProjectConversion, you'll see there's a separate entry point for the online s
 * Attempts to create a valid syntax tree to convert
 * Adds a bunch of default references and imports
 
-The majority of the work happens in the heart of the converter which is based around a visitor pattern with a method for each syntax type. If you don't know what a Syntax Tree is, that's definitely worth [looking up](https://github.com/dotnet/roslyn/wiki/Roslyn-Overview). There are lots of tests, set a breakpoint somewhere like `VisitCompilationUnit`, then run them in debug mode. If you step through the code, you'll see how it walks down the syntax tree converting piece by piece. If you want to find the name of the syntax for some specific code, use [Roslyn Quoter](https://roslynquoter.azurewebsites.net/). See the main 3 visitors:
+The majority of the work happens in the heart of the converter which is based around a visitor pattern with a method for each syntax type. If you don't know what a Syntax Tree is, that's definitely worth [looking up](https://github.com/dotnet/roslyn/wiki/Roslyn-Overview). There are lots of tests, set a breakpoint somewhere like `VisitCompilationUnit`, then run them in debug mode. If you step through the code, you'll see how it walks down the syntax tree converting piece by piece. If you want to find the name of the syntax for some specific code, use [Roslyn Quoter](https://roslynquoter.azurewebsites.net/). 
+
+See the main 3 visitors containing a method for each bit of syntax (e.g. for an if statement):
 * https://github.com/icsharpcode/CodeConverter/blob/master/ICSharpCode.CodeConverter/CSharp/DeclarationNodeVisitor.cs
 * https://github.com/icsharpcode/CodeConverter/blob/master/ICSharpCode.CodeConverter/CSharp/MethodBodyExecutableStatementVisitor.cs
 * https://github.com/icsharpcode/CodeConverter/blob/master/ICSharpCode.CodeConverter/CSharp/ExpressionNodeVisitor.cs
 
+
 There are some surrounding visitors which keep cross-cutting details out of the way of the main body of code.
 After conversion, the roslyn simplifier runs to tidy up the code, removing redundant qualification etc.
+
+Always try to understand the root problem and find the general place to apply a fix that covers or helps with related cases. Example here: https://github.com/icsharpcode/CodeConverter/issues/557
 
 ## For documentation, prefer:
 * Anything process/project related to be visible on GitHub (e.g. these bullet points)
@@ -66,3 +71,4 @@ At the moment there's just a very small amount of first draft documentation. Con
 ## Codebase details
 * All parallelism is controlled by Env.MaxDop. When a debugger is attached to a debug build, it sets parallelism to 1. If you're seeing a transient issue when the debugger isn't attached but can't reproduce the issue with the debugger, set this to a large number instead.
 * The worst part of the code is the query syntax conversion. It's just evolved messily to cover basic cases. To comprehensively cover the syntax would need a proper architecture defined to match how the queries are formed. For an example of other code that solves a similar query syntax problem, see ILSpy's [`CSharpDecompiler`](https://github.com/icsharpcode/ILSpy/blob/e189ad9ca301142b9134c2839e416199cbd3360e/ICSharpCode.Decompiler/CSharp/Transforms/IntroduceQueryExpressions.cs)
+* There are a few areas where different special cases collide which are incredibly difficult to reason about all cases. Function hoisting, select case statements and methodswithhandles are some examples which need care. If major work is required, they'll need some extra test cases adding and refactoring to separate the concerns.
