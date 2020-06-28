@@ -633,6 +633,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public ISymbol GetCsOriginalSymbolOrNull(ISymbol symbol)
         {
+            if (symbol == null) return null;
             symbol = symbol.OriginalDefinition;
             // Construct throws an exception if ConstructedFrom differs from it, so let's use ConstructedFrom directly
             var symbolToFind = symbol is IMethodSymbol m ? m.ConstructedFrom : symbol;

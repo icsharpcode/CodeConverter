@@ -409,9 +409,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxToken token = default(SyntaxToken);
             var convertedArgExpression = ((ExpressionSyntax)await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor)).SkipParens();
             var typeConversionAnalyzer = CommonConversions.TypeConversionAnalyzer;
-            if (symbol is IMethodSymbol methodSymbol) {
-                var parameters = (CommonConversions.GetCsOriginalSymbolOrNull(methodSymbol.OriginalDefinition) ?? methodSymbol).GetParameters();
-                var refType = GetRefConversionType(node, argList, parameters, out var argName, out var refKind);
+            var possibleParameters = (CommonConversions.GetCsOriginalSymbolOrNull(symbol?.OriginalDefinition) ?? symbol)?.GetParameters();
+            if (possibleParameters.HasValue) {
+                var refType = GetRefConversionType(node, argList, possibleParameters.Value, out var argName, out var refKind);
                 token = GetRefToken(refKind);
                 if (refType != RefConversion.Inline) {
                     convertedArgExpression = HoistByRefDeclaration(node, convertedArgExpression, refType, argName, refKind);

@@ -570,5 +570,34 @@ BC30590: Event 'Click' cannot be found.
 1 target compilation errors:
 CS0246: The type or namespace name 'Button' could not be found (are you missing a using directive or an assembly reference?)");
         }
+
+        [Fact]
+        public async Task Issue584_EventWithByRefAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue584RaiseEventByRefDemo
+    Public Event ConversionNeeded(ai_OrigID As Integer, ByRef NewID As Integer)
+
+    Public Function TestConversion(ai_ID) As Integer
+        Dim i_NewValue As Integer
+        RaiseEvent ConversionNeeded(ai_ID, i_NewValue)
+        Return i_NewValue
+    End Function
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class Issue584RaiseEventByRefDemo
+{
+    public event ConversionNeededEventHandler ConversionNeeded;
+
+    public delegate void ConversionNeededEventHandler(int ai_OrigID, ref int NewID);
+
+    public int TestConversion(object ai_ID)
+    {
+        var i_NewValue = default(int);
+        ConversionNeeded?.Invoke(Conversions.ToInteger(ai_ID), ref i_NewValue);
+        return i_NewValue;
+    }
+}
+");
+        }
     }
 }
