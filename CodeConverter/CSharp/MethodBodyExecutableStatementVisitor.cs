@@ -766,20 +766,26 @@ namespace ICSharpCode.CodeConverter.CSharp
                 patternMatch = ValidSyntaxFactory.VarPattern(varName);
                 ExpressionSyntax csLeft = SyntaxFactory.IdentifierName(varName), csRight = expression;
                 var caseTypeInfo = _semanticModel.GetTypeInfo(vbCase);
-                var vbEquality = CommonConversions.VisualBasicEqualityComparison;
-                if (vbEquality.GetObjectEqualityType(typeInfo, caseTypeInfo) == VisualBasicEqualityComparison.RequiredType.Object) {
-                    expression = vbEquality.GetFullExpressionForVbObjectComparison(csLeft, csRight);
-                } else {
-                    // We know lhs isn't null, because we always coalesce it in the switch expression
-                    (csLeft, csRight) = vbEquality
-                        .AdjustForVbStringComparison(node.SelectStatement.Expression, csLeft, typeInfo, true, vbCase, csRight, caseTypeInfo, false);
-                    expression = SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, csLeft, csRight);
-                }
+                expression = EqualsAdjustedForStringComparison(node, vbCase, typeInfo, csLeft, csRight, caseTypeInfo);
             }
 
-            var casePatternSwitchLabelSyntax = SyntaxFactory.CasePatternSwitchLabel(patternMatch,
-                SyntaxFactory.WhenClause(expression), SyntaxFactory.Token(SyntaxKind.ColonToken));
-            return casePatternSwitchLabelSyntax;
+            var colonToken = SyntaxFactory.Token(SyntaxKind.ColonToken);
+            return SyntaxFactory.CasePatternSwitchLabel(patternMatch, SyntaxFactory.WhenClause(expression), colonToken);
+        }
+
+        private ExpressionSyntax EqualsAdjustedForStringComparison(VBSyntax.SelectBlockSyntax node, VBSyntax.ExpressionSyntax vbCase, TypeInfo lhsTypeInfo, ExpressionSyntax csLeft, ExpressionSyntax csRight, TypeInfo rhsTypeInfo)
+        {
+            var vbEquality = CommonConversions.VisualBasicEqualityComparison;
+            switch (vbEquality.GetObjectEqualityType(lhsTypeInfo, rhsTypeInfo)) {
+                case VisualBasicEqualityComparison.RequiredType.Object:
+                    return vbEquality.GetFullExpressionForVbObjectComparison(csLeft, csRight);
+                case VisualBasicEqualityComparison.RequiredType.StringOnly:
+                    // We know lhs isn't null, because we always coalesce it in the switch expression
+                    (csLeft, csRight) = vbEquality
+                        .AdjustForVbStringComparison(node.SelectStatement.Expression, csLeft, lhsTypeInfo, true, vbCase, csRight, rhsTypeInfo, false);
+                    break;
+            }
+            return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, csLeft, csRight);
         }
 
         public override async Task<SyntaxList<StatementSyntax>> VisitWithBlock(VBSyntax.WithBlockSyntax node)
