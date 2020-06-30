@@ -413,7 +413,7 @@ End Class");
     int Ab = (int) o;
 }",
                 @"Private Sub Test()
-    Dim l_AB As Object = 5
+    Dim lAB As Object = 5
     Dim Ab As Integer = CInt(o)
 End Sub
 
@@ -430,8 +430,8 @@ BC30451: 'o' is not declared. It may be inaccessible due to its protection level
     int tesT = (int) o;
 }",
                 @"Private Sub Test()
-    Dim l_Test1 As Object = 5
-    Dim l_TesT As Integer = CInt(o)
+    Dim lTest1 As Object = 5
+    Dim lTesT As Integer = CInt(o)
 End Sub
 
 1 source compilation errors:
@@ -451,9 +451,9 @@ BC30451: 'o' is not declared. It may be inaccessible due to its protection level
 }",
                 @"Public ReadOnly Property Test As Integer
     Get
-        Dim l_Test1 As Object = 5
-        Dim l_TesT As Integer = CInt(o)
-        Return l_Test1
+        Dim lTest1 As Object = 5
+        Dim lTesT As Integer = CInt(o)
+        Return lTest1
     End Get
 End Property
 
@@ -484,21 +484,21 @@ BC30451: 'o' is not declared. It may be inaccessible due to its protection level
     }
 }",
                 @"Friend Class TestClass
-    Private f_Test As EventHandler
+    Private testField As EventHandler
 
     Public Custom Event Test As EventHandler
         AddHandler(ByVal value As EventHandler)
-            Dim l_TeSt1 As Object = 5
-            Dim l_TesT As Integer = CInt(o)
-            f_Test = [Delegate].Combine(f_Test, value)
+            Dim lTeSt1 As Object = 5
+            Dim lTesT As Integer = CInt(o)
+            testField = [Delegate].Combine(testField, value)
         End AddHandler
         RemoveHandler(ByVal value As EventHandler)
-            Dim l_TeSt1 As Object = 5
-            Dim l_TesT As Integer = CInt(o)
-            f_Test = [Delegate].Remove(f_Test, value)
+            Dim lTeSt1 As Object = 5
+            Dim lTesT As Integer = CInt(o)
+            testField = [Delegate].Remove(testField, value)
         End RemoveHandler
         RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
-            f_Test?(sender, e)
+            testField?(sender, e)
         End RaiseEvent
     End Event
 End Class
@@ -518,8 +518,8 @@ BC30451: '[Delegate]' is not declared. It may be inaccessible due to its protect
     return tesT;
 }",
                 @"Private Function Method(ByVal test As Object) As Integer
-    Dim l_TesT As Integer = test
-    Return l_TesT
+    Dim lTesT As Integer = test
+    Return lTesT
 End Function");
         }
         [Fact]
@@ -569,17 +569,17 @@ public class TestClass {
 @"Imports System
 
 Public Class TestClass
-    Private f_Value As EventHandler
+    Private valueField As EventHandler
 
     Public Custom Event Value As EventHandler
         AddHandler(ByVal value As EventHandler)
-            f_Value = [Delegate].Combine(f_Value, value)
+            valueField = [Delegate].Combine(valueField, value)
         End AddHandler
         RemoveHandler(ByVal value As EventHandler)
-            f_Value = [Delegate].Remove(f_Value, value)
+            valueField = [Delegate].Remove(valueField, value)
         End RemoveHandler
         RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
-            f_Value?(sender, e)
+            valueField?(sender, e)
         End RaiseEvent
     End Event
 End Class
@@ -608,14 +608,14 @@ End Interface
 Public Class TestClass
     Implements IInterface
 
-    Private f_Prop As Integer
+    Private propField As Integer
 
     Private Property Prop As Integer Implements IInterface.Prop
         Get
-            Return f_Prop
+            Return propField
         End Get
         Set(ByVal value As Integer)
-            f_Prop = value
+            propField = value
         End Set
     End Property
 End Class");
@@ -631,15 +631,19 @@ End Class");
 }",
                 @"Namespace System
     Public Class TestClass
-        Private f_Test As Integer
+        Private test As Integer
 
         Public ReadOnly Property Test As Integer
             Get
-                Return f_Test
+                Return Me.test
             End Get
         End Property
     End Class
-End Namespace");
+End Namespace
+
+2 target compilation errors:
+BC30260: 'Test' is already declared as 'Private test As Integer' in this class.
+BC31429: 'test' is ambiguous because multiple kinds of members with this name exist in class 'TestClass'.");
         }
 
         [Fact]

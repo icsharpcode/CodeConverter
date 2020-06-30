@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Fix compilation error when switching with enum cases [#549](https://github.com/icsharpcode/CodeConverter/issues/549)
 * Improve numeric casts [#580](https://github.com/icsharpcode/CodeConverter/issues/580)
 * Add ref to conversion of RaiseEvent where needed [#584](https://github.com/icsharpcode/CodeConverter/issues/584)
+* Rename clashing type memvers [#420](https://github.com/icsharpcode/CodeConverter/issues/420)
 
 ### C# -> VB
 

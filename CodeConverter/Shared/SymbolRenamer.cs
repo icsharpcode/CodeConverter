@@ -16,7 +16,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var symbolsWithNewNames = toRename.OrderByDescending(x => x.DeclaredAccessibility).ThenByDescending(x => x.Kind == SymbolKind.Parameter || x.Kind == SymbolKind.Property).Skip(canKeepOne ? 1 :0).Select(tr =>
             {
-                string newName = NameGenerator.GenerateUniqueName(GetBaseName(tr), canUse);
+                string newName = NameGenerator.GenerateUniqueName(GetBaseForNewName(tr), canUse);
                 return (Original: tr, NewName: newName);
             });
             return symbolsWithNewNames;
@@ -45,11 +45,16 @@ namespace ICSharpCode.CodeConverter.Shared
             return solution.GetProject(project.Id);
         }
 
-        private static string GetBaseName(ISymbol declaration)
+        private static string GetBaseForNewName(ISymbol declaration)
         {
-            string prefix = declaration.Kind.ToString().ToLowerInvariant()[0] + "_";
             string name = GetName(declaration);
-            return prefix + name.Substring(0, 1).ToUpperInvariant() + name.Substring(1);
+            return declaration.Kind switch {
+                SymbolKind.Method => name + "Method",
+                SymbolKind.Property => name + "Prop",
+                SymbolKind.NamedType => name + "Type",
+                SymbolKind.Field => name + "Field",
+                _ =>  declaration.Kind.ToString().ToLowerInvariant()[0] + name.Substring(0, 1).ToUpperInvariant() + name.Substring(1)
+            };
         }
 
         public static IEnumerable<INamespaceOrTypeSymbol> GetNamespacesAndTypesInAssembly(Project project, Compilation compilation)

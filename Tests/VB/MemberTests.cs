@@ -554,14 +554,14 @@ public class ShouldNotChange {
 }
 ",
                 @"Public Class HasConflictingPropertyAndField
-    Private f_Test As Integer
+    Private testField As Integer
 
     Public Property Test As Integer
         Get
-            Return f_Test
+            Return testField
         End Get
         Set(ByVal value As Integer)
-            f_Test = value
+            testField = value
         End Set
     End Property
 End Class
@@ -610,26 +610,26 @@ End Class");
 }",
                 @"Public Class HasConflictingMethodAndField
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
-        f_TeSt = test
+        teStField = test
         Return test
     End Function
 
-    Private f_TeSt As Integer
+    Private teStField As Integer
 
-    Private Function m_Test() As Integer
+    Private Function testMethod() As Integer
         Return 1
     End Function
 
     Public Function Test() As Integer
-        Return m_Test()
+        Return testMethod()
     End Function
 
-    Private Function m_Test(ByVal arg As Integer) As Integer
+    Private Function testMethod(ByVal arg As Integer) As Integer
         Return arg
     End Function
 
     Public Function Test(ByVal arg As Integer) As Integer
-        Return m_Test(arg)
+        Return testMethod(arg)
     End Function
 End Class");
         }
@@ -653,18 +653,18 @@ End Class");
 }",
                 @"Public Class HasConflictingPropertyAndField
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
-        f_Test = test
+        testField = test
         Return test
     End Function
 
-    Private f_Test As Integer
+    Private testField As Integer
 
     Public Property Test As Integer
         Get
-            Return f_Test
+            Return testField
         End Get
         Set(ByVal value As Integer)
-            f_Test = value
+            testField = value
         End Set
     End Property
 End Class");
@@ -685,14 +685,14 @@ End Class");
     }
 }",
                 @"Public Class HasConflictingPropertyAndField
-    Private f_Test As Integer
+    Private testField As Integer
 
     Public Property Test As Integer
         Get
-            Return f_Test
+            Return testField
         End Get
         Set(ByVal value As Integer)
-            f_Test = value
+            testField = value
         End Set
     End Property
 
@@ -727,22 +727,22 @@ public partial class HasConflictingPropertyAndField {
 }",
                 @"Public Partial Class HasConflictingPropertyAndField
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
-        Dim l_TEST As Integer = 0
-        f_Test = test + l_TEST
+        Dim lTEST As Integer = 0
+        testField = test + lTEST
         Return test
     End Function
 End Class
 
 Public Partial Class HasConflictingPropertyAndField
-    Private f_Test As Integer
+    Private testField As Integer
 
     Public Property Test As Integer
         Get
-            Dim l_TEST As Integer = 0
-            Return f_Test + l_TEST
+            Dim lTEST As Integer = 0
+            Return testField + lTEST
         End Get
         Set(ByVal value As Integer)
-            f_Test = value
+            testField = value
         End Set
     End Property
 End Class");
@@ -1122,15 +1122,15 @@ class OwnerClass : INotifyPropertyChanged {
 @"Imports System.ComponentModel
 
 Friend Class TestClass
-    Private f_Owner As OwnerClass
+    Private ownerField As OwnerClass
 
     Public Property Owner As OwnerClass
         Get
-            Return f_Owner
+            Return ownerField
         End Get
         Set(ByVal value As OwnerClass)
-            f_Owner = value
-            AddHandler CType(f_Owner, INotifyPropertyChanged).PropertyChanged, AddressOf OnOwnerChanged
+            ownerField = value
+            AddHandler CType(ownerField, INotifyPropertyChanged).PropertyChanged, AddressOf OnOwnerChanged
         End Set
     End Property
 

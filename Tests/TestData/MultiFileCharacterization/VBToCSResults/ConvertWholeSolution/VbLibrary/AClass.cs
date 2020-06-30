@@ -28,17 +28,17 @@ namespace VbLibrary
             dict.TryGetValue(1, out argvalue);
         }
 
-        private void UseEnumFromOtherFileInSolution(AnEnum m)
+        private void UseEnumFromOtherFileInSolution(AnEnumType m)
         {
-            string nothing = Enumerable.Empty<string>().ToArray()[(int)AnEnum.AnEnumMember];
+            string nothing = Enumerable.Empty<string>().ToArray()[(int)AnEnumType.AnEnumMember];
             switch (m)
             {
-                case (AnEnum)(-1):
+                case (AnEnumType)(-1):
                     {
                         return;
                     }
 
-                case AnEnum.AnEnumMember:
+                case AnEnumType.AnEnumMember:
                     {
                         return;
                     }

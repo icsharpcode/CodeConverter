@@ -1245,5 +1245,36 @@ internal partial class Foo : IFoo
 }
 ");
         }
+
+        [Fact]
+        public async Task Issue420_RenameClashingClassMemberAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Module Main
+    Sub Main()
+    End Sub
+End Module", @"
+internal static partial class MainType
+{
+    public static void Main()
+    {
+    }
+}
+");
+        }
+
+        [Fact]
+        public async Task Issue420_RenameClashingEnumMemberAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Enum MyEnum
+    MyEnumFirst
+End Enum", @"
+internal enum MyEnumType
+{
+    MyEnumFirst
+}
+");
+        }
     }
 }
