@@ -662,5 +662,43 @@ BC31429: 'test' is ambiguous because multiple kinds of members with this name ex
     End Sub
 End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
+
+        [Fact]
+        public async Task ExplicitImplementationsMustNotDifferOnlyByReturnTypeAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"using System.Collections;
+using System.Collections.Generic;
+
+public class AdditionalLocals : IEnumerable<KeyValuePair<string, int>>
+{
+    private readonly Stack<Dictionary<string, int>> _additionalLocals = new Stack<Dictionary<string, int>>();
+
+    public IEnumerator<KeyValuePair<string, int>> GetEnumerator()
+    {
+        return _additionalLocals.Peek().GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return _additionalLocals.Peek().GetEnumerator();
+    }
+}",
+@"Imports System.Collections
+Imports System.Collections.Generic
+
+Public Class AdditionalLocals
+    Implements IEnumerable(Of KeyValuePair(Of String, Integer))
+
+    Private ReadOnly _additionalLocals As Stack(Of Dictionary(Of String, Integer)) = New Stack(Of Dictionary(Of String, Integer))()
+
+    Public Function GetEnumerator() As IEnumerator(Of KeyValuePair(Of String, Integer)) Implements IEnumerable(Of KeyValuePair(Of String, Integer)).GetEnumerator
+        Return _additionalLocals.Peek().GetEnumerator()
+    End Function
+
+    Private Function GetEnumerator1() As IEnumerator Implements IEnumerable.GetEnumerator
+        Return _additionalLocals.Peek().GetEnumerator()
+    End Function
+End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
+        }
     }
 }

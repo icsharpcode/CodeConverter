@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Fix conversion for string implicitly converted to enum [#476](https://github.com/icsharpcode/CodeConverter/issues/476)
 
 ### C# -> VB
-
+* Rename explicit method implementations where needed [#492](https://github.com/icsharpcode/CodeConverter/issues/492)
 
 ## [8.1.4] - 2020-06-26
 

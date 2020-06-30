@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
@@ -50,6 +51,7 @@ namespace ICSharpCode.CodeConverter.VB
         private readonly HashSet<string> _extraImports = new HashSet<string>();
         private readonly CSharpHelperMethodDefinition _cSharpHelperMethodDefinition;
         private readonly CommonConversions _commonConversions;
+        private readonly HashSet<string> _addedNames = new HashSet<string>();
 
         private int _placeholder = 1;
         public CommentConvertingVisitorWrapper<VisualBasicSyntaxNode> TriviaConvertingVisitor { get; }
@@ -432,7 +434,7 @@ namespace ICSharpCode.CodeConverter.VB
             if (needsOverloads == true) {
                 modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.OverloadsKeyword));
             }
-            var implementsClause = methodInfo == null ? null : CreateImplementsClauseSyntaxOrNull(methodInfo, id);
+            var implementsClause = methodInfo == null ? null : CreateImplementsClauseSyntaxOrNull(methodInfo, ref id);
             if (isVoidSub) {
                 var stmt = SyntaxFactory.SubStatement(
                     attributes,
@@ -459,20 +461,33 @@ namespace ICSharpCode.CodeConverter.VB
         /// <remarks>
         /// PERF: Computational complexity high due to starting with all members and narrowing down
         /// </remarks>
-        private ImplementsClauseSyntax CreateImplementsClauseSyntaxOrNull(ISymbol memberInfo, SyntaxToken id)
+        private ImplementsClauseSyntax CreateImplementsClauseSyntaxOrNull(ISymbol memberInfo, ref SyntaxToken id)
         {
+            var originalId = id;
             var explicitImplementors = memberInfo.ExplicitInterfaceImplementations();
-            if (explicitImplementors.Any())
-                return CreateImplementsClauseSyntax(explicitImplementors, id);
-            var containingType = memberInfo.ContainingType;
-            var baseClassesAndInterfaces = containingType.GetAllBaseClassesAndInterfaces(true);
-            var implementors = baseClassesAndInterfaces.Except(new[] { containingType })
-                .SelectMany(t => t.GetMembers().Where(m => memberInfo.Name.EndsWith(m.Name)))
-                .Where(m => containingType.FindImplementationForInterfaceMember(m)?.Equals(memberInfo) == true)
-                .ToList();
+            if (explicitImplementors.Any()) {
+                //https://github.com/icsharpcode/CodeConverter/issues/492
+                var memberNames = memberInfo.ContainingType.GetMembers().ToLookup(s => UndottedMemberName(s.Name), StringComparer.OrdinalIgnoreCase);
+                string explicitMemberName = UndottedMemberName(memberInfo.Name);
+                var hasDuplicateNames = memberNames[explicitMemberName].Count() > 1;
+                if (hasDuplicateNames) id = SyntaxFactory.Identifier(NameGenerator.GenerateUniqueName(explicitMemberName, n => !memberNames.Contains(n) && _addedNames.Add(n)));
+            } else {
+                var containingType = memberInfo.ContainingType;
+                var baseClassesAndInterfaces = containingType.GetAllBaseClassesAndInterfaces(true);
+                explicitImplementors = baseClassesAndInterfaces.Except(new[] { containingType })
+                    .SelectMany(t => t.GetMembers().Where(m => memberInfo.Name.EndsWith(m.Name)))
+                    .Where(m => containingType.FindImplementationForInterfaceMember(m)?.Equals(memberInfo) == true)
+                    .ToImmutableArray();
+            }
 
-            return !implementors.Any() ? null: CreateImplementsClauseSyntax(implementors, id);
+            return !explicitImplementors.Any() ? null : CreateImplementsClauseSyntax(explicitImplementors, originalId);
         }
+
+        private static string UndottedMemberName(string n)
+        {
+            return n.Split('.').Last();
+        }
+
         private ImplementsClauseSyntax CreateImplementsClauseSyntax(IEnumerable<ISymbol> implementors, SyntaxToken id) {
             return SyntaxFactory.ImplementsClause(implementors.Select(x => {
                     NameSyntax nameSyntax = _commonConversions.GetFullyQualifiedNameSyntax(x.ContainingSymbol as INamedTypeSymbol);
@@ -515,6 +530,7 @@ namespace ICSharpCode.CodeConverter.VB
             IPropertySymbol declaredSymbol = _semanticModel.GetDeclaredSymbol(node) as IPropertySymbol;
             modifiers = modifiers.AddRange(GetAccessLimitationSyntaxKinds(declaredSymbol).Select(x => SyntaxFactory.Token(x)));
             Func<PropertyStatementSyntax> getStatementSyntax = () => {
+                var implementsClauseSyntaxOrNull = declaredSymbol == null ? null : CreateImplementsClauseSyntaxOrNull(declaredSymbol, ref id);
                 return SyntaxFactory.PropertyStatement(
                     attributes,
                     modifiers,
@@ -522,7 +538,7 @@ namespace ICSharpCode.CodeConverter.VB
                     parameterListSyntax,
                     SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)),
                     initializerOrNull,
-                    declaredSymbol == null ? null : CreateImplementsClauseSyntaxOrNull(declaredSymbol, id)
+                    implementsClauseSyntaxOrNull
                 );
             };
 
@@ -591,10 +607,11 @@ namespace ICSharpCode.CodeConverter.VB
             var id = _commonConversions.ConvertIdentifier(node.Identifier);
             var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node))
                 .Add(SyntaxFactory.Token(SyntaxKind.CustomKeyword));
+            var implementsClauseSyntaxOrNull = declaredSymbol == null ? null : CreateImplementsClauseSyntaxOrNull(declaredSymbol, ref id);
             var stmt = SyntaxFactory.EventStatement(
                 attributes, modifiers, id, null,
                 SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)),
-                declaredSymbol == null ? null : CreateImplementsClauseSyntaxOrNull(declaredSymbol, id)
+                implementsClauseSyntaxOrNull
             );
             if (!RequiresAccessorBody(node.AccessorList))
                 return stmt;
@@ -650,6 +667,7 @@ namespace ICSharpCode.CodeConverter.VB
             var id = SyntaxFactory.Identifier(decl.Identifier.ValueText, SyntaxFacts.IsKeywordKind(decl.Identifier.Kind()), decl.Identifier.GetIdentifierText(), TypeCharacter.None);
             ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
             var declaredSymbol = _semanticModel.GetDeclaredSymbol(decl);
+            var implementsClauseSyntaxOrNull = declaredSymbol == null ? null : CreateImplementsClauseSyntaxOrNull(declaredSymbol, ref id);
             return SyntaxFactory.EventStatement(
                 attributes,
                 CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)),
@@ -657,7 +675,7 @@ namespace ICSharpCode.CodeConverter.VB
                 null,
                 SyntaxFactory.SimpleAsClause(returnAttributes,
                 (TypeSyntax)node.Declaration.Type.Accept(TriviaConvertingVisitor)),
-                declaredSymbol == null ? null : CreateImplementsClauseSyntaxOrNull(declaredSymbol, id));
+                implementsClauseSyntaxOrNull);
         }
         private TypeSyntax GetTypeSyntax(ITypeSymbol typeInfo) {
             return (TypeSyntax) _vbSyntaxGenerator.TypeExpression(typeInfo);

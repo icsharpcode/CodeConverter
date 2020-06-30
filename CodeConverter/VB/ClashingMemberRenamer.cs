@@ -28,7 +28,8 @@ namespace ICSharpCode.CodeConverter.VB
 
         private static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(INamespaceOrTypeSymbol containerSymbol, Compilation compilation)
         {
-            var members = containerSymbol.GetMembers().Where(m => m.Locations.Any(loc => loc.SourceTree != null && compilation.ContainsSyntaxTree(loc.SourceTree))).ToArray();
+            var members = containerSymbol.GetMembers()
+                .Where(m => m.Locations.Any(loc => loc.SourceTree != null && compilation.ContainsSyntaxTree(loc.SourceTree))).ToArray();
             var symbolSets = GetLocalSymbolSets(containerSymbol, compilation, members).Concat(members.AsEnumerable().Yield());
             return symbolSets.SelectMany(GetUniqueNamesForSymbolSet);
         }
