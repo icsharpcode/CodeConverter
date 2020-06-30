@@ -570,7 +570,7 @@ public partial class TestIssue479
                 @"Imports System.IO
 Imports SIO = System.IO
 Imports Microsoft.VisualBasic
-Imports VB = Microsoft.VisualBasic 'TODO: Figure out why this is removed sometimes when it has a comment
+Imports VB = Microsoft.VisualBasic 'TODO: Figure out why this is removed sometimes by the simplifier (making this test flaky)
 
 Public Class Test
     Private aliased As String = VB.Left(""SomeText"", 1)
@@ -590,7 +590,7 @@ End Class",
 using System.IO;
 using SIO = System.IO;
 using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
-using VB = Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic // TODO: Figure out why this is removed sometimes when it has a comment
+using VB = Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic // TODO: Figure out why this is removed sometimes by the simplifier (making this test flaky)
 
 public partial class Test
 {
