@@ -8,6 +8,26 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp
     public class TypeCastTests : ConverterTestBase
     {
         [Fact]
+        public async Task NumericStringToEnumAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Public Class NumericStringToEnum
+    Public Shared Sub Main()
+        MsgBox(NameOf(Main), ""1"", True)
+    End Sub
+End Class" + Environment.NewLine, @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class NumericStringToEnum
+{
+    public static void Main()
+    {
+        Interaction.MsgBox(nameof(Main), (MsgBoxStyle)Conversions.ToInteger(""1""), true);
+    }
+}" + Environment.NewLine);
+        }
+
+        [Fact]
         public async Task CIntObjectToIntegerAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(

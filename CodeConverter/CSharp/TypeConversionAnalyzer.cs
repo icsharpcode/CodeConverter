@@ -82,6 +82,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         private ExpressionSyntax AddTypeConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded, ITypeSymbol vbType, ITypeSymbol vbConvertedType)
         {
             switch (conversionKind) {
+                case TypeConversionKind.EnumConversionThenCast:
+                    csNode = AddTypeConversion(vbNode, csNode, TypeConversionKind.Conversion, addParenthesisIfNeeded, vbType, ((INamedTypeSymbol) vbConvertedType).EnumUnderlyingType);
+                    return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
                 case TypeConversionKind.Unknown:
                 case TypeConversionKind.Identity:
                     return addParenthesisIfNeeded ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
@@ -186,7 +189,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return true;
                 }
                 if (isConvertToString || vbConversion.IsNarrowing) {
-                    typeConversionKind = TypeConversionKind.Conversion;
+                    typeConversionKind = vbConvertedType.IsEnumType() && !csConversion.Exists ? TypeConversionKind.EnumConversionThenCast : TypeConversionKind.Conversion;
                     return true;
                 }
             } else if (vbConversion.IsWidening && vbConversion.IsNumeric && csConversion.IsImplicit &&
@@ -309,6 +312,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             DestructiveCast,
             NonDestructiveCast,
             Conversion,
+            EnumConversionThenCast,
             NullableBool,
             StringToCharArray
         }
