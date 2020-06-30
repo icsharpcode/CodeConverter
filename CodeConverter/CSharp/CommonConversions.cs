@@ -492,7 +492,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (op is IBinaryOperation bOp && bOp.OperatorKind == BinaryOperatorKind.Subtract &&
                 bOp.RightOperand.ConstantValue.HasValue && bOp.RightOperand.ConstantValue.Value is int subtractedVal && subtractedVal == 1
-                && convertedExpression.SkipParens() is CSSyntax.BinaryExpressionSyntax bExp && bExp.IsKind(CSSyntaxKind.SubtractExpression))
+                && convertedExpression.SkipIntoParens() is CSSyntax.BinaryExpressionSyntax bExp && bExp.IsKind(CSSyntaxKind.SubtractExpression))
                 return bExp.Left;
 
             return SyntaxFactory.BinaryExpression(

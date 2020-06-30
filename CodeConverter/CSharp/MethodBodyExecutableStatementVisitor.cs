@@ -561,8 +561,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csStepValue = (ExpressionSyntax)await (stmt.StepClause?.StepValue).AcceptAsync(_expressionVisitor);
             // For an enum, you need to add on an integer for example:
             var forceStepType = controlVarType is INamedTypeSymbol nt && nt.IsEnumType() ? nt.EnumUnderlyingType : controlVarType;
-            csStepValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbStepValue, csStepValue?.SkipParens(), forceTargetType: forceStepType);
-            csToValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.ToValue, csToValue?.SkipParens(), forceTargetType: controlVarType);
+            csStepValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbStepValue, csStepValue?.SkipIntoParens(), forceTargetType: forceStepType);
+            csToValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.ToValue, csToValue?.SkipIntoParens(), forceTargetType: controlVarType);
 
             var nonNegativeCondition = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, id, csToValue);
             var negativeCondition = SyntaxFactory.BinaryExpression(SyntaxKind.GreaterThanOrEqualExpression, id, csToValue);
@@ -741,7 +741,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<bool> CanEvaluateMultipleTimesAsync(VBSyntax.ExpressionSyntax vbExpr)
         {
-            return _semanticModel.GetConstantValue(vbExpr).HasValue || vbExpr.SkipParens() is VBSyntax.NameSyntax ns && await IsNeverMutatedAsync(ns);
+            return _semanticModel.GetConstantValue(vbExpr).HasValue || vbExpr.SkipIntoParens() is VBSyntax.NameSyntax ns && await IsNeverMutatedAsync(ns);
         }
 
         private async Task<bool> IsNeverMutatedAsync(VBSyntax.NameSyntax ns)

@@ -29,7 +29,7 @@ namespace ICSharpCode.CodeConverter.Util
                 var uOp = (PrefixUnaryExpressionSyntax)condition;
                 if (uOp.IsKind(SyntaxKind.LogicalNotExpression)) {
                     if (!(uOp.Parent is ExpressionSyntax))
-                        return uOp.Operand.SkipParens();
+                        return uOp.Operand.SkipIntoParens();
                     return uOp.Operand;
                 }
                 return SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, uOp);

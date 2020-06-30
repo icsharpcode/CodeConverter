@@ -326,7 +326,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var preferChar = node.Parent is VBSyntax.PredefinedCastExpressionSyntax pces &&
                                pces.Keyword.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.CCharKeyword)
                 || convertedType?.SpecialType == SpecialType.System_Char;
-            if (preferChar && node.SkipParens() is VBSyntax.LiteralExpressionSyntax les &&
+            if (preferChar && node.SkipIntoParens() is VBSyntax.LiteralExpressionSyntax les &&
                 les.Token.Value is string str &&
                 str.Length == 1) {
                 chr = str.Single();

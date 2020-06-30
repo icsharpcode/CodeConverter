@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### C# -> VB
 * Rename explicit method implementations where needed [#492](https://github.com/icsharpcode/CodeConverter/issues/492)
+* Include type information in conversion of default(someType) [#486](https://github.com/icsharpcode/CodeConverter/issues/486)
 
 ## [8.1.4] - 2020-06-26
 

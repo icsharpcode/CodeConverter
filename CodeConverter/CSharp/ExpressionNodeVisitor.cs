@@ -407,7 +407,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
             var symbol = GetInvocationSymbol(invocation);
             SyntaxToken token = default(SyntaxToken);
-            var convertedArgExpression = ((ExpressionSyntax)await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor)).SkipParens();
+            var convertedArgExpression = ((ExpressionSyntax)await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor)).SkipIntoParens();
             var typeConversionAnalyzer = CommonConversions.TypeConversionAnalyzer;
             var possibleParameters = (CommonConversions.GetCsOriginalSymbolOrNull(symbol?.OriginalDefinition) ?? symbol)?.GetParameters();
             if (possibleParameters.HasValue) {
@@ -679,7 +679,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<ExpressionSyntax> NegateAndSimplifyOrNullAsync(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr)
         {
-            if (await _operatorConverter.ConvertNothingComparisonOrNullAsync(node.Operand.SkipParens(), true) is ExpressionSyntax nothingComparison) {
+            if (await _operatorConverter.ConvertNothingComparisonOrNullAsync(node.Operand.SkipIntoParens(), true) is ExpressionSyntax nothingComparison) {
                 return nothingComparison;
             } else if (expr is BinaryExpressionSyntax bes && bes.OperatorToken.IsKind(SyntaxKind.EqualsToken)) {
                 return bes.WithOperatorToken(SyntaxFactory.Token(SyntaxKind.ExclamationEqualsToken));
@@ -914,7 +914,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var refConversion = GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out var argName, out var refKind);
                 if (RefConversion.Inline == refConversion) return false;
                 if (!(a is VBSyntax.SimpleArgumentSyntax sas)) return false;
-                var argExpression = sas.Expression.SkipParens();
+                var argExpression = sas.Expression.SkipIntoParens();
                 if (argExpression is VBSyntax.InstanceExpressionSyntax) return false;
                 return !_semanticModel.GetConstantValue(argExpression).HasValue;
             }
@@ -992,7 +992,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             EqualsValueClauseSyntax @default = null;
             if (node.Default != null) {
-                var defaultValue = node.Default.Value.SkipParens();
+                var defaultValue = node.Default.Value.SkipIntoParens();
                 if (_semanticModel.GetTypeInfo(defaultValue).Type?.SpecialType == SpecialType.System_DateTime) {
                     var constant = _semanticModel.GetConstantValue(defaultValue);
                     if (constant.HasValue && constant.Value is DateTime dt) {
@@ -1354,7 +1354,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             if (refKind == RefKind.None) return RefConversion.Inline;
             if (!(node is VBSyntax.SimpleArgumentSyntax sas)) return RefConversion.PreAssigment;
-            var expression = sas.Expression.SkipParens();
+            var expression = sas.Expression.SkipIntoParens();
 
             return GetRefConversion(expression);
 

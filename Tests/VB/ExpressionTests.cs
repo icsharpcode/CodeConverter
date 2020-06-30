@@ -966,6 +966,7 @@ Public Class TestClass
     End Sub
 End Class");
         }
+
         [Fact]
         public async Task PrefixUnaryExpression_SingleLineFunctionAsync() {
             await TestConversionCSharpToVisualBasicAsync(
@@ -980,6 +981,26 @@ End Class");
     End Sub
 End Class");
         }
+
+        [Fact]
+        public async Task Issue486_MustCastNothingAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"public class WhyWeNeedToCastNothing
+{
+    public void Example(int? vbInitValue)
+    {
+        var withDefault = vbInitValue != null ? 7 : default(int?);
+        var withNull = vbInitValue != null ? (int?)8 : null;
+    }
+}",
+@"Public Class WhyWeNeedToCastNothing
+    Public Sub Example(ByVal vbInitValue As Integer?)
+        Dim withDefault = If(vbInitValue IsNot Nothing, 7, DirectCast(Nothing, Integer?))
+        Dim withNull = If(vbInitValue IsNot Nothing, 8, DirectCast(Nothing, Integer?))
+    End Sub
+End Class");
+        }
+
         [Fact]
         public async Task EqualsExpressionAsync() {
             await TestConversionCSharpToVisualBasicAsync(

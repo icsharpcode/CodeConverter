@@ -86,7 +86,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static bool IsNonEmptyStringLiteral(VBSyntax.ExpressionSyntax vbExpr)
         {
-            return vbExpr.SkipParens().IsKind(VBSyntaxKind.StringLiteralExpression) && vbExpr is VBSyntax.LiteralExpressionSyntax literal && !IsEmptyString(literal);
+            return vbExpr.SkipIntoParens().IsKind(VBSyntaxKind.StringLiteralExpression) && vbExpr is VBSyntax.LiteralExpressionSyntax literal && !IsEmptyString(literal);
         }
 
         public ExpressionSyntax VbCoerceToNonNullString(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo, bool knownNotNull = false)

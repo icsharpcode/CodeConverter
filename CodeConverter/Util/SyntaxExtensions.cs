@@ -20,7 +20,7 @@ namespace ICSharpCode.CodeConverter.Util
                 .SelectMany(t => ((VBSyntax.SkippedTokensTriviaSyntax)t.GetStructure()).Tokens);
         }
 
-        public static CS.Syntax.ExpressionSyntax SkipParens(this CS.Syntax.ExpressionSyntax expression)
+        public static CS.Syntax.ExpressionSyntax SkipIntoParens(this CS.Syntax.ExpressionSyntax expression)
         {
             if (expression == null)
                 return null;
@@ -30,12 +30,32 @@ namespace ICSharpCode.CodeConverter.Util
             return expression;
         }
 
-        public static VBSyntax.ExpressionSyntax SkipParens(this VBSyntax.ExpressionSyntax expression)
+        public static VBSyntax.ExpressionSyntax SkipIntoParens(this VBSyntax.ExpressionSyntax expression)
         {
             if (expression == null)
                 return null;
             while (expression is VBSyntax.ParenthesizedExpressionSyntax pes) {
                 expression = pes.Expression;
+            }
+            return expression;
+        }
+
+        public static CS.Syntax.ExpressionSyntax SkipOutOfParens(this CS.Syntax.ExpressionSyntax expression)
+        {
+            if (expression == null)
+                return null;
+            while (expression is CS.Syntax.ParenthesizedExpressionSyntax pes) {
+                expression = pes.Parent as CS.Syntax.ExpressionSyntax;
+            }
+            return expression;
+        }
+
+        public static VBSyntax.ExpressionSyntax SkipOutOfParens(this VBSyntax.ExpressionSyntax expression)
+        {
+            if (expression == null)
+                return null;
+            while (expression is VBSyntax.ParenthesizedExpressionSyntax pes) {
+                expression = pes.Parent as VBSyntax.ExpressionSyntax;
             }
             return expression;
         }

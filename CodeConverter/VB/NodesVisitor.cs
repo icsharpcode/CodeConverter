@@ -840,6 +840,8 @@ namespace ICSharpCode.CodeConverter.VB
         {
             if (node.IsKind(CS.SyntaxKind.DefaultLiteralExpression)) {
                 return VisualBasicSyntaxFactory.NothingExpression;
+            } else if (node.IsKind(CS.SyntaxKind.NullLiteralExpression)) {
+                return CreateTypedNothing(node);
             } else if (node.IsKind(CS.SyntaxKind.StringLiteralExpression) && CS.CSharpExtensions.IsVerbatimStringLiteral(node.Token)) {
                 return SyntaxFactory.StringLiteralExpression(
                     SyntaxFactory.StringLiteralToken(
@@ -1186,7 +1188,15 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitDefaultExpression(CSS.DefaultExpressionSyntax node)
         {
-            return SyntaxFactory.NothingLiteralExpression(SyntaxFactory.Token(SyntaxKind.NothingKeyword));
+            return CreateTypedNothing(node);
+        }
+
+        private VisualBasicSyntaxNode CreateTypedNothing(CSS.ExpressionSyntax node)
+        {
+            var nothing = VisualBasicSyntaxFactory.NothingExpression;
+            return _semanticModel.GetTypeInfo(node).ConvertedType is ITypeSymbol t
+                ? (VisualBasicSyntaxNode) _commonConversions.VbSyntaxGenerator.CastExpression(t, nothing)
+                : nothing;
         }
 
         public override VisualBasicSyntaxNode VisitThisExpression(CSS.ThisExpressionSyntax node)
@@ -1558,7 +1568,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitCasePatternSwitchLabel(CSS.CasePatternSwitchLabelSyntax node)
         {
-            var condition = node.WhenClause.Condition.SkipParens();
+            var condition = node.WhenClause.Condition.SkipIntoParens();
             switch (condition) {
                 case CSS.BinaryExpressionSyntax bes when node.Pattern.ToString().StartsWith("var"): //VarPatternSyntax (not available in current library version)
                     var basicSyntaxNode = (ExpressionSyntax)bes.Right.Accept(TriviaConvertingVisitor);
