@@ -7,10 +7,9 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     internal static class RoslynCrashPreventer
     {
-        private static readonly object _exchangeLock = new object();
+        private static readonly DelegatingHandler _codeAnalysisHandler= new DelegatingHandler(typeof(Compilation).Assembly, "Microsoft.CodeAnalysis.FatalError");
+        private static readonly DelegatingHandler _errorReportingHandler = new DelegatingHandler(typeof(WorkspaceDiagnostic).Assembly, "Microsoft.CodeAnalysis.ErrorReporting.FatalError");
         private static volatile int _currentUses;
-        private static Action<Exception> _codeAnalysisErrorHandler;
-        private static Action<Exception> _errorReportingErrorHandler;
 
         /// <summary>
         /// Use this to stop the library exiting the process without telling us.
@@ -23,55 +22,59 @@ namespace ICSharpCode.CodeConverter.Shared
         /// See https://github.com/icsharpcode/CodeConverter/issues/521 and https://github.com/icsharpcode/CodeConverter/issues/484
         /// There are other ways to find these bugs - just run the expander/reducer on a couple of whole open source projects and the bugs will pile up.
         /// </remarks>
-        public static IDisposable Create(Action<Exception> logError)
+        public static IDisposable Create(Action<Exception> logErrorToUseIfNotSet)
         {
-            var codeAnalysisAssembly = (typeof(Compilation).Assembly, "Microsoft.CodeAnalysis.FatalError");
-            var errorReportingAssembly = (typeof(WorkspaceDiagnostic).Assembly, "Microsoft.CodeAnalysis.ErrorReporting.FatalError");
-
-            TryExchangeHandler(WrappedCodeAnalysisErrorHandler(logError), codeAnalysisAssembly, ref _codeAnalysisErrorHandler);
-            TryExchangeHandler(WrappedErrorReportingHandler(logError), errorReportingAssembly, ref _errorReportingErrorHandler);
-
+            _codeAnalysisHandler.TryExchangeHandler(logErrorToUseIfNotSet);
+            _errorReportingHandler.TryExchangeHandler(logErrorToUseIfNotSet);
             Interlocked.Increment(ref _currentUses);
             return new ActionDisposable(() => Interlocked.Decrement(ref _currentUses));
         }
 
-        private static void TryExchangeHandler(Action<Exception> logError, (Assembly Assembly, string) handlerContainer, ref Action<Exception> originalHandler)
+        private class DelegatingHandler
         {
-            if (originalHandler != null || logError == null) return;
-            lock (_exchangeLock) {
-                originalHandler ??= ExchangeFatalErrorHandler(logError, handlerContainer);
-            }
-        }
+            private readonly Assembly _assembly;
+            private readonly string _containingType;
+            private readonly object _exchangeLock = new object();
+            private Action<Exception> _originalHandler;
 
-        private static Action<Exception> ExchangeFatalErrorHandler(Action<Exception> errorHandler, (Assembly assembly, string containingType) container)
-        {
-            try {
-                var fataErrorType = container.assembly.GetType(container.containingType);
-                var fatalHandlerField = fataErrorType.GetField("s_fatalHandler", BindingFlags.NonPublic | BindingFlags.Static);
-                var originalHandler = (Action<Exception>)fatalHandlerField.GetValue(null);
-                if (originalHandler != null) {
-                    fatalHandlerField.SetValue(null, errorHandler);
+            public DelegatingHandler(Assembly assembly, string containingType)
+            {
+                _assembly = assembly;
+                _containingType = containingType;
+            }
+
+            public void TryExchangeHandler(Action<Exception> logError)
+            {
+                if (_originalHandler != null || logError == null) return;
+                lock (_exchangeLock) {
+                    _originalHandler ??= ExchangeFatalErrorHandler(WrappedCodeAnalysisErrorHandler(logError));
                 }
-                return originalHandler;
-            } catch (Exception) {
-                return null;
             }
+
+            private Action<Exception> ExchangeFatalErrorHandler(Action<Exception> errorHandler)
+            {
+                try {
+                    var fataErrorType = _assembly.GetType(_containingType);
+                    var fatalHandlerField =
+                        fataErrorType.GetField("s_fatalHandler", BindingFlags.NonPublic | BindingFlags.Static);
+                    var originalHandler = (Action<Exception>)fatalHandlerField.GetValue(null);
+                    if (originalHandler != null) {
+                        fatalHandlerField.SetValue(null, errorHandler);
+                    }
+
+                    return originalHandler;
+                } catch (Exception) {
+                    return null;
+                }
+            }
+
+            private Action<Exception> WrappedCodeAnalysisErrorHandler(Action<Exception> errorHandler) => e => {
+                if (_currentUses > 0) {
+                    errorHandler(e);
+                } else {
+                    _originalHandler(e);
+                }
+            };
         }
-
-        private static Action<Exception> WrappedCodeAnalysisErrorHandler(Action<Exception> errorHandler) => e => {
-            if (_currentUses > 0) {
-                errorHandler(e);
-            } else {
-                _codeAnalysisErrorHandler(e);
-            }
-        };
-
-        private static Action<Exception> WrappedErrorReportingHandler(Action<Exception> errorHandler) => e => {
-            if (_currentUses > 0) {
-                errorHandler(e);
-            } else {
-                _errorReportingErrorHandler(e);
-            }
-        };
     }
 }
