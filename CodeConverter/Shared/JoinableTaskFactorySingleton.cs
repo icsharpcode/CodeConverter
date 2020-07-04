@@ -12,7 +12,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         internal static JoinableTaskFactory EnsureInitialized()
         {
-            return Instance = new JoinableTaskFactory(new JoinableTaskContext());
+            return Instance ??= new JoinableTaskFactory(new JoinableTaskContext());
         }
     }
 }
