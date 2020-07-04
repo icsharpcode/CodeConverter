@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### Vsix
-
+* Workaround Visual Studio 16.7+ that was causing VB->CS conversion to fail [#586](https://github.com/icsharpcode/CodeConverter/issues/586)
 
 ### VB -> C#
 * Handle Option Compare Text case insensitive comparisons in switch statements [#579](https://github.com/icsharpcode/CodeConverter/issues/579)
