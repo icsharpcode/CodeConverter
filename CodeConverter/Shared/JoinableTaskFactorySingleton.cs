@@ -6,9 +6,9 @@ namespace ICSharpCode.CodeConverter.Shared
     /// <summary>
     /// If you have a JoinableTaskFactory, set it here to help avoid deadlocks
     /// </summary>
-    internal static class JoinableTaskFactorySingleton
+    public static class JoinableTaskFactorySingleton
     {
-        public static JoinableTaskFactory Instance { get; private set; }
+        public static JoinableTaskFactory Instance { get; set; }
 
         internal static JoinableTaskFactory EnsureInitialized()
         {

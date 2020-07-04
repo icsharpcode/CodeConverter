@@ -41,6 +41,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
             JoinableTaskFactory joinableTaskFactory, Cancellation packageCancellation, VisualStudioWorkspace visualStudioWorkspace,
             Func<Task<ConverterOptionsPage>> getOptions, OutputWindow outputWindow)
         {
+            JoinableTaskFactorySingleton.Instance = joinableTaskFactory;
             GetOptions = getOptions;
             _serviceProvider = serviceProvider;
             _joinableTaskFactory = joinableTaskFactory;
