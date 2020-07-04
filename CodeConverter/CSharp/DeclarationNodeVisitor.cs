@@ -263,6 +263,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private bool ShouldAddTypeWideInitToThisPart(VBSyntax.TypeBlockSyntax typeSyntax, INamedTypeSymbol namedTypeSybol)
         {
+            if (namedTypeSybol == null) return false;
+
             var bestPartToAddTo = namedTypeSybol.DeclaringSyntaxReferences
                 .OrderByDescending(l => l.SyntaxTree.FilePath?.IsGeneratedFile() == false).ThenBy(l => l.GetSyntax() is VBSyntax.TypeBlockSyntax tbs && HasAttribute(tbs, "DesignerGenerated"))
                 .First();
