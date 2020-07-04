@@ -33,10 +33,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public static Project ToProjectFromAnyOptions(this Project project, CompilationOptions compilationOptions, ParseOptions parseOptions)
         {
-            var projectInfo = project.ToProjectInfo(project.Id, project.Name, compilationOptions,
+            // Use a new id to workaround VS caching issue first reported here: https://github.com/icsharpcode/CodeConverter/issues/586
+            var newProjectId = ProjectId.CreateNewId("ConvertedProject");
+            var projectInfo = project.ToProjectInfo(newProjectId, project.Name, compilationOptions,
                 project.ProjectReferences, parseOptions);
             var convertedSolution = project.Solution.RemoveProject(project.Id).AddProject(projectInfo);
-            return convertedSolution.GetProject(project.Id);
+            return convertedSolution.GetProject(newProjectId);
         }
 
         public static string GetDirectoryPath(this Project proj)
