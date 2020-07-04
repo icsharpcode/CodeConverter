@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using ICSharpCode.CodeConverter;
+using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.VisualStudio.LanguageServices;
@@ -213,7 +214,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
 
         private async Task<ConversionResult> ConvertDocumentUnhandledAsync<TLanguageConversion>(string documentPath, Span selected, CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
         {
-            await _outputWindow.WriteToOutputWindowAsync($"Converting {documentPath}...", true, true);
+            await _outputWindow.WriteToOutputWindowAsync($"Reproing issue...", true, true);
 
             //TODO Figure out when there are multiple document ids for a single file path
             var documentId = _visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(documentPath).SingleOrDefault();
@@ -222,6 +223,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                 return await ConvertTextOnlyAsync<TLanguageConversion>(documentPath, selected, cancellationToken);
             }
             var document = _visualStudioWorkspace.CurrentSolution.GetDocument(documentId);
+            await ReproIssue.ReproAsync(document.Project);
             var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
             return await ProjectConversion.ConvertSingleAsync<TLanguageConversion>(document, new SingleConversionOptions {SelectedTextSpan = selectedTextSpan}, CreateOutputWindowProgress(), cancellationToken);
         }
