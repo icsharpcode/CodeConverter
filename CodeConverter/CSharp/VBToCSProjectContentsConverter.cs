@@ -72,7 +72,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var projDirPath = SourceProject.GetDirectoryPath();
             var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults.Select(r => r.WithTargetPath(GetTargetPath(projDirPath, r))).ToArray());
-            if (_useProjectLevelWinformsAdjustments) project = await project.RenameMergedNamespacesAsync(_cancellationToken);
+            if (_useProjectLevelWinformsAdjustments) project = await project.RenameMergedNamespacesAsync(_progress, _cancellationToken);
             return (project, docIds);
         }
 
