@@ -270,7 +270,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return csNode;
             }
 
-            if (GetToStringConversionOrNull(csNode, currentType, targetType) is ExpressionSyntax csNodeToString) return csNodeToString;
+            if (GetToStringConversionOrNull(csNode, currentType, targetType) is { } csNodeToString) return csNodeToString;
 
             if (!ExpressionEvaluator.ConversionsTypeFullNames.TryGetValue(targetType.GetFullMetadataName(), out var methodId)) {
                 return CreateCast(csNode, targetType);

@@ -897,8 +897,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var attributes = await CommonConversions.ConvertAttributesAsync(node.AccessorStatement.AttributeLists);
             var modifiers = CommonConversions.ConvertModifiers(node, node.AccessorStatement.Modifiers, TokenContext.Local);
             string potentialMethodId;
-            var declaredParentSymbol = containingPropertyStmt != null ? _semanticModel.GetDeclaredSymbol(containingPropertyStmt) : null;
-            var explicitInterfaceSpecifier = declaredParentSymbol is IPropertySymbol propSymbol && propSymbol.DeclaredAccessibility == Accessibility.Private && propSymbol.ExplicitInterfaceImplementations.Any() ?
+            var declaredPropSymbol = containingPropertyStmt != null ? _semanticModel.GetDeclaredSymbol(containingPropertyStmt) : null;
+            var explicitInterfaceSpecifier = declaredPropSymbol is { } propSymbol && propSymbol.DeclaredAccessibility == Accessibility.Private && propSymbol.ExplicitInterfaceImplementations.Any() ?
                 SyntaxFactory.ExplicitInterfaceSpecifier(SyntaxFactory.IdentifierName(propSymbol.ExplicitInterfaceImplementations.First().ContainingType.Name))
                 : null;
             var sourceMap = ancestoryPropertyBlock?.Accessors.FirstOrDefault() == node ? SourceTriviaMapKind.All : SourceTriviaMapKind.None;
@@ -1012,7 +1012,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             IdentifierNameSyntax csReturnVariableOrNull)
         {
             if (!node.MustReturn()) return convertedStatements;
-            if (_semanticModel.GetDeclaredSymbol(node) is IMethodSymbol ms && ms.ReturnsVoidOrAsyncTask()) {
+            if (_semanticModel.GetDeclaredSymbol(node) is { } ms && ms.ReturnsVoidOrAsyncTask()) {
                 return convertedStatements;
             }
 

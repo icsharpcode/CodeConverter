@@ -600,7 +600,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var declaration = (await SplitVariableDeclarationsAsync(vds)).Variables.Single().Decl;
                 type = declaration.Type;
                 id = declaration.Variables.Single().Identifier;
-            } else if (_semanticModel.GetSymbolInfo(stmt.ControlVariable).Symbol is ISymbol varSymbol) {
+            } else if (_semanticModel.GetSymbolInfo(stmt.ControlVariable).Symbol is { } varSymbol) {
                 var variableType = varSymbol.GetSymbolType();
                 var explicitCastWouldHaveNoEffect = variableType?.SpecialType == SpecialType.System_Object || _semanticModel.GetTypeInfo(stmt.Expression).ConvertedType.IsEnumerableOfExactType(variableType);
                 type = CommonConversions.GetTypeSyntax(varSymbol.GetSymbolType(), explicitCastWouldHaveNoEffect);

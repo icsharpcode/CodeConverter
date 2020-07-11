@@ -73,7 +73,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             if (_assemblyInfoCache.TryGetValue(assemblyName, out var assemblyInfo)) {
                 return assemblyInfo;
-            } else if (LoadOrNull(assemblyName) is Assembly a) {
+            } else if (LoadOrNull(assemblyName) is { } a) {
                 return GetAssemblyInfo(a);
             }
 

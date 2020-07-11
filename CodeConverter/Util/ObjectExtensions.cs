@@ -14,7 +14,7 @@ namespace ICSharpCode.CodeConverter.Util
                     return matchFunc1(tObj);
                 case TDerivedType2 tObj:
                     return matchFunc2(tObj);
-                case TBaseType tObj when (defaultFunc != null):
+                case { } tObj when (defaultFunc != null):
                     return defaultFunc(tObj);
                 default:
                     return default(TResult);
@@ -33,7 +33,7 @@ namespace ICSharpCode.CodeConverter.Util
                     return matchFunc2(tObj);
                 case TDerivedType3 tObj:
                     return matchFunc3(tObj);
-                case TBaseType tObj when (defaultFunc != null):
+                case { } tObj when (defaultFunc != null):
                     return defaultFunc(tObj);
                 default:
                     return default(TResult);

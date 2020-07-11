@@ -1194,7 +1194,7 @@ namespace ICSharpCode.CodeConverter.VB
         private VisualBasicSyntaxNode CreateTypedNothing(CSS.ExpressionSyntax node)
         {
             var nothing = VisualBasicSyntaxFactory.NothingExpression;
-            return _semanticModel.GetTypeInfo(node).ConvertedType is ITypeSymbol t
+            return _semanticModel.GetTypeInfo(node).ConvertedType is { } t
                 ? (VisualBasicSyntaxNode) _commonConversions.VbSyntaxGenerator.CastExpression(t, nothing)
                 : nothing;
         }

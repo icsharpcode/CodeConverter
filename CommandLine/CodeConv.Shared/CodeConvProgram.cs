@@ -74,7 +74,7 @@ Remarks:
             // Ideally we'd be able to use MSBuildLocator.QueryVisualStudioInstances(DiscoveryType.VisualStudioSetup) from .NET core, but it will never be supported: https://github.com/microsoft/MSBuildLocator/issues/61
             // Instead, if MSBuild 16.0+ is available, start a .NET framework process and let it run with that
             if (_runningInNetCore && !CoreOnlyProjects) {
-                if (await GetLatestMsBuildExePathAsync() is string latestMsBuildExePath) {
+                if (await GetLatestMsBuildExePathAsync() is { } latestMsBuildExePath) {
                     return await RunNetFrameworkExeAsync(latestMsBuildExePath);
                 } else {
                     Console.WriteLine($"Using dot net SDK MSBuild which only works for dot net core projects.");

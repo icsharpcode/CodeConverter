@@ -662,7 +662,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
             var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
             SyntaxKind csTokenKind = CSharpUtil.GetExpressionOperatorTokenKind(kind);
-            if (kind == SyntaxKind.LogicalNotExpression && await NegateAndSimplifyOrNullAsync(node, expr) is ExpressionSyntax simpleNegation) {
+            if (kind == SyntaxKind.LogicalNotExpression && await NegateAndSimplifyOrNullAsync(node, expr) is { } simpleNegation) {
                 return AsBool(node, simpleNegation);
             }
             return SyntaxFactory.PrefixUnaryExpression(
@@ -679,7 +679,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<ExpressionSyntax> NegateAndSimplifyOrNullAsync(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr)
         {
-            if (await _operatorConverter.ConvertNothingComparisonOrNullAsync(node.Operand.SkipIntoParens(), true) is ExpressionSyntax nothingComparison) {
+            if (await _operatorConverter.ConvertNothingComparisonOrNullAsync(node.Operand.SkipIntoParens(), true) is { } nothingComparison) {
                 return nothingComparison;
             } else if (expr is BinaryExpressionSyntax bes && bes.OperatorToken.IsKind(SyntaxKind.EqualsToken)) {
                 return bes.WithOperatorToken(SyntaxFactory.Token(SyntaxKind.ExclamationEqualsToken));
@@ -700,7 +700,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax node)
         {
-            if (await _operatorConverter.ConvertRewrittenBinaryOperatorOrNullAsync(node) is ExpressionSyntax operatorNode) {
+            if (await _operatorConverter.ConvertRewrittenBinaryOperatorOrNullAsync(node) is { } operatorNode) {
                 return operatorNode;
             }
 
@@ -809,8 +809,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 expressionSymbol?.GetReturnType() ?? _semanticModel.GetTypeInfo(node.Expression).Type;
             var operation = _semanticModel.GetOperation(node);
             if (expressionSymbol?.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic) &&
-                (await SubstituteVisualBasicMethodOrNullAsync(node) ?? await WithRemovedRedundantConversionOrNullAsync(node, expressionSymbol)) is
-                CSharpSyntaxNode csEquivalent) {
+                (await SubstituteVisualBasicMethodOrNullAsync(node) ?? await WithRemovedRedundantConversionOrNullAsync(node, expressionSymbol)) is { } csEquivalent) {
                 return csEquivalent;
             }
 
