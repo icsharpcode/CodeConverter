@@ -60,7 +60,7 @@ namespace ICSharpCode.CodeConverter.Web
             if (language == null)
                 throw new ArgumentNullException(nameof(language));
             if (language.StartsWith("cs", StringComparison.OrdinalIgnoreCase))
-                return 6;
+                return 8;
             if (language.StartsWith("vb", StringComparison.OrdinalIgnoreCase))
                 return 14;
             throw new ArgumentException($"{language} not supported!");
