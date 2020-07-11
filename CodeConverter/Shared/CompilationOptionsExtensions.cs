@@ -11,7 +11,12 @@ namespace ICSharpCode.CodeConverter.Shared
     {
         public static Document AddDocumentFromTree(this Project project, SyntaxTree tree)
         {
-            return project.AddDocument("CodeToConvert", tree.GetRoot(), filePath: Path.Combine(Path.GetTempPath(), "TempCodeToConvert.txt"));
+            return project.AddDocument("CodeToConvert", tree.GetRoot(), filePath: string.IsNullOrEmpty(tree.FilePath) ? TempFilePath(tree.Options.Language) : tree.FilePath);
+        }
+
+        private static string TempFilePath(string optionsLanguage)
+        {
+            return Path.Combine(Path.GetTempPath(), "TempCodeToConvert." + optionsLanguage == LanguageNames.CSharp ? "cs" : "vb");
         }
 
         public static async Task<Project> CreateProjectAsync(this CompilationOptions options, IEnumerable<MetadataReference> references, ParseOptions parseOptions, string singleDocumentAssemblyName = "ProjectToBeConverted")

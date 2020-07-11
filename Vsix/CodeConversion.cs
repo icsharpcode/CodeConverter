@@ -219,14 +219,15 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             var documentId = _visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(documentPath).SingleOrDefault();
             if (documentId == null) {
                 //If document doesn't belong to any project
-                return await ConvertTextOnlyAsync<TLanguageConversion>(documentPath, selected, cancellationToken);
+                await _outputWindow.WriteToOutputWindowAsync("File is not part of a compiling project, using best effort text conversion (less accurate).");
+                return await ConvertFileTextAsync<TLanguageConversion>(documentPath, selected, cancellationToken);
             }
             var document = _visualStudioWorkspace.CurrentSolution.GetDocument(documentId);
             var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
             return await ProjectConversion.ConvertSingleAsync<TLanguageConversion>(document, new SingleConversionOptions {SelectedTextSpan = selectedTextSpan}, CreateOutputWindowProgress(), cancellationToken);
         }
 
-        private async Task<ConversionResult> ConvertTextOnlyAsync<TLanguageConversion>(string documentPath, Span selected, CancellationToken cancellationToken)
+        private async Task<ConversionResult> ConvertFileTextAsync<TLanguageConversion>(string documentPath, Span selected, CancellationToken cancellationToken)
             where TLanguageConversion : ILanguageConversion, new()
         {
             var documentText = File.ReadAllText(documentPath);
@@ -235,7 +236,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                 documentText = documentText.Substring(selected.Start, selected.Length);
             }
 
-            var convertTextOnly = await ProjectConversion.ConvertTextAsync<TLanguageConversion>(documentText, new TextConversionOptions(DefaultReferences.NetStandard2), CreateOutputWindowProgress(), cancellationToken);
+            var convertTextOnly = await ProjectConversion.ConvertTextAsync<TLanguageConversion>(documentText, new TextConversionOptions(DefaultReferences.NetStandard2, documentPath), CreateOutputWindowProgress(), cancellationToken);
             convertTextOnly.SourcePathOrNull = documentPath;
             return convertTextOnly;
         }
