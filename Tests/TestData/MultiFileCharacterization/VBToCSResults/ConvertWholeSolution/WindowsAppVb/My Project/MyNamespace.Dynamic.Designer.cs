@@ -23,7 +23,7 @@ namespace WindowsAppVb.My
                 [DebuggerHidden]
                 set
                 {
-                    if (value == m_FolderForm)
+                    if (ReferenceEquals(value, m_FolderForm))
                         return;
                     if (value is object)
                         throw new ArgumentException("Property can only be set to Nothing");
@@ -46,7 +46,7 @@ namespace WindowsAppVb.My
                 [DebuggerHidden]
                 set
                 {
-                    if (value == m_WinformsDesignerTest)
+                    if (ReferenceEquals(value, m_WinformsDesignerTest))
                         return;
                     if (value is object)
                         throw new ArgumentException("Property can only be set to Nothing");

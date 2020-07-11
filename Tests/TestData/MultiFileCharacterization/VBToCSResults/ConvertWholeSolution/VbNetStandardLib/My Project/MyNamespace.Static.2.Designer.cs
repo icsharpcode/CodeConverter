@@ -20,7 +20,7 @@ namespace Microsoft.VisualBasic
 
             public static int CompareString(string Left, string Right, bool TextCompare)
             {
-                if (Left == Right)
+                if (ReferenceEquals(Left, Right))
                 {
                     return 0;
                 }
@@ -1082,7 +1082,7 @@ namespace Microsoft.VisualBasic
                 {
                     return decimal.Parse(Value, flags, NormalizedNumberFormat);
                 }
-                catch (FormatException FormatEx) when (!(NumberFormat == NormalizedNumberFormat))
+                catch (FormatException FormatEx) when (!ReferenceEquals(NumberFormat, NormalizedNumberFormat))
                 {
                     return decimal.Parse(Value, flags, NumberFormat);
                 }
@@ -1329,7 +1329,7 @@ namespace Microsoft.VisualBasic
                 {
                     return double.Parse(Value, flags, NormalizedNumberFormat);
                 }
-                catch (FormatException FormatEx) when (!(NumberFormat == NormalizedNumberFormat))
+                catch (FormatException FormatEx) when (!ReferenceEquals(NumberFormat, NormalizedNumberFormat))
                 {
                     return double.Parse(Value, flags, NumberFormat);
                 }

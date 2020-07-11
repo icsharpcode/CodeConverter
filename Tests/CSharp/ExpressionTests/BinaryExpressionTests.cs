@@ -47,8 +47,8 @@ public partial class TestClass
 End Class", @"
 internal partial class TestClass
 {
-    private bool bIs = new object() == new object();
-    private bool bIsNot = new object() != new object();
+    private bool bIs = ReferenceEquals(new object(), new object());
+    private bool bIsNot = !ReferenceEquals(new object(), new object());
     private int bLeftShift = 1 << 3;
     private int bRightShift = 8 >> 3;
 }");

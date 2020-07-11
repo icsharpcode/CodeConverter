@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### VB -> C#
 * Correct logic for conversion "objectWithOverloadedEquals Is Nothing" [#591](https://github.com/icsharpcode/CodeConverter/issues/591)
 * Coercing enum to a string now correctly uses its numeric value [#590](https://github.com/icsharpcode/CodeConverter/issues/590)
+* Correct conversion for equality of overloaded types [#594](https://github.com/icsharpcode/CodeConverter/issues/594)
 
 ### C# -> VB
 

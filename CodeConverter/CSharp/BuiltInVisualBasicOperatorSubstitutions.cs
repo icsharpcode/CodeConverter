@@ -44,31 +44,58 @@ namespace ICSharpCode.CodeConverter.CSharp
                 _typeConversionAnalyzer = typeConversionAnalyzer;
             }
 
-            public async Task<ExpressionSyntax> ConvertNothingComparisonOrNullAsync(VBSyntax.ExpressionSyntax exprNode, bool negateExpression = false)
+            public async Task<ExpressionSyntax> ConvertReferenceOrNothingComparisonOrNullAsync(VBSyntax.ExpressionSyntax exprNode, bool negateExpression = false)
             {
-                if (!(exprNode is VBSyntax.BinaryExpressionSyntax node) || !node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression)) {
+                if (!(exprNode is VBSyntax.BinaryExpressionSyntax node) ||
+                    !node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression)) {
                     return null;
+                }
+                
+                var notted =
+                    node.IsKind(VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression) ||
+                    negateExpression;
+                var isReferenceComparison = node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.IsNotExpression);
+
+                if (ArgComparedToNull(node) is {} vbOtherArg) {
+                    var csOtherArg = await ConvertIsOrIsNotExpressionArgAsync(vbOtherArg);
+                    return notted
+                        ? CommonConversions.NotNothingComparison(csOtherArg, isReferenceComparison)
+                        : CommonConversions.NothingComparison(csOtherArg, isReferenceComparison);
                 }
 
-                VBSyntax.ExpressionSyntax vbOtherArg;
-                if (node.Left.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    vbOtherArg = node.Right;
-                } else if (node.Right.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    vbOtherArg = node.Left;
-                } else {
-                    return null;
+                if (isReferenceComparison) {
+
+                    var lhs = await ConvertIsOrIsNotExpressionArgAsync(node.Left);
+                    var rhs = await ConvertIsOrIsNotExpressionArgAsync(node.Right);
+
+                    var equalityCheck = new KnownMethod(nameof(System), nameof(Object), nameof(object.ReferenceEquals))
+                        .Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives,
+                            ConvertTo(node.Left, lhs, SpecialType.System_Object), rhs);
+                    return notted
+                        ? SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, equalityCheck)
+                        : equalityCheck;
                 }
-                var csOtherArg = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArgAsync(vbOtherArg);
-                var typeSymbol = _semanticModel.GetTypeInfo(vbOtherArg).Type;
-                var isReferenceComparison = typeSymbol?.IsValueType != true || node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.IsNotExpression);
-                var notted = node.IsKind(VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression) || negateExpression;
-                return notted ? CommonConversions.NotNothingComparison(csOtherArg, isReferenceComparison) : CommonConversions.NothingComparison(csOtherArg, isReferenceComparison);
+                return null;
             }
 
-            private async Task<CSharpSyntaxNode> ConvertIsOrIsNotExpressionArgAsync(VBSyntax.ExpressionSyntax binaryExpressionArg)
+            private static VBSyntax.ExpressionSyntax ArgComparedToNull(VBSyntax.BinaryExpressionSyntax node)
             {
-                return await ConvertMyGroupCollectionPropertyGetWithUnderlyingFieldAsync(binaryExpressionArg)
-                       ?? await binaryExpressionArg.AcceptAsync(_triviaConvertingVisitor);
+                if (node.Left.IsKind(VBasic.SyntaxKind.NothingLiteralExpression))
+                {
+                    return node.Right;
+                }
+                else if (node.Right.IsKind(VBasic.SyntaxKind.NothingLiteralExpression))
+                {
+                    return node.Left;
+                }
+
+                return null;
+            }
+
+            private async Task<ExpressionSyntax> ConvertIsOrIsNotExpressionArgAsync(VBSyntax.ExpressionSyntax binaryExpressionArg)
+            {
+                return (ExpressionSyntax) (await ConvertMyGroupCollectionPropertyGetWithUnderlyingFieldAsync(binaryExpressionArg)
+                                           ?? await binaryExpressionArg.AcceptAsync(_triviaConvertingVisitor));
             }
 
             private async Task<ExpressionSyntax> ConvertMyGroupCollectionPropertyGetWithUnderlyingFieldAsync(SyntaxNode node)
@@ -104,9 +131,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     .Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives, lhs, rhs);
             }
 
-            private ExpressionSyntax ConvertTo(VBSyntax.ExpressionSyntax node, ExpressionSyntax lhs, SpecialType targetType)
+            private ExpressionSyntax ConvertTo(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, SpecialType targetType)
             {
-                return _typeConversionAnalyzer.AddExplicitConversion(node, lhs, forceTargetType: _semanticModel.Compilation.GetSpecialType(targetType));
+                return _typeConversionAnalyzer.AddExplicitConversion(vbNode, csNode, forceTargetType: _semanticModel.Compilation.GetSpecialType(targetType));
             }
 
             /// <remarks>No need to implement these since this is only called for things that are already decimal and hence will resolve operator in C#</remarks>
@@ -173,7 +200,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 switch (opKind) {
                     case BinaryOperatorKind.IsExpression:
                     case BinaryOperatorKind.IsNotExpression: {
-                            if (await ConvertNothingComparisonOrNullAsync(node) is CSharpSyntaxNode nothingComparison) return (ExpressionSyntax) nothingComparison;
+                            if (await ConvertReferenceOrNothingComparisonOrNullAsync(node) is { } nothingComparison) return nothingComparison;
+                            
                             break;
                         }
 
