@@ -402,7 +402,7 @@ public partial class MultipleCasts
 {
     public static T ToGenericParameter<T>(object Value)
     {
-        if (Value == null)
+        if (Value is null)
         {
             return default;
         }

@@ -399,7 +399,7 @@ public partial class GenericComparison
 {
     public void m<T>(T p)
     {
-        if (p == null)
+        if (p is null)
             return;
     }
 }");
@@ -1347,7 +1347,7 @@ public partial class Foo
 
     protected void OnBar(EventArgs e)
     {
-        if ((object)Bar == null)
+        if (Bar is null)
         {
             Debug.WriteLine(""No subscriber"");
         }

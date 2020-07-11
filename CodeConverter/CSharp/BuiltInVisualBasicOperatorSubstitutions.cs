@@ -59,10 +59,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return null;
                 }
                 var csOtherArg = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArgAsync(vbOtherArg);
-                var couldHaveOverloadedOperators = !_semanticModel.GetTypeInfo(vbOtherArg).Type.IsSpecialType();
-                var isReferenceComparison = node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.IsNotExpression);
+                var typeSymbol = _semanticModel.GetTypeInfo(vbOtherArg).Type;
+                var isReferenceComparison = typeSymbol?.IsValueType != true || node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.IsNotExpression);
                 var notted = node.IsKind(VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression) || negateExpression;
-                return notted ? CommonConversions.NotNothingComparison(csOtherArg, isReferenceComparison) : CommonConversions.NothingComparison(csOtherArg, isReferenceComparison, couldHaveOverloadedOperators);
+                return notted ? CommonConversions.NotNothingComparison(csOtherArg, isReferenceComparison) : CommonConversions.NothingComparison(csOtherArg, isReferenceComparison);
             }
 
             private async Task<CSharpSyntaxNode> ConvertIsOrIsNotExpressionArgAsync(VBSyntax.ExpressionSyntax binaryExpressionArg)

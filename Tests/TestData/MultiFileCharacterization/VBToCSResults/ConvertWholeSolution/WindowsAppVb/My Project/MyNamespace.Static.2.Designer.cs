@@ -68,7 +68,7 @@ namespace WindowsAppVb.My
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static XAttribute CreateAttribute(XName name, object value)
         {
-            if (value == null)
+            if (value is null)
             {
                 return null;
             }

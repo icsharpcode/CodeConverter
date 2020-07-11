@@ -658,17 +658,20 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static CSSyntax.BinaryExpressionSyntax NotNothingComparison(ExpressionSyntax otherArgument, bool isReferenceType)
         {
             if (isReferenceType) {
+                // When we upgrade the CodeAnalysis version, we'll be able to use a RecursivePattern of "{}" instead
                 return SyntaxFactory.BinaryExpression(CSSyntaxKind.IsExpression, otherArgument, ValidSyntaxFactory.ObjectType);
             }
             return SyntaxFactory.BinaryExpression(CSSyntaxKind.NotEqualsExpression, otherArgument, ValidSyntaxFactory.DefaultExpression);
         }
 
-        public static ExpressionSyntax NothingComparison(ExpressionSyntax otherArgument, bool isReferenceType, bool couldHaveOverloadedOperators)
+        public static ExpressionSyntax NothingComparison(ExpressionSyntax otherArgument, bool isReferenceType)
         {
-            // Old project style doesn't support is pattern expressions (or indeed anything beyond c#7.3), so can't use "x is null"
-            var literal = isReferenceType ? ValidSyntaxFactory.NullExpression : (ExpressionSyntax)ValidSyntaxFactory.DefaultExpression;
-            if (isReferenceType && couldHaveOverloadedOperators) otherArgument = SyntaxFactory.ParenthesizedExpression(SyntaxFactory.CastExpression(ValidSyntaxFactory.ObjectType, otherArgument));
-            return SyntaxFactory.BinaryExpression(CSSyntaxKind.EqualsExpression, otherArgument, literal);
+            if (isReferenceType) {
+                return SyntaxFactory.IsPatternExpression(otherArgument,
+                    SyntaxFactory.ConstantPattern(ValidSyntaxFactory.NullExpression));
+            }
+
+            return SyntaxFactory.BinaryExpression(CSSyntaxKind.EqualsExpression, otherArgument, ValidSyntaxFactory.DefaultExpression);
         }
     }
 }
