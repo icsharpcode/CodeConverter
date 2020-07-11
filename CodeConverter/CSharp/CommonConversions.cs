@@ -658,16 +658,17 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static CSSyntax.BinaryExpressionSyntax NotNothingComparison(ExpressionSyntax otherArgument, bool isReferenceType)
         {
             if (isReferenceType) {
-                return SyntaxFactory.BinaryExpression(CSSyntaxKind.IsExpression, otherArgument, SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.ObjectKeyword)));
+                return SyntaxFactory.BinaryExpression(CSSyntaxKind.IsExpression, otherArgument, ValidSyntaxFactory.ObjectType);
             }
-            return SyntaxFactory.BinaryExpression(CSSyntaxKind.NotEqualsExpression, otherArgument, SyntaxFactory.LiteralExpression(CSSyntaxKind.DefaultLiteralExpression));
+            return SyntaxFactory.BinaryExpression(CSSyntaxKind.NotEqualsExpression, otherArgument, ValidSyntaxFactory.DefaultExpression);
         }
 
-        public static ExpressionSyntax NothingComparison(ExpressionSyntax otherArgument, bool isReferenceType)
+        public static ExpressionSyntax NothingComparison(ExpressionSyntax otherArgument, bool isReferenceType, bool couldHaveOverloadedOperators)
         {
             // Old project style doesn't support is pattern expressions (or indeed anything beyond c#7.3), so can't use "x is null"
-            var literalKind = isReferenceType ? CSSyntaxKind.NullLiteralExpression : CSSyntaxKind.DefaultLiteralExpression;
-            return SyntaxFactory.BinaryExpression(CSSyntaxKind.EqualsExpression, otherArgument, SyntaxFactory.LiteralExpression(literalKind));
+            var literal = isReferenceType ? ValidSyntaxFactory.NullExpression : (ExpressionSyntax)ValidSyntaxFactory.DefaultExpression;
+            if (isReferenceType && couldHaveOverloadedOperators) otherArgument = SyntaxFactory.ParenthesizedExpression(SyntaxFactory.CastExpression(ValidSyntaxFactory.ObjectType, otherArgument));
+            return SyntaxFactory.BinaryExpression(CSSyntaxKind.EqualsExpression, otherArgument, literal);
         }
     }
 }

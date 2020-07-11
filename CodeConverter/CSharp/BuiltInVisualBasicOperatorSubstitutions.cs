@@ -49,18 +49,20 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (!(exprNode is VBSyntax.BinaryExpressionSyntax node) || !node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression)) {
                     return null;
                 }
-                ExpressionSyntax otherArgument;
+
+                VBSyntax.ExpressionSyntax vbOtherArg;
                 if (node.Left.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArgAsync(node.Right);
+                    vbOtherArg = node.Right;
                 } else if (node.Right.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    otherArgument = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArgAsync(node.Left);
+                    vbOtherArg = node.Left;
                 } else {
                     return null;
                 }
-
-                var isReference = node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.IsNotExpression);
+                var csOtherArg = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArgAsync(vbOtherArg);
+                var couldHaveOverloadedOperators = _semanticModel.GetTypeInfo(vbOtherArg).Type.SpecialType == SpecialType.None;
+                var isReferenceComparison = node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.IsNotExpression);
                 var notted = node.IsKind(VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression) || negateExpression;
-                return notted ? CommonConversions.NotNothingComparison(otherArgument, isReference) : CommonConversions.NothingComparison(otherArgument, isReference);
+                return notted ? CommonConversions.NotNothingComparison(csOtherArg, isReferenceComparison) : CommonConversions.NothingComparison(csOtherArg, isReferenceComparison, couldHaveOverloadedOperators);
             }
 
             private async Task<CSharpSyntaxNode> ConvertIsOrIsNotExpressionArgAsync(VBSyntax.ExpressionSyntax binaryExpressionArg)

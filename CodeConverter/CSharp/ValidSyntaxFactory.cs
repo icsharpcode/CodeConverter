@@ -99,5 +99,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.DeclarationPattern(
                 ValidSyntaxFactory.VarType, SyntaxFactory.SingleVariableDesignation(varName));
         }
+
+        public static PredefinedTypeSyntax ObjectType => SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword));
+        public static LiteralExpressionSyntax NullExpression => SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
+        public static LiteralExpressionSyntax DefaultExpression => SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
     }
 }

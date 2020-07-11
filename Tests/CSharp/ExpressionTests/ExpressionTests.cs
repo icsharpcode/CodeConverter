@@ -1347,7 +1347,7 @@ public partial class Foo
 
     protected void OnBar(EventArgs e)
     {
-        if (Bar == null)
+        if ((object)Bar == null)
         {
             Debug.WriteLine(""No subscriber"");
         }

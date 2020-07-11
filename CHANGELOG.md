@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Fix file extension and location of single converted file [#589](https://github.com/icsharpcode/CodeConverter/issues/589)
 
 ### VB -> C#
-
+* Correct logic for conversion "objectWithOverloadedEquals Is Nothing" [#591](https://github.com/icsharpcode/CodeConverter/issues/591)
 
 ### C# -> VB
 
