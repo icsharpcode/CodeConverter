@@ -243,7 +243,7 @@ public partial class EnumAndValTest
 
             default:
                 {
-                    tS = Conversions.ToString(pS);
+                    tS = ((int)pS).ToString();
                     break;
                 }
         }

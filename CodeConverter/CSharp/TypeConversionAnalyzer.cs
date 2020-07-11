@@ -83,8 +83,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             switch (conversionKind) {
                 case TypeConversionKind.EnumConversionThenCast:
-                    csNode = AddTypeConversion(vbNode, csNode, TypeConversionKind.Conversion, addParenthesisIfNeeded, vbType, ((INamedTypeSymbol) vbConvertedType).EnumUnderlyingType);
-                    return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
+                    var underlyingType = ((INamedTypeSymbol) vbConvertedType).EnumUnderlyingType;
+                    csNode = AddTypeConversion(vbNode, csNode, TypeConversionKind.Conversion, addParenthesisIfNeeded, vbType, underlyingType);
+                    return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, underlyingType, vbConvertedType);
+                case TypeConversionKind.EnumCastThenConversion:
+                    var enumUnderlyingType = ((INamedTypeSymbol) vbType).EnumUnderlyingType;
+                    csNode = AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, enumUnderlyingType);
+                    return AddTypeConversion(vbNode, csNode, TypeConversionKind.Conversion, addParenthesisIfNeeded, enumUnderlyingType, vbConvertedType);
                 case TypeConversionKind.Unknown:
                 case TypeConversionKind.Identity:
                     return addParenthesisIfNeeded ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
@@ -132,7 +137,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                             (vbConvertedType.IsNullable() && vbType.Equals(vbConvertedType.GetNullableUnderlyingType())) ||
                             vbConvertedType.SpecialType == SpecialType.System_Object) {
                     return TypeConversionKind.Identity;
-                } else {
+                } else if (vbConvertedType.SpecialType == SpecialType.System_String) {
+                    return TypeConversionKind.EnumCastThenConversion;
+                }else {
                     return TypeConversionKind.Conversion;
                 }
             }
@@ -313,8 +320,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             NonDestructiveCast,
             Conversion,
             EnumConversionThenCast,
+            EnumCastThenConversion,
             NullableBool,
-            StringToCharArray
+            StringToCharArray,
         }
 
         public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax node,

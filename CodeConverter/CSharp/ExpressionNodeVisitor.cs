@@ -713,7 +713,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             ITypeSymbol forceLhsTargetType = null;
             bool omitRightConversion = false;
             bool omitConversion = false;
-            if (node.IsKind(VBasic.SyntaxKind.ConcatenateExpression)) {
+            if (node.IsKind(VBasic.SyntaxKind.ConcatenateExpression) && !lhsTypeInfo.Type.IsEnumType() && !rhsTypeInfo.Type.IsEnumType()) {
                 omitRightConversion = true;
                 omitConversion = lhsTypeInfo.Type.SpecialType == SpecialType.System_String ||
                     rhsTypeInfo.Type.SpecialType == SpecialType.System_String;

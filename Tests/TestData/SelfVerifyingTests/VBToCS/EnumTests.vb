@@ -56,4 +56,15 @@ Public Class EnumTests
                 }
         Console.WriteLine(a)
     End Sub
+
+    <Fact>
+    Public Sub TestEnumConcat()
+        Assert.Equal(RankEnum.Second.ToString() & RankEnum.Second, "Second2")
+    End Sub
+
+    <Fact>
+    Public Sub TestEnumstringCoerce()
+        Dim s As String = RankEnum.Second
+        Assert.Equal(s & RankEnum.Second, "22")
+    End Sub
 End Class

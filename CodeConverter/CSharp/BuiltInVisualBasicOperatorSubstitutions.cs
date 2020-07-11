@@ -59,7 +59,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return null;
                 }
                 var csOtherArg = (ExpressionSyntax)await ConvertIsOrIsNotExpressionArgAsync(vbOtherArg);
-                var couldHaveOverloadedOperators = _semanticModel.GetTypeInfo(vbOtherArg).Type.SpecialType == SpecialType.None;
+                var couldHaveOverloadedOperators = !_semanticModel.GetTypeInfo(vbOtherArg).Type.IsSpecialType();
                 var isReferenceComparison = node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.IsNotExpression);
                 var notted = node.IsKind(VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression) || negateExpression;
                 return notted ? CommonConversions.NotNothingComparison(csOtherArg, isReferenceComparison) : CommonConversions.NothingComparison(csOtherArg, isReferenceComparison, couldHaveOverloadedOperators);
