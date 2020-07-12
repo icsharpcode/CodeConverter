@@ -12,9 +12,11 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.MissingSemanticModelInfo
             // Chances of having an unknown delegate stored as a field/property/local seem lower than having an unknown non-delegate
             // type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-Public Property SomeProperty As System.Some.UnknownType
+    Public Property SomeProperty As System.Some.UnknownType
     Private Sub TestMethod()
-        Dim value = SomeProperty(0)
+        Dim num = 0
+        Dim value = SomeProperty(num)
+        value = SomeProperty(0)
     End Sub
 End Class", @"
 internal partial class TestClass
@@ -23,7 +25,9 @@ internal partial class TestClass
 
     private void TestMethod()
     {
-        var value = SomeProperty[0];
+        int num = 0;
+        var value = SomeProperty[num];
+        value = SomeProperty[0];
     }
 }
 2 source compilation errors:
@@ -31,6 +35,33 @@ BC30002: Type 'System.Some.UnknownType' is not defined.
 BC32016: 'Public Property SomeProperty As System.Some.UnknownType' has no parameters and its return type cannot be indexed.
 1 target compilation errors:
 CS0234: The type or namespace name 'Some' does not exist in the namespace 'System' (are you missing an assembly reference?)");
+        }
+        [Fact]
+        public async Task InvokeMethodOnPropertyValueAsync()
+        {
+            // Chances of having an unknown delegate stored as a field/property/local seem lower than having an unknown non-delegate
+            // type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Public Property SomeProperty As System.Some.UnknownType
+    Private Sub TestMethod()
+        Dim value = SomeProperty(New Object())
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    public System.Some.UnknownType SomeProperty { get; set; }
+
+    private void TestMethod()
+    {
+        var value = SomeProperty(new object());
+    }
+}
+2 source compilation errors:
+BC30002: Type 'System.Some.UnknownType' is not defined.
+BC32016: 'Public Property SomeProperty As System.Some.UnknownType' has no parameters and its return type cannot be indexed.
+2 target compilation errors:
+CS0234: The type or namespace name 'Some' does not exist in the namespace 'System' (are you missing an assembly reference?)
+CS1955: Non-invocable member 'TestClass.SomeProperty' cannot be used like a method.");
         }
 
         [Fact]
@@ -310,14 +341,15 @@ internal partial class TestClass
 
     private void TestMethod()
     {
-        var a = DefaultDate.Blawer(1, 2, 3);
+        var a = DefaultDate(1, 2, 3).Blawer(1, 2, 3);
     }
 }
 2 source compilation errors:
 BC30002: Type 'System.SomeUnknownType' is not defined.
 BC32016: 'Private Property DefaultDate As System.SomeUnknownType' has no parameters and its return type cannot be indexed.
-1 target compilation errors:
-CS0234: The type or namespace name 'SomeUnknownType' does not exist in the namespace 'System' (are you missing an assembly reference?)");
+2 target compilation errors:
+CS0234: The type or namespace name 'SomeUnknownType' does not exist in the namespace 'System' (are you missing an assembly reference?)
+CS1955: Non-invocable member 'TestClass.DefaultDate' cannot be used like a method.");
         }
 
         [Fact]

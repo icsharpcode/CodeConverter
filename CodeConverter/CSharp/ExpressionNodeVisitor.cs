@@ -838,7 +838,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             if (expressionSymbol != null && expressionSymbol.IsKind(SymbolKind.Property) &&
-                invocationSymbol != null && invocationSymbol.GetParameters().Length == 0) {
+                invocationSymbol != null && invocationSymbol.GetParameters().Length == 0 && node.ArgumentList.Arguments.Count == 0) {
                 return convertedExpression; //Parameterless property access
             }
 
@@ -1444,12 +1444,15 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         /// <summary>
-        /// Chances of having an unknown delegate stored as a field/local seem lower than having an unknown non-delegate type with an indexer stored.
-        /// So for a standalone identifier err on the side of assuming it's an indexer.
+        /// If there's a single numeric arg, let's assume it's an indexer (probably an array).
+        /// Otherwise, err on the side of a method call.
         /// </summary>
-        private static bool ProbablyNotAMethodCall(VBasic.Syntax.InvocationExpressionSyntax node, ISymbol symbol, ITypeSymbol symbolReturnType)
+        private bool ProbablyNotAMethodCall(VBasic.Syntax.InvocationExpressionSyntax node, ISymbol symbol, ITypeSymbol symbolReturnType)
         {
-            return !node.IsParentKind(VBasic.SyntaxKind.CallStatement) && !(symbol is IMethodSymbol) && symbolReturnType.IsErrorType() && node.Expression is VBasic.Syntax.IdentifierNameSyntax && node.ArgumentList?.Arguments.Count() == 1;
+            return !node.IsParentKind(VBasic.SyntaxKind.CallStatement) && !(symbol is IMethodSymbol) &&
+                   symbolReturnType.IsErrorType() && node.Expression is VBasic.Syntax.IdentifierNameSyntax &&
+                   node.ArgumentList?.Arguments.OnlyOrDefault()?.GetExpression() is {} arg &&
+                   _semanticModel.GetTypeInfo(arg).Type.IsNumericType();
         }
 
         private async Task<ArgumentListSyntax> ConvertArgumentListOrEmptyAsync(SyntaxNode node, VBSyntax.ArgumentListSyntax argumentList)
