@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### Vsix
+
+
+### VB -> C#
+
+
+### C# -> VB
+
+
+## [8.1.6] - 2020-07-12
+
+
+### Vsix
 * Fix file extension and location of single converted file [#589](https://github.com/icsharpcode/CodeConverter/issues/589)
 
 ### VB -> C#
