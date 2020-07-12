@@ -94,14 +94,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <remarks>
         /// CodeAnalysis upgrade to 3.0.0 needed for VarPattern. Correct text comes out, but tree is invalid so the tests this will generate "CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code"
         /// </remarks>
-        public static DeclarationPatternSyntax VarPattern(SyntaxToken varName)
-        {
-            return SyntaxFactory.DeclarationPattern(
-                ValidSyntaxFactory.VarType, SyntaxFactory.SingleVariableDesignation(varName));
-        }
+        public static DeclarationPatternSyntax VarPattern(SyntaxToken varName) => SyntaxFactory.DeclarationPattern(VarType, SyntaxFactory.SingleVariableDesignation(varName));
 
         public static PredefinedTypeSyntax ObjectType => SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword));
         public static LiteralExpressionSyntax NullExpression => SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
         public static LiteralExpressionSyntax DefaultExpression => SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
+
+        public static IdentifierNameSyntax NameOf() => SyntaxFactory.IdentifierName(
+            SyntaxFactory.Identifier(SyntaxTriviaList.Empty, SyntaxKind.NameOfKeyword, "nameof", "nameof", SyntaxTriviaList.Empty)
+        );
     }
 }

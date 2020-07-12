@@ -493,13 +493,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitNameOfExpression(VBasic.Syntax.NameOfExpressionSyntax node)
         {
-            return SyntaxFactory.InvocationExpression(NameOf(), SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList<ArgumentSyntax>(SyntaxFactory.Argument((ExpressionSyntax)await node.Argument.AcceptAsync(TriviaConvertingExpressionVisitor)))));
-        }
-
-        private static ExpressionSyntax NameOf()
-        {
-            // Usually it'd be preferable to just construct the Identifier ourselves, but the opportunity to inject parse options lets us control the LanguageVersion which needs to be high enough not to consider nameof an error
-            return SyntaxFactory.ParseExpression("nameof", options: CSharpCompiler.ParseOptions);
+            return SyntaxFactory.InvocationExpression(ValidSyntaxFactory.NameOf(), SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList<ArgumentSyntax>(SyntaxFactory.Argument((ExpressionSyntax)await node.Argument.AcceptAsync(TriviaConvertingExpressionVisitor)))));
         }
 
         public override async Task<CSharpSyntaxNode> VisitEqualsValue(VBasic.Syntax.EqualsValueSyntax node)
