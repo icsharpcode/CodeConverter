@@ -129,6 +129,58 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task TestOptionalParameterizedPropertyAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Class TestClass
+    Public Property FirstName As String
+    Public Property LastName As String
+
+    Public Property FullName(Optional ByVal isFirst As Boolean = False) As String
+        Get
+            Return FirstName & "" "" & LastName
+        End Get
+
+        Friend Set
+            If isFirst Then FirstName = Value
+        End Set
+    End Property
+
+    Public Overrides Function ToString() As String
+        FullName(True) = ""hello2""
+        FullName() = ""hello3""
+        FullName = ""hello4""
+        Return FullName
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+
+    public string get_FullName(bool isFirst)
+    {
+        return FirstName + "" "" + LastName;
+    }
+
+    internal void set_FullName(bool isFirst, string value)
+    {
+        if (isFirst)
+            FirstName = value;
+    }
+
+    public override string ToString()
+    {
+        set_FullName(true, ""hello2"");
+        set_FullName(false, ""hello3"");
+        set_FullName(false, ""hello4"");
+        return get_FullName(false);
+    }
+}",
+hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
+        }
+
+        [Fact]
         public async Task TestParameterizedPropertyAndGenericInvocationAndEnumEdgeCasesAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(

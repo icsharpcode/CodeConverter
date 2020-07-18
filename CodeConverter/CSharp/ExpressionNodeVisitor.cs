@@ -361,7 +361,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (left == null) {
                 if (IsSubPartOfConditionalAccess(node)) {
                     return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
-                        : AddEmptyArgumentListIfImplicit(node, SyntaxFactory.MemberBindingExpression(simpleNameSyntax));
+                        : await AdjustForImplicitInvocationAsync(node, SyntaxFactory.MemberBindingExpression(simpleNameSyntax));
                 }
                 left = _withBlockLhs.Peek();
             }
@@ -381,7 +381,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, left, simpleNameSyntax);
-            return AddEmptyArgumentListIfImplicit(node, memberAccessExpressionSyntax);
+            return await AdjustForImplicitInvocationAsync(node, memberAccessExpressionSyntax);
         }
 
         public override async Task<CSharpSyntaxNode> VisitConditionalAccessExpression(VBasic.Syntax.ConditionalAccessExpressionSyntax node)
@@ -807,19 +807,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return csEquivalent;
             }
 
-            var (overrideIdentifier, extraArg) =
-                await CommonConversions.GetParameterizedPropertyAccessMethodAsync(operation);
-            if (overrideIdentifier != null) {
-                var expr = await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
-                var idToken = expr.DescendantTokens().Last(t => t.IsKind(SyntaxKind.IdentifierToken));
-                expr = ReplaceRightmostIdentifierText(expr, idToken, overrideIdentifier);
-
-                var args = await ConvertArgumentListOrEmptyAsync(node, node.ArgumentList);
-                if (extraArg != null) {
-                    args = args.WithArguments(args.Arguments.Add(SyntaxFactory.Argument(extraArg)));
-                }
-
-                return SyntaxFactory.InvocationExpression((ExpressionSyntax)expr, args);
+            var expr = await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
+            if (await TryConvertParameterizedPropertyAsync(operation, node, expr, node.ArgumentList) is {} invocation) {
+                return invocation;
             }
             //TODO: Decide if the above override should be subject to the rest of this method's adjustments (probably)
 
@@ -852,8 +842,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var isElementAccess = operation.IsPropertyElementAccess() ||
                                       operation.IsArrayElementAccess() ||
                                       ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
-
-                var expr = await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
                 return ((ExpressionSyntax)expr, isElementAccess);
             }
 
@@ -870,6 +858,30 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return SyntaxFactory.ElementAccessExpression(convertedExpression, bracketedArgumentListSyntax);
                 }
             }
+        }
+
+        private async Task<InvocationExpressionSyntax> TryConvertParameterizedPropertyAsync(IOperation operation,
+            SyntaxNode node, CSharpSyntaxNode identifier,
+            VBSyntax.ArgumentListSyntax optionalArgumentList = null)
+        {
+            var (overrideIdentifier, extraArg) =
+                await CommonConversions.GetParameterizedPropertyAccessMethodAsync(operation);
+            if (overrideIdentifier != null)
+            {
+                var expr = identifier;
+                var idToken = expr.DescendantTokens().Last(t => t.IsKind(SyntaxKind.IdentifierToken));
+                expr = ReplaceRightmostIdentifierText(expr, idToken, overrideIdentifier);
+
+                var args = await ConvertArgumentListOrEmptyAsync(node, optionalArgumentList);
+                if (extraArg != null)
+                {
+                    args = args.WithArguments(args.Arguments.Add(SyntaxFactory.Argument(extraArg)));
+                }
+
+                return SyntaxFactory.InvocationExpression((ExpressionSyntax)expr, args);
+            }
+
+            return null;
         }
 
 
@@ -984,7 +996,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             EqualsValueClauseSyntax @default = null;
-            if (node.Default != null) {
+            // Parameterized properties get compiled/converted to a methd with non-optional parameters
+            if (node.Default != null && node.Parent?.Parent?.IsKind(VBasic.SyntaxKind.PropertyStatement) != true) {
                 var defaultValue = node.Default.Value.SkipIntoParens();
                 if (_semanticModel.GetTypeInfo(defaultValue).Type?.SpecialType == SpecialType.System_DateTime) {
                     var constant = _semanticModel.GetConstantValue(defaultValue);
@@ -1120,8 +1133,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var qualifiedIdentifier = requiresQualification
                 ? QualifyNode(node, identifier) : identifier;
 
-            var sym = GetSymbolInfoInDocument<ILocalSymbol>(node);
-            if (sym != null) {
+            var sym = GetSymbolInfoInDocument<ISymbol>(node);
+            if (sym is ILocalSymbol) {
                 var vbMethodBlock = node.Ancestors().OfType<VBasic.Syntax.MethodBlockBaseSyntax>().FirstOrDefault();
                 if (vbMethodBlock != null &&
                     vbMethodBlock.MustReturn() &&
@@ -1134,9 +1147,22 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            //PERF: AddEmptyArgumentListIfImplicit calls GetOperation, which is expensive, avoid it when it's easy to do so
-            var couldBeMethodCall = !(node.Parent is VBSyntax.QualifiedNameSyntax);
-            return couldBeMethodCall ? AddEmptyArgumentListIfImplicit(node, qualifiedIdentifier) : qualifiedIdentifier;
+            return await AdjustForImplicitInvocationAsync(node, qualifiedIdentifier);
+        }
+
+        private async Task<CSharpSyntaxNode> AdjustForImplicitInvocationAsync(SyntaxNode node, ExpressionSyntax qualifiedIdentifier)
+        {
+            //PERF: Avoid calling expensive GetOperation when it's easy
+            bool nonExecutableNode = node.IsParentKind(VBasic.SyntaxKind.QualifiedName);
+            if (nonExecutableNode || _semanticModel.SyntaxTree != node.SyntaxTree) return qualifiedIdentifier;
+
+            if (await TryConvertParameterizedPropertyAsync(_semanticModel.GetOperation(node), node, qualifiedIdentifier) is {}
+                invocation)
+            {
+                return invocation;
+            }
+
+            return AddEmptyArgumentListIfImplicit(node, qualifiedIdentifier);
         }
 
         public override async Task<CSharpSyntaxNode> VisitQualifiedName(VBasic.Syntax.QualifiedNameSyntax node)
@@ -1172,7 +1198,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var symbol = GetSymbolInfoInDocument<ISymbol>(node);
             var genericNameSyntax = await GenericNameAccountingForReducedParametersAsync(node, symbol);
-            return AddEmptyArgumentListIfImplicit(node, genericNameSyntax);
+            return await AdjustForImplicitInvocationAsync(node, genericNameSyntax);
         }
 
         /// <summary>
@@ -1329,11 +1355,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             var namedArgNames = new HashSet<string>(existingArgs.OfType<VBasic.Syntax.SimpleArgumentSyntax>().Where(a => a.IsNamed).Select(a => a.NameColonEquals.Name.Identifier.Text), StringComparer.OrdinalIgnoreCase);
             if (invocationSymbol != null) {
                 var requiredInCs = invocationSymbol.GetParameters()
-                    .Where((p, i) => p.HasExplicitDefaultValue && p.RefKind != RefKind.None && i >= vbPositionalArgs && !namedArgNames.Contains(p.Name));
-                return requiredInCs.Select(CreateOptionalRefArg);
+                    .Select((p, i) => CreateExtraArgOrNull(invocationSymbol, p, i, vbPositionalArgs, namedArgNames));
+                return requiredInCs.Where(x => x != null);
             }
 
             return Enumerable.Empty<ArgumentSyntax>();
+        }
+
+        private ArgumentSyntax CreateExtraArgOrNull(ISymbol invocationSymbol, IParameterSymbol p, int i, int vbPositionalArgs, HashSet<string> namedArgNames)
+        {
+            if (i < vbPositionalArgs || namedArgNames.Contains(p.Name) || !p.HasExplicitDefaultValue) return null;
+            if (p.RefKind != RefKind.None) return CreateOptionalRefArg(p);
+            if (invocationSymbol is IPropertySymbol)  return SyntaxFactory.Argument(CommonConversions.Literal(p.ExplicitDefaultValue));
+            return null;
         }
 
         private ArgumentSyntax CreateOptionalRefArg(IParameterSymbol p)
@@ -1451,13 +1485,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<ArgumentListSyntax> ConvertArgumentListOrEmptyAsync(SyntaxNode node, VBSyntax.ArgumentListSyntax argumentList)
         {
-            return (ArgumentListSyntax)await argumentList.AcceptAsync(TriviaConvertingExpressionVisitor) ?? CreateArgList(_semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol);
+            return (ArgumentListSyntax)await argumentList.AcceptAsync(TriviaConvertingExpressionVisitor) ?? CreateArgList(_semanticModel.GetSymbolInfo(node).Symbol);
         }
 
-        private ArgumentListSyntax CreateArgList(IMethodSymbol methodSymbol)
+        private ArgumentListSyntax CreateArgList(ISymbol invocationSymbol)
         {
             return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(
-                       GetAdditionalRequiredArgs(methodSymbol, Array.Empty<VBSyntax.ArgumentSyntax>()))
+                       GetAdditionalRequiredArgs(invocationSymbol, Array.Empty<VBSyntax.ArgumentSyntax>()))
                    );
         }
 
@@ -1477,9 +1511,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(SyntaxNode node, ExpressionSyntax id)
         {
             if (_semanticModel.SyntaxTree != node.SyntaxTree) return id;
-            return _semanticModel.GetOperation(node) is IInvocationOperation invocation
-                ? SyntaxFactory.InvocationExpression(id, CreateArgList(invocation.TargetMethod))
-                : id;
+            return _semanticModel.GetOperation(node) switch {
+                IInvocationOperation invocation => SyntaxFactory.InvocationExpression(id, CreateArgList(invocation.TargetMethod)),
+                IPropertyReferenceOperation propReference when propReference.Property.Parameters.Any() => SyntaxFactory.InvocationExpression(id, CreateArgList(propReference.Property)),
+                _ => id
+            };
         }
 
         /// <summary>
