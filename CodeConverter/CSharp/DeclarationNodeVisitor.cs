@@ -636,7 +636,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var csPropIds = ids.Except(csFormIds).ToList();
                     if (!csPropIds.Any() && !csFormIds.Any()) return null;
                     var csMethodId = SyntaxFactory.Identifier(m.Name);
-                    var delegatingMethodBaseForHandler = (MethodDeclarationSyntax) _csSyntaxGenerator.MethodDeclaration(m);
                     return new MethodWithHandles(_csSyntaxGenerator, csMethodId, csPropIds, csFormIds);
                 }).Where(x => x != null).ToList();
             return methodWithHandleses;
