@@ -53,6 +53,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
         public async Task ConvertProjectsAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects, CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
         {
             try {
+                await EnsureBuiltAsync();
                 await _joinableTaskFactory.RunAsync(async () => {
                     var convertedFiles = ConvertProjectUnhandled<TLanguageConversion>(selectedProjects, cancellationToken);
                     await WriteConvertedFilesAndShowSummaryAsync(convertedFiles);
@@ -67,6 +68,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
         public async Task ConvertDocumentAsync<TLanguageConversion>(string documentFilePath, Span selected, CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
         {
             try {
+                await EnsureBuiltAsync();
                 var conversionResult = await _joinableTaskFactory.RunAsync(async () => {
                     var result = await ConvertDocumentUnhandledAsync<TLanguageConversion>(documentFilePath, selected, cancellationToken);
                     await WriteConvertedFilesAndShowSummaryAsync(new[] { result }.ToAsyncEnumerable());
@@ -83,6 +85,15 @@ namespace ICSharpCode.CodeConverter.VsExtension
                     await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + "Previous conversion cancelled", forceShow: true);
                 }
             }
+        }
+
+        /// <remarks>
+        /// https://github.com/icsharpcode/CodeConverter/issues/592
+        /// https://github.com/dotnet/roslyn/issues/6615
+        /// </remarks>
+        private async Task EnsureBuiltAsync()
+        {
+            await VisualStudioInteraction.EnsureBuiltAsync(m => _outputWindow.WriteToOutputWindowAsync(m));
         }
 
         private static async Task SetClipboardTextOnUiThreadAsync(string conversionResultConvertedCode)

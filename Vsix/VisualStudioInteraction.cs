@@ -135,6 +135,18 @@ namespace ICSharpCode.CodeConverter.VsExtension
             return userAnswer == MessageBoxResult.OK;
         }
 
+        public static async Task EnsureBuiltAsync(Func<string, Task> writeMessageAsync)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+            var build = Dte.Solution.SolutionBuild;
+            if (build.BuildState == vsBuildState.vsBuildStateInProgress) {
+                throw new InvalidOperationException("Build in progress, please wait for it to complete before conversion.");
+            }
+            await writeMessageAsync("Building solution prior to conversion for maximum accuracy...");
+            build.Build(true);
+            await TaskScheduler.Default;
+        }
+
         public static async Task WriteStatusBarTextAsync(IAsyncServiceProvider serviceProvider, string text)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
