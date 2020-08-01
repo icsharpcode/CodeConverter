@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 * Convert parameterized properties with optional parameters [#597](https://github.com/icsharpcode/CodeConverter/issues/597)
+* Convert bitwise negation [#599](https://github.com/icsharpcode/CodeConverter/issues/599)
 
 ### C# -> VB
 
