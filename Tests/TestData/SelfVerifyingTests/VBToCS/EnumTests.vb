@@ -67,4 +67,13 @@ Public Class EnumTests
         Dim s As String = RankEnum.Second
         Assert.Equal(s & RankEnum.Second, "22")
     End Sub
+
+    <Fact>
+    Public Sub NegatedEnumNegatesUnderlyingNumber()
+        Dim initialEnum = RankEnum.First Or RankEnum.Second
+        Dim withSecondRemoved = initialEnum And Not RankEnum.Second
+        Dim i As RankEnum = (1 Or 2) And Not 2
+        Assert.Equal(withSecondRemoved, i)
+        Assert.Equal(withSecondRemoved, RankEnum.First)
+    End Sub
 End Class

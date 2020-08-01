@@ -659,6 +659,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (kind == SyntaxKind.LogicalNotExpression && await NegateAndSimplifyOrNullAsync(node, expr) is { } simpleNegation) {
                 return AsBool(node, simpleNegation);
             }
+
+            if (kind == SyntaxKind.LogicalNotExpression &&
+                _semanticModel.GetTypeInfo(node.Operand).ConvertedType is {} t &&
+                (t.IsNumericType() || t.IsEnumType())) {
+                csTokenKind = SyntaxKind.TildeToken;
+            }
             return SyntaxFactory.PrefixUnaryExpression(
                 kind,
                 SyntaxFactory.Token(csTokenKind),
