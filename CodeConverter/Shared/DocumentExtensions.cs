@@ -82,7 +82,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 );
                 return document.WithSyntaxRoot(newRoot);
             } catch (Exception ex) {
-                var warningText = "Conversion warning: Qualified name reduction failed for this file. " + ex;
+                var warningText = "Conversion warning: Name qualification failed for this file. " + ex;
                 return document.WithSyntaxRoot(WithWarningAnnotation(root, warningText));
             }
         }

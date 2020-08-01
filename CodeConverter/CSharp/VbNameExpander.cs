@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Simplification;
@@ -14,40 +15,38 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static readonly SyntaxToken _dotToken = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.Token(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DotToken);
         public static ISyntaxExpander Instance { get; } = new VbNameExpander();
 
-        public bool ShouldExpandWithinNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel)
-        {
-            return !ShouldExpandNode(node, root, semanticModel) &&
-                   !IsRoslynInstanceExpressionBug(node as MemberAccessExpressionSyntax); ;
-        }
+        public bool ShouldExpandWithinNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel) =>
+            !ShouldExpandNode(node, root, semanticModel) && !IsRoslynInstanceExpressionBug(node as MemberAccessExpressionSyntax);
 
-        public bool ShouldExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel)
-        {
-            return ShouldExpandName(node) ||
-                   ShouldExpandMemberAccess(node, root, semanticModel);
-        }
+        public bool ShouldExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel) =>
+            ShouldExpandName(node) || ShouldExpandMemberAccess(node, root, semanticModel);
 
         private static bool ShouldExpandMemberAccess(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel)
         {
             return node is MemberAccessExpressionSyntax maes && !IsRoslynInstanceExpressionBug(maes) &&
-                   ShouldBeQualified(node, semanticModel.GetSymbolInfo(node).Symbol, semanticModel, root);
+                   ShouldBeQualified(node, semanticModel.GetSymbolInfo(node).Symbol, semanticModel);
         }
 
-        private static bool ShouldExpandName(SyntaxNode node)
-        {
-            return node is NameSyntax && NameCanBeExpanded(node);
-        }
+        private static bool ShouldExpandName(SyntaxNode node) =>
+            node is NameSyntax && NameCanBeExpanded(node);
 
         public SyntaxNode ExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel,
             Workspace workspace)
         {
             var symbol = semanticModel.GetSymbolInfo(node).Symbol;
-            if (node is SimpleNameSyntax sns && IsMyBaseBug(node, symbol, root, semanticModel) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro && mro.Instance != null) {
-                var expressionSyntax = (ExpressionSyntax)mro.Instance.Syntax;
-                return MemberAccess(expressionSyntax, sns);
+            if (node is SimpleNameSyntax sns && GetDefaultImplicitInstance(sns, symbol, semanticModel) is {} defaultImplicitInstance) {
+                if (defaultImplicitInstance.InheritsFromOrEquals(symbol.ContainingType)) {
+                    return MemberAccess(SyntaxFactory.MeExpression(), sns);
+                }
+
+                if (semanticModel.GetOperation(node) is IMemberReferenceOperation { Instance: { Syntax: ExpressionSyntax implicitInstance } }) {
+                    return MemberAccess(implicitInstance, sns);
+                }
             }
-            if (node is MemberAccessExpressionSyntax maes && IsTypePromotion(node, symbol, root, semanticModel) && semanticModel.GetOperation(node) is IMemberReferenceOperation mro2 && mro2.Instance != null) {
-                var expressionSyntax = (ExpressionSyntax)mro2.Instance.Syntax;
-                return MemberAccess(expressionSyntax, SyntaxFactory.IdentifierName(mro2.Member.Name));
+
+            if (node is MemberAccessExpressionSyntax && IsTypePromotion(node, symbol, semanticModel) &&
+                semanticModel.GetOperation(node) is IMemberReferenceOperation { Instance: { Syntax: ExpressionSyntax promotedInstance }, Member: {} member }) {
+                return MemberAccess(promotedInstance, SyntaxFactory.IdentifierName(member.Name));
             }
             return IsOriginalSymbolGenericMethod(semanticModel, node) ? node : Simplifier.Expand(node, semanticModel, workspace);
         }
@@ -59,11 +58,22 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// This leaves the possibility of not qualifying some instance references which didn't contain
         /// </summary>
         private static bool ShouldBeQualified(SyntaxNode node,
-            ISymbol symbol, SemanticModel semanticModel, SyntaxNode root)
+            ISymbol symbol, SemanticModel semanticModel)
         {
-
-            return symbol?.IsStatic == true || IsMyBaseBug(node, symbol, root, semanticModel) || IsTypePromotion(node, symbol, root, semanticModel);
+            return symbol?.IsStatic == true || CouldBeMyBaseBug(node, symbol, semanticModel) || IsTypePromotion(node, symbol, semanticModel);
         }
+
+        /// <summary>Need to workaround roslyn bug that accidentally uses MyBase instead of Me, or implicit instances like Forms</summary>
+        /// See https://github.com/dotnet/roslyn/blob/97123b393c3a5a91cc798b329db0d7fc38634784/src/Workspaces/VisualBasic/Portable/Simplification/VisualBasicSimplificationService.Expander.vb#L657</returns>
+        private static bool CouldBeMyBaseBug(SyntaxNode node, ISymbol symbol, SemanticModel semanticModel) =>
+            node is SimpleNameSyntax sns && IsLeftMostQualifier(sns) && GetDefaultImplicitInstance(sns, symbol, semanticModel) is {};
+
+        private static bool IsLeftMostQualifier(SimpleNameSyntax node) =>
+            node?.Parent switch {
+                MemberAccessExpressionSyntax maes => maes.Expression == node,
+                ConditionalAccessExpressionSyntax caes => caes.Expression == node,
+                _ => true
+            };
 
         private static bool NameCanBeExpanded(SyntaxNode node)
         {
@@ -74,22 +84,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             return true;
         }
 
-        /// <returns>True iff calling Expand would qualify with MyBase when the symbol isn't in the base type
-        /// See https://github.com/dotnet/roslyn/blob/97123b393c3a5a91cc798b329db0d7fc38634784/src/Workspaces/VisualBasic/Portable/Simplification/VisualBasicSimplificationService.Expander.vb#L657</returns>
-        private static bool IsMyBaseBug(SyntaxNode node, ISymbol symbol, SyntaxNode root, SemanticModel semanticModel)
-        {
-            if (IsInstanceReference(symbol) && node is NameSyntax) {
-                return GetEnclosingNamedType(semanticModel, root, node.SpanStart) is ITypeSymbol
-                           implicitQualifyingSymbol &&
-                       !implicitQualifyingSymbol.ContainsMember(symbol);
-            }
+        private static INamedTypeSymbol GetDefaultImplicitInstance(SimpleNameSyntax node, ISymbol symbol, SemanticModel semanticModel, CancellationToken cancellationToken = default) =>
+            IsQualifiableInstanceReference(symbol) && IsLeftMostQualifier(node) ? semanticModel.GetEnclosingSymbol<INamedTypeSymbol>(node.SpanStart, cancellationToken) : null;
 
-            return false;
-        }
-
-        private static bool IsTypePromotion(SyntaxNode node, ISymbol symbol, SyntaxNode root, SemanticModel semanticModel)
+        private static bool IsTypePromotion(SyntaxNode node, ISymbol symbol, SemanticModel semanticModel)
         {
-            if (IsInstanceReference(symbol) && node is MemberAccessExpressionSyntax maes && maes.Expression != null) {
+            if (IsQualifiableInstanceReference(symbol) && node is MemberAccessExpressionSyntax maes && maes.Expression != null) {
                 var qualifyingType = semanticModel.GetTypeInfo(maes.Expression).Type;
                 return qualifyingType == null || !qualifyingType.ContainsMember(symbol);
             }
@@ -100,56 +100,21 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <summary>
         /// Roslyn bug - accidentally expands "New" into an identifier causing compile error
         /// </summary>
-        public static bool IsRoslynInstanceExpressionBug(MemberAccessExpressionSyntax node)
-        {
-            return node?.Expression is InstanceExpressionSyntax;
-        }
+        public static bool IsRoslynInstanceExpressionBug(MemberAccessExpressionSyntax node) =>
+            node?.Expression is InstanceExpressionSyntax;
 
         /// <summary>
         /// Roslyn bug - accidentally expands anonymous types to just "Global."
         /// Since the C# reducer also doesn't seem to reduce generic extension methods, it's best to avoid those too, so let's just avoid all generic methods
         /// </summary>
-        private static bool IsOriginalSymbolGenericMethod(SemanticModel semanticModel, SyntaxNode node)
-        {
-            return semanticModel.GetSymbolInfo(node).Symbol.IsGenericMethod();
-        }
+        private static bool IsOriginalSymbolGenericMethod(SemanticModel semanticModel, SyntaxNode node) =>
+            semanticModel.GetSymbolInfo(node).Symbol.IsGenericMethod();
 
-        private static bool IsInstanceReference(ISymbol symbol)
-        {
-            return symbol?.IsStatic == false && (symbol.Kind == SymbolKind.Method || symbol.Kind ==
-                                                 SymbolKind.Field || symbol.Kind == SymbolKind.Property);
-        }
+        private static bool IsQualifiableInstanceReference(ISymbol symbol) =>
+            symbol?.IsStatic == false && (symbol.IsKind(SymbolKind.Method) || symbol.IsKind(SymbolKind.Field) ||
+                                          symbol.IsKind(SymbolKind.Property));
 
-        private static MemberAccessExpressionSyntax MemberAccess(ExpressionSyntax expressionSyntax, SimpleNameSyntax sns)
-        {
-            return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                expressionSyntax,
-                _dotToken,
-                sns);
-        }
-
-        /// <summary>
-        /// Pasted from AbstractGenerateFromMembersCodeRefactoringProvider
-        /// Gets the enclosing named type for the specified position.  We can't use
-        /// <see cref="SemanticModel.GetEnclosingSymbol"/> because that doesn't return
-        /// the type you're current on if you're on the header of a class/interface.
-        /// </summary>
-        private static INamedTypeSymbol GetEnclosingNamedType(
-            SemanticModel semanticModel, SyntaxNode root, int start,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            var token = root.FindToken(start);
-            if (token == ((ICompilationUnitSyntax)root).EndOfFileToken) {
-                token = token.GetPreviousToken();
-            }
-
-            for (var node = token.Parent; node != null; node = node.Parent) {
-                if (semanticModel.GetDeclaredSymbol(node) is INamedTypeSymbol declaration) {
-                    return declaration;
-                }
-            }
-
-            return null;
-        }
+        private static MemberAccessExpressionSyntax MemberAccess(ExpressionSyntax expressionSyntax, SimpleNameSyntax sns) =>
+            SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, expressionSyntax, _dotToken, sns);
     }
 }
