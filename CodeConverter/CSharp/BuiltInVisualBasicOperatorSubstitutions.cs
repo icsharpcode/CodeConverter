@@ -107,7 +107,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     case IPropertyReferenceOperation pro when pro.Property.IsMyGroupCollectionProperty():
                         var associatedField = pro.Property.GetAssociatedField();
                         var propertyReferenceOperation = ((IPropertyReferenceOperation)pro.Instance);
-                        var qualification = (ExpressionSyntax)await propertyReferenceOperation.Syntax.AcceptAsync(_triviaConvertingVisitor);
+                        var qualification = await propertyReferenceOperation.Syntax.AcceptAsync<ExpressionSyntax>(_triviaConvertingVisitor);
                         return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, qualification, SyntaxFactory.IdentifierName(associatedField.Name));
                     default:
                         return null;

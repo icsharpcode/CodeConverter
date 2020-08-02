@@ -445,7 +445,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxList<VBSyntax.ArrayRankSpecifierSyntax> arrayRankSpecifierSyntaxs,
             ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
         {
-            var bounds = SyntaxFactory.List(await arrayRankSpecifierSyntaxs.SelectAsync(async r => (ArrayRankSpecifierSyntax) await r.AcceptAsync(TriviaConvertingExpressionVisitor)));
+            var bounds = SyntaxFactory.List(await arrayRankSpecifierSyntaxs.SelectAsync(async r => await r.AcceptAsync<ArrayRankSpecifierSyntax>(TriviaConvertingExpressionVisitor)));
 
             if (nodeArrayBounds != null) {
                 ArrayRankSpecifierSyntax arrayRankSpecifierSyntax = await ConvertArrayBoundsAsync(nodeArrayBounds, withSizes);
@@ -488,7 +488,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (constant.HasValue && constant.Value is int)
                 return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((int)constant.Value + 1));
 
-            var convertedExpression = (ExpressionSyntax)await expr.AcceptAsync(TriviaConvertingExpressionVisitor);
+            var convertedExpression = await expr.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
 
             if (op is IBinaryOperation bOp && bOp.OperatorKind == BinaryOperatorKind.Subtract &&
                 bOp.RightOperand.ConstantValue.HasValue && bOp.RightOperand.ConstantValue.Value is int subtractedVal && subtractedVal == 1
@@ -546,7 +546,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 !VBasic.VisualBasicExtensions.IsDefault(pro.Property)) {
                 var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.Children.First() == pro;
                 var extraArg = isSetter
-                    ? (ExpressionSyntax) await operation.Parent.Syntax.ChildNodes().ElementAt(1).AcceptAsync(TriviaConvertingExpressionVisitor)
+                    ? await operation.Parent.Syntax.ChildNodes().ElementAt(1).AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)
                     : null;
                 return (isSetter ? pro.Property.SetMethod.Name : pro.Property.GetMethod.Name, extraArg);
             }
