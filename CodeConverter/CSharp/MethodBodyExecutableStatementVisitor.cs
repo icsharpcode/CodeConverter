@@ -604,9 +604,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var variableType = varSymbol.GetSymbolType();
                 var explicitCastWouldHaveNoEffect = variableType?.SpecialType == SpecialType.System_Object || _semanticModel.GetTypeInfo(stmt.Expression).ConvertedType.IsEnumerableOfExactType(variableType);
                 type = CommonConversions.GetTypeSyntax(varSymbol.GetSymbolType(), explicitCastWouldHaveNoEffect);
-                var v = await stmt.ControlVariable.AcceptAsync<IdentifierNameSyntax>(_expressionVisitor);
-                if (_localsToInlineInLoop.Contains(varSymbol)) {
-                    id = v.Identifier;
+                var v = await stmt.ControlVariable.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+                if (_localsToInlineInLoop.Contains(varSymbol) && v is IdentifierNameSyntax vId) {
+                    id = vId.Identifier;
                 } else {
                     id = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "current" + varSymbol.Name.ToPascalCase()));
                     statements.Add(SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, v, SyntaxFactory.IdentifierName(id))));

@@ -220,6 +220,42 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task ForEachStatementWithFieldVarUsedOuterDeclarationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Dim val As Integer
+
+    Private Sub TestMethod(ByVal values As Integer())
+        For Each val In values
+            If val = 2 Then Continue For
+            If val = 3 Then Exit For
+        Next
+
+        Console.WriteLine(val)
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int val;
+
+    private void TestMethod(int[] values)
+    {
+        foreach (var currentVal in values)
+        {
+            val = currentVal;
+            if (val == 2)
+                continue;
+            if (val == 3)
+                break;
+        }
+
+        Console.WriteLine(val);
+    }
+}");
+        }
+
+        [Fact]
         public async Task ForEachStatementWithUnusedOuterDeclarationAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
@@ -237,6 +273,36 @@ internal partial class TestClass
     {
         foreach (var val in values)
         {
+            if (val == 2)
+                continue;
+            if (val == 3)
+                break;
+        }
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ForEachStatementWithFieldVarUnusedOuterDeclarationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Dim val As Integer
+    Private Sub TestMethod(ByVal values As Integer())
+        For Each val In values
+            If val = 2 Then Continue For
+            If val = 3 Then Exit For
+        Next
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private int val;
+
+    private void TestMethod(int[] values)
+    {
+        foreach (var currentVal in values)
+        {
+            val = currentVal;
             if (val == 2)
                 continue;
             if (val == 3)
