@@ -245,5 +245,27 @@ internal partial class TestConstCharacterConversions
     }
 }");
         }
+
+        [Fact]
+        public async Task UsingBoolInToExpressionAsync()
+        {
+            // Beware, this will never enter the loop, it's buggy input due to the "i <", but it compiles and runs, so the output should too (and do the same thing)
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Sub M(OldWords As String(), NewWords As String(), HTMLCode As String)
+        For i As Integer = 0 To i < OldWords.Length - 1
+            HTMLCode = HTMLCode.Replace(OldWords(i), NewWords(i))
+        Next i
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class C
+{
+    public void M(string[] OldWords, string[] NewWords, string HTMLCode)
+    {
+        for (int i = 0, loopTo = Conversions.ToInteger(i < OldWords.Length - 1); i <= loopTo; i++)
+            HTMLCode = HTMLCode.Replace(OldWords[i], NewWords[i]);
+    }
+}");
+        }
     }
 }

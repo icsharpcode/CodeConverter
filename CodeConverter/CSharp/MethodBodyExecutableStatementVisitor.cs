@@ -516,19 +516,23 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            // In Visual Basic, the To expression is only evaluated once, but in C# will be evaluated every loop.
-            // If it could evaluate differently or has side effects, it must be extracted as a variable
+           
             var preLoopStatements = new List<SyntaxNode>();
             var csToValue = await stmt.ToValue.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+            csToValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.ToValue, csToValue?.SkipIntoParens(), forceTargetType: controlVarType);
+
+            // In Visual Basic, the To expression is only evaluated once, but in C# will be evaluated every loop.
+            // If it could evaluate differently or has side effects, it must be extracted as a variable
             if (!_semanticModel.GetConstantValue(stmt.ToValue).HasValue) {
                 var loopToVariableName = GetUniqueVariableNameInScope(node, "loopTo");
                 var toValueType = _semanticModel.GetTypeInfo(stmt.ToValue).ConvertedType;
                 var toVariableId = SyntaxFactory.IdentifierName(loopToVariableName);
+
+                // If that variable has the same type as the loop variable, we can explicitly declare the type and it inline
                 if (controlVarType?.Equals(toValueType) == true && declaration != null) {
                     var loopToAssignment = CommonConversions.CreateVariableDeclarator(loopToVariableName, csToValue);
-                    declaration = declaration.AddVariables(loopToAssignment);
+                    declaration = declaration.AddVariables(loopToAssignment).WithType(CommonConversions.GetTypeSyntax(controlVarType));
                 } else {
-                    csToValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.ToValue, csToValue, forceTargetType: controlVarType);
                     var loopEndDeclaration = SyntaxFactory.LocalDeclarationStatement(
                         CommonConversions.CreateVariableDeclarationAndAssignment(loopToVariableName, csToValue));
                     // Does not do anything about porting newline trivia upwards to maintain spacing above the loop
@@ -536,7 +540,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 csToValue = toVariableId;
-            };
+            }
 
             var (csCondition, csStep) = await ConvertConditionAndStepClauseAsync(stmt, id, csToValue, controlVarType);
 
@@ -562,7 +566,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             // For an enum, you need to add on an integer for example:
             var forceStepType = controlVarType is INamedTypeSymbol nt && nt.IsEnumType() ? nt.EnumUnderlyingType : controlVarType;
             csStepValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbStepValue, csStepValue?.SkipIntoParens(), forceTargetType: forceStepType);
-            csToValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.ToValue, csToValue?.SkipIntoParens(), forceTargetType: controlVarType);
 
             var nonNegativeCondition = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, id, csToValue);
             var negativeCondition = SyntaxFactory.BinaryExpression(SyntaxKind.GreaterThanOrEqualExpression, id, csToValue);

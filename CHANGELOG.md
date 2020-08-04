@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Coercing enum to a string now correctly uses its numeric value [#590](https://github.com/icsharpcode/CodeConverter/issues/590)
 * Correct conversion for equality of overloaded types [#594](https://github.com/icsharpcode/CodeConverter/issues/594)
 * Correct conversion when for loop variable is a class member [#601](https://github.com/icsharpcode/CodeConverter/issues/601)
+* Correct conversion when for loop "To" expression is a boolean [#602](https://github.com/icsharpcode/CodeConverter/issues/602)
 
 ### C# -> VB
 
