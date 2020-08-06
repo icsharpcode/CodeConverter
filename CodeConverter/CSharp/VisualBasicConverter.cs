@@ -32,7 +32,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             try {
                 // This call is very expensive for large documents. Should look for a more performant version, e.g. Is NormalizeWhitespace good enough?
-                converted = (CSS.CompilationUnitSyntax)Formatter.Format(converted, document.Project.Solution.Workspace, cancellationToken: cancellationToken);
+                converted = await (CSS.CompilationUnitSyntax)Formatter.FormatAsync(converted, document.Project.Solution.Workspace, cancellationToken: cancellationToken);
                 return LineTriviaMapper.MapSourceTriviaToTarget(root, converted);
             } catch (Exception) { //TODO log
                 return converted;

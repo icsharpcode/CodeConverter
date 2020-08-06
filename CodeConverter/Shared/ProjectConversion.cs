@@ -233,12 +233,12 @@ namespace ICSharpCode.CodeConverter.Shared
                     selectedNode = await GetSelectedNodeAsync(document);
                     var extraLeadingTrivia = selectedNode.GetFirstToken().GetPreviousToken().TrailingTrivia;
                     var extraTrailingTrivia = selectedNode.GetLastToken().GetNextToken().LeadingTrivia;
-                    selectedNode = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
+                    selectedNode = await Formatter.FormatAsync(selectedNode, document.Project.Solution.Workspace);
                     if (extraLeadingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) selectedNode = selectedNode.WithPrependedLeadingTrivia(extraLeadingTrivia);
                     if (extraTrailingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) selectedNode = selectedNode.WithAppendedTrailingTrivia(extraTrailingTrivia);
                 } else {
                     selectedNode = await document.GetSyntaxRootAsync();
-                    selectedNode = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
+                    selectedNode = await Formatter.FormatAsync(selectedNode, document.Project.Solution.Workspace);
                     var convertedDoc = document.WithSyntaxRoot(selectedNode);
                     selectedNode = await convertedDoc.GetSyntaxRootAsync();
                 }
