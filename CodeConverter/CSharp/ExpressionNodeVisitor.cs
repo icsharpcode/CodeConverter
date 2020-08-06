@@ -40,7 +40,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly Lazy<IDictionary<ITypeSymbol, string>> _convertMethodsLookupByReturnType;
         private readonly Compilation _csCompilation;
         private readonly LambdaConverter _lambdaConverter;
-        private INamedTypeSymbol _vbBooleanTypeSymbol;
+        private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
 
         public ExpressionNodeVisitor(SemanticModel semanticModel,
             VisualBasicEqualityComparison visualBasicEqualityComparison,

@@ -13,7 +13,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal class MethodWithHandles
     {
-        private IdentifierNameSyntax _methodId;
+        private readonly IdentifierNameSyntax _methodId;
         private readonly SyntaxGenerator _csSyntaxGenerator;
 
         public SyntaxToken MethodCSharpId { get; }

@@ -12,8 +12,8 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// </summary>
     internal class MethodsWithHandles
     {
-        private List<MethodWithHandles> _methodWithHandleses;
-        private ILookup<string, MethodWithHandles> _handledMethodsFromPropertyWithEventName;
+        private readonly List<MethodWithHandles> _methodWithHandleses;
+        private readonly ILookup<string, MethodWithHandles> _handledMethodsFromPropertyWithEventName;
 
 
         public MethodsWithHandles(List<MethodWithHandles> methodWithHandleses, ILookup<string, MethodWithHandles> handledMethodsFromPropertyWithEventName)

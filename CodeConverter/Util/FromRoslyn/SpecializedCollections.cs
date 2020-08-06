@@ -517,7 +517,7 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
         {
             internal sealed class Collection<T> : ICollection<T>, IReadOnlyCollection<T>
             {
-                private T _loneValue;
+                private readonly T _loneValue;
 
                 public Collection(T value)
                 {
@@ -569,7 +569,7 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
             }
             internal class Enumerator<T> : IEnumerator<T>
             {
-                private T _loneValue;
+                private readonly T _loneValue;
                 private bool _moveNextCalled;
 
                 public Enumerator(T value)

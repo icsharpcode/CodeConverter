@@ -13,7 +13,7 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
     public class ParallelSelectAwaitTests
     {
         private const int MaxDop = 8;
-        private static int[] Input = Enumerable.Range(1, MaxDop * 3).ToArray();
+        private static readonly int[] Input = Enumerable.Range(1, MaxDop * 3).ToArray();
 
         [Fact]
         public async Task ExceptionDoesNotHaltPipelineAsync()

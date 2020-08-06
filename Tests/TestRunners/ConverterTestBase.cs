@@ -20,8 +20,8 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
         private const string AutoTestCommentPrefix = " SourceLine:";
         private static readonly bool RecharacterizeByWritingExpectedOverActual = TestConstants.RecharacterizeByWritingExpectedOverActual;
 
-        private bool _testCstoVbCommentsByDefault = true;
-        private bool _testVbtoCsCommentsByDefault = true;
+        private readonly bool _testCstoVbCommentsByDefault = true;
+        private readonly bool _testVbtoCsCommentsByDefault = true;
         private readonly string _rootNamespace;
 
         protected TextConversionOptions EmptyNamespaceOptionStrictOff { get; set; }
@@ -166,7 +166,7 @@ End Sub";
         public static void Fail(string message) => throw new XunitException(message);
     }
     public class CSToVBWithoutSimplifierConversion : ILanguageConversion {
-        private CSToVBConversion baseConversion;
+        private readonly CSToVBConversion baseConversion;
         public CSToVBWithoutSimplifierConversion() {
             this.baseConversion = new CSToVBConversion();
         }

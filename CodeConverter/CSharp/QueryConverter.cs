@@ -19,7 +19,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     internal class QueryConverter
     {
         private readonly CommentConvertingVisitorWrapper _triviaConvertingVisitor;
-        private SemanticModel _semanticModel;
+        private readonly SemanticModel _semanticModel;
 
         public QueryConverter(CommonConversions commonConversions, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor)
         {

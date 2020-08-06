@@ -28,7 +28,7 @@ Shared Function {ThrowMethodName}(Of T)(ByVal e As Exception) As T
     Throw e
 End Function";
 
-        private static ICompiler _compiler = new VisualBasicCompiler();
+        private static readonly ICompiler _compiler = new VisualBasicCompiler();
 
         public bool AddThrowMethod { get; set; }
         public bool AddInlineAssignMethod { get; set; }

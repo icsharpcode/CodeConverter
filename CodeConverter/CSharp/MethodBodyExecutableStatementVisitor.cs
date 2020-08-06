@@ -31,7 +31,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly MethodsWithHandles _methodsWithHandles;
         private readonly HashSet<string> _generatedNames = new HashSet<string>();
         private readonly HashSet<VBSyntax.StatementSyntax> _redundantSourceStatements = new HashSet<VBSyntax.StatementSyntax>();
-        private INamedTypeSymbol _vbBooleanTypeSymbol;
+        private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
         private readonly HashSet<ILocalSymbol> _localsToInlineInLoop;
 
         public bool IsIterator { get; set; }

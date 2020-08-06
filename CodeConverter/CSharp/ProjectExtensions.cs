@@ -8,7 +8,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class ProjectExtensions
     {
-        private static char[] DirSeparators = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
+        private static readonly char[] DirSeparators = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
         public static Project CreateReferenceOnlyProjectFromAnyOptions(this Project project, CompilationOptions baseOptions, ParseOptions parseOptions)
         {
