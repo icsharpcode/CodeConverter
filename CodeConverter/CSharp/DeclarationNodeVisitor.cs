@@ -200,40 +200,48 @@ namespace ICSharpCode.CodeConverter.CSharp
             var methodsWithHandles = MethodsWithHandles.Create(GetMethodWithHandles(parentType));
 
             if (methodsWithHandles.Any()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
+            
+            _typeContext.Push(methodsWithHandles, additionalInitializers);
+            try {
+                var convertedMembers = (await members.SelectManyAsync(async member =>
+                        (await ConvertMemberAsync(member)).Yield().Concat(GetAdditionalDeclarations(member)))
+                    );
 
-            IEnumerable<MemberDeclarationSyntax> directlyConvertedMembers = await GetDirectlyConvertedMembers(additionalInitializers, methodsWithHandles);
-
-            var requiresInitializeComponent = namedTypeSymbol.IsDesignerGeneratedTypeWithInitializeComponent(_vbCompilation);
-
-            if (shouldAddTypeWideInitToThisPart) {
-                var otherPartsOfType = GetAllPartsOfType(parentType, namedTypeSymbol).ToArray();
-                var constructorFieldInitializersFromOtherParts = otherPartsOfType
-                    .Where(t => (!Equals(t.Type.SyntaxTree.FilePath, _semanticModel.SyntaxTree.FilePath) || !t.Type.Span.Equals(parentType.Span)))
-                    .SelectMany(r => GetFieldsIdentifiersWithInitializer(r.Type, r.SemanticModel));
-                additionalInitializers.AdditionalInstanceInitializers.AddRange(constructorFieldInitializersFromOtherParts);
-                if (requiresInitializeComponent) {
-                    // Constructor event handlers not required since they'll be inside InitializeComponent - see other use of IsDesignerGeneratedTypeWithInitializeComponent
-                    directlyConvertedMembers = directlyConvertedMembers
-                        .Concat(methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
-                    additionalInitializers.AdditionalInstanceInitializers
-                        .AddRange(CommonConversions.WinformsConversions.GetNameAssignments(methodsWithHandles, otherPartsOfType));
-                } else {
-                    additionalInitializers.AdditionalInstanceInitializers.AddRange(methodsWithHandles.GetConstructorEventHandlers());
-                }
+                return WithAdditionalMembers(convertedMembers).ToArray();//Ensure evaluated before popping type context
+            } finally {
+                _typeContext.Pop();
             }
 
-            return additionalInitializers.WithAdditionalInitializers(namedTypeSymbol, directlyConvertedMembers.ToList(), CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier), requiresInitializeComponent);
-
-            async Task<MemberDeclarationSyntax[]> GetDirectlyConvertedMembers(AdditionalInitializers additionalInitializers, MethodsWithHandles methodsWithHandles)
+            IEnumerable<MemberDeclarationSyntax> WithAdditionalMembers(IEnumerable<MemberDeclarationSyntax> convertedMembers)
             {
-                _typeContext.Push(methodsWithHandles, additionalInitializers);
-                try {
-                    var convertedMembers = await members.SelectManyAsync(async member =>
-                        new[] { await ConvertMemberAsync(member) }.Concat(GetAdditionalDeclarations(member)));
-                    return convertedMembers.ToArray();
-                } finally {
-                    _typeContext.Pop();
+                var requiresInitializeComponent = namedTypeSymbol.IsDesignerGeneratedTypeWithInitializeComponent(_vbCompilation);
+
+                if (shouldAddTypeWideInitToThisPart)
+                {
+                    var otherPartsOfType = GetAllPartsOfType(parentType, namedTypeSymbol).ToArray();
+                    var constructorFieldInitializersFromOtherParts = otherPartsOfType
+                        .Where(t => (!Equals(t.Type.SyntaxTree.FilePath, _semanticModel.SyntaxTree.FilePath) ||
+                                     !t.Type.Span.Equals(parentType.Span)))
+                        .SelectMany(r => GetFieldsIdentifiersWithInitializer(r.Type, r.SemanticModel));
+                    additionalInitializers.AdditionalInstanceInitializers.AddRange(constructorFieldInitializersFromOtherParts);
+                    if (requiresInitializeComponent)
+                    {
+                        // Constructor event handlers not required since they'll be inside InitializeComponent - see other use of IsDesignerGeneratedTypeWithInitializeComponent
+                        convertedMembers = convertedMembers
+                            .Concat(methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
+                        additionalInitializers.AdditionalInstanceInitializers
+                            .AddRange(
+                                CommonConversions.WinformsConversions.GetNameAssignments(otherPartsOfType));
+                    }
+                    else
+                    {
+                        additionalInitializers.AdditionalInstanceInitializers.AddRange(methodsWithHandles
+                            .GetConstructorEventHandlers());
+                    }
                 }
+
+                return additionalInitializers.WithAdditionalInitializers(namedTypeSymbol, convertedMembers.ToList(),
+                    CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier), requiresInitializeComponent);
             }
         }
 
