@@ -10,9 +10,7 @@ using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
-using Microsoft.VisualStudio.Threading;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
@@ -69,7 +67,7 @@ namespace ICSharpCode.CodeConverter.Shared
             document = projectContentsConverter.SourceProject.GetDocument(document.Id);
 
             var conversion = new ProjectConversion(projectContentsConverter, new[] { document }, Enumerable.Empty<TextDocument>(), languageConversion, cancellationToken, conversionOptions.ShowCompilationErrors, returnSelectedNode);
-            var conversionResults = await conversion.Convert(progress).ToArrayAsync();
+            var conversionResults = await conversion.Convert(progress).ToArrayAsync(cancellationToken);
             return GetSingleResultForDocument(conversionResults, document);
         }
 
@@ -93,7 +91,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress, cancellationToken);
 
             var results = WithProjectFile(projectContentsConverter, languageConversion, sourceFilePaths, convertProjectContents, replacements);
-            await foreach (var result in results) yield return result;
+            await foreach (var result in results.WithCancellation(cancellationToken)) yield return result;
         }
 
         /// <remarks>Perf: Keep lazy so that we don't keep an extra copy of all files in memory at once</remarks>
@@ -164,7 +162,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var documentsWithLengths = await projectContentsConverter.SourceProject.Documents
                 .Where(d => !BannedPaths.Any(d.FilePath.Contains))
-                .SelectAsync(async d => (Doc: d, Length: (await d.GetTextAsync()).Length));
+                .SelectAsync(async d => (Doc: d, Length: (await d.GetTextAsync(cancellationToken)).Length));
 
             //Perf heuristic: Decrease memory pressure on the simplification phase by converting large files first https://github.com/icsharpcode/CodeConverter/issues/524#issuecomment-590301594
             var documentsToConvert = documentsWithLengths.OrderByDescending(d => d.Length).Select(d => d.Doc);
@@ -172,7 +170,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, projectContentsConverter.SourceProject.AdditionalDocuments, languageConversion, cancellationToken, false);
 
             var results = projectConversion.Convert(progress);
-            await foreach (var result in results) yield return result;
+            await foreach (var result in results.WithCancellation(cancellationToken)) yield return result;
         }
 
 
@@ -180,7 +178,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var phaseProgress = StartPhase(progress, "Phase 1 of 2:");
             var firstPassResults = _documentsToConvert.ParallelSelectAwait(d => FirstPassLoggedAsync(d, phaseProgress), Env.MaxDop, _cancellationToken);
-            var (proj1, docs1) = await _projectContentsConverter.GetConvertedProjectAsync(await firstPassResults.ToArrayAsync());
+            var (proj1, docs1) = await _projectContentsConverter.GetConvertedProjectAsync(await firstPassResults.ToArrayAsync(_cancellationToken));
 
             var warnings = await GetProjectWarningsAsync(_projectContentsConverter.SourceProject, proj1);
             if (!string.IsNullOrWhiteSpace(warnings)) {
@@ -190,7 +188,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             phaseProgress = StartPhase(progress, "Phase 2 of 2:");
             var secondPassResults = proj1.GetDocuments(docs1).ParallelSelectAwait(d => SecondPassLoggedAsync(d, phaseProgress), Env.MaxDop, _cancellationToken);
-            await foreach (var result in secondPassResults.Select(CreateConversionResult)) {
+            await foreach (var result in secondPassResults.Select(CreateConversionResult).WithCancellation(_cancellationToken)) {
                 yield return result;
             }
             await foreach (var result in _projectContentsConverter.GetAdditionalConversionResults(_additionalDocumentsToConvert, _cancellationToken)) {
@@ -233,20 +231,20 @@ namespace ICSharpCode.CodeConverter.Shared
                     selectedNode = await GetSelectedNodeAsync(document);
                     var extraLeadingTrivia = selectedNode.GetFirstToken().GetPreviousToken().TrailingTrivia;
                     var extraTrailingTrivia = selectedNode.GetLastToken().GetNextToken().LeadingTrivia;
-                    selectedNode = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
+                    selectedNode = _projectContentsConverter.OptionalOperations.Format(selectedNode, document);
                     if (extraLeadingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) selectedNode = selectedNode.WithPrependedLeadingTrivia(extraLeadingTrivia);
                     if (extraTrailingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) selectedNode = selectedNode.WithAppendedTrailingTrivia(extraTrailingTrivia);
                 } else {
-                    selectedNode = await document.GetSyntaxRootAsync();
-                    selectedNode = Formatter.Format(selectedNode, document.Project.Solution.Workspace);
+                    selectedNode = await document.GetSyntaxRootAsync(_cancellationToken);
+                    selectedNode = _projectContentsConverter.OptionalOperations.Format(selectedNode, document);
                     var convertedDoc = document.WithSyntaxRoot(selectedNode);
-                    selectedNode = await convertedDoc.GetSyntaxRootAsync();
+                    selectedNode = await convertedDoc.GetSyntaxRootAsync(_cancellationToken);
                 }
             } catch (Exception e) {
                 errors = new[] { e.ToString() };
             }
 
-            var convertedNode = selectedNode ?? await convertedDocument.GetSyntaxRootAsync();
+            var convertedNode = selectedNode ?? await convertedDocument.GetSyntaxRootAsync(_cancellationToken);
             return (convertedNode, errors);
         }
 
@@ -254,8 +252,8 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             if (!_showCompilationErrors) return null;
 
-            var sourceCompilation = await source.GetCompilationAsync();
-            var convertedCompilation = await converted.GetCompilationAsync();
+            var sourceCompilation = await source.GetCompilationAsync(_cancellationToken);
+            var convertedCompilation = await converted.GetCompilationAsync(_cancellationToken);
             return CompilationWarnings.WarningsForCompilation(sourceCompilation, "source") + CompilationWarnings.WarningsForCompilation(convertedCompilation, "target");
         }
 
@@ -297,7 +295,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private async Task<SyntaxNode> GetSelectedNodeAsync(Document document)
         {
-            var resultNode = await document.GetSyntaxRootAsync();
+            var resultNode = await document.GetSyntaxRootAsync(_cancellationToken);
             var selectedNode = resultNode.GetAnnotatedNodes(AnnotationConstants.SelectedNodeAnnotationKind)
                 .FirstOrDefault();
             if (selectedNode != null) {

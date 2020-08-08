@@ -12,6 +12,7 @@ namespace ICSharpCode.CodeConverter.Shared
         string LanguageVersion { get; }
         string RootNamespace { get; }
         Project SourceProject { get; }
+        OptionalOperations OptionalOperations { get; }
         Task<SyntaxNode> SingleFirstPassAsync(Document document);
         Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProjectAsync(WipFileConversion<SyntaxNode>[] firstPassResults);
         public IAsyncEnumerable<ConversionResult> GetAdditionalConversionResults(IReadOnlyCollection<TextDocument> additionalDocumentsToConvert, CancellationToken cancellationToken);

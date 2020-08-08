@@ -36,7 +36,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             this._useProjectLevelWinformsAdjustments = useProjectLevelWinformsAdjustments;
             _progress = progress;
             _cancellationToken = cancellationToken;
+            OptionalOperations = new OptionalOperations(conversionOptions.AbandonOptionalTasksAfter, progress, cancellationToken);
         }
+
+        public OptionalOperations OptionalOperations { get; }
 
         public string RootNamespace => _conversionOptions.RootNamespaceOverride ??
                                        ((VisualBasicCompilationOptions)SourceProject.CompilationOptions).RootNamespace;
@@ -65,7 +68,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public async Task<SyntaxNode> SingleFirstPassAsync(Document document)
         {
-            return await VisualBasicConverter.ConvertCompilationTreeAsync(document, _csharpViewOfVbSymbols, _csharpReferenceProject, _cancellationToken);
+            return await VisualBasicConverter.ConvertCompilationTreeAsync(document, _csharpViewOfVbSymbols, _csharpReferenceProject, OptionalOperations, _cancellationToken);
         }
 
         public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProjectAsync(WipFileConversion<SyntaxNode>[] firstPassResults)

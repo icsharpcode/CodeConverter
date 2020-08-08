@@ -235,19 +235,22 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             }
             var document = _visualStudioWorkspace.CurrentSolution.GetDocument(documentId);
             var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
-            return await ProjectConversion.ConvertSingleAsync<TLanguageConversion>(document, new SingleConversionOptions {SelectedTextSpan = selectedTextSpan}, CreateOutputWindowProgress(), cancellationToken);
+            return await ProjectConversion.ConvertSingleAsync<TLanguageConversion>(document, new SingleConversionOptions {SelectedTextSpan = selectedTextSpan, AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()}, CreateOutputWindowProgress(), cancellationToken);
         }
 
-        private async Task<ConversionResult> ConvertFileTextAsync<TLanguageConversion>(string documentPath, Span selected, CancellationToken cancellationToken)
+        private async Task<ConversionResult> ConvertFileTextAsync<TLanguageConversion>(string documentPath,
+            Span selected, CancellationToken cancellationToken)
             where TLanguageConversion : ILanguageConversion, new()
         {
             var documentText = File.ReadAllText(documentPath);
-            if (selected.Length > 0 && documentText.Length >= selected.End)
-            {
+            if (selected.Length > 0 && documentText.Length >= selected.End) {
                 documentText = documentText.Substring(selected.Start, selected.Length);
             }
 
-            var convertTextOnly = await ProjectConversion.ConvertTextAsync<TLanguageConversion>(documentText, new TextConversionOptions(DefaultReferences.NetStandard2, documentPath), CreateOutputWindowProgress(), cancellationToken);
+            var textConversionOptions = new TextConversionOptions(DefaultReferences.NetStandard2, documentPath) {
+                AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()
+            };
+            var convertTextOnly = await ProjectConversion.ConvertTextAsync<TLanguageConversion>(documentText, textConversionOptions, CreateOutputWindowProgress(), cancellationToken);
             convertTextOnly.SourcePathOrNull = documentPath;
             return convertTextOnly;
         }
@@ -267,11 +270,14 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             await TaskScheduler.Default;
 
-            var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects, progress: CreateOutputWindowProgress(), cancellationToken: cancellationToken);
+            var conversionOptions = new ConversionOptions(){AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()};
+            var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects, progress: CreateOutputWindowProgress(), cancellationToken: cancellationToken, conversionOptions: conversionOptions);
 
             var results = solutionConverter.Convert();
             await foreach(var result in results) yield return result;
         }
+
+        private async Task<TimeSpan> GetAbandonOptionalTasksAfterAsync() => TimeSpan.FromMinutes((await GetOptions()).FormattingTimeout);
 
         private Progress<ConversionProgress> CreateOutputWindowProgress()
         {

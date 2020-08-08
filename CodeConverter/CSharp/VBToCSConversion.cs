@@ -29,7 +29,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public ConversionOptions ConversionOptions { get; set; }
 
-
         public async Task<IProjectContentsConverter> CreateProjectContentsConverterAsync(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
             _progress = progress;

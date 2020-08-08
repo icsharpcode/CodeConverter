@@ -15,7 +15,7 @@ namespace ICSharpCode.CodeConverter.VB
     internal static class CSharpConverter
     {
         public static async Task<SyntaxNode> ConvertCompilationTreeAsync(Document document,
-            VisualBasicCompilation vbViewOfCsSymbols, Project vbReferenceProject, CancellationToken cancellationToken)
+            VisualBasicCompilation vbViewOfCsSymbols, Project vbReferenceProject, OptionalOperations optionalOperations, CancellationToken cancellationToken)
         {
             document = await document.WithExpandedRootAsync(cancellationToken);
             var compilation = await document.Project.GetCompilationAsync(cancellationToken);
@@ -30,13 +30,7 @@ namespace ICSharpCode.CodeConverter.VB
             var visualBasicSyntaxVisitor = new NodesVisitor(document, (CS.CSharpCompilation)compilation, semanticModel, vbViewOfCsSymbols, vbSyntaxGenerator, numberOfLines);
             var converted = (VBSyntax.CompilationUnitSyntax)root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
 
-            try {
-                // This call is very expensive for large documents. Should look for a more performant version, e.g. Is NormalizeWhitespace good enough?
-                converted = (VBSyntax.CompilationUnitSyntax)Formatter.Format(converted, document.Project.Solution.Workspace, cancellationToken: cancellationToken);
-                return LineTriviaMapper.MapSourceTriviaToTarget(root, converted);
-            } catch (Exception) { //TODO log
-                return converted;
-            }
+            return optionalOperations.MapSourceTriviaToTargetHandled(root, converted, document);
         }
 
         private static string NullRootError(Document document)
