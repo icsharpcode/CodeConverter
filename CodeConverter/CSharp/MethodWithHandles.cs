@@ -35,24 +35,24 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static IEnumerable<MemberDeclarationSyntax> GetDeclarationsForFieldBackedProperty(
             VariableDeclarationSyntax decl, SyntaxTokenList convertedModifiers,
             SyntaxList<AttributeListSyntax> attributes,
-            List<MethodWithHandles> methodsWithHandles)
+            IReadOnlyCollection<MethodWithHandles> methodsWithHandles)
         {
             // It should be safe to use the underscore name since in VB the compiler generates a backing field with that name, and errors if you try to clash with it
-            var propertyToBackingFieldMapping = decl.Variables.Select(v => v.Identifier.Text)
-                .ToDictionary(n => n, n => SyntaxFactory.Identifier("_" + n));
-            var fieldDecl = decl.WithVariables(SyntaxFactory.SeparatedList(decl.Variables.Select(v =>
-                v.WithIdentifier(propertyToBackingFieldMapping[v.Identifier.Text])
-            )));
+            var variablesToMap = decl.Variables
+                .Select(v => (Variable: v, HasEvents: true, NewId: SyntaxFactory.Identifier("_" + v.Identifier.Text))).ToArray();
+            var fieldDecl = decl.WithVariables(SyntaxFactory.SeparatedList(
+                variablesToMap.Select(m => m.Variable.WithIdentifier(m.NewId))
+            ));
             var fieldModifiers = SyntaxFactory.TokenList(new[] {SyntaxFactory.Token(SyntaxKind.PrivateKeyword)}.Concat(convertedModifiers.Where(m => !m.IsCsVisibility(false, false))));
             yield return SyntaxFactory.FieldDeclaration(attributes, fieldModifiers, fieldDecl);
-            foreach (var variable in decl.Variables) {
+            foreach (var mapping in variablesToMap) {
                 yield return GetDeclarationsForFieldBackedProperty(methodsWithHandles, attributes, convertedModifiers,
-                    decl.Type, variable.Identifier,
-                    propertyToBackingFieldMapping[variable.Identifier.Text]);
+                    decl.Type, mapping.Variable.Identifier,
+                    mapping.NewId);
             }
         }
 
-        private static PropertyDeclarationSyntax GetDeclarationsForFieldBackedProperty(List<MethodWithHandles> methods,
+        private static PropertyDeclarationSyntax GetDeclarationsForFieldBackedProperty(IReadOnlyCollection<MethodWithHandles> methods,
             SyntaxList<AttributeListSyntax> attributes, SyntaxTokenList convertedModifiers, TypeSyntax typeSyntax,
             SyntaxToken propertyIdentifier, SyntaxToken fieldIdentifier)
         {
@@ -75,7 +75,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static StatementSyntax[] CreateSetterBlockToUpdateHandles(string propertyIdentifier,
             IdentifierNameSyntax fieldIdSyntax,
-            List<MethodWithHandles> methods)
+            IReadOnlyCollection<MethodWithHandles> methods)
         {
             var assignBackingField = SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(
                 SyntaxKind.SimpleAssignmentExpression, fieldIdSyntax,
@@ -91,9 +91,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             };
         }
 
-        public static IEnumerable<StatementSyntax> CreateHandlesUpdaters(string propertyIdentifier,
+        private static IEnumerable<StatementSyntax> CreateHandlesUpdaters(string propertyIdentifier,
             IdentifierNameSyntax fieldIdSyntax,
-            List<MethodWithHandles> handlesSpecs,
+            IReadOnlyCollection<MethodWithHandles> handlesSpecs,
             SyntaxKind assignmentExpressionKind)
         {
             return handlesSpecs.SelectMany(hs => hs.CreateHandlesUpdater(propertyIdentifier, fieldIdSyntax, assignmentExpressionKind));
@@ -108,9 +108,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         private IEnumerable<StatementSyntax> CreateHandlesUpdater(string propertyIdentifier,
             IdentifierNameSyntax fieldIdSyntax, SyntaxKind assignmentExpressionKind, bool requiresNewDelegate = false)
         {
-            return HandledPropertyEventCSharpIds
-                .Where(h => h.EventContainerName.Text == propertyIdentifier)
+            return GetPropertyEvents(propertyIdentifier)
                 .Select(e => CreateHandlesUpdater(fieldIdSyntax, e, assignmentExpressionKind, requiresNewDelegate));
+        }
+
+        private IEnumerable<(SyntaxToken EventContainerName, SyntaxToken EventSymbolName, IEventSymbol Event, int ParametersToDiscard)> GetPropertyEvents(string propertyIdentifier)
+        {
+            return HandledPropertyEventCSharpIds
+                .Where(h => h.EventContainerName.Text == propertyIdentifier);
         }
 
         /// <summary>Use instead of <see cref="GetConstructorEventHandlers"/> for DesignerGenerated classes: https://github.com/icsharpcode/CodeConverter/issues/550</summary>
