@@ -1,6 +1,5 @@
 using System;
 using System.Threading;
-using System.Timers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Formatting;
 
@@ -22,7 +21,9 @@ namespace ICSharpCode.CodeConverter.Shared
             _progress = progress;
             _wholeTaskCancellationToken = wholeTaskCancellationToken;
             _optionalTaskCts = CancellationTokenSource.CreateLinkedTokenSource(wholeTaskCancellationToken);
-            _activityMonitor = new ActivityMonitor(abandonTasksIfNoActivityFor, _optionalTaskCts);
+            _activityMonitor = new ActivityMonitor(abandonTasksIfNoActivityFor, _optionalTaskCts, () => 
+                _progress.Report(new ConversionProgress("WARNING: Skipping all further formatting, you can increase the timeout for this in Tools -> Options -> Code Converter."))
+            );
         }
 
         public SyntaxNode MapSourceTriviaToTargetHandled<TSource, TTarget>(TSource root,
@@ -52,14 +53,11 @@ namespace ICSharpCode.CodeConverter.Shared
                         cancellationToken: _optionalTaskCts.Token);
 
                 } catch (OperationCanceledException) {
-                    if (!_wholeTaskCancellationToken.IsCancellationRequested) {
-                        _progress.Report(new ConversionProgress(
-                            "Aborting all further formatting and comment mapping, you can increase the timeout for this in Tools -> Options -> Code Converter."));
-                    }
                 } finally {
                     _activityMonitor.ActivityFinished();
                 }
             }
+            _progress.Report(new ConversionProgress("Skipped formatting", 1));
             return node.NormalizeWhitespace();
         }
 
@@ -70,28 +68,32 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             private readonly TimeSpan _timeout;
             private readonly CancellationTokenSource _cts;
+            private readonly Action _afterInactivity;
             private volatile int _activeOperations;
             /// <summary>
             /// Must check <see cref="_activeOperations"/> within the lock before changed timer.Enabled
             /// This avoids race conditions between the last task of a set finishing and the first of a new set starting
             /// </summary>
             private readonly object _timerEnabledWriteLock = new object();
-            private static System.Timers.Timer _timer;
+            private static Timer _timer;
 
 
-            private void OnTimedEvent(object source, ElapsedEventArgs e)
+            private void OnTimedEvent(object state)
             {
-                if (!_cts.IsCancellationRequested && _timer.Enabled) {
+                if (!_cts.IsCancellationRequested && _activeOperations > 0) {
                     _cts.Cancel();
+                    _afterInactivity();
+                } else if (_activeOperations > 0) {
+                    ActivityObserved();
                 }
             }
 
-            public ActivityMonitor(TimeSpan timeout, CancellationTokenSource cts)
+            public ActivityMonitor(TimeSpan timeout, CancellationTokenSource cts, Action afterInactivity)
             {
                 _timeout = timeout;
                 _cts = cts;
-                _timer = new System.Timers.Timer(timeout.TotalMilliseconds) {AutoReset = true};
-                _timer.Elapsed += OnTimedEvent;
+                _afterInactivity = afterInactivity;
+                _timer = new Timer(OnTimedEvent, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
             }
 
             public void ActivityStarted()
@@ -99,7 +101,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 if (Interlocked.Increment(ref _activeOperations) == 1) {
                     lock (_timerEnabledWriteLock) {
                         if (_activeOperations > 0) {
-                            _timer.Enabled = true;
+                            ActivityObserved();
                         }
                     }
                 }
@@ -112,7 +114,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 if (Interlocked.Decrement(ref _activeOperations) == 0) {
                     lock (_timerEnabledWriteLock) {
                         if (_activeOperations == 0) {
-                            _timer.Enabled = false;
+                            _timer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
                         }
                     }
                 }
@@ -120,13 +122,7 @@ namespace ICSharpCode.CodeConverter.Shared
 
             private void ActivityObserved()
             {
-                try {
-                    _timer.Interval = _timeout.TotalMilliseconds;
-                } catch (ObjectDisposedException e) {
-                    // Race condition if we try to set the interval after disabling the timer
-                } catch (NullReferenceException e) {
-                    // Race condition if we try to set the interval after disabling the timer
-                }
+                _timer.Change(_timeout, Timeout.InfiniteTimeSpan);
             }
         }
     }

@@ -24,7 +24,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
 
         [Category(SettingsPageCategory)]
         [DisplayName("Comment and formatting timeout (minutes)")]
-        [Description("Positioning comments correctly, and formatting and tidying up the result can take a very long time for large files. Set this to how many minutes you're willing to wait.")]
+        [Description("Roslyn formatting can take a very long time for large files and has no progress updates. Set this to the maximum you're willing to wait without any indication of progress.")]
         public int FormattingTimeout{ get; set; } = 15;
     }
 

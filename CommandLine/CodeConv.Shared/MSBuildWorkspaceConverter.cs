@@ -57,7 +57,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
             var languageConversion = targetLanguage == Language.CS
                 ? (ILanguageConversion)new VBToCSConversion()
                 : new CSToVBConversion();
-            languageConversion.ConversionOptions.AbandonOptionalTasksAfter = TimeSpan.FromHours(4);
+            languageConversion.ConversionOptions = new ConversionOptions(){AbandonOptionalTasksAfter = TimeSpan.FromHours(4)};
             var languageNameToConvert = targetLanguage == Language.CS
                 ? LanguageNames.VisualBasic
                 : LanguageNames.CSharp;
