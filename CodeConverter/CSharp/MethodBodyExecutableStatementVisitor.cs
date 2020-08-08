@@ -197,7 +197,19 @@ namespace ICSharpCode.CodeConverter.CSharp
         private SyntaxList<StatementSyntax> GetPostAssignmentStatements(VBSyntax.AssignmentStatementSyntax node)
         {
             var potentialPropertySymbol = _semanticModel.GetSymbolInfo(node.Left).ExtractBestMatch<ISymbol>();
-            return _methodsWithHandles.GetPostAssignmentStatements(node, potentialPropertySymbol);
+            return GetPostAssignmentStatements(node, potentialPropertySymbol);
+        }
+
+        /// <summary>
+        /// Make winforms designer work: https://github.com/icsharpcode/CodeConverter/issues/321
+        /// </summary>
+        public SyntaxList<StatementSyntax> GetPostAssignmentStatements(Microsoft.CodeAnalysis.VisualBasic.Syntax.AssignmentStatementSyntax node, ISymbol potentialPropertySymbol)
+        {
+            if (CommonConversions.WinformsConversions.MustInlinePropertyWithEventsAccess(node, potentialPropertySymbol)) {
+                return _methodsWithHandles.GetPostAssignmentStatements(potentialPropertySymbol);
+            }
+
+            return SyntaxFactory.List<StatementSyntax>();
         }
 
         public override async Task<SyntaxList<StatementSyntax>> VisitEraseStatement(VBSyntax.EraseStatementSyntax node)

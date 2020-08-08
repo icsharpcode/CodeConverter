@@ -17,5 +17,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public void Pop() => _contextStack.Pop();
+        public bool Any() => _contextStack.Count > 0;
     }
 }

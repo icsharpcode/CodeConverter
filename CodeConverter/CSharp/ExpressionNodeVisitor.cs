@@ -269,7 +269,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var val = node.Token.Value;
             var text = node.Token.Text;
-            if (WinformsConversions.ShouldPrefixAssignedNameWithUnderscore(node.Parent as VBSyntax.AssignmentStatementSyntax) && val is string valStr) {
+            if (_typeContext.Any() && CommonConversions.WinformsConversions.ShouldPrefixAssignedNameWithUnderscore(node.Parent as VBSyntax.AssignmentStatementSyntax, _typeContext.MethodsWithHandles) && val is string valStr) {
                 val = "_" + valStr;
                 text = "\"_" + valStr + "\"";
             }

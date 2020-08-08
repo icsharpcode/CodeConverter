@@ -216,7 +216,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     directlyConvertedMembers = directlyConvertedMembers
                         .Concat(methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
                     additionalInitializers.AdditionalInstanceInitializers
-                        .AddRange(WinformsConversions.GetNameAssignments(otherPartsOfType));
+                        .AddRange(CommonConversions.WinformsConversions.GetNameAssignments(methodsWithHandles, otherPartsOfType));
                 } else {
                     additionalInitializers.AdditionalInstanceInitializers.AddRange(methodsWithHandles.GetConstructorEventHandlers());
                 }

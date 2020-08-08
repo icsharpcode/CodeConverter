@@ -9,15 +9,22 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    internal static class WinformsConversions
+    internal class WinformsConversions
     {
+        private readonly ITypeContext _typeContext;
+
+        public WinformsConversions(ITypeContext typeContext)
+        {
+            _typeContext = typeContext;
+        }
+
         /// <remarks>
         /// Co-ordinates inlining property events, see <see cref="MethodBodyExecutableStatementVisitor.GetPostAssignmentStatements"/>
         /// Also see usages of IsDesignerGeneratedTypeWithInitializeComponent
         /// </remarks>
-        public static bool MustInlinePropertyWithEventsAccess(SyntaxNode anyNodePossiblyWithinMethod, ISymbol potentialPropertySymbol)
+        public bool MustInlinePropertyWithEventsAccess(SyntaxNode anyNodePossiblyWithinMethod, ISymbol potentialPropertySymbol)
         {
-            return InMethodCalledInitializeComponent(anyNodePossiblyWithinMethod) && potentialPropertySymbol is IPropertySymbol prop && prop.IsWithEvents;
+            return potentialPropertySymbol != null &&_typeContext.Any() && _typeContext.MethodsWithHandles.AnyForPropertyName(potentialPropertySymbol.Name) && InMethodCalledInitializeComponent(anyNodePossiblyWithinMethod) && potentialPropertySymbol is IPropertySymbol prop && prop.IsWithEvents;
         }
 
         public static bool InMethodCalledInitializeComponent(SyntaxNode anyNodePossiblyWithinMethod)
@@ -34,33 +41,32 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <summary>
         /// We replace a field with a property to handle event subscription, so need to update the name so the winforms designer regenerates the file correctly in future
         /// </summary>
-        /// <returns></returns>
-        public static bool ShouldPrefixAssignedNameWithUnderscore(VBSyntax.StatementSyntax statementOrNull)
+        public bool ShouldPrefixAssignedNameWithUnderscore(VBSyntax.StatementSyntax statementOrNull, MethodsWithHandles typeContextMethodsWithHandles)
         {
             return statementOrNull is VBSyntax.AssignmentStatementSyntax assignment && InMethodCalledInitializeComponent(assignment) &&
                             assignment.Left is VBSyntax.MemberAccessExpressionSyntax maes &&
                                 !(maes.Expression is VBSyntax.MeExpressionSyntax) &&
-                            maes.Name.ToString() == "Name";
+                            maes.Name.ToString() == "Name" && 
+                            maes.Expression.LastOrDefaultDescendant<VBSyntax.IdentifierNameSyntax>()?.Identifier.Text is {} propName &&
+                            typeContextMethodsWithHandles.AnyForPropertyName(propName);
         }
 
-        private static T LastOrDefaultDescendant<T>(this VBasic.VisualBasicSyntaxNode syntaxNode) {
-            return syntaxNode.DescendantNodes().OfType<T>().LastOrDefault();
-        }
-
-        internal static IEnumerable<Assignment> GetNameAssignments((VBSyntax.TypeBlockSyntax Type, SemanticModel SemanticModel)[] otherPartsOfType)
+        public IEnumerable<Assignment> GetNameAssignments(MethodsWithHandles typeContextMethodsWithHandles,
+            (VBSyntax.TypeBlockSyntax Type, SemanticModel SemanticModel)[] otherPartsOfType)
         {
             return otherPartsOfType.SelectMany(typePart => 
                 typePart.Type.Members.OfType<VBSyntax.MethodBlockSyntax>()
                     .Where(IsInitializeComponent)
-                    .SelectMany(GetAssignments)
+                    .SelectMany(syntax => GetAssignments(typeContextMethodsWithHandles, syntax))
             );
         }
 
-        private static IEnumerable<Assignment> GetAssignments(VBSyntax.MethodBlockSyntax initializeComponent)
+        private IEnumerable<Assignment> GetAssignments(MethodsWithHandles typeContextMethodsWithHandles,
+            VBSyntax.MethodBlockSyntax initializeComponent)
         {
             return initializeComponent.Statements
                 .OfType<VBSyntax.AssignmentStatementSyntax>()
-                .Where(ShouldPrefixAssignedNameWithUnderscore)
+                .Where(syntax => ShouldPrefixAssignedNameWithUnderscore(syntax, typeContextMethodsWithHandles))
                 .Select(s => (s.Left as VBSyntax.MemberAccessExpressionSyntax)?.Expression.LastOrDefaultDescendant<VBSyntax.IdentifierNameSyntax>())
                 .Where(s => s != null)
                 .Select(id => {

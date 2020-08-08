@@ -516,5 +516,9 @@ namespace ICSharpCode.CodeConverter.Util
                 return syntaxToken;
             }
         }
+
+        public static T LastOrDefaultDescendant<T>(this SyntaxNode syntaxNode) {
+            return syntaxNode.DescendantNodes().OfType<T>().LastOrDefault();
+        }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -15,26 +16,31 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private readonly List<MethodWithHandles> _methodWithHandleses;
         private readonly ILookup<string, MethodWithHandles> _handledMethodsFromPropertyWithEventName;
+        private readonly ImmutableHashSet<string> _containerFieldsConvertedToProperties;
 
 
-        public MethodsWithHandles(List<MethodWithHandles> methodWithHandleses, ILookup<string, MethodWithHandles> handledMethodsFromPropertyWithEventName)
+        private MethodsWithHandles(List<MethodWithHandles> methodWithHandleses,
+            ILookup<string, MethodWithHandles> handledMethodsFromPropertyWithEventName,
+            ImmutableHashSet<string> containerFieldsConvertedToProperties)
         {
             _methodWithHandleses = methodWithHandleses;
             _handledMethodsFromPropertyWithEventName = handledMethodsFromPropertyWithEventName;
+            _containerFieldsConvertedToProperties = containerFieldsConvertedToProperties;
         }
 
         public static MethodsWithHandles Create(List<MethodWithHandles> methodWithHandleses)
         {
             var handledMethodsFromPropertyWithEventName = methodWithHandleses
-                .SelectMany(m => m.HandledPropertyEventCSharpIds.Select(h => (EventPropertyName: h.Item1.Text, MethodWithHandles: m)))
+                .SelectMany(m => m.HandledPropertyEventCSharpIds.Select(h => (EventPropertyName: h.EventContainerName.Text, MethodWithHandles: m)))
                 .ToLookup(m => m.EventPropertyName, m => m.MethodWithHandles);
-            return new MethodsWithHandles(methodWithHandleses, handledMethodsFromPropertyWithEventName);
+            var containerFieldsConvertedToProperties = methodWithHandleses
+                .SelectMany(m => m.HandledPropertyEventCSharpIds, (_, handled) => handled.EventContainerName.Text)
+                .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
+            return new MethodsWithHandles(methodWithHandleses, handledMethodsFromPropertyWithEventName, containerFieldsConvertedToProperties);
         }
 
-        public bool Any()
-        {
-            return _methodWithHandleses.Any();
-        }
+        public bool Any() => _methodWithHandleses.Any();
+        public bool AnyForPropertyName(string propertyIdentifierText) => _containerFieldsConvertedToProperties.Contains(propertyIdentifierText);
 
         public IEnumerable<MemberDeclarationSyntax> GetDeclarationsForFieldBackedProperty(VariableDeclarationSyntax fieldDecl, SyntaxTokenList convertedModifiers, SyntaxList<AttributeListSyntax> attributes)
         {
@@ -42,20 +48,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                 _methodWithHandleses);
         }
 
-
-        /// <summary>
-        /// Make winforms designer work: https://github.com/icsharpcode/CodeConverter/issues/321
-        /// </summary>
-        public SyntaxList<StatementSyntax> GetPostAssignmentStatements(Microsoft.CodeAnalysis.VisualBasic.Syntax.AssignmentStatementSyntax node, ISymbol potentialPropertySymbol)
+        public SyntaxList<StatementSyntax> GetPostAssignmentStatements(ISymbol potentialPropertySymbol)
         {
-            if (WinformsConversions.MustInlinePropertyWithEventsAccess(node, potentialPropertySymbol))
+            var fieldName = SyntaxFactory.IdentifierName("_" + potentialPropertySymbol.Name);
+            var handledMethods = _handledMethodsFromPropertyWithEventName[potentialPropertySymbol.Name].ToArray();
+            if (handledMethods.Any())
             {
-                var fieldName = SyntaxFactory.IdentifierName("_" + potentialPropertySymbol.Name);
-                var handledMethods = _handledMethodsFromPropertyWithEventName[potentialPropertySymbol.Name].ToArray();
-                if (handledMethods.Any())
+                var postAssignmentStatements = handledMethods.SelectMany(h =>
+                    h.GetPostInitializationStatements(potentialPropertySymbol.Name, fieldName));
                 {
-                    var postAssignmentStatements = handledMethods.SelectMany(h =>
-                        h.GetPostInitializationStatements(potentialPropertySymbol.Name, fieldName));
                     return SyntaxFactory.List(postAssignmentStatements);
                 }
             }

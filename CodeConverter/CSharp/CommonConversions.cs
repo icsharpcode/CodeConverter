@@ -45,6 +45,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private readonly CSharpCompilation _csCompilation;
         private readonly ITypeContext _typeContext;
+        public WinformsConversions WinformsConversions { get; }
 
         public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; set; }
         public TypeConversionAnalyzer TypeConversionAnalyzer { get; }
@@ -60,6 +61,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _csCompilation = csCompilation;
             _typeContext = typeContext;
             VisualBasicEqualityComparison = visualBasicEqualityComparison;
+            WinformsConversions = new WinformsConversions(typeContext);
         }
 
         public async Task<(IReadOnlyCollection<(VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(
