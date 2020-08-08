@@ -39,18 +39,21 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             // It should be safe to use the underscore name since in VB the compiler generates a backing field with that name, and errors if you try to clash with it
             var variablesToMap = decl.Variables
-                .Select(v => (Variable: v, HasEvents: true, NewId: SyntaxFactory.Identifier("_" + v.Identifier.Text))).ToArray();
+                .Select(v => (Variable: v, HasEvents: HasEvents(methodsWithHandles, v.Identifier), NewId: SyntaxFactory.Identifier("_" + v.Identifier.Text))).ToArray();
             var fieldDecl = decl.WithVariables(SyntaxFactory.SeparatedList(
-                variablesToMap.Select(m => m.Variable.WithIdentifier(m.NewId))
+                variablesToMap.Select(m => m.HasEvents ? m.Variable.WithIdentifier(m.NewId) : m.Variable)
             ));
             var fieldModifiers = SyntaxFactory.TokenList(new[] {SyntaxFactory.Token(SyntaxKind.PrivateKeyword)}.Concat(convertedModifiers.Where(m => !m.IsCsVisibility(false, false))));
             yield return SyntaxFactory.FieldDeclaration(attributes, fieldModifiers, fieldDecl);
-            foreach (var mapping in variablesToMap) {
+            foreach (var mapping in variablesToMap.Where(v => v.HasEvents)) {
                 yield return GetDeclarationsForFieldBackedProperty(methodsWithHandles, attributes, convertedModifiers,
                     decl.Type, mapping.Variable.Identifier,
                     mapping.NewId);
             }
         }
+
+        private static bool HasEvents(IReadOnlyCollection<MethodWithHandles> methodsWithHandles, SyntaxToken propertyId) => 
+            methodsWithHandles.Any(m => m.GetPropertyEvents(propertyId.Text).Any());
 
         private static PropertyDeclarationSyntax GetDeclarationsForFieldBackedProperty(IReadOnlyCollection<MethodWithHandles> methods,
             SyntaxList<AttributeListSyntax> attributes, SyntaxTokenList convertedModifiers, TypeSyntax typeSyntax,
