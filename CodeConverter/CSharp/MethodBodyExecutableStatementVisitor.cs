@@ -500,12 +500,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<SyntaxList<StatementSyntax>> VisitForBlock(VBSyntax.ForBlockSyntax node)
         {
             var stmt = node.ForStatement;
-            var startValue = await stmt.FromValue.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
             VariableDeclarationSyntax declaration = null;
             ExpressionSyntax id;
-            var controlVarOp = _semanticModel.GetOperation(stmt.ControlVariable) as IVariableDeclaratorOperation;
-            var controlVarSymbol = controlVarOp?.Symbol;
-            var controlVarType = controlVarSymbol?.Type;
+            var controlVarSymbol  = _semanticModel.GetSymbolInfo(stmt.ControlVariable).Symbol;
+            var controlVarType = controlVarSymbol?.GetSymbolType();
+            var startValue = await stmt.FromValue.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+            startValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.FromValue, startValue?.SkipIntoParens(), forceTargetType: controlVarType);
+            
             var initializers = new List<ExpressionSyntax>();
             if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
                 var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;

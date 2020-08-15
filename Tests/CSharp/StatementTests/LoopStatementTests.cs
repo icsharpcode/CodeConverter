@@ -383,6 +383,41 @@ internal partial class Program
         }
 
         [Fact]
+        public async Task Int16ForLoopAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"    Sub DummyMethod()
+        Dim someArray = New Integer() { 1, 2, 3}
+        For index As Int16 = 0 To someArray.Length - 1
+            Console.WriteLine(index)
+        Next
+    End Sub", @"public void DummyMethod()
+{
+    var someArray = new int[] { 1, 2, 3 };
+    for (short index = 0, loopTo = Conversions.ToShort(someArray.Length - 1); index <= loopTo; index++)
+        Console.WriteLine(index);
+}");
+        }
+
+        [Fact]
+        public async Task ExternallyDeclaredLoopVariableAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Sub Main()
+    Dim foo As Single = 3.5
+    Dim index As Integer
+    For index = Int(foo) To Int(foo * 3)
+        Console.WriteLine(index)
+    Next
+End Sub", @"public void Main()
+{
+    float foo = 3.5F;
+    int index;
+    var loopTo = Conversions.ToInteger(Conversion.Int(foo * 3));
+    for (index = Conversions.ToInteger(Conversion.Int(foo)); index <= loopTo; index++)
+        Console.WriteLine(index);
+}");
+        }
+
+        [Fact]
         public async Task ForNonNegativeStepAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
