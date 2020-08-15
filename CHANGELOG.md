@@ -4,6 +4,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+
+### Vsix
+
+
+### VB -> C#
+
+
+### C# -> VB
+
+
+## [8.1.7] - 2020-08-16
+
 * Timeout cosmetic operations (formatting/comments) after 15 minutes of inactivity [#598](https://github.com/icsharpcode/CodeConverter/issues/598)
 
 ### Vsix
