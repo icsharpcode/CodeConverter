@@ -502,27 +502,27 @@ namespace ICSharpCode.CodeConverter.CSharp
             var stmt = node.ForStatement;
             VariableDeclarationSyntax declaration = null;
             ExpressionSyntax id;
-            var controlVarSymbol  = _semanticModel.GetSymbolInfo(stmt.ControlVariable).Symbol;
-            var controlVarType = controlVarSymbol?.GetSymbolType();
+            var controlVarSymbol  = _semanticModel.GetSymbolInfo(stmt.ControlVariable).Symbol ?? (_semanticModel.GetOperation(stmt.ControlVariable) as IVariableDeclaratorOperation)?.Symbol;
+            
+            // If missing semantic info, the compiler just guesses object, let's try to improve on that guess:
+            var controlVarType = controlVarSymbol?.GetSymbolType().Yield().Concat(
+                new SyntaxNode[] {stmt.ControlVariable, stmt.FromValue, stmt.ToValue, stmt.StepClause?.StepValue}
+                    .Select(exp => _semanticModel.GetTypeInfo(exp).Type)
+                ).FirstOrDefault(t => t != null && t.SpecialType != SpecialType.System_Object);
             var startValue = await stmt.FromValue.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
             startValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.FromValue, startValue?.SkipIntoParens(), forceTargetType: controlVarType);
             
             var initializers = new List<ExpressionSyntax>();
-            if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax) {
-                var v = (VBSyntax.VariableDeclaratorSyntax)stmt.ControlVariable;
+            var controlVarTypeSyntax = CommonConversions.GetTypeSyntax(controlVarType);
+            if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax v) {
                 declaration = (await SplitVariableDeclarationsAsync(v)).Variables.Single().Decl;
                 declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(declaration.Variables[0].WithInitializer(SyntaxFactory.EqualsValueClause(startValue))));
                 id = SyntaxFactory.IdentifierName(declaration.Variables[0].Identifier);
             } else {
                 id = await stmt.ControlVariable.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-
-                // If missing semantic info, the compiler just guesses object. In this branch there was no explicit type, so let's try to improve on that guess:
-                controlVarType = controlVarType.Yield()
-                    .Concat(new[] { stmt.FromValue, stmt.ToValue, stmt.StepClause?.StepValue }.Select(exp => _semanticModel.GetTypeInfo(exp).Type))
-                    .FirstOrDefault(t => t != null && t.SpecialType != SpecialType.System_Object);
-
+                
                 if (controlVarSymbol != null && controlVarSymbol.DeclaringSyntaxReferences.Any(r => r.Span.OverlapsWith(stmt.ControlVariable.Span))) {
-                    declaration = CommonConversions.CreateVariableDeclarationAndAssignment(controlVarSymbol.Name, startValue, CommonConversions.GetTypeSyntax(controlVarType));
+                    declaration = CommonConversions.CreateVariableDeclarationAndAssignment(controlVarSymbol.Name, startValue, controlVarTypeSyntax);
                 } else {
                     startValue = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, id, startValue);
                     initializers.Add(startValue);
@@ -538,18 +538,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             // If it could evaluate differently or has side effects, it must be extracted as a variable
             if (!_semanticModel.GetConstantValue(stmt.ToValue).HasValue) {
                 var loopToVariableName = GetUniqueVariableNameInScope(node, "loopTo");
-                var toValueType = _semanticModel.GetTypeInfo(stmt.ToValue).ConvertedType;
                 var toVariableId = SyntaxFactory.IdentifierName(loopToVariableName);
 
-                // If that variable has the same type as the loop variable, we can explicitly declare the type and it inline
-                if (controlVarType?.Equals(toValueType) == true && declaration != null) {
-                    var loopToAssignment = CommonConversions.CreateVariableDeclarator(loopToVariableName, csToValue);
-                    declaration = declaration.AddVariables(loopToAssignment).WithType(CommonConversions.GetTypeSyntax(controlVarType));
-                } else {
+                var loopToAssignment = CommonConversions.CreateVariableDeclarator(loopToVariableName, csToValue);
+                if (initializers.Any()) {
                     var loopEndDeclaration = SyntaxFactory.LocalDeclarationStatement(
                         CommonConversions.CreateVariableDeclarationAndAssignment(loopToVariableName, csToValue));
                     // Does not do anything about porting newline trivia upwards to maintain spacing above the loop
                     preLoopStatements.Add(loopEndDeclaration);
+                } else {
+                    declaration = declaration == null
+                        ? SyntaxFactory.VariableDeclaration(controlVarTypeSyntax,
+                            SyntaxFactory.SingletonSeparatedList(loopToAssignment))
+                        : declaration.AddVariables(loopToAssignment).WithType(controlVarTypeSyntax);
                 }
 
                 csToValue = toVariableId;
