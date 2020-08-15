@@ -30,43 +30,43 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             textForUser = ConvertNumericLiteralValueText(textForUser ?? value.ToString(), value, convertedType);
 
-            if (value is byte)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (byte)value));
-            if (value is sbyte)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (sbyte)value));
-            if (value is short)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (short)value));
-            if (value is ushort)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (ushort)value));
-            if (value is int)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (int)value));
-            if (value is uint)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (uint)value));
-            if (value is long)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (long)value));
-            if (value is ulong)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (ulong)value));
-
-            if (value is float)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (float)value));
-            if (value is double) {
-                // Important to use value text, otherwise "10.0" gets coerced to and integer literal of 10 which can change semantics
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (double)value));
+            switch (value)
+            {
+                case byte b:
+                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, b));
+                case sbyte sb:
+                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, sb));
+                case short s:
+                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, s));
+                case ushort us:
+                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, us));
+                case int i:
+                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, i));
+                case uint u:
+                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, u));
+                case long l:
+                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, l));
+                case ulong ul:
+                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, ul));
+                case double d:
+                    // The value is passed as a double from VB expression: "3.5F"
+                    // Important to use value text, otherwise "10.0" gets coerced to and integer literal of 10 which can change semantics
+                    var syntaxToken = false ? SyntaxFactory.Literal(textForUser, (float) d) : SyntaxFactory.Literal(textForUser, d);
+                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, syntaxToken);
+                case float f:
+                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, f));
+                case decimal dec:
+                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, dec));
+                case char c:
+                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal(c));
+                case DateTime dt:
+                {
+                    var valueToOutput = dt.Date.Equals(dt) ? dt.ToString("yyyy-MM-dd") : dt.ToString("yyyy-MM-dd HH:mm:ss");
+                    return SyntaxFactory.ParseExpression("DateTime.Parse(\"" + valueToOutput + "\")");
+                }
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(value), value, null);
             }
-            if (value is decimal) {
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, (decimal)value));
-            }
-
-            if (value is char)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal((char)value));
-
-            if (value is DateTime dt) {
-                var valueToOutput = dt.Date.Equals(dt) ? dt.ToString("yyyy-MM-dd") : dt.ToString("yyyy-MM-dd HH:mm:ss");
-                return SyntaxFactory.ParseExpression("DateTime.Parse(\"" + valueToOutput + "\")");
-            }
-
-
-            throw new ArgumentOutOfRangeException(nameof(value), value, null);
         }
 
         internal static string GetQuotedStringTextForUser(string textForUser, string valueTextForCompiler)
