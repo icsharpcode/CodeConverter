@@ -171,9 +171,15 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return null;
             }
 
-            private async Task<ExpressionSyntax> ConvertToStringComparisonOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
+            private async Task<ExpressionSyntax> ConvertToStringComparisonOperatorAsync(VBSyntax.BinaryExpressionSyntax node, SyntaxKind expressionKind)
             {
-                return null;
+                var (lhs, rhs) = await AcceptSidesAsync(node);
+                lhs = VisualBasicEqualityComparison.VbCoerceToString(lhs, _semanticModel.GetTypeInfo(node.Left));
+                rhs = VisualBasicEqualityComparison.VbCoerceToString(rhs, _semanticModel.GetTypeInfo(node.Right));
+                var member = new KnownMethod(_compilerServices, _operators, "CompareString");
+                var optionaCompareTextBoolLiteralExpression = _visualBasicEqualityComparison.OptionCompareTextCaseInsensitiveBoolExpression;
+                var comparedLhs = member.Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives, lhs, rhs, optionaCompareTextBoolLiteralExpression);
+                return SyntaxFactory.BinaryExpression(expressionKind, comparedLhs, LiteralConversions.GetLiteralExpression(0));
             }
 
             private async Task<ExpressionSyntax> ConvertToMethodAsync(VBSyntax.BinaryExpressionSyntax node, KnownMethod member)
@@ -196,7 +202,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var opKind = node.Kind();
                 var nodeType = _semanticModel.GetTypeInfo(node).Type;
-                var leftType = _semanticModel.GetTypeInfo(node.Left).Type;
+                var leftType = _semanticModel.GetTypeInfo(node.Left).ConvertedType;
                 switch (opKind) {
                     case BinaryOperatorKind.IsExpression:
                     case BinaryOperatorKind.IsNotExpression: {
@@ -234,7 +240,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                 if (leftType.IsObjectType()) {
                                     return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "ConditionalCompareObjectEqual"));
                                 } else if (leftType.IsStringType()) {
-                                    return await ConvertToStringComparisonOperatorAsync(node);
+                                    return null; //Handled elsewhere
                                 } else if (leftType.IsDecimalType()) {
                                     return await ConvertToDecimalComparisonOperatorAsync(node);
                                 } else if (leftType.IsDateTimeType()) {
@@ -254,7 +260,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                 if (leftType.IsObjectType()) {
                                     return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "ConditionalCompareObjectNotEqual"));
                                 } else if (leftType.IsStringType()) {
-                                    return await ConvertToStringComparisonOperatorAsync(node);
+                                    return null;  //Handled elsewhere
                                 } else if (leftType.IsDecimalType()) {
                                     return await ConvertToDecimalComparisonOperatorAsync(node);
                                 } else if (leftType.IsDateTimeType()) {
@@ -274,7 +280,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                 if (leftType.IsObjectType()) {
                                     return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "ConditionalCompareObjectLessEqual"));
                                 } else if (leftType.IsStringType()) {
-                                    return await ConvertToStringComparisonOperatorAsync(node);
+                                    return await ConvertToStringComparisonOperatorAsync(node, SyntaxKind.LessThanOrEqualExpression);
                                 } else if (leftType.IsDecimalType()) {
                                     return await ConvertToDecimalComparisonOperatorAsync(node);
                                 } else if (leftType.IsDateTimeType()) {
@@ -294,7 +300,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                 if (leftType.IsObjectType()) {
                                     return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "ConditionalCompareObjectGreaterEqual"));
                                 } else if (leftType.IsStringType()) {
-                                    return await ConvertToStringComparisonOperatorAsync(node);
+                                    return await ConvertToStringComparisonOperatorAsync(node, SyntaxKind.GreaterThanOrEqualExpression);
                                 } else if (leftType.IsDecimalType()) {
                                     return await ConvertToDecimalComparisonOperatorAsync(node);
                                 } else if (leftType.IsDateTimeType()) {
@@ -314,7 +320,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                 if (leftType.IsObjectType()) {
                                     return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "ConditionalCompareObjectLess"));
                                 } else if (leftType.IsStringType()) {
-                                    return await ConvertToStringComparisonOperatorAsync(node);
+                                    return await ConvertToStringComparisonOperatorAsync(node, SyntaxKind.LessThanExpression);
                                 } else if (leftType.IsDecimalType()) {
                                     return await ConvertToDecimalComparisonOperatorAsync(node);
                                 } else if (leftType.IsDateTimeType()) {
@@ -334,7 +340,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                 if (leftType.IsObjectType()) {
                                     return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "ConditionalCompareObjectGreater"));
                                 } else if (leftType.IsStringType()) {
-                                    return await ConvertToStringComparisonOperatorAsync(node);
+                                    return await ConvertToStringComparisonOperatorAsync(node, SyntaxKind.GreaterThanExpression);
                                 } else if (leftType.IsDecimalType()) {
                                     return await ConvertToDecimalComparisonOperatorAsync(node);
                                 } else if (leftType.IsDateTimeType()) {

@@ -108,9 +108,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             return VbCoerceToString(csNode, typeInfo);
         }
 
-        private static ExpressionSyntax VbCoerceToString(ExpressionSyntax csNode, TypeInfo typeInfo)
+        public static ExpressionSyntax VbCoerceToString(ExpressionSyntax csNode, TypeInfo typeInfo)
         {
-            return typeInfo.Type.SpecialType == SpecialType.System_String ? csNode : NewStringFromArg(csNode);
+            return typeInfo.Type.SpecialType switch
+            {
+                SpecialType.System_String => csNode,
+                SpecialType.System_Char => SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(csNode, nameof(ToString))),
+                _ => NewStringFromArg(csNode)
+            };
         }
 
         private bool CanBeNull(VBSyntax.ExpressionSyntax vbNode)

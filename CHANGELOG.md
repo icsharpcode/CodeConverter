@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * No longer adds incorrect "base" qualification for virtual method calls [#600](https://github.com/icsharpcode/CodeConverter/issues/600)
 * Don't generate unnecessary properties for WithEvents fields [#572](https://github.com/icsharpcode/CodeConverter/issues/572)
 * Add type conversion where needed for externally declared loop control variable [#609](https://github.com/icsharpcode/CodeConverter/issues/609)
+* Convert string operators in common cases [#608](https://github.com/icsharpcode/CodeConverter/issues/608)
 
 ### C# -> VB
 

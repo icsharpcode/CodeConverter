@@ -1,5 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using Microsoft.VisualBasic.CompilerServices;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp
@@ -264,6 +266,22 @@ public partial class C
     {
         for (int i = 0, loopTo = Conversions.ToInteger(i < OldWords.Length - 1); i <= loopTo; i++)
             HTMLCode = HTMLCode.Replace(OldWords[i], NewWords[i]);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task StringOperatorsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"     Sub DummyMethod(target As String)
+        If target < ""Z""c OrElse New Char(){} <= target OrElse target = """" OrElse target <> """" OrElse target >= New Char(){} OrElse target > """" Then
+            Console.WriteLine(""It must be one of those"")
+        End If
+    End Sub", @"public void DummyMethod(string target)
+{
+    if (Operators.CompareString(target, 'Z'.ToString(), false) < 0 || Operators.CompareString(new string(new char[] { }), target, false) <= 0 || string.IsNullOrEmpty(target) || !string.IsNullOrEmpty(target) || Operators.CompareString(target, new string(new char[] { }), false) >= 0 || Operators.CompareString(target, """", false) > 0)
+    {
+        Console.WriteLine(""It must be one of those"");
     }
 }");
         }
