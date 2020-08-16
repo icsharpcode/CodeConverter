@@ -548,12 +548,19 @@ namespace ICSharpCode.CodeConverter.CSharp
                 !VBasic.VisualBasicExtensions.IsDefault(pro.Property)) {
                 var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.Children.First() == pro;
                 var extraArg = isSetter
-                    ? await operation.Parent.Syntax.ChildNodes().ElementAt(1).AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)
+                    ? await GetParameterizedSetterArgAsync(operation)
                     : null;
                 return (isSetter ? pro.Property.SetMethod.Name : pro.Property.GetMethod.Name, extraArg);
             }
 
             return (null, null);
+        }
+
+        private async Task<ExpressionSyntax> GetParameterizedSetterArgAsync(IOperation operation)
+        {
+            var vbNode = (VBSyntax.ExpressionSyntax) operation.Parent.Syntax.ChildNodes().ElementAt(1);
+            var csNode = await vbNode.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+            return TypeConversionAnalyzer.AddExplicitConversion(vbNode, csNode, forceTargetType: operation.Type);
         }
 
         public CSSyntax.IdentifierNameSyntax GetRetVariableNameOrNull(VBSyntax.MethodBlockBaseSyntax node)

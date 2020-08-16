@@ -49,9 +49,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case ulong ul:
                     return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, ul));
                 case double d:
-                    // The value is passed as a double from VB expression: "3.5F"
+                    // The value is passed as a double from VB expression: "3.5F" and "3.5M"
                     // Important to use value text, otherwise "10.0" gets coerced to and integer literal of 10 which can change semantics
-                    var syntaxToken = convertedType?.SpecialType == SpecialType.System_Single ? SyntaxFactory.Literal(textForUser, (float) d) : SyntaxFactory.Literal(textForUser, d);
+                    var syntaxToken = convertedType?.SpecialType switch
+                    {
+                        SpecialType.System_Single => SyntaxFactory.Literal(textForUser, (float)d),
+                        SpecialType.System_Decimal => SyntaxFactory.Literal(textForUser, (decimal)d),
+                        _ => SyntaxFactory.Literal(textForUser, d)
+                    };
                     return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, syntaxToken);
                 case float f:
                     return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, f));

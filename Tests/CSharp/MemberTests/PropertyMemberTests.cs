@@ -129,6 +129,44 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task TestParameterizedPropertyRequiringConversionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Public Class Class1
+    Public Property SomeProp(ByVal index As Integer) As Single
+        Get
+            Return 1.5
+        End Get
+        Set(ByVal Value As Single)
+        End Set
+    End Property
+
+    Public Sub Foo()
+        Dim someDecimal As Decimal = 123.0
+        SomeProp(123) = someDecimal
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class Class1
+{
+    public float get_SomeProp(int index)
+    {
+        return 1.5F;
+    }
+
+    public void set_SomeProp(int index, float value)
+    {
+    }
+
+    public void Foo()
+    {
+        decimal someDecimal = 123.0M;
+        set_SomeProp(123, Conversions.ToSingle(someDecimal));
+    }
+}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
+        }
+
+        [Fact]
         public async Task TestOptionalParameterizedPropertyAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(

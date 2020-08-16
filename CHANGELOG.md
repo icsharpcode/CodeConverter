@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Don't generate unnecessary properties for WithEvents fields [#572](https://github.com/icsharpcode/CodeConverter/issues/572)
 * Add type conversion where needed for externally declared loop control variable [#609](https://github.com/icsharpcode/CodeConverter/issues/609)
 * Convert string operators in common cases [#608](https://github.com/icsharpcode/CodeConverter/issues/608)
+* Type convert parameterized property in assignment [#610](https://github.com/icsharpcode/CodeConverter/issues/610)
 
 ### C# -> VB
 
