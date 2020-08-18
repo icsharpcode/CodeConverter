@@ -19,7 +19,7 @@ Download from [Visual Studio Marketplace](https://marketplace.visualstudio.com/i
 * Actively developed: User feedback helps us continuously strive for a more accurate conversion.
 
 <p>
-<img title="Selected text can be converted" alt="Selected text conversion context menu" src="https://github.com/icsharpcode/CodeConverter/raw/master/.github/img/vbToCsSelection.png" />
+<img title="Selected text can be converted" alt="Selected text conversion context menu" src="https://github.com/icsharpcode/CodeConverter/raw/master/.github/img/marketplace.PNG" />
 </p>
 
 ## Contributing
