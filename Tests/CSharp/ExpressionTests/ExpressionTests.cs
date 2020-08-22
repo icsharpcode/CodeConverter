@@ -1465,5 +1465,37 @@ public partial class MoreParsing
 }");
         }
 
+        [Fact]
+        public async Task CompoundOperatorsWithTypeConversionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class Compound
+    Public Sub Operators()
+        Dim anInt As Integer = 123
+        Dim aDec As Decimal = 12.3
+        anInt *= aDec
+        anInt \= aDec
+        anInt /= aDec
+        anInt -= aDec
+        anInt += aDec
+    End Sub
+End Class",
+                @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class Compound
+{
+    public void Operators()
+    {
+        int anInt = 123;
+        decimal aDec = 12.3M;
+        anInt = Conversions.ToInteger(anInt * aDec);
+        anInt = Conversions.ToInteger(anInt / Conversions.ToLong(aDec));
+        anInt = Conversions.ToInteger(anInt / aDec);
+        anInt = Conversions.ToInteger(anInt - aDec);
+        anInt = Conversions.ToInteger(anInt + aDec);
+    }
+}");
+        }
+
     }
 }
