@@ -1,17 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.CSharp;
-using ICSharpCode.CodeConverter.Util;
+﻿using ICSharpCode.CodeConverter.Shared;
 using Xunit;
 
-namespace CodeConverter.Tests.LanguageAgnostic
+namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
 {
     public class ProjectFileTextEditorTests
     {
-
         [Fact]
         public void TogglesExistingValue()
         {

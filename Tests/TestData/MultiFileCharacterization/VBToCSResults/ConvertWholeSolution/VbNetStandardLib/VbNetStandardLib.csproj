@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>VbNetStandardLib</RootNamespace>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <DefaultItemExcludes>$(DefaultItemExcludes);$(ProjectDir)**\*.vb</DefaultItemExcludes>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualBasic" />
+    <EmbeddedResource Update="Folder2Res.resx">
+      <CustomToolNamespace>VbNetStandardLib.My.Resources</CustomToolNamespace>
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Folder2Res.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="FolderRes.resx">
+      <CustomToolNamespace>VbNetStandardLib.My.Resources</CustomToolNamespace>
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>FolderRes.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="RootResources.resx">
+      <CustomToolNamespace>VbNetStandardLib.My.Resources</CustomToolNamespace>
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>RootResources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Folder2Res.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Folder2Res.resx</DependentUpon>
+    </Compile>
+    <Compile Update="FolderRes.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>FolderRes.resx</DependentUpon>
+    </Compile>
+    <Compile Update="RootResources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>RootResources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+</Project>

@@ -4,9 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Xunit;
 
-namespace CodeConverter.Tests.TestRunners
+namespace ICSharpCode.CodeConverter.Tests.TestRunners
 {
     public static class TestFileRewriter
     {

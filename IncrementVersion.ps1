@@ -1,4 +1,7 @@
-Param($major = $false)
+Param([Switch] $major, [Switch] $minor)
+$incrementPart = 3
+if ($minor) { $incrementPart = 2 }
+if ($major) { $incrementPart = 1 }
 
 # https://stackoverflow.com/a/9121679/1128762
 function Get-FileEncoding($filePath) {  
@@ -27,9 +30,14 @@ function Create-Version([Version] $version, $versionMajorNew = $version.Major, $
     }
 }
 
-function Increment-Version($version, $incrementMajor = $major) {
-    if ($incrementMajor -Or $version.Minor -ge 9) { return Create-Version $version ($version.Major + 1) 0 0 0 }
-    return Create-Version $version $version.Major ($version.Minor + 1)
+function WriteAllText-PreservingEncoding($filePath, $contents) {
+    [System.IO.File]::WriteAllText($filePath, $contents, (Get-FileEncoding $filePath))
+}
+
+function Increment-Version($version) {
+    if ($incrementPart -eq 1 -Or $version.Minor -ge 9) { return Create-Version $version ($version.Major + 1) 0 0 0 }
+    if ($incrementPart -eq 2 -Or $version.Build -ge 9) { return Create-Version $version $version.Major ($version.Minor + 1) 0 0}
+    return Create-Version $version $version.Major $version.Minor ($version.Build + 1) 0
 }
 
 #Regex must contain 3 groups. 1: Text preceding version to replace, 2: Version number part to replace, 3: Text after version to replace
@@ -51,14 +59,42 @@ function Increment-VersionInFile($filePath, $find, $allowNoMatch=$false) {
     Write-Host "Updating $fileName`: Replacing $version with $newVersion using $find"
 
     $contents = [RegEx]::Replace($contents, $find, ("`${1}" + $newVersion.ToString() + "`${3}"))
-    [System.IO.File]::WriteAllText($filePath, $contents, (Get-FileEncoding $filePath))
+    WriteAllText-PreservingEncoding $filePath $contents
+    return $newVersion
 }
 
-Increment-VersionInFile 'appveyor.yml' '(version: )(\d+\.\d+)(\.)'
-Increment-VersionInFile 'azure-pipelines.yml' '(buildVersion: .)(\d+\.\d+)(\.\$)'
-Increment-VersionInFile 'Vsix\source.extension.vsixmanifest' '(7e2a69d6-193b-4cdf-878d-3370d5931942" Version=")(\d+\.\d+)(\.)'
-Get-ChildItem -Recurse '*.csproj' | Where { -not $_.FullName.Contains("TestData")} | % {
-    Increment-VersionInFile $_ '(\n    <Version>)(\d+\.\d+)(\.)' $true
-    Increment-VersionInFile $_ '(\n    <FileVersion>)(\d+\.\d+)(\.)'  $true
-    Increment-VersionInFile $_ '(\n    <AssemblyVersion>)(\d+\.\d+)(\.)' $true
+function Update-Changelog($filePath, $newVersion) {
+
+    if (-not [System.IO.Path]::IsPathRooted($filePath)) { $filePath = Join-Path $PSScriptRoot $filePath }
+    $date = get-date -format 'yyyy-MM-dd'
+    $newReleaseFragment =
+@"
+## [Unreleased]
+
+
+### Vsix
+
+
+### VB -> C#
+
+
+### C# -> VB
+
+
+## [$newVersion] - $date
+"@
+
+    $contents = [System.IO.File]::ReadAllText($filePath)
+    $contents = $contents.Replace('## [Unreleased]',$newReleaseFragment)
+    WriteAllText-PreservingEncoding $filePath $contents
 }
+
+$newVersion = Increment-VersionInFile 'azure-pipelines.yml' '(buildVersion: .)(\d+\.\d+\.\d+)(\.\$)'
+Increment-VersionInFile 'Vsix\source.extension.vsixmanifest' '(7e2a69d6-193b-4cdf-878d-3370d5931942" Version=")(\d+\.\d+\.\d+)(\.)' | Out-Null
+Get-ChildItem -Recurse '*.csproj' | Where { -not $_.FullName.Contains("TestData")} | % {
+    Increment-VersionInFile $_ '(\n    <Version>)(\d+\.\d+\.\d+)(<)' $true | Out-Null
+    Increment-VersionInFile $_ '(\n    <FileVersion>)(\d+\.\d+\.\d+)(\.)'  $true | Out-Null
+    Increment-VersionInFile $_ '(\n    <AssemblyVersion>)(\d+\.\d+\.\d+)(\.)' $true | Out-Null
+}
+$newVersionString = $newVersion.ToString(3)
+Update-Changelog 'CHANGELOG.md' $newVersionString

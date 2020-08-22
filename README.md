@@ -1,11 +1,15 @@
-# Code Converter [![Build Status](https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_apis/build/status/icsharpcode.CodeConverter?branchName=master)](https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_build/latest?definitionId=2&branchName=master)
+# Code Converter [![Build Status](https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_apis/build/status/icsharpcode.CodeConverter?branchName=master)](https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_build?definitionId=2&statusFilter=succeeded&repositoryFilter=2&branchFilter=32)
 
-Convert code from VB.NET to C# and vice versa via Roslyn using a [Visual Studio Extension](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter) or [Online snippet converter](https://codeconverter.icsharpcode.net/)
+Convert code from VB.NET to C# and vice versa using Roslyn - all free and open source:
+* [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter)
+* Command line `dotnet tool install ICSharpCode.CodeConverter.codeconv --global`
+* [Online snippet converter](https://codeconverter.icsharpcode.net/)
+* [Nuget library](https://www.nuget.org/packages/ICSharpCode.CodeConverter/) (this underpins all other free converters you'll find online)
 
 ## Visual Studio Extension
 Adds context menu items to convert projects/files between VB.NET and C#. See the [wiki documentation](https://github.com/icsharpcode/CodeConverter/wiki) for help using it.
 
-Download from [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter) (Requires VS 2017 ~15.5+)
+Download from [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter) (Requires VS 2017 15.7+)
 
 * Flexible: Convert a small selection, or a whole solution in one go, in either direction.
 * Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
@@ -21,29 +25,25 @@ Download from [Visual Studio Marketplace](https://marketplace.visualstudio.com/i
 ## Contributing
 Let us know what needs improving. If you want to get involved in writing the code yourself, even better! We've already had code contributions from several first time GitHub contributors, so don't be shy! See [Contributing.md](https://github.com/icsharpcode/CodeConverter/blob/master/.github/CONTRIBUTING.md) for more info.
 
-Currently, the VB -> C# conversion quality is higher than the C# -> VB conversion quality. This is due to demand of people raising issues and supply of developers willing to fix them. But we're very happy to support developers who want to contribute to either conversion direction.
+Currently, the VB -> C# conversion quality is higher than the C# -> VB conversion quality. This is due to demand of people raising issues and supply of developers willing to fix them. But we're very happy to support developers who want to contribute to either conversion direction. Visual Basic will have support for some project types on initial versions of .NET 5, but won't be getting new features according to the [.NET Team Blog](https://devblogs.microsoft.com/vbteam/visual-basic-support-planned-for-net-5-0/).
 
 ## Other ways to use the converter
-* Extension "nightly" developer builds (potentially less stable and more effort to update): https://ci.appveyor.com/project/icsharpcode/codeconverter/branch/master
-
-* Online snippet converter: [https://codeconverter.icsharpcode.net/](https://codeconverter.icsharpcode.net/) (less accurate due to lack of project context)
-
-* NuGet package: [https://www.nuget.org/packages/ICSharpCode.CodeConverter/](https://www.nuget.org/packages/ICSharpCode.CodeConverter/)
-
+* Latest CI build (potentially less stable):
+  * [See latest build](https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_build?definitionId=2&statusFilter=succeeded&repositoryFilter=2&branchFilter=32)
+  * Uninstall current version, then install VSIX file inside "1 published" artifact
+* Integrating the NuGet library
   * Check out the [CodeConversion class](https://github.com/icsharpcode/CodeConverter/blob/8226313a8d46d5dd73bd35f07af2212e6155d0fd/Vsix/CodeConversion.cs#L226) in the VSIX project.
-  * Or check out the [ConverterController](https://github.com/icsharpcode/CodeConverter/blob/master/CodeConverter.Web/ConverterController.cs) for a more web-focused API.
+  * Or check out the [ConverterController](https://github.com/icsharpcode/CodeConverter/blob/master/Web/ConverterController.cs) for a more web-focused API.
 
 ## Building/running from source
-1. Ensure you have [.NET Core SDK 3+](https://dotnet.microsoft.com/download/dotnet-core/3.0)
+1. Ensure you have [.NET Core SDK 3.1+](https://dotnet.microsoft.com/download/dotnet-core/3.1)
 2. Open the solution in Visual Studio 2017+
 3. To run the website, set CodeConverter.Web as the startup project
-4. To run the Visual Studio extension, set Vsix as the startup project and in the project properties, set:
-  * "Start external program" to `C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\devenv.exe`
-  * "Command line arguments" to `/rootsuffix Roslyn`
+4. To run the Visual Studio extension, set Vsix as the startup project
+   * A new instance of Visual Studio will open with the extension installed
 
 ##  History
-This was previously part of [Refactoring Essentials](https://github.com/icsharpcode/RefactoringEssentials). However, because of the way analyzers are tied to Visual Studio and Roslyn versions
-made it super-hard to co-evolve the code converter bits. That is why we teased the converters out and they are now a self-contained entity.
+A spiritual successor of the code conversion within [SharpDevelop](https://github.com/icsharpcode/SharpDevelop) and later part of [Refactoring Essentials](https://github.com/icsharpcode/RefactoringEssentials), the code converter was separated out to avoid difficulties with different Visual Studio and Roslyn versions.
 
 ## More screenshots
 <p float="left">

@@ -1,28 +1,31 @@
 ﻿using System;
 using System.ComponentModel.Design;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
 using Task = System.Threading.Tasks.Task;
 
-namespace CodeConverter.VsExtension
+namespace ICSharpCode.CodeConverter.VsExtension
 {
     internal class OleMenuCommandWithBlockingStatus
     {
         private readonly JoinableTaskFactory _joinableTaskFactory;
         private readonly OleMenuCommand _command;
 
-        public OleMenuCommandWithBlockingStatus(JoinableTaskFactory joinableTaskFactory, Func<object, EventArgs, Task> callbackAsync, CommandID menuCommandId)
+        public OleMenuCommandWithBlockingStatus(JoinableTaskFactory joinableTaskFactory, Cancellation _packageCancellation, Func<CancellationToken, Task> callbackAsync, CommandID menuCommandId)
         {
             _joinableTaskFactory = joinableTaskFactory;
             _command = new OleMenuCommand(Execute, menuCommandId);
 
             void Execute(object sender, EventArgs eventArgs)
             {
+                var cancellationTokenSource = _packageCancellation.ResetCommandCancellation();
+
                 async Task ExecuteAsync()
                 {
                     await TaskScheduler.Default;
-                    await callbackAsync(sender, eventArgs);
+                    await callbackAsync(cancellationTokenSource.Token);
                 }
                 _joinableTaskFactory.RunAsync(ExecuteAsync).Task.Forget();
             }
@@ -37,6 +40,7 @@ namespace CodeConverter.VsExtension
         {
             return oleMenuCommandWithBlockingCommand._command;
         }
+
         private EventHandler WaitFor(Func<object, EventArgs, Task> task)
         {
             return (o, a) => {

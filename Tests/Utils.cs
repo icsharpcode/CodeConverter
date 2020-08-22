@@ -1,8 +1,9 @@
 ﻿using System.Text;
+using ICSharpCode.CodeConverter.Util;
 
-namespace CodeConverter.Tests
+namespace ICSharpCode.CodeConverter.Tests
 {
-    static class Utils
+    internal static class Utils
     {
         internal static string HomogenizeEol(string str)
         {

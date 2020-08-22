@@ -1,0 +1,21 @@
+{
+    "profiles": {
+        "RunDebug": {
+            "commandName": "Project",
+            "commandLineArgs": "--help",
+            "workingDirectory": "$(ProjectDir)"
+        },
+        "InstallDebugTool": {
+            "commandName": "Executable",
+            "executablePath": "powershell",
+            "commandLineArgs": "./Install-BuiltTool.ps1",
+            "workingDirectory": "$(ProjectDir)"
+        },
+        "RunDebugTool": {
+            "commandName": "Executable",
+            "executablePath": "dotnet",
+            "commandLineArgs": "codeconv",
+            "workingDirectory": "$(ProjectDir)"
+        }
+    }
+}

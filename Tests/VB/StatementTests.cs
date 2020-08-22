@@ -1,19 +1,16 @@
 ﻿using System.Threading.Tasks;
-using CodeConverter.Tests.TestRunners;
-using ICSharpCode.CodeConverter;
-using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.VB;
-using Microsoft.CodeAnalysis;
 using Xunit;
 
-namespace CodeConverter.Tests.VB
+namespace ICSharpCode.CodeConverter.Tests.VB
 {
     public class StatementTests : ConverterTestBase
     {
         [Fact]
-        public async Task EmptyStatement()
+        public async Task EmptyStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -41,9 +38,74 @@ End Class");
         }
 
         [Fact]
-        public async Task AssignmentStatement()
+        public async Task ForConvertedToWhile_BreakAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"class TestClass {
+    void TestMethod() {
+        for (;;)
+            break;
+    }
+}", @"Friend Class TestClass
+    Private Sub TestMethod()
+        While True
+            Exit While
+        End While
+    End Sub
+End Class");
+        }
+
+        [Fact]
+        public async Task ForConvertedToWhile_BreakContinueAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"class TestClass {
+    void TestMethod(int arg) {
+        for (;;) //Becomes while loop
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            if (arg == 3) break;
+            switch (arg)
+            {
+                case 1:
+                    break; //From switch
+                case 2:
+                    break; //From switch
+                default:
+                    continue; // Outer while loop
+            }
+            for (var i = 0; i < arg; i++) // Becomes For Next loop
+            {
+                if (arg != 1) break; // From inner for loop
+                continue; // Inner for loop
+            }
+            continue; // Outer while loop
+        }
+    }
+}", @"Friend Class TestClass
+    Private Sub TestMethod(ByVal arg As Integer)
+        While True 'Becomes while loop
+            If arg = 3 Then Exit While
+
+            Select Case arg
+                Case 1 'From switch
+                Case 2 'From switch
+                Case Else
+                    Continue While ' Outer while loop
+            End Select
+
+            For i = 0 To arg - 1 ' Becomes For Next loop
+                If arg <> 1 Then Exit For ' From inner for loop
+                Continue For ' Inner for loop
+            Next
+
+            Continue While ' Outer while loop
+        End While
+    End Sub
+End Class");
+        }
+
+        [Fact]
+        public async Task AssignmentStatementAsync()
+        {
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -59,9 +121,9 @@ End Class");
         }
 
         [Fact]
-        public async Task AssignmentStatementInDeclaration()
+        public async Task AssignmentStatementInDeclarationAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -69,15 +131,15 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = 0
+        Dim b As Integer = 0
     End Sub
 End Class");
         }
 
         [Fact]
-        public async Task AssignmentStatementInVarDeclaration()
+        public async Task AssignmentStatementInVarDeclarationAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -91,9 +153,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ObjectInitializationStatement()
+        public async Task ObjectInitializationStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -105,13 +167,16 @@ End Class");
         Dim b As String
         b = New String(""test"")
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         }
 
         [Fact]
-        public async Task ObjectInitializationStatementInDeclaration()
+        public async Task ObjectInitializationStatementInDeclarationAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -119,15 +184,18 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = New String(""test"")
+        Dim b As String = New String(""test"")
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         }
 
         [Fact]
-        public async Task ObjectInitializationStatementInVarDeclaration()
+        public async Task ObjectInitializationStatementInVarDeclarationAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -137,13 +205,16 @@ End Class");
     Private Sub TestMethod()
         Dim b = New String(""test"")
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         }
 
         [Fact]
-        public async Task ArrayDeclarationStatement()
+        public async Task ArrayDeclarationStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -157,9 +228,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ArrayInitializationStatement()
+        public async Task ArrayInitializationStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -167,15 +238,15 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = {1, 2, 3}
+        Dim b As Integer() = {1, 2, 3}
     End Sub
 End Class");
         }
 
         [Fact]
-        public async Task ArrayInitializationStatementInVarDeclaration()
+        public async Task ArrayInitializationStatementInVarDeclarationAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -185,13 +256,16 @@ End Class");
     Private Sub TestMethod()
         Dim b = {1, 2, 3}
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS0820: Cannot initialize an implicitly-typed variable with an array initializer");
         }
 
         [Fact]
-        public async Task ArrayInitializationStatementWithType()
+        public async Task ArrayInitializationStatementWithTypeAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -199,15 +273,15 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = New Integer() {1, 2, 3}
+        Dim b As Integer() = New Integer() {1, 2, 3}
     End Sub
 End Class");
         }
 
         [Fact]
-        public async Task ArrayInitializationStatementWithLength()
+        public async Task ArrayInitializationStatementWithLengthAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -215,15 +289,15 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = New Integer(2) {1, 2, 3}
+        Dim b As Integer() = New Integer(2) {1, 2, 3}
     End Sub
 End Class");
         }
 
         [Fact]
-        public async Task MultidimensionalArrayDeclarationStatement()
+        public async Task MultidimensionalArrayDeclarationStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -237,9 +311,9 @@ End Class");
         }
 
         [Fact]
-        public async Task MultidimensionalArrayInitializationStatement()
+        public async Task MultidimensionalArrayInitializationStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -250,7 +324,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = {
+        Dim b As Integer(,) = {
         {1, 2},
         {3, 4}}
     End Sub
@@ -258,9 +332,9 @@ End Class");
         }
 
         [Fact]
-        public async Task MultidimensionalArrayInitializationStatementWithType()
+        public async Task MultidimensionalArrayInitializationStatementWithTypeAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -271,7 +345,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = New Integer(,) {
+        Dim b As Integer(,) = New Integer(,) {
         {1, 2},
         {3, 4}}
     End Sub
@@ -279,9 +353,9 @@ End Class");
         }
 
         [Fact]
-        public async Task MultidimensionalArrayInitializationStatementWithLengths()
+        public async Task MultidimensionalArrayInitializationStatementWithLengthsAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -292,17 +366,20 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = New Integer(1, 1) {
+        Dim b As Integer(,) = New Integer(1, 1) {
         {1, 2},
         {3, 4}}
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS1002: ; expected");
         }
 
         [Fact]
-        public async Task JaggedArrayDeclarationStatement()
+        public async Task JaggedArrayDeclarationStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -316,9 +393,9 @@ End Class");
         }
 
         [Fact]
-        public async Task JaggedArrayInitializationStatement()
+        public async Task JaggedArrayInitializationStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -326,15 +403,15 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = {New Integer() {1, 2}, New Integer() {3, 4}}
+        Dim b As Integer()() = {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
         }
 
         [Fact]
-        public async Task JaggedArrayInitializationStatementWithType()
+        public async Task JaggedArrayInitializationStatementWithTypeAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -342,15 +419,15 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = New Integer()() {New Integer() {1, 2}, New Integer() {3, 4}}
+        Dim b As Integer()() = New Integer()() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
         }
 
         [Fact]
-        public async Task JaggedArrayInitializationStatementWithLength()
+        public async Task JaggedArrayInitializationStatementWithLengthAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -358,15 +435,15 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
+        Dim b As Integer()() = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
         }
 
         [Fact]
-        public async Task DeclarationStatements()
+        public async Task DeclarationStatementsAsync()
         {
-            await TestConversionCSharpToVisualBasic(
+            await TestConversionCSharpToVisualBasicAsync(
                 @"class Test {
     void TestMethod()
     {
@@ -379,8 +456,8 @@ the_beginning:
 }", @"Friend Class Test
     Private Sub TestMethod()
 the_beginning:
-        Dim value = 1
-        Const myPIe = Math.PI
+        Dim value As Integer = 1
+        Const myPIe As Double = Math.PI
         Dim text = ""This is my text!""
         GoTo the_beginning
     End Sub
@@ -388,9 +465,9 @@ End Class");
         }
 
         [Fact]
-        public async Task IfStatementWithoutBlock()
+        public async Task IfStatementWithoutBlockAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod (int a)
     {
@@ -414,9 +491,9 @@ End Class");
         }
 
         [Fact]
-        public async Task IfStatement()
+        public async Task IfStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod (int a)
     {
@@ -449,9 +526,9 @@ End Class");
         }
 
         [Fact]
-        public async Task BlockStatement()
+        public async Task BlockStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     public static void TestMethod()
     {
@@ -477,13 +554,16 @@ End Class");
             Console.WriteLine(x)
         End If
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
-        public async Task WhileStatement()
+        public async Task WhileStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -513,9 +593,9 @@ End Class");
         }
 
         [Fact]
-        public async Task UnsafeStatementsWithNoVbEquivalentShowErrorInlineCharacterization()
+        public async Task UnsafeStatementsWithNoVbEquivalentShowErrorInlineCharacterizationAsync()
         {
-            string convertedCode = await GetConvertedCodeOrErrorString<CSToVBConversion>(@"class TestClass
+            string convertedCode = await ConvertAsync<CSToVBConversion>(@"class TestClass
 {
     void TestMethod()
     {
@@ -547,9 +627,9 @@ End Class");
         }
 
         [Fact]
-        public async Task DoWhileStatement()
+        public async Task DoWhileStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -580,9 +660,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ForEachStatementWithExplicitType()
+        public async Task ForEachStatementWithExplicitTypeAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(int[] values)
     {
@@ -596,7 +676,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
-        For Each val In values
+        For Each val As Integer In values
             If val = 2 Then Continue For
             If val = 3 Then Exit For
         Next
@@ -605,9 +685,9 @@ End Class");
         }
 
         [Fact]
-        public async Task ForEachStatementWithVar()
+        public async Task ForEachStatementWithVarAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(int[] values)
     {
@@ -626,13 +706,16 @@ End Class");
             If val = 3 Then Exit For
         Next
     End Sub
-End Class");
+End Class
+
+1 target compilation errors:
+BC30516: Overload resolution failed because no accessible 'Val' accepts this number of arguments.");
         }
 
         [Fact]
-        public async Task SyncLockStatement()
+        public async Task SyncLockStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(object nullObject)
     {
@@ -650,13 +733,17 @@ End Class");
             Console.WriteLine(nullObject)
         End SyncLock
     End Sub
-End Class");
+End Class
+
+2 source compilation errors:
+CS0246: The type or namespace name 'ArgumentNullException' could not be found (are you missing a using directive or an assembly reference?)
+CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
-        public async Task ForWithUnknownConditionAndSingleStatement()
+        public async Task ForWithUnknownConditionAndSingleStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -672,36 +759,56 @@ End Class");
             i += 1
         End While
     End Sub
-End Class");
+End Class
+
+4 source compilation errors:
+CS0103: The name 'i' does not exist in the current context
+CS0103: The name 'unknownCondition' does not exist in the current context
+CS0103: The name 'b' does not exist in the current context
+CS0103: The name 's' does not exist in the current context
+4 target compilation errors:
+BC30451: 'i' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'unknownCondition' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
+BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
-        public async Task ForWithUnknownConditionAndBlock()
+        public async Task ForWithUnknownConditionAndBlockAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
-        for (int i = 0; unknownCondition; i++) {
+        for (int i = 0; unknownCondition; i++) { // Increment moves to bottom of loop
             b[i] = s[i];
         }
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim i = 0
+        Dim i As Integer = 0
 
         While unknownCondition
             b(i) = s(i)
-            i += 1
+            i += 1 ' Increment moves to bottom of loop
         End While
     End Sub
-End Class");
+End Class
+
+3 source compilation errors:
+CS0103: The name 'unknownCondition' does not exist in the current context
+CS0103: The name 'b' does not exist in the current context
+CS0103: The name 's' does not exist in the current context
+3 target compilation errors:
+BC30451: 'unknownCondition' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
+BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
-        public async Task ForWithSingleStatement()
+        public async Task ForWithSingleStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -713,13 +820,23 @@ End Class");
             b(i) = s(i)
         Next
     End Sub
-End Class");
+End Class
+
+4 source compilation errors:
+CS0103: The name 'i' does not exist in the current context
+CS0103: The name 'end' does not exist in the current context
+CS0103: The name 'b' does not exist in the current context
+CS0103: The name 's' does not exist in the current context
+3 target compilation errors:
+BC30451: 'end' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
+BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
-        public async Task ForWithBlock()
+        public async Task ForWithBlockAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod()
     {
@@ -733,13 +850,141 @@ End Class");
             b(i) = s(i)
         Next
     End Sub
-End Class");
+End Class
+
+4 source compilation errors:
+CS0103: The name 'i' does not exist in the current context
+CS0103: The name 'end' does not exist in the current context
+CS0103: The name 'b' does not exist in the current context
+CS0103: The name 's' does not exist in the current context
+3 target compilation errors:
+BC30451: 'end' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
+BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
-        public async Task ForTupleDeconstruction()
+        public async Task ForWithBlockDecrementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"public class SolutionConverter
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    void TestMethod()
+    {
+        for (i = end; i > 0; i--) {
+            b[i] = s[i];
+        }
+    }
+}", @"Friend Class TestClass
+    Private Sub TestMethod()
+        For i = [end] To 0 + 1 Step -1
+            b(i) = s(i)
+        Next
+    End Sub
+End Class
+
+4 source compilation errors:
+CS0103: The name 'i' does not exist in the current context
+CS0103: The name 'end' does not exist in the current context
+CS0103: The name 'b' does not exist in the current context
+CS0103: The name 's' does not exist in the current context
+3 target compilation errors:
+BC30451: 'end' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
+BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
+        }
+        [Fact]
+        public async Task ForWithDateTimeVariablesAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"class TestClass {
+    void TestMethod() {
+        int summary = 0;
+        for (int month = 1; month <= 12; month++) {
+            summary += month;
+        }
+    }
+}",
+                @"Friend Class TestClass
+    Private Sub TestMethod()
+        Dim summary As Integer = 0
+
+        For month As Integer = 1 To 12
+            summary += month
+        Next
+    End Sub
+End Class");
+        }
+        [Fact(Skip = "Should we rename, or add If True End If block?")]
+        public async Task Conflict_DeclarationsAfterConvertionForToWhileAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"class TestClass {
+    double height;
+    void TestMethod() {
+        for(double y = 0d; y < height; y += 10d)
+            Draw(y);
+        for(double y = 0d; y < height; y += 20d)
+            Draw(y);
+    }
+    void Draw(double height) {
+    }
+}",
+                @"Friend Class TestClass
+    Private height As Double
+
+    Private Sub TestMethod()
+        Dim y = 0R
+
+        While y < height
+            Draw(y)
+            y += 10R
+        End While
+
+        Dim y = 0R
+
+        While y < height
+            Draw(y)
+            y += 20R
+        End While
+    End Sub
+
+    Private Sub Draw(ByVal height As Double)
+    End Sub
+End Class");
+        }
+        [Fact]
+        public async Task SubWithForEach_MultilineAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"class TestClass {
+    void TestMethod(IEnumerable<int> counts) {
+        int summary = 0;
+        Action action = () => {
+            foreach(var c in counts) {
+                var current = c;
+                summary += current;
+            }
+        };
+    }
+}",
+                @"Friend Class TestClass
+    Private Sub TestMethod(ByVal counts As IEnumerable(Of Integer))
+        Dim summary As Integer = 0
+        Dim action As Action = Sub()
+                                   For Each c In counts
+                                       Dim current = c
+                                       summary += current
+                                   Next
+                               End Sub
+    End Sub
+End Class
+
+2 source compilation errors:
+CS0246: The type or namespace name 'IEnumerable<>' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'Action' could not be found (are you missing a using directive or an assembly reference?)");
+        }
+
+        [Fact]
+        public async Task ForTupleDeconstructionAsync()
+        {
+            await TestConversionCSharpToVisualBasicAsync(@"public class SolutionConverter
 {
     private static string ApplyReplacements(string originalText, IEnumerable<(string, string)> replacements)
     {
@@ -760,13 +1005,23 @@ End Class");
 
         Return originalText
     End Function
-End Class");
+End Class
+
+5 source compilation errors:
+CS0246: The type or namespace name 'IEnumerable<>' could not be found (are you missing a using directive or an assembly reference?)
+CS8130: Cannot infer the type of implicitly-typed deconstruction variable 'oldValue'.
+CS8130: Cannot infer the type of implicitly-typed deconstruction variable 'newValue'.
+CS0103: The name 'Regex' does not exist in the current context
+CS0103: The name 'RegexOptions' does not exist in the current context
+2 target compilation errors:
+BC30451: 'Regex' is not declared. It may be inaccessible due to its protection level.
+BC30451: 'RegexOptions' is not declared. It may be inaccessible due to its protection level.");
         }
 
         [Fact]
-        public async Task LabeledAndForStatement()
+        public async Task LabeledAndForStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class GotoTest1
+            await TestConversionCSharpToVisualBasicAsync(@"class GotoTest1
 {
     static void Main()
     {
@@ -808,23 +1063,23 @@ End Class");
         }
     }", @"Friend Class GotoTest1
     Private Shared Sub Main()
-        Dim x = 200, y = 4
-        Dim count = 0
-        Dim array = New String(x - 1, y - 1) {}
+        Dim x As Integer = 200, y As Integer = 4
+        Dim count As Integer = 0
+        Dim array As String(,) = New String(x - 1, y - 1) {}
 
-        For i = 0 To x - 1
+        For i As Integer = 0 To x - 1
 
-            For j = 0 To y - 1
-                array(i, j) = Threading.Interlocked.Increment(count).ToString
+            For j As Integer = 0 To y - 1
+                array(i, j) = Threading.Interlocked.Increment(count).ToString()
             Next
         Next
 
         Console.Write(""Enter the number to search for: "")
-        Dim myNumber = Console.ReadLine
+        Dim myNumber As String = Console.ReadLine()
 
-        For i = 0 To x - 1
+        For i As Integer = 0 To x - 1
 
-            For j = 0 To y - 1
+            For j As Integer = 0 To y - 1
 
                 If array(i, j).Equals(myNumber) Then
                     GoTo Found
@@ -839,15 +1094,18 @@ Found:
 Finish:
         Console.WriteLine(""End of search."")
         Console.WriteLine(""Press any key to exit."")
-        Console.ReadKey
+        Console.ReadKey()
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
-        public async Task ThrowStatement()
+        public async Task ThrowStatementAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(object nullObject)
     {
@@ -858,13 +1116,16 @@ End Class");
     Private Sub TestMethod(ByVal nullObject As Object)
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS0246: The type or namespace name 'ArgumentNullException' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
-        public async Task AddRemoveHandler()
+        public async Task AddRemoveHandlerAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"using System;
+            await TestConversionCSharpToVisualBasicAsync(@"using System;
 
 class TestClass
 {
@@ -905,11 +1166,43 @@ Friend Class TestClass
     End Sub
 End Class");
         }
+        [Fact]
+        public async Task AddHandlerInSimpleLambdaAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"using System;
+using System.ComponentModel;
+using System.Collections.Generic;
+
+class TestClass {
+    List<INotifyPropertyChanged> items;
+
+    void TestMethod(EventHandler e) {
+        items.ForEach(x => x.PropertyChanged += OnItemPropertyChanged);
+    }
+
+    void OnItemPropertyChanged(object sender, PropertyChangedEventArgs e) { }
+}",
+@"Imports System
+Imports System.ComponentModel
+Imports System.Collections.Generic
+
+Friend Class TestClass
+    Private items As List(Of INotifyPropertyChanged)
+
+    Private Sub TestMethod(ByVal e As EventHandler)
+        items.ForEach(Sub(x) AddHandler x.PropertyChanged, AddressOf OnItemPropertyChanged)
+    End Sub
+
+    Private Sub OnItemPropertyChanged(ByVal sender As Object, ByVal e As PropertyChangedEventArgs)
+    End Sub
+End Class");
+        }
+        
 
         [Fact]
-        public async Task SelectCase1()
+        public async Task SelectCase1Async()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(int number)
     {
@@ -926,8 +1219,8 @@ End Class");
                 Console.Write(""section 4"");
                 goto default;
             default:
-                Console.Write(""default section"");
-                break;
+                Console.Write(""default section""); // Block moves to end - 1
+                break; // Block moves to end - 2
             case 5:
                 Console.Write(""section 5"");
                 break;
@@ -949,16 +1242,20 @@ _Select0_Case5:
                 Console.Write(""section 5"")
             Case Else
 _Select0_CaseDefault:
-                Console.Write(""default section"")
+                Console.Write(""default section"") ' Block moves to end - 1
+                ' Block moves to end - 2
         End Select
     End Sub
-End Class");
+End Class
+
+1 source compilation errors:
+CS0103: The name 'Console' does not exist in the current context");
         }
 
         [Fact]
-        public async Task SelectCase_WithDotInCaseLabel()
+        public async Task SelectCase_WithDotInCaseLabelAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     void TestMethod(double number)
     {
@@ -982,13 +1279,44 @@ _Select0_Case5_5:
                 Console.Write(""section 5"")
         End Select
     End Sub
+End Class
+
+1 source compilation errors:
+CS0103: The name 'Console' does not exist in the current context");
+        }
+
+        [Fact]
+        public async Task SelectCase_WithVarWhenClauseAsync()
+        {
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    public bool IsFive(int aNum)
+    {
+        switch (aNum)
+        {
+            case var case2 when case2 == 5:
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+}", @"Friend Class TestClass
+    Public Function IsFive(ByVal aNum As Integer) As Boolean
+        Select Case aNum
+            Case = 5
+                Return True
+        End Select
+
+        Return False
+    End Function
 End Class");
         }
 
         [Fact]
-        public async Task TryCatch()
+        public async Task TryCatchAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
     static bool Log(string message)
     {
@@ -1051,13 +1379,19 @@ End Class");
             Console.WriteLine(""finally"")
         End Try
     End Sub
-End Class");
+End Class
+
+2 source compilation errors:
+CS0103: The name 'Console' does not exist in the current context
+CS0246: The type or namespace name 'Exception' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
-        public async Task Yield()
+        public async Task YieldAsync()
         {
-            await TestConversionCSharpToVisualBasic(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"using System.Collections.Generic;
+
+class TestClass
 {
     IEnumerable<int> TestMethod(int number)
     {
@@ -1066,14 +1400,46 @@ End Class");
         for (int i = 0; i < number; i++)
             yield return i;
     }
-}", @"Friend Class TestClass
+}", @"Imports System.Collections.Generic
+
+Friend Class TestClass
     Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
         If number < 0 Then Return
 
-        For i = 0 To number - 1
+        For i As Integer = 0 To number - 1
             Yield i
         Next
     End Function
+End Class");
+        }
+
+        [Fact]
+        public async Task ObjectCreationExpressionInInvocationExpressionAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"class TestClass {
+    int field;
+    TestClass(int param) {
+        this.field = param;
+    }
+    
+    static void TestMethod() {
+        new TestClass(10).Initialize();
+    }
+    void Initialize() { }
+}",
+@"Friend Class TestClass
+    Private field As Integer
+
+    Private Sub New(ByVal param As Integer)
+        field = param
+    End Sub
+
+    Private Shared Sub TestMethod()
+        Call New TestClass(10).Initialize()
+    End Sub
+
+    Private Sub Initialize()
+    End Sub
 End Class");
         }
     }

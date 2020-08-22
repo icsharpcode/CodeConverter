@@ -1,22 +1,42 @@
 ﻿using System;
 using System.Threading.Tasks;
-using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace CodeConverter.Tests.CSharp
+namespace ICSharpCode.CodeConverter.Tests.CSharp
 {
     public class TypeCastTests : ConverterTestBase
     {
         [Fact]
-        public async Task CIntObjectToInteger()
+        public async Task NumericStringToEnumAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
+@"Public Class NumericStringToEnum
+    Public Shared Sub Main()
+        MsgBox(NameOf(Main), ""1"", True)
+    End Sub
+End Class" + Environment.NewLine, @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class NumericStringToEnum
+{
+    public static void Main()
+    {
+        Interaction.MsgBox(nameof(Main), (MsgBoxStyle)Conversions.ToInteger(""1""), true);
+    }
+}" + Environment.NewLine);
+        }
+
+        [Fact]
+        public async Task CIntObjectToIntegerAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5
         Dim i As Integer = CInt(o)
     End Sub
-End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
+End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -29,33 +49,35 @@ internal partial class Class1
         }
 
         [Fact]
-        public async Task CDate()
+        public async Task CDateAsync()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Public Class Class1
     Sub Foo()
         Dim x = CDate(""2019-09-04"")
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {
     public void Foo()
     {
-        var x = Conversions.ToDate(""2019-09-04"");
+        DateTime x = Conversions.ToDate(""2019-09-04"");
     }
 }");
         }
 
         [Fact]
-        public async Task CastObjectToString()
+        public async Task CastObjectToStringAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = ""Test""
         Dim s As String = CStr(o)
     End Sub
-End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
+End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -67,15 +89,15 @@ internal partial class Class1
 }" + Environment.NewLine);
         }
         [Fact]
-        public async Task ImplicitCastObjectToString()
+        public async Task ImplicitCastObjectToStringAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = ""Test""
         Dim s As String = o
     End Sub
-End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
+End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -87,9 +109,9 @@ internal partial class Class1
 }" + Environment.NewLine);
         }
         [Fact]
-        public async Task CastArrayListAssignmentToString()
+        public async Task CastArrayListAssignmentToStringAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim x As New ArrayList
@@ -100,7 +122,7 @@ internal partial class Class1
         xs(0) = x(0)
     End Sub
 End Class" + Environment.NewLine, @"using System.Collections;
-using Microsoft.VisualBasic.CompilerServices;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -108,23 +130,21 @@ internal partial class Class1
     {
         var x = new ArrayList();
         x.Add(""a"");
-
         var xs = new string[2];
-
         xs[0] = Conversions.ToString(x[0]);
     }
 }" + Environment.NewLine);
         }
         [Fact]
-        public async Task ImplicitCastObjecStringToString()
+        public async Task ImplicitCastObjecStringToStringAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = ""Test""
         Dim s As String = o
     End Sub
-End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices;
+End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -136,15 +156,15 @@ internal partial class Class1
 }" + Environment.NewLine);
         }
         [Fact]
-        public async Task CTypeDoubleToInt()
+        public async Task CTypeDoubleToIntAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim q = 2.37
         Dim j = CType(q, Integer)
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices;
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -157,9 +177,9 @@ internal partial class Class1
         }
 
         [Fact]
-        public async Task CastObjectToGenericList()
+        public async Task CastObjectToGenericListAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = New System.Collections.Generic.List(Of Integer)()
@@ -173,15 +193,15 @@ internal partial class Class1
     private void Test()
     {
         object o = new List<int>();
-        var l = (List<int>)o;
+        List<int> l = (List<int>)o;
     }
 }");
         }
 
         [Fact]
-        public async Task CTypeObjectToInteger()
+        public async Task CTypeObjectToIntegerAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5
@@ -189,7 +209,7 @@ internal partial class Class1
         Dim s As String = CType(o, Integer).ToString()
     End Sub
 End Class",
-@"using Microsoft.VisualBasic.CompilerServices;
+@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -203,9 +223,9 @@ internal partial class Class1
         }
 
         [Fact]
-        public async Task TryCastObjectToGenericList()
+        public async Task TryCastObjectToGenericListAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = New System.Collections.Generic.List(Of Integer)()
@@ -219,21 +239,22 @@ internal partial class Class1
     private void Test()
     {
         object o = new List<int>();
-        var l = o as List<int>;
+        List<int> l = o as List<int>;
     }
 }");
         }
 
         [Fact]
-        public async Task CastConstantNumberToLong()
+        public async Task CastConstantNumberToLongAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5L
     End Sub
 End Class",
-@"internal partial class Class1
+@"
+internal partial class Class1
 {
     private void Test()
     {
@@ -243,15 +264,16 @@ End Class",
         }
 
         [Fact]
-        public async Task CastConstantNumberToFloat()
+        public async Task CastConstantNumberToFloatAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5F
     End Sub
 End Class",
-@"internal partial class Class1
+@"
+internal partial class Class1
 {
     private void Test()
     {
@@ -261,14 +283,15 @@ End Class",
         }
 
         [Fact]
-        public async Task CastConstantNumberToDecimal()
+        public async Task CastConstantNumberToDecimalAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Class Class1
     Private Sub Test()
         Dim o As Object = 5.0D
     End Sub
-End Class" + Environment.NewLine, @"internal partial class Class1
+End Class" + Environment.NewLine, @"
+internal partial class Class1
 {
     private void Test()
     {
@@ -278,46 +301,169 @@ End Class" + Environment.NewLine, @"internal partial class Class1
         }
 
         [Fact]
-        public async Task CastConstantNumberToCharacterW()
+        public async Task CastConstantNumberToCharacterWAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Private Sub Test()
-    Dim CR = ChrW(&HD)
+    Dim CR = ChrW(&HF)
 End Sub
 ", @"private void Test()
 {
-    char CR = (char)0xD;
+    char CR = '\u000f';
 }
 ");
         }
 
         [Fact]
-        public async Task CastConstantNumberToCharacter()
+        public async Task CastConstantNumberToCharacterAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Private Sub Test()
-    Dim CR As Char = Chr(&HD)
+    Dim CR As Char = Chr(&HF)
 End Sub
 ", @"private void Test()
 {
-    char CR = (char)0xD;
+    char CR = '\u000f';
 }
 ");
         }
 
         [Fact]
-        public async Task TestSingleCharacterStringLiteralBecomesCharWhenNeeded()
+        public async Task TestSingleCharacterStringLiteralBecomesCharWhenNeededAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Class CharTestClass
     Private Function QuoteSplit(ByVal text As String) As String()
         Return text.Split("""""""")
     End Function
-End Class", @"internal partial class CharTestClass
+End Class", @"
+internal partial class CharTestClass
 {
     private string[] QuoteSplit(string text)
     {
         return text.Split('""');
+    }
+}");
+        }
+
+        [Fact]
+        public async Task TestSingleCharacterStringLiteralBecomesChar_WhenExplictCastAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Class ExplicitCastClass
+    Dim wordArray As String() = 1.ToString().Split(CChar("",""))
+End Class", @"
+internal partial class ExplicitCastClass
+{
+    private string[] wordArray = 1.ToString().Split(',');
+}");
+        }
+
+        [Fact]
+        public async Task TestCastHasBracketsWhenElementAccessAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Class TestCastHasBracketsWhenElementAccess
+    Private Function Casting(ByVal sender As Object) As Integer
+        Return CInt(DirectCast(sender, Object())(0))
+    End Function
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestCastHasBracketsWhenElementAccess
+{
+    private int Casting(object sender)
+    {
+        return Conversions.ToInteger(((object[])sender)[0]);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task MultipleNestedCastsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class MultipleCasts
+    Public Shared Function ToGenericParameter(Of T)(Value As Object) As T
+        If Value Is Nothing Then
+            Return Nothing
+        End If
+        Dim reflectedType As Global.System.Type = GetType(T)
+        If Global.System.Type.Equals(reflectedType, GetType(Global.System.Int16)) Then
+            Return DirectCast(CObj(CShort(Value)), T)
+        ElseIf Global.System.Type.Equals(reflectedType, GetType(Global.System.UInt64)) Then
+            Return DirectCast(CObj(CULng(Value)), T)
+        Else
+            Return DirectCast(Value, T)
+        End If
+    End Function
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class MultipleCasts
+{
+    public static T ToGenericParameter<T>(object Value)
+    {
+        if (Value is null)
+        {
+            return default;
+        }
+
+        var reflectedType = typeof(T);
+        if (Equals(reflectedType, typeof(short)))
+        {
+            return (T)(object)Conversions.ToShort(Value);
+        }
+        else if (Equals(reflectedType, typeof(ulong)))
+        {
+            return (T)(object)Conversions.ToULong(Value);
+        }
+        else
+        {
+            return (T)Value;
+        }
+    }
+}");
+        }
+
+        /// <summary>
+        /// We just use ConditionalCompareObjectEqual to make it a bool, but VB emits a late binding call something like this:
+        /// array[0] = Operators.CompareObjectEqual(left, right, false);
+        /// array[1] = "Identical values stored in objects should be equal";
+        /// NewLateBinding.LateCall(this, null, "AssertTrue", array, null, null, null, true);
+        /// This will likely be the same in the vast majority of cases
+        /// </summary>
+        [Fact]
+        public async Task ObjectComparisonIsConvertedToBoolRatherThanLateBoundAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class CopiedFromTheSelfVerifyingBooleanTests
+    Public Sub VisualBasicEqualityOfNormalObjectsNotSubjectToSpecialStringConversionRules()
+        Dim a1 As Object = 3
+        Dim a2 As Object = 3
+        AssertTrue(a1 = a2, ""Identical values stored in objects should be equal"")
+    End Sub
+
+    Private Sub AssertTrue(v1 As Nullable(Of Boolean), v2 As String)
+    End Sub
+
+    Private Sub AssertTrue(v1 As Boolean, v2 As String)
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class CopiedFromTheSelfVerifyingBooleanTests
+{
+    public void VisualBasicEqualityOfNormalObjectsNotSubjectToSpecialStringConversionRules()
+    {
+        object a1 = 3;
+        object a2 = 3;
+        AssertTrue(Operators.ConditionalCompareObjectEqual(a1, a2, false), ""Identical values stored in objects should be equal"");
+    }
+
+    private void AssertTrue(bool? v1, string v2)
+    {
+    }
+
+    private void AssertTrue(bool v1, string v2)
+    {
     }
 }");
         }

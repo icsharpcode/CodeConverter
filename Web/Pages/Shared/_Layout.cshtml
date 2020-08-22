@@ -1,0 +1,66 @@
+﻿@using System.Diagnostics
+@using System.Reflection
+@using ICSharpCode.CodeConverter
+@using Microsoft.AspNetCore.Http
+@using Microsoft.Extensions.Caching.Memory
+
+@inject IMemoryCache memCache
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Roslyn Code Converter</title>
+    @RenderSection("head", required: false)
+
+    <meta name="keywords" content="@ViewData["Keywords"]" />
+    <meta name="description" content="@ViewData["Description"]" />
+    <meta name="robots" content="index,follow">
+    <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+
+    <link rel="stylesheet" href="~/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a href="~/" class="navbar-brand">ICSharp<span class="title-highlight">Code Converter</span></a>
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li><a href="~/">Home</a></li>
+                    <li><a href="~/About">About</a></li>
+                </ul>
+            </div>
+            @{ await Html.RenderPartialAsync("_GithubLink"); }
+        </div>
+    </div>
+    <div class="container body-content">
+        @RenderBody()
+        <hr />
+        @{
+            string versionInfo;
+            if (!memCache.TryGetValue("AssemblyVersionInformation", out versionInfo))
+            {
+                Assembly assembly = Assembly.GetAssembly(typeof(CodeConverter));
+                FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+
+                versionInfo = fvi.FileVersion;
+                memCache.Set("AssemblyVersionInformation", versionInfo);
+            }
+            <footer>
+                <p>&copy; 2015-@DateTime.Now.Year - Code Converter by <a href="https://github.com/icsharpcode/CodeConverter/">https://github.com/icsharpcode/CodeConverter/</a> - Version @versionInfo</p>
+            </footer>
+        }
+    </div>
+
+    <script src="~/js/bootstrap.min.js"></script>
+</body>
+</html>

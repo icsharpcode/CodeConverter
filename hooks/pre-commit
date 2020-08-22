@@ -1,0 +1,14 @@
+#!/bin/sh
+#
+# Stop us from committing the test constants flag
+#
+disallowed="RecharacterizeByWritingExpectedOverActual.*=.*true" 
+
+git diff --cached --name-status  | egrep TestConstants | while read x file; do
+        if [ "$x" == 'D' ]; then continue; fi
+        if egrep "$disallowed" "$file" ; then
+            echo "ERROR: Disallowed expression \"${disallowed}\" in file: ${file}"
+            exit 1
+        fi
+
+done || exit $?

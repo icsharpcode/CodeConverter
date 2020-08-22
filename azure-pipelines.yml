@@ -7,7 +7,7 @@ pr:
 variables:
   solution: '**/CodeConverter.sln'
   buildPlatform: 'Any CPU'
-  buildVersion: '7.2.$(Build.BuildId)'
+  buildVersion: '8.1.7.$(Build.BuildId)'
 
 pool:
   vmImage: 'windows-2019'
@@ -19,10 +19,10 @@ strategy:
 steps:
 
 - task: UseDotNet@2
-  displayName: 'Install .net core 3.0'
+  displayName: 'Install .net core 3.1'
   inputs:
     packageType: sdk
-    version: '3.0.100'
+    version: '3.1.100'
     installationPath: $(Agent.ToolsDirectory)/dotnet
 
 - task: NuGetToolInstaller@1
@@ -34,7 +34,7 @@ steps:
 - task: Assembly-Info-NetCore@2
   inputs:
     Path: '$(Build.SourcesDirectory)'
-    FileNames: '**/ICSharpCode.CodeConverter.csproj'
+    FileNames: '**/CodeConverter.csproj'
     InsertAttributes: false
     FileEncoding: 'auto'
     WriteBOM: false
@@ -53,11 +53,13 @@ steps:
   inputs:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+    codeCoverageEnabled: True
+    runSettingsFile: Tests/continuousintegration.runsettings
 
 - task: DotNetCoreCLI@2
   inputs:
     command: 'pack'
-    packagesToPack: '**/ICSharpCode.CodeConverter.csproj'
+    packagesToPack: '**/CodeConverter.csproj'
     versioningScheme: 'off'
 
 - task: CopyFiles@2
@@ -65,10 +67,11 @@ steps:
   inputs:
     contents: |
       **\ICSharpCode.CodeConverter.*.nupkg
-      **\CodeConverter.VsExtension.vsix
+      **\ICSharpCode.CodeConverter.VsExtension.vsix
     targetFolder: $(Build.ArtifactStagingDirectory)
 
-- task: PublishPipelineArtifact@0
+- task: PublishPipelineArtifact@1
   displayName: Publish Artifacts
   inputs:
     targetPath: $(Build.ArtifactStagingDirectory)
+    artifactName: VSExtensionAndNupkg

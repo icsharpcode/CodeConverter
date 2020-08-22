@@ -46,8 +46,8 @@ dotnet_style_qualification_for_event = false:silent
 
 # Do not use 'var' when generating code, but allow developers to use it
 csharp_style_var_for_built_in_types = false:silent
-csharp_style_var_when_type_is_apparent = false:silent
-csharp_style_var_elsewhere = false:silent
+csharp_style_var_when_type_is_apparent = true:silent
+csharp_style_var_elsewhere = true:silent
 
 # Use language keywords instead of BCL types when generating code, but allow developers to use either
 dotnet_style_predefined_type_for_locals_parameters_members = true:silent
@@ -110,3 +110,42 @@ csharp_space_between_method_declaration_name_and_open_parenthesis = false
 csharp_space_between_method_declaration_parameter_list_parentheses = false
 csharp_space_between_parentheses = false
 csharp_space_between_square_brackets = false
+
+# RCS1141: Add 'param' element to documentation comment.
+dotnet_diagnostic.RCS1141.severity = none
+
+# RCS1139: Add summary element to documentation comment.
+dotnet_diagnostic.RCS1139.severity = none
+
+# RCS1090: Call 'ConfigureAwait(false)'.
+dotnet_diagnostic.RCS1090.severity = none
+
+# RCS1080: Use 'Count/Length' property instead of 'Any' method.
+dotnet_diagnostic.RCS1080.severity = none
+
+# RCS1124: Inline local variable.
+dotnet_diagnostic.RCS1124.severity = none
+
+# RCS1077: Optimize LINQ method call.
+dotnet_diagnostic.RCS1077.severity = none
+
+# IDE0040: Add accessibility modifiers
+dotnet_style_require_accessibility_modifiers = always:warning
+
+# IDE0048: Add parentheses for clarity
+dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:none
+
+# IDE0048: Add parentheses for clarity
+dotnet_style_parentheses_in_other_operators = never_if_unnecessary:none
+
+# IDE0048: Add parentheses for clarity
+dotnet_style_parentheses_in_other_binary_operators = always_for_clarity:none
+
+# IDE0048: Add parentheses for clarity
+dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity:none
+
+# RCS1123: Add parentheses according to operator precedence.
+dotnet_diagnostic.RCS1123.severity = none
+
+# Default severity for analyzer diagnostics with category 'Performance' - turn this up to warn when looking for performance issues
+dotnet_analyzer_diagnostic.category-Performance.severity = suggestion

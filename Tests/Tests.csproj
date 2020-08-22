@@ -2,18 +2,16 @@
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
     <OutputType>Library</OutputType>
-    <AssemblyName>CodeConverter.Tests</AssemblyName>
-    <RootNamespace>CodeConverter.Tests</RootNamespace>
+    <AssemblyName>ICSharpCode.CodeConverter.Tests</AssemblyName>
+    <RootNamespace>ICSharpCode.CodeConverter.Tests</RootNamespace>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <LangVersion>7.3</LangVersion>
+    <LangVersion>8.0</LangVersion>
     <NoWarn>$(NoWarn);1998</NoWarn>
+    <DisableMSBuildAssemblyCopyCheck>true</DisableMSBuildAssemblyCopyCheck>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build.Locator" Version="1.2.2" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="3.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="3.1.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.0.102" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
   </ItemGroup>
@@ -22,13 +20,18 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ICSharpCode.CodeConverter\ICSharpCode.CodeConverter.csproj" />
+    <Compile Include="..\CodeConverter\Shared\DefaultReferences.cs" Link="DefaultReferences.cs" />
+    <Compile Remove="TestData\**" />
+    <EmbeddedResource Remove="TestData\**" />
+    <None Include="TestData\**\*.*" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\ICSharpCode.CodeConverter\Shared\DefaultReferences.cs" Link="DefaultReferences.cs" />
-    <None Include="..\TestData\**\*.*">
-      <Link>TestData\%(RecursiveDir)%(FileName)%(Extension)</Link>
-    </None>
+    <ProjectReference Include="..\CommandLine\CodeConv.NetFramework\CodeConv.NetFramework.csproj" />
+  </ItemGroup>
+  <ItemGroup Label="ReSharper test runner requirements">
+    <PackageReference Include="Microsoft.CodeAnalysis.Features" Version="3.4.0" />
+    <PackageReference Include="Microsoft.Build" Version="16.4.0" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="16.4.0" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Web" />

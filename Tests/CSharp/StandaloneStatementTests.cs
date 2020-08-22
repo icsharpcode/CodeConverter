@@ -1,15 +1,15 @@
 ﻿using System.Threading.Tasks;
-using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace CodeConverter.Tests.CSharp
+namespace ICSharpCode.CodeConverter.Tests.CSharp
 {
     public class StandaloneStatementTests : ConverterTestBase
     {
         [Fact]
-        public async Task Reassignment()
+        public async Task ReassignmentAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Dim num as Integer = 4
 num = 5",
 @"int num = 4;
@@ -18,9 +18,18 @@ expectSurroundingBlock: true);
         }
 
         [Fact]
-        public async Task ObjectMemberInitializerSyntax()
+        public async Task CallAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
+@"Call mySuperFunction",
+@"mySuperFunction();",
+expectSurroundingBlock: true, missingSemanticInfo: true);
+        }
+
+        [Fact]
+        public async Task ObjectMemberInitializerSyntaxAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
 @"Dim obj as New AttributeUsageAttribute With
 {
     .AllowMultiple = True,
@@ -37,9 +46,9 @@ obj = null;",
         }
 
         [Fact]
-        public async Task AnonymousObjectCreationExpressionSyntax()
+        public async Task AnonymousObjectCreationExpressionSyntaxAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Dim obj = New With
 {
     .Name = ""Hello"",
@@ -56,62 +65,64 @@ obj = null;",
         }
 
         [Fact]
-        public async Task SingleAssigment()
+        public async Task SingleAssigmentAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Dim x = 3",
                 @"int x = 3;",
                 expectSurroundingBlock: true);
         }
 
         [Fact]
-        public async Task SingleFieldDeclaration()
+        public async Task SingleFieldDeclarationAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Private x As Integer = 3",
                 @"private int x = 3;");
         }
 
         [Fact]
-        public async Task SingleEmptyClass()
+        public async Task SingleEmptyClassAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Public Class Test
 End Class",
-@"public partial class Test
+@"
+public partial class Test
 {
 }");
         }
 
         [Fact]
-        public async Task SingleAbstractMethod()
+        public async Task SingleAbstractMethodAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
                 @"Protected MustOverride Sub abs()",
                 @"protected abstract void abs();");
         }
 
         [Fact]
-        public async Task SingleEmptyNamespace()
+        public async Task SingleEmptyNamespaceAsync()
         {
-            await TestConversionVisualBasicToCSharp(
+            await TestConversionVisualBasicToCSharpAsync(
 @"Namespace nam
 End Namespace",
-@"namespace nam
+@"
+namespace nam
 {
 }");
         }
 
         [Fact]
-        public async Task SingleUnusedUsingAliasTidiedAway()
+        public async Task SingleUnusedUsingAliasTidiedAwayAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Imports tr = System.IO.TextReader", "");
+            await TestConversionVisualBasicToCSharpAsync(@"Imports tr = System.IO.TextReader ' Removed by simplifier", "");
         }
 
         [Fact]
-        public async Task QuerySyntax()
+        public async Task QuerySyntaxAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Dim cmccIds As New List(Of Integer)
+            await TestConversionVisualBasicToCSharpAsync(@"Dim cmccIds As New List(Of Integer)
 For Each scr In _sponsorPayment.SponsorClaimRevisions
     For Each claim In scr.Claims
         If TypeOf claim.ClaimSummary Is ClaimSummary Then
@@ -124,7 +135,7 @@ Next", @"{
     var cmccIds = new List<int>();
     foreach (var scr in _sponsorPayment.SponsorClaimRevisions)
     {
-        foreach (var claim in scr.Claims)
+        foreach (var claim in (IEnumerable)scr.Claims)
         {
             if (claim.ClaimSummary is ClaimSummary)
             {
@@ -135,7 +146,15 @@ Next", @"{
             }
         }
     }
-}");
+}
+
+2 source compilation errors:
+BC30451: '_sponsorPayment' is not declared. It may be inaccessible due to its protection level.
+BC30002: Type 'ClaimSummary' is not defined.
+3 target compilation errors:
+CS0103: The name '_sponsorPayment' does not exist in the current context
+CS1061: 'object' does not contain a definition for 'ClaimSummary' and no accessible extension method 'ClaimSummary' accepting a first argument of type 'object' could be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'ClaimSummary' could not be found (are you missing a using directive or an assembly reference?)");
         }
     }
 }

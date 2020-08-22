@@ -2,12 +2,12 @@
 using System.Linq;
 using ICSharpCode.CodeConverter.CSharp;
 using Xunit;
-using CodeConverter.Tests.Compilation;
 using System.IO;
-using CodeConverter.Tests.TestRunners;
-using ICSharpCode.CodeConverter.Util;
+using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.Shared;
 
-namespace CodeConverter.Tests.CSharp
+namespace ICSharpCode.CodeConverter.Tests.CSharp
 {
     /// <summary>
     /// Run pairs of xUnit tests in converted code before and after conversion
@@ -16,9 +16,9 @@ namespace CodeConverter.Tests.CSharp
     public class SelfVerifyingTests
     {
         [Theory, MemberData(nameof(GetVisualBasicToCSharpTestData))]
-        public void VisualBasicToCSharp(NamedFact verifyConvertedTestPasses)
+        public async Task VisualBasicToCSharpAsync(NamedFact verifyConvertedTestPasses)
         {
-            verifyConvertedTestPasses.Execute();
+            await verifyConvertedTestPasses.Execute();
         }
 
         /// <summary>
@@ -27,9 +27,10 @@ namespace CodeConverter.Tests.CSharp
         /// </summary>
         public static IEnumerable<object[]> GetVisualBasicToCSharpTestData()
         {
-            var testFiles = Directory.GetFiles("../../../TestData/SelfVerifyingTests/VBToCS", "*.vb");
+            var testFiles = Directory.GetFiles(Path.Combine(TestConstants.GetTestDataDirectory(), "SelfVerifyingTests/VBToCS"), "*.vb");
             return testFiles.SelectMany(SelfVerifyingTestFactory.GetSelfVerifyingFacts<VisualBasicCompiler, CSharpCompiler, VBToCSConversion>)
-                .Select(et => new object[] {et});
+                .Select(et => new object[] {et})
+                .ToArray();
         }
     }
 }

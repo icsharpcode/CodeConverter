@@ -1,34 +1,73 @@
 ﻿using System.Threading.Tasks;
-using CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace CodeConverter.Tests.CSharp.MissingSemanticModelInfo
+namespace ICSharpCode.CodeConverter.Tests.CSharp.MissingSemanticModelInfo
 {
     public class ExpressionTests : ConverterTestBase
     {
         [Fact]
-        public async Task InvokeIndexerOnPropertyValue()
+        public async Task InvokeIndexerOnPropertyValueAsync()
         {
             // Chances of having an unknown delegate stored as a field/property/local seem lower than having an unknown non-delegate
             // type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
-Public Property SomeProperty As System.Some.UnknownType
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Public Property SomeProperty As System.Some.UnknownType
     Private Sub TestMethod()
-        Dim value = SomeProperty(0)
+        Dim num = 0
+        Dim value = SomeProperty(num)
+        value = SomeProperty(0)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     public System.Some.UnknownType SomeProperty { get; set; }
+
     private void TestMethod()
     {
-        var value = SomeProperty[0];
+        int num = 0;
+        var value = SomeProperty[num];
+        value = SomeProperty[0];
     }
-}");
+}
+2 source compilation errors:
+BC30002: Type 'System.Some.UnknownType' is not defined.
+BC32016: 'Public Property SomeProperty As System.Some.UnknownType' has no parameters and its return type cannot be indexed.
+1 target compilation errors:
+CS0234: The type or namespace name 'Some' does not exist in the namespace 'System' (are you missing an assembly reference?)");
         }
         [Fact]
-        public async Task InvokeMethodWithUnknownReturnType()
+        public async Task InvokeMethodOnPropertyValueAsync()
         {
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            // Chances of having an unknown delegate stored as a field/property/local seem lower than having an unknown non-delegate
+            // type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Public Property SomeProperty As System.Some.UnknownType
+    Private Sub TestMethod()
+        Dim value = SomeProperty(New Object())
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    public System.Some.UnknownType SomeProperty { get; set; }
+
+    private void TestMethod()
+    {
+        var value = SomeProperty(new object());
+    }
+}
+2 source compilation errors:
+BC30002: Type 'System.Some.UnknownType' is not defined.
+BC32016: 'Public Property SomeProperty As System.Some.UnknownType' has no parameters and its return type cannot be indexed.
+2 target compilation errors:
+CS0234: The type or namespace name 'Some' does not exist in the namespace 'System' (are you missing an assembly reference?)
+CS1955: Non-invocable member 'TestClass.SomeProperty' cannot be used like a method.");
+        }
+
+        [Fact]
+        public async Task InvokeMethodWithUnknownReturnTypeAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Bar(Nothing)
     End Sub
@@ -37,31 +76,36 @@ End Class", @"internal partial class TestClass
         Return x
     End Function
 
-End Class", @"public partial class Class1
+End Class", @"
+public partial class Class1
 {
     public void Foo()
     {
-        Bar(null);
+        Bar(default);
     }
 
     private SomeClass Bar(SomeClass x)
     {
         return x;
     }
-}");
+}
+1 source compilation errors:
+BC30002: Type 'SomeClass' is not defined.
+1 target compilation errors:
+CS0246: The type or namespace name 'SomeClass' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
-        public async Task ForNextMutatingMissingField()
+        public async Task ForNextMutatingMissingFieldAsync()
         {
-            // Comment from "Next" gets pushed up to previous line
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class Class1
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         For Me.Index = 0 To 10
 
         Next
     End Sub
-End Class", @"public partial class Class1
+End Class", @"
+public partial class Class1
 {
     public void Foo()
     {
@@ -69,13 +113,17 @@ End Class", @"public partial class Class1
         {
         }
     }
-}");
+}
+1 source compilation errors:
+BC30456: 'Index' is not a member of 'Class1'.
+1 target compilation errors:
+CS1061: 'Class1' does not contain a definition for 'Index' and no accessible extension method 'Index' accepting a first argument of type 'Class1' could be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
-        public async Task OutParameterNonCompilingType()
+        public async Task OutParameterNonCompilingTypeAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Public Class OutParameterWithMissingType
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class OutParameterWithMissingType
     Private Shared Sub AddToDict(ByVal pDict As Dictionary(Of Integer, MissingType), ByVal pKey As Integer)
         Dim anInstance As MissingType = Nothing
         If Not pDict.TryGetValue(pKey, anInstance) Then
@@ -99,7 +147,7 @@ public partial class OutParameterWithMissingType
 {
     private static void AddToDict(Dictionary<int, MissingType> pDict, int pKey)
     {
-        MissingType anInstance = null;
+        MissingType anInstance = default;
         if (!pDict.TryGetValue(pKey, out anInstance))
         {
             anInstance = new MissingType();
@@ -112,20 +160,23 @@ public partial class OutParameterWithNonCompilingType
 {
     private static void AddToDict(Dictionary<OutParameterWithMissingType, MissingType> pDict, OutParameterWithMissingType pKey)
     {
-        MissingType anInstance = null;
+        MissingType anInstance = default;
         if (!pDict.TryGetValue(pKey, out anInstance))
         {
             anInstance = new MissingType();
             pDict.Add(pKey, anInstance);
         }
     }
-}");
+}
+1 source compilation errors:
+BC30002: Type 'MissingType' is not defined.
+1 target compilation errors:
+CS0246: The type or namespace name 'MissingType' could not be found (are you missing a using directive or an assembly reference?)");
         }
         [Fact]
-        public async Task EnumSwitchAndValWithUnusedMissingType()
+        public async Task EnumSwitchAndValWithUnusedMissingTypeAsync()
         {
-            // BUG: Stop comments appearing before colon in case statement
-            await TestConversionVisualBasicToCSharpWithoutComments(@"Public Class EnumAndValTest
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class EnumAndValTest
     Public Enum PositionEnum As Integer
         None = 0
         LeftTop = 1
@@ -160,8 +211,8 @@ public partial class OutParameterWithNonCompilingType
         Return tS
     End Function
 End Class",
-@"using Microsoft.VisualBasic;
-using Microsoft.VisualBasic.CompilerServices;
+@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class EnumAndValTest
 {
@@ -178,7 +229,7 @@ public partial class EnumAndValTest
     public PositionEnum PositionEnumFromString(string pS, MissingType missing)
     {
         var tPos = default(PositionEnum);
-        switch (pS.ToUpper())
+        switch (pS.ToUpper() ?? """")
         {
             case ""NONE"":
             case ""0"":
@@ -200,8 +251,10 @@ public partial class EnumAndValTest
                     break;
                 }
         }
+
         return tPos;
     }
+
     public string PositionEnumStringFromConstant(PositionEnum pS)
     {
         string tS;
@@ -221,52 +274,150 @@ public partial class EnumAndValTest
 
             default:
                 {
-                    tS = Conversions.ToString(pS);
+                    tS = ((int)pS).ToString();
                     break;
                 }
         }
+
         return tS;
     }
-}");
+}
+1 source compilation errors:
+BC30002: Type 'MissingType' is not defined.
+1 target compilation errors:
+CS0246: The type or namespace name 'MissingType' could not be found (are you missing a using directive or an assembly reference?)");
         }
 
         [Fact]
-        public async Task UnknownTypeInvocation()
+        public async Task CastToSameTypeAsync()
         {
-            await TestConversionVisualBasicToCSharp(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class CastToSameTypeTest
+
+    Sub PositionEnumFromString(ByVal c As Char)
+        Select Case c
+            Case CChar(""."")
+                Console.WriteLine(1)
+            Case CChar("","")
+                Console.WriteLine(2)
+        End Select
+    End Sub
+End Class",
+    @"using System;
+
+public partial class CastToSameTypeTest
+{
+    public void PositionEnumFromString(char c)
+    {
+        switch (c)
+        {
+            case '.':
+                {
+                    Console.WriteLine(1);
+                    break;
+                }
+
+            case ',':
+                {
+                    Console.WriteLine(2);
+                    break;
+                }
+        }
+    }
+}") ;
+        }
+
+        [Fact]
+        public async Task UnknownTypeInvocationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private property DefaultDate as System.SomeUnknownType
     private sub TestMethod()
         Dim a = DefaultDate(1, 2, 3).Blawer(1, 2, 3)
     End Sub
-End Class", @"internal partial class TestClass
+End Class", @"
+internal partial class TestClass
 {
     private System.SomeUnknownType DefaultDate { get; set; }
+
     private void TestMethod()
     {
-        var a = DefaultDate[1, 2, 3].Blawer(1, 2, 3);
+        var a = DefaultDate(1, 2, 3).Blawer(1, 2, 3);
     }
-}");
+}
+2 source compilation errors:
+BC30002: Type 'System.SomeUnknownType' is not defined.
+BC32016: 'Private Property DefaultDate As System.SomeUnknownType' has no parameters and its return type cannot be indexed.
+2 target compilation errors:
+CS0234: The type or namespace name 'SomeUnknownType' does not exist in the namespace 'System' (are you missing an assembly reference?)
+CS1955: Non-invocable member 'TestClass.DefaultDate' cannot be used like a method.");
         }
 
-    [Fact]
-    public async Task CharacterizeRaiseEventWithMissingDefinitionActsLikeFunc()
-    {
-    await TestConversionCSharpToVisualBasic(
-        @"using System;
+        [Fact]
+        public async Task CharacterizeRaiseEventWithMissingDefinitionActsLikeMultiIndexerAsync()
+        {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System
 
-class TestClass
+    Friend Class TestClass
+        Private Sub TestMethod()
+            If MyEvent IsNot Nothing Then MyEvent(Me, EventArgs.Empty)
+        End Sub
+    End Class", @"using System;
+
+internal partial class TestClass
 {
-    void TestMethod()
+    private void TestMethod()
     {
-        if (MyEvent != null) MyEvent(this, EventArgs.Empty);
+        if (MyEvent is object)
+            MyEvent(this, EventArgs.Empty);
     }
-}", @"Imports System
-
-Friend Class TestClass
-    Private Sub TestMethod()
-        If MyEvent IsNot Nothing Then MyEvent(Me, EventArgs.Empty)
-    End Sub
-End Class");
+}
+1 source compilation errors:
+BC30451: 'MyEvent' is not declared. It may be inaccessible due to its protection level.
+1 target compilation errors:
+CS0103: The name 'MyEvent' does not exist in the current context");
         }
+
+        [Fact]
+        public async Task ConvertBuiltInMethodWithUnknownArgumentTypeAsync()
+        {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class A
+    Public Sub Test()
+        Dim x As SomeUnknownType = Nothing
+        Dim y As Integer = 3
+        If IsNothing(x) OrElse IsNothing(y) Then
+
+        End If
+    End Sub
+End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+
+internal partial class A
+{
+    public void Test()
+    {
+        SomeUnknownType x = default;
+        int y = 3;
+        if (Information.IsNothing(x) || Information.IsNothing(y))
+        {
+        }
+    }
+}
+1 source compilation errors:
+BC30002: Type 'SomeUnknownType' is not defined.
+1 target compilation errors:
+CS0246: The type or namespace name 'SomeUnknownType' could not be found (are you missing a using directive or an assembly reference?)");
+        }
+
+        [Fact]
+        public async Task CallShouldAlwaysBecomeInvocationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Call mySuperFunction(strSomething, , optionalSomething)",
+                @"mySuperFunction(strSomething, default, optionalSomething);",
+                expectSurroundingBlock: true, missingSemanticInfo: true
+            );
+        }
+
     }
 }

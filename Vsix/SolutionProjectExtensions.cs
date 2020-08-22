@@ -3,7 +3,7 @@ using System.Linq;
 using EnvDTE;
 using EnvDTE80;
 
-namespace CodeConverter.VsExtension
+namespace ICSharpCode.CodeConverter.VsExtension
 {
     /// <summary>
     /// http://www.wwwlicious.com/2011/03/29/envdte-getting-all-projects-html/#comment-2557459433

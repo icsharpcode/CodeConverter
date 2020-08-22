@@ -1,45 +1,82 @@
 ﻿using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.VisualBasic;
 using Xunit;
 using Xunit.Sdk;
 
-namespace CodeConverter.Tests.TestRunners
+namespace ICSharpCode.CodeConverter.Tests.TestRunners
 {
     public class ConverterTestBase
     {
-        /// <summary>
-        /// Leave this set to false when committing, and check any changes very carefully when using.
-        /// </summary>
-        private static readonly bool WriteNewCharacterization = false;
+        private const string AutoTestCommentPrefix = " SourceLine:";
+        private static readonly bool RecharacterizeByWritingExpectedOverActual = TestConstants.RecharacterizeByWritingExpectedOverActual;
 
-        private bool _testCstoVBCommentsByDefault = false;
+        private readonly bool _testCstoVbCommentsByDefault = true;
+        private readonly bool _testVbtoCsCommentsByDefault = true;
         private readonly string _rootNamespace;
+
+        protected TextConversionOptions EmptyNamespaceOptionStrictOff { get; set; }
 
         public ConverterTestBase(string rootNamespace = null)
         {
             _rootNamespace = rootNamespace;
+            var options = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                                .WithOptionExplicit(true)
+                                .WithOptionCompareText(false)
+                                .WithOptionStrict(OptionStrict.Off)
+                                .WithOptionInfer(true);
+            EmptyNamespaceOptionStrictOff = new TextConversionOptions(DefaultReferences.NetStandard2) {
+                RootNamespaceOverride = string.Empty, TargetCompilationOptionsOverride = options,
+                ShowCompilationErrors = true
+            };
         }
 
-        protected static async Task<string> GetConvertedCodeOrErrorString<TLanguageConversion>(string toConvert) where TLanguageConversion : ILanguageConversion, new()
-        {
-            var conversionResult = await ProjectConversion.ConvertText<TLanguageConversion>(toConvert, DefaultReferences.NetStandard2);
-            var convertedCode = conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString();
-            return convertedCode;
-        }
-
-        public async Task TestConversionCSharpToVisualBasic(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, bool expectCompilationErrors = false)
+        public async Task TestConversionCSharpToVisualBasicAsync(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, bool expectCompilationErrors = false, TextConversionOptions conversionOptions = null, bool hasLineCommentConversionIssue = false)
         {
             expectedVisualBasicCode = AddSurroundingMethodBlock(expectedVisualBasicCode, expectSurroundingMethodBlock);
 
-            await TestConversionCSharpToVisualBasicWithoutComments(csharpCode, expectedVisualBasicCode);
-            if (_testCstoVBCommentsByDefault) await TestConversionCSharpToVisualBasicWithoutComments(AddLineNumberComments(csharpCode, "// ", false), AddLineNumberComments(expectedVisualBasicCode, "' ", true));
+            conversionOptions ??= new TextConversionOptions(DefaultReferences.NetStandard2) { ShowCompilationErrors = !expectSurroundingMethodBlock };
+            await AssertConvertedCodeResultEqualsAsync<CSToVBConversion>(csharpCode, expectedVisualBasicCode, conversionOptions);
+            if (_testCstoVbCommentsByDefault && !hasLineCommentConversionIssue) {
+                await AssertLineCommentsConvertedInSameOrderAsync<CSToVBConversion>(csharpCode, conversionOptions, "//", LineCanHaveCSharpComment);
+            }
+        }
+
+        private static bool LineCanHaveCSharpComment(string l)
+        {
+            return !l.TrimStart().StartsWith("#region");
+        }
+
+        /// <summary>
+        /// Lines that already have comments aren't automatically tested, so if a line changes order in a conversion, just add a comment to that line.
+        /// If there's a comment conversion issue, set the optional hasLineCommentConversionIssue to true
+        /// </summary>
+        private async Task AssertLineCommentsConvertedInSameOrderAsync<TLanguageConversion>(string source, TextConversionOptions conversion, string singleLineCommentStart, Func<string, bool> lineCanHaveComment) where TLanguageConversion : ILanguageConversion, new()
+        {
+            var (sourceLinesWithComments, lineNumbersAdded) = AddLineNumberComments(source, singleLineCommentStart, AutoTestCommentPrefix, lineCanHaveComment);
+            string sourceWithComments = string.Join(Environment.NewLine, sourceLinesWithComments);
+            var convertedCode = await ConvertAsync<TLanguageConversion>(sourceWithComments, conversion);
+            var convertedCommentLineNumbers = convertedCode.Split(new[] { AutoTestCommentPrefix }, StringSplitOptions.None)
+                .Skip(1).Select(afterPrefix => afterPrefix.Split('\n')[0].TrimEnd()).ToList();
+            var missingSourceLineNumbers = lineNumbersAdded.Except(convertedCommentLineNumbers);
+            if (missingSourceLineNumbers.Any()) {
+                Assert.False(true, "Comments not converted from source lines: " + string.Join(", ", missingSourceLineNumbers) + GetSourceAndConverted(sourceWithComments, convertedCode));
+            }
+            OurAssert.Equal(string.Join(", ", lineNumbersAdded), string.Join(", ", convertedCommentLineNumbers), () => GetSourceAndConverted(sourceWithComments, convertedCode));
+        }
+
+        private static string GetSourceAndConverted(string sourceLinesWithComments, string convertedCode)
+        {
+            return OurAssert.LineSplitter + "Converted:\r\n" + convertedCode + OurAssert.LineSplitter + "Source:\r\n" + sourceLinesWithComments;
         }
 
         private static string AddSurroundingMethodBlock(string expectedVisualBasicCode, bool expectSurroundingBlock)
@@ -55,16 +92,18 @@ End Sub";
             return expectedVisualBasicCode;
         }
 
-        private async Task TestConversionCSharpToVisualBasicWithoutComments(string csharpCode, string expectedVisualBasicCode)
-        {
-            await AssertConvertedCodeResultEquals<CSToVBConversion>(csharpCode, expectedVisualBasicCode);
-        }
-
-        public async Task TestConversionVisualBasicToCSharp(string visualBasicCode, string expectedCsharpCode, bool expectSurroundingBlock = false)
+        /// <summary>
+        /// <paramref name="missingSemanticInfo"/> is currently unused but acts as documentation, and in future will be used to decide whether to check if the input/output compiles
+        /// </summary>
+        public async Task TestConversionVisualBasicToCSharpAsync(string visualBasicCode, string expectedCsharpCode, bool expectSurroundingBlock = false, bool missingSemanticInfo = false, bool hasLineCommentConversionIssue = false)
         {
             if (expectSurroundingBlock) expectedCsharpCode = SurroundWithBlock(expectedCsharpCode);
-            await TestConversionVisualBasicToCSharpWithoutComments(visualBasicCode, expectedCsharpCode);
-            await TestConversionVisualBasicToCSharpWithoutComments(AddLineNumberComments(visualBasicCode, "' ", false), AddLineNumberComments(expectedCsharpCode, "// ", true));
+            var conversionOptions = new TextConversionOptions(DefaultReferences.NetStandard2) { RootNamespaceOverride = _rootNamespace, ShowCompilationErrors = !expectSurroundingBlock };
+            await AssertConvertedCodeResultEqualsAsync<VBToCSConversion>(visualBasicCode, expectedCsharpCode, conversionOptions);
+
+            if (_testVbtoCsCommentsByDefault && !hasLineCommentConversionIssue) {
+                await AssertLineCommentsConvertedInSameOrderAsync<VBToCSConversion>(visualBasicCode, null, "'", _ => true);
+            }
         }
 
         private static string SurroundWithBlock(string expectedCsharpCode)
@@ -73,113 +112,119 @@ End Sub";
             return $"{{\r\n    {indentedStatements}\r\n}}";
         }
 
-        public async Task TestConversionVisualBasicToCSharpWithoutComments(string visualBasicCode, string expectedCsharpCode)
+        protected async Task<string> ConvertAsync<TLanguageConversion>(string inputCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
         {
-            await AssertConvertedCodeResultEquals<VBToCSConversion>(visualBasicCode, expectedCsharpCode);
+            var textConversionOptions = conversionOptions ?? new TextConversionOptions(DefaultReferences.NetStandard2) { RootNamespaceOverride = _rootNamespace, ShowCompilationErrors = true };
+            var conversionResult = await ProjectConversion.ConvertTextAsync<TLanguageConversion>(inputCode, textConversionOptions);
+            return (conversionResult.ConvertedCode ?? "") + (conversionResult.GetExceptionsAsString() ?? "");
         }
 
-        private async Task AssertConvertedCodeResultEquals<TLanguageConversion>(string inputCode, string expectedConvertedCode) where TLanguageConversion : ILanguageConversion, new()
+        protected async Task AssertConvertedCodeResultEqualsAsync<TLanguageConversion>(string inputCode, string expectedConvertedCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
         {
-            var outputNode =
-                ProjectConversion.ConvertText<TLanguageConversion>(inputCode, DefaultReferences.NetStandard2, _rootNamespace);
-            AssertConvertedCodeResultEquals(await outputNode, expectedConvertedCode, inputCode);
+            string convertedTextFollowedByExceptions = await ConvertAsync<TLanguageConversion>(inputCode, conversionOptions);
+            AssertConvertedCodeResultEquals(convertedTextFollowedByExceptions, expectedConvertedCode, inputCode);
         }
 
-        private static void AssertConvertedCodeResultEquals(ConversionResult conversionResult,
+        private static void AssertConvertedCodeResultEquals(string convertedCodeFollowedByExceptions,
             string expectedConversionResultText, string originalSource)
         {
-            var convertedTextFollowedByExceptions =
-                (conversionResult.ConvertedCode ?? "") + (conversionResult.GetExceptionsAsString() ?? "");
-            var txt = convertedTextFollowedByExceptions.TrimEnd();
+            var txt = convertedCodeFollowedByExceptions.TrimEnd();
             expectedConversionResultText = expectedConversionResultText.TrimEnd();
             AssertCodeEqual(originalSource, expectedConversionResultText, txt);
         }
 
         private static void AssertCodeEqual(string originalSource, string expectedConversion, string actualConversion)
         {
-            OurAssert.StringsEqualIgnoringNewlines(expectedConversion, actualConversion, () =>
+            OurAssert.EqualIgnoringNewlines(expectedConversion, actualConversion, () =>
             {
                 StringBuilder sb = OurAssert.DescribeStringDiff(expectedConversion, actualConversion);
-                sb.AppendLine();
+                sb.AppendLine(OurAssert.LineSplitter);
                 sb.AppendLine("source:");
                 sb.AppendLine(originalSource);
-                if (WriteNewCharacterization) TestFileRewriter.UpdateFiles(expectedConversion, actualConversion);
+                if (RecharacterizeByWritingExpectedOverActual) TestFileRewriter.UpdateFiles(expectedConversion, actualConversion);
                 return sb.ToString();
             });
-            Assert.False(WriteNewCharacterization, $"Test setup issue: Set {nameof(WriteNewCharacterization)} to false after using it");
+            Assert.False(RecharacterizeByWritingExpectedOverActual, $"Test setup issue: Set {nameof(RecharacterizeByWritingExpectedOverActual)} to false after using it");
         }
 
-        private static string AddLineNumberComments(string code, string singleLineCommentStart, bool isTarget)
+
+        /// <remarks>Currently puts comments in multi-line comments which then don't get converted</remarks>
+        private static (IReadOnlyCollection<string> Lines, IReadOnlyCollection<string> LineNumbersAdded) AddLineNumberComments(string code, string singleLineCommentStart, string commentPrefix, Func<string, bool> lineCanHaveComment)
         {
-            int skipped = 0;
-            var lines = Utils.HomogenizeEol(code).Split(new[]{Environment.NewLine}, StringSplitOptions.None);
-            bool started = false;
-
-            var newLines = lines.Select((s, i) => {
-
-                var prevLine = i > 0 ? lines[i - 1] : "";
-                var nextLine = i < lines.Length - 1 ? lines[i + 1] : "";
-
-                //Don't start until first line mentioning class
-                started |= s.IndexOf("class ", StringComparison.InvariantCultureIgnoreCase) + s.IndexOf("module ", StringComparison.InvariantCultureIgnoreCase) > -2;
-
-                //Lines which don't map directly should be tested independently
-                if (!started ||
-                isTarget && HasNoSourceLine(prevLine, s, nextLine)
-                || !isTarget && HasNoTargetLine(prevLine, s, nextLine)) {
-                    skipped++;
-                    return s;
-                }
-
-                //Try to indent based on next line
-                if (s.Trim() == "" && i > 0) {
-                    s = s + new string(Enumerable.Repeat(' ', lines[i - 1].Length).ToArray());
-                }
-
-                return s + singleLineCommentStart + (i - skipped).ToString();
-            });
-            return string.Join(Environment.NewLine, newLines);
-        }
-
-        private static bool HasNoSourceLine(string prevLine, string line, string nextLine)
-        {
-            return line.Trim() == "{"
-                   || nextLine.Contains("where T")
-                   || IsTwoLineCsIfStatement(line, nextLine)
-                   || line.TrimStart().StartsWith("//")
-                   || line.Contains("DllImport")
-                   || line.Contains("arg") && nextLine.Contains("ref ")
-                   || line.TrimStart().StartsWith("if") && nextLine.Trim() == "{";
-        }
-
-        /// <summary>
-        /// Comes from a one line if statement in VB
-        /// </summary>
-        private static bool IsTwoLineCsIfStatement(string line, string nextLine)
-        {
-            return line.Contains("if ") && !nextLine.Trim().Equals("{");
-        }
-
-        private static bool HasNoTargetLine(string prevLine, string line, string nextLine)
-        {
-            return IsVbInheritsOrImplements(nextLine)
-                || IsFirstOfMultiLineVbIfStatement(line)
-                || line.Contains("<Extension") || line.Contains("CompilerServices.Extension")
-                || line.TrimStart().StartsWith("'")
-                //Allow a blank line in VB after these statements that doesn't appear in the C# since C# has braces to act as a separator
-                || string.IsNullOrWhiteSpace(line) && IsVbInheritsOrImplements(prevLine);
-        }
-
-        private static bool IsFirstOfMultiLineVbIfStatement(string line)
-        {
-            return line.Trim().StartsWith("If ") && line.Trim().EndsWith("Then");
-        }
-
-        private static bool IsVbInheritsOrImplements(string line)
-        {
-            return line.Contains("Inherits") || line.Contains("Implements");
+            var lines = Utils.HomogenizeEol(code).Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            var lineNumbersAdded = new List<string>();
+            var newLines = lines.Select((line, i) => {
+                var lineNumber = i.ToString();
+                var potentialExistingComments = line.Split(new[] { singleLineCommentStart }, StringSplitOptions.None).Skip(1);
+                if (potentialExistingComments.Count() == 1 || !lineCanHaveComment(line)) return line;
+                lineNumbersAdded.Add(lineNumber);
+                return line + singleLineCommentStart + commentPrefix + lineNumber;
+            }).ToArray();
+            return (newLines, lineNumbersAdded);
         }
 
         public static void Fail(string message) => throw new XunitException(message);
+    }
+    public class CSToVBWithoutSimplifierConversion : ILanguageConversion {
+        private readonly CSToVBConversion baseConversion;
+        public CSToVBWithoutSimplifierConversion() {
+            this.baseConversion = new CSToVBConversion();
+        }
+
+        string ILanguageConversion.TargetLanguage => baseConversion.TargetLanguage;
+
+        ConversionOptions ILanguageConversion.ConversionOptions { get => baseConversion.ConversionOptions; set => baseConversion.ConversionOptions = value; }
+
+        bool ILanguageConversion.CanBeContainedByMethod(SyntaxNode node) {
+            return baseConversion.CanBeContainedByMethod(node);
+        }
+
+        async Task<IProjectContentsConverter> ILanguageConversion.CreateProjectContentsConverterAsync(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken) {
+            return await baseConversion.CreateProjectContentsConverterAsync(project, progress, cancellationToken);
+        }
+
+        async Task<Document> ILanguageConversion.CreateProjectDocumentFromTreeAsync(SyntaxTree tree, IEnumerable<MetadataReference> references)
+        {
+            return await baseConversion.CreateProjectDocumentFromTreeAsync(tree, references);
+        }
+
+        SyntaxTree ILanguageConversion.CreateTree(string text) {
+            return baseConversion.CreateTree(text);
+        }
+
+        List<SyntaxNode> ILanguageConversion.FindSingleImportantChild(SyntaxNode annotatedNode) {
+            return baseConversion.FindSingleImportantChild(annotatedNode);
+        }
+
+        IEnumerable<(string, string)> ILanguageConversion.GetProjectFileReplacementRegexes() {
+            return baseConversion.GetProjectFileReplacementRegexes();
+        }
+
+        IReadOnlyCollection<(string, string)> ILanguageConversion.GetProjectTypeGuidMappings() {
+            return baseConversion.GetProjectTypeGuidMappings();
+        }
+
+        SyntaxNode ILanguageConversion.GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes, bool surroundedWithMethod) {
+            return baseConversion.GetSurroundedNode(descendantNodes, surroundedWithMethod);
+        }
+
+        bool ILanguageConversion.MustBeContainedByClass(SyntaxNode node) {
+            return baseConversion.MustBeContainedByClass(node);
+        }
+
+        string ILanguageConversion.PostTransformProjectFile(string xml) {
+            return baseConversion.PostTransformProjectFile(xml);
+        }
+
+        async Task<Document> ILanguageConversion.SingleSecondPassAsync(Document doc) {
+            return doc;
+        }
+
+        string ILanguageConversion.WithSurroundingClass(string text) {
+            return baseConversion.WithSurroundingClass(text);
+        }
+        string ILanguageConversion.WithSurroundingMethod(string text) {
+            return baseConversion.WithSurroundingMethod(text);
+        }
     }
 }
