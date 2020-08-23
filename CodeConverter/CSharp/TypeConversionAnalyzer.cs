@@ -231,25 +231,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                     typeConversionKind = vbConvertedType.IsEnumType() && !csConversion.Exists ? TypeConversionKind.EnumConversionThenCast : TypeConversionKind.Conversion;
                     return true;
                 }
-            } else if (vbConversion.IsWidening && vbConversion.IsNumeric && csConversion.IsImplicit &&
-                       csConversion.IsNumeric) {
-                // Safe overapproximation: A cast is really only needed to help resolve the overload for the operator/method used.
-                // e.g. When VB "&" changes to C# "+", there are lots more overloads available that implicit casts could match.
-                // e.g. sbyte * ulong uses the decimal * operator in VB. In C# it's ambiguous - see ExpressionTests.vb "TestMul".
-                typeConversionKind = TypeConversionKind.NonDestructiveCast;
-                return true;
             } else if (csConversion.IsExplicit && csConversion.IsEnumeration || csConversion.IsBoxing) {
                 typeConversionKind = TypeConversionKind.NonDestructiveCast;
                 return true;
-            } else if (csConversion.IsExplicit && csConversion.IsNumeric && vbConversion.IsNarrowing && isConst) {
-                typeConversionKind = IsImplicitConstantConversion(vbNode) ? TypeConversionKind.Identity : TypeConversionKind.NonDestructiveCast;
-                return true;
-            } else if (csConversion.IsExplicit && vbConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
-                typeConversionKind = IsImplicitConstantConversion(vbNode) ? TypeConversionKind.Identity :
-                    TypeConversionKind.Conversion;
-                return true;
-            } else if (csConversion.IsExplicit && vbConversion.IsIdentity && csConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
-                typeConversionKind = TypeConversionKind.Conversion;
+            } else if (vbConversion.IsNumeric && csConversion.IsNumeric) {
+                // For widening, implicit, a cast is really only needed to help resolve the overload for the operator/method used.
+                // e.g. When VB "&" changes to C# "+", there are lots more overloads available that implicit casts could match.
+                // e.g. sbyte * ulong uses the decimal * operator in VB. In C# it's ambiguous - see ExpressionTests.vb "TestMul".
+                typeConversionKind = 
+                    isConst && IsImplicitConstantConversion(vbNode) ? TypeConversionKind.Identity :
+                    csConversion.IsImplicit ? TypeConversionKind.NonDestructiveCast
+                    : TypeConversionKind.Conversion;
                 return true;
             } else if (isConvertToString && vbType.SpecialType == SpecialType.System_Object) {
                 typeConversionKind = TypeConversionKind.Conversion;
