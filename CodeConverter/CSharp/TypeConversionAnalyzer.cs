@@ -216,11 +216,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             bool isConvertToString =
                         (vbConversion.IsString || vbConversion.IsReference && vbConversion.IsNarrowing)  && vbConvertedType.SpecialType == SpecialType.System_String;
-            bool isArithmetic = vbNode.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AddExpression,
-                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.SubtractExpression,
-                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.MultiplyExpression,
-                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DivideExpression,
-                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IntegerDivideExpression);
             if (!csConversion.Exists || csConversion.IsUnboxing) {
                 if (ConvertStringToCharLiteral(vbNode, vbType, vbConvertedType, out _)) {
                     typeConversionKind =
@@ -246,14 +241,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             } else if (csConversion.IsExplicit && csConversion.IsEnumeration || csConversion.IsBoxing) {
                 typeConversionKind = TypeConversionKind.NonDestructiveCast;
                 return true;
-            } else if (isArithmetic) {
-                var arithmeticConversion =
-                    vbCompilation.ClassifyConversion(vbConvertedType,
-                        vbCompilation.GetTypeByMetadataName("System.Int32"));
-                if (arithmeticConversion.IsWidening && !arithmeticConversion.IsIdentity) {
-                    typeConversionKind = TypeConversionKind.Conversion;
-                    return true;
-                }
             } else if (csConversion.IsExplicit && csConversion.IsNumeric && vbConversion.IsNarrowing && isConst) {
                 typeConversionKind = IsImplicitConstantConversion(vbNode) ? TypeConversionKind.Identity : TypeConversionKind.NonDestructiveCast;
                 return true;

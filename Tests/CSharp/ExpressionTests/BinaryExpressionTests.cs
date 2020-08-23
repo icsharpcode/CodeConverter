@@ -199,5 +199,33 @@ internal partial class TestClass
     }
 }");
         }
+
+        [Fact]
+        public async Task ConversionInComparisonOperatorAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class ConversionInComparisonOperatorTest
+    Public Sub Foo()
+        Dim SomeDecimal As Decimal = 12.3
+        Dim ACalc As Double = 32.1
+        If ACalc > 60 / SomeDecimal Then
+            Console.WriteLine(1)
+        End If
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class ConversionInComparisonOperatorTest
+{
+    public void Foo()
+    {
+        decimal SomeDecimal = 12.3M;
+        double ACalc = 32.1;
+        if (ACalc > Conversions.ToDouble(60 / SomeDecimal))
+        {
+            Console.WriteLine(1);
+        }
+    }
+}");
+        }
     }
 }
