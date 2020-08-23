@@ -22,9 +22,7 @@ using MemberAccessExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.Member
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Linq.Expressions;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -105,6 +103,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, csNode, SyntaxFactory.IdentifierName(nameof(string.ToCharArray)));
                     return SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax,
                         SyntaxFactory.ArgumentList());
+                case TypeConversionKind.DelegateConstructor:
+                    return Microsoft.CodeAnalysis.CSharp.SyntaxFactory.ObjectCreationExpression(GetCommonDelegateTypeOrNull(vbNode, vbConvertedType)).WithArgumentList(new[]{csNode}.CreateCsArgList());
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -125,9 +125,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, vbNode);
             var vbType = forceSourceType ?? typeInfo.Type;
             var vbConvertedType = forceTargetType ?? typeInfo.ConvertedType;
-            if (vbType is null || vbConvertedType is null)
+            
+            if (vbConvertedType is null)
             {
                 return TypeConversionKind.Unknown;
+            }
+
+            if (vbType is null) {
+                return GetCommonDelegateTypeOrNull(vbNode, vbConvertedType) is {} ? TypeConversionKind.DelegateConstructor : TypeConversionKind.Unknown;
             }
 
             if (vbType.IsEnumType()) {
@@ -155,6 +160,38 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return AnalyzeVbConversion(alwaysExplicit, vbType, vbConvertedType, vbConversion);
+        }
+
+        private CSS.NameSyntax GetCommonDelegateTypeOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType)
+        {
+            if (vbNode.SkipIntoParens() is VBSyntax.LambdaExpressionSyntax vbLambda &&
+                vbConvertedType.Name == nameof(Delegate) &&
+                _semanticModel.GetSymbolInfo(vbLambda).Symbol is IMethodSymbol lambdaSymbol)
+            {
+                return CreateCommonDelegateTypeSyntax(lambdaSymbol);
+            }
+
+            return null;
+        }
+
+        private CSS.NameSyntax CreateCommonDelegateTypeSyntax(IMethodSymbol vbLambda)
+        {
+            var parameters = vbLambda.Parameters
+                .Select(p => _csSyntaxGenerator.TypeExpression(p.Type));
+            
+            if (vbLambda.ReturnType.IsSystemVoid()) {
+                return CreateType("Action", parameters);
+            }
+
+            var typeExpression = _csSyntaxGenerator.TypeExpression(vbLambda.ReturnType);
+            return CreateType("Func", parameters.Concat(typeExpression));
+        }
+
+        private static CSS.NameSyntax CreateType(string baseTypeName, IEnumerable<SyntaxNode> parameters)
+        {
+            var parameterList = SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(parameters));
+            if (!parameterList.Arguments.Any()) return SyntaxFactory.IdentifierName(baseTypeName);
+            return SyntaxFactory.GenericName(SyntaxFactory.Identifier(baseTypeName), parameterList);
         }
 
         private ITypeSymbol GetCSType(ITypeSymbol vbType, VBSyntax.ExpressionSyntax vbNode = null)
@@ -323,6 +360,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             EnumCastThenConversion,
             NullableBool,
             StringToCharArray,
+            DelegateConstructor
         }
 
         public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax node,

@@ -9,7 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
-
+* Type convert within compound assignments [#612](https://github.com/icsharpcode/CodeConverter/issues/612)
+* Type convert lambdas to a concrete delegate type if needed [#611](https://github.com/icsharpcode/CodeConverter/issues/611)
 
 ### C# -> VB
 
@@ -29,7 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Add type conversion where needed for externally declared loop control variable [#609](https://github.com/icsharpcode/CodeConverter/issues/609)
 * Convert string operators in common cases [#608](https://github.com/icsharpcode/CodeConverter/issues/608)
 * Type convert parameterized property in assignment [#610](https://github.com/icsharpcode/CodeConverter/issues/610)
-* Type convert within compound assignments [#612](https://github.com/icsharpcode/CodeConverter/issues/612)
+
 ### C# -> VB
 
 ## [8.1.6] - 2020-07-12

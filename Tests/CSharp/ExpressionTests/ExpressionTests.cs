@@ -1097,6 +1097,53 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task AnonymousLambdaTypeConversionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class AnonymousLambdaTypeConversionTest
+    Public Sub CallThing(thingToCall As [Delegate])
+    End Sub
+
+    Public Sub SomeMethod()
+    End Sub
+
+    Public Sub Foo()
+        CallThing(Sub()
+                    SomeMethod()
+                  End Sub)
+        CallThing(Sub(a) SomeMethod())
+        CallThing(Function()
+                    SomeMethod()
+                    Return False
+                  End Function)
+        CallThing(Function(a) False)
+    End Sub
+End Class", @"using System;
+
+public partial class AnonymousLambdaTypeConversionTest
+{
+    public void CallThing(Delegate thingToCall)
+    {
+    }
+
+    public void SomeMethod()
+    {
+    }
+
+    public void Foo()
+    {
+        CallThing(new Action(() => SomeMethod()));
+        CallThing(new Action<object>(a => SomeMethod()));
+        CallThing(new Func<bool>(() =>
+        {
+            SomeMethod();
+            return false;
+        }));
+        CallThing(new Func<object, bool>(a => false));
+    }
+}");
+        }
+
+        [Fact]
         public async Task AwaitAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
