@@ -165,7 +165,8 @@ internal partial class TestClass
         Dim z As Integer = 8
         z /= 3
     End Sub
-End Class", @"
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
 internal partial class TestClass
 {
     private void TestMethod()
@@ -175,12 +176,9 @@ internal partial class TestClass
         double y = 10.0 / 3;
         y /= 2;
         int z = 8;
-        z /= (double)3;
+        z = Conversions.ToInteger(z / (double)3);
     }
-}
-1 target compilation errors:
-CS0266: Cannot implicitly convert type 'double' to 'int'. An explicit conversion exists (are you missing a cast?)");
-            //BUG: To avoid compilation error, should be z = (int)Math.Round(z / 3d);
+}");
         }
 
         [Fact]

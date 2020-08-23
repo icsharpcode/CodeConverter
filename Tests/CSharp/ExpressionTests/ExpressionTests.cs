@@ -1471,7 +1471,7 @@ internal static partial class Module1
 {
     public static void Main()
     {
-        short x = true ? Conversions.ToShort(50) : Conversions.ToShort(100);
+        short x = true ? Conversions.ToShort(50) : (short)100;
     }
 }
 ");

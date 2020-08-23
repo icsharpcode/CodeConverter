@@ -90,7 +90,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return AddTypeConversion(vbNode, csNode, TypeConversionKind.Conversion, addParenthesisIfNeeded, enumUnderlyingType, vbConvertedType);
                 case TypeConversionKind.Unknown:
                 case TypeConversionKind.Identity:
-                    return addParenthesisIfNeeded ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
+                    return addParenthesisIfNeeded ? vbNode.ParenthesizeIfPrecedenceCouldChange(csNode) : csNode;
                 case TypeConversionKind.DestructiveCast:
                 case TypeConversionKind.NonDestructiveCast:
                     return CreateCast(csNode, vbConvertedType);
@@ -238,8 +238,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 // For widening, implicit, a cast is really only needed to help resolve the overload for the operator/method used.
                 // e.g. When VB "&" changes to C# "+", there are lots more overloads available that implicit casts could match.
                 // e.g. sbyte * ulong uses the decimal * operator in VB. In C# it's ambiguous - see ExpressionTests.vb "TestMul".
-                typeConversionKind = 
-                    isConst && IsImplicitConstantConversion(vbNode) ? TypeConversionKind.Identity :
+                typeConversionKind =
+                    isConst && IsImplicitConstantConversion(vbNode) || csConversion.IsIdentity || IsExactTypeNumericLiteral(vbNode, vbConvertedType) ? TypeConversionKind.Identity :
                     csConversion.IsImplicit ? TypeConversionKind.NonDestructiveCast
                     : TypeConversionKind.Conversion;
                 return true;
@@ -257,6 +257,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             typeConversionKind = csConversion.IsIdentity ? TypeConversionKind.Identity : TypeConversionKind.Unknown;
             return false;
         }
+
+        private static bool IsExactTypeNumericLiteral(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType) => 
+            vbNode.SkipIntoParens() is VBSyntax.LiteralExpressionSyntax literal &&
+            LiteralConversions.ConvertLiteralNumericValueOrNull(literal.Token.Value, vbConvertedType) is {};
 
         private bool IsImplicitConstantConversion(VBSyntax.ExpressionSyntax vbNode)
         {
