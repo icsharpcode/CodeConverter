@@ -1,22 +1,28 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
-  <Extern href="stdidcmd.h"/>
-  <Extern href="vsshlids.h"/>
+  <Extern href="stdidcmd.h" />
+  <Extern href="vsshlids.h" />
 
   <Commands package="guidCodeConverterPackage">
     <Groups>
       <Group guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterMenuGroup" priority="0x0300">
-        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_EDIT"/>
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_EDIT" />
       </Group>
       <Group guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterCtxMenuGroup" priority="0x0300">
-        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_CODEWIN"/>
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_CODEWIN" />
       </Group>
       <Group guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterProjectItemCtxMenuGroup" priority="0x0300">
-        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE"/>
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE" />
       </Group>
       <Group guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterProjectCtxMenuGroup" priority="0x0300" />
       <Group guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterSolutionCtxMenuGroup" priority="0x0300" />
+      <!--<Group guid="guidCodeConverterPackageCmdSet" id="MyMenuGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS" />
+      </Group>-->
+      <Group guid="guidCodeConverterPackageCmdSet" id="MyMenuGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS" />
+      </Group>
     </Groups>
 
     <Buttons>
@@ -61,6 +67,14 @@
           <ButtonText>Convert to VB</ButtonText>
         </Strings>
       </Button>
+      <Button guid="guidCodeConverterCommandPackageCmdSet" id="PasteAsVBCommandId" type="Button" priority="0x0300">
+        <Parent guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterMenuGroup" />
+        <!--<CommandFlag>DefaultInvisible</CommandFlag>-->
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Paste as VB</ButtonText>
+        </Strings>
+      </Button>
 
       <!-- VB to C# conversion commands -->
       <Button guid="guidCodeConverterCommandPackageCmdSet" id="ConvertVBToCSCommandId" type="Button" priority="0x0300">
@@ -103,6 +117,12 @@
           <ButtonText>Convert to C#</ButtonText>
         </Strings>
       </Button>
+      <Button guid="guidCodeConverterPackageCmdSet" id="cmdidPasteAsCS" priority="0x0100" type="Button">
+        <Parent guid="guidCodeConverterPackageCmdSet" id="MyMenuGroup" />
+        <Strings>
+          <ButtonText>Paste as C#</ButtonText>
+        </Strings>
+      </Button>
     </Buttons>
   </Commands>
   <VisibilityConstraints>
@@ -119,13 +139,13 @@
   </VisibilityConstraints>
   <CommandPlacements>
     <CommandPlacement guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterProjectCtxMenuGroup" priority="0x0300">
-      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_PROJNODE"/>
+      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_PROJNODE" />
     </CommandPlacement>
     <CommandPlacement guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterProjectCtxMenuGroup" priority="0x0300">
-      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_XPROJ_MULTIPROJ"/>
+      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_XPROJ_MULTIPROJ" />
     </CommandPlacement>
     <CommandPlacement guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterSolutionCtxMenuGroup" priority="0x0300">
-      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_SOLNNODE"/>
+      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_SOLNNODE" />
     </CommandPlacement>
   </CommandPlacements>
   <Symbols>
@@ -157,6 +177,14 @@
       <IDSymbol name="ConvertVBToCSProjectItemCtxCommandId" value="0x0202" />
       <IDSymbol name="ConvertVBToCSProjectCtxCommandId" value="0x0203" />
       <IDSymbol name="ConvertVBToCSSolutionCtxCommandId" value="0x0204" />
+      <IDSymbol name="PasteAsVBCommandId" value="0x0300" />
     </GuidSymbol>
+  
+  
+    <GuidSymbol value="{4b687dc5-b8e5-47d1-a545-d2c346459ef3}" name="guidCodeConverterPackageCmdSet">
+      <IDSymbol value="4128" name="MyMenuGroup" />
+      <IDSymbol value="0x0400" name="cmdidPasteAsCS" />
+    </GuidSymbol>
+  
   </Symbols>
 </CommandTable>

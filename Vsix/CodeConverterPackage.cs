@@ -109,9 +109,11 @@ namespace ICSharpCode.CodeConverter.VsExtension
             var codeConversion = await CodeConversion.CreateAsync(this, visualStudioWorkspace, this.GetDialogPageAsync<ConverterOptionsPage>);
             ConvertCSToVBCommand.Initialize(this, oleMenuCommandService, codeConversion);
             ConvertVBToCSCommand.Initialize(this, oleMenuCommandService, codeConversion);
+            PasteAsVB.Initialize(this, oleMenuCommandService,codeConversion);
             VisualStudioInteraction.Initialize(PackageCancellation);
             await TaskScheduler.Default;
             await base.InitializeAsync(cancellationToken, progress);
+            await ICSharpCode.CodeConverter.VsExtension.PasteAsCS.InitializeAsync(this);
         }
 
         internal OleMenuCommandWithBlockingStatus CreateCommand(Func<CancellationToken, Task> callbackAsync, CommandID menuCommandId)
