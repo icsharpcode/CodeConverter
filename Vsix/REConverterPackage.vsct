@@ -17,13 +17,7 @@
       </Group>
       <Group guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterProjectCtxMenuGroup" priority="0x0300" />
       <Group guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterSolutionCtxMenuGroup" priority="0x0300" />
-      <!--<Group guid="guidCodeConverterPackageCmdSet" id="MyMenuGroup" priority="0x0600">
-        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS" />
-      </Group>-->
-      <Group guid="guidCodeConverterPackageCmdSet" id="MyMenuGroup" priority="0x0600">
-        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS" />
-      </Group>
-    </Groups>
+ </Groups>
 
     <Buttons>
       <!-- C# to VB conversion commands -->
@@ -183,7 +177,6 @@
   
   
     <GuidSymbol value="{4b687dc5-b8e5-47d1-a545-d2c346459ef3}" name="guidCodeConverterPackageCmdSet">
-      <IDSymbol value="4128" name="MyMenuGroup" />
       <IDSymbol value="0x0400" name="cmdidPasteAsCS" />
     </GuidSymbol>
   
