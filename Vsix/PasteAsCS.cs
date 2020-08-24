@@ -22,7 +22,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
         /// <summary>
         /// Command menu group (command set GUID).
         /// </summary>
-        public static readonly Guid CommandSet = new Guid("4b687dc5-b8e5-47d1-a545-d2c346459ef3");
+        public static readonly Guid CommandSet = new Guid("a3378a21-e939-40c9-9e4b-eb0cec7b7854");
 
         /// <summary>
         /// VS Package that provides this command, not null.
