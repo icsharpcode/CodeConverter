@@ -117,8 +117,8 @@
           <ButtonText>Convert to C#</ButtonText>
         </Strings>
       </Button>
-      <Button guid="guidCodeConverterPackageCmdSet" id="cmdidPasteAsCS" priority="0x0100" type="Button">
-        <Parent guid="guidCodeConverterPackageCmdSet" id="MyMenuGroup" />
+      <Button guid="guidCodeConverterPackageCmdSet" id="cmdidPasteAsCS" priority="0x0300" type="Button">
+        <Parent guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterMenuGroup" />
         <Strings>
           <ButtonText>Paste as C#</ButtonText>
         </Strings>
@@ -178,6 +178,7 @@
       <IDSymbol name="ConvertVBToCSProjectCtxCommandId" value="0x0203" />
       <IDSymbol name="ConvertVBToCSSolutionCtxCommandId" value="0x0204" />
       <IDSymbol name="PasteAsVBCommandId" value="0x0300" />
+      <IDSymbol name="cmdidPasteAsCS" value="0x0400" />
     </GuidSymbol>
   
   
