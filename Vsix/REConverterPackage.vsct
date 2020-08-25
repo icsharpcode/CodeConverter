@@ -111,7 +111,7 @@
           <ButtonText>Convert to C#</ButtonText>
         </Strings>
       </Button>
-      <Button guid="guidCodeConverterCommandPackageCmdSet" id="cmdidPasteAsCS" priority="0x0300" type="Button">
+      <Button guid="guidCodeConverterCommandPackageCmdSet" id="PasteAsCSCommandId" priority="0x0300" type="Button">
         <Parent guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterMenuGroup" />
         <Strings>
           <ButtonText>Paste as C#</ButtonText>
@@ -140,6 +140,15 @@
     </CommandPlacement>
     <CommandPlacement guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterSolutionCtxMenuGroup" priority="0x0300">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_SOLNNODE" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidCodeConverterCommandPackageCmdSet" id="PasteAsCSCommandId" priority="0xFFFF">
+      <Parent guid="guidSHLMainMenu" id="IDG_VS_EDIT_PASTE" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidCodeConverterCommandPackageCmdSet" id="PasteAsVBCommandId" priority="0xFFFF">
+      <Parent guid="guidSHLMainMenu" id="IDG_VS_EDIT_PASTE" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidSHLMainMenu" id="IDM_VS_EDITOR_PASTE_MENU" priority="0x800">
+      <Parent guid="guidSHLMainMenu" id="IDG_VS_CODEWIN_TEXTEDIT" />
     </CommandPlacement>
   </CommandPlacements>
   <Symbols>
@@ -172,7 +181,7 @@
       <IDSymbol name="ConvertVBToCSProjectCtxCommandId" value="0x0203" />
       <IDSymbol name="ConvertVBToCSSolutionCtxCommandId" value="0x0204" />
       <IDSymbol name="PasteAsVBCommandId" value="0x0300" />
-      <IDSymbol name="cmdidPasteAsCS" value="0x0400" />
+      <IDSymbol name="PasteAsCSCommandId" value="0x0400" />
     </GuidSymbol>
   
   
