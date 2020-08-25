@@ -28,6 +28,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
         /// VS Package that provides this command, not null.
         /// </summary>
         private readonly AsyncPackage package;
+        private readonly object _codeConversion;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PasteAsCS"/> class.
@@ -35,9 +36,10 @@ namespace ICSharpCode.CodeConverter.VsExtension
         /// </summary>
         /// <param name="package">Owner package, not null.</param>
         /// <param name="commandService">Command service to add command to, not null.</param>
-        private PasteAsCS(AsyncPackage package, OleMenuCommandService commandService)
+        private PasteAsCS(CodeConverterPackage package, CodeConversion codeConversion, OleMenuCommandService commandService)
         {
             this.package = package ?? throw new ArgumentNullException(nameof(package));
+            _codeConversion = codeConversion;
             commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
 
             var menuCommandID = new CommandID(CommandSet, CommandId);
@@ -62,18 +64,27 @@ namespace ICSharpCode.CodeConverter.VsExtension
             }
         }
 
-        /// <summary>
-        /// Initializes the singleton instance of the command.
-        /// </summary>
-        /// <param name="package">Owner package, not null.</param>
-        public static async Task InitializeAsync(AsyncPackage package)
-        {
-            // Switch to the main thread - the call to AddCommand in PasteAsCS's constructor requires
-            // the UI thread.
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(package.DisposalToken);
+        ///// <summary>
+        ///// Initializes the singleton instance of the command.
+        ///// </summary>
+        ///// <param name="package">Owner package, not null.</param>
+        //public static async Task InitializeAsync(AsyncPackage package)
+        //{
+        //    // Switch to the main thread - the call to AddCommand in PasteAsCS's constructor requires
+        //    // the UI thread.
+        //    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(package.DisposalToken);
 
-            OleMenuCommandService commandService = await package.GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService;
-            Instance = new PasteAsCS(package, commandService);
+        //    OleMenuCommandService commandService = await package.GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService;
+        //    Instance = new PasteAsCS(package, commandService);
+        //}
+        /// <remarks>
+        /// Must be called from UI thread
+        /// </remarks>
+        public static void Initialize(CodeConverterPackage package, OleMenuCommandService menuCommandService, CodeConversion codeConversion)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            //Instance = new ConvertVBToCSCommand(package, codeConversion, menuCommandService);
+            Instance = new PasteAsCS(package, codeConversion, menuCommandService);
         }
 
         /// <summary>
