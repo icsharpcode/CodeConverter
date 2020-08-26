@@ -3,6 +3,7 @@ using System.ComponentModel.Design;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Task = System.Threading.Tasks.Task;
@@ -44,6 +45,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
 
             var menuCommandID = new CommandID(CommandSet, CommandId);
             var menuItem = new MenuCommand(this.Execute, menuCommandID);
+            //menuItem.BeforeQueryStatus += MainEditMenuItem_BeforeQueryStatusAsync;
             commandService.AddCommand(menuItem);
         }
 
@@ -63,7 +65,13 @@ namespace ICSharpCode.CodeConverter.VsExtension
                 return this.package;
             }
         }
-
+        private async Task MainEditMenuItem_BeforeQueryStatusAsync(object sender, EventArgs e)
+        {
+            if (sender is OleMenuCommand menuItem) {
+                var selectionInCurrentViewAsync = await VisualStudioInteraction.GetFirstSelectedSpanInCurrentViewAsync(ServiceProvider, CodeConversion.IsCSFileName, true);
+                menuItem.Visible = selectionInCurrentViewAsync != null;
+            }
+        }
         ///// <summary>
         ///// Initializes the singleton instance of the command.
         ///// </summary>
@@ -97,7 +105,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
         private void Execute(object sender, EventArgs e)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            string message = string.Format(CultureInfo.CurrentCulture, "Inside {0}.MenuItemCallback()", this.GetType().FullName);
+            string message = "Here is the code \n" + Clipboard.GetText(); //string.Format(CultureInfo.CurrentCulture, "Inside {0}.MenuItemCallback()", this.GetType().FullName);
             string title = "PasteAsCS";
 
             // Show a message box to prove we were here
