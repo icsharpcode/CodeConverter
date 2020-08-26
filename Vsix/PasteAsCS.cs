@@ -44,7 +44,8 @@ namespace ICSharpCode.CodeConverter.VsExtension
             commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
 
             var menuCommandID = new CommandID(CommandSet, CommandId);
-            var menuItem = new MenuCommand(this.Execute, menuCommandID);
+            //var menuItem = new MenuCommand(this.Execute, menuCommandID);
+            var menuItem = package.CreateCommand(CodeEditorMenuItemCallbackAsync, menuCommandID);
             //menuItem.BeforeQueryStatus += MainEditMenuItem_BeforeQueryStatusAsync;
             commandService.AddCommand(menuItem);
         }
@@ -117,5 +118,23 @@ namespace ICSharpCode.CodeConverter.VsExtension
                 OLEMSGBUTTON.OLEMSGBUTTON_OK,
                 OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
         }
+
+        private async Task CodeEditorMenuItemCallbackAsync(CancellationToken cancellationToken)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            string message = "Here is the code \n" + Clipboard.GetText(); //string.Format(CultureInfo.CurrentCulture, "Inside {0}.MenuItemCallback()", this.GetType().FullName);
+            string title = "PasteAsCS";
+
+            // Show a message box to prove we were here
+            VsShellUtilities.ShowMessageBox(
+                this.package,
+                message,
+                title,
+                OLEMSGICON.OLEMSGICON_INFO,
+                OLEMSGBUTTON.OLEMSGBUTTON_OK,
+                OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+
+        }
+
     }
 }
