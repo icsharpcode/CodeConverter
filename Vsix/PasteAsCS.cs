@@ -4,6 +4,8 @@ using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Shared;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Task = System.Threading.Tasks.Task;
@@ -44,9 +46,8 @@ namespace ICSharpCode.CodeConverter.VsExtension
             commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
 
             var menuCommandID = new CommandID(CommandSet, CommandId);
-            //var menuItem = new MenuCommand(this.Execute, menuCommandID);
             var menuItem = package.CreateCommand(CodeEditorMenuItemCallbackAsync, menuCommandID);
-            //menuItem.BeforeQueryStatus += MainEditMenuItem_BeforeQueryStatusAsync;
+            menuItem.BeforeQueryStatus += MainEditMenuItem_BeforeQueryStatusAsync;
             commandService.AddCommand(menuItem);
         }
 
@@ -122,7 +123,8 @@ namespace ICSharpCode.CodeConverter.VsExtension
         private async Task CodeEditorMenuItemCallbackAsync(CancellationToken cancellationToken)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-            string message = "Here is the code \n" + Clipboard.GetText(); //string.Format(CultureInfo.CurrentCulture, "Inside {0}.MenuItemCallback()", this.GetType().FullName);
+            var text = Clipboard.GetText();
+            string message = "Here is the code \n" + text; //string.Format(CultureInfo.CurrentCulture, "Inside {0}.MenuItemCallback()", this.GetType().FullName);
             string title = "PasteAsCS";
 
             // Show a message box to prove we were here
@@ -134,6 +136,16 @@ namespace ICSharpCode.CodeConverter.VsExtension
                 OLEMSGBUTTON.OLEMSGBUTTON_OK,
                 OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
 
+            var convertTextOnly = await ProjectConversion.ConvertTextAsync<VBToCSConversion>(text, conversionOptions: new TextConversionOptions(DefaultReferences.NetStandard2), cancellationToken: cancellationToken);
+
+            message = convertTextOnly.ConvertedCode;
+            VsShellUtilities.ShowMessageBox(
+                this.package,
+                message,
+                title,
+                OLEMSGICON.OLEMSGICON_INFO,
+                OLEMSGBUTTON.OLEMSGBUTTON_OK,
+                OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
         }
 
     }

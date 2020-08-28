@@ -3,6 +3,9 @@ using System.ComponentModel.Design;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.VB;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Task = System.Threading.Tasks.Task;
@@ -44,7 +47,8 @@ namespace ICSharpCode.CodeConverter.VsExtension
             commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
 
             var menuCommandID = new CommandID(CommandSet, MainMenuCommandId);
-            var menuItem = new MenuCommand(this.Execute, menuCommandID);
+            var menuItem = package.CreateCommand(CodeEditorMenuItemCallbackAsync, menuCommandID);
+            menuItem.BeforeQueryStatus += MainEditMenuItem_BeforeQueryStatusAsync;
             commandService.AddCommand(menuItem);
         }
 
@@ -87,18 +91,18 @@ namespace ICSharpCode.CodeConverter.VsExtension
             //Instance = new ConvertVBToCSCommand(package, codeConversion, menuCommandService);
             Instance = new PasteAsVB(package, codeConversion, menuCommandService);
         }
-
-        /// <summary>
-        /// This function is the callback used to execute the command when the menu item is clicked.
-        /// See the constructor to see how the menu item is associated with this function using
-        /// OleMenuCommandService service and MenuCommand class.
-        /// </summary>
-        /// <param name="sender">Event sender.</param>
-        /// <param name="e">Event args.</param>
-        private void Execute(object sender, EventArgs e)
+        private async Task MainEditMenuItem_BeforeQueryStatusAsync(object sender, EventArgs e)
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            string message = string.Format(CultureInfo.CurrentCulture, "Inside {0}.MenuItemCallback()", this.GetType().FullName);
+            if (sender is OleMenuCommand menuItem) {
+                var selectionInCurrentViewAsync = await VisualStudioInteraction.GetFirstSelectedSpanInCurrentViewAsync(ServiceProvider, CodeConversion.IsVBFileName, true);
+                menuItem.Visible = selectionInCurrentViewAsync != null;
+            }
+        }
+        private async Task CodeEditorMenuItemCallbackAsync(CancellationToken cancellationToken)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            var text = Clipboard.GetText();
+            string message = "Here is the code \n" + text; //string.Format(CultureInfo.CurrentCulture, "Inside {0}.MenuItemCallback()", this.GetType().FullName);
             string title = "PasteAsVB";
 
             // Show a message box to prove we were here
@@ -109,6 +113,19 @@ namespace ICSharpCode.CodeConverter.VsExtension
                 OLEMSGICON.OLEMSGICON_INFO,
                 OLEMSGBUTTON.OLEMSGBUTTON_OK,
                 OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+
+            var convertTextOnly = await ProjectConversion.ConvertTextAsync<CSToVBConversion>(text, conversionOptions: new TextConversionOptions(DefaultReferences.NetStandard2), cancellationToken: cancellationToken);
+
+            message = convertTextOnly.ConvertedCode;
+            VsShellUtilities.ShowMessageBox(
+                this.package,
+                message,
+                title,
+                OLEMSGICON.OLEMSGICON_INFO,
+                OLEMSGBUTTON.OLEMSGBUTTON_OK,
+                OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
         }
+
     }
 }
+
