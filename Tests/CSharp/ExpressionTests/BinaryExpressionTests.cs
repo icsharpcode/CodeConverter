@@ -165,18 +165,17 @@ internal partial class TestClass
         Dim z As Integer = 8
         z /= 3
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
-
+End Class", @"
 internal partial class TestClass
 {
     private void TestMethod()
     {
-        double x = 10 / (double)3;
-        x /= 2;
-        double y = 10.0 / 3;
-        y /= 2;
+        double x = 10d / 3d;
+        x /= 2d;
+        double y = 10.0d / 3d;
+        y /= 2d;
         int z = 8;
-        z = Conversions.ToInteger(z / (double)3);
+        z = (int)(z / 3d);
     }
 }");
         }

@@ -29,13 +29,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (value is bool)
                 return SyntaxFactory.LiteralExpression((bool)value ? CSSyntaxKind.TrueLiteralExpression : CSSyntaxKind.FalseLiteralExpression);
 
-            textForUser = ConvertNumericLiteralValueText(textForUser ?? value.ToString(), value, convertedType);
-
-            
             // The value is passed as an int from VB expression: "3"
             // Important to use value text, otherwise "10.0" gets coerced to and integer literal of 10 which can change semantics
             value = ConvertLiteralNumericValueOrNull(value, convertedType) ?? value;
 
+            textForUser = ConvertNumericLiteralValueText(textForUser ?? value.ToString(), value);
+            
             switch (value)
             {
                 case byte b:
@@ -128,54 +127,34 @@ namespace ICSharpCode.CodeConverter.CSharp
         ///  https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/data-types/type-characters
         ///  https://stackoverflow.com/a/166762/1128762
         /// </summary>
-        private static string ConvertNumericLiteralValueText(string textForUser, object value, ITypeSymbol convertedTypeOrNull)
+        private static string ConvertNumericLiteralValueText(string textForUser, object value)
         {
-            var replacements = new Dictionary<string, string> {
-                {"C", ""},
-                {"I", ""},
-                {"%", ""},
-                {"UI", "U"},
-                {"S", ""},
-                {"US", ""},
-                {"UL", "UL"},
-                {"D", "M"},
-                {"@", "M"},
-                {"R", "D"},
-                {"#", "D"},
-                {"F", "F"}, // Normalizes casing
-                {"!", "F"},
-                {"L", "L"}, // Normalizes casing
-                {"&", "L"},
-            };
-
-            var isHex = textForUser.StartsWith("&H", StringComparison.OrdinalIgnoreCase);
-
-            // Be careful not to replace only the "S" in "US" for example
-            var longestMatchingReplacement = replacements.Where(t => textForUser.EndsWith(t.Key, StringComparison.OrdinalIgnoreCase) && (!isHex || !new[] { "C", "D", "F" }.Contains(t.Key)))
-                .GroupBy(t => t.Key.Length).OrderByDescending(g => g.Key).FirstOrDefault()?.SingleOrDefault();
-
-
-            if (longestMatchingReplacement != null) {
-                textForUser = textForUser.ReplaceEnd(longestMatchingReplacement.Value);
-            } else if (textForUser.Contains(".")) {
-                if (convertedTypeOrNull?.SpecialType == SpecialType.System_Single) textForUser += "F";
-                if (convertedTypeOrNull?.SpecialType == SpecialType.System_Decimal) textForUser += "M";
+            if (textForUser.StartsWith("&H", StringComparison.OrdinalIgnoreCase)) {
+                textForUser = "0x" + textForUser.Substring(2);
+            } else if (textForUser.StartsWith("&B", StringComparison.OrdinalIgnoreCase)) {
+                textForUser = "0b" + textForUser.Substring(2);
+            } else if (textForUser.StartsWith("&O", StringComparison.OrdinalIgnoreCase)) {
+                textForUser = value.ToString();
             }
 
-            if (textForUser.Length <= 2 || !textForUser.StartsWith("&")) return textForUser;
-
-            if (isHex)
-            {
-                return "0x" + textForUser.Substring(2);
+            if (value switch {
+                ulong _ => ("UL", "UL"),
+                long _ => ("L", "L"),
+                uint _ => ("UI", "U"),
+                int _ => ("I", ""),
+                ushort _ => ("US", ""),
+                short _ => ("S", ""),
+                double _ => ("R", "d"),
+                float _ => ("F", "f"),
+                decimal _ => ("D", "m"),
+                _ => default
+            } is {Item1: {} vbSuffix, Item2: {} csSuffix} suffix) {
+                int vbSuffixIndex = textForUser.LastIndexOf(vbSuffix, StringComparison.OrdinalIgnoreCase);
+                if (vbSuffixIndex > -1) textForUser = textForUser.Substring(0, vbSuffixIndex);
+                textForUser += csSuffix;
             }
 
-            if (textForUser.StartsWith("&B", StringComparison.OrdinalIgnoreCase))
-            {
-                return "0b" + textForUser.Substring(2);
-            }
-
-            // Octal or something unknown that can't be represented with C# literals
-            return value.ToString();
+            return textForUser;
         }
     }
 }
