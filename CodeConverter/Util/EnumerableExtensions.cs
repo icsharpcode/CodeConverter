@@ -100,5 +100,12 @@ namespace ICSharpCode.CodeConverter.Util
                 collection.Add(item);
             }
         }
+
+        public static (T[] False, T[] True) SplitOn<T>(this IEnumerable<T> enumerable, Func<T, bool> groupSelector) => SplitOn(enumerable, groupSelector, x => x);
+        public static (TOut[] False, TOut[] True) SplitOn<TIn, TOut>(this IEnumerable<TIn> enumerable, Func<TIn, bool> groupSelector, Func<TIn, TOut> elementSelector)
+        {
+            var lookup = enumerable.ToLookup(groupSelector, elementSelector);
+            return (lookup[false].ToArray(), lookup[true].ToArray());
+        }
     }
 }

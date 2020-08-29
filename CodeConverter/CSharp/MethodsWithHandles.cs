@@ -44,8 +44,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public IEnumerable<MemberDeclarationSyntax> GetDeclarationsForFieldBackedProperty(VariableDeclarationSyntax fieldDecl, SyntaxTokenList convertedModifiers, SyntaxList<AttributeListSyntax> attributes)
         {
-            return MethodWithHandles.GetDeclarationsForFieldBackedProperty(fieldDecl, convertedModifiers, attributes,
-                _methodWithHandleses);
+            return MethodWithHandles.GetDeclarationsForFieldBackedProperty(fieldDecl, convertedModifiers, attributes, _methodWithHandleses);
         }
 
         public SyntaxList<StatementSyntax> GetPostAssignmentStatements(ISymbol potentialPropertySymbol)

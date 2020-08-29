@@ -215,21 +215,21 @@ namespace WindowsAppVb
             PerformLayout();
         }
 
-        private ToolStrip ToolStrip1;
-        private ToolStripButton ToolStripButton1;
-        private ToolStripButton ToolStripButton2;
-        private ToolStripButton ToolStripButton3;
-        private ToolStripButton ToolStripButton4;
-        private ToolStripButton ToolStripButton5;
-        private ToolStripButton ToolStripButton6;
-        private ToolStripButton ToolStripButton7;
-        private ToolStripButton ToolStripButton8;
-        private ToolStripButton ToolStripButton9;
-        private ToolStripButton ToolStripButton10;
-        private ToolStripButton ToolStripButton11;
-        private ToolStripButton ToolStripButton12;
-        private ToolStripButton ToolStripButton13;
-        private ToolStripButton ToolStripButton14;
-        private ToolStripButton ToolStripButton15;
+        internal ToolStrip ToolStrip1;
+        internal ToolStripButton ToolStripButton1;
+        internal ToolStripButton ToolStripButton2;
+        internal ToolStripButton ToolStripButton3;
+        internal ToolStripButton ToolStripButton4;
+        internal ToolStripButton ToolStripButton5;
+        internal ToolStripButton ToolStripButton6;
+        internal ToolStripButton ToolStripButton7;
+        internal ToolStripButton ToolStripButton8;
+        internal ToolStripButton ToolStripButton9;
+        internal ToolStripButton ToolStripButton10;
+        internal ToolStripButton ToolStripButton11;
+        internal ToolStripButton ToolStripButton12;
+        internal ToolStripButton ToolStripButton13;
+        internal ToolStripButton ToolStripButton14;
+        internal ToolStripButton ToolStripButton15;
     }
 }
