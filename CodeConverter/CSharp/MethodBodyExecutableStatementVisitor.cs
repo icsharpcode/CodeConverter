@@ -172,6 +172,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             
             var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
             var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
+
+            //TODO Distinguish assignment from compound assignment. Multiplication of two shorts results in int.
+
             // e.g. Right operand of division must be converted to int or double depending on the operator, but can't say that explicitly in case there are operator overloads
             if (CommonConversions.TypeConversionAnalyzer.AnalyzeConversion(node.Left, forceSourceType: lhsTypeInfo.Type,
                 forceTargetType: rhsTypeInfo.ConvertedType) != TypeConversionAnalyzer.TypeConversionKind.Identity) {

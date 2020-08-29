@@ -1513,7 +1513,7 @@ public partial class MoreParsing
         }
 
         [Fact]
-        public async Task CompoundOperatorsWithTypeConversionAsync()
+        public async Task DecimalToIntegerCompoundOperatorsWithTypeConversionAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"Public Class Compound
@@ -1527,22 +1527,110 @@ public partial class MoreParsing
         anInt += aDec
     End Sub
 End Class",
-                @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
-
+                @"
 public partial class Compound
 {
     public void Operators()
     {
         int anInt = 123;
-        decimal aDec = 12.3M;
-        anInt = Conversions.ToInteger(anInt * aDec);
-        anInt = Conversions.ToInteger(anInt / Conversions.ToLong(aDec));
-        anInt = Conversions.ToInteger(anInt / aDec);
-        anInt = Conversions.ToInteger(anInt - aDec);
-        anInt = Conversions.ToInteger(anInt + aDec);
+        decimal aDec = 12.3m;
+        anInt = (int)(anInt * aDec);
+        anInt = (int)(anInt / (long)aDec);
+        anInt = (int)(anInt / aDec);
+        anInt = (int)(anInt - aDec);
+        anInt = (int)(anInt + aDec);
     }
 }");
         }
 
+        [Fact]
+        public async Task DecimalToShortCompoundOperatorsWithTypeConversionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class Compound
+    Public Sub Operators()
+        Dim aShort As Short = 123
+        Dim aDec As Decimal = 12.3
+        aShort *= aDec
+        aShort \= aDec
+        aShort /= aDec
+        aShort -= aDec
+        aShort += aDec
+    End Sub
+End Class",
+                @"
+public partial class Compound
+{
+    public void Operators()
+    {
+        short aShort = 123;
+        decimal aDec = 12.3m;
+        aShort = (short)(aShort * aDec);
+        aShort = (short)(aShort / (long)aDec);
+        aShort = (short)(aShort / aDec);
+        aShort = (short)(aShort - aDec);
+        aShort = (short)(aShort + aDec);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task IntegerToShortCompoundOperatorsWithTypeConversionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class Compound
+    Public Sub Operators()
+        Dim aShort As Short = 123
+        Dim anInt As Integer= 12
+        aShort *= anInt
+        aShort \= anInt
+        aShort /= anInt
+        aShort -= anInt
+        aShort += anInt
+    End Sub
+End Class",
+                @"
+public partial class Compound
+{
+    public void Operators()
+    {
+        short aShort = 123;
+        int anInt = 12;
+        aShort = (short)(aShort * anInt);
+        aShort = (short)(aShort / anInt);
+        aShort = (short)(aShort / (double)anInt);
+        aShort = (short)(aShort - anInt);
+        aShort = (short)(aShort + anInt);
+    }
+}");
+        }
+
+        //TODO: Check the code path for declaration shares code with assignment
+        [Fact]
+        public async Task ShortMultiplicationDeclarationAndAssignment()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class Compound
+    Public Sub Operators()
+        Dim aShort As Short = 123
+        Dim anotherShort As Short = 234
+        Dim x As Short = aShort * anotherShort
+        x *= aShort ' Implicit cast in C# due to compound operator
+        x = aShort * x
+    End Sub
+End Class",
+                @"
+public partial class Compound
+{
+    public void Operators()
+    {
+        short aShort = 123;
+        short anotherShort = 234;
+        short x = (short) (aShort * anotherShort);
+        x *= aShort; // Implicit cast in C# due to compound operator
+        x = (short) (aShort * x);
+    }
+}");
+        }
     }
 }
