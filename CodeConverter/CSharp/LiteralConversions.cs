@@ -129,6 +129,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         private static string ConvertNumericLiteralValueText(string textForUser, object value)
         {
+            textForUser = textForUser.TrimEnd('@', '!', '#');
             if (textForUser.StartsWith("&H", StringComparison.OrdinalIgnoreCase)) {
                 textForUser = "0x" + textForUser.Substring(2);
             } else if (textForUser.StartsWith("&B", StringComparison.OrdinalIgnoreCase)) {

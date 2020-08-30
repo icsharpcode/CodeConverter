@@ -202,7 +202,7 @@ namespace WindowsAppVb
             // 
             // FolderForm
             // 
-            AutoScaleDimensions = new SizeF(6.0F, 13.0F);
+            AutoScaleDimensions = new SizeF(6.0f, 13.0f);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(621, 257);
             Controls.Add(ToolStrip1);
