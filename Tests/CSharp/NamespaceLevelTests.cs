@@ -748,17 +748,17 @@ internal enum EInteger : int
 
 internal enum EUInteger : uint
 {
-    M1 = 0
+    M1 = 0U
 }
 
 internal enum ELong : long
 {
-    M1 = 0
+    M1 = 0L
 }
 
 internal enum EULong : ulong
 {
-    M1 = 0
+    M1 = 0UL
 }
 
 internal static partial class Module1

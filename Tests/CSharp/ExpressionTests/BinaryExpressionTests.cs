@@ -112,12 +112,12 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        double x = Math.Pow(7, 6) % (5 / 4) + 3 * 2;
-        x += 1;
-        x -= 2;
-        x *= 3;
-        x /= 4;
-        x = Math.Pow(x, 5);
+        double x = Math.Pow(7d, 6d) % (5 / 4) + 3 * 2;
+        x += 1d;
+        x -= 2d;
+        x *= 3d;
+        x = x / 4L;
+        x = Math.Pow(x, 5d);
     }
 }");
         }
@@ -135,19 +135,18 @@ internal partial class TestClass
         Dim z = x + y
         Dim z2 = y + x
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
-
+End Class", @"
 internal partial class TestClass
 {
     private void TestMethod()
     {
-        double x = 1;
-        decimal y = 2;
+        double x = 1d;
+        decimal y = 2m;
         int i1 = 1;
         int i2 = 2;
         double d1 = i1 / (double)i2;
-        double z = x + Conversions.ToDouble(y);
-        double z2 = Conversions.ToDouble(y) + x;
+        double z = x + (double)y;
+        double z2 = (double)y + x;
     }
 }
 ");
@@ -209,15 +208,14 @@ internal partial class TestClass
         End If
     End Sub
 End Class", @"using System;
-using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class ConversionInComparisonOperatorTest
 {
     public void Foo()
     {
-        decimal SomeDecimal = 12.3M;
-        double ACalc = 32.1;
-        if (ACalc > Conversions.ToDouble(60 / SomeDecimal))
+        decimal SomeDecimal = 12.3m;
+        double ACalc = 32.1d;
+        if (ACalc > (double)(60m / SomeDecimal))
         {
             Console.WriteLine(1);
         }

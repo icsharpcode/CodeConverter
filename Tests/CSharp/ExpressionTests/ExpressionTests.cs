@@ -41,7 +41,7 @@ using System.Runtime.InteropServices;
 
 internal partial class TestClass
 {
-    private void TestMethod([Optional, DateTimeConstant(599266080000000000/* #1/1/1900# */)] DateTime pDate)
+    private void TestMethod([Optional, DateTimeConstant(599266080000000000L/* #1/1/1900# */)] DateTime pDate)
     {
         var rslt = DateTime.Parse(""1900-01-01"");
         var rslt2 = DateTime.Parse(""2002-08-13 12:14:00"");
@@ -65,7 +65,7 @@ public partial class Issue213
 {
     private static DateTime x = DateTime.Parse(""1990-01-01"");
 
-    private void Y([Optional, DateTimeConstant(627667488000000000/* Global.Issue213.x */)] DateTime opt)
+    private void Y([Optional, DateTimeConstant(627667488000000000L/* Global.Issue213.x */)] DateTime opt)
     {
     }
 }");
@@ -117,7 +117,6 @@ Public Class EnumToString
     End Sub
 End Class",
 @"using System;
-using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class EnumToString
 {
@@ -130,7 +129,7 @@ public partial class EnumToString
     private void TEest2(Tes aEnum)
     {
         string sxtr_Tmp = ""Use"" + ((short)aEnum).ToString();
-        short si_Txt = Conversions.ToShort(Math.Pow(2, (double)Tes.TEST2));
+        short si_Txt = (short)Math.Pow(2d, (double)Tes.TEST2);
     }
 }");
         }
@@ -1031,7 +1030,7 @@ internal partial class TestClass
         {
             if (b > 0)
                 return a / (double)b;
-            return 0;
+            return 0d;
         };
         Func<int, int, int> test3 = (a, b) => a % b;
         test(3);
@@ -1296,17 +1295,17 @@ internal static partial class Module1
 {
     private const bool a = true;
     private const char b = '\u0001';
-    private const float c = 1;
-    private const double d = 1;
-    private const decimal e = 1;
+    private const float c = 1f;
+    private const double d = 1d;
+    private const decimal e = 1m;
     private const sbyte f = 1;
     private const short g = 1;
     private const int h = 1;
-    private const long i = 1;
+    private const long i = 1L;
     private const byte j = 1;
-    private const uint k = 1;
+    private const uint k = 1U;
     private const ushort l = 1;
-    private const ulong m = 1;
+    private const ulong m = 1UL;
     private const string Nl = ""\r\n"";
 
     public static void Main()
@@ -1419,7 +1418,7 @@ public partial class Class1
 {
     public void Foo()
     {
-        var x = DateAndTime.DateAdd(""m"", 5, DateAndTime.Now);
+        var x = DateAndTime.DateAdd(""m"", 5d, DateAndTime.Now);
     }
 }");
         }
@@ -1465,13 +1464,12 @@ internal static partial class Module1
     Sub Main()
         Dim x As Short = If(True, CShort(50), 100S)
     End Sub
-End Module", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
-
+End Module", @"
 internal static partial class Module1
 {
     public static void Main()
     {
-        short x = true ? Conversions.ToShort(50) : (short)100;
+        short x = true ? 50 : 100;
     }
 }
 ");
