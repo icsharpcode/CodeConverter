@@ -172,26 +172,22 @@ namespace ICSharpCode.CodeConverter.CSharp
             
             var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
             var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
-
-            //TODO Distinguish assignment from compound assignment. Multiplication of two shorts results in int.
-
-            // e.g. Right operand of division must be converted to int or double depending on the operator, but can't say that explicitly in case there are operator overloads
-            if (CommonConversions.TypeConversionAnalyzer.AnalyzeConversion(node.Left, forceSourceType: lhsTypeInfo.Type,
-                forceTargetType: rhsTypeInfo.ConvertedType) != TypeConversionAnalyzer.TypeConversionKind.Identity) {
-                rhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs,
-                    forceSourceType: rhsTypeInfo.Type, forceTargetType: rhsTypeInfo.ConvertedType);
-            }
-            var rhsSourceType = rhsTypeInfo.ConvertedType;
-
-            var typeConversionKind = CommonConversions.TypeConversionAnalyzer.AnalyzeConversion(node.Left, forceSourceType: rhsSourceType, forceTargetType: lhsTypeInfo.Type);
             
-            // Split out compound operator if type conversion needed on result
-            if (typeConversionKind != TypeConversionAnalyzer.TypeConversionKind.Identity && GetNonCompoundOrNull(kind) is {} nonCompound) {
-                kind = SyntaxKind.SimpleAssignmentExpression;
-                rhs = SyntaxFactory.BinaryExpression(nonCompound, lhs, rhs);
-            }
-            rhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs, typeConversionKind, forceTargetType: lhsTypeInfo.Type).Expr;
+            var typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
 
+            // Split out compound operator if type conversion needed on result
+            if (GetNonCompoundOrNull(kind) is {} nonCompound) {
+                
+                var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, lhs, rhs);
+                var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: rhsTypeInfo.ConvertedType, forceTargetType: lhsTypeInfo.Type);
+                if (nonCompoundRhs != typeConvertedNonCompoundRhs) {
+                    kind = SyntaxKind.SimpleAssignmentExpression;
+                    typeConvertedRhs = typeConvertedNonCompoundRhs;
+                }
+            }
+
+            rhs = typeConvertedRhs;
+            
             var assignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
 
             var postAssignment = GetPostAssignmentStatements(node);
