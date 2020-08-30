@@ -36,11 +36,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly ExpressionEvaluator _expressionEvaluator;
 
         private static readonly VBasic.SyntaxKind[] Int32ArithmeticExpressionKinds = new[] {
+            VBasic.SyntaxKind.IntegerDivideExpression,
+            VBasic.SyntaxKind.ModuloExpression,
             VBasic.SyntaxKind.AddExpression,
             VBasic.SyntaxKind.SubtractExpression,
             VBasic.SyntaxKind.MultiplyExpression,
-            VBasic.SyntaxKind.IntegerDivideExpression,
-            VBasic.SyntaxKind.ModuloExpression
+            VBasic.SyntaxKind.DivideExpression
         };
 
         public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation,
@@ -179,23 +180,27 @@ namespace ICSharpCode.CodeConverter.CSharp
             convertedType ??= typeInfo.ConvertedType;
             if (type.IsNumericType()) {
                 var syntaxKind = VBasic.VisualBasicExtensions.Kind(vbNode.SkipIntoParens());
-                type = GetTypeOrNull(type, syntaxKind) ?? type;
+                type = GetTypeOrNull(vbNode, type.SpecialType) ?? type;
             }
             return (type, convertedType);
         }
 
-        private ITypeSymbol GetTypeOrNull(ITypeSymbol type, VBasic.SyntaxKind syntaxKind)
+        private ITypeSymbol GetTypeOrNull(VBSyntax.ExpressionSyntax vbNode, SpecialType type)
         {
+            var syntaxKind = VBasic.VisualBasicExtensions.Kind(vbNode.SkipIntoParens());
             if (Int32ArithmeticExpressionKinds.Contains(syntaxKind))
             {
-                type = _semanticModel.Compilation.GetTypeByMetadataName("System.Int32");
-            }
-            else if (syntaxKind == VBasic.SyntaxKind.DivideExpression && type.SpecialType != SpecialType.System_Decimal)
-            {
-                type = _semanticModel.Compilation.GetTypeByMetadataName("System.Double");
+                var mappedSpecialType = type switch {
+                    SpecialType.System_SByte => SpecialType.System_Int32,
+                    SpecialType.System_Byte => SpecialType.System_Int32,
+                    SpecialType.System_Int16 => SpecialType.System_Int32,
+                    SpecialType.System_UInt16 => SpecialType.System_Int32,
+                    var other => other
+                };
+                return _semanticModel.Compilation.GetSpecialType(mappedSpecialType);
             }
 
-            return type;
+            return null;
         }
 
         private CSS.NameSyntax GetCommonDelegateTypeOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType)

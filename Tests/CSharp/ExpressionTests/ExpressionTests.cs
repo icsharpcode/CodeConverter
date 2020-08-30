@@ -1603,9 +1603,8 @@ public partial class Compound
 }");
         }
 
-        //TODO: Check the code path for declaration shares code with assignment
         [Fact]
-        public async Task ShortMultiplicationDeclarationAndAssignment()
+        public async Task ShortMultiplicationDeclarationAndAssignmentAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"Public Class Compound
@@ -1627,6 +1626,30 @@ public partial class Compound
         short x = (short)(aShort * anotherShort);
         x *= aShort; // Implicit cast in C# due to compound operator
         x = (short)(aShort * x);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ArgumentsAreTypeConvertedAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Imports System.Drawing
+
+Public Class Compound
+    Public Sub TypeCast(someInt As Integer)
+        Dim col = Color.FromArgb(someInt * 255.0F, someInt * 255.0F, someInt * 255.0F)
+        Dim arry = New Single(7/someInt, 8)
+    End Sub
+End Class",
+                @"using System.Drawing;
+
+public partial class Compound
+{
+    public void TypeCast(int someInt)
+    {
+        var col = Color.FromArgb((int)((float)someInt * 255.0f),(int)((float)someInt * 255.0f), (int)((float)someInt * 255.0f));
+        float arry = new float(7d / (double)someInt);
     }
 }");
         }
