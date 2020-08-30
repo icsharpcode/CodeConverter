@@ -176,9 +176,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             var typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
 
             // Split out compound operator if type conversion needed on result
-            if (GetNonCompoundOrNull(kind) is {} nonCompound) {
+            if (TypeConversionAnalyzer.GetNonCompoundOrNull(kind) is {} nonCompound) {
                 
-                var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, lhs, rhs);
+                var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, lhs, typeConvertedRhs);
                 var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: rhsTypeInfo.ConvertedType, forceTargetType: lhsTypeInfo.Type);
                 if (nonCompoundRhs != typeConvertedNonCompoundRhs) {
                     kind = SyntaxKind.SimpleAssignmentExpression;
@@ -193,18 +193,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             var postAssignment = GetPostAssignmentStatements(node);
             return postAssignment.Insert(0, SyntaxFactory.ExpressionStatement(assignment));
         }
-
-        private SyntaxKind? GetNonCompoundOrNull(SyntaxKind kind) =>
-            kind switch {
-                SyntaxKind.DivideAssignmentExpression=> SyntaxKind.DivideExpression,
-                SyntaxKind.MultiplyAssignmentExpression => SyntaxKind.MultiplyExpression,
-                SyntaxKind.AddAssignmentExpression => SyntaxKind.AddExpression,
-                SyntaxKind.SubtractAssignmentExpression=> SyntaxKind.SubtractExpression,
-                SyntaxKind.ModuloAssignmentExpression=> SyntaxKind.ModuloExpression,
-                SyntaxKind.LeftShiftAssignmentExpression=> SyntaxKind.LeftShiftExpression,
-                SyntaxKind.RightShiftAssignmentExpression=> SyntaxKind.RightShiftExpression,
-                _ => null
-            };
 
         private async Task<SyntaxList<StatementSyntax>> ConvertMidAssignmentAsync(VBSyntax.AssignmentStatementSyntax node, VBSyntax.MidExpressionSyntax mes)
         {

@@ -35,6 +35,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly SyntaxGenerator _csSyntaxGenerator;
         private readonly ExpressionEvaluator _expressionEvaluator;
 
+        private static readonly VBasic.SyntaxKind[] Int32ArithmeticExpressionKinds = new[] {
+            VBasic.SyntaxKind.AddExpression,
+            VBasic.SyntaxKind.SubtractExpression,
+            VBasic.SyntaxKind.MultiplyExpression,
+            VBasic.SyntaxKind.IntegerDivideExpression,
+            VBasic.SyntaxKind.ModuloExpression
+        };
+
         public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation,
             HashSet<string> extraUsingDirectives, SyntaxGenerator csSyntaxGenerator, ExpressionEvaluator expressionEvaluator)
         {
@@ -45,7 +53,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _expressionEvaluator = expressionEvaluator;
         }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
+        public ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
         {
             if (csNode == null) return null;
             var conversionKind = AnalyzeConversion(vbNode, defaultToCast, isConst, forceSourceType, forceTargetType);
@@ -55,7 +63,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded, isConst, forceSourceType: forceSourceType, forceTargetType: forceTargetType).Expr;
         }
 
-        public (ExpressionSyntax Expr, bool IsConst) AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false, bool requiresConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
+        public (ExpressionSyntax Expr, bool IsConst) AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false, bool requiresConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
         {
             var (vbType, vbConvertedType) = GetTypeInfo(vbNode, forceSourceType, forceTargetType);
             bool resultConst = false;
@@ -118,7 +126,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return ValidSyntaxFactory.CastExpression(typeName, csNode);
         }
 
-        public TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
+        public TypeConversionKind AnalyzeConversion(VBSyntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
         {
             var (vbType, vbConvertedType) = GetTypeInfo(vbNode, forceSourceType, forceTargetType);
             
@@ -169,20 +177,25 @@ namespace ICSharpCode.CodeConverter.CSharp
             var typeInfo = _semanticModel.GetTypeInfo(vbNode);
             type ??= typeInfo.Type;
             convertedType ??= typeInfo.ConvertedType;
-            if (type?.Equals(typeInfo.Type) == true && type.IsNumericType()) {
-                if (vbNode.SkipIntoParens().IsKind(
-                    VBasic.SyntaxKind.AddExpression,
-                    VBasic.SyntaxKind.SubtractExpression,
-                    VBasic.SyntaxKind.MultiplyExpression,
-                    VBasic.SyntaxKind.IntegerDivideExpression,
-                    VBasic.SyntaxKind.ModuloExpression
-                )) {
-                    type = _semanticModel.Compilation.GetTypeByMetadataName("System.Int32");
-                } else if (vbNode.SkipIntoParens().IsKind(VBasic.SyntaxKind.DivideExpression) && type.SpecialType != SpecialType.System_Decimal) {
-                    type = _semanticModel.Compilation.GetTypeByMetadataName("System.Double");
-                }
+            if (type.IsNumericType()) {
+                var syntaxKind = VBasic.VisualBasicExtensions.Kind(vbNode.SkipIntoParens());
+                type = GetTypeOrNull(type, syntaxKind) ?? type;
             }
             return (type, convertedType);
+        }
+
+        private ITypeSymbol GetTypeOrNull(ITypeSymbol type, VBasic.SyntaxKind syntaxKind)
+        {
+            if (Int32ArithmeticExpressionKinds.Contains(syntaxKind))
+            {
+                type = _semanticModel.Compilation.GetTypeByMetadataName("System.Int32");
+            }
+            else if (syntaxKind == VBasic.SyntaxKind.DivideExpression && type.SpecialType != SpecialType.System_Decimal)
+            {
+                type = _semanticModel.Compilation.GetTypeByMetadataName("System.Double");
+            }
+
+            return type;
         }
 
         private CSS.NameSyntax GetCommonDelegateTypeOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType)
@@ -311,7 +324,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return TypeConversionKind.Unknown;
         }
 
-        public ExpressionSyntax AddExplicitConvertTo(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
+        public ExpressionSyntax AddExplicitConvertTo(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
         {
             var displayType = targetType.ToMinimalDisplayString(_semanticModel, vbNode.SpanStart);
             if (csNode is InvocationExpressionSyntax invoke &&
@@ -370,7 +383,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             DelegateConstructor
         }
 
-        public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax node,
+        public static bool ConvertStringToCharLiteral(VBSyntax.ExpressionSyntax node,
             ITypeSymbol type,
             ITypeSymbol convertedType,
             out char chr)
@@ -389,5 +402,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             chr = default;
             return false;
         }
+
+        public static SyntaxKind? GetNonCompoundOrNull(SyntaxKind kind) =>
+            kind switch {
+                SyntaxKind.DivideAssignmentExpression=> SyntaxKind.DivideExpression,
+                SyntaxKind.MultiplyAssignmentExpression => SyntaxKind.MultiplyExpression,
+                SyntaxKind.AddAssignmentExpression => SyntaxKind.AddExpression,
+                SyntaxKind.SubtractAssignmentExpression=> SyntaxKind.SubtractExpression,
+                SyntaxKind.ModuloAssignmentExpression=> SyntaxKind.ModuloExpression,
+                SyntaxKind.LeftShiftAssignmentExpression=> SyntaxKind.LeftShiftExpression,
+                SyntaxKind.RightShiftAssignmentExpression=> SyntaxKind.RightShiftExpression,
+                _ => null
+            };
     }
 }
