@@ -462,7 +462,7 @@ namespace ICSharpCode.CodeConverter.Util
         {
             var fullCodeHeading = "Input:";
             string nodeType = node.GetType().Name;
-            if (e is ExceptionWithNodeInformation {InnerException: {} inner, ExceptionCause: {} importantNode}) {
+            if (e is ExceptionWithNodeInformation {InnerException: {} inner, ExceptionCause: {} importantNode} && importantNode != node) {
                 e = inner;
                 nodeType = importantNode.GetType().Name;
                 fullCodeHeading += $" {importantNode.ToFullString()}{Environment.NewLine}Context:";
