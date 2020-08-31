@@ -9,6 +9,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
+
+
+### C# -> VB
+
+
+## [8.1.8] - 2020-08-31
+
+
+### Vsix
+
+
+### VB -> C#
 * (Fix regression) WithEvents field visibility converted correctly [#616](https://github.com/icsharpcode/CodeConverter/issues/616)[#618](https://github.com/icsharpcode/CodeConverter/issues/618)
 * Type convert within compound assignments [#612](https://github.com/icsharpcode/CodeConverter/issues/612)
 * Type convert lambdas to a concrete delegate type if needed [#611](https://github.com/icsharpcode/CodeConverter/issues/611)
