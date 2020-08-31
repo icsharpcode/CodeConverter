@@ -102,28 +102,8 @@ namespace ICSharpCode.CodeConverter.VsExtension
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             var text = Clipboard.GetText();
-            string message = "Here is the code \n" + text; //string.Format(CultureInfo.CurrentCulture, "Inside {0}.MenuItemCallback()", this.GetType().FullName);
-            string title = "PasteAsVB";
-
-            // Show a message box to prove we were here
-            VsShellUtilities.ShowMessageBox(
-                this.package,
-                message,
-                title,
-                OLEMSGICON.OLEMSGICON_INFO,
-                OLEMSGBUTTON.OLEMSGBUTTON_OK,
-                OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
-
             var convertTextOnly = await ProjectConversion.ConvertTextAsync<CSToVBConversion>(text, conversionOptions: new TextConversionOptions(DefaultReferences.NetStandard2), cancellationToken: cancellationToken);
-
-            message = convertTextOnly.ConvertedCode;
-            VsShellUtilities.ShowMessageBox(
-                this.package,
-                message,
-                title,
-                OLEMSGICON.OLEMSGICON_INFO,
-                OLEMSGBUTTON.OLEMSGBUTTON_OK,
-                OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+            await VisualStudioInteraction.WriteToCurrentWindowAsync(ServiceProvider, convertTextOnly.ConvertedCode);
         }
 
     }
