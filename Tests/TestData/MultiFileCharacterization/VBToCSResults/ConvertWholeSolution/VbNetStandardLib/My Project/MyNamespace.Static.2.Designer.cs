@@ -235,10 +235,10 @@ namespace Microsoft.VisualBasic
                     var i64Value = default(long);
                     if (IsHexOrOctValue(Value, ref i64Value))
                     {
-                        return ToByte(i64Value);
+                        return (byte)i64Value;
                     }
 
-                    return ToByte(ParseDouble(Value));
+                    return (byte)ParseDouble(Value);
                 }
                 catch (FormatException e)
                 {
@@ -264,7 +264,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is sbyte)
                 {
-                    return ToByte((sbyte)Value);
+                    return (byte)(sbyte)Value;
                 }
                 else if (Value is byte)
                 {
@@ -272,39 +272,39 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is short)
                 {
-                    return ToByte((short)Value);
+                    return (byte)(short)Value;
                 }
                 else if (Value is ushort)
                 {
-                    return ToByte((ushort)Value);
+                    return (byte)(ushort)Value;
                 }
                 else if (Value is int)
                 {
-                    return ToByte((int)Value);
+                    return (byte)(int)Value;
                 }
                 else if (Value is uint)
                 {
-                    return ToByte((uint)Value);
+                    return (byte)(uint)Value;
                 }
                 else if (Value is long)
                 {
-                    return ToByte((long)Value);
+                    return (byte)(long)Value;
                 }
                 else if (Value is ulong)
                 {
-                    return ToByte((ulong)Value);
+                    return (byte)(ulong)Value;
                 }
                 else if (Value is decimal)
                 {
-                    return ToByte((decimal)Value);
+                    return (byte)(decimal)Value;
                 }
                 else if (Value is float)
                 {
-                    return ToByte((float)Value);
+                    return (byte)(float)Value;
                 }
                 else if (Value is double)
                 {
-                    return ToByte((double)Value);
+                    return (byte)(double)Value;
                 }
                 else if (Value is string)
                 {
@@ -327,10 +327,10 @@ namespace Microsoft.VisualBasic
                     var i64Value = default(long);
                     if (IsHexOrOctValue(Value, ref i64Value))
                     {
-                        return ToSByte(i64Value);
+                        return (sbyte)i64Value;
                     }
 
-                    return ToSByte(ParseDouble(Value));
+                    return (sbyte)ParseDouble(Value);
                 }
                 catch (FormatException e)
                 {
@@ -361,43 +361,43 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is byte)
                 {
-                    return ToSByte((byte)Value);
+                    return (sbyte)(byte)Value;
                 }
                 else if (Value is short)
                 {
-                    return ToSByte((short)Value);
+                    return (sbyte)(short)Value;
                 }
                 else if (Value is ushort)
                 {
-                    return ToSByte((ushort)Value);
+                    return (sbyte)(ushort)Value;
                 }
                 else if (Value is int)
                 {
-                    return ToSByte((int)Value);
+                    return (sbyte)(int)Value;
                 }
                 else if (Value is uint)
                 {
-                    return ToSByte((uint)Value);
+                    return (sbyte)(uint)Value;
                 }
                 else if (Value is long)
                 {
-                    return ToSByte((long)Value);
+                    return (sbyte)(long)Value;
                 }
                 else if (Value is ulong)
                 {
-                    return ToSByte((ulong)Value);
+                    return (sbyte)(ulong)Value;
                 }
                 else if (Value is decimal)
                 {
-                    return ToSByte((decimal)Value);
+                    return (sbyte)(decimal)Value;
                 }
                 else if (Value is float)
                 {
-                    return ToSByte((float)Value);
+                    return (sbyte)(float)Value;
                 }
                 else if (Value is double)
                 {
-                    return ToSByte((double)Value);
+                    return (sbyte)(double)Value;
                 }
                 else if (Value is string)
                 {
@@ -419,10 +419,10 @@ namespace Microsoft.VisualBasic
                     var i64Value = default(long);
                     if (IsHexOrOctValue(Value, ref i64Value))
                     {
-                        return ToShort(i64Value);
+                        return (short)i64Value;
                     }
 
-                    return ToShort(ParseDouble(Value));
+                    return (short)ParseDouble(Value);
                 }
                 catch (FormatException e)
                 {
@@ -460,35 +460,35 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is ushort)
                 {
-                    return ToShort((ushort)Value);
+                    return (short)(ushort)Value;
                 }
                 else if (Value is int)
                 {
-                    return ToShort((int)Value);
+                    return (short)(int)Value;
                 }
                 else if (Value is uint)
                 {
-                    return ToShort((uint)Value);
+                    return (short)(uint)Value;
                 }
                 else if (Value is long)
                 {
-                    return ToShort((long)Value);
+                    return (short)(long)Value;
                 }
                 else if (Value is ulong)
                 {
-                    return ToShort((ulong)Value);
+                    return (short)(ulong)Value;
                 }
                 else if (Value is decimal)
                 {
-                    return ToShort((decimal)Value);
+                    return (short)(decimal)Value;
                 }
                 else if (Value is float)
                 {
-                    return ToShort((float)Value);
+                    return (short)(float)Value;
                 }
                 else if (Value is double)
                 {
-                    return ToShort((double)Value);
+                    return (short)(double)Value;
                 }
                 else if (Value is string)
                 {
@@ -511,10 +511,10 @@ namespace Microsoft.VisualBasic
                     var i64Value = default(long);
                     if (IsHexOrOctValue(Value, ref i64Value))
                     {
-                        return ToUShort(i64Value);
+                        return (ushort)i64Value;
                     }
 
-                    return ToUShort(ParseDouble(Value));
+                    return (ushort)ParseDouble(Value);
                 }
                 catch (FormatException e)
                 {
@@ -541,7 +541,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is sbyte)
                 {
-                    return ToUShort((sbyte)Value);
+                    return (ushort)(sbyte)Value;
                 }
                 else if (Value is byte)
                 {
@@ -549,7 +549,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is short)
                 {
-                    return ToUShort((short)Value);
+                    return (ushort)(short)Value;
                 }
                 else if (Value is ushort)
                 {
@@ -557,31 +557,31 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is int)
                 {
-                    return ToUShort((int)Value);
+                    return (ushort)(int)Value;
                 }
                 else if (Value is uint)
                 {
-                    return ToUShort((uint)Value);
+                    return (ushort)(uint)Value;
                 }
                 else if (Value is long)
                 {
-                    return ToUShort((long)Value);
+                    return (ushort)(long)Value;
                 }
                 else if (Value is ulong)
                 {
-                    return ToUShort((ulong)Value);
+                    return (ushort)(ulong)Value;
                 }
                 else if (Value is decimal)
                 {
-                    return ToUShort((decimal)Value);
+                    return (ushort)(decimal)Value;
                 }
                 else if (Value is float)
                 {
-                    return ToUShort((float)Value);
+                    return (ushort)(float)Value;
                 }
                 else if (Value is double)
                 {
-                    return ToUShort((double)Value);
+                    return (ushort)(double)Value;
                 }
                 else if (Value is string)
                 {
@@ -603,10 +603,10 @@ namespace Microsoft.VisualBasic
                     var i64Value = default(long);
                     if (IsHexOrOctValue(Value, ref i64Value))
                     {
-                        return ToInteger(i64Value);
+                        return (int)i64Value;
                     }
 
-                    return ToInteger(ParseDouble(Value));
+                    return (int)ParseDouble(Value);
                 }
                 catch (FormatException e)
                 {
@@ -652,27 +652,27 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is uint)
                 {
-                    return ToInteger((uint)Value);
+                    return (int)(uint)Value;
                 }
                 else if (Value is long)
                 {
-                    return ToInteger((long)Value);
+                    return (int)(long)Value;
                 }
                 else if (Value is ulong)
                 {
-                    return ToInteger((ulong)Value);
+                    return (int)(ulong)Value;
                 }
                 else if (Value is decimal)
                 {
-                    return ToInteger((decimal)Value);
+                    return (int)(decimal)Value;
                 }
                 else if (Value is float)
                 {
-                    return ToInteger((float)Value);
+                    return (int)(float)Value;
                 }
                 else if (Value is double)
                 {
-                    return ToInteger((double)Value);
+                    return (int)(double)Value;
                 }
                 else if (Value is string)
                 {
@@ -687,7 +687,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value is null)
                 {
-                    return 0;
+                    return 0U;
                 }
 
                 try
@@ -695,10 +695,10 @@ namespace Microsoft.VisualBasic
                     var i64Value = default(long);
                     if (IsHexOrOctValue(Value, ref i64Value))
                     {
-                        return ToUInteger(i64Value);
+                        return (uint)i64Value;
                     }
 
-                    return ToUInteger(ParseDouble(Value));
+                    return (uint)ParseDouble(Value);
                 }
                 catch (FormatException e)
                 {
@@ -711,7 +711,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value is null)
                 {
-                    return 0;
+                    return 0U;
                 }
 
                 if (Value is Enum)
@@ -725,7 +725,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is sbyte)
                 {
-                    return ToUInteger((sbyte)Value);
+                    return (uint)(sbyte)Value;
                 }
                 else if (Value is byte)
                 {
@@ -733,7 +733,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is short)
                 {
-                    return ToUInteger((short)Value);
+                    return (uint)(short)Value;
                 }
                 else if (Value is ushort)
                 {
@@ -741,7 +741,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is int)
                 {
-                    return ToUInteger((int)Value);
+                    return (uint)(int)Value;
                 }
                 else if (Value is uint)
                 {
@@ -749,23 +749,23 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is long)
                 {
-                    return ToUInteger((long)Value);
+                    return (uint)(long)Value;
                 }
                 else if (Value is ulong)
                 {
-                    return ToUInteger((ulong)Value);
+                    return (uint)(ulong)Value;
                 }
                 else if (Value is decimal)
                 {
-                    return ToUInteger((decimal)Value);
+                    return (uint)(decimal)Value;
                 }
                 else if (Value is float)
                 {
-                    return ToUInteger((float)Value);
+                    return (uint)(float)Value;
                 }
                 else if (Value is double)
                 {
-                    return ToUInteger((double)Value);
+                    return (uint)(double)Value;
                 }
                 else if (Value is string)
                 {
@@ -779,7 +779,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value is null)
                 {
-                    return 0;
+                    return 0L;
                 }
 
                 try
@@ -790,7 +790,7 @@ namespace Microsoft.VisualBasic
                         return i64Value;
                     }
 
-                    return ToLong(ParseDecimal(Value, null));
+                    return (long)ParseDecimal(Value, null);
                 }
                 catch (FormatException e)
                 {
@@ -802,7 +802,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value is null)
                 {
-                    return 0;
+                    return 0L;
                 }
 
                 if (Value is Enum)
@@ -844,19 +844,19 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is ulong)
                 {
-                    return ToLong((ulong)Value);
+                    return (long)(ulong)Value;
                 }
                 else if (Value is decimal)
                 {
-                    return ToLong((decimal)Value);
+                    return (long)(decimal)Value;
                 }
                 else if (Value is float)
                 {
-                    return ToLong((float)Value);
+                    return (long)(float)Value;
                 }
                 else if (Value is double)
                 {
-                    return ToLong((double)Value);
+                    return (long)(double)Value;
                 }
                 else if (Value is string)
                 {
@@ -871,7 +871,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value is null)
                 {
-                    return 0;
+                    return 0UL;
                 }
 
                 try
@@ -882,7 +882,7 @@ namespace Microsoft.VisualBasic
                         return ui64Value;
                     }
 
-                    return ToULong(ParseDecimal(Value, null));
+                    return (ulong)ParseDecimal(Value, null);
                 }
                 catch (FormatException e)
                 {
@@ -895,7 +895,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value is null)
                 {
-                    return 0;
+                    return 0UL;
                 }
 
                 if (Value is Enum)
@@ -909,7 +909,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is sbyte)
                 {
-                    return ToULong((sbyte)Value);
+                    return (ulong)(sbyte)Value;
                 }
                 else if (Value is byte)
                 {
@@ -917,7 +917,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is short)
                 {
-                    return ToULong((short)Value);
+                    return (ulong)(short)Value;
                 }
                 else if (Value is ushort)
                 {
@@ -925,7 +925,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is int)
                 {
-                    return ToULong((int)Value);
+                    return (ulong)(int)Value;
                 }
                 else if (Value is uint)
                 {
@@ -933,7 +933,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is long)
                 {
-                    return ToULong((long)Value);
+                    return (ulong)(long)Value;
                 }
                 else if (Value is ulong)
                 {
@@ -941,15 +941,15 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is decimal)
                 {
-                    return ToULong((decimal)Value);
+                    return (ulong)(decimal)Value;
                 }
                 else if (Value is float)
                 {
-                    return ToULong((float)Value);
+                    return (ulong)(float)Value;
                 }
                 else if (Value is double)
                 {
-                    return ToULong((double)Value);
+                    return (ulong)(double)Value;
                 }
                 else if (Value is string)
                 {
@@ -963,11 +963,11 @@ namespace Microsoft.VisualBasic
             {
                 if (Value)
                 {
-                    return -1M;
+                    return -1m;
                 }
                 else
                 {
-                    return 0M;
+                    return 0m;
                 }
             }
 
@@ -975,7 +975,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value is null)
                 {
-                    return 0M;
+                    return 0m;
                 }
 
                 try
@@ -1002,7 +1002,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value is null)
                 {
-                    return 0M;
+                    return 0m;
                 }
 
                 if (Value is Enum)
@@ -1052,11 +1052,11 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is float)
                 {
-                    return ToDecimal((float)Value);
+                    return (decimal)(float)Value;
                 }
                 else if (Value is double)
                 {
-                    return ToDecimal((double)Value);
+                    return (decimal)(double)Value;
                 }
                 else if (Value is string)
                 {
@@ -1133,7 +1133,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value is null)
                 {
-                    return 0;
+                    return 0f;
                 }
 
                 try
@@ -1150,7 +1150,7 @@ namespace Microsoft.VisualBasic
                         throw new OverflowException();
                     }
 
-                    return ToSingle(Result);
+                    return (float)Result;
                 }
                 catch (FormatException e)
                 {
@@ -1162,7 +1162,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value is null)
                 {
-                    return 0;
+                    return 0f;
                 }
 
                 if (Value is Enum)
@@ -1208,7 +1208,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is decimal)
                 {
-                    return ToSingle((decimal)Value);
+                    return (float)(decimal)Value;
                 }
                 else if (Value is float)
                 {
@@ -1216,7 +1216,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is double)
                 {
-                    return ToSingle((double)Value);
+                    return (float)(double)Value;
                 }
                 else if (Value is string)
                 {
@@ -1230,7 +1230,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value is null)
                 {
-                    return 0;
+                    return 0d;
                 }
 
                 try
@@ -1253,7 +1253,7 @@ namespace Microsoft.VisualBasic
             {
                 if (Value is null)
                 {
-                    return 0;
+                    return 0d;
                 }
 
                 if (Value is Enum)
@@ -1299,7 +1299,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is decimal)
                 {
-                    return ToDouble((decimal)Value);
+                    return (double)(decimal)Value;
                 }
                 else if (Value is float)
                 {
@@ -1477,7 +1477,7 @@ namespace Microsoft.VisualBasic
                 {
                     return Value.ToString("T");
                 }
-                else if (TimeTicks == 0)
+                else if (TimeTicks == 0L)
                 {
                     return Value.ToString("d");
                 }
@@ -1877,7 +1877,7 @@ namespace Microsoft.VisualBasic
             {
                 public static bool ForNextCheckR4(float count, float limit, float StepValue)
                 {
-                    if (StepValue >= 0)
+                    if (StepValue >= 0f)
                     {
                         return count <= limit;
                     }
@@ -1889,7 +1889,7 @@ namespace Microsoft.VisualBasic
 
                 public static bool ForNextCheckR8(double count, double limit, double StepValue)
                 {
-                    if (StepValue >= 0)
+                    if (StepValue >= 0d)
                     {
                         return count <= limit;
                     }
@@ -1901,7 +1901,7 @@ namespace Microsoft.VisualBasic
 
                 public static bool ForNextCheckDec(decimal count, decimal limit, decimal StepValue)
                 {
-                    if (StepValue >= 0)
+                    if (StepValue >= 0m)
                     {
                         return count <= limit;
                     }

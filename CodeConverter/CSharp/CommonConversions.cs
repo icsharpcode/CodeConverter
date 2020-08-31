@@ -474,12 +474,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<IEnumerable<ExpressionSyntax>> ConvertArrayBoundsAsync(SeparatedSyntaxList<VBSyntax.ArgumentSyntax> arguments)
         {
-            return await arguments.SelectAsync(a => {
+            return await arguments.SelectAsync(async a => {
                 VBSyntax.ExpressionSyntax upperBoundExpression = a is VBSyntax.SimpleArgumentSyntax sas ? sas.Expression
                     : a is VBSyntax.RangeArgumentSyntax ras ? ras.UpperBound
                     : throw new ArgumentOutOfRangeException(nameof(a), a, null);
-
-                return IncreaseArrayUpperBoundExpressionAsync(upperBoundExpression);
+                var increaseArrayUpperBoundExpressionAsync = await IncreaseArrayUpperBoundExpressionAsync(upperBoundExpression);
+                return TypeConversionAnalyzer.AddExplicitConversion(upperBoundExpression, increaseArrayUpperBoundExpressionAsync);
             });
         }
 

@@ -112,12 +112,12 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        double x = Math.Pow(7, 6) % (5 / 4) + 3 * 2;
-        x += 1;
-        x -= 2;
-        x *= 3;
-        x /= 4;
-        x = Math.Pow(x, 5);
+        double x = Math.Pow(7d, 6d) % (5 / 4) + 3 * 2;
+        x += 1d;
+        x -= 2d;
+        x *= 3d;
+        x = x / 4L;
+        x = Math.Pow(x, 5d);
     }
 }");
         }
@@ -135,19 +135,18 @@ internal partial class TestClass
         Dim z = x + y
         Dim z2 = y + x
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
-
+End Class", @"
 internal partial class TestClass
 {
     private void TestMethod()
     {
-        double x = 1;
-        decimal y = 2;
+        double x = 1d;
+        decimal y = 2m;
         int i1 = 1;
         int i2 = 2;
         double d1 = i1 / (double)i2;
-        double z = x + Conversions.ToDouble(y);
-        double z2 = Conversions.ToDouble(y) + x;
+        double z = x + (double)y;
+        double z2 = (double)y + x;
     }
 }
 ");
@@ -170,17 +169,14 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        double x = 10 / (double)3;
-        x /= 2;
-        double y = 10.0 / 3;
-        y /= 2;
+        double x = 10d / 3d;
+        x /= 2d;
+        double y = 10.0d / 3d;
+        y /= 2d;
         int z = 8;
-        z /= (double)3;
+        z = (int)(z / 3d);
     }
-}
-1 target compilation errors:
-CS0266: Cannot implicitly convert type 'double' to 'int'. An explicit conversion exists (are you missing a cast?)");
-            //BUG: To avoid compilation error, should be z = (int)Math.Round(z / 3d);
+}");
         }
 
         [Fact]
@@ -196,6 +192,33 @@ internal partial class TestClass
     private void TestMethod(string str)
     {
         int result = 5 - (string.IsNullOrEmpty(str) ? 1 : 2);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ConversionInComparisonOperatorAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class ConversionInComparisonOperatorTest
+    Public Sub Foo()
+        Dim SomeDecimal As Decimal = 12.3
+        Dim ACalc As Double = 32.1
+        If ACalc > 60 / SomeDecimal Then
+            Console.WriteLine(1)
+        End If
+    End Sub
+End Class", @"using System;
+
+public partial class ConversionInComparisonOperatorTest
+{
+    public void Foo()
+    {
+        decimal SomeDecimal = 12.3m;
+        double ACalc = 32.1d;
+        if (ACalc > (double)(60m / SomeDecimal))
+        {
+            Console.WriteLine(1);
+        }
     }
 }");
         }

@@ -170,46 +170,28 @@ namespace ICSharpCode.CodeConverter.CSharp
             var kind = node.Kind().ConvertToken(TokenContext.Local);
 
             
+            var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
             var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
-            // e.g. Right operand of division must be converted to int or double depending on the operator, but can't say that explicitly in case there are operator overloads
-            rhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs, forceSourceType: rhsTypeInfo.Type, forceTargetType: rhsTypeInfo.ConvertedType);
-            var rhsSourceType = rhsTypeInfo.ConvertedType;
-
-            var lhsType = _semanticModel.GetTypeInfo(node.Left).Type;
-            var typeConversionKind = CommonConversions.TypeConversionAnalyzer.AnalyzeConversion(node.Right, forceSourceType: rhsSourceType, forceTargetType: lhsType);
             
-            // Split out compound operator if type conversion needed on result
-            if (GetNonCompoundOrNull(kind) is {} nonCompound && !IsImplicit(typeConversionKind)) {
-                kind = SyntaxKind.SimpleAssignmentExpression;
-                rhs = SyntaxFactory.BinaryExpression(nonCompound, lhs, rhs);
-            }
-            rhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs, typeConversionKind, forceTargetType: lhsType).Expr;
+            var typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
 
+            // Split out compound operator if type conversion needed on result
+            if (TypeConversionAnalyzer.GetNonCompoundOrNull(kind) is {} nonCompound) {
+                
+                var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, lhs, typeConvertedRhs);
+                var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: rhsTypeInfo.ConvertedType, forceTargetType: lhsTypeInfo.Type);
+                if (nonCompoundRhs != typeConvertedNonCompoundRhs) {
+                    kind = SyntaxKind.SimpleAssignmentExpression;
+                    typeConvertedRhs = typeConvertedNonCompoundRhs;
+                }
+            }
+
+            rhs = typeConvertedRhs;
+            
             var assignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
 
             var postAssignment = GetPostAssignmentStatements(node);
             return postAssignment.Insert(0, SyntaxFactory.ExpressionStatement(assignment));
-        }
-
-        private SyntaxKind? GetNonCompoundOrNull(SyntaxKind kind) =>
-            kind switch {
-                SyntaxKind.DivideAssignmentExpression=> SyntaxKind.DivideExpression,
-                SyntaxKind.MultiplyAssignmentExpression => SyntaxKind.MultiplyExpression,
-                SyntaxKind.AddAssignmentExpression => SyntaxKind.AddExpression,
-                SyntaxKind.SubtractAssignmentExpression=> SyntaxKind.SubtractExpression,
-                SyntaxKind.ModuloAssignmentExpression=> SyntaxKind.ModuloExpression,
-                SyntaxKind.LeftShiftAssignmentExpression=> SyntaxKind.LeftShiftExpression,
-                SyntaxKind.RightShiftAssignmentExpression=> SyntaxKind.RightShiftExpression,
-                _ => null
-            };
-
-        private static bool IsImplicit(TypeConversionAnalyzer.TypeConversionKind typeConversionKind)
-        {
-            return typeConversionKind switch {
-                TypeConversionAnalyzer.TypeConversionKind.Identity => true,
-                TypeConversionAnalyzer.TypeConversionKind.NonDestructiveCast => true,
-                _ => false
-            };
         }
 
         private async Task<SyntaxList<StatementSyntax>> ConvertMidAssignmentAsync(VBSyntax.AssignmentStatementSyntax node, VBSyntax.MidExpressionSyntax mes)

@@ -170,7 +170,7 @@ internal partial class Class1
 {
     private void Test()
     {
-        double q = 2.37;
+        double q = 2.37d;
         int j = Conversions.ToInteger(q);
     }
 }");
@@ -277,7 +277,7 @@ internal partial class Class1
 {
     private void Test()
     {
-        object o = 5F;
+        object o = 5f;
     }
 }");
         }
@@ -295,7 +295,7 @@ internal partial class Class1
 {
     private void Test()
     {
-        object o = 5.0M;
+        object o = 5.0m;
     }
 }" + Environment.NewLine);
         }

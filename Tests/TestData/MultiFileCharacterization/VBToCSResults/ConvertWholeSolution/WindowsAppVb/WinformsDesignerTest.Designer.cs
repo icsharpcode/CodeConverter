@@ -80,7 +80,7 @@ namespace WindowsAppVb
             // 
             // WinformsDesignerTest
             // 
-            AutoScaleDimensions = new SizeF(6.0F, 13.0F);
+            AutoScaleDimensions = new SizeF(6.0f, 13.0f);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(292, 273);
             Controls.Add(_Button2);

@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * (Fix regression) WithEvents field visibility converted correctly [#616](https://github.com/icsharpcode/CodeConverter/issues/616)[#618](https://github.com/icsharpcode/CodeConverter/issues/618)
 * Type convert within compound assignments [#612](https://github.com/icsharpcode/CodeConverter/issues/612)
 * Type convert lambdas to a concrete delegate type if needed [#611](https://github.com/icsharpcode/CodeConverter/issues/611)
+* Type convert from decimal to double in more cases where needed [#617](https://github.com/icsharpcode/CodeConverter/issues/617)
+* Use casts rather than Conversions.To\* for numeric conversions
 
 ### C# -> VB
 

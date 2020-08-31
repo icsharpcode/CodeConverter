@@ -413,7 +413,7 @@ internal static partial class Ext
     public static IEnumerable<AccountEntry> Reduce(this IEnumerable<AccountEntry> accountEntries)
     {
         return from _accountEntry in accountEntries
-               where _accountEntry.Amount > 0M
+               where _accountEntry.Amount > 0m
                group _accountEntry by new
                {
                    _accountEntry.LookupAccountEntryTypeId,

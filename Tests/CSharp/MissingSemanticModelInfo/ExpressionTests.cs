@@ -212,7 +212,6 @@ CS0246: The type or namespace name 'MissingType' could not be found (are you mis
     End Function
 End Class",
 @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
-using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class EnumAndValTest
 {
@@ -224,7 +223,7 @@ public partial class EnumAndValTest
 
     public PositionEnum TitlePosition = PositionEnum.LeftTop;
     public PositionEnum TitleAlign = (PositionEnum)2;
-    public float Ratio = 0;
+    public float Ratio = 0f;
 
     public PositionEnum PositionEnumFromString(string pS, MissingType missing)
     {
@@ -247,7 +246,7 @@ public partial class EnumAndValTest
 
             default:
                 {
-                    Ratio = Conversions.ToSingle(Conversion.Val(pS));
+                    Ratio = (float)Conversion.Val(pS);
                     break;
                 }
         }

@@ -41,7 +41,7 @@ using System.Runtime.InteropServices;
 
 internal partial class TestClass
 {
-    private void TestMethod([Optional, DateTimeConstant(599266080000000000/* #1/1/1900# */)] DateTime pDate)
+    private void TestMethod([Optional, DateTimeConstant(599266080000000000L/* #1/1/1900# */)] DateTime pDate)
     {
         var rslt = DateTime.Parse(""1900-01-01"");
         var rslt2 = DateTime.Parse(""2002-08-13 12:14:00"");
@@ -65,7 +65,7 @@ public partial class Issue213
 {
     private static DateTime x = DateTime.Parse(""1990-01-01"");
 
-    private void Y([Optional, DateTimeConstant(627667488000000000/* Global.Issue213.x */)] DateTime opt)
+    private void Y([Optional, DateTimeConstant(627667488000000000L/* Global.Issue213.x */)] DateTime opt)
     {
     }
 }");
@@ -117,7 +117,6 @@ Public Class EnumToString
     End Sub
 End Class",
 @"using System;
-using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class EnumToString
 {
@@ -130,7 +129,7 @@ public partial class EnumToString
     private void TEest2(Tes aEnum)
     {
         string sxtr_Tmp = ""Use"" + ((short)aEnum).ToString();
-        short si_Txt = Conversions.ToShort(Math.Pow(2, (double)Tes.TEST2));
+        short si_Txt = (short)Math.Pow(2d, (double)Tes.TEST2);
     }
 }");
         }
@@ -1031,7 +1030,7 @@ internal partial class TestClass
         {
             if (b > 0)
                 return a / (double)b;
-            return 0;
+            return 0d;
         };
         Func<int, int, int> test3 = (a, b) => a % b;
         test(3);
@@ -1296,17 +1295,17 @@ internal static partial class Module1
 {
     private const bool a = true;
     private const char b = '\u0001';
-    private const float c = 1;
-    private const double d = 1;
-    private const decimal e = 1;
+    private const float c = 1f;
+    private const double d = 1d;
+    private const decimal e = 1m;
     private const sbyte f = 1;
     private const short g = 1;
     private const int h = 1;
-    private const long i = 1;
+    private const long i = 1L;
     private const byte j = 1;
-    private const uint k = 1;
+    private const uint k = 1U;
     private const ushort l = 1;
-    private const ulong m = 1;
+    private const ulong m = 1UL;
     private const string Nl = ""\r\n"";
 
     public static void Main()
@@ -1419,7 +1418,7 @@ public partial class Class1
 {
     public void Foo()
     {
-        var x = DateAndTime.DateAdd(""m"", 5, DateAndTime.Now);
+        var x = DateAndTime.DateAdd(""m"", 5d, DateAndTime.Now);
     }
 }");
         }
@@ -1465,13 +1464,12 @@ internal static partial class Module1
     Sub Main()
         Dim x As Short = If(True, CShort(50), 100S)
     End Sub
-End Module", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
-
+End Module", @"
 internal static partial class Module1
 {
     public static void Main()
     {
-        short x = true ? Conversions.ToShort(50) : Conversions.ToShort(100);
+        short x = true ? 50 : 100;
     }
 }
 ");
@@ -1513,7 +1511,7 @@ public partial class MoreParsing
         }
 
         [Fact]
-        public async Task CompoundOperatorsWithTypeConversionAsync()
+        public async Task DecimalToIntegerCompoundOperatorsWithTypeConversionAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"Public Class Compound
@@ -1527,22 +1525,133 @@ public partial class MoreParsing
         anInt += aDec
     End Sub
 End Class",
-                @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
-
+                @"
 public partial class Compound
 {
     public void Operators()
     {
         int anInt = 123;
-        decimal aDec = 12.3M;
-        anInt = Conversions.ToInteger(anInt * aDec);
-        anInt = Conversions.ToInteger(anInt / Conversions.ToLong(aDec));
-        anInt = Conversions.ToInteger(anInt / aDec);
-        anInt = Conversions.ToInteger(anInt - aDec);
-        anInt = Conversions.ToInteger(anInt + aDec);
+        decimal aDec = 12.3m;
+        anInt = (int)(anInt * aDec);
+        anInt = (int)(anInt / (long)aDec);
+        anInt = (int)(anInt / aDec);
+        anInt = (int)(anInt - aDec);
+        anInt = (int)(anInt + aDec);
     }
 }");
         }
 
+        [Fact]
+        public async Task DecimalToShortCompoundOperatorsWithTypeConversionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class Compound
+    Public Sub Operators()
+        Dim aShort As Short = 123
+        Dim aDec As Decimal = 12.3
+        aShort *= aDec
+        aShort \= aDec
+        aShort /= aDec
+        aShort -= aDec
+        aShort += aDec
+    End Sub
+End Class",
+                @"
+public partial class Compound
+{
+    public void Operators()
+    {
+        short aShort = 123;
+        decimal aDec = 12.3m;
+        aShort = (short)(aShort * aDec);
+        aShort = (short)(aShort / (long)aDec);
+        aShort = (short)(aShort / aDec);
+        aShort = (short)(aShort - aDec);
+        aShort = (short)(aShort + aDec);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task IntegerToShortCompoundOperatorsWithTypeConversionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class Compound
+    Public Sub Operators()
+        Dim aShort As Short = 123
+        Dim anInt As Integer= 12
+        aShort *= anInt
+        aShort \= anInt
+        aShort /= anInt
+        aShort -= anInt
+        aShort += anInt
+    End Sub
+End Class",
+                @"
+public partial class Compound
+{
+    public void Operators()
+    {
+        short aShort = 123;
+        int anInt = 12;
+        aShort = (short)(aShort * anInt);
+        aShort = (short)(aShort / anInt);
+        aShort = (short)(aShort / (double)anInt);
+        aShort = (short)(aShort - anInt);
+        aShort = (short)(aShort + anInt);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ShortMultiplicationDeclarationAndAssignmentAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class Compound
+    Public Sub Operators()
+        Dim aShort As Short = 123
+        Dim anotherShort As Short = 234
+        Dim x As Short = aShort * anotherShort
+        x *= aShort ' Implicit cast in C# due to compound operator
+        x = aShort * x
+    End Sub
+End Class",
+                @"
+public partial class Compound
+{
+    public void Operators()
+    {
+        short aShort = 123;
+        short anotherShort = 234;
+        short x = (short)(aShort * anotherShort);
+        x *= aShort; // Implicit cast in C# due to compound operator
+        x = (short)(aShort * x);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ArgumentsAreTypeConvertedAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Imports System.Drawing
+
+Public Class Compound
+    Public Sub TypeCast(someInt As Integer)
+        Dim col = Color.FromArgb(someInt * 255.0F, someInt * 255.0F, someInt * 255.0F)
+        Dim arry = New Single(7/someInt) {}
+    End Sub
+End Class",
+                @"using System.Drawing;
+
+public partial class Compound
+{
+    public void TypeCast(int someInt)
+    {
+        var col = Color.FromArgb((int)(someInt * 255.0f), (int)(someInt * 255.0f), (int)(someInt * 255.0f));
+        var arry = new float[(int)(7d / someInt + 1)];
+    }
+}");
+        }
     }
 }
