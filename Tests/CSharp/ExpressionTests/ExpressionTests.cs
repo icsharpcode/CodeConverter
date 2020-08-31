@@ -1639,7 +1639,7 @@ public partial class Compound
 Public Class Compound
     Public Sub TypeCast(someInt As Integer)
         Dim col = Color.FromArgb(someInt * 255.0F, someInt * 255.0F, someInt * 255.0F)
-        Dim arry = New Single(7/someInt, 8)
+        Dim arry = New Single(7/someInt) {}
     End Sub
 End Class",
                 @"using System.Drawing;
@@ -1648,8 +1648,8 @@ public partial class Compound
 {
     public void TypeCast(int someInt)
     {
-        var col = Color.FromArgb((int)((float)someInt * 255.0f),(int)((float)someInt * 255.0f), (int)((float)someInt * 255.0f));
-        float arry = new float(7d / (double)someInt);
+        var col = Color.FromArgb((int)(someInt * 255.0f), (int)(someInt * 255.0f), (int)(someInt * 255.0f));
+        var arry = new float[(int)(7d / someInt + 1)];
     }
 }");
         }
