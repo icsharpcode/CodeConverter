@@ -247,11 +247,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             if (selected.Length > 0 && documentText.Length >= selected.End) {
                 documentText = documentText.Substring(selected.Start, selected.Length);
             }
-
-            var textConversionOptions = new TextConversionOptions(DefaultReferences.NetStandard2, documentPath) {
-                AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()
-            };
-            var convertTextOnly = await ProjectConversion.ConvertTextAsync<TLanguageConversion>(documentText, textConversionOptions, CreateOutputWindowProgress(), cancellationToken);
+            var convertTextOnly = await ConvertTextAsync<TLanguageConversion>(documentText, cancellationToken, documentPath);
             convertTextOnly.SourcePathOrNull = documentPath;
             return convertTextOnly;
         }
@@ -309,14 +305,37 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             return false;
         }
 
-        public async Task ConvertTextBestEffortAsync<TLanguageConversion>(CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
+        public async Task PasteAsAsync<TLanguageConversion>(CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
         {
+            var caretPosition = await VisualStudioInteraction.GetCaretPositionAsync(_serviceProvider);
+
+            await _outputWindow.WriteToOutputWindowAsync("Converting clipboard text...", true, true);
+
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             string text = Clipboard.GetText();
-            var convertTextOnly = await ProjectConversion.ConvertTextAsync<TLanguageConversion>(text,
-                new TextConversionOptions(DefaultReferences.NetStandard2),
-                cancellationToken: cancellationToken);
-            await VisualStudioInteraction.WriteToCurrentWindowAsync(_serviceProvider, convertTextOnly.ConvertedCode);
+
+            var convertTextOnly = await _joinableTaskFactory.RunAsync(async () =>
+                await ConvertTextAsync<TLanguageConversion>(text, cancellationToken)
+            );
+
+            await caretPosition.InsertAsync(convertTextOnly.ConvertedCode);
+
+        }
+
+        private async Task<ConversionResult> ConvertTextAsync<TLanguageConversion>(string text,
+            CancellationToken cancellationToken, string documentPath = null) where TLanguageConversion : ILanguageConversion, new()
+        {
+            return await ProjectConversion.ConvertTextAsync<TLanguageConversion>(text,
+                await CreateTextConversionOptionsAsync(documentPath),
+                cancellationToken: cancellationToken,
+                progress: CreateOutputWindowProgress());
+        }
+
+        private async Task<TextConversionOptions> CreateTextConversionOptionsAsync(string documentPath = null)
+        {
+            return new TextConversionOptions(DefaultReferences.NetStandard2, documentPath) {
+                AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()
+            };
         }
     }
 }

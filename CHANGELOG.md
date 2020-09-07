@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Vsix
 
+* Add "Paste as VB/C#" to "Paste special" menu [#622](https://github.com/icsharpcode/CodeConverter/pull/622)
 
 ### VB -> C#
 

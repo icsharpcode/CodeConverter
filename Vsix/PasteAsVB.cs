@@ -84,7 +84,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
         private async Task CodeEditorMenuItemCallbackAsync(CancellationToken cancellationToken)
         {
             try {
-                await _codeConversion.ConvertTextBestEffortAsync<CSToVBConversion>(cancellationToken);
+                await _codeConversion.PasteAsAsync<CSToVBConversion>(cancellationToken);
             } catch (Exception ex) {
                 await VisualStudioInteraction.ShowExceptionAsync(ex);
             }
