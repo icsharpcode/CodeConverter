@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;
@@ -306,6 +307,16 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                     return true;
             }
             return false;
+        }
+
+        public async Task ConvertTextBestEffortAsync<TLanguageConversion>(CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            string text = Clipboard.GetText();
+            var convertTextOnly = await ProjectConversion.ConvertTextAsync<TLanguageConversion>(text,
+                new TextConversionOptions(DefaultReferences.NetStandard2),
+                cancellationToken: cancellationToken);
+            await VisualStudioInteraction.WriteToCurrentWindowAsync(_serviceProvider, convertTextOnly.ConvertedCode);
         }
     }
 }

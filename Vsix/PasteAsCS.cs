@@ -85,12 +85,11 @@ namespace ICSharpCode.CodeConverter.VsExtension
 
         private async Task CodeEditorMenuItemCallbackAsync(CancellationToken cancellationToken)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-            string text = Clipboard.GetText();
-            var convertTextOnly = await ProjectConversion.ConvertTextAsync<VBToCSConversion>(text,
-                new TextConversionOptions(DefaultReferences.NetStandard2),
-                cancellationToken: cancellationToken);
-            await VisualStudioInteraction.WriteToCurrentWindowAsync(ServiceProvider, convertTextOnly.ConvertedCode);
+            try {
+                await _codeConversion.ConvertTextBestEffortAsync<VBToCSConversion>(cancellationToken);
+            } catch (Exception ex) {
+                await VisualStudioInteraction.ShowExceptionAsync(ex);
+            }
         }
     }
 }
