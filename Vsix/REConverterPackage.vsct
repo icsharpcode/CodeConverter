@@ -62,7 +62,7 @@
         </Strings>
       </Button>
       <Button guid="guidCodeConverterCommandPackageCmdSet" id="PasteAsVBCommandId" type="Button" priority="0x0300">
-        <Parent guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterMenuGroup" />
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_EDIT_PASTE" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
@@ -112,7 +112,7 @@
         </Strings>
       </Button>
       <Button guid="guidCodeConverterCommandPackageCmdSet" id="PasteAsCSCommandId" priority="0x0300" type="Button">
-        <Parent guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterMenuGroup" />
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_EDIT_PASTE" />
         <CommandFlag>DefaultInvisible</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
@@ -145,12 +145,7 @@
     <CommandPlacement guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterSolutionCtxMenuGroup" priority="0x0300">
       <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_SOLNNODE" />
     </CommandPlacement>
-    <CommandPlacement guid="guidCodeConverterCommandPackageCmdSet" id="PasteAsCSCommandId" priority="0xFFFF">
-      <Parent guid="guidSHLMainMenu" id="IDG_VS_EDIT_PASTE" />
-    </CommandPlacement>
-    <CommandPlacement guid="guidCodeConverterCommandPackageCmdSet" id="PasteAsVBCommandId" priority="0xFFFF">
-      <Parent guid="guidSHLMainMenu" id="IDG_VS_EDIT_PASTE" />
-    </CommandPlacement>
+    <!-- Adds the whole paste special menu to the right click menu-->
     <CommandPlacement guid="guidSHLMainMenu" id="IDM_VS_EDITOR_PASTE_MENU" priority="0x800">
       <Parent guid="guidSHLMainMenu" id="IDG_VS_CODEWIN_TEXTEDIT" />
     </CommandPlacement>
