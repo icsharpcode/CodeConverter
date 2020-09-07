@@ -274,6 +274,12 @@ namespace ICSharpCode.CodeConverter.VsExtension
             return viewHost?.TextView.Selection;
         }
 
+        public static async Task WriteToCurrentWindowAsync(IAsyncServiceProvider serviceProvider, string text)
+        {
+            var viewHost = await GetCurrentViewHostAsync(serviceProvider,false);
+            viewHost.TextView.TextBuffer.Insert(viewHost.TextView.Caret.Position.BufferPosition, text);
+
+        }
         private static async Task<IWpfTextViewHost> GetCurrentViewHostAsync(IAsyncServiceProvider serviceProvider,
             Func<string, bool> predicate, bool mustHaveFocus)
         {

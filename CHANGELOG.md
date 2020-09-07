@@ -405,6 +405,14 @@ Known issue: Converting single file from VB project with resx files throws an er
 * Load extension only when menu item clicked (multi-project conversion menu not present until project loaded)
 
 ### VB -> C#
+* Convert implicit object->string cast correctly (#365)
+* Convert trivia (e.g. comments) at start of file (#333)
+* Improvements to redim conversion (#403, #393)
+* Convert array of arrays initializer (#364)
+* Improvements to implicit enum -> int conversion (#361)
+* Convert expressions in constants (#329)
+* Convert implicit `ElementAtOrDefault` (#362)
+* Convert types in ternary expressions (#363)
 * Convert implicit object->string cast correctly ([#365](https://github.com/icsharpcode/CodeConverter/pull/365))
 * Convert trivia (e.g. comments) at start of file ([#333](https://github.com/icsharpcode/CodeConverter/pull/333))
 * Improvements to redim conversion ([#403](https://github.com/icsharpcode/CodeConverter/pull/403), [#393](https://github.com/icsharpcode/CodeConverter/pull/393))
