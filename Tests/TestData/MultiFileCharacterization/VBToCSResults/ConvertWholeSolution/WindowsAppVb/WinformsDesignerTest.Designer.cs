@@ -4,10 +4,11 @@ using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using Microsoft.VisualBasic.CompilerServices;
 
 namespace WindowsAppVb
 {
-    [Microsoft.VisualBasic.CompilerServices.DesignerGenerated()]
+    [DesignerGenerated()]
     public partial class WinformsDesignerTest : Form
     {
 
@@ -48,6 +49,11 @@ namespace WindowsAppVb
             _Button2 = new Button();
             _Button2.MouseClick += new MouseEventHandler(ButtonMouseClickWithNoArgs);
             _Button2.Click += new EventHandler(Button2_Click);
+            DataGridView1 = new DataGridView();
+            Column1 = new DataGridViewTextBoxColumn();
+            _ColumnWithEvent = new DataGridViewTextBoxColumn();
+            _ColumnWithEvent.Disposed += new EventHandler(ColumnWithEvent_Disposed);
+            ((System.ComponentModel.ISupportInitialize)DataGridView1).BeginInit();
             SuspendLayout();
             // 
             // Button1
@@ -78,16 +84,37 @@ namespace WindowsAppVb
             _Button2.Text = "Show resources";
             _Button2.UseVisualStyleBackColor = true;
             // 
+            // DataGridView1
+            // 
+            DataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            DataGridView1.Columns.AddRange(new DataGridViewColumn[] { Column1, _ColumnWithEvent });
+            DataGridView1.Location = new Point(35, 156);
+            DataGridView1.Name = "DataGridView1";
+            DataGridView1.Size = new Size(240, 150);
+            DataGridView1.TabIndex = 3;
+            // 
+            // Column1
+            // 
+            Column1.HeaderText = "Column1";
+            Column1.Name = "Column1";
+            // 
+            // ColumnWithEvent
+            // 
+            _ColumnWithEvent.HeaderText = "ColumnWithEvent";
+            _ColumnWithEvent.Name = "_ColumnWithEvent";
+            // 
             // WinformsDesignerTest
             // 
-            AutoScaleDimensions = new SizeF(6.0f, 13.0f);
+            AutoScaleDimensions = new SizeF(6f, 13f);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(292, 273);
+            ClientSize = new Size(471, 364);
+            Controls.Add(DataGridView1);
             Controls.Add(_Button2);
             Controls.Add(_CheckBox1);
             Controls.Add(_Button1);
             Name = "WinformsDesignerTest";
             Text = "Form1";
+            ((System.ComponentModel.ISupportInitialize)DataGridView1).EndInit();
             Load += new EventHandler(WinformsDesignerTest_EnsureSelfEventsWork);
             SizeChanged += new EventHandler(WinformsDesignerTest_EnsureSelfEventsWork);
             MouseClick += new MouseEventHandler(WinformsDesignerTest_MouseClick);
@@ -184,6 +211,34 @@ namespace WindowsAppVb
                 {
                     _Button2.MouseClick += (_, __) => ButtonMouseClickWithNoArgs();
                     _Button2.Click += Button2_Click;
+                }
+            }
+        }
+
+        internal DataGridView DataGridView1;
+        internal DataGridViewTextBoxColumn Column1;
+        private DataGridViewTextBoxColumn _ColumnWithEvent;
+
+        internal DataGridViewTextBoxColumn ColumnWithEvent
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            get
+            {
+                return _ColumnWithEvent;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            set
+            {
+                if (_ColumnWithEvent != null)
+                {
+                    _ColumnWithEvent.Disposed -= ColumnWithEvent_Disposed;
+                }
+
+                _ColumnWithEvent = value;
+                if (_ColumnWithEvent != null)
+                {
+                    _ColumnWithEvent.Disposed += ColumnWithEvent_Disposed;
                 }
             }
         }
