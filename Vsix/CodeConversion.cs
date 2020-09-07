@@ -309,7 +309,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
         {
             var caretPosition = await VisualStudioInteraction.GetCaretPositionAsync(_serviceProvider);
 
-            await _outputWindow.WriteToOutputWindowAsync("Converting clipboard text...", true, true);
+            _outputWindow.WriteToOutputWindowAsync("Converting clipboard text...", true, true).Forget();
 
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             string text = Clipboard.GetText();

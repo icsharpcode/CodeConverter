@@ -217,6 +217,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
                 _textEdit.Insert(_position, text);
                 _textEdit.Apply();
+                _textEdit.Dispose();
             }
         }
 
