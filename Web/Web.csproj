@@ -8,6 +8,8 @@
     <Version>8.1.8</Version>
     <LangVersion>8</LangVersion>
     <NoWarn>$(NoWarn);1998</NoWarn>
+    <RootNamespace>ICSharpCode.CodeConverter.Web</RootNamespace>
+    <AssemblyName>ICSharpCode.CodeConverter.Web</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
