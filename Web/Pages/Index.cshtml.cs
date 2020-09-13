@@ -6,7 +6,6 @@ namespace ICSharpCode.CodeConverter.Web.Pages
     {
         public void OnGet()
         {
-
         }
     }
 }

@@ -1,8 +1,8 @@
-import * as React from 'react';
-import { connect } from 'react-redux';
-import { RouteComponentProps } from 'react-router';
-import { ApplicationState } from '../store';
-import * as CounterStore from '../store/Counter';
+import * as React from "react";
+import { connect } from "react-redux";
+import { RouteComponentProps } from "react-router";
+import { ApplicationState } from "../store";
+import * as CounterStore from "../store/Counter";
 
 type CounterProps =
     CounterStore.CounterState &
@@ -20,8 +20,8 @@ class Counter extends React.PureComponent<CounterProps> {
                 <p aria-live="polite">Current count: <strong>{this.props.count}</strong></p>
 
                 <button type="button"
-                    className="btn btn-primary btn-lg"
-                    onClick={() => { this.props.increment(); }}>
+                        className="btn btn-primary btn-lg"
+                        onClick={() => { this.props.increment(); }}>
                     Increment
                 </button>
             </React.Fragment>
