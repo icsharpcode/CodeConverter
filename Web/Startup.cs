@@ -21,6 +21,7 @@ namespace WebApplication12
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddMemoryCache();
             services.AddControllersWithViews();
 
             // In production, the React files will be served from this directory
@@ -33,12 +34,10 @@ namespace WebApplication12
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
+
+            if (env.IsDevelopment()) {
                 app.UseDeveloperExceptionPage();
-            }
-            else
-            {
+            } else {
                 app.UseExceptionHandler("/Error");
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
@@ -55,6 +54,12 @@ namespace WebApplication12
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller}/{action=Index}/{id?}");
+            });
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Code Converter API V1");
             });
 
             app.UseSpa(spa =>
