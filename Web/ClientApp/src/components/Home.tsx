@@ -1,21 +1,38 @@
 import { connect } from "react-redux";
 
-const Home = () => (
-    <div>
-        <h1>Hello, world!</h1>
-        <p>Welcome to your new single-page application, built with:</p>
-        <ul>
-            <li><a href="https://get.asp.net/">ASP.NET Core</a> and <a href="https://msdn.microsoft.com/en-us/library/67ef8sbd.aspx">C#</a> for cross-platform server-side code</li>
-            <li><a href="https://facebook.github.io/react/">React</a> and <a href="https://redux.js.org/">Redux</a> for client-side code</li>
-            <li><a href="http://getbootstrap.com/">Bootstrap</a> for layout and styling</li>
-        </ul>
-        <p>To help you get started, we've also set up:</p>
-        <ul>
-            <li><strong>Client-side navigation</strong>. For example, click <em>Counter</em> then <em>Back</em> to return here.</li>
-            <li><strong>Development server integration</strong>. In development mode, the development server from <code>create-react-app</code> runs in the background automatically, so your client-side resources are dynamically built on demand and the page refreshes when you modify any file.</li>
-            <li><strong>Efficient production builds</strong>. In production mode, development-time features are disabled, and your <code>dotnet publish</code> configuration produces minified, efficiently bundled JavaScript files.</li>
-        </ul>
-        <p>The <code>ClientApp</code> subdirectory is a standard React application based on the <code>create-react-app</code> template. If you open a command prompt in that directory, you can run <code>npm</code> commands such as <code>npm test</code> or <code>npm install</code>.</p>
+const Home = (props) => (
+    <div className="row">
+        <div className="col-md-8">
+            <div id="app">
+                <div className="form-group">
+                    <label>Input code ({props.InputCodeLanguage})</label>
+                    <textarea id="inputTextArea" v-model="inputCode" className="form-control" rows={10} style={{minWidth: "100%"}}></textarea>
+                </div>
+                <div className="form-group">
+                    <button id="convert-button" className="btn btn-default" onClick={convert()}>Convert Code</button>
+                    &nbsp;
+                    <label className="horizontal-spaced">
+                        <input type="radio" v-model="requestedConversion" value="vbnet2cs" />
+                        VB.NET to C#
+                    </label>
+                    &nbsp;
+                    <label className="horizontal-spaced">
+                        <input type="radio" v-model="requestedConversion" value="cs2vbnet" />
+                        C# to VB.NET
+                    </label>
+                    &nbsp;
+                    {props.ConverterCallInFlight && <div className="spinner horizontal-spaced"></div>}
+                </div>
+                <div className="form-group">
+                    <label>Converted code ({props.OutputCodeLanguage})</label>
+                    <textarea id="outputTextArea" v-model="convertedCode" className="form-control" rows={10} style={{ minWidth: "100%" }}></textarea>
+                </div>
+
+                {props.ShowErrors && <p style={{ whiteSpace: "pre-wrap" }}>Error message:<br />{props.ErrorMessageOnResponse}</p>}
+
+                <p>Get a more accurate conversion by using our free <a href="https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter">Code Converter extension for Visual Studio</a>.</p>
+            </div>
+        </div>
     </div>
 );
 
