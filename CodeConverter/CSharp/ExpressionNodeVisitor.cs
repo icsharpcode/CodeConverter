@@ -611,11 +611,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitBinaryConditionalExpression(VBasic.Syntax.BinaryConditionalExpressionSyntax node)
         {
-            return SyntaxFactory.BinaryExpression(
+            var expr = SyntaxFactory.BinaryExpression(
                 SyntaxKind.CoalesceExpression,
                 await node.FirstExpression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor),
                 await node.SecondExpression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)
             );
+
+            if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || VbSyntaxNodeExtensions.PrecedenceCouldChange(node))
+                return SyntaxFactory.ParenthesizedExpression(expr);
+
+            return expr;
         }
 
         public override async Task<CSharpSyntaxNode> VisitTernaryConditionalExpression(VBasic.Syntax.TernaryConditionalExpressionSyntax node)
