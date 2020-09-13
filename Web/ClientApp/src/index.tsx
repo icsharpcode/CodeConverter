@@ -1,18 +1,17 @@
-import React, { Component }  from 'react';
-import * as ReactDOM from "react-dom";
-import { Router } from "react-router";
-import { createBrowserHistory } from "history";
-import App from "./App";
-import registerServiceWorker from "./registerServiceWorker";
+import 'bootstrap/dist/css/bootstrap.css';
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import registerServiceWorker from './registerServiceWorker';
 
-// Create browser history to use in the Redux store
-const baseUrl = document.getElementsByTagName("base")[0].getAttribute("href") as string;
-const history = createBrowserHistory({ basename: baseUrl });
+const baseUrl = document.getElementsByTagName('base')[0].getAttribute('href');
+const rootElement = document.getElementById('root');
 
 ReactDOM.render(
-    <Router history={history}>
-        <App/>
-    </Router>,
-    document.getElementById("root"));
+    <BrowserRouter basename={baseUrl}>
+        <App />
+    </BrowserRouter>,
+    rootElement);
 
 registerServiceWorker();

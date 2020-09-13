@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.OpenApi.Models;
 
 namespace ICSharpCode.CodeConverter.Web
 {
@@ -21,7 +22,9 @@ namespace ICSharpCode.CodeConverter.Web
         {
             services.AddMemoryCache();
             services.AddControllersWithViews();
-
+            services.AddSwaggerGen(c => {
+                c.SwaggerDoc("v1", new OpenApiInfo {Title = "Code Converter API", Version = "v1"});
+            });
             // In production, the React files will be served from this directory
             services.AddSpaStaticFiles(configuration => {
                 configuration.RootPath = "ClientApp/build";
@@ -40,8 +43,14 @@ namespace ICSharpCode.CodeConverter.Web
             }
 
             app.UseHttpsRedirection();
+
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c => {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Code Converter API V1");
+            });
 
             app.UseRouting();
 
@@ -49,11 +58,6 @@ namespace ICSharpCode.CodeConverter.Web
                 endpoints.MapControllerRoute(
                     "default",
                     "{controller}/{action=Index}/{id?}");
-            });
-
-            app.UseSwagger();
-            app.UseSwaggerUI(c => {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Code Converter API V1");
             });
 
             app.UseSpa(spa => {
