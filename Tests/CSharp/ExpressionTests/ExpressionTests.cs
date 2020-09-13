@@ -116,7 +116,7 @@ Public Class EnumToString
         Dim si_Txt As Short = CShort(2 ^ Tes.TEST2)
     End Sub
 End Class",
-@"using System;
+                @"using System;
 
 public partial class EnumToString
 {
@@ -145,7 +145,7 @@ public partial class EnumToString
         Foo(0)
     End Sub
 End Class",
-@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+                @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {
@@ -174,7 +174,7 @@ public partial class Class1
         Dim t1 As Integer = EnumVariable
     End Sub
 End Class",
-@"
+                @"
 public partial class MyTest
 {
     public enum TestEnum : int
@@ -205,7 +205,7 @@ End Enum
 Public Class MyTest
     Public MyEnum As FilePermissions = FilePermissions.None + FilePermissions.Create
 End Class",
-@"using System;
+                @"using System;
 
 [Flags()]
 public enum FilePermissions : int
@@ -244,7 +244,7 @@ public partial class MyTest
 
     End Sub
 End Class",
-@"
+                @"
 public partial class Class1
 {
     public enum E
@@ -292,7 +292,7 @@ public partial class Class1
 
     End Sub
 End Module",
-@"using System;
+                @"using System;
 
 internal static partial class Module1
 {
@@ -1650,6 +1650,29 @@ public partial class Compound
     {
         var col = Color.FromArgb((int)(someInt * 255.0f), (int)(someInt * 255.0f), (int)(someInt * 255.0f));
         var arry = new float[(int)(7d / someInt + 1)];
+    }
+}");
+        }
+
+        [Fact]
+        public async Task NullCoalescingOperatorUsesParenthesisWhenNeededAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+    Public Sub TestMethod(ByVal x As String)
+        Dim a As String = If(x, ""x"")
+        Dim b As String = If(x, ""x"").ToUpper()
+        Dim c As String = $""{If(x, ""x"")}""
+        Dim d As String = $""{If(x, ""x"").ToUpper()}""
+    End Sub
+End Class", @"
+public partial class VisualBasicClass
+{
+    public void TestMethod(string x)
+    {
+        string a = x ?? ""x"";
+        string b = (x ?? ""x"").ToUpper();
+        string c = $""{x ?? ""x""}"";
+        string d = $""{(x ?? ""x"").ToUpper()}"";
     }
 }");
         }
