@@ -41,6 +41,9 @@ namespace ICSharpCode.CodeConverter.VB
 
             _vbCompilationOptions = vbCompilationOptions;
             _vbParseOptions = VisualBasicCompiler.ParseOptions;
+            var languageVersion = conversionOptions.LanguageVersionOverride as Microsoft.CodeAnalysis.VisualBasic.LanguageVersion?;
+            if(languageVersion != null)
+                _vbParseOptions = _vbParseOptions.WithLanguageVersion(languageVersion.Value);
             RootNamespace = conversionOptions.RootNamespaceOverride;
         }
         

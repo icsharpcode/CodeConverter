@@ -1035,6 +1035,43 @@ BC36637: The '?' character cannot be used here.
 BC30451: '[Delegate]' is not declared. It may be inaccessible due to its protection level.");
         }
         [Fact]
+        public async Task TestCustomEvent_VB11_Async() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"using System;
+
+class TestClass {
+    EventHandler backingField;
+
+    public event EventHandler MyEvent {
+        add { this.backingField += value; }
+        remove { this.backingField -= value; }
+    }
+}",
+@"Imports System
+
+Friend Class TestClass
+    Private backingField As EventHandler
+
+    Public Custom Event MyEvent As EventHandler
+        AddHandler(ByVal value As EventHandler)
+            backingField = [Delegate].Combine(backingField, value)
+        End AddHandler
+        RemoveHandler(ByVal value As EventHandler)
+            backingField = [Delegate].Remove(backingField, value)
+        End RemoveHandler
+        RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
+
+            If backingField IsNot Nothing Then
+                backingField(sender, e)
+            End If
+        End RaiseEvent
+    End Event
+End Class
+
+1 target compilation errors:
+BC30451: '[Delegate]' is not declared. It may be inaccessible due to its protection level.", conversionOptions: VisualBasic11);
+        }
+        [Fact]
         public async Task TestCustomEvent_TrivialExpressionAsync()
         {
             await TestConversionCSharpToVisualBasicAsync(

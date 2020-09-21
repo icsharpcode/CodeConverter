@@ -55,6 +55,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private int _placeholder = 1;
         public CommentConvertingVisitorWrapper<VisualBasicSyntaxNode> TriviaConvertingVisitor { get; }
+        public LanguageVersion LanguageVersion { get; private set; }
 
         private string GeneratePlaceholder(string v)
         {
@@ -62,7 +63,7 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
         public NodesVisitor(Document document, CS.CSharpCompilation compilation, SemanticModel semanticModel,
-            VisualBasicCompilation vbViewOfCsSymbols, SyntaxGenerator vbSyntaxGenerator, int numberOfLines)
+            VisualBasicCompilation vbViewOfCsSymbols, SyntaxGenerator vbSyntaxGenerator, int numberOfLines, LanguageVersion languageVersion)
         {
             _document = document;
             _compilation = compilation;
@@ -72,6 +73,7 @@ namespace ICSharpCode.CodeConverter.VB
             TriviaConvertingVisitor = new CommentConvertingVisitorWrapper<VisualBasicSyntaxNode>(this);
             _commonConversions = new CommonConversions(semanticModel, vbSyntaxGenerator, TriviaConvertingVisitor);
             _cSharpHelperMethodDefinition = new CSharpHelperMethodDefinition();
+            LanguageVersion = languageVersion;
         }
 
         public override VisualBasicSyntaxNode DefaultVisit(SyntaxNode node)
@@ -633,7 +635,7 @@ namespace ICSharpCode.CodeConverter.VB
                 .FirstOrDefault();
             var eventFieldIdentifier = (IdentifierNameSyntax)csEventFieldIdentifier?.Accept(TriviaConvertingVisitor, false);
 
-            var riseEventAccessor = SyntaxFactory.RaiseEventAccessorBlock(
+            var raiseEventAccessor = SyntaxFactory.RaiseEventAccessorBlock(
                 SyntaxFactory.RaiseEventAccessorStatement(
                     attributes,
                     SyntaxFactory.TokenList(),
@@ -642,22 +644,38 @@ namespace ICSharpCode.CodeConverter.VB
             );
             if (eventFieldIdentifier != null) {
                 if (_semanticModel.GetSymbolInfo(csEventFieldIdentifier).Symbol.Kind == SymbolKind.Event) {
-                    riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList(
+                    raiseEventAccessor = raiseEventAccessor.WithStatements(SyntaxFactory.SingletonList(
                         (StatementSyntax)SyntaxFactory.RaiseEventStatement(eventFieldIdentifier,
                             SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(raiseEventParameters.Select(x => SyntaxFactory.SimpleArgument(SyntaxFactory.IdentifierName(x.Identifier.Identifier))).Cast<ArgumentSyntax>())))
                         )
                     );
                 } else {
-                    var invocationExpression =
-                        SyntaxFactory.InvocationExpression(
-                            SyntaxFactory.ParseExpression(eventFieldIdentifier.Identifier.ValueText + "?"), //I think this syntax tree is the wrong shape, but using the right shape causes the simplifier to fail
-                            raiseEventParameters.Select(x => SyntaxFactory.IdentifierName(x.Identifier.Identifier)).CreateVbArgList()
-                        );
-                    riseEventAccessor = riseEventAccessor.WithStatements(SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.ExpressionStatement(invocationExpression)));
+                    if ((int)LanguageVersion < 14) {
+                        var conditionalStatement = _vbSyntaxGenerator.IfStatement(
+                            _vbSyntaxGenerator.ReferenceNotEqualsExpression(eventFieldIdentifier,
+                                _vbSyntaxGenerator.NullLiteralExpression()),
+                            SyntaxFactory.InvocationExpression(
+                                SyntaxFactory.ParseExpression(eventFieldIdentifier.Identifier.ValueText),
+                                raiseEventParameters.Select(x => SyntaxFactory.IdentifierName(x.Identifier.Identifier)).CreateVbArgList()).Yield()
+                            );
+                        raiseEventAccessor = raiseEventAccessor.WithStatements(SyntaxFactory.SingletonList(conditionalStatement));
+                    } else {
+                        var invocationExpression =
+                            SyntaxFactory.InvocationExpression(
+                                SyntaxFactory.ParseExpression(
+                                    eventFieldIdentifier.Identifier.ValueText +
+                                    "?"), //I think this syntax tree is the wrong shape, but using the right shape causes the simplifier to fail
+                                raiseEventParameters.Select(x => SyntaxFactory.IdentifierName(x.Identifier.Identifier))
+                                    .CreateVbArgList()
+                            );
+                        raiseEventAccessor = raiseEventAccessor.WithStatements(
+                            SyntaxFactory.SingletonList(
+                                (StatementSyntax)SyntaxFactory.ExpressionStatement(invocationExpression)));
+                    }
                 }
             }
 
-            accessors.Add(riseEventAccessor);
+            accessors.Add(raiseEventAccessor);
             return SyntaxFactory.EventBlock(stmt, SyntaxFactory.List(accessors));
         }
 
