@@ -160,6 +160,30 @@ public partial class Class1
 }");
         }
 
+        [Fact] // https://github.com/icsharpcode/CodeConverter/issues/636
+        public async Task CharacterizeCompilationErrorsWithLateBoundImplicitObjectNarrowingAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+    Public Sub Rounding()
+        Dim o as Object = 3.0f
+        Dim x = Math.Round(o, 2)
+    End Sub
+End Class",
+@"using System;
+
+public partial class VisualBasicClass
+{
+    public void Rounding()
+    {
+        object o = 3.0f;
+        var x = Math.Round(o, (object)2);
+    }
+}
+2 target compilation errors:
+CS1503: Argument 1: cannot convert from 'object' to 'double'
+CS1503: Argument 2: cannot convert from 'object' to 'int'");
+        }
+
         [Fact]
         public async Task EnumToIntCastAsync()
         {
