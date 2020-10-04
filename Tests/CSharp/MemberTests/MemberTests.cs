@@ -344,6 +344,47 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task TestHoistedOutParameterAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class ClassWithProperties
+   Public Property Property1 As String
+End Class
+
+Public Class VisualBasicClass
+   Public Sub New()
+       Dim x As New Dictionary(Of String, String)()
+       Dim y As New ClassWithProperties()
+       
+       If (x.TryGetValue(""x"", y.Property1)) Then
+          Debug.Print(y.Property1)
+       End If
+   End Sub
+End Class", @"using System.Collections.Generic;
+using System.Diagnostics;
+
+public partial class ClassWithProperties
+{
+    public string Property1 { get; set; }
+}
+
+public partial class VisualBasicClass
+{
+    public VisualBasicClass()
+    {
+        var x = new Dictionary<string, string>();
+        var y = new ClassWithProperties();
+        bool localTryGetValue() { string argvalue = y.Property1; var ret = x.TryGetValue(""x"", out argvalue); y.Property1 = argvalue; return ret; }
+
+        if (localTryGetValue())
+        {
+            Debug.Print(y.Property1);
+        }
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestMethodWithReturnTypeAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
