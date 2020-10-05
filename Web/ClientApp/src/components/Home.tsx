@@ -56,6 +56,7 @@ export const Home = () => {
             })
             .catch((error: any) => {
                 setConverterCallInFlight(false);
+                setErrorMessageOnResponse(error.message);
 
                 // Copied verbatim from https://github.com/axios/axios for debugging purposes only
                 if (error.response) {
