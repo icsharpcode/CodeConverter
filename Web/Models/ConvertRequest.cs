@@ -5,5 +5,4 @@
         public string code { get; set; }
         public string requestedConversion { get; set; }
     }
-
 }
