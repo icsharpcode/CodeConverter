@@ -1,13 +1,14 @@
-body {
-    padding-top: 50px;
-    padding-bottom: 20px;
-}
-
 /* Wrapping element */
 /* Set some basic padding to keep content from hitting the edges */
 .body-content {
     padding-left: 15px;
     padding-right: 15px;
+}
+
+.btn-default {
+    color: #333;
+    background-color: #fff;
+    border-color: #ccc;
 }
 
 /* Set widths on the form inputs since otherwise they're 100% wide */
@@ -17,8 +18,8 @@ textarea {
     max-width: 280px;
 }
 
-.navbar-brand:not(:hover) .title-highlight {
-    color: #b28bbc;
+input[type="radio"] {
+    margin-right: 5px;
 }
 
 .horizontal-spaced {
@@ -82,28 +83,12 @@ textarea {
 }
 /* END https://loading.io/css/ */
 
-/* BEGIN https://github.com/tholman/github-corners/blob/master/license.md */
-.github-corner:hover .octo-arm {
-    animation: octocat-wave 560ms ease-in-out
+
+
+.navbar {
+    background-color: #333333;
 }
 
-@keyframes octocat-wave {
-    0%,100% {
-        transform: rotate(0)
-    }
-
-    20%,60% {
-        transform: rotate(-25deg)
-    }
-
-    40%,80% {
-        transform: rotate(10deg)
-    }
-}
-/* END https://github.com/tholman/github-corners/blob/master/license.md */
-
-@media (max-width:768px) {
-    .github-corner {
-        display: none
-    }
+.navbar-brand:not(:hover) .title-highlight {
+    color: #b28bbc;
 }

@@ -1,5 +1,47 @@
-﻿a.navbar-brand {
-    text-align: center;
+﻿
+.octo-svg {
+    border: 0;
+    color: #222222;
+    fill: #ffffff;
+    position: absolute;
+    right: 0;
+    top: -12px;
+}
+
+.octo-arm {
+    -ms-transform-origin: 130px 106px;
+    -o-transform-origin: 130px 106px;
+    -webkit-transform-origin: 130px 106px;
+    transform-origin: 130px 106px;
+}
+
+/* BEGIN https://github.com/tholman/github-corners/blob/master/license.md */
+.github-corner:hover .octo-arm {
+    animation: octocat-wave 560ms ease-in-out
+}
+
+@keyframes octocat-wave {
+    0%,100% {
+        transform: rotate(0)
+    }
+
+    20%,60% {
+        transform: rotate(-25deg)
+    }
+
+    40%,80% {
+        transform: rotate(10deg)
+    }
+}
+/* END https://github.com/tholman/github-corners/blob/master/license.md */
+
+@media (max-width:768px) {
+    .github-corner {
+        display: none
+    }
+}
+
+a.navbar-brand {
     white-space: normal;
     word-break: break-all;
 }
