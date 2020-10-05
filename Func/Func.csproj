@@ -12,6 +12,7 @@
     <Compile Include="..\Web\Models\ConvertRequest.cs" Link="ConvertRequest.cs" />
     <Compile Include="..\Web\Models\ConvertResponse.cs" Link="ConvertResponse.cs" />
     <Compile Include="..\Web\WebConverter.cs" Link="WebConverter.cs" />
+    <None Include="local.settings.json" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.10" />
