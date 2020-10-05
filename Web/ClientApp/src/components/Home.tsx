@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import ClientSettings from '../ClientSettings.json'
 
 export const Home = () => {
     const defaultVbCode = "Public Class VisualBasicClass\r\n\r\nEnd Class";
@@ -37,7 +38,7 @@ export const Home = () => {
         setConvertedCode("");
         setErrorMessageOnResponse("");
 
-        axios.post('/api/converter/',
+        axios.post(ClientSettings.endpoints.conversion,
                 {
                     code: inputCode,
                     requestedConversion: conversionType

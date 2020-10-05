@@ -1,0 +1,5 @@
+{
+    "endpoints": {
+        "conversion": "/api/converter/"
+    }
+}
