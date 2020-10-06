@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import ClientSettings from '../ClientSettings.json'
+import React, { useState, useRef } from "react";
+import axios from "axios";
+import ClientSettings from "../ClientSettings.json"
+import { ControlledEditor } from "@monaco-editor/react";
+import * as monacoEditor from "monaco-editor";
 
 export const Home = () => {
     const defaultVbCode = "Public Class VisualBasicClass\r\n\r\nEnd Class";
@@ -11,14 +13,19 @@ export const Home = () => {
     const [converterCallInFlight, setConverterCallInFlight] = useState(false);
     const vbNetToCsId = "vbnet2cs";
     const [conversionType, setConversionType] = useState(vbNetToCsId);
-    const onInputCodeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => setInputCode(e.target.value);
-    const onConvertedCodeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => setConvertedCode(e.target.value);
     const conversionIsFromVb = conversionType === vbNetToCsId;
-    const selectTextArea = (elementId: string) => {
+    const inputEditor = useRef(null as unknown as monacoEditor.editor.IStandaloneCodeEditor);
+    const outputEditor = useRef(null as unknown as monacoEditor.editor.IStandaloneCodeEditor);
+    const selectAndFocus = (editorToFocus: React.MutableRefObject<monacoEditor.editor.IStandaloneCodeEditor>) => {
         setTimeout(() => {
-            var output = document.getElementById(elementId) as HTMLTextAreaElement;
-            output.focus();
-            output.select();
+            const editorToFocusCurrent = editorToFocus.current;
+            if (editorToFocusCurrent) {
+                editorToFocusCurrent.focus();
+                const textModel = editorToFocusCurrent.getModel();
+                if (textModel) {
+                    editorToFocusCurrent.setSelection(textModel.getFullModelRange());
+                }
+            }
         });
     };
     const setDefaultInput = (conversionType: string) => {
@@ -30,7 +37,7 @@ export const Home = () => {
             setInputCode(convertedCode);
             setConvertedCode(inputCode);
         }
-        selectTextArea("inputTextArea");
+        selectAndFocus(inputEditor);
     };
 
     const convert = () => {
@@ -52,7 +59,7 @@ export const Home = () => {
                         setErrorMessageOnResponse(response.data.errorMessage);
                     }
                 }
-                selectTextArea("outputTextArea");
+                selectAndFocus(outputEditor);
             })
             .catch((error: any) => {
                 setConverterCallInFlight(false);
@@ -72,18 +79,24 @@ export const Home = () => {
                     console.log(error.request);
                 } else {
                     // Something happened in setting up the request that triggered an Error
-                    console.log('Error', error.message);
+                    console.log("Error", error.message);
                 }
                 console.log(error.config);
             });
     };
 
-
     return (
             <div id="app">
                 <div className="form-group">
                     <label>Input code ({conversionIsFromVb ? "VB.NET" : "C#"})</label>
-                    <textarea id="inputTextArea" value={inputCode} onChange={onInputCodeChange} className="form-control" rows={10} style={{ minWidth: "100%" }}></textarea>
+                    <ControlledEditor
+                        className="code-editor"
+                        value={inputCode} language={conversionIsFromVb ? "vb" : "csharp"} 
+                        onChange={(ev, code) => setInputCode(code || "")}
+                        editorDidMount={ (_, editor) => { inputEditor.current = editor; selectAndFocus(inputEditor); } }
+                        height="30vh"
+                        options={ { lineNumbers: false, minimap: { enabled: false }, scrollBeyondLastLine: false, } }
+                    />
                 </div>
                 <div className="form-group">
                     <button id="convert-button" className="btn btn-default" onClick={() => convert()}>Convert Code</button>
@@ -102,7 +115,15 @@ export const Home = () => {
                 </div>
                 <div className="form-group">
                     <label>Converted code ({conversionIsFromVb ? "C#" : "VB.NET"})</label>
-                    <textarea id="outputTextArea" value={convertedCode} onChange={onConvertedCodeChange} className="form-control" rows={10} style={{ minWidth: "100%" }}></textarea>
+                    <ControlledEditor
+                        className="code-editor"
+                        value={convertedCode}
+                        language={conversionIsFromVb ? "csharp" : "vb"}
+                        onChange={(ev, code) => setConvertedCode(code || "")}
+                        editorDidMount={(_, editor) => outputEditor.current = editor}
+                        height="30vh"
+                        options={ { lineNumbers: false, minimap: { enabled: false }, readOnly: true, scrollBeyondLastLine: false, } }
+                    />
                 </div>
 
                 {!converterCallInFlight &&
