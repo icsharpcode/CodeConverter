@@ -95,7 +95,7 @@ export const Home = () => {
                         onChange={(ev, code) => setInputCode(code || "")}
                         editorDidMount={ (_, editor) => { inputEditor.current = editor; selectAndFocus(inputEditor); } }
                         height="30vh"
-                        options={ { lineNumbers: false, minimap: { enabled: false }, formatOnPaste: true, formatOnType: true, padding: { top: 10, bottom: 10 }, } }
+                        options={ { lineNumbers: false, minimap: { enabled: false }, } }
                     />
                 </div>
                 <div className="form-group">
@@ -122,7 +122,7 @@ export const Home = () => {
                         onChange={(ev, code) => setConvertedCode(code || "")}
                         editorDidMount={(_, editor) => outputEditor.current = editor}
                         height="30vh"
-                        options={ { lineNumbers: false, readOnly: true, minimap: { enabled: false }, glyphMargin: false, padding: { top: 5, bottom: 5 }, } }
+                        options={ { lineNumbers: false, minimap: { enabled: false }, readOnly: true, } }
                     />
                 </div>
 
