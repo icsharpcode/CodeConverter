@@ -627,7 +627,10 @@ public partial class Test
     public static void OnError(object s, ErrorEventArgs e)
     {
     }
-}");
+}
+1 target compilation errors:
+CS8082: Sub-expression cannot be used in an argument to nameof.", //I believe this compiler exception was a bug, which was later fixed, hence we shouldn't try to make it go away since it causes issues like https://github.com/icsharpcode/CodeConverter/issues/613
+                hasLineCommentConversionIssue: true);
         }
 
         [Fact]

@@ -1249,7 +1249,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
             var partOfNamespaceDeclaration = topLevelName.Parent.IsKind(VBasic.SyntaxKind.NamespaceStatement);
             var leftIsGlobal = node.Left.IsKind(VBasic.SyntaxKind.GlobalName);
-            var isPartOfNameOfExpression = node.GetAncestor<VBSyntax.NameOfExpressionSyntax>() != null;
             ExpressionSyntax qualifiedName;
             if (partOfNamespaceDeclaration || !(lhsSyntax is SimpleNameSyntax sns)) {
                 if (leftIsGlobal) return rhsSyntax;
@@ -1259,7 +1258,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return leftIsGlobal ? SyntaxFactory.AliasQualifiedName((IdentifierNameSyntax)lhsSyntax, rhsSyntax) :
-                isPartOfNameOfExpression ? SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, (NameSyntax)qualifiedName, rhsSyntax) :
                 (CSharpSyntaxNode)SyntaxFactory.QualifiedName((NameSyntax)qualifiedName, rhsSyntax);
         }
 
