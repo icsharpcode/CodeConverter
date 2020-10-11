@@ -59,7 +59,14 @@ namespace ICSharpCode.CodeConverter.Shared
 
         public static IEnumerable<INamespaceOrTypeSymbol> GetNamespacesAndTypesInAssembly(Project project, Compilation compilation)
         {
-            return compilation.GlobalNamespace.FollowProperty((INamespaceOrTypeSymbol n) => n.GetMembers().OfType<INamespaceOrTypeSymbol>().Where(s => s.IsDefinedInSource() && s?.ContainingAssembly?.Name == project.AssemblyName));
+            return compilation.GlobalNamespace.FollowProperty((INamespaceOrTypeSymbol n) => n.GetMembers().OfType<INamespaceOrTypeSymbol>().Where(s => s.IsDefinedInSource() && MayBeInThisAssembly(project, s)));
+        }
+
+        private static bool MayBeInThisAssembly(Project project, INamespaceOrTypeSymbol s)
+        {
+            var containingAssembly = s.ContainingAssembly;
+            // null assembly means it's shared between several
+            return containingAssembly == null || containingAssembly.Name == project.AssemblyName;
         }
 
         public static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(IReadOnlyCollection<ISymbol> symbolGroup, HashSet<string> names, bool caseSensitive)

@@ -631,19 +631,15 @@ End Class");
 }",
                 @"Namespace System
     Public Class TestClass
-        Private test As Integer
+        Private testField As Integer
 
         Public ReadOnly Property Test As Integer
             Get
-                Return Me.test
+                Return testField
             End Get
         End Property
     End Class
-End Namespace
-
-2 target compilation errors:
-BC30260: 'Test' is already declared as 'Private test As Integer' in this class.
-BC31429: 'test' is ambiguous because multiple kinds of members with this name exist in class 'TestClass'.");
+End Namespace");
         }
 
         [Fact]
