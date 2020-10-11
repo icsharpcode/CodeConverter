@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -486,6 +487,19 @@ public partial class Issue495
     {
         return Array.Empty<int>();
     }
+}");
+        }
+
+        [Fact]
+        public async Task Empty2DArrayExpressionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Public Class Empty2DArray
+    Dim data(,) As Double = {}
+End Class", @"
+public partial class Empty2DArray
+{
+    private double[,] data = new double[,] { };
 }");
         }
 

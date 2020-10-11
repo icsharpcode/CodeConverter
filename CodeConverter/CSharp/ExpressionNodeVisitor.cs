@@ -557,7 +557,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (!(_semanticModel.GetTypeInfo(node).ConvertedType is IArrayTypeSymbol arrayType)) return SyntaxFactory.ImplicitArrayCreationExpression(initializer);
 
-            if (!initializers.Any()) {
+            if (!initializers.Any() && arrayType.Rank == 1) {
 
                 var arrayTypeArgs = SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList(CommonConversions.GetTypeSyntax(arrayType.ElementType)));
                 var arrayEmpty = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
