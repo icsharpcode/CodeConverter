@@ -14,6 +14,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal class LiteralConversions
     {
+        private static readonly char[] _vbTypeLiteralNonHexSpecifierCharacters = "%&@!#SILRUsilru".ToCharArray();
+        private static readonly char[] _vbTypeLiteralSpecifierCharacters = "%&@!#SILDFRUsildfru".ToCharArray();
+
         public static ExpressionSyntax GetLiteralExpression(object value, string textForUser = null, ITypeSymbol convertedType = null)
         {
             if (value is string valueTextForCompiler) {
@@ -129,30 +132,38 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         private static string ConvertNumericLiteralValueText(string textForUser, object value)
         {
-            textForUser = textForUser.TrimEnd('@', '!', '#');
-            if (textForUser.StartsWith("&H", StringComparison.OrdinalIgnoreCase)) {
+            bool canBeBinaryOrHex = value switch {
+                double _ => false,
+                float _ => false,
+                decimal _ => false,
+                _ => true
+            };
+
+            textForUser = textForUser.TrimEnd(_vbTypeLiteralNonHexSpecifierCharacters);
+
+            if (canBeBinaryOrHex && textForUser.StartsWith("&H", StringComparison.OrdinalIgnoreCase)) {
                 textForUser = "0x" + textForUser.Substring(2);
-            } else if (textForUser.StartsWith("&B", StringComparison.OrdinalIgnoreCase)) {
+            } else if (canBeBinaryOrHex && textForUser.StartsWith("&B", StringComparison.OrdinalIgnoreCase)) {
                 textForUser = "0b" + textForUser.Substring(2);
-            } else if (textForUser.StartsWith("&O", StringComparison.OrdinalIgnoreCase)) {
+            } else if (textForUser.StartsWith("&", StringComparison.OrdinalIgnoreCase)) {
                 textForUser = value.ToString();
+            } else {
+                textForUser = textForUser.TrimEnd(_vbTypeLiteralSpecifierCharacters);
             }
 
             if (value switch {
-                ulong _ => ("UL", "UL"),
-                long _ => ("L", "L"),
-                uint _ => ("UI", "U"),
-                int _ => ("I", ""),
-                ushort _ => ("US", ""),
-                short _ => ("S", ""),
-                double _ => ("R", "d"),
-                float _ => ("F", "f"),
-                decimal _ => ("D", "m"),
+                ulong _ => "UL",
+                long _ => "L",
+                uint _ => "U",
+                int _ => "",
+                ushort _ => "",
+                short _ => "",
+                double _ => "d",
+                float _ => "f",
+                decimal _ => "m",
                 _ => default
-            } is {Item1: {} vbSuffix, Item2: {} csSuffix} suffix) {
-                int vbSuffixIndex = textForUser.LastIndexOf(vbSuffix, StringComparison.OrdinalIgnoreCase);
-                if (vbSuffixIndex > -1) textForUser = textForUser.Substring(0, vbSuffixIndex);
-                textForUser += csSuffix;
+            } is {} suffix ) {
+                textForUser += suffix;
             }
 
             return textForUser;

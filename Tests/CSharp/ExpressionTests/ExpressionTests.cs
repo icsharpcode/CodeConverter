@@ -50,6 +50,24 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task ImplicitCastToDoubleLiteralAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Class DoubleLiteral
+    Private Function Test(myDouble As Double) As Double
+        Return Test(2.37D) + Test(&HFFUL) 'VB: D means decimal, C#: D means double
+    End Function
+End Class", @"
+internal partial class DoubleLiteral
+{
+    private double Test(double myDouble)
+    {
+        return Test(2.37d) + Test(255d); // VB: D means decimal, C#: D means double
+    }
+}");
+        }
+
+        [Fact]
         public async Task DateConstsAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue213
