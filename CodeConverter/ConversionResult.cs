@@ -11,7 +11,7 @@ namespace ICSharpCode.CodeConverter
     {
         private string _sourcePathOrNull;
         private string _targetPathOrNull;
-        public bool Success { get; private set; }
+        public bool Success => ConvertedCode != null;
         public string ConvertedCode { get; private set; }
         public IReadOnlyList<string> Exceptions { get; internal set; }
         internal bool IsIdentity { get; set; }
@@ -28,13 +28,11 @@ namespace ICSharpCode.CodeConverter
 
         public ConversionResult(string convertedCode = null)
         {
-            Success = convertedCode != null;
             ConvertedCode = convertedCode;
         }
 
         public ConversionResult(params Exception[] exceptions)
         {
-            Success = exceptions.Length == 0;
             Exceptions = exceptions.Select(e => e.ToString()).ToList();
         }
 
