@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -22,18 +23,17 @@ namespace ICSharpCode.CodeConverter.CSharp
         public IReadOnlyCollection<MemberDeclarationSyntax> WithAdditionalInitializers(ITypeSymbol parentType,
             List<MemberDeclarationSyntax> convertedMembers, SyntaxToken parentTypeName, bool requiresInitializeComponent)
         {
-            var constructorsInAllParts = parentType?.GetMembers().OfType<IMethodSymbol>().Where(m => m.IsConstructor()).ToList();
-            var parameterlessConstructorsInAllParts = constructorsInAllParts?.Where(c => !c.IsImplicitlyDeclared && !c.Parameters.Any()) ?? Array.Empty<IMethodSymbol>();
-            var requiresInstanceConstructor = !parameterlessConstructorsInAllParts.Any(c => !c.IsStatic);
-            var requiresStaticConstructor = !parameterlessConstructorsInAllParts.Any(c => c.IsStatic);
-            var rootConstructors = convertedMembers.OfType<ConstructorDeclarationSyntax>()
+            var (parameterlessInstanceConstructors, parameterlessStaticConstructors) = parentType.GetParameterlessConstructorsInAllParts();
+            var requiresInstanceConstructor = !parameterlessInstanceConstructors.Any();
+            var requiresStaticConstructor = !parameterlessStaticConstructors.Any();
+            var (thisFileInstanceConstructors, thisFileStaticConstructors) = convertedMembers.OfType<ConstructorDeclarationSyntax>()
                 .Where(cds => !cds.Initializer.IsKind(SyntaxKind.ThisConstructorInitializer))
-                .ToLookup(cds => cds.IsInStaticCsContext());
+                .SplitOn(cds => cds.IsInStaticCsContext());
 
-            convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)), rootConstructors[false], ShouldAddTypeWideInitToThisPart && requiresInstanceConstructor, requiresInitializeComponent);
+            convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)), thisFileInstanceConstructors, ShouldAddTypeWideInitToThisPart && requiresInstanceConstructor, requiresInitializeComponent);
 
             convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName,
-                AdditionalStaticInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword)), rootConstructors[true], requiresStaticConstructor, false);
+                AdditionalStaticInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword)), thisFileStaticConstructors, requiresStaticConstructor, false);
 
             return convertedMembers;
         }
