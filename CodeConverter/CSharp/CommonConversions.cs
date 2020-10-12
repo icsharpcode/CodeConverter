@@ -145,7 +145,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     : adjustedInitializerExpr;
 
                 if (isField && !declaredSymbol.IsStatic && !_semanticModel.IsDefinitelyStatic(vbName, vbInitValue)) {
-                    if (_typeContext.Initializers.ShouldAddTypeWideInitToThisPart) {
+                    if (!_typeContext.Initializers.HasInstanceConstructorsOutsideThisPart) {
                         var lhs = SyntaxFactory.IdentifierName(ConvertIdentifier(vbName.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None));
                         _typeContext.Initializers.AdditionalInstanceInitializers.Add((lhs, CSSyntaxKind.SimpleAssignmentExpression, adjustedInitializerExpr));
                         equalsValueClauseSyntax = null;

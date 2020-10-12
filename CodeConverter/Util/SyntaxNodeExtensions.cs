@@ -531,5 +531,7 @@ namespace ICSharpCode.CodeConverter.Util
         public static T LastOrDefaultDescendant<T>(this SyntaxNode syntaxNode) {
             return syntaxNode.DescendantNodes().OfType<T>().LastOrDefault();
         }
+
+        public static bool OverlapsWith(this SyntaxNode node, SyntaxReference reference) => reference.SyntaxTree == node.SyntaxTree && reference.Span.OverlapsWith(node.Span);
     }
 }

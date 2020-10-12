@@ -65,11 +65,11 @@ namespace ICSharpCode.CodeConverter.Util
             return null;
         }
 
-        public static (IMethodSymbol[] Instance, IMethodSymbol[] Static) GetParameterlessConstructorsInAllParts(this ITypeSymbol type)
+        public static (IMethodSymbol[] Instance, IMethodSymbol[] Static) GetDeclaredConstructorsInAllParts(this ITypeSymbol type)
         {
             var allMethods = type?.GetMembers().OfType<IMethodSymbol>() ?? ImmutableArray<IMethodSymbol>.Empty;
             return allMethods
-                .Where(m => m.IsConstructor() && !m.IsImplicitlyDeclared && !m.Parameters.Any())
+                .Where(m => m.IsConstructor() && !m.IsImplicitlyDeclared)
                 .SplitOn(c => c.IsStatic);
         }
     }
