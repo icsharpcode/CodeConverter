@@ -7,10 +7,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Vsix
 
-* Add "Paste as VB/C#" to "Paste special" menu [#622](https://github.com/icsharpcode/CodeConverter/pull/622)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [8.2.0] - 2020-10-12
+
+
+* Web UI improvements [#644](https://github.com/icsharpcode/CodeConverter/pull/644)
+
+### Vsix
+
+* Add "Paste as VB/C#" to "Paste special" menu [#622](https://github.com/icsharpcode/CodeConverter/pull/622)
+
+
+### VB -> C#
+* Update property when used in out parameter [#629](https://github.com/icsharpcode/CodeConverter/issues/629)
+* Parenthesize on null coalesce when needed [#628](https://github.com/icsharpcode/CodeConverter/pull/628)
 
 ### C# -> VB
 
