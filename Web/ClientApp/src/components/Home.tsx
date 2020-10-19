@@ -87,6 +87,11 @@ export const Home = () => {
 
     const commonEditorOptions: monacoEditor.editor.IEditorConstructionOptions = {
         lineNumbers: "off",
+        glyphMargin: false,
+        folding: false,
+        // Undocumented see https://github.com/Microsoft/vscode/issues/30795#issuecomment-410998882
+        lineDecorationsWidth: 2,
+        lineNumbersMinChars: 0,
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
     };
