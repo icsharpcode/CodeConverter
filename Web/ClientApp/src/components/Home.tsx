@@ -85,6 +85,12 @@ export const Home = () => {
             });
     };
 
+    const commonEditorOptions: monacoEditor.editor.IEditorConstructionOptions = {
+        lineNumbers: "off",
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+    };
+
     return (
             <div id="app">
                 <div className="form-group">
@@ -95,7 +101,7 @@ export const Home = () => {
                         onChange={(ev, code) => setInputCode(code || "")}
                         editorDidMount={ (_, editor) => { inputEditor.current = editor; selectAndFocus(inputEditor); } }
                         height="30vh"
-                        options={ { lineNumbers: "off", minimap: { enabled: false }, scrollBeyondLastLine: false, } }
+                        options={{ ...commonEditorOptions }}
                     />
                 </div>
                 <div className="form-group">
@@ -122,7 +128,7 @@ export const Home = () => {
                         onChange={(ev, code) => setConvertedCode(code || "")}
                         editorDidMount={(_, editor) => outputEditor.current = editor}
                         height="30vh"
-                        options={ { lineNumbers: "off", minimap: { enabled: false }, readOnly: true, scrollBeyondLastLine: false, } }
+                        options={{ ...commonEditorOptions, readOnly: true }}
                     />
                 </div>
 
