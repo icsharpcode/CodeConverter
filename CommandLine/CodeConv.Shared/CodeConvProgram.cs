@@ -120,10 +120,10 @@ Remarks:
 
         private async Task ConvertAsync(IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
-            string finalSolutionPath = SolutionPath;
-            if (!Path.IsPathRooted(finalSolutionPath) && ! File.Exists(SolutionPath)) {
-                finalSolutionPath = Path.Combine(Environment.CurrentDirectory, SolutionPath);
-            }
+            string finalSolutionPath = Path.IsPathRooted(SolutionPath) 
+                ? SolutionPath
+                : Path.Combine(Environment.CurrentDirectory, SolutionPath);
+
             IProgress<string> strProgress = new Progress<string>(p => progress.Report(new ConversionProgress(p)));
 
             if (!string.Equals(Path.GetExtension(finalSolutionPath), ".sln", StringComparison.OrdinalIgnoreCase)) {
