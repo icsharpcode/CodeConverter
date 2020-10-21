@@ -1063,7 +1063,7 @@ End Class");
         }
 
         [Fact]
-        public async Task Issue486_MustCastNothingAsync() {
+        public async Task Issue486_MustCastForTernaryAsync() {
             await TestConversionCSharpToVisualBasicAsync(
 @"public class WhyWeNeedToCastNothing
 {
@@ -1078,6 +1078,51 @@ End Class");
         Dim withDefault = If(vbInitValue IsNot Nothing, 7, DirectCast(Nothing, Integer?))
         Dim withNull = If(vbInitValue IsNot Nothing, CType(8, Integer?), Nothing)
     End Sub
+End Class");
+        }
+
+        [Fact]
+        public async Task Issue486_MustCastForOverloadAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"using System;
+
+public partial class WhyWeNeedToCastNothing
+{
+    public static void CorrectOverloadChosen()
+    {
+        Console.WriteLine(4011.ToString() + Identity((int?)default));
+        Console.WriteLine(4011.ToString() + Identity((int?)null));
+        Console.WriteLine(""null"" + Identity(default(string)));
+        Console.WriteLine(""null"" + Identity((string)null));
+    }
+
+    public static int? Identity(int? vbInitValue)
+    {
+        return !vbInitValue.HasValue ? 4011 : vbInitValue;
+    }
+
+    public static string Identity(string vbInitValue)
+    {
+        return vbInitValue == null ? ""null"" : vbInitValue;
+    }
+}",
+@"Imports System
+
+Public Partial Class WhyWeNeedToCastNothing
+    Public Shared Sub CorrectOverloadChosen()
+        Console.WriteLine(4011.ToString() & Identity(CType(Nothing, Integer?)))
+        Console.WriteLine(4011.ToString() & Identity(CType(Nothing, Integer?)))
+        Console.WriteLine(""null"" & Identity(DirectCast(Nothing, String)))
+        Console.WriteLine(""null"" & Identity(CStr(Nothing)))
+    End Sub
+
+    Public Shared Function Identity(ByVal vbInitValue As Integer?) As Integer?
+        Return If(Not vbInitValue.HasValue, 4011, vbInitValue)
+    End Function
+
+    Public Shared Function Identity(ByVal vbInitValue As String) As String
+        Return If(Equals(vbInitValue, Nothing), ""null"", vbInitValue)
+    End Function
 End Class");
         }
         [Fact]
