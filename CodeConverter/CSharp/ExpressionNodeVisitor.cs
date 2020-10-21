@@ -557,7 +557,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (!(_semanticModel.GetTypeInfo(node).ConvertedType is IArrayTypeSymbol arrayType)) return SyntaxFactory.ImplicitArrayCreationExpression(initializer);
 
-            if (!initializers.Any()) {
+            if (!initializers.Any() && arrayType.Rank == 1) {
 
                 var arrayTypeArgs = SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList(CommonConversions.GetTypeSyntax(arrayType.ElementType)));
                 var arrayEmpty = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
@@ -922,37 +922,95 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
         {
-            if (invocation.ArgumentList == null || IsDefinitelyExecutedInStatement(invocation)) return false;
-            return invocation.ArgumentList.Arguments.Any(a => RequiresLocalFunction(invocation, invocationSymbol, a));
+            if (invocation.ArgumentList == null) return false;
+            var definitelyExecutedAfterPrevious = DefinitelyExecutedAfterPreviousStatement(invocation);
+            var nextStatementDefinitelyExecuted = NextStatementDefinitelyExecutedAfter(invocation);
+            if (definitelyExecutedAfterPrevious && nextStatementDefinitelyExecuted) return false;
+            var possibleInline = definitelyExecutedAfterPrevious ? RefConversion.PreAssigment : RefConversion.Inline;
+            return invocation.ArgumentList.Arguments.Any(a => RequiresLocalFunction(possibleInline, invocation, invocationSymbol, a));
 
-            bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol, VBSyntax.ArgumentSyntax a)
+            bool RequiresLocalFunction(RefConversion possibleInline, VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol, VBSyntax.ArgumentSyntax a)
             {
                 var refConversion = GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out var argName, out var refKind);
-                if (RefConversion.Inline == refConversion) return false;
+                if (RefConversion.Inline == refConversion || possibleInline == refConversion) return false;
                 if (!(a is VBSyntax.SimpleArgumentSyntax sas)) return false;
                 var argExpression = sas.Expression.SkipIntoParens();
                 if (argExpression is VBSyntax.InstanceExpressionSyntax) return false;
                 return !_semanticModel.GetConstantValue(argExpression).HasValue;
             }
         }
-
-        private static bool IsDefinitelyExecutedInStatement(VBSyntax.InvocationExpressionSyntax invocation)
+        
+        /// <summary>
+        /// Conservative version of _semanticModel.AnalyzeControlFlow(invocation).ExitPoints to account for exceptions
+        /// </summary>
+        private bool DefinitelyExecutedAfterPreviousStatement(VBSyntax.InvocationExpressionSyntax invocation)
         {
-            SyntaxNode parentStatement = invocation;
-            do {
-                parentStatement = parentStatement.GetAncestor<VBSyntax.StatementSyntax>();
-            } while (parentStatement is VBSyntax.ElseIfStatementSyntax);
-            return parentStatement.FollowProperty(n => GetLeftMostWithPossibleExitPoints(n)).Contains(invocation);
+            SyntaxNode parent = invocation;
+            while (true) {
+                parent = parent.Parent;
+                switch (parent)
+                {
+                    case VBSyntax.ParenthesizedExpressionSyntax _:
+                        continue;
+                    case VBSyntax.BinaryExpressionSyntax binaryExpression:
+                        if (binaryExpression.Left == invocation) continue;
+                        else return false;
+                    case VBSyntax.ArgumentSyntax argumentSyntax:
+                        // Being the leftmost invocation of an unqualified method call ensures no other code is executed. Could add other cases here, such as a method call on a local variable name, or "this.". A method call on a property is not acceptable.
+                        if (argumentSyntax.Parent.Parent is VBSyntax.InvocationExpressionSyntax parentInvocation && parentInvocation.ArgumentList.Arguments.First() == argumentSyntax && FirstArgDefinitelyEvaluated(parentInvocation)) continue;
+                        else return false;
+                    case VBSyntax.ElseIfStatementSyntax _:
+                    case VBSyntax.ExpressionSyntax _:
+                        return false;
+                    case VBSyntax.StatementSyntax _:
+                        return true;
+                }
+            }
+        }
+
+        private bool FirstArgDefinitelyEvaluated(VBSyntax.InvocationExpressionSyntax parentInvocation) =>
+            parentInvocation.Expression.SkipIntoParens() switch {
+                VBSyntax.IdentifierNameSyntax _ => true,
+                VBSyntax.MemberAccessExpressionSyntax maes => !MayThrow(maes.Expression),
+                _ => true
+            };
+
+        /// <summary>
+        /// Safe overapproximation of whether an expression may throw.
+        /// </summary>
+        private bool MayThrow(VBSyntax.ExpressionSyntax expression)
+        {
+            expression = expression.SkipIntoParens();
+            if (expression is VBSyntax.InstanceExpressionSyntax) return false;
+            var symbol = _semanticModel.GetSymbolInfo(expression).Symbol;
+            return !symbol.IsKind(SymbolKind.Local) && !symbol.IsKind(SymbolKind.Field);
         }
 
         /// <summary>
-        /// It'd be great to use _semanticModel.AnalyzeControlFlow(invocation).ExitPoints, but that doesn't account for the possibility of exceptions
+        /// Conservative version of _semanticModel.AnalyzeControlFlow(invocation).ExitPoints to account for exceptions
         /// </summary>
-        private static SyntaxNode GetLeftMostWithPossibleExitPoints(SyntaxNode n) => n switch
+        private static bool NextStatementDefinitelyExecutedAfter(VBSyntax.InvocationExpressionSyntax invocation)
         {
-            VBSyntax.VariableDeclaratorSyntax vds => vds.Initializer,
-            _ => n.ChildNodes().FirstOrDefault()
-        };
+            SyntaxNode parent = invocation;
+            while (true) {
+                parent = parent.Parent;
+                switch (parent)
+                {
+                    case VBSyntax.ParenthesizedExpressionSyntax _:
+                        continue;
+                    case VBSyntax.BinaryExpressionSyntax binaryExpression:
+                        if (binaryExpression.Right == invocation) continue;
+                        else return false;
+                    case VBSyntax.IfStatementSyntax _:
+                    case VBSyntax.ElseIfStatementSyntax _:
+                    case VBSyntax.SingleLineIfStatementSyntax _:
+                        return false;
+                    case VBSyntax.ExpressionSyntax _:
+                    case VBSyntax.StatementSyntax _:
+                        return true;
+                }
+            }
+        }
 
         public override async Task<CSharpSyntaxNode> VisitSingleLineLambdaExpression(VBasic.Syntax.SingleLineLambdaExpressionSyntax node)
         {
@@ -1191,7 +1249,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
             var partOfNamespaceDeclaration = topLevelName.Parent.IsKind(VBasic.SyntaxKind.NamespaceStatement);
             var leftIsGlobal = node.Left.IsKind(VBasic.SyntaxKind.GlobalName);
-            var isPartOfNameOfExpression = node.GetAncestor<VBSyntax.NameOfExpressionSyntax>() != null;
             ExpressionSyntax qualifiedName;
             if (partOfNamespaceDeclaration || !(lhsSyntax is SimpleNameSyntax sns)) {
                 if (leftIsGlobal) return rhsSyntax;
@@ -1201,7 +1258,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return leftIsGlobal ? SyntaxFactory.AliasQualifiedName((IdentifierNameSyntax)lhsSyntax, rhsSyntax) :
-                isPartOfNameOfExpression ? SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, (NameSyntax)qualifiedName, rhsSyntax) :
                 (CSharpSyntaxNode)SyntaxFactory.QualifiedName((NameSyntax)qualifiedName, rhsSyntax);
         }
 

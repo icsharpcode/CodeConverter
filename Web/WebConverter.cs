@@ -31,7 +31,7 @@ namespace ICSharpCode.CodeConverter.Web
 
             var result = await CodeConverter.ConvertAsync(codeWithOptions);
 
-            return new ConvertResponse() {
+            return new ConvertResponse {
                 conversionOk = result.Success,
                 convertedCode = result.ConvertedCode,
                 errorMessage = result.GetExceptionsAsString()
@@ -40,23 +40,35 @@ namespace ICSharpCode.CodeConverter.Web
 
         private static string ParseLanguage(string language)
         {
-            if (language == null)
+            if (language == null) {
                 throw new ArgumentNullException(nameof(language));
-            if (language.StartsWith("cs", StringComparison.OrdinalIgnoreCase))
+            }
+
+            if (language.StartsWith("cs", StringComparison.OrdinalIgnoreCase)) {
                 return LanguageNames.CSharp;
-            if (language.StartsWith("vb", StringComparison.OrdinalIgnoreCase))
+            }
+
+            if (language.StartsWith("vb", StringComparison.OrdinalIgnoreCase)) {
                 return LanguageNames.VisualBasic;
+            }
+
             throw new ArgumentException($"{language} not supported!");
         }
 
         private static int GetDefaultVersionForLanguage(string language)
         {
-            if (language == null)
+            if (language == null) {
                 throw new ArgumentNullException(nameof(language));
-            if (language.StartsWith("cs", StringComparison.OrdinalIgnoreCase))
+            }
+
+            if (language.StartsWith("cs", StringComparison.OrdinalIgnoreCase)) {
                 return 6;
-            if (language.StartsWith("vb", StringComparison.OrdinalIgnoreCase))
+            }
+
+            if (language.StartsWith("vb", StringComparison.OrdinalIgnoreCase)) {
                 return 14;
+            }
+
             throw new ArgumentException($"{language} not supported!");
         }
     }

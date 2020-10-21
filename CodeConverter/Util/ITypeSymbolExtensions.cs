@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Linq;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
@@ -62,6 +63,14 @@ namespace ICSharpCode.CodeConverter.Util
                 .OnlyOrDefault(impl => impl.MetadataName == "IEnumerable`1")
                 ?.TypeArguments.OnlyOrDefault();
             return null;
+        }
+
+        public static (IMethodSymbol[] Instance, IMethodSymbol[] Static) GetDeclaredConstructorsInAllParts(this ITypeSymbol type)
+        {
+            var allMethods = type?.GetMembers().OfType<IMethodSymbol>() ?? ImmutableArray<IMethodSymbol>.Empty;
+            return allMethods
+                .Where(m => m.IsConstructor() && !m.IsImplicitlyDeclared)
+                .SplitOn(c => c.IsStatic);
         }
     }
 }

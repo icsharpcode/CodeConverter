@@ -1,39 +1,50 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.CodeConverter.Util;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
     internal class AdditionalInitializers
     {
-        public AdditionalInitializers(bool shouldAddTypeWideInitToThisPart)
+        private readonly bool _shouldAddInstanceConstructor;
+        private readonly bool _shouldAddStaticConstructor;
+
+        public AdditionalInitializers(VBSyntax.TypeBlockSyntax typeSyntax, INamedTypeSymbol namedTypeSybol,
+            Compilation vbCompilation)
         {
-            ShouldAddTypeWideInitToThisPart = shouldAddTypeWideInitToThisPart;
+            var (instanceConstructors, staticConstructors) = namedTypeSybol.GetDeclaredConstructorsInAllParts();
+            var isBestPartToAddParameterlessConstructor = IsBestPartToAddParameterlessConstructor(typeSyntax, namedTypeSybol);
+            _shouldAddInstanceConstructor = !instanceConstructors.Any() && isBestPartToAddParameterlessConstructor;
+            _shouldAddStaticConstructor = !staticConstructors.Any() && isBestPartToAddParameterlessConstructor;
+            IsBestPartToAddTypeInit = isBestPartToAddParameterlessConstructor;
+            HasInstanceConstructorsOutsideThisPart = instanceConstructors.Any(c => c.DeclaringSyntaxReferences.Any(
+                reference => !typeSyntax.OverlapsWith(reference)
+            )) || !instanceConstructors.Any() && !isBestPartToAddParameterlessConstructor;
+            RequiresInitializeComponent = namedTypeSybol.IsDesignerGeneratedTypeWithInitializeComponent(vbCompilation);
         }
+
+        public bool HasInstanceConstructorsOutsideThisPart { get; }
+        public bool IsBestPartToAddTypeInit { get; }
+        public bool RequiresInitializeComponent { get; }
 
         public List<Assignment> AdditionalStaticInitializers { get; } = new List<Assignment>();
         public List<Assignment> AdditionalInstanceInitializers { get; } = new List<Assignment>();
-        public bool ShouldAddTypeWideInitToThisPart { get; }
 
-        public IReadOnlyCollection<MemberDeclarationSyntax> WithAdditionalInitializers(ITypeSymbol parentType,
-            List<MemberDeclarationSyntax> convertedMembers, SyntaxToken parentTypeName, bool requiresInitializeComponent)
+        public IReadOnlyCollection<MemberDeclarationSyntax> WithAdditionalInitializers(List<MemberDeclarationSyntax> convertedMembers, SyntaxToken parentTypeName)
         {
-            var constructorsInAllParts = parentType?.GetMembers().OfType<IMethodSymbol>().Where(m => m.IsConstructor()).ToList();
-            var parameterlessConstructorsInAllParts = constructorsInAllParts?.Where(c => !c.IsImplicitlyDeclared && !c.Parameters.Any()) ?? Array.Empty<IMethodSymbol>();
-            var requiresInstanceConstructor = !parameterlessConstructorsInAllParts.Any(c => !c.IsStatic);
-            var requiresStaticConstructor = !parameterlessConstructorsInAllParts.Any(c => c.IsStatic);
-            var rootConstructors = convertedMembers.OfType<ConstructorDeclarationSyntax>()
+            var (rootInstanceConstructors, rootStaticConstructors) = convertedMembers.OfType<ConstructorDeclarationSyntax>()
                 .Where(cds => !cds.Initializer.IsKind(SyntaxKind.ThisConstructorInitializer))
-                .ToLookup(cds => cds.IsInStaticCsContext());
+                .SplitOn(cds => cds.IsInStaticCsContext());
 
-            convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)), rootConstructors[false], ShouldAddTypeWideInitToThisPart && requiresInstanceConstructor, requiresInitializeComponent);
+            convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)), rootInstanceConstructors, _shouldAddInstanceConstructor, RequiresInitializeComponent);
 
             convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName,
-                AdditionalStaticInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword)), rootConstructors[true], requiresStaticConstructor, false);
+                AdditionalStaticInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword)), rootStaticConstructors, _shouldAddStaticConstructor, false);
 
             return convertedMembers;
         }
@@ -80,6 +91,21 @@ namespace ICSharpCode.CodeConverter.CSharp
                             SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(
                                 assignment.AssignmentKind, assignment.Field, assignment.Initializer))
                         ).ToList();
+        }
+
+        private static bool IsBestPartToAddParameterlessConstructor(VBSyntax.TypeBlockSyntax typeSyntax, INamedTypeSymbol namedTypeSybol)
+        {
+            if (namedTypeSybol == null) return false;
+
+            var bestPartToAddTo = namedTypeSybol.DeclaringSyntaxReferences
+                .OrderByDescending(l => l.SyntaxTree.FilePath?.IsGeneratedFile() == false).ThenBy(l => l.GetSyntax() is VBSyntax.TypeBlockSyntax tbs && HasAttribute(tbs, "DesignerGenerated"))
+                .First();
+            return typeSyntax.OverlapsWith(bestPartToAddTo);
+        }
+
+        private static bool HasAttribute(VBSyntax.TypeBlockSyntax tbs, string attributeName)
+        {
+            return tbs.BlockStatement.AttributeLists.Any(list => list.Attributes.Any(a => a.Name.GetText().ToString().Contains(attributeName)));
         }
     }
 }

@@ -125,15 +125,17 @@ namespace ICSharpCode.CodeConverter.VsExtension
                 if (!string.IsNullOrWhiteSpace(exceptionsAsString)) {
                     errors.Add(exceptionsAsString);
                 }
+                
+                if (convertedFile.Success) {
+                    files.Add(convertedFile.TargetPathOrNull);
 
-                files.Add(convertedFile.TargetPathOrNull);
+                    if (convertedFile.ConvertedCode.Length > longestFileLength) {
+                        longestFileLength = convertedFile.ConvertedCode.Length;
+                        longestFilePath = convertedFile.TargetPathOrNull;
+                    }
 
-                if (convertedFile.ConvertedCode.Length > longestFileLength) {
-                    longestFileLength = convertedFile.ConvertedCode.Length;
-                    longestFilePath = convertedFile.TargetPathOrNull;
+                    convertedFile.WriteToFile();
                 }
-
-                convertedFile.WriteToFile();
             }
 
             await FinalizeConversionAsync(files, errors, longestFilePath, filesToOverwrite);

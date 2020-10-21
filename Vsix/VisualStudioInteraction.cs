@@ -40,11 +40,11 @@ namespace ICSharpCode.CodeConverter.VsExtension
         private static CancellationToken CancelAllToken;
         private static readonly Version m_LowestSupportedVersion = new Version(15, 7, 0, 0);
         private static readonly Version m_FullVsVersion = GetFullVsVersion();
-        private static readonly string m_Title = "Code converter " + new AssemblyName(typeof(ProjectConversion).Assembly.FullName).Version.ToString(3) + " - Visual Studio " + m_FullVsVersion;
+        private static readonly string m_Title = "Code converter " + new AssemblyName(typeof(ProjectConversion).Assembly.FullName).Version.ToString(3) + " - Visual Studio " + (m_FullVsVersion?.ToString() ?? "unknown version");
 
         private static Version GetFullVsVersion()
         {
-            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "msenv.dll");
+            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "devenv.exe");
 
             if (File.Exists(path)) {
                 var fvi = FileVersionInfo.GetVersionInfo(path);

@@ -195,8 +195,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var members = parentType.Members;
 
             var namedTypeSymbol = _semanticModel.GetDeclaredSymbol(parentType);
-            bool shouldAddTypeWideInitToThisPart = ShouldAddTypeWideInitToThisPart(parentType, namedTypeSymbol);
-            var additionalInitializers = new AdditionalInitializers(shouldAddTypeWideInitToThisPart);
+            var additionalInitializers = new AdditionalInitializers(parentType, namedTypeSymbol, _vbCompilation);
             var methodsWithHandles = MethodsWithHandles.Create(GetMethodWithHandles(parentType));
 
             if (methodsWithHandles.Any()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
@@ -214,34 +213,22 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             IEnumerable<MemberDeclarationSyntax> WithAdditionalMembers(IEnumerable<MemberDeclarationSyntax> convertedMembers)
             {
-                var requiresInitializeComponent = namedTypeSymbol.IsDesignerGeneratedTypeWithInitializeComponent(_vbCompilation);
-
-                if (shouldAddTypeWideInitToThisPart)
-                {
-                    var otherPartsOfType = GetAllPartsOfType(parentType, namedTypeSymbol).ToArray();
-                    var constructorFieldInitializersFromOtherParts = otherPartsOfType
-                        .Where(t => (!Equals(t.Type.SyntaxTree.FilePath, _semanticModel.SyntaxTree.FilePath) ||
-                                     !t.Type.Span.Equals(parentType.Span)))
-                        .SelectMany(r => GetFieldsIdentifiersWithInitializer(r.Type, r.SemanticModel));
-                    additionalInitializers.AdditionalInstanceInitializers.AddRange(constructorFieldInitializersFromOtherParts);
-                    if (requiresInitializeComponent)
-                    {
-                        // Constructor event handlers not required since they'll be inside InitializeComponent - see other use of IsDesignerGeneratedTypeWithInitializeComponent
-                        convertedMembers = convertedMembers
-                            .Concat(methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
-                        additionalInitializers.AdditionalInstanceInitializers
-                            .AddRange(
-                                CommonConversions.WinformsConversions.GetNameAssignments(otherPartsOfType));
-                    }
-                    else
-                    {
-                        additionalInitializers.AdditionalInstanceInitializers.AddRange(methodsWithHandles
-                            .GetConstructorEventHandlers());
-                    }
+                var otherPartsOfType = GetAllPartsOfType(parentType, namedTypeSymbol).ToArray();
+                var constructorFieldInitializersFromOtherParts = otherPartsOfType
+                    .Where(t => (!Equals(t.Type.SyntaxTree.FilePath, _semanticModel.SyntaxTree.FilePath) ||
+                                 !t.Type.Span.Equals(parentType.Span)))
+                    .SelectMany(r => GetFieldsIdentifiersWithInitializer(r.Type, r.SemanticModel));
+                additionalInitializers.AdditionalInstanceInitializers.AddRange(constructorFieldInitializersFromOtherParts);
+                if (additionalInitializers.RequiresInitializeComponent) {
+                    // Constructor event handlers not required since they'll be inside InitializeComponent - see other use of IsDesignerGeneratedTypeWithInitializeComponent
+                    if (additionalInitializers.IsBestPartToAddTypeInit) convertedMembers = convertedMembers.Concat(methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
+                    additionalInitializers.AdditionalInstanceInitializers.AddRange(CommonConversions.WinformsConversions.GetNameAssignments(otherPartsOfType));
+                } else {
+                    additionalInitializers.AdditionalInstanceInitializers.AddRange(methodsWithHandles.GetConstructorEventHandlers());
                 }
 
-                return additionalInitializers.WithAdditionalInitializers(namedTypeSymbol, convertedMembers.ToList(),
-                    CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier), requiresInitializeComponent);
+                return additionalInitializers.WithAdditionalInitializers(convertedMembers.ToList(),
+                    CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier));
             }
         }
 
@@ -267,21 +254,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             string initializerFunctionName = CommonConversions.GetInitialValueFunctionName(f.n);
             var invocation = SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(initializerFunctionName)), SyntaxFactory.ArgumentList());
             return (SyntaxFactory.IdentifierName(csId), CSSyntaxKind.SimpleAssignmentExpression, invocation);
-        }
-
-        private bool ShouldAddTypeWideInitToThisPart(VBSyntax.TypeBlockSyntax typeSyntax, INamedTypeSymbol namedTypeSybol)
-        {
-            if (namedTypeSybol == null) return false;
-
-            var bestPartToAddTo = namedTypeSybol.DeclaringSyntaxReferences
-                .OrderByDescending(l => l.SyntaxTree.FilePath?.IsGeneratedFile() == false).ThenBy(l => l.GetSyntax() is VBSyntax.TypeBlockSyntax tbs && HasAttribute(tbs, "DesignerGenerated"))
-                .First();
-            return bestPartToAddTo.SyntaxTree == typeSyntax.SyntaxTree && bestPartToAddTo.Span.OverlapsWith(typeSyntax.Span);
-        }
-
-        private static bool HasAttribute(VBSyntax.TypeBlockSyntax tbs, string attributeName)
-        {
-            return tbs.BlockStatement.AttributeLists.Any(list => list.Attributes.Any(a => a.Name.GetText().ToString().Contains(attributeName)));
         }
 
         private MemberDeclarationSyntax[] GetAdditionalDeclarations(VBSyntax.StatementSyntax member)

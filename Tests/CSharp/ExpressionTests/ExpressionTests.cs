@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -45,6 +46,24 @@ internal partial class TestClass
     {
         var rslt = DateTime.Parse(""1900-01-01"");
         var rslt2 = DateTime.Parse(""2002-08-13 12:14:00"");
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ImplicitCastToDoubleLiteralAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Class DoubleLiteral
+    Private Function Test(myDouble As Double) As Double
+        Return Test(2.37D) + Test(&HFFUL) 'VB: D means decimal, C#: D means double
+    End Function
+End Class", @"
+internal partial class DoubleLiteral
+{
+    private double Test(double myDouble)
+    {
+        return Test(2.37d) + Test(255d); // VB: D means decimal, C#: D means double
     }
 }");
         }
@@ -158,6 +177,30 @@ public partial class Class1
         Foo(0);
     }
 }");
+        }
+
+        [Fact] // https://github.com/icsharpcode/CodeConverter/issues/636
+        public async Task CharacterizeCompilationErrorsWithLateBoundImplicitObjectNarrowingAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+    Public Sub Rounding()
+        Dim o as Object = 3.0f
+        Dim x = Math.Round(o, 2)
+    End Sub
+End Class",
+@"using System;
+
+public partial class VisualBasicClass
+{
+    public void Rounding()
+    {
+        object o = 3.0f;
+        var x = Math.Round(o, (object)2);
+    }
+}
+2 target compilation errors:
+CS1503: Argument 1: cannot convert from 'object' to 'double'
+CS1503: Argument 2: cannot convert from 'object' to 'int'");
         }
 
         [Fact]
@@ -444,6 +487,19 @@ public partial class Issue495
     {
         return Array.Empty<int>();
     }
+}");
+        }
+
+        [Fact]
+        public async Task Empty2DArrayExpressionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Public Class Empty2DArray
+    Dim data(,) As Double = {}
+End Class", @"
+public partial class Empty2DArray
+{
+    private double[,] data = new double[,] { };
 }");
         }
 
