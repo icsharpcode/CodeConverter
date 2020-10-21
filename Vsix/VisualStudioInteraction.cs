@@ -40,11 +40,11 @@ namespace ICSharpCode.CodeConverter.VsExtension
         private static CancellationToken CancelAllToken;
         private static readonly Version m_LowestSupportedVersion = new Version(15, 7, 0, 0);
         private static readonly Version m_FullVsVersion = GetFullVsVersion();
-        private static readonly string m_Title = "Code converter " + new AssemblyName(typeof(ProjectConversion).Assembly.FullName).Version.ToString(3) + " - Visual Studio " + m_FullVsVersion;
+        private static readonly string m_Title = "Code converter " + new AssemblyName(typeof(ProjectConversion).Assembly.FullName).Version.ToString(3) + " - Visual Studio " + (m_FullVsVersion?.ToString() ?? "unknown version");
 
         private static Version GetFullVsVersion()
         {
-            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "msenv.dll");
+            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "devenv.exe");
 
             if (File.Exists(path)) {
                 var fvi = FileVersionInfo.GetVersionInfo(path);
@@ -191,6 +191,36 @@ namespace ICSharpCode.CodeConverter.VsExtension
 
         }
 
+        public static async Task<CaretPosition> GetCaretPositionAsync(IAsyncServiceProvider serviceProvider)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+            var viewHost = await GetCurrentViewHostAsync(serviceProvider,false);
+            ITextEdit edit = viewHost.TextView.TextBuffer.CreateEdit();
+            var caretPositionAsync = new CaretPosition(edit, viewHost.TextView.Caret.Position.BufferPosition.Position);
+            await TaskScheduler.Default;
+            return caretPositionAsync;
+        }
+
+        internal class CaretPosition
+        {
+            private readonly ITextEdit _textEdit;
+            private readonly int _position;
+
+            public CaretPosition(ITextEdit textEdit, int position)
+            {
+                _textEdit = textEdit;
+                _position = position;
+            }
+
+            public async Task InsertAsync(string text)
+            {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+                _textEdit.Insert(_position, text);
+                _textEdit.Apply();
+                _textEdit.Dispose();
+            }
+        }
+
         private static async Task<VsDocument> GetSingleSelectedItemOrDefaultAsync()
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
@@ -273,7 +303,6 @@ namespace ICSharpCode.CodeConverter.VsExtension
             var viewHost = await GetCurrentViewHostAsync(serviceProvider, predicate, mustHaveFocus);
             return viewHost?.TextView.Selection;
         }
-
         private static async Task<IWpfTextViewHost> GetCurrentViewHostAsync(IAsyncServiceProvider serviceProvider,
             Func<string, bool> predicate, bool mustHaveFocus)
         {

@@ -460,8 +460,19 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static string DescribeConversionError(this SyntaxNode node, Exception e)
         {
-            return $"Cannot convert {node.GetType().Name}, {e}{Environment.NewLine}{Environment.NewLine}" +
-                $"Input:{Environment.NewLine}{node.ToFullString()}{Environment.NewLine}";
+            var fullCodeHeading = "Input:";
+            string nodeType = node.GetType().Name;
+            if (e is ExceptionWithNodeInformation {InnerException: {} inner, ExceptionCause: {} importantNode} && importantNode != node) {
+                e = inner;
+                nodeType = importantNode.GetType().Name;
+                fullCodeHeading += $" {importantNode.ToFullString()}{Environment.NewLine}Context:";
+            }
+
+            var errorStringLines = e.ToString().Split(new[] {Environment.NewLine}, StringSplitOptions.None)
+                .Where(line => !line.Contains("System.Runtime.CompilerServices.TaskAwaiter"));
+                
+            return $"Cannot convert {nodeType}, {string.Join(Environment.NewLine, errorStringLines)}{Environment.NewLine}{Environment.NewLine}" +
+                   $"{fullCodeHeading}{Environment.NewLine}{node.ToFullString()}{Environment.NewLine}";
         }
 
         public static string DescribeConversionWarning(this SyntaxNode node, string addtlInfo)
@@ -520,5 +531,7 @@ namespace ICSharpCode.CodeConverter.Util
         public static T LastOrDefaultDescendant<T>(this SyntaxNode syntaxNode) {
             return syntaxNode.DescendantNodes().OfType<T>().LastOrDefault();
         }
+
+        public static bool OverlapsWith(this SyntaxNode node, SyntaxReference reference) => reference.SyntaxTree == node.SyntaxTree && reference.Span.OverlapsWith(node.Span);
     }
 }

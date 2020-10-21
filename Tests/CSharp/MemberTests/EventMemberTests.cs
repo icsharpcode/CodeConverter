@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using System.Windows.Forms;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.CSharp;
 using Xunit;
@@ -226,7 +227,7 @@ Class Class1
     End Sub
 
     Public Sub New(obj As Object)
-        MyClass.New()
+        MyClass.New(7)
     End Sub
 
     Shared Sub PrintTestMessage2() Handles SharedEventClassInstance.TestEvent, NonSharedEventClassInstance.TestEvent
@@ -259,11 +260,6 @@ internal partial class Class1
     static Class1()
     {
         SharedEventClassInstance = new MyEventClass();
-    }
-
-    public Class1()
-    {
-        NonSharedEventClassInstance = new MyEventClass();
     }
 
     public Class1(int num)
@@ -325,7 +321,7 @@ internal partial class Class1
         }
     }
 
-    public Class1(object obj) : this()
+    public Class1(object obj) : this(7)
     {
     }
 
@@ -344,9 +340,7 @@ internal partial class Class1
 
 public partial class ShouldNotGainConstructor
 {
-}
-1 source compilation errors:
-BC30516: Overload resolution failed because no accessible 'New' accepts this number of arguments.", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
+}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
         }
 
         [Fact]

@@ -45,4 +45,8 @@
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
         FolderForm.ShowDialog()
     End Sub
+
+    Private Sub ColumnWithEvent_Disposed(sender As Object, e As EventArgs) Handles ColumnWithEvent.Disposed
+        ' Just here so that the column is turned into a property
+    End Sub
 End Class

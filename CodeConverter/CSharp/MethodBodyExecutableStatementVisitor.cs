@@ -169,7 +169,25 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
             var kind = node.Kind().ConvertToken(TokenContext.Local);
 
-            rhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+            
+            var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
+            var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
+            
+            var typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+
+            // Split out compound operator if type conversion needed on result
+            if (TypeConversionAnalyzer.GetNonCompoundOrNull(kind) is {} nonCompound) {
+                
+                var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, lhs, typeConvertedRhs);
+                var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: rhsTypeInfo.ConvertedType, forceTargetType: lhsTypeInfo.Type);
+                if (nonCompoundRhs != typeConvertedNonCompoundRhs) {
+                    kind = SyntaxKind.SimpleAssignmentExpression;
+                    typeConvertedRhs = typeConvertedNonCompoundRhs;
+                }
+            }
+
+            rhs = typeConvertedRhs;
+            
             var assignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
 
             var postAssignment = GetPostAssignmentStatements(node);

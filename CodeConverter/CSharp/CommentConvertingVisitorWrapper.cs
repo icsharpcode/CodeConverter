@@ -50,9 +50,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                     : sourceTriviaMap == SourceTriviaMapKind.SubNodesOnly
                         ? converted
                         : WithSourceMapping(vbNode, converted);
-            } catch (Exception e) {
+            } catch (Exception e) when (typeof(T).IsAssignableFrom(typeof(CSSyntax.EmptyStatementSyntax))) {
                 var dummyStatement = (T)(object)CS.SyntaxFactory.EmptyStatement();
                 return dummyStatement.WithCsTrailingErrorComment((VBasic.VisualBasicSyntaxNode)vbNode, e);
+            } catch (Exception e) when (!(e is ExceptionWithNodeInformation)) {
+                throw e.WithNodeInformation(vbNode);
             }
         }
 

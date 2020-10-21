@@ -14,6 +14,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### C# -> VB
 
 
+## [8.2.0] - 2020-10-12
+
+
+* Web UI improvements [#644](https://github.com/icsharpcode/CodeConverter/pull/644)
+
+### Vsix
+
+* Add "Paste as VB/C#" to "Paste special" menu [#622](https://github.com/icsharpcode/CodeConverter/pull/622)
+
+
+### VB -> C#
+* Update property when used in out parameter [#629](https://github.com/icsharpcode/CodeConverter/issues/629)
+* Parenthesize on null coalesce when needed [#628](https://github.com/icsharpcode/CodeConverter/pull/628)
+
+### C# -> VB
+
+
+## [8.1.8] - 2020-08-31
+
+
+### Vsix
+
+
+### VB -> C#
+* (Fix regression) WithEvents field visibility converted correctly [#616](https://github.com/icsharpcode/CodeConverter/issues/616)[#618](https://github.com/icsharpcode/CodeConverter/issues/618)
+* Type convert within compound assignments [#612](https://github.com/icsharpcode/CodeConverter/issues/612)
+* Type convert lambdas to a concrete delegate type if needed [#611](https://github.com/icsharpcode/CodeConverter/issues/611)
+* Type convert from decimal to double in more cases where needed [#617](https://github.com/icsharpcode/CodeConverter/issues/617)
+* Use casts rather than Conversions.To\* for numeric conversions
+
+### C# -> VB
+
+
 ## [8.1.7] - 2020-08-16
 
 * Timeout cosmetic operations (formatting/comments) after 15 minutes of inactivity [#598](https://github.com/icsharpcode/CodeConverter/issues/598)
@@ -389,14 +422,6 @@ Known issue: Converting single file from VB project with resx files throws an er
 * Load extension only when menu item clicked (multi-project conversion menu not present until project loaded)
 
 ### VB -> C#
-* Convert implicit object->string cast correctly (#365)
-* Convert trivia (e.g. comments) at start of file (#333)
-* Improvements to redim conversion (#403, #393)
-* Convert array of arrays initializer (#364)
-* Improvements to implicit enum -> int conversion (#361)
-* Convert expressions in constants (#329)
-* Convert implicit `ElementAtOrDefault` (#362)
-* Convert types in ternary expressions (#363)
 * Convert implicit object->string cast correctly ([#365](https://github.com/icsharpcode/CodeConverter/pull/365))
 * Convert trivia (e.g. comments) at start of file ([#333](https://github.com/icsharpcode/CodeConverter/pull/333))
 * Improvements to redim conversion ([#403](https://github.com/icsharpcode/CodeConverter/pull/403), [#393](https://github.com/icsharpcode/CodeConverter/pull/393))

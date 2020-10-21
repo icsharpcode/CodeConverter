@@ -120,13 +120,17 @@ Remarks:
 
         private async Task ConvertAsync(IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
+            string finalSolutionPath = Path.IsPathRooted(SolutionPath) 
+                ? SolutionPath
+                : Path.Combine(Environment.CurrentDirectory, SolutionPath);
+
             IProgress<string> strProgress = new Progress<string>(p => progress.Report(new ConversionProgress(p)));
 
-            if (!string.Equals(Path.GetExtension(SolutionPath), ".sln", StringComparison.OrdinalIgnoreCase)) {
+            if (!string.Equals(Path.GetExtension(finalSolutionPath), ".sln", StringComparison.OrdinalIgnoreCase)) {
                 throw new ValidationException("Solution path must end in `.sln`");
             }
 
-            var outputDirectory = new DirectoryInfo(string.IsNullOrWhiteSpace(OutputDirectory) ? Path.GetDirectoryName(SolutionPath) : OutputDirectory);
+            var outputDirectory = new DirectoryInfo(string.IsNullOrWhiteSpace(OutputDirectory) ? Path.GetDirectoryName(finalSolutionPath) : OutputDirectory);
             if (await CouldOverwriteUncomittedFilesAsync(outputDirectory)) {
                 var action = string.IsNullOrWhiteSpace(OutputDirectory) ? "may be overwritten" : "will be deleted";
                 strProgress.Report($"WARNING: There are files in {outputDirectory.FullName} which {action}, and aren't comitted to git");
@@ -136,10 +140,10 @@ Remarks:
 
             var properties = ParsedProperties();
             var joinableTaskFactory = new JoinableTaskFactory(new JoinableTaskContext());
-            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionPath, CoreOnlyProjects, joinableTaskFactory, BestEffort, properties);
+            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(finalSolutionPath, CoreOnlyProjects, joinableTaskFactory, BestEffort, properties);
 
             var converterResultsEnumerable = msbuildWorkspaceConverter.ConvertProjectsWhereAsync(ShouldIncludeProject, TargetLanguage, progress, cancellationToken);
-            await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, SolutionPath, outputDirectory, Force, true, strProgress, cancellationToken);
+            await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, finalSolutionPath, outputDirectory, Force, true, strProgress, cancellationToken);
         }
 
         private static async Task<bool> CouldOverwriteUncomittedFilesAsync(DirectoryInfo outputDirectory)

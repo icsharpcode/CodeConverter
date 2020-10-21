@@ -200,9 +200,9 @@ public partial class Issue483
         StringType.MidStmtStr(ref str_Txt, Strings.Len(str_Txt) - 6, ""."".Length, ""."");
         StringType.MidStmtStr(ref str_Txt, Strings.Len(str_Txt) - 6, aDouble.ToString().Length, aDouble.ToString());
         Console.WriteLine(aDouble);
-        if (aDouble > 5.0)
+        if (aDouble > 5.0d)
         {
-            var midTmp = numstr(aDouble - 1.0);
+            var midTmp = numstr(aDouble - 1.0d);
             StringType.MidStmtStr(ref str_Txt, Strings.Len(str_Txt) - 6, midTmp.Length, midTmp);
         }
 

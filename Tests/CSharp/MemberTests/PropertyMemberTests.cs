@@ -145,13 +145,12 @@ internal partial class TestClass
         Dim someDecimal As Decimal = 123.0
         SomeProp(123) = someDecimal
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
-
+End Class", @"
 public partial class Class1
 {
     public float get_SomeProp(int index)
     {
-        return 1.5F;
+        return 1.5f;
     }
 
     public void set_SomeProp(int index, float value)
@@ -160,8 +159,8 @@ public partial class Class1
 
     public void Foo()
     {
-        decimal someDecimal = 123.0M;
-        set_SomeProp(123, Conversions.ToSingle(someDecimal));
+        decimal someDecimal = 123.0m;
+        set_SomeProp(123, (float)someDecimal);
     }
 }", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
         }
@@ -309,7 +308,7 @@ internal partial class MissingPropertyType
     {
         get
         {
-            double mx = 0;
+            double mx = 0d;
             return mx;
         }
     }
@@ -553,7 +552,7 @@ public partial class Class1
         {
             string XRet = default;
             XRet = 4.ToString();
-            XRet = (Conversions.ToDouble(XRet) * 2).ToString();
+            XRet = (Conversions.ToDouble(XRet) * 2d).ToString();
             string y = ""random variable to check it isn't just using the value of the last statement"";
             return XRet;
         }

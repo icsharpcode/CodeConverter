@@ -33,7 +33,8 @@ namespace ICSharpCode.CodeConverter.VsExtension
             outputWindow.GetPane(ref generalPaneGuid, out var pane);
 
             if (pane == null) {
-                outputWindow.CreatePane(ref generalPaneGuid, PaneName, 1, 0);
+                int initiallyVisibleThusStealingFocusWhenTryingToGetCaretPosition = 0;
+                outputWindow.CreatePane(ref generalPaneGuid, PaneName, initiallyVisibleThusStealingFocusWhenTryingToGetCaretPosition, 0);
                 outputWindow.GetPane(ref generalPaneGuid, out pane);
             }
 

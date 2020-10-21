@@ -22,9 +22,7 @@ using MemberAccessExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.Member
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Linq.Expressions;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -37,6 +35,15 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly SyntaxGenerator _csSyntaxGenerator;
         private readonly ExpressionEvaluator _expressionEvaluator;
 
+        private static readonly VBasic.SyntaxKind[] Int32ArithmeticExpressionKinds = new[] {
+            VBasic.SyntaxKind.IntegerDivideExpression,
+            VBasic.SyntaxKind.ModuloExpression,
+            VBasic.SyntaxKind.AddExpression,
+            VBasic.SyntaxKind.SubtractExpression,
+            VBasic.SyntaxKind.MultiplyExpression,
+            VBasic.SyntaxKind.DivideExpression
+        };
+
         public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation,
             HashSet<string> extraUsingDirectives, SyntaxGenerator csSyntaxGenerator, ExpressionEvaluator expressionEvaluator)
         {
@@ -47,7 +54,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _expressionEvaluator = expressionEvaluator;
         }
 
-        public ExpressionSyntax AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
+        public ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
         {
             if (csNode == null) return null;
             var conversionKind = AnalyzeConversion(vbNode, defaultToCast, isConst, forceSourceType, forceTargetType);
@@ -57,11 +64,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded, isConst, forceSourceType: forceSourceType, forceTargetType: forceTargetType).Expr;
         }
 
-        public (ExpressionSyntax Expr, bool IsConst) AddExplicitConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false, bool requiresConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
+        public (ExpressionSyntax Expr, bool IsConst) AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false, bool requiresConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
         {
-            var typeInfo = _semanticModel.GetTypeInfo(vbNode);
-            var vbType = forceSourceType ?? typeInfo.Type;
-            var vbConvertedType = forceTargetType ?? typeInfo.ConvertedType;
+            var (vbType, vbConvertedType) = GetTypeInfo(vbNode, forceSourceType, forceTargetType);
             bool resultConst = false;
 
             if (requiresConst) {
@@ -92,7 +97,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return AddTypeConversion(vbNode, csNode, TypeConversionKind.Conversion, addParenthesisIfNeeded, enumUnderlyingType, vbConvertedType);
                 case TypeConversionKind.Unknown:
                 case TypeConversionKind.Identity:
-                    return addParenthesisIfNeeded ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode) : csNode;
+                    return addParenthesisIfNeeded ? vbNode.ParenthesizeIfPrecedenceCouldChange(csNode) : csNode;
                 case TypeConversionKind.DestructiveCast:
                 case TypeConversionKind.NonDestructiveCast:
                     return CreateCast(csNode, vbConvertedType);
@@ -105,6 +110,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, csNode, SyntaxFactory.IdentifierName(nameof(string.ToCharArray)));
                     return SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax,
                         SyntaxFactory.ArgumentList());
+                case TypeConversionKind.DelegateConstructor:
+                    return SyntaxFactory.ObjectCreationExpression(GetCommonDelegateTypeOrNull(vbNode, vbConvertedType)).WithArgumentList(new[]{csNode}.CreateCsArgList());
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -120,14 +127,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             return ValidSyntaxFactory.CastExpression(typeName, csNode);
         }
 
-        public TypeConversionKind AnalyzeConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
+        public TypeConversionKind AnalyzeConversion(VBSyntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
         {
-            var typeInfo = ModelExtensions.GetTypeInfo(_semanticModel, vbNode);
-            var vbType = forceSourceType ?? typeInfo.Type;
-            var vbConvertedType = forceTargetType ?? typeInfo.ConvertedType;
-            if (vbType is null || vbConvertedType is null)
+            var (vbType, vbConvertedType) = GetTypeInfo(vbNode, forceSourceType, forceTargetType);
+            
+            if (vbConvertedType is null)
             {
                 return TypeConversionKind.Unknown;
+            }
+
+            if (vbType is null) {
+                return GetCommonDelegateTypeOrNull(vbNode, vbConvertedType) is {} ? TypeConversionKind.DelegateConstructor : TypeConversionKind.Unknown;
             }
 
             if (vbType.IsEnumType()) {
@@ -150,18 +160,86 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csConvertedType = GetCSType(vbConvertedType);
 
             if (csType != null && csConvertedType != null &&
-                TryAnalyzeCsConversion(vbNode, csType, csConvertedType, vbConversion, vbConvertedType, vbType, vbCompilation, isConst, out TypeConversionKind analyzeConversion)) {
+                TryAnalyzeCsConversion(vbNode, csType, csConvertedType, vbConversion, vbConvertedType, vbType, vbCompilation, isConst, forceSourceType != null, out TypeConversionKind analyzeConversion)) {
                 return analyzeConversion;
             }
 
             return AnalyzeVbConversion(alwaysExplicit, vbType, vbConvertedType, vbConversion);
         }
 
+        /// <summary>
+        /// The VB operators are different to C#, e.g. VB: short * short = short, C#: short * short = int
+        /// https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/operators-and-expressions/arithmetic-operators
+        /// https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/arithmetic-operators#:~:text=The%20following%20operators%20perform%20arithmetic,%2C%20and%20%2D%20(subtraction)%20operators
+        /// </summary>
+        private (ITypeSymbol Type, ITypeSymbol ConvertedType) GetTypeInfo(VBSyntax.ExpressionSyntax vbNode,
+            ITypeSymbol type = null, ITypeSymbol convertedType = null)
+        {
+            var typeInfo = _semanticModel.GetTypeInfo(vbNode);
+            type ??= typeInfo.Type;
+            convertedType ??= typeInfo.ConvertedType;
+            if (type.IsNumericType()) {
+                var syntaxKind = VBasic.VisualBasicExtensions.Kind(vbNode.SkipIntoParens());
+                type = GetTypeOrNull(vbNode, type.SpecialType) ?? type;
+            }
+            return (type, convertedType);
+        }
+
+        private ITypeSymbol GetTypeOrNull(VBSyntax.ExpressionSyntax vbNode, SpecialType type)
+        {
+            var syntaxKind = VBasic.VisualBasicExtensions.Kind(vbNode.SkipIntoParens());
+            if (Int32ArithmeticExpressionKinds.Contains(syntaxKind))
+            {
+                var mappedSpecialType = type switch {
+                    SpecialType.System_SByte => SpecialType.System_Int32,
+                    SpecialType.System_Byte => SpecialType.System_Int32,
+                    SpecialType.System_Int16 => SpecialType.System_Int32,
+                    SpecialType.System_UInt16 => SpecialType.System_Int32,
+                    var other => other
+                };
+                return _semanticModel.Compilation.GetSpecialType(mappedSpecialType);
+            }
+
+            return null;
+        }
+
+        private CSS.NameSyntax GetCommonDelegateTypeOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType)
+        {
+            if (vbNode.SkipIntoParens() is VBSyntax.LambdaExpressionSyntax vbLambda &&
+                vbConvertedType.Name == nameof(Delegate) &&
+                _semanticModel.GetSymbolInfo(vbLambda).Symbol is IMethodSymbol lambdaSymbol)
+            {
+                return CreateCommonDelegateTypeSyntax(lambdaSymbol);
+            }
+
+            return null;
+        }
+
+        private CSS.NameSyntax CreateCommonDelegateTypeSyntax(IMethodSymbol vbLambda)
+        {
+            var parameters = vbLambda.Parameters
+                .Select(p => _csSyntaxGenerator.TypeExpression(p.Type));
+            
+            if (vbLambda.ReturnType.IsSystemVoid()) {
+                return CreateType("Action", parameters);
+            }
+
+            var typeExpression = _csSyntaxGenerator.TypeExpression(vbLambda.ReturnType);
+            return CreateType("Func", parameters.Concat(typeExpression));
+        }
+
+        private static CSS.NameSyntax CreateType(string baseTypeName, IEnumerable<SyntaxNode> parameters)
+        {
+            var parameterList = SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(parameters));
+            if (!parameterList.Arguments.Any()) return SyntaxFactory.IdentifierName(baseTypeName);
+            return SyntaxFactory.GenericName(SyntaxFactory.Identifier(baseTypeName), parameterList);
+        }
+
         private ITypeSymbol GetCSType(ITypeSymbol vbType, VBSyntax.ExpressionSyntax vbNode = null)
         {
             // C# does not have literals for short/ushort, so the actual type here is integer
             if (vbNode is VBSyntax.LiteralExpressionSyntax literal &&
-                literal.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NumericLiteralExpression) &&
+                literal.IsKind(VBasic.SyntaxKind.NumericLiteralExpression) &&
                 literal.Token.Text.EndsWith("S")) {
                 return _csCompilation.GetSpecialType(SpecialType.System_Int32);
             }
@@ -171,19 +249,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             return csType;
         }
 
-        private bool TryAnalyzeCsConversion(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ITypeSymbol csType,
+        private bool TryAnalyzeCsConversion(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol csType,
             ITypeSymbol csConvertedType, Conversion vbConversion, ITypeSymbol vbConvertedType, ITypeSymbol vbType,
-            VBasic.VisualBasicCompilation vbCompilation, bool isConst, out TypeConversionKind typeConversionKind)
+            VBasic.VisualBasicCompilation vbCompilation, bool isConst, bool sourceForced,
+            out TypeConversionKind typeConversionKind)
         {
             var csConversion = _csCompilation.ClassifyConversion(csType, csConvertedType);
 
             bool isConvertToString =
                         (vbConversion.IsString || vbConversion.IsReference && vbConversion.IsNarrowing)  && vbConvertedType.SpecialType == SpecialType.System_String;
-            bool isArithmetic = vbNode.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AddExpression,
-                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.SubtractExpression,
-                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.MultiplyExpression,
-                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DivideExpression,
-                Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.IntegerDivideExpression);
             if (!csConversion.Exists || csConversion.IsUnboxing) {
                 if (ConvertStringToCharLiteral(vbNode, vbType, vbConvertedType, out _)) {
                     typeConversionKind =
@@ -199,33 +273,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                     typeConversionKind = vbConvertedType.IsEnumType() && !csConversion.Exists ? TypeConversionKind.EnumConversionThenCast : TypeConversionKind.Conversion;
                     return true;
                 }
-            } else if (vbConversion.IsWidening && vbConversion.IsNumeric && csConversion.IsImplicit &&
-                       csConversion.IsNumeric) {
-                // Safe overapproximation: A cast is really only needed to help resolve the overload for the operator/method used.
-                // e.g. When VB "&" changes to C# "+", there are lots more overloads available that implicit casts could match.
-                // e.g. sbyte * ulong uses the decimal * operator in VB. In C# it's ambiguous - see ExpressionTests.vb "TestMul".
-                typeConversionKind = TypeConversionKind.NonDestructiveCast;
-                return true;
             } else if (csConversion.IsExplicit && csConversion.IsEnumeration || csConversion.IsBoxing) {
                 typeConversionKind = TypeConversionKind.NonDestructiveCast;
                 return true;
-            } else if (isArithmetic) {
-                var arithmeticConversion =
-                    vbCompilation.ClassifyConversion(vbConvertedType,
-                        vbCompilation.GetTypeByMetadataName("System.Int32"));
-                if (arithmeticConversion.IsWidening && !arithmeticConversion.IsIdentity) {
-                    typeConversionKind = TypeConversionKind.Conversion;
-                    return true;
-                }
-            } else if (csConversion.IsExplicit && csConversion.IsNumeric && vbConversion.IsNarrowing && isConst) {
-                typeConversionKind = IsImplicitConstantConversion(vbNode) ? TypeConversionKind.Identity : TypeConversionKind.NonDestructiveCast;
-                return true;
-            } else if (csConversion.IsExplicit && vbConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
-                typeConversionKind = IsImplicitConstantConversion(vbNode) ? TypeConversionKind.Identity :
-                    TypeConversionKind.Conversion;
-                return true;
-            } else if (csConversion.IsExplicit && vbConversion.IsIdentity && csConversion.IsNumeric && vbType.TypeKind != TypeKind.Enum) {
-                typeConversionKind = TypeConversionKind.Conversion;
+            } else if (vbConversion.IsNumeric && csConversion.IsNumeric) {
+                // For widening, implicit, a cast is really only needed to help resolve the overload for the operator/method used.
+                // e.g. When VB "&" changes to C# "+", there are lots more overloads available that implicit casts could match.
+                // e.g. sbyte * ulong uses the decimal * operator in VB. In C# it's ambiguous - see ExpressionTests.vb "TestMul".
+                typeConversionKind =
+                    isConst && IsImplicitConstantConversion(vbNode) || csConversion.IsIdentity || !sourceForced && IsExactTypeNumericLiteral(vbNode, vbConvertedType) ? TypeConversionKind.Identity :
+                    csConversion.IsImplicit || vbType.IsNumericType() ? TypeConversionKind.NonDestructiveCast
+                    : TypeConversionKind.Conversion;
                 return true;
             } else if (isConvertToString && vbType.SpecialType == SpecialType.System_Object) {
                 typeConversionKind = TypeConversionKind.Conversion;
@@ -241,6 +299,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             typeConversionKind = csConversion.IsIdentity ? TypeConversionKind.Identity : TypeConversionKind.Unknown;
             return false;
         }
+
+        private static bool IsExactTypeNumericLiteral(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType) => 
+            vbNode is VBSyntax.LiteralExpressionSyntax literal &&
+            LiteralConversions.ConvertLiteralNumericValueOrNull(literal.Token.Value, vbConvertedType) is {};
 
         private bool IsImplicitConstantConversion(VBSyntax.ExpressionSyntax vbNode)
         {
@@ -267,7 +329,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return TypeConversionKind.Unknown;
         }
 
-        public ExpressionSyntax AddExplicitConvertTo(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
+        public ExpressionSyntax AddExplicitConvertTo(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
         {
             var displayType = targetType.ToMinimalDisplayString(_semanticModel, vbNode.SpanStart);
             if (csNode is InvocationExpressionSyntax invoke &&
@@ -323,16 +385,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             EnumCastThenConversion,
             NullableBool,
             StringToCharArray,
+            DelegateConstructor
         }
 
-        public static bool ConvertStringToCharLiteral(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax node,
+        public static bool ConvertStringToCharLiteral(VBSyntax.ExpressionSyntax node,
             ITypeSymbol type,
             ITypeSymbol convertedType,
             out char chr)
         {
 
             var preferChar = node.Parent is VBSyntax.PredefinedCastExpressionSyntax pces &&
-                               pces.Keyword.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.CCharKeyword)
+                               pces.Keyword.IsKind(VBasic.SyntaxKind.CCharKeyword)
                 || convertedType?.SpecialType == SpecialType.System_Char;
             if (preferChar && node.SkipIntoParens() is VBSyntax.LiteralExpressionSyntax les &&
                 les.Token.Value is string str &&
@@ -344,5 +407,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             chr = default;
             return false;
         }
+
+        public static SyntaxKind? GetNonCompoundOrNull(SyntaxKind kind) =>
+            kind switch {
+                SyntaxKind.DivideAssignmentExpression=> SyntaxKind.DivideExpression,
+                SyntaxKind.MultiplyAssignmentExpression => SyntaxKind.MultiplyExpression,
+                SyntaxKind.AddAssignmentExpression => SyntaxKind.AddExpression,
+                SyntaxKind.SubtractAssignmentExpression=> SyntaxKind.SubtractExpression,
+                SyntaxKind.ModuloAssignmentExpression=> SyntaxKind.ModuloExpression,
+                SyntaxKind.LeftShiftAssignmentExpression=> SyntaxKind.LeftShiftExpression,
+                SyntaxKind.RightShiftAssignmentExpression=> SyntaxKind.RightShiftExpression,
+                _ => null
+            };
     }
 }

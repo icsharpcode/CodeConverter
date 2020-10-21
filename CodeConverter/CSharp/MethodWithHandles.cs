@@ -38,18 +38,33 @@ namespace ICSharpCode.CodeConverter.CSharp
             IReadOnlyCollection<MethodWithHandles> methodsWithHandles)
         {
             // It should be safe to use the underscore name since in VB the compiler generates a backing field with that name, and errors if you try to clash with it
-            var variablesToMap = decl.Variables
-                .Select(v => (Variable: v, HasEvents: HasEvents(methodsWithHandles, v.Identifier), NewId: SyntaxFactory.Identifier("_" + v.Identifier.Text))).ToArray();
-            var fieldDecl = decl.WithVariables(SyntaxFactory.SeparatedList(
-                variablesToMap.Select(m => m.HasEvents ? m.Variable.WithIdentifier(m.NewId) : m.Variable)
-            ));
-            var fieldModifiers = SyntaxFactory.TokenList(new[] {SyntaxFactory.Token(SyntaxKind.PrivateKeyword)}.Concat(convertedModifiers.Where(m => !m.IsCsVisibility(false, false))));
-            yield return SyntaxFactory.FieldDeclaration(attributes, fieldModifiers, fieldDecl);
-            foreach (var mapping in variablesToMap.Where(v => v.HasEvents)) {
-                yield return GetDeclarationsForFieldBackedProperty(methodsWithHandles, attributes, convertedModifiers,
-                    decl.Type, mapping.Variable.Identifier,
-                    mapping.NewId);
+            var (nonRenamedEvents, renamedEvents) = decl.Variables
+                .SplitOn(
+                    v => HasEvents(methodsWithHandles, v.Identifier),
+                    v => (Variable: v, NewId: SyntaxFactory.Identifier("_" + v.Identifier.Text))
+                );
+
+            if (nonRenamedEvents.Any()) {
+                var nonRenamedDecl = decl.WithVariables(SyntaxFactory.SeparatedList(nonRenamedEvents.Select(v => v.Variable)));
+                yield return SyntaxFactory.FieldDeclaration(attributes, convertedModifiers, nonRenamedDecl);
             }
+
+            if (renamedEvents.Any()) {
+                var nonRenamedDecl = decl.WithVariables(SyntaxFactory.SeparatedList(renamedEvents.Select(v => v.Variable.WithIdentifier(v.NewId))));
+                yield return SyntaxFactory.FieldDeclaration(attributes, MakePrivate(convertedModifiers), nonRenamedDecl);
+            }
+
+            foreach (var (variable, newId) in renamedEvents) {
+                yield return GetDeclarationsForFieldBackedProperty(methodsWithHandles, attributes, convertedModifiers,
+                    decl.Type, variable.Identifier,
+                    newId);
+            }
+        }
+
+        private static SyntaxTokenList MakePrivate(SyntaxTokenList convertedModifiers)
+        {
+            var noVisibility = convertedModifiers.Where(m => !m.IsCsVisibility(false, false));
+            return SyntaxFactory.TokenList(new[] {SyntaxFactory.Token(SyntaxKind.PrivateKeyword)}.Concat(noVisibility));
         }
 
         private static bool HasEvents(IReadOnlyCollection<MethodWithHandles> methodsWithHandles, SyntaxToken propertyId) => 

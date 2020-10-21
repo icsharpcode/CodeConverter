@@ -8,11 +8,15 @@ using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using Microsoft.CodeAnalysis;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
     internal class LiteralConversions
     {
+        private static readonly char[] _vbTypeLiteralNonHexSpecifierCharacters = "%&@!#SILRUsilru".ToCharArray();
+        private static readonly char[] _vbTypeLiteralSpecifierCharacters = "%&@!#SILDFRUsildfru".ToCharArray();
+
         public static ExpressionSyntax GetLiteralExpression(object value, string textForUser = null, ITypeSymbol convertedType = null)
         {
             if (value is string valueTextForCompiler) {
@@ -28,40 +32,36 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (value is bool)
                 return SyntaxFactory.LiteralExpression((bool)value ? CSSyntaxKind.TrueLiteralExpression : CSSyntaxKind.FalseLiteralExpression);
 
-            textForUser = ConvertNumericLiteralValueText(textForUser ?? value.ToString(), value, convertedType);
+            // The value is passed as an int from VB expression: "3"
+            // Important to use value text, otherwise "10.0" gets coerced to and integer literal of 10 which can change semantics
+            value = ConvertLiteralNumericValueOrNull(value, convertedType) ?? value;
 
+            textForUser = ConvertNumericLiteralValueText(textForUser ?? value.ToString(), value);
+            
             switch (value)
             {
                 case byte b:
-                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, b));
+                    return NumericLiteral(SyntaxFactory.Literal(textForUser, b));
                 case sbyte sb:
-                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, sb));
+                    return NumericLiteral(SyntaxFactory.Literal(textForUser, sb));
                 case short s:
-                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, s));
+                    return NumericLiteral(SyntaxFactory.Literal(textForUser, s));
                 case ushort us:
-                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, us));
+                    return NumericLiteral(SyntaxFactory.Literal(textForUser, us));
                 case int i:
-                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, i));
+                    return NumericLiteral(SyntaxFactory.Literal(textForUser, i));
                 case uint u:
-                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, u));
+                    return NumericLiteral(SyntaxFactory.Literal(textForUser, u));
                 case long l:
-                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, l));
+                    return NumericLiteral(SyntaxFactory.Literal(textForUser, l));
                 case ulong ul:
-                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, ul));
+                    return NumericLiteral(SyntaxFactory.Literal(textForUser, ul));
                 case double d:
-                    // The value is passed as a double from VB expression: "3.5F" and "3.5M"
-                    // Important to use value text, otherwise "10.0" gets coerced to and integer literal of 10 which can change semantics
-                    var syntaxToken = convertedType?.SpecialType switch
-                    {
-                        SpecialType.System_Single => SyntaxFactory.Literal(textForUser, (float)d),
-                        SpecialType.System_Decimal => SyntaxFactory.Literal(textForUser, (decimal)d),
-                        _ => SyntaxFactory.Literal(textForUser, d)
-                    };
-                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, syntaxToken);
+                    return NumericLiteral(SyntaxFactory.Literal(textForUser, d));
                 case float f:
-                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, f));
+                    return NumericLiteral(SyntaxFactory.Literal(textForUser, f));
                 case decimal dec:
-                    return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(textForUser, dec));
+                    return NumericLiteral(SyntaxFactory.Literal(textForUser, dec));
                 case char c:
                     return SyntaxFactory.LiteralExpression(CSSyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal(c));
                 case DateTime dt:
@@ -73,6 +73,24 @@ namespace ICSharpCode.CodeConverter.CSharp
                     throw new ArgumentOutOfRangeException(nameof(value), value, null);
             }
         }
+
+        private static LiteralExpressionSyntax NumericLiteral(SyntaxToken literal) => SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, literal);
+        
+        /// <summary>
+        /// See LiteralConversions.GetLiteralExpression
+        /// These are all the literals where the type will already be correct from the literal declaration
+        /// </summary>
+        public static object ConvertLiteralNumericValueOrNull(object value, ITypeSymbol vbConvertedType) =>
+            vbConvertedType?.SpecialType switch {
+                SpecialType.System_Int32 => Convert.ToInt32(value), //Special case since it's the C# default and doesn't need a suffix like the rest
+                SpecialType.System_UInt32 => Convert.ToUInt32(value),
+                SpecialType.System_Int64 => Convert.ToInt64(value),
+                SpecialType.System_UInt64=> Convert.ToUInt64(value),
+                SpecialType.System_Single => Convert.ToSingle(value),
+                SpecialType.System_Double => Convert.ToDouble(value),
+                SpecialType.System_Decimal => Convert.ToDecimal(value),
+                _ => null
+            };
 
         internal static string GetQuotedStringTextForUser(string textForUser, string valueTextForCompiler)
         {
@@ -112,54 +130,43 @@ namespace ICSharpCode.CodeConverter.CSharp
         ///  https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/data-types/type-characters
         ///  https://stackoverflow.com/a/166762/1128762
         /// </summary>
-        private static string ConvertNumericLiteralValueText(string textForUser, object value, ITypeSymbol convertedTypeOrNull)
+        private static string ConvertNumericLiteralValueText(string textForUser, object value)
         {
-            var replacements = new Dictionary<string, string> {
-                {"C", ""},
-                {"I", ""},
-                {"%", ""},
-                {"UI", "U"},
-                {"S", ""},
-                {"US", ""},
-                {"UL", "UL"},
-                {"D", "M"},
-                {"@", "M"},
-                {"R", "D"},
-                {"#", "D"},
-                {"F", "F"}, // Normalizes casing
-                {"!", "F"},
-                {"L", "L"}, // Normalizes casing
-                {"&", "L"},
+            bool canBeBinaryOrHex = value switch {
+                double _ => false,
+                float _ => false,
+                decimal _ => false,
+                _ => true
             };
 
-            var isHex = textForUser.StartsWith("&H", StringComparison.OrdinalIgnoreCase);
+            textForUser = textForUser.TrimEnd(_vbTypeLiteralNonHexSpecifierCharacters);
 
-            // Be careful not to replace only the "S" in "US" for example
-            var longestMatchingReplacement = replacements.Where(t => textForUser.EndsWith(t.Key, StringComparison.OrdinalIgnoreCase) && (!isHex || !new[] { "C", "D", "F" }.Contains(t.Key)))
-                .GroupBy(t => t.Key.Length).OrderByDescending(g => g.Key).FirstOrDefault()?.SingleOrDefault();
-
-
-            if (longestMatchingReplacement != null) {
-                textForUser = textForUser.ReplaceEnd(longestMatchingReplacement.Value);
-            } else if (textForUser.Contains(".")) {
-                if (convertedTypeOrNull?.SpecialType == SpecialType.System_Single) textForUser += "F";
-                if (convertedTypeOrNull?.SpecialType == SpecialType.System_Decimal) textForUser += "M";
+            if (canBeBinaryOrHex && textForUser.StartsWith("&H", StringComparison.OrdinalIgnoreCase)) {
+                textForUser = "0x" + textForUser.Substring(2);
+            } else if (canBeBinaryOrHex && textForUser.StartsWith("&B", StringComparison.OrdinalIgnoreCase)) {
+                textForUser = "0b" + textForUser.Substring(2);
+            } else if (textForUser.StartsWith("&", StringComparison.OrdinalIgnoreCase)) {
+                textForUser = value.ToString();
+            } else {
+                textForUser = textForUser.TrimEnd(_vbTypeLiteralSpecifierCharacters);
             }
 
-            if (textForUser.Length <= 2 || !textForUser.StartsWith("&")) return textForUser;
-
-            if (isHex)
-            {
-                return "0x" + textForUser.Substring(2);
+            if (value switch {
+                ulong _ => "UL",
+                long _ => "L",
+                uint _ => "U",
+                int _ => "",
+                ushort _ => "",
+                short _ => "",
+                double _ => "d",
+                float _ => "f",
+                decimal _ => "m",
+                _ => default
+            } is {} suffix ) {
+                textForUser += suffix;
             }
 
-            if (textForUser.StartsWith("&B", StringComparison.OrdinalIgnoreCase))
-            {
-                return "0b" + textForUser.Substring(2);
-            }
-
-            // Octal or something unknown that can't be represented with C# literals
-            return value.ToString();
+            return textForUser;
         }
     }
 }

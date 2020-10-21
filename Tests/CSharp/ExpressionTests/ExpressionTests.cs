@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -41,10 +42,28 @@ using System.Runtime.InteropServices;
 
 internal partial class TestClass
 {
-    private void TestMethod([Optional, DateTimeConstant(599266080000000000/* #1/1/1900# */)] DateTime pDate)
+    private void TestMethod([Optional, DateTimeConstant(599266080000000000L/* #1/1/1900# */)] DateTime pDate)
     {
         var rslt = DateTime.Parse(""1900-01-01"");
         var rslt2 = DateTime.Parse(""2002-08-13 12:14:00"");
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ImplicitCastToDoubleLiteralAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Class DoubleLiteral
+    Private Function Test(myDouble As Double) As Double
+        Return Test(2.37D) + Test(&HFFUL) 'VB: D means decimal, C#: D means double
+    End Function
+End Class", @"
+internal partial class DoubleLiteral
+{
+    private double Test(double myDouble)
+    {
+        return Test(2.37d) + Test(255d); // VB: D means decimal, C#: D means double
     }
 }");
         }
@@ -65,7 +84,7 @@ public partial class Issue213
 {
     private static DateTime x = DateTime.Parse(""1990-01-01"");
 
-    private void Y([Optional, DateTimeConstant(627667488000000000/* Global.Issue213.x */)] DateTime opt)
+    private void Y([Optional, DateTimeConstant(627667488000000000L/* Global.Issue213.x */)] DateTime opt)
     {
     }
 }");
@@ -116,8 +135,7 @@ Public Class EnumToString
         Dim si_Txt As Short = CShort(2 ^ Tes.TEST2)
     End Sub
 End Class",
-@"using System;
-using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+                @"using System;
 
 public partial class EnumToString
 {
@@ -130,7 +148,7 @@ public partial class EnumToString
     private void TEest2(Tes aEnum)
     {
         string sxtr_Tmp = ""Use"" + ((short)aEnum).ToString();
-        short si_Txt = Conversions.ToShort(Math.Pow(2, (double)Tes.TEST2));
+        short si_Txt = (short)Math.Pow(2d, (double)Tes.TEST2);
     }
 }");
         }
@@ -146,7 +164,7 @@ public partial class EnumToString
         Foo(0)
     End Sub
 End Class",
-@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+                @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {
@@ -159,6 +177,30 @@ public partial class Class1
         Foo(0);
     }
 }");
+        }
+
+        [Fact] // https://github.com/icsharpcode/CodeConverter/issues/636
+        public async Task CharacterizeCompilationErrorsWithLateBoundImplicitObjectNarrowingAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+    Public Sub Rounding()
+        Dim o as Object = 3.0f
+        Dim x = Math.Round(o, 2)
+    End Sub
+End Class",
+@"using System;
+
+public partial class VisualBasicClass
+{
+    public void Rounding()
+    {
+        object o = 3.0f;
+        var x = Math.Round(o, (object)2);
+    }
+}
+2 target compilation errors:
+CS1503: Argument 1: cannot convert from 'object' to 'double'
+CS1503: Argument 2: cannot convert from 'object' to 'int'");
         }
 
         [Fact]
@@ -175,7 +217,7 @@ public partial class Class1
         Dim t1 As Integer = EnumVariable
     End Sub
 End Class",
-@"
+                @"
 public partial class MyTest
 {
     public enum TestEnum : int
@@ -206,7 +248,7 @@ End Enum
 Public Class MyTest
     Public MyEnum As FilePermissions = FilePermissions.None + FilePermissions.Create
 End Class",
-@"using System;
+                @"using System;
 
 [Flags()]
 public enum FilePermissions : int
@@ -245,7 +287,7 @@ public partial class MyTest
 
     End Sub
 End Class",
-@"
+                @"
 public partial class Class1
 {
     public enum E
@@ -293,7 +335,7 @@ public partial class Class1
 
     End Sub
 End Module",
-@"using System;
+                @"using System;
 
 internal static partial class Module1
 {
@@ -445,6 +487,19 @@ public partial class Issue495
     {
         return Array.Empty<int>();
     }
+}");
+        }
+
+        [Fact]
+        public async Task Empty2DArrayExpressionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Public Class Empty2DArray
+    Dim data(,) As Double = {}
+End Class", @"
+public partial class Empty2DArray
+{
+    private double[,] data = new double[,] { };
 }");
         }
 
@@ -1031,7 +1086,7 @@ internal partial class TestClass
         {
             if (b > 0)
                 return a / (double)b;
-            return 0;
+            return 0d;
         };
         Func<int, int, int> test3 = (a, b) => a % b;
         test(3);
@@ -1092,6 +1147,53 @@ internal partial class TestClass
         Action simpleAssignmentAction = () => x = 1;
         Action nonBlockAction = () => Console.WriteLine(""Statement"");
         Action ifAction = () => { if (true) return; };
+    }
+}");
+        }
+
+        [Fact]
+        public async Task AnonymousLambdaTypeConversionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class AnonymousLambdaTypeConversionTest
+    Public Sub CallThing(thingToCall As [Delegate])
+    End Sub
+
+    Public Sub SomeMethod()
+    End Sub
+
+    Public Sub Foo()
+        CallThing(Sub()
+                    SomeMethod()
+                  End Sub)
+        CallThing(Sub(a) SomeMethod())
+        CallThing(Function()
+                    SomeMethod()
+                    Return False
+                  End Function)
+        CallThing(Function(a) False)
+    End Sub
+End Class", @"using System;
+
+public partial class AnonymousLambdaTypeConversionTest
+{
+    public void CallThing(Delegate thingToCall)
+    {
+    }
+
+    public void SomeMethod()
+    {
+    }
+
+    public void Foo()
+    {
+        CallThing(new Action(() => SomeMethod()));
+        CallThing(new Action<object>(a => SomeMethod()));
+        CallThing(new Func<bool>(() =>
+        {
+            SomeMethod();
+            return false;
+        }));
+        CallThing(new Func<object, bool>(a => false));
     }
 }");
         }
@@ -1249,17 +1351,17 @@ internal static partial class Module1
 {
     private const bool a = true;
     private const char b = '\u0001';
-    private const float c = 1;
-    private const double d = 1;
-    private const decimal e = 1;
+    private const float c = 1f;
+    private const double d = 1d;
+    private const decimal e = 1m;
     private const sbyte f = 1;
     private const short g = 1;
     private const int h = 1;
-    private const long i = 1;
+    private const long i = 1L;
     private const byte j = 1;
-    private const uint k = 1;
+    private const uint k = 1U;
     private const ushort l = 1;
-    private const ulong m = 1;
+    private const ulong m = 1UL;
     private const string Nl = ""\r\n"";
 
     public static void Main()
@@ -1372,7 +1474,7 @@ public partial class Class1
 {
     public void Foo()
     {
-        var x = DateAndTime.DateAdd(""m"", 5, DateAndTime.Now);
+        var x = DateAndTime.DateAdd(""m"", 5d, DateAndTime.Now);
     }
 }");
         }
@@ -1418,13 +1520,12 @@ internal static partial class Module1
     Sub Main()
         Dim x As Short = If(True, CShort(50), 100S)
     End Sub
-End Module", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
-
+End Module", @"
 internal static partial class Module1
 {
     public static void Main()
     {
-        short x = true ? Conversions.ToShort(50) : Conversions.ToShort(100);
+        short x = true ? 50 : 100;
     }
 }
 ");
@@ -1465,5 +1566,171 @@ public partial class MoreParsing
 }");
         }
 
+        [Fact]
+        public async Task DecimalToIntegerCompoundOperatorsWithTypeConversionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class Compound
+    Public Sub Operators()
+        Dim anInt As Integer = 123
+        Dim aDec As Decimal = 12.3
+        anInt *= aDec
+        anInt \= aDec
+        anInt /= aDec
+        anInt -= aDec
+        anInt += aDec
+    End Sub
+End Class",
+                @"
+public partial class Compound
+{
+    public void Operators()
+    {
+        int anInt = 123;
+        decimal aDec = 12.3m;
+        anInt = (int)(anInt * aDec);
+        anInt = (int)(anInt / (long)aDec);
+        anInt = (int)(anInt / aDec);
+        anInt = (int)(anInt - aDec);
+        anInt = (int)(anInt + aDec);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task DecimalToShortCompoundOperatorsWithTypeConversionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class Compound
+    Public Sub Operators()
+        Dim aShort As Short = 123
+        Dim aDec As Decimal = 12.3
+        aShort *= aDec
+        aShort \= aDec
+        aShort /= aDec
+        aShort -= aDec
+        aShort += aDec
+    End Sub
+End Class",
+                @"
+public partial class Compound
+{
+    public void Operators()
+    {
+        short aShort = 123;
+        decimal aDec = 12.3m;
+        aShort = (short)(aShort * aDec);
+        aShort = (short)(aShort / (long)aDec);
+        aShort = (short)(aShort / aDec);
+        aShort = (short)(aShort - aDec);
+        aShort = (short)(aShort + aDec);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task IntegerToShortCompoundOperatorsWithTypeConversionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class Compound
+    Public Sub Operators()
+        Dim aShort As Short = 123
+        Dim anInt As Integer= 12
+        aShort *= anInt
+        aShort \= anInt
+        aShort /= anInt
+        aShort -= anInt
+        aShort += anInt
+    End Sub
+End Class",
+                @"
+public partial class Compound
+{
+    public void Operators()
+    {
+        short aShort = 123;
+        int anInt = 12;
+        aShort = (short)(aShort * anInt);
+        aShort = (short)(aShort / anInt);
+        aShort = (short)(aShort / (double)anInt);
+        aShort = (short)(aShort - anInt);
+        aShort = (short)(aShort + anInt);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ShortMultiplicationDeclarationAndAssignmentAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class Compound
+    Public Sub Operators()
+        Dim aShort As Short = 123
+        Dim anotherShort As Short = 234
+        Dim x As Short = aShort * anotherShort
+        x *= aShort ' Implicit cast in C# due to compound operator
+        x = aShort * x
+    End Sub
+End Class",
+                @"
+public partial class Compound
+{
+    public void Operators()
+    {
+        short aShort = 123;
+        short anotherShort = 234;
+        short x = (short)(aShort * anotherShort);
+        x *= aShort; // Implicit cast in C# due to compound operator
+        x = (short)(aShort * x);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ArgumentsAreTypeConvertedAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Imports System.Drawing
+
+Public Class Compound
+    Public Sub TypeCast(someInt As Integer)
+        Dim col = Color.FromArgb(someInt * 255.0F, someInt * 255.0F, someInt * 255.0F)
+        Dim arry = New Single(7/someInt) {}
+    End Sub
+End Class",
+                @"using System.Drawing;
+
+public partial class Compound
+{
+    public void TypeCast(int someInt)
+    {
+        var col = Color.FromArgb((int)(someInt * 255.0f), (int)(someInt * 255.0f), (int)(someInt * 255.0f));
+        var arry = new float[(int)(7d / someInt + 1)];
+    }
+}");
+        }
+
+        [Fact]
+        public async Task NullCoalescingOperatorUsesParenthesisWhenNeededAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+    Public Sub TestMethod(ByVal x As String)
+        Dim a As String = If(x, ""x"")
+        Dim b As String = If(x, ""x"").ToUpper()
+        Dim c As String = $""{If(x, ""x"")}""
+        Dim d As String = $""{If(x, ""x"").ToUpper()}""
+    End Sub
+End Class", @"
+public partial class VisualBasicClass
+{
+    public void TestMethod(string x)
+    {
+        string a = x ?? ""x"";
+        string b = (x ?? ""x"").ToUpper();
+        string c = $""{x ?? ""x""}"";
+        string d = $""{(x ?? ""x"").ToUpper()}"";
+    }
+}");
+        }
     }
 }

@@ -11,6 +11,7 @@ namespace WindowsAppVb
             _Button1.Name = "Button1";
             _CheckBox1.Name = "CheckBox1";
             _Button2.Name = "Button2";
+            _ColumnWithEvent.Name = "ColumnWithEvent";
         }
 
         private void Button1_Click(object sender, EventArgs e)
@@ -65,6 +66,11 @@ namespace WindowsAppVb
         private void Button2_Click(object sender, EventArgs e)
         {
             My.MyProject.Forms.FolderForm.ShowDialog();
+        }
+
+        private void ColumnWithEvent_Disposed(object sender, EventArgs e)
+        {
+            // Just here so that the column is turned into a property
         }
 
         private void WinformsDesignerTest_MouseClick(object sender, MouseEventArgs e) => WinformsDesignerTest_MouseClick();

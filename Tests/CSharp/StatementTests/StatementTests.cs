@@ -928,7 +928,7 @@ internal partial class TestClass
         var matrix2 = new int[4, 3] { { 1, 2, 3 }, { 2, 3, 4 }, { 3, 4, 5 }, { 4, 5, 6 } };
 
         // Combine rank specifiers with initializers of various kinds
-        var rankSpecifiers = new double[2, 2] { { 1.0, 2.0 }, { 3.0, 4.0 } };
+        var rankSpecifiers = new double[2, 2] { { 1.0d, 2.0d }, { 3.0d, 4.0d } };
         var rankSpecifiers2 = new double[2, 2];
 
         // Declare a jagged array
@@ -1106,7 +1106,7 @@ internal partial class Test
     the_beginning:
         ;
         int value = 1;
-        const double myPIe = 2 * Math.PI;
+        const double myPIe = 2d * Math.PI;
         string text = ""This is my text!"";
         goto the_beginning;
     }

@@ -393,7 +393,7 @@ internal partial class Program
     End Sub", @"public void DummyMethod()
 {
     var someArray = new int[] { 1, 2, 3 };
-    for (short index = 0, loopTo = Conversions.ToShort(someArray.Length - 1); index <= loopTo; index++)
+    for (short index = 0, loopTo = (short)(someArray.Length - 1); index <= loopTo; index++)
         Console.WriteLine(index);
 }");
         }
@@ -409,10 +409,10 @@ internal partial class Program
     Next
 End Sub", @"public void Main()
 {
-    float foo = 3.5F;
+    float foo = 3.5f;
     int index;
-    var loopTo = Conversions.ToInteger(Conversion.Int(foo * 3));
-    for (index = Conversions.ToInteger(Conversion.Int(foo)); index <= loopTo; index++)
+    var loopTo = (int)Conversion.Int(foo * 3f);
+    for (index = (int)Conversion.Int(foo); index <= loopTo; index++)
         Console.WriteLine(index);
 }");
         }

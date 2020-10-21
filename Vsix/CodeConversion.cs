@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;
@@ -124,15 +125,17 @@ namespace ICSharpCode.CodeConverter.VsExtension
                 if (!string.IsNullOrWhiteSpace(exceptionsAsString)) {
                     errors.Add(exceptionsAsString);
                 }
+                
+                if (convertedFile.Success) {
+                    files.Add(convertedFile.TargetPathOrNull);
 
-                files.Add(convertedFile.TargetPathOrNull);
+                    if (convertedFile.ConvertedCode.Length > longestFileLength) {
+                        longestFileLength = convertedFile.ConvertedCode.Length;
+                        longestFilePath = convertedFile.TargetPathOrNull;
+                    }
 
-                if (convertedFile.ConvertedCode.Length > longestFileLength) {
-                    longestFileLength = convertedFile.ConvertedCode.Length;
-                    longestFilePath = convertedFile.TargetPathOrNull;
+                    convertedFile.WriteToFile();
                 }
-
-                convertedFile.WriteToFile();
             }
 
             await FinalizeConversionAsync(files, errors, longestFilePath, filesToOverwrite);
@@ -246,11 +249,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             if (selected.Length > 0 && documentText.Length >= selected.End) {
                 documentText = documentText.Substring(selected.Start, selected.Length);
             }
-
-            var textConversionOptions = new TextConversionOptions(DefaultReferences.NetStandard2, documentPath) {
-                AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()
-            };
-            var convertTextOnly = await ProjectConversion.ConvertTextAsync<TLanguageConversion>(documentText, textConversionOptions, CreateOutputWindowProgress(), cancellationToken);
+            var convertTextOnly = await ConvertTextAsync<TLanguageConversion>(documentText, cancellationToken, documentPath);
             convertTextOnly.SourcePathOrNull = documentPath;
             return convertTextOnly;
         }
@@ -306,6 +305,39 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                     return true;
             }
             return false;
+        }
+
+        public async Task PasteAsAsync<TLanguageConversion>(CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
+        {
+            var caretPosition = await VisualStudioInteraction.GetCaretPositionAsync(_serviceProvider);
+
+            _outputWindow.WriteToOutputWindowAsync("Converting clipboard text...", true, true).Forget();
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            string text = Clipboard.GetText();
+
+            var convertTextOnly = await _joinableTaskFactory.RunAsync(async () =>
+                await ConvertTextAsync<TLanguageConversion>(text, cancellationToken)
+            );
+
+            await caretPosition.InsertAsync(convertTextOnly.ConvertedCode);
+
+        }
+
+        private async Task<ConversionResult> ConvertTextAsync<TLanguageConversion>(string text,
+            CancellationToken cancellationToken, string documentPath = null) where TLanguageConversion : ILanguageConversion, new()
+        {
+            return await ProjectConversion.ConvertTextAsync<TLanguageConversion>(text,
+                await CreateTextConversionOptionsAsync(documentPath),
+                cancellationToken: cancellationToken,
+                progress: CreateOutputWindowProgress());
+        }
+
+        private async Task<TextConversionOptions> CreateTextConversionOptionsAsync(string documentPath = null)
+        {
+            return new TextConversionOptions(DefaultReferences.NetStandard2, documentPath) {
+                AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()
+            };
         }
     }
 }
