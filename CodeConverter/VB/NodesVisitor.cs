@@ -1054,7 +1054,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private bool IsReturnValueDiscarded(CSS.ExpressionSyntax node)
         {
-            return node.Parent is CSS.ParenthesizedLambdaExpressionSyntax && _commonConversions.IsVoidLambda(node.Parent) ||
+            return node.Parent is CSS.ParenthesizedLambdaExpressionSyntax ples && _commonConversions.ReturnsVoid(ples) ||
                    node.Parent is CSS.ExpressionStatementSyntax ||
                    node.Parent is CSS.SimpleLambdaExpressionSyntax ||
                    node.Parent is CSS.ForStatementSyntax ||
