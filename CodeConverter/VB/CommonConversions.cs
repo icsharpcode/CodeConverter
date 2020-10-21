@@ -283,13 +283,12 @@ namespace ICSharpCode.CodeConverter.VB
 
         public LambdaExpressionSyntax ConvertLambdaExpression(CSS.AnonymousFunctionExpressionSyntax node, CS.CSharpSyntaxNode body, IEnumerable<ParameterSyntax> parameters, SyntaxTokenList modifiers)
         {
-            var symbol = (IMethodSymbol)ModelExtensions.GetSymbolInfo(_semanticModel, node).Symbol;
             var parameterList = SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters.Select(p => (Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterSyntax)p.Accept(_nodesVisitor))));
             LambdaHeaderSyntax header;
             EndBlockStatementSyntax endBlock;
             SyntaxKind multiLineExpressionKind;
             SyntaxKind singleLineExpressionKind;
-            bool isSub = symbol.ReturnsVoid;
+            bool isSub = IsVoidLambda(node);
             if (isSub) {
                 header = SyntaxFactory.SubLambdaHeader(SyntaxFactory.List<AttributeListSyntax>(),
                     ConvertModifiers(modifiers, TokenContext.Local), parameterList, null);
@@ -321,6 +320,10 @@ namespace ICSharpCode.CodeConverter.VB
 
             return CreateLambdaExpression(singleLineExpressionKind, multiLineExpressionKind, header, statements, endBlock);
 
+        }
+        public bool IsVoidLambda(SyntaxNode node) {
+            var symbol = (IMethodSymbol)_semanticModel.GetSymbolInfo(node).Symbol;
+            return symbol.ReturnsVoid;
         }
 
         private StatementSyntax GetStatementSyntax(VisualBasicSyntaxNode node, Func<ExpressionSyntax, StatementSyntax> create) {

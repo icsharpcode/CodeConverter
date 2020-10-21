@@ -1072,6 +1072,17 @@ End Class
 BC30451: '[Delegate]' is not declared. It may be inaccessible due to its protection level.", conversionOptions: VisualBasic11);
         }
         [Fact]
+        public async Task MultilineStringLiteral_VB11_Async() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"public class TestClass {
+    string someMultiLineString = @""first line
+second line"";
+}",
+@"Public Class TestClass
+    Private someMultiLineString As String = ""first line"" & Microsoft.VisualBasic.vbCrLf & ""second line""
+End Class", conversionOptions: VisualBasic11, hasLineCommentConversionIssue: true);
+        }
+        [Fact]
         public async Task TestCustomEvent_TrivialExpressionAsync()
         {
             await TestConversionCSharpToVisualBasicAsync(
@@ -1346,6 +1357,32 @@ End Class
 
 1 source compilation errors:
 CS0161: 'TestClass.this[int].get': not all code paths return a value");
+        }
+        [Fact]
+        public async Task GenericMethodWithConstraintsAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"using System; //Gets simplified away
+
+public class BaseClass {
+    public virtual void TestMethod<T>(T parameter)
+        where T : class {
+    }
+}
+public class TestClass : BaseClass {
+    public override void TestMethod<T>(T parameter) {
+    }
+}",
+@"Public Class BaseClass
+    Public Overridable Sub TestMethod(Of T As Class)(ByVal parameter As T)
+    End Sub
+End Class
+
+Public Class TestClass
+    Inherits BaseClass
+
+    Public Overrides Sub TestMethod(Of T As Class)(ByVal parameter As T)
+    End Sub
+End Class");
         }
         [Fact]
         public async Task NameMatchesWithTypeDateAsync() {

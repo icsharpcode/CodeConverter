@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading;
+using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
@@ -198,7 +200,8 @@ namespace ICSharpCode.CodeConverter.VB
             List<InheritsStatementSyntax> inherits = new List<InheritsStatementSyntax>();
             List<ImplementsStatementSyntax> implements = new List<ImplementsStatementSyntax>();
             _commonConversions.ConvertBaseList(node, inherits, implements);
-            members.AddRange(_cSharpHelperMethodDefinition.GetExtraMembers());
+            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node) as INamedTypeSymbol;
+            members.AddRange(_cSharpHelperMethodDefinition.GetExtraMembers(declaredSymbol));
             if (CanBeModule(node)) {
                 return SyntaxFactory.ModuleBlock(
                     SyntaxFactory.ModuleStatement(
@@ -236,7 +239,8 @@ namespace ICSharpCode.CodeConverter.VB
             List<InheritsStatementSyntax> inherits = new List<InheritsStatementSyntax>();
             List<ImplementsStatementSyntax> implements = new List<ImplementsStatementSyntax>();
             _commonConversions.ConvertBaseList(node, inherits, implements);
-            members.AddRange(_cSharpHelperMethodDefinition.GetExtraMembers());
+            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node) as INamedTypeSymbol;
+            members.AddRange(_cSharpHelperMethodDefinition.GetExtraMembers(declaredSymbol));
 
             return SyntaxFactory.StructureBlock(
                 SyntaxFactory.StructureStatement(
@@ -350,7 +354,7 @@ namespace ICSharpCode.CodeConverter.VB
                         lhs,
                         (TypeSyntax)d.Type.Accept(TriviaConvertingVisitor));
 
-                    var tryCast = CreateInlineAssignmentExpression(left, right);
+                    var tryCast = CreateInlineAssignmentExpression(left, right, _semanticModel.GetSymbolInfo(node.Expression).Symbol.ContainingType);
                     var nothingExpression = SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression,
                         SyntaxFactory.Token(SyntaxKind.NothingKeyword));
                     return SyntaxFactory.IsNotExpression(tryCast, nothingExpression);
@@ -857,10 +861,10 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitLiteralExpression(CSS.LiteralExpressionSyntax node)
         {
             if (node.IsKind(CS.SyntaxKind.DefaultLiteralExpression)) {
-                return VisualBasicSyntaxFactory.NothingExpression;
-            } else if (node.IsKind(CS.SyntaxKind.NullLiteralExpression)) {
                 return CreateTypedNothing(node);
-            } else if (node.IsKind(CS.SyntaxKind.StringLiteralExpression) && CS.CSharpExtensions.IsVerbatimStringLiteral(node.Token)) {
+            } else if (node.IsKind(CS.SyntaxKind.NullLiteralExpression)) {
+                return VisualBasicSyntaxFactory.NothingExpression;
+            } else if (node.IsKind(CS.SyntaxKind.StringLiteralExpression) && CS.CSharpExtensions.IsVerbatimStringLiteral(node.Token) && (int)LanguageVersion >= 14) {
                 return SyntaxFactory.StringLiteralExpression(
                     SyntaxFactory.StringLiteralToken(
                         node.Token.Text.Substring(1),
@@ -990,7 +994,7 @@ namespace ICSharpCode.CodeConverter.VB
                     return SyntaxFactory.NamedFieldInitializer((IdentifierNameSyntax)left, right);
                 }
             }
-            return CreateInlineAssignmentExpression(left, right);
+            return CreateInlineAssignmentExpression(left, right, _semanticModel.GetSymbolInfo(node.Left).Symbol.ContainingType);
         }
 
         private static MemberAccessExpressionSyntax MemberAccess(params string[] nameParts)
@@ -1006,9 +1010,9 @@ namespace ICSharpCode.CodeConverter.VB
             return lhs;
         }
 
-        private ExpressionSyntax CreateInlineAssignmentExpression(ExpressionSyntax left, ExpressionSyntax right)
+        private ExpressionSyntax CreateInlineAssignmentExpression(ExpressionSyntax left, ExpressionSyntax right, INamedTypeSymbol containingType)
         {
-            _cSharpHelperMethodDefinition.AddInlineAssignMethod = true;
+            _cSharpHelperMethodDefinition.AddAssignMethod(containingType);
             return SyntaxFactory.InvocationExpression(
                 SyntaxFactory.IdentifierName(CSharpHelperMethodDefinition.QualifiedInlineAssignMethodName),
                 ExpressionSyntaxExtensions.CreateArgList(left, right)
@@ -1048,12 +1052,13 @@ namespace ICSharpCode.CodeConverter.VB
             }
         }
 
-        private static bool IsReturnValueDiscarded(CSS.ExpressionSyntax node)
+        private bool IsReturnValueDiscarded(CSS.ExpressionSyntax node)
         {
-            return node.Parent is CSS.ExpressionStatementSyntax ||
-                node.Parent is CSS.SimpleLambdaExpressionSyntax ||
-                node.Parent is CSS.ForStatementSyntax ||
-                node.Parent.IsParentKind(CS.SyntaxKind.SetAccessorDeclaration);
+            return node.Parent is CSS.ParenthesizedLambdaExpressionSyntax && _commonConversions.IsVoidLambda(node.Parent) ||
+                   node.Parent is CSS.ExpressionStatementSyntax ||
+                   node.Parent is CSS.SimpleLambdaExpressionSyntax ||
+                   node.Parent is CSS.ForStatementSyntax ||
+                   node.Parent.IsParentKind(CS.SyntaxKind.SetAccessorDeclaration);
         }
 
         private AssignmentStatementSyntax MakeAssignmentStatement(CSS.AssignmentExpressionSyntax node, ExpressionSyntax left, ExpressionSyntax right)
@@ -1575,8 +1580,9 @@ namespace ICSharpCode.CodeConverter.VB
         {
             var convertedExceptionExpression = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
             if (IsReturnValueDiscarded(node)) return SyntaxFactory.ThrowStatement(convertedExceptionExpression);
-
-            _cSharpHelperMethodDefinition.AddThrowMethod = true;
+            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node.Ancestors()
+                        .First(x => x is CSS.ClassDeclarationSyntax || x is CSS.StructDeclarationSyntax)) as INamedTypeSymbol; 
+            _cSharpHelperMethodDefinition.AddThrowMethod(declaredSymbol);
             var convertedType = _semanticModel.GetTypeInfo(node.Parent).ConvertedType ?? _compilation.GetTypeByMetadataName("System.Object");
             var typeName = _commonConversions.GetFullyQualifiedNameSyntax(convertedType);
             var throwEx = SyntaxFactory.GenericName(CSharpHelperMethodDefinition.QualifiedThrowMethodName, SyntaxFactory.TypeArgumentList(typeName));

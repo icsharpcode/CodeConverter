@@ -7,13 +7,10 @@ namespace ICSharpCode.CodeConverter.Tests.VB
     public class SpecialConversionTests : ConverterTestBase
     {
         [Fact]
-        public async Task TestSimpleInlineAssignAsync()
-        {
+        public async Task TestSimpleInlineAssignAsync() {
             await TestConversionCSharpToVisualBasicAsync(
-                @"class TestClass
-{
-    void TestMethod()
-    {
+                @"class TestClass {
+    void TestMethod() {
         int a, b;
         b = a = 5;
     }
@@ -34,6 +31,37 @@ End Class
 
 1 target compilation errors:
 BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to its protection level.");
+        }
+        [Fact]
+        public async Task DoNotGenerateAssignInSeveralClasses_ObsoleteShouldAlsoBeFullQualifiedAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"class TestClass {
+    void TestMethod() {
+        int a, b;
+        b = a = 5;
+    }
+}
+class TestClass2 { }",
+@"Friend Class TestClass
+    Private Sub TestMethod()
+        Dim a, b As Integer
+        b = CSharpImpl.__Assign(a, 5)
+    End Sub
+
+    Private Class CSharpImpl
+        <System.Obsolete(""Please refactor calling code to use normal Visual Basic assignment"")>
+        Shared Function __Assign(Of T)(ByRef target As T, value As T) As T
+            target = value
+            Return value
+        End Function
+    End Class
+End Class
+
+Friend Class TestClass2
+End Class
+
+1 target compilation errors:
+BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to its protection level.", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
 
         [Fact]
@@ -631,19 +659,15 @@ End Class");
 }",
                 @"Namespace System
     Public Class TestClass
-        Private test As Integer
+        Private testField As Integer
 
         Public ReadOnly Property Test As Integer
             Get
-                Return Me.test
+                Return testField
             End Get
         End Property
     End Class
-End Namespace
-
-2 target compilation errors:
-BC30260: 'Test' is already declared as 'Private test As Integer' in this class.
-BC31429: 'test' is ambiguous because multiple kinds of members with this name exist in class 'TestClass'.");
+End Namespace");
         }
 
         [Fact]
