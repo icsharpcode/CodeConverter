@@ -127,15 +127,6 @@ End Class");
     Public Bar As String
 End Class");
         }
-        public class TestClass {
-            public void TestMethod(int b) {
-                int a;
-                DoAction(() => a = b);
-            }
-            public void DoAction(System.Action action) {
-                action();
-            }
-        }
         [Fact]
         public async Task BadAssignInCaseOfSubAsync() {
             await TestConversionCSharpToVisualBasicAsync(
