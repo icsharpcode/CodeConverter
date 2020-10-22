@@ -57,7 +57,7 @@ namespace ICSharpCode.CodeConverter.VB
 
         private int _placeholder = 1;
         public CommentConvertingVisitorWrapper<VisualBasicSyntaxNode> TriviaConvertingVisitor { get; }
-        public LanguageVersion LanguageVersion { get; private set; }
+        public LanguageVersion LanguageVersion { get => _vbViewOfCsSymbols.Options.ParseOptions.LanguageVersion; }
 
         private string GeneratePlaceholder(string v)
         {
@@ -65,7 +65,7 @@ namespace ICSharpCode.CodeConverter.VB
         }
 
         public NodesVisitor(Document document, CS.CSharpCompilation compilation, SemanticModel semanticModel,
-            VisualBasicCompilation vbViewOfCsSymbols, SyntaxGenerator vbSyntaxGenerator, int numberOfLines, LanguageVersion languageVersion)
+            VisualBasicCompilation vbViewOfCsSymbols, SyntaxGenerator vbSyntaxGenerator, int numberOfLines)
         {
             _document = document;
             _compilation = compilation;
@@ -75,7 +75,6 @@ namespace ICSharpCode.CodeConverter.VB
             TriviaConvertingVisitor = new CommentConvertingVisitorWrapper<VisualBasicSyntaxNode>(this);
             _commonConversions = new CommonConversions(semanticModel, vbSyntaxGenerator, TriviaConvertingVisitor);
             _cSharpHelperMethodDefinition = new CSharpHelperMethodDefinition();
-            LanguageVersion = languageVersion;
         }
 
         public override VisualBasicSyntaxNode DefaultVisit(SyntaxNode node)

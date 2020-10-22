@@ -27,7 +27,7 @@ namespace ICSharpCode.CodeConverter.VB
             var vbSyntaxGenerator = SyntaxGenerator.GetGenerator(vbReferenceProject);
             var numberOfLines = tree.GetLineSpan(root.FullSpan).EndLinePosition.Line;
 
-            var visualBasicSyntaxVisitor = new NodesVisitor(document, (CS.CSharpCompilation)compilation, semanticModel, vbViewOfCsSymbols, vbSyntaxGenerator, numberOfLines, ((VisualBasicParseOptions)vbReferenceProject?.ParseOptions).LanguageVersion);
+            var visualBasicSyntaxVisitor = new NodesVisitor(document, (CS.CSharpCompilation)compilation, semanticModel, vbViewOfCsSymbols, vbSyntaxGenerator, numberOfLines);
             var converted = (VBSyntax.CompilationUnitSyntax)root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
 
             return optionalOperations.MapSourceTriviaToTargetHandled(root, converted, document);
