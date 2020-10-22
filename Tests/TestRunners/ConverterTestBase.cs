@@ -41,8 +41,7 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
             };
             VisualBasic11 = new TextConversionOptions(DefaultReferences.NetStandard2) {
                 RootNamespaceOverride = string.Empty,
-                TargetCompilationOptionsOverride = options,
-                LanguageVersionOverride = LanguageVersion.VisualBasic11,
+                TargetCompilationOptionsOverride = options.WithParseOptions(new VisualBasicParseOptions(LanguageVersion.VisualBasic11)),
                 ShowCompilationErrors = true
             };
         }

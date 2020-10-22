@@ -33,17 +33,15 @@ namespace ICSharpCode.CodeConverter.VB
             OptionalOperations = new OptionalOperations(conversionOptions.AbandonOptionalTasksAfter, progress, cancellationToken);
             var vbCompilationOptions =
                 (VisualBasicCompilationOptions)conversionOptions.TargetCompilationOptionsOverride ??
-                VisualBasicCompiler.CreateCompilationOptions(conversionOptions.RootNamespaceOverride);
+                VisualBasicCompiler.CreateCompilationOptions(conversionOptions.RootNamespaceOverride)
+                    .WithParseOptions(VisualBasicCompiler.ParseOptions);
 
             if (conversionOptions.RootNamespaceOverride != null) {
                 vbCompilationOptions = vbCompilationOptions.WithRootNamespace(conversionOptions.RootNamespaceOverride);
             }
 
             _vbCompilationOptions = vbCompilationOptions;
-            _vbParseOptions = VisualBasicCompiler.ParseOptions;
-            var languageVersion = conversionOptions.LanguageVersionOverride as Microsoft.CodeAnalysis.VisualBasic.LanguageVersion?;
-            if(languageVersion != null)
-                _vbParseOptions = _vbParseOptions.WithLanguageVersion(languageVersion.Value);
+            _vbParseOptions = vbCompilationOptions.ParseOptions;
             RootNamespace = conversionOptions.RootNamespaceOverride;
         }
         
