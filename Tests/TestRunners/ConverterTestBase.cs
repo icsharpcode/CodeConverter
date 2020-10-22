@@ -24,7 +24,8 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
         private readonly bool _testVbtoCsCommentsByDefault = true;
         private readonly string _rootNamespace;
 
-        protected TextConversionOptions EmptyNamespaceOptionStrictOff { get; set; }
+        protected TextConversionOptions EmptyNamespaceOptionStrictOff { get; }
+        protected TextConversionOptions VisualBasic11 { get; }
 
         public ConverterTestBase(string rootNamespace = null)
         {
@@ -36,6 +37,11 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
                                 .WithOptionInfer(true);
             EmptyNamespaceOptionStrictOff = new TextConversionOptions(DefaultReferences.NetStandard2) {
                 RootNamespaceOverride = string.Empty, TargetCompilationOptionsOverride = options,
+                ShowCompilationErrors = true
+            };
+            VisualBasic11 = new TextConversionOptions(DefaultReferences.NetStandard2) {
+                RootNamespaceOverride = string.Empty,
+                TargetCompilationOptionsOverride = options.WithParseOptions(new VisualBasicParseOptions(LanguageVersion.VisualBasic11)),
                 ShowCompilationErrors = true
             };
         }

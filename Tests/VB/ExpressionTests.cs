@@ -127,6 +127,48 @@ End Class");
     Public Bar As String
 End Class");
         }
+        [Fact]
+        public async Task BadAssignInCaseOfSubAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"public class TestClass {
+    public void TestMethod(int b) {
+        int a;
+        DoAction(() => a = b);
+        int c = DoFunc(() => a = b);
+    }
+    public void DoAction(System.Action action) {
+        action();
+    }
+    public int DoFunc(System.Func<int> func) {
+        return func();
+    }
+}", @"Public Class TestClass
+    Public Sub TestMethod(ByVal b As Integer)
+        Dim a As Integer
+        DoAction(Sub() a = b)
+        Dim c As Integer = Me.DoFunc(Function() CSharpImpl.__Assign(a, b))
+    End Sub
+
+    Public Sub DoAction(ByVal action As Action)
+        action()
+    End Sub
+
+    Public Function DoFunc(ByVal func As Func(Of Integer)) As Integer
+        Return func()
+    End Function
+
+    Private Class CSharpImpl
+        <Obsolete(""Please refactor calling code to use normal Visual Basic assignment"")>
+        Shared Function __Assign(Of T)(ByRef target As T, value As T) As T
+            target = value
+            Return value
+        End Function
+    End Class
+End Class
+
+1 target compilation errors:
+BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to its protection level.");
+        }
 
         [Fact]
         public async Task IfIsPatternExpressionAsync()
@@ -217,6 +259,35 @@ End Class
 
 1 target compilation errors:
 BC30451: 'CSharpImpl.__Throw' is not declared. It may be inaccessible due to its protection level.");
+        }
+        [Fact]
+        public async Task DoNotGenerateSeveralThrowExpression_ObsoleteAndExceptionShouldBeFullQualifiedAsync()
+        {
+            await TestConversionCSharpToVisualBasicAsync(
+@"class TestClass {
+    void TestMethod(string str) {
+        bool result = (str == """") ? throw new System.Exception(""empty"") : false;
+    }
+}
+class TestClass2 { }",
+@"Friend Class TestClass
+    Private Sub TestMethod(ByVal str As String)
+        Dim result As Boolean = If(Equals(str, """"), CSharpImpl.__Throw(Of Boolean)(New System.Exception(""empty"")), False)
+    End Sub
+
+    Private Class CSharpImpl
+        <System.Obsolete(""Please refactor calling code to use normal throw statements"")>
+        Shared Function __Throw(Of T)(ByVal e As System.Exception) As T
+            Throw e
+        End Function
+    End Class
+End Class
+
+Friend Class TestClass2
+End Class
+
+1 target compilation errors:
+BC30451: 'CSharpImpl.__Throw' is not declared. It may be inaccessible due to its protection level.", conversionOptions: EmptyNamespaceOptionStrictOff);
         }
 
         [Fact]
@@ -983,7 +1054,7 @@ End Class");
         }
 
         [Fact]
-        public async Task Issue486_MustCastNothingAsync() {
+        public async Task Issue486_MustCastForTernaryAsync() {
             await TestConversionCSharpToVisualBasicAsync(
 @"public class WhyWeNeedToCastNothing
 {
@@ -996,9 +1067,73 @@ End Class");
 @"Public Class WhyWeNeedToCastNothing
     Public Sub Example(ByVal vbInitValue As Integer?)
         Dim withDefault = If(vbInitValue IsNot Nothing, 7, DirectCast(Nothing, Integer?))
-        Dim withNull = If(vbInitValue IsNot Nothing, 8, DirectCast(Nothing, Integer?))
+        Dim withNull = If(vbInitValue IsNot Nothing, CType(8, Integer?), Nothing)
     End Sub
 End Class");
+        }
+
+        [Fact]
+        public async Task Issue486_MustCastForOverloadAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"using System;
+
+public partial class WhyWeNeedToCastNothing
+{
+    public static void CorrectOverloadChosen()
+    {
+        Console.WriteLine(4011.ToString() + Identity((int?)default));
+        Console.WriteLine(4011.ToString() + Identity((int?)null));
+        Console.WriteLine(""null"" + Identity(default(string)));
+        Console.WriteLine(""null"" + Identity((string)null));
+    }
+
+    public static int? Identity(int? vbInitValue)
+    {
+        return !vbInitValue.HasValue ? 4011 : vbInitValue;
+    }
+
+    public static string Identity(string vbInitValue)
+    {
+        return vbInitValue == null ? ""null"" : vbInitValue;
+    }
+}",
+@"Imports System
+
+Public Partial Class WhyWeNeedToCastNothing
+    Public Shared Sub CorrectOverloadChosen()
+        Console.WriteLine(4011.ToString() & Identity(CType(Nothing, Integer?)))
+        Console.WriteLine(4011.ToString() & Identity(CType(Nothing, Integer?)))
+        Console.WriteLine(""null"" & Identity(DirectCast(Nothing, String)))
+        Console.WriteLine(""null"" & Identity(CStr(Nothing)))
+    End Sub
+
+    Public Shared Function Identity(ByVal vbInitValue As Integer?) As Integer?
+        Return If(Not vbInitValue.HasValue, 4011, vbInitValue)
+    End Function
+
+    Public Shared Function Identity(ByVal vbInitValue As String) As String
+        Return If(Equals(vbInitValue, Nothing), ""null"", vbInitValue)
+    End Function
+End Class");
+        }
+        [Fact]
+        public async Task ErroneousCastNothingAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"using System;
+using System.Linq;
+
+public class Class1 {
+    public void Example(DateTime?[] values) {
+        DateTime? nullableDate = values.SingleOrDefault(x => x != null);
+    }
+}",
+@"Imports System.Linq
+
+Public Class Class1
+    Public Sub Example(ByVal values As Date?())
+        Dim nullableDate As Date? = values.SingleOrDefault(Function(x) x IsNot Nothing)
+    End Sub
+End Class", hasLineCommentConversionIssue: true);
         }
 
         [Fact]

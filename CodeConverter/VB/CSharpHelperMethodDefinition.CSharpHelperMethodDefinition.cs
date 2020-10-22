@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic;
@@ -16,26 +17,36 @@ namespace ICSharpCode.CodeConverter.VB
         public static string QualifiedThrowMethodName { get; } = $"{CSharpImplClassName}.{ThrowMethodName}";
 
         private readonly string _assignMethodDefinition =
-            $@"<Obsolete(""Please refactor calling code to use normal Visual Basic assignment"")>
+$@"<System.Obsolete(""Please refactor calling code to use normal Visual Basic assignment"")>
 Shared Function {InlineAssignMethodName}(Of T)(ByRef target As T, value As T) As T
     target = value
     Return value
 End Function";
 
         private readonly string _throwMethodDefinition =
-            $@"<Obsolete(""Please refactor calling code to use normal throw statements"")>
-Shared Function {ThrowMethodName}(Of T)(ByVal e As Exception) As T
+$@"<System.Obsolete(""Please refactor calling code to use normal throw statements"")>
+Shared Function {ThrowMethodName}(Of T)(ByVal e As System.Exception) As T
     Throw e
 End Function";
 
         private static readonly ICompiler _compiler = new VisualBasicCompiler();
+        List<INamedTypeSymbol> AssignMethodTypeSymbols { get; } = new List<INamedTypeSymbol>();
+        List<INamedTypeSymbol> ThrowMethodTypeSymbols { get; } = new List<INamedTypeSymbol>();
 
-        public bool AddThrowMethod { get; set; }
-        public bool AddInlineAssignMethod { get; set; }
+        public void AddAssignMethod(INamedTypeSymbol symbol) {
+            if(AssignMethodTypeSymbols.Contains(symbol))
+                return;
+            AssignMethodTypeSymbols.Add(symbol);
+        }
+        public void AddThrowMethod(INamedTypeSymbol symbol) {
+            if(ThrowMethodTypeSymbols.Contains(symbol))
+                return;
+            ThrowMethodTypeSymbols.Add(symbol);
+        }
 
-        public IEnumerable<StatementSyntax> GetExtraMembers()
+        public IEnumerable<StatementSyntax> GetExtraMembers(INamedTypeSymbol symbol)
         {
-            var inlineHelperMethods = SyntaxFactory.List(GetInlineHelperMethods());
+            var inlineHelperMethods = SyntaxFactory.List(GetInlineHelperMethods(symbol));
             if (inlineHelperMethods.Any()) {
                 var classStatementSyntax = SyntaxFactory.ClassStatement(CSharpImplClassName).WithModifiers(SyntaxTokenList.Create(SyntaxFactory.Token(SyntaxKind.PrivateKeyword)));
                 yield return SyntaxFactory.ClassBlock(classStatementSyntax,
@@ -44,13 +55,13 @@ End Function";
             }
         }
 
-        private IEnumerable<StatementSyntax> GetInlineHelperMethods()
+        private IEnumerable<StatementSyntax> GetInlineHelperMethods(INamedTypeSymbol symbol)
         {
-            if (AddInlineAssignMethod) {
+            if (AssignMethodTypeSymbols.Contains(symbol)) {
                 yield return Parse(_assignMethodDefinition);
             }
 
-            if (AddThrowMethod) {
+            if (ThrowMethodTypeSymbols.Contains(symbol)) {
                 yield return Parse(_throwMethodDefinition);
             }
         }
