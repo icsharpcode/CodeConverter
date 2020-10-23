@@ -353,7 +353,7 @@ namespace ICSharpCode.CodeConverter.VB
                         lhs,
                         (TypeSyntax)d.Type.Accept(TriviaConvertingVisitor));
 
-                    var tryCast = CreateInlineAssignmentExpression(left, right, _semanticModel.GetSymbolInfo(node.Expression).Symbol.ContainingType);
+                    var tryCast = CreateInlineAssignmentExpression(left, right, GetStructOrClassSymbol(node));
                     var nothingExpression = SyntaxFactory.LiteralExpression(SyntaxKind.NothingLiteralExpression,
                         SyntaxFactory.Token(SyntaxKind.NothingKeyword));
                     return SyntaxFactory.IsNotExpression(tryCast, nothingExpression);
@@ -993,7 +993,7 @@ namespace ICSharpCode.CodeConverter.VB
                     return SyntaxFactory.NamedFieldInitializer((IdentifierNameSyntax)left, right);
                 }
             }
-            return CreateInlineAssignmentExpression(left, right, _semanticModel.GetSymbolInfo(node.Left).Symbol.ContainingType);
+            return CreateInlineAssignmentExpression(left, right, GetStructOrClassSymbol(node));
         }
 
         private static MemberAccessExpressionSyntax MemberAccess(params string[] nameParts)
@@ -1579,9 +1579,7 @@ namespace ICSharpCode.CodeConverter.VB
         {
             var convertedExceptionExpression = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
             if (IsReturnValueDiscarded(node)) return SyntaxFactory.ThrowStatement(convertedExceptionExpression);
-            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node.Ancestors()
-                        .First(x => x is CSS.ClassDeclarationSyntax || x is CSS.StructDeclarationSyntax)) as INamedTypeSymbol; 
-            _cSharpHelperMethodDefinition.AddThrowMethod(declaredSymbol);
+            _cSharpHelperMethodDefinition.AddThrowMethod(GetStructOrClassSymbol(node));
             var convertedType = _semanticModel.GetTypeInfo(node.Parent).ConvertedType ?? _compilation.GetTypeByMetadataName("System.Object");
             var typeName = _commonConversions.GetFullyQualifiedNameSyntax(convertedType);
             var throwEx = SyntaxFactory.GenericName(CSharpHelperMethodDefinition.QualifiedThrowMethodName, SyntaxFactory.TypeArgumentList(typeName));
@@ -1602,7 +1600,9 @@ namespace ICSharpCode.CodeConverter.VB
                     throw new NotSupportedException(condition.GetType() + " in switch case");
             }
         }
-
+        private INamedTypeSymbol GetStructOrClassSymbol(CS.CSharpSyntaxNode node) {
+            return (INamedTypeSymbol)_semanticModel.GetDeclaredSymbol(node.Ancestors().First(x => x is CSS.ClassDeclarationSyntax || x is CSS.StructDeclarationSyntax));
+        }
         private static SyntaxKind GetCaseClauseFromOperatorKind(SyntaxKind syntaxKind)
         {
             switch (syntaxKind) {
