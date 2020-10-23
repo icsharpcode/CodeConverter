@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
@@ -64,6 +65,7 @@ namespace ICSharpCode.CodeConverter.VB
             xml = ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(xml, "vb", "cs");
             xml = TweakDefineConstantsSeparator(xml);
             xml = AddInfer(xml);
+            xml = TweakOutputPaths(xml);
             return xml;
         }
 
@@ -92,6 +94,59 @@ namespace ICSharpCode.CodeConverter.VB
             return s.Substring(0, defineConstantsStart) +
                    s.Substring(defineConstantsStart, defineConstantsEnd - defineConstantsStart).Replace(";", ",") +
                    s.Substring(defineConstantsEnd);
+        }
+
+        private static string TweakOutputPaths(string s)
+        {
+            var startTag = "<PropertyGroup";
+            var endTag = "</PropertyGroup>";
+            var prevGroupEnd = 0;
+            var propertyGroupStart = s.IndexOf(startTag);
+            var propertyGroupEnd = s.IndexOf(endTag);
+            var sb = new StringBuilder();
+
+            if (propertyGroupStart == -1 || propertyGroupEnd == -1)
+                return s;
+
+            do {
+                sb.Append(s.Substring(prevGroupEnd, propertyGroupStart - prevGroupEnd));
+                
+                var curSegment = s.Substring(propertyGroupStart, propertyGroupEnd - propertyGroupStart);
+                curSegment = TweakOutputPath(curSegment);
+                sb.Append(curSegment);
+                prevGroupEnd = propertyGroupEnd;
+                propertyGroupStart = s.IndexOf(startTag, propertyGroupEnd);
+                propertyGroupEnd = s.IndexOf(endTag, prevGroupEnd + 1);
+            } while (propertyGroupStart != -1 && propertyGroupEnd != -1);
+
+            sb.Append(s.Substring(prevGroupEnd));
+
+            return sb.ToString();
+        }
+
+        private static string TweakOutputPath(string s)
+        {
+            var startPathTag = "<OutputPath>";
+            var endPathTag = "</OutputPath>";
+            var pathStart = s.IndexOf(startPathTag);
+            var pathEnd = s.IndexOf(endPathTag);
+
+            if (pathStart == -1 || pathEnd == -1)
+                return s;
+            var filePath = s.Substring(pathStart + startPathTag.Length,
+                pathEnd - (pathStart + startPathTag.Length));
+            
+            var startFileTag = "<DocumentationFile";
+            var endFileTag = "</DocumentationFile>";
+            var fileTagStart = s.IndexOf(startFileTag);
+            var fileTagEnd = s.IndexOf(endFileTag);
+
+            if (fileTagStart == -1 || fileTagEnd == -1)
+                return s;
+
+            return s.Substring(0, fileTagStart) +
+                   s.Substring(fileTagStart, fileTagEnd - fileTagStart).Replace(filePath, "") +
+                   s.Substring(fileTagEnd);
         }
 
         public string TargetLanguage { get; } = LanguageNames.VisualBasic;

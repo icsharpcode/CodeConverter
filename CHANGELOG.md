@@ -9,9 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
+* XML output path needs output path prepending [#641](https://github.com/icsharpcode/CodeConverter/issues/641)
 
 
 ### C# -> VB
+* XML output path needs output path prepending [#641](https://github.com/icsharpcode/CodeConverter/issues/641)
 
 
 ## [8.2.0] - 2020-10-12

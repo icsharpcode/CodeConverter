@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -78,6 +79,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 xml = new Regex(@"(\s*)(</\s*PropertyGroup\s*>)").Replace(xml, $"$1  <LangVersion>{_vbToCsProjectContentsConverter.LanguageVersion}</LangVersion>$1$2", 1);
             }
 
+            xml = tweakDefineConstants(xml);
+            xml = TweakOutputPaths(xml);
+            return xml;
+        }
+
+        private string tweakDefineConstants(string xml)
+        {
             // TODO Find API to, or parse project file sections to remove "<DefineDebug>true</DefineDebug>" + "<DefineTrace>true</DefineTrace>"
             // Then add them to the define constants in the same section, or create one if necessary.
 
@@ -89,6 +97,59 @@ namespace ICSharpCode.CodeConverter.CSharp
             return xml.Substring(0, defineConstantsStart) +
                    xml.Substring(defineConstantsStart, defineConstantsEnd - defineConstantsStart).Replace(",", ";") +
                    xml.Substring(defineConstantsEnd);
+        }
+
+        private static string TweakOutputPaths(string s)
+        {
+            var startTag = "<PropertyGroup";
+            var endTag = "</PropertyGroup>";
+            var prevGroupEnd = 0;
+            var propertyGroupStart = s.IndexOf(startTag);
+            var propertyGroupEnd = s.IndexOf(endTag);
+            var sb = new StringBuilder();
+
+            if (propertyGroupStart == -1 || propertyGroupEnd == -1)
+                return s;
+
+            do {
+                sb.Append(s.Substring(prevGroupEnd, propertyGroupStart - prevGroupEnd));
+
+                var curSegment = s.Substring(propertyGroupStart, propertyGroupEnd - propertyGroupStart);
+                curSegment = TweakOutputPath(curSegment);
+                sb.Append(curSegment);
+                prevGroupEnd = propertyGroupEnd;
+                propertyGroupStart = s.IndexOf(startTag, propertyGroupEnd);
+                propertyGroupEnd = s.IndexOf(endTag, prevGroupEnd + 1);
+            } while (propertyGroupStart != -1 && propertyGroupEnd != -1);
+
+            sb.Append(s.Substring(prevGroupEnd));
+
+            return sb.ToString();
+        }
+
+        private static string TweakOutputPath(string s)
+        {
+            var startPathTag = "<OutputPath>";
+            var endPathTag = "</OutputPath>";
+            var pathStart = s.IndexOf(startPathTag);
+            var pathEnd = s.IndexOf(endPathTag);
+
+            if (pathStart == -1 || pathEnd == -1)
+                return s;
+            var filePath = s.Substring(pathStart + startPathTag.Length,
+                pathEnd - (pathStart + startPathTag.Length));
+
+            var startFileTag = "<DocumentationFile>";
+            var endFileTag = "</DocumentationFile>";
+            var fileTagStart = s.IndexOf(startFileTag);
+            var fileTagEnd = s.IndexOf(endFileTag);
+
+            if (fileTagStart == -1 || fileTagEnd == -1)
+                return s;
+
+            return s.Substring(0, fileTagStart + startFileTag.Length) +
+                   filePath +
+                   s.Substring(fileTagStart + startFileTag.Length);
         }
 
         public string TargetLanguage { get; } = LanguageNames.CSharp;
