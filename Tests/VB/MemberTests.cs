@@ -418,6 +418,33 @@ End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
     End Operator
 End Class");
         }
+ 
+        [Fact]
+        public async Task TestNarrowingWideningConversionOperatorAsync()
+        {
+            await TestConversionCSharpToVisualBasicAsync(@"
+public partial class MyInt
+{
+    public static explicit operator MyInt(int i)
+    {
+        return new MyInt();
+    }
+
+    public static implicit operator int(MyInt myInt)
+    {
+        return 1;
+    }
+}", @"Public Partial Class MyInt
+    Public Shared Narrowing Operator CType(ByVal i As Integer) As MyInt
+        Return New MyInt()
+    End Operator
+
+    Public Shared Widening Operator CType(ByVal myInt As MyInt) As Integer
+        Return 1
+    End Operator
+End Class"
+                );
+        }
 
         [Fact]
         public async Task TestSealedMethodAsync()

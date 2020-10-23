@@ -181,6 +181,10 @@ namespace ICSharpCode.CodeConverter.VB
                     return SyntaxKind.PlusToken;
                 case Microsoft.CodeAnalysis.CSharp.SyntaxKind.MinusMinusToken:
                     return SyntaxKind.MinusToken;
+                case Microsoft.CodeAnalysis.CSharp.SyntaxKind.ExplicitKeyword:
+                    return SyntaxKind.NarrowingKeyword;
+                case Microsoft.CodeAnalysis.CSharp.SyntaxKind.ImplicitKeyword:
+                    return SyntaxKind.WideningKeyword;
             }
 
             throw new NotSupportedException(t + " is not supported!");

@@ -757,7 +757,18 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitConversionOperatorDeclaration(CSS.ConversionOperatorDeclarationSyntax node)
         {
-            return base.VisitConversionOperatorDeclaration(node);
+            ConvertAndSplitAttributes(node.AttributeLists, out var attributes, out var returnAttributes);
+            var body = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, true);
+            var parameterList = (ParameterListSyntax)node.ParameterList?.Accept(TriviaConvertingVisitor);
+            var modifiers = node.GetModifiers();
+            modifiers= modifiers.Add(node.ImplicitOrExplicitKeyword);
+            var stmt = SyntaxFactory.OperatorStatement(
+                attributes, CommonConversions.ConvertModifiers(modifiers, GetMemberContext(node)),
+                SyntaxFactory.Token(SyntaxKind.CTypeKeyword),
+                parameterList,
+                SyntaxFactory.SimpleAsClause(returnAttributes, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor))
+            );
+            return SyntaxFactory.OperatorBlock(stmt, body);
         }
 
         public override VisualBasicSyntaxNode VisitParameterList(CSS.ParameterListSyntax node)

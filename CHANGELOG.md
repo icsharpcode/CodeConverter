@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### C# -> VB
 
+* Converting explicit and implicit operator failed [#659](https://github.com/icsharpcode/CodeConverter/issues/659)
 
 ## [8.2.0] - 2020-10-12
 
