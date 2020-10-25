@@ -136,6 +136,7 @@ Public Class EnumToString
     End Sub
 End Class",
                 @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class EnumToString
 {
@@ -148,7 +149,7 @@ public partial class EnumToString
     private void TEest2(Tes aEnum)
     {
         string sxtr_Tmp = ""Use"" + ((short)aEnum).ToString();
-        short si_Txt = (short)Math.Pow(2d, (double)Tes.TEST2);
+        short si_Txt = Conversions.ToShort(Math.Pow(2d, (double)Tes.TEST2));
     }
 }");
         }
@@ -1520,12 +1521,13 @@ internal static partial class Module1
     Sub Main()
         Dim x As Short = If(True, CShort(50), 100S)
     End Sub
-End Module", @"
+End Module", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
 internal static partial class Module1
 {
     public static void Main()
     {
-        short x = true ? 50 : 100;
+        short x = true ? Conversions.ToShort(50) : (short)100;
     }
 }
 ");
@@ -1682,6 +1684,28 @@ public partial class Compound
         short x = (short)(aShort * anotherShort);
         x *= aShort; // Implicit cast in C# due to compound operator
         x = (short)(aShort * x);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task CintIsConvertedCorrectly()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class Compound
+    Public Sub Operators()
+        Dim do_Tmp As Double = 9999 / 100
+        Dim i_Tmp as Integer = CInt(do_Tmp)
+    End Sub
+End Class",
+                @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class Compound
+{
+    public void Operators()
+    {
+        double do_Tmp = 9999d / 100d;
+        int i_Tmp = Conversions.ToInteger(do_Tmp);
     }
 }");
         }

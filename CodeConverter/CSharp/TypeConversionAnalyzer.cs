@@ -282,7 +282,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 // e.g. sbyte * ulong uses the decimal * operator in VB. In C# it's ambiguous - see ExpressionTests.vb "TestMul".
                 typeConversionKind =
                     isConst && IsImplicitConstantConversion(vbNode) || csConversion.IsIdentity || !sourceForced && IsExactTypeNumericLiteral(vbNode, vbConvertedType) ? TypeConversionKind.Identity :
-                    csConversion.IsImplicit || vbType.IsNumericType() ? TypeConversionKind.NonDestructiveCast
+                    csConversion.IsImplicit || vbType.IsNumericType() && !IsExplicitNumericConversion(vbNode) ? TypeConversionKind.NonDestructiveCast
                     : TypeConversionKind.Conversion;
                 return true;
             } else if (isConvertToString && vbType.SpecialType == SpecialType.System_Object) {
@@ -308,7 +308,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             return _semanticModel.GetOperation(vbNode).Parent is IConversionOperation co && co.IsImplicit && co.Operand.ConstantValue.HasValue;
         }
-
+        private bool IsExplicitNumericConversion(VBSyntax.ExpressionSyntax vbNode)
+        {
+            return _semanticModel.GetOperation(vbNode).Parent is IConversionOperation co &&
+                   !co.IsImplicit; //&& co.Operand.i && co.Operand.ConstantValue.HasValue;
+        }
         private static TypeConversionKind AnalyzeVbConversion(bool alwaysExplicit, ITypeSymbol vbType,
             ITypeSymbol vbConvertedType, Conversion vbConversion)
         {
