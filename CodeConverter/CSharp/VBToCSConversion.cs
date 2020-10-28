@@ -79,12 +79,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 xml = new Regex(@"(\s*)(</\s*PropertyGroup\s*>)").Replace(xml, $"$1  <LangVersion>{_vbToCsProjectContentsConverter.LanguageVersion}</LangVersion>$1$2", 1);
             }
 
-            xml = tweakDefineConstants(xml);
+            xml = TweakDefineConstants(xml);
             xml = TweakOutputPaths(xml);
             return xml;
         }
 
-        private string tweakDefineConstants(string xml)
+        private string TweakDefineConstants(string xml)
         {
             // TODO Find API to, or parse project file sections to remove "<DefineDebug>true</DefineDebug>" + "<DefineTrace>true</DefineTrace>"
             // Then add them to the define constants in the same section, or create one if necessary.

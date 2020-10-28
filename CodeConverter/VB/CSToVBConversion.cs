@@ -103,23 +103,24 @@ namespace ICSharpCode.CodeConverter.VB
             var prevGroupEnd = 0;
             var propertyGroupStart = s.IndexOf(startTag);
             var propertyGroupEnd = s.IndexOf(endTag);
-            var sb = new StringBuilder();
 
-            if (propertyGroupStart == -1 || propertyGroupEnd == -1)
+            if (propertyGroupStart == -1 || propertyGroupEnd == -1) {
                 return s;
+            }
+            
+            var sb = new StringBuilder();
+            while (propertyGroupStart != -1 && propertyGroupEnd != -1) {
+                sb.Append(s, prevGroupEnd, propertyGroupStart - prevGroupEnd);
 
-            do {
-                sb.Append(s.Substring(prevGroupEnd, propertyGroupStart - prevGroupEnd));
-                
                 var curSegment = s.Substring(propertyGroupStart, propertyGroupEnd - propertyGroupStart);
                 curSegment = TweakOutputPath(curSegment);
                 sb.Append(curSegment);
                 prevGroupEnd = propertyGroupEnd;
                 propertyGroupStart = s.IndexOf(startTag, propertyGroupEnd);
                 propertyGroupEnd = s.IndexOf(endTag, prevGroupEnd + 1);
-            } while (propertyGroupStart != -1 && propertyGroupEnd != -1);
+            }
 
-            sb.Append(s.Substring(prevGroupEnd));
+            sb.Append(s, prevGroupEnd, s.Length - prevGroupEnd);
 
             return sb.ToString();
         }
