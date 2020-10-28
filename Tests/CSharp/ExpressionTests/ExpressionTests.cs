@@ -1732,5 +1732,43 @@ public partial class VisualBasicClass
     }
 }");
         }
+
+        [Fact]
+        public async Task NullForgivingInvocationDoesNotThrowAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Public Class AClass
+        Public Shared Sub Identify(ByVal talker As ITraceMessageTalker)
+            talker?.IdentifyTalker(IdentityTraceMessage())
+        End Sub
+
+    Private Shared Function IdentityTraceMessage() As Object
+        Throw New NotImplementedException()
+    End Function
+End Class
+
+Public Interface ITraceMessageTalker
+    Function IdentifyTalker(v As Object) As Object
+End Interface", @"using System;
+
+public partial class AClass
+{
+    public static void Identify(ITraceMessageTalker talker)
+    {
+        talker?.IdentifyTalker(IdentityTraceMessage());
+    }
+
+    private static object IdentityTraceMessage()
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public partial interface ITraceMessageTalker
+{
+    object IdentifyTalker(object v);
+}");
+        }
     }
 }

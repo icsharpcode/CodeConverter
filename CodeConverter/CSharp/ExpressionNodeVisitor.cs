@@ -971,7 +971,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private bool FirstArgDefinitelyEvaluated(VBSyntax.InvocationExpressionSyntax parentInvocation) =>
             parentInvocation.Expression.SkipIntoParens() switch {
                 VBSyntax.IdentifierNameSyntax _ => true,
-                VBSyntax.MemberAccessExpressionSyntax maes => !MayThrow(maes.Expression),
+                VBSyntax.MemberAccessExpressionSyntax maes => maes.Expression is {} exp && !MayThrow(exp),
                 _ => true
             };
 
