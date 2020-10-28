@@ -9,9 +9,9 @@
     <AssemblyName>ICSharpCode.CodeConverter.CodeConv</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter.CodeConv</RootNamespace>
     <ToolCommandName>codeconv</ToolCommandName>
-    <AssemblyVersion>8.2.0.0</AssemblyVersion>
-    <FileVersion>8.2.0.0</FileVersion>
-    <Version>8.2.0</Version>
+    <AssemblyVersion>8.2.1.0</AssemblyVersion>
+    <FileVersion>8.2.1.0</FileVersion>
+    <Version>8.2.1</Version>
     <Description>Bidirectional code converter for VB and C#
 This package contains a command line tool.
 For a nugetted dll, web converter or visual studio extension, see https://github.com/icsharpcode/CodeConverter</Description>

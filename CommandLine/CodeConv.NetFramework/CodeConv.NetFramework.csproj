@@ -6,8 +6,8 @@
     <AssemblyName>ICSharpCode.CodeConverter.CodeConv.NetFramework</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter.CodeConv.NetFramework</RootNamespace>
     <ToolCommandName>codeconv</ToolCommandName>
-    <AssemblyVersion>8.2.0.0</AssemblyVersion>
-    <FileVersion>8.2.0.0</FileVersion>
+    <AssemblyVersion>8.2.1.0</AssemblyVersion>
+    <FileVersion>8.2.1.0</FileVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>

@@ -7,7 +7,7 @@ pr:
 variables:
   solution: '**/CodeConverter.sln'
   buildPlatform: 'Any CPU'
-  buildVersion: '8.2.0.$(Build.BuildId)'
+  buildVersion: '8.2.1.$(Build.BuildId)'
 
 pool:
   vmImage: 'windows-2019'

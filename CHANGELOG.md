@@ -9,6 +9,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
+
+
+### C# -> VB
+
+
+## [8.2.1] - 2020-10-28
+
+
+### Vsix
+
+
+### VB -> C#
 * XML output path needs output path prepending [#641](https://github.com/icsharpcode/CodeConverter/issues/641)
 * Fix issue when converting `?.` operator - [#673](https://github.com/icsharpcode/CodeConverter/issues/673)
 

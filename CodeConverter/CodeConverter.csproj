@@ -13,9 +13,9 @@ See https://github.com/icsharpcode/CodeConverter for a pre-built command line, v
 </Description>
     <Product>Code Converter for C# to/from VB.NET</Product>
     <Copyright>Copyright (c) 2017-2020 AlphaSierraPapa for the CodeConverter team</Copyright>
-    <AssemblyVersion>8.2.0.0</AssemblyVersion>
-    <FileVersion>8.2.0.0</FileVersion>
-    <Version>8.2.0</Version>
+    <AssemblyVersion>8.2.1.0</AssemblyVersion>
+    <FileVersion>8.2.1.0</FileVersion>
+    <Version>8.2.1</Version>
     <PackageId>ICSharpCode.CodeConverter</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

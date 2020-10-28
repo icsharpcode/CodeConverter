@@ -8,8 +8,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <RootNamespace>ICSharpCode.CodeConverter.VsExtension</RootNamespace>
     <AssemblyName>ICSharpCode.CodeConverter.VsExtension</AssemblyName>
-    <AssemblyVersion>8.2.0.0</AssemblyVersion>
-    <FileVersion>8.2.0.0</FileVersion>
+    <AssemblyVersion>8.2.1.0</AssemblyVersion>
+    <FileVersion>8.2.1.0</FileVersion>
     <ProjectGuid>{99498EF8-C9E0-433B-8D7B-EA8E9E66F0C7}</ProjectGuid>
     <ProjectTypeGuids>{82B43B9B-A64C-4715-B499-D71E9CA2BD60};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>

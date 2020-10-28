@@ -3,9 +3,9 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
-    <AssemblyVersion>8.1.9.0</AssemblyVersion>
-    <FileVersion>8.1.9.0</FileVersion>
-    <Version>8.1.9</Version>
+    <AssemblyVersion>8.2.0.0</AssemblyVersion>
+    <FileVersion>8.2.0.0</FileVersion>
+    <Version>8.2.0</Version>
     <LangVersion>8</LangVersion>
     <NoWarn>$(NoWarn);1998</NoWarn>
     <RootNamespace>ICSharpCode.CodeConverter.Web</RootNamespace>

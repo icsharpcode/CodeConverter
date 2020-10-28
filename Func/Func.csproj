@@ -4,8 +4,8 @@
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
     <RootNamespace>ICSharpCode.CodeConverter.Func</RootNamespace>
     <AssemblyName>ICSharpCode.CodeConverter.Func</AssemblyName>
-    <AssemblyVersion>8.2.0.0</AssemblyVersion>
-    <FileVersion>8.2.0.0</FileVersion>
+    <AssemblyVersion>8.2.1.0</AssemblyVersion>
+    <FileVersion>8.2.1.0</FileVersion>
     <_FunctionsSkipCleanOutput>true</_FunctionsSkipCleanOutput>
     <UserSecretsId>1d2f0b91-7e29-4920-8a93-e52863d06c2e</UserSecretsId>
   </PropertyGroup>
