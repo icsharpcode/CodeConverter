@@ -10,20 +10,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 * XML output path needs output path prepending [#641](https://github.com/icsharpcode/CodeConverter/issues/641)
-
+* Fix issue when converting `?.` operator - [#673](https://github.com/icsharpcode/CodeConverter/issues/673)
 
 ### C# -> VB
 * XML output path needs output path prepending [#641](https://github.com/icsharpcode/CodeConverter/issues/641)
-
 * Converting explicit and implicit operator failed [#659](https://github.com/icsharpcode/CodeConverter/issues/659)
 
 ## [8.2.0] - 2020-10-12
-
-
 * Web UI improvements [#644](https://github.com/icsharpcode/CodeConverter/pull/644)
 
 ### Vsix
-
 * Add "Paste as VB/C#" to "Paste special" menu [#622](https://github.com/icsharpcode/CodeConverter/pull/622)
 
 
