@@ -87,6 +87,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         private ExpressionSyntax AddTypeConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded, ITypeSymbol vbType, ITypeSymbol vbConvertedType)
         {
             switch (conversionKind) {
+                case TypeConversionKind.FractionalNumberRoundThenCast:
+                    csNode = AddRoundInvocation(vbNode, csNode, vbType, vbConvertedType);
+                    return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
                 case TypeConversionKind.EnumConversionThenCast:
                     var underlyingType = ((INamedTypeSymbol) vbConvertedType).EnumUnderlyingType;
                     csNode = AddTypeConversion(vbNode, csNode, TypeConversionKind.Conversion, addParenthesisIfNeeded, vbType, underlyingType);
@@ -258,6 +261,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             bool isConvertToString =
                         (vbConversion.IsString || vbConversion.IsReference && vbConversion.IsNarrowing)  && vbConvertedType.SpecialType == SpecialType.System_String;
+            bool isConvertFractionalToInt = 
+                        !csConversion.IsImplicit && vbType.IsFractionalNumericType() && vbConvertedType.IsNumericType() && !vbConvertedType.IsFractionalNumericType();
+
             if (!csConversion.Exists || csConversion.IsUnboxing) {
                 if (ConvertStringToCharLiteral(vbNode, vbType, vbConvertedType, out _)) {
                     typeConversionKind =
@@ -276,13 +282,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             } else if (csConversion.IsExplicit && csConversion.IsEnumeration || csConversion.IsBoxing) {
                 typeConversionKind = TypeConversionKind.NonDestructiveCast;
                 return true;
+            } else if (vbConversion.IsNumeric && csConversion.IsNumeric && isConvertFractionalToInt) {
+                typeConversionKind = TypeConversionKind.FractionalNumberRoundThenCast;
+                return true;
             } else if (vbConversion.IsNumeric && csConversion.IsNumeric) {
                 // For widening, implicit, a cast is really only needed to help resolve the overload for the operator/method used.
                 // e.g. When VB "&" changes to C# "+", there are lots more overloads available that implicit casts could match.
                 // e.g. sbyte * ulong uses the decimal * operator in VB. In C# it's ambiguous - see ExpressionTests.vb "TestMul".
                 typeConversionKind =
                     isConst && IsImplicitConstantConversion(vbNode) || csConversion.IsIdentity || !sourceForced && IsExactTypeNumericLiteral(vbNode, vbConvertedType) ? TypeConversionKind.Identity :
-                    csConversion.IsImplicit || vbType.IsNumericType() && !IsExplicitNumericConversion(vbNode) ? TypeConversionKind.NonDestructiveCast
+                    csConversion.IsImplicit || vbType.IsNumericType() ? TypeConversionKind.NonDestructiveCast
                     : TypeConversionKind.Conversion;
                 return true;
             } else if (isConvertToString && vbType.SpecialType == SpecialType.System_Object) {
@@ -331,6 +340,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return TypeConversionKind.Unknown;
+        }
+
+        public ExpressionSyntax AddRoundInvocation(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
+        {
+ 
+            // Add to specify we're using System for Math.Round
+            _extraUsingDirectives.Add("System");
+            var memberAccess = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                SyntaxFactory.IdentifierName("Math"),  SyntaxFactory.IdentifierName("Round"));
+            var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(csNode)));
+            return SyntaxFactory.InvocationExpression(memberAccess, arguments);
         }
 
         public ExpressionSyntax AddExplicitConvertTo(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
@@ -389,7 +409,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             EnumCastThenConversion,
             NullableBool,
             StringToCharArray,
-            DelegateConstructor
+            DelegateConstructor,
+            FractionalNumberRoundThenCast
         }
 
         public static bool ConvertStringToCharLiteral(VBSyntax.ExpressionSyntax node,

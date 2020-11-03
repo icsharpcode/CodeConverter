@@ -254,6 +254,20 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
             return false;
         }
 
+        public static bool IsFractionalNumericType(this ITypeSymbol? type)
+        {
+            if (type != null) {
+                switch (type.SpecialType) {
+                    case SpecialType.System_Single:
+                    case SpecialType.System_Double:
+                    case SpecialType.System_Decimal:
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         public static bool IsNumericType(this ITypeSymbol? type)
         {
             if (type != null) {
@@ -275,7 +289,6 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
 
             return false;
         }
-
         public static bool ContainsAnonymousType(this ITypeSymbol? symbol)
         {
             switch (symbol) {

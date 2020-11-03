@@ -136,7 +136,6 @@ Public Class EnumToString
     End Sub
 End Class",
                 @"using System;
-using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class EnumToString
 {
@@ -149,7 +148,7 @@ public partial class EnumToString
     private void TEest2(Tes aEnum)
     {
         string sxtr_Tmp = ""Use"" + ((short)aEnum).ToString();
-        short si_Txt = Conversions.ToShort(Math.Pow(2d, (double)Tes.TEST2));
+        short si_Txt = (short)Math.Round(Math.Pow(2d, (double)Tes.TEST2));
     }
 }");
         }
@@ -1521,13 +1520,12 @@ internal static partial class Module1
     Sub Main()
         Dim x As Short = If(True, CShort(50), 100S)
     End Sub
-End Module", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
-
+End Module", @"
 internal static partial class Module1
 {
     public static void Main()
     {
-        short x = true ? Conversions.ToShort(50) : (short)100;
+        short x = true ? 50 : 100;
     }
 }
 ");
@@ -1583,18 +1581,19 @@ public partial class MoreParsing
         anInt += aDec
     End Sub
 End Class",
-                @"
+                @"using System;
+
 public partial class Compound
 {
     public void Operators()
     {
         int anInt = 123;
         decimal aDec = 12.3m;
-        anInt = (int)(anInt * aDec);
-        anInt = (int)(anInt / (long)aDec);
-        anInt = (int)(anInt / aDec);
-        anInt = (int)(anInt - aDec);
-        anInt = (int)(anInt + aDec);
+        anInt = (int)Math.Round(anInt * aDec);
+        anInt = (int)(anInt / (long)Math.Round(aDec));
+        anInt = (int)Math.Round(anInt / aDec);
+        anInt = (int)Math.Round(anInt - aDec);
+        anInt = (int)Math.Round(anInt + aDec);
     }
 }");
         }
@@ -1614,18 +1613,19 @@ public partial class Compound
         aShort += aDec
     End Sub
 End Class",
-                @"
+                @"using System;
+
 public partial class Compound
 {
     public void Operators()
     {
         short aShort = 123;
         decimal aDec = 12.3m;
-        aShort = (short)(aShort * aDec);
-        aShort = (short)(aShort / (long)aDec);
-        aShort = (short)(aShort / aDec);
-        aShort = (short)(aShort - aDec);
-        aShort = (short)(aShort + aDec);
+        aShort = (short)Math.Round(aShort * aDec);
+        aShort = (short)(aShort / (long)Math.Round(aDec));
+        aShort = (short)Math.Round(aShort / aDec);
+        aShort = (short)Math.Round(aShort - aDec);
+        aShort = (short)Math.Round(aShort + aDec);
     }
 }");
         }
@@ -1645,7 +1645,8 @@ public partial class Compound
         aShort += anInt
     End Sub
 End Class",
-                @"
+                @"using System;
+
 public partial class Compound
 {
     public void Operators()
@@ -1654,7 +1655,7 @@ public partial class Compound
         int anInt = 12;
         aShort = (short)(aShort * anInt);
         aShort = (short)(aShort / anInt);
-        aShort = (short)(aShort / (double)anInt);
+        aShort = (short)Math.Round(aShort / (double)anInt);
         aShort = (short)(aShort - anInt);
         aShort = (short)(aShort + anInt);
     }
@@ -1698,14 +1699,14 @@ public partial class Compound
         Dim i_Tmp as Integer = CInt(do_Tmp)
     End Sub
 End Class",
-                @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+                @"using System;
 
 public partial class Compound
 {
     public void Operators()
     {
         double do_Tmp = 9999d / 100d;
-        int i_Tmp = Conversions.ToInteger(do_Tmp);
+        int i_Tmp = (int)Math.Round(do_Tmp);
     }
 }");
         }
@@ -1722,14 +1723,15 @@ Public Class Compound
         Dim arry = New Single(7/someInt) {}
     End Sub
 End Class",
-                @"using System.Drawing;
+                @"using System;
+using System.Drawing;
 
 public partial class Compound
 {
     public void TypeCast(int someInt)
     {
-        var col = Color.FromArgb((int)(someInt * 255.0f), (int)(someInt * 255.0f), (int)(someInt * 255.0f));
-        var arry = new float[(int)(7d / someInt + 1)];
+        var col = Color.FromArgb((int)Math.Round(someInt * 255.0f), (int)Math.Round(someInt * 255.0f), (int)Math.Round(someInt * 255.0f));
+        var arry = new float[(int)Math.Round(7d / someInt + 1)];
     }
 }");
         }

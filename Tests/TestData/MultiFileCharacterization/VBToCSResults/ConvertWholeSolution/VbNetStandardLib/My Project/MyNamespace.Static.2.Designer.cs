@@ -238,7 +238,7 @@ namespace Microsoft.VisualBasic
                         return (byte)i64Value;
                     }
 
-                    return (byte)ParseDouble(Value);
+                    return (byte)Math.Round(ParseDouble(Value));
                 }
                 catch (FormatException e)
                 {
@@ -296,15 +296,15 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is decimal)
                 {
-                    return (byte)(decimal)Value;
+                    return (byte)Math.Round((decimal)Value);
                 }
                 else if (Value is float)
                 {
-                    return (byte)(float)Value;
+                    return (byte)Math.Round((float)Value);
                 }
                 else if (Value is double)
                 {
-                    return (byte)(double)Value;
+                    return (byte)Math.Round((double)Value);
                 }
                 else if (Value is string)
                 {
@@ -330,7 +330,7 @@ namespace Microsoft.VisualBasic
                         return (sbyte)i64Value;
                     }
 
-                    return (sbyte)ParseDouble(Value);
+                    return (sbyte)Math.Round(ParseDouble(Value));
                 }
                 catch (FormatException e)
                 {
@@ -389,15 +389,15 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is decimal)
                 {
-                    return (sbyte)(decimal)Value;
+                    return (sbyte)Math.Round((decimal)Value);
                 }
                 else if (Value is float)
                 {
-                    return (sbyte)(float)Value;
+                    return (sbyte)Math.Round((float)Value);
                 }
                 else if (Value is double)
                 {
-                    return (sbyte)(double)Value;
+                    return (sbyte)Math.Round((double)Value);
                 }
                 else if (Value is string)
                 {
@@ -422,7 +422,7 @@ namespace Microsoft.VisualBasic
                         return (short)i64Value;
                     }
 
-                    return (short)ParseDouble(Value);
+                    return (short)Math.Round(ParseDouble(Value));
                 }
                 catch (FormatException e)
                 {
@@ -480,15 +480,15 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is decimal)
                 {
-                    return (short)(decimal)Value;
+                    return (short)Math.Round((decimal)Value);
                 }
                 else if (Value is float)
                 {
-                    return (short)(float)Value;
+                    return (short)Math.Round((float)Value);
                 }
                 else if (Value is double)
                 {
-                    return (short)(double)Value;
+                    return (short)Math.Round((double)Value);
                 }
                 else if (Value is string)
                 {
@@ -514,7 +514,7 @@ namespace Microsoft.VisualBasic
                         return (ushort)i64Value;
                     }
 
-                    return (ushort)ParseDouble(Value);
+                    return (ushort)Math.Round(ParseDouble(Value));
                 }
                 catch (FormatException e)
                 {
@@ -573,15 +573,15 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is decimal)
                 {
-                    return (ushort)(decimal)Value;
+                    return (ushort)Math.Round((decimal)Value);
                 }
                 else if (Value is float)
                 {
-                    return (ushort)(float)Value;
+                    return (ushort)Math.Round((float)Value);
                 }
                 else if (Value is double)
                 {
-                    return (ushort)(double)Value;
+                    return (ushort)Math.Round((double)Value);
                 }
                 else if (Value is string)
                 {
@@ -606,7 +606,7 @@ namespace Microsoft.VisualBasic
                         return (int)i64Value;
                     }
 
-                    return (int)ParseDouble(Value);
+                    return (int)Math.Round(ParseDouble(Value));
                 }
                 catch (FormatException e)
                 {
@@ -664,15 +664,15 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is decimal)
                 {
-                    return (int)(decimal)Value;
+                    return (int)Math.Round((decimal)Value);
                 }
                 else if (Value is float)
                 {
-                    return (int)(float)Value;
+                    return (int)Math.Round((float)Value);
                 }
                 else if (Value is double)
                 {
-                    return (int)(double)Value;
+                    return (int)Math.Round((double)Value);
                 }
                 else if (Value is string)
                 {
@@ -698,7 +698,7 @@ namespace Microsoft.VisualBasic
                         return (uint)i64Value;
                     }
 
-                    return (uint)ParseDouble(Value);
+                    return (uint)Math.Round(ParseDouble(Value));
                 }
                 catch (FormatException e)
                 {
@@ -757,15 +757,15 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is decimal)
                 {
-                    return (uint)(decimal)Value;
+                    return (uint)Math.Round((decimal)Value);
                 }
                 else if (Value is float)
                 {
-                    return (uint)(float)Value;
+                    return (uint)Math.Round((float)Value);
                 }
                 else if (Value is double)
                 {
-                    return (uint)(double)Value;
+                    return (uint)Math.Round((double)Value);
                 }
                 else if (Value is string)
                 {
@@ -790,7 +790,7 @@ namespace Microsoft.VisualBasic
                         return i64Value;
                     }
 
-                    return (long)ParseDecimal(Value, null);
+                    return (long)Math.Round(ParseDecimal(Value, null));
                 }
                 catch (FormatException e)
                 {
@@ -848,15 +848,15 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is decimal)
                 {
-                    return (long)(decimal)Value;
+                    return (long)Math.Round((decimal)Value);
                 }
                 else if (Value is float)
                 {
-                    return (long)(float)Value;
+                    return (long)Math.Round((float)Value);
                 }
                 else if (Value is double)
                 {
-                    return (long)(double)Value;
+                    return (long)Math.Round((double)Value);
                 }
                 else if (Value is string)
                 {
@@ -882,7 +882,7 @@ namespace Microsoft.VisualBasic
                         return ui64Value;
                     }
 
-                    return (ulong)ParseDecimal(Value, null);
+                    return (ulong)Math.Round(ParseDecimal(Value, null));
                 }
                 catch (FormatException e)
                 {
@@ -941,15 +941,15 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is decimal)
                 {
-                    return (ulong)(decimal)Value;
+                    return (ulong)Math.Round((decimal)Value);
                 }
                 else if (Value is float)
                 {
-                    return (ulong)(float)Value;
+                    return (ulong)Math.Round((float)Value);
                 }
                 else if (Value is double)
                 {
-                    return (ulong)(double)Value;
+                    return (ulong)Math.Round((double)Value);
                 }
                 else if (Value is string)
                 {
