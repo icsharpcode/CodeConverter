@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* CInt wrongly converted to (int)[#658](https://github.com/icsharpcode/CodeConverter/pull/658)
 
 ### C# -> VB
 

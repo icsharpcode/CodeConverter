@@ -164,7 +164,8 @@ internal partial class TestClass
         Dim z As Integer = 8
         z /= 3
     End Sub
-End Class", @"
+End Class", @"using System;
+
 internal partial class TestClass
 {
     private void TestMethod()
@@ -174,7 +175,7 @@ internal partial class TestClass
         double y = 10.0d / 3d;
         y /= 2d;
         int z = 8;
-        z = (int)(z / 3d);
+        z = (int)Math.Round(z / 3d);
     }
 }");
         }
