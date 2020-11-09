@@ -1442,5 +1442,29 @@ End Class");
     End Sub
 End Class");
         }
+        [Fact]
+        public async Task ObjectCreationExpression_FluidCallsAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"using System.Threading.Tasks;
+
+public class TestClass {
+    static void TestMethod() {
+        (new TaskFactory() as TaskFactory)
+            .StartNew(new System.Action(() => { }))
+            .ContinueWith(t => {}, TaskContinuationOptions.ExecuteSynchronously)
+            .ContinueWith(t => {});
+    }
+}",
+@"Imports System.Threading.Tasks
+
+Public Class TestClass
+    Private Shared Sub TestMethod()
+        Call TryCast(New TaskFactory(), TaskFactory).StartNew(New Action(Sub()
+                                                                         End Sub)).ContinueWith(Sub(t)
+                                                                                                End Sub, TaskContinuationOptions.ExecuteSynchronously).ContinueWith(Sub(t)
+                                                                                                                                                                    End Sub)
+    End Sub
+End Class");
+        }
     }
 }

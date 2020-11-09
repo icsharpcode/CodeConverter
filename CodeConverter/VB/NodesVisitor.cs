@@ -1111,12 +1111,7 @@ namespace ICSharpCode.CodeConverter.VB
 
             var vbEventExpression = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
             var argumentListSyntax = (ArgumentListSyntax)node.ArgumentList.Accept(TriviaConvertingVisitor);
-            var invocationExpressionSyntax = SyntaxFactory.InvocationExpression(vbEventExpression, argumentListSyntax);
-            var objectCreationExpression = node.Expression.DescendantNodesAndSelf().OfType<CSS.MemberAccessExpressionSyntax>().FirstOrDefault()?.Expression as CSS.ObjectCreationExpressionSyntax;
-            if (node.Parent is CSS.ExpressionStatementSyntax && objectCreationExpression != null) {
-                return SyntaxFactory.CallStatement(invocationExpressionSyntax);
-            }
-            return invocationExpressionSyntax;
+            return SyntaxFactory.InvocationExpression(vbEventExpression, argumentListSyntax);
         }
 
         private bool TryCreateRaiseEventStatement(CSS.ExpressionSyntax invokedCsExpression,

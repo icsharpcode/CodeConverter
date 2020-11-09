@@ -66,8 +66,19 @@ namespace ICSharpCode.CodeConverter.VB
         private StatementSyntax ConvertSingleExpression(CSS.ExpressionSyntax node)
         {
             var exprNode = node.Accept(_nodesVisitor);
-            if (!(exprNode is StatementSyntax))
-                exprNode = SyntaxFactory.ExpressionStatement((ExpressionSyntax)exprNode);
+            var expression = exprNode as ExpressionSyntax;
+            if (expression != null) {
+                var allDirectExpressions = expression.FollowProperty(exp => exp.TypeSwitch(
+                        (InvocationExpressionSyntax e) => e.Expression,
+                        (ParenthesizedExpressionSyntax e) => e.Expression,
+                        (CastExpressionSyntax e) => e.Expression,
+                        (MemberAccessExpressionSyntax e) => e.Expression
+                    ));
+                if(allDirectExpressions.Last() is ObjectCreationExpressionSyntax)
+                    exprNode = SyntaxFactory.CallStatement(expression);
+                else
+                    exprNode = SyntaxFactory.ExpressionStatement(expression);
+            }
 
             return (StatementSyntax)exprNode;
         }
