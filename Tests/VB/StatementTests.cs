@@ -1414,7 +1414,7 @@ End Class");
         }
 
         [Fact]
-        public async Task ObjectCreationExpressionInInvocationExpressionAsync() {
+        public async Task Call_ObjectCreationExpressionInInvocationExpressionAsync() {
             await TestConversionCSharpToVisualBasicAsync(
 @"class TestClass {
     int field;
@@ -1443,7 +1443,7 @@ End Class");
 End Class");
         }
         [Fact]
-        public async Task ObjectCreationExpression_FluidCallsAsync() {
+        public async Task Call_ObjectCreationExpression_FluidCallsAsync() {
             await TestConversionCSharpToVisualBasicAsync(
 @"using System.Threading.Tasks;
 
@@ -1465,6 +1465,26 @@ Public Class TestClass
                                                                                                                                                                     End Sub)
     End Sub
 End Class");
+        }
+        [Fact]
+        public async Task Call_Lambda_CSharpDoesntHaveThisFunctionalityAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"using System;
+public class TestClass {
+    public void TestMethod() {
+        (() => Console.WriteLine(""Hello""))(); //compilation error in C#
+    }
+}",
+@"Imports System
+
+Public Class TestClass
+    Public Sub TestMethod()
+        Call (Sub() Console.WriteLine(""Hello""))() 'compilation error in C#
+    End Sub
+End Class
+
+1 source compilation errors:
+CS0149: Method name expected");
         }
     }
 }

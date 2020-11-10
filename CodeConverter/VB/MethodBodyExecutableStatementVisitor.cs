@@ -74,7 +74,9 @@ namespace ICSharpCode.CodeConverter.VB
                         (CastExpressionSyntax e) => e.Expression,
                         (MemberAccessExpressionSyntax e) => e.Expression
                     ));
-                if(allDirectExpressions.Last() is ObjectCreationExpressionSyntax)
+                InvocationExpressionSyntax invocationExpression = expression as InvocationExpressionSyntax;
+                var lastExpression = allDirectExpressions.LastOrDefault();
+                if (invocationExpression != null && lastExpression != null && !(lastExpression is IdentifierNameSyntax || lastExpression is InstanceExpressionSyntax))
                     exprNode = SyntaxFactory.CallStatement(expression);
                 else
                     exprNode = SyntaxFactory.ExpressionStatement(expression);
