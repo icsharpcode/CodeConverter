@@ -67,22 +67,21 @@ namespace ICSharpCode.CodeConverter.VB
         {
             var exprNode = node.Accept(_nodesVisitor);
             var expression = exprNode as ExpressionSyntax;
-            if (expression != null) {
-                var allDirectExpressions = expression.FollowProperty(exp => exp.TypeSwitch(
+            return expression != null ? WrapRootExpression(expression) : (StatementSyntax)exprNode;
+        }
+        private StatementSyntax WrapRootExpression(ExpressionSyntax expressionSyntax) {
+            InvocationExpressionSyntax invocationExpression = expressionSyntax as InvocationExpressionSyntax;
+            if (invocationExpression != null) {
+                var lastExpression = expressionSyntax.FollowProperty(exp => exp.TypeSwitch(
                         (InvocationExpressionSyntax e) => e.Expression,
                         (ParenthesizedExpressionSyntax e) => e.Expression,
                         (CastExpressionSyntax e) => e.Expression,
                         (MemberAccessExpressionSyntax e) => e.Expression
-                    ));
-                InvocationExpressionSyntax invocationExpression = expression as InvocationExpressionSyntax;
-                var lastExpression = allDirectExpressions.LastOrDefault();
-                if (invocationExpression != null && lastExpression != null && !(lastExpression is IdentifierNameSyntax || lastExpression is InstanceExpressionSyntax))
-                    exprNode = SyntaxFactory.CallStatement(expression);
-                else
-                    exprNode = SyntaxFactory.ExpressionStatement(expression);
+                    )).LastOrDefault();
+                if (lastExpression != null && !(lastExpression is IdentifierNameSyntax || lastExpression is InstanceExpressionSyntax))
+                    return SyntaxFactory.CallStatement(expressionSyntax);
             }
-
-            return (StatementSyntax)exprNode;
+            return SyntaxFactory.ExpressionStatement(expressionSyntax);
         }
 
         public override SyntaxList<StatementSyntax> VisitExpressionStatement(CSS.ExpressionStatementSyntax node)
