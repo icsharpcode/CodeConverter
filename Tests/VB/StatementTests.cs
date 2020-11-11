@@ -1466,6 +1466,7 @@ Public Class TestClass
     End Sub
 End Class");
         }
+
         [Fact]
         public async Task Call_Lambda_CSharpDoesntHaveThisFunctionalityAsync() {
             await TestConversionCSharpToVisualBasicAsync(
