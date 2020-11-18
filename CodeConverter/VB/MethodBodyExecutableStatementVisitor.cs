@@ -66,10 +66,22 @@ namespace ICSharpCode.CodeConverter.VB
         private StatementSyntax ConvertSingleExpression(CSS.ExpressionSyntax node)
         {
             var exprNode = node.Accept(_nodesVisitor);
-            if (!(exprNode is StatementSyntax))
-                exprNode = SyntaxFactory.ExpressionStatement((ExpressionSyntax)exprNode);
-
-            return (StatementSyntax)exprNode;
+            var expression = exprNode as ExpressionSyntax;
+            return expression != null ? WrapRootExpression(expression) : (StatementSyntax)exprNode;
+        }
+        private StatementSyntax WrapRootExpression(ExpressionSyntax expressionSyntax) {
+            InvocationExpressionSyntax invocationExpression = expressionSyntax as InvocationExpressionSyntax;
+            if (invocationExpression != null) {
+                var lastExpression = expressionSyntax.FollowProperty(exp => exp.TypeSwitch(
+                        (InvocationExpressionSyntax e) => e.Expression,
+                        (ParenthesizedExpressionSyntax e) => e.Expression,
+                        (CastExpressionSyntax e) => e.Expression,
+                        (MemberAccessExpressionSyntax e) => e.Expression
+                    )).LastOrDefault();
+                if (lastExpression != null && !(lastExpression is IdentifierNameSyntax || lastExpression is InstanceExpressionSyntax))
+                    return SyntaxFactory.CallStatement(expressionSyntax);
+            }
+            return SyntaxFactory.ExpressionStatement(expressionSyntax);
         }
 
         public override SyntaxList<StatementSyntax> VisitExpressionStatement(CSS.ExpressionStatementSyntax node)

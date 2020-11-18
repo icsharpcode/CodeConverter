@@ -1414,7 +1414,7 @@ End Class");
         }
 
         [Fact]
-        public async Task ObjectCreationExpressionInInvocationExpressionAsync() {
+        public async Task Call_ObjectCreationExpressionInInvocationExpressionAsync() {
             await TestConversionCSharpToVisualBasicAsync(
 @"class TestClass {
     int field;
@@ -1441,6 +1441,51 @@ End Class");
     Private Sub Initialize()
     End Sub
 End Class");
+        }
+        [Fact]
+        public async Task Call_ObjectCreationExpression_FluidCallsAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"using System.Threading.Tasks;
+
+public class TestClass {
+    static void TestMethod() {
+        (new TaskFactory() as TaskFactory)
+            .StartNew(new System.Action(() => { }))
+            .ContinueWith(t => {}, TaskContinuationOptions.ExecuteSynchronously)
+            .ContinueWith(t => {});
+    }
+}",
+@"Imports System.Threading.Tasks
+
+Public Class TestClass
+    Private Shared Sub TestMethod()
+        Call TryCast(New TaskFactory(), TaskFactory).StartNew(New Action(Sub()
+                                                                         End Sub)).ContinueWith(Sub(t)
+                                                                                                End Sub, TaskContinuationOptions.ExecuteSynchronously).ContinueWith(Sub(t)
+                                                                                                                                                                    End Sub)
+    End Sub
+End Class");
+        }
+
+        [Fact]
+        public async Task Call_Lambda_CSharpDoesntHaveThisFunctionalityAsync() {
+            await TestConversionCSharpToVisualBasicAsync(
+@"using System;
+public class TestClass {
+    public void TestMethod() {
+        (() => Console.WriteLine(""Hello""))(); //compilation error in C#
+    }
+}",
+@"Imports System
+
+Public Class TestClass
+    Public Sub TestMethod()
+        Call (Sub() Console.WriteLine(""Hello""))() 'compilation error in C#
+    End Sub
+End Class
+
+1 source compilation errors:
+CS0149: Method name expected");
         }
     }
 }
