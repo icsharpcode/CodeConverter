@@ -30,8 +30,8 @@
   </ItemGroup>
   <ItemGroup Label="ReSharper test runner requirements">
     <PackageReference Include="Microsoft.CodeAnalysis.Features" Version="3.4.0" />
-    <PackageReference Include="Microsoft.Build" Version="16.4.0" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="16.4.0" />
+    <PackageReference Include="Microsoft.Build" Version="16.8.0" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="16.8.0" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Web" />
