@@ -901,6 +901,11 @@ namespace ICSharpCode.CodeConverter.VB
             if (CS.CSharpExtensions.IsVerbatimStringLiteral(token)) return token.Text;
             return token.ValueText.Replace("\"", "\"\"");
         }
+        private static string ConvertUserFormatText(SyntaxToken token)
+        {
+            if (CS.CSharpExtensions.IsVerbatimStringLiteral(token)) return token.Text;
+            return token.ValueText.Replace("\\\\", "\\");
+        }
 
         public override VisualBasicSyntaxNode VisitInterpolation(CSS.InterpolationSyntax node)
         {
@@ -910,7 +915,7 @@ namespace ICSharpCode.CodeConverter.VB
         public override VisualBasicSyntaxNode VisitInterpolationFormatClause(CSS.InterpolationFormatClauseSyntax node)
         {
             SyntaxToken formatStringToken = SyntaxFactory.InterpolatedStringTextToken(SyntaxTriviaList.Empty,
-                node.FormatStringToken.Text, node.FormatStringToken.ValueText, SyntaxTriviaList.Empty);
+              ConvertUserFormatText(node.FormatStringToken), node.FormatStringToken.ValueText, SyntaxTriviaList.Empty);
             return SyntaxFactory.InterpolationFormatClause(SyntaxFactory.Token(SyntaxKind.ColonToken), formatStringToken);
         }
 

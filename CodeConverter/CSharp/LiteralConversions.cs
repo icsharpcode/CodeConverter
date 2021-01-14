@@ -112,6 +112,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
+        internal static string EscapeEscapeChar(string valueTextForCompiler)
+        {
+                return valueTextForCompiler.Replace("\\", "\\\\");
+        }
         private static string Unquote(string quotedText)
         {
             quotedText = quotedText.Replace('”', '"');

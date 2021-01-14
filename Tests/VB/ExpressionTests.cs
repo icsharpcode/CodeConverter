@@ -63,6 +63,26 @@ End Namespace
 1 source compilation errors:
 CS7000: Unexpected use of an aliased name");
         }
+        [Fact]
+        public async Task StringInterpolationWithDateFormatAsync()
+        {
+            await TestConversionCSharpToVisualBasicAsync(
+                @"using System;
+public class Test
+{
+    public string InterStringDateFormat(DateTime dt)
+    {
+        string a = $""Soak: {dt: d\\.h\\:mm\\:ss\\.f}"";
+        return a;
+    }
+}",  @"Public Class Test
+    Public Function InterStringDateFormat(ByVal dt As Date) As String
+        Dim a As String = $""Soak: {dt: d\.h\:mm\:ss\.f}""
+        Return a
+    End Function
+End Class"
+ ,hasLineCommentConversionIssue:true);
+        }
 
         [Fact]
         public async Task ConditionalExpressionAsync()
