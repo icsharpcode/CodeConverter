@@ -142,12 +142,15 @@ namespace ICSharpCode.CodeConverter.VB
 
         private VariableDeclaratorSyntax ConvertToVariableDeclarator(CSS.DeclarationExpressionSyntax des)
         {
+            
             var id = ((IdentifierNameSyntax)des.Accept(_nodesVisitor)).Identifier;
             var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
             TypeSyntax typeSyntax;
             if (des.Type.IsVar) {
                 var typeSymbol = ModelExtensions.GetSymbolInfo(_semanticModel, des.Type).ExtractBestMatch<ITypeSymbol>();
-                typeSyntax = typeSymbol?.ToVbSyntax(_semanticModel, des.Type);
+                var csTypeSyntax =
+                   CS.SyntaxFactory.ParseTypeName(typeSymbol.ToMinimalDisplayString(_semanticModel, des.Type.SpanStart));
+                typeSyntax = (TypeSyntax)csTypeSyntax.Accept(_nodesVisitor);
             } else {
                 typeSyntax = (TypeSyntax)des.Type.Accept(_nodesVisitor);
             }
