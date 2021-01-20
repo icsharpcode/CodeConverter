@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * CInt wrongly converted to (int)[#658](https://github.com/icsharpcode/CodeConverter/pull/658)
 
 ### C# -> VB
-
+* Generics type parameter missed BC30737 and BC32042 [#682] (https://github.com/icsharpcode/CodeConverter/issues/682)
 
 ## [8.2.1] - 2020-10-28
 

@@ -142,12 +142,13 @@ namespace ICSharpCode.CodeConverter.VB
 
         private VariableDeclaratorSyntax ConvertToVariableDeclarator(CSS.DeclarationExpressionSyntax des)
         {
+            
             var id = ((IdentifierNameSyntax)des.Accept(_nodesVisitor)).Identifier;
             var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
             TypeSyntax typeSyntax;
             if (des.Type.IsVar) {
                 var typeSymbol = ModelExtensions.GetSymbolInfo(_semanticModel, des.Type).ExtractBestMatch<ITypeSymbol>();
-                typeSyntax = typeSymbol?.ToVbSyntax(_semanticModel, des.Type);
+                typeSyntax =(TypeSyntax) VbSyntaxGenerator.TypeExpression(typeSymbol);
             } else {
                 typeSyntax = (TypeSyntax)des.Type.Accept(_nodesVisitor);
             }
@@ -185,7 +186,7 @@ namespace ICSharpCode.CodeConverter.VB
             TypeSyntax typeSyntax;
             if (des.Type.IsVar) {
                 var typeSymbol = ModelExtensions.GetSymbolInfo(_semanticModel, des.Type).ExtractBestMatch<ITypeSymbol>();
-                typeSyntax = typeSymbol?.ToVbSyntax(_semanticModel, des.Type);
+                typeSyntax = (TypeSyntax)VbSyntaxGenerator.TypeExpression(typeSymbol);
             } else {
                 typeSyntax = (TypeSyntax)des.Type.Accept(_nodesVisitor);
             }

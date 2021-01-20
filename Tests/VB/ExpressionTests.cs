@@ -147,10 +147,12 @@ End Class");
     Public Bar As String
 End Class");
         }
+
         [Fact]
-        public async Task BadAssignInCaseOfSubAsync() {
+        public async Task BadAssignInCaseOfSubAsync()
+        {
             await TestConversionCSharpToVisualBasicAsync(
-@"public class TestClass {
+                @"public class TestClass {
     public void TestMethod(int b) {
         int a;
         DoAction(() => a = b);
@@ -245,12 +247,12 @@ class TestClass
 Friend Class TestClass
     Private Shared Function [Do]() As Boolean
         Dim d = New Dictionary(Of String, String)()
-        Dim output As string = Nothing
+        Dim output As String = Nothing
         Return d.TryGetValue("""", output)
     End Function
-End Class");
+End Class",hasLineCommentConversionIssue:true);
         }
-
+ 
         [Fact]
         public async Task ThrowExpressionAsync()
         {
@@ -280,17 +282,18 @@ End Class
 1 target compilation errors:
 BC30451: 'CSharpImpl.__Throw' is not declared. It may be inaccessible due to its protection level.");
         }
+
         [Fact]
         public async Task DoNotGenerateSeveralThrowExpression_ObsoleteAndExceptionShouldBeFullQualifiedAsync()
         {
             await TestConversionCSharpToVisualBasicAsync(
-@"class TestClass {
+                @"class TestClass {
     void TestMethod(string str) {
         bool result = (str == """") ? throw new System.Exception(""empty"") : false;
     }
 }
 class TestClass2 { }",
-@"Friend Class TestClass
+                @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = If(Equals(str, """"), CSharpImpl.__Throw(Of Boolean)(New System.Exception(""empty"")), False)
     End Sub
@@ -307,7 +310,8 @@ Friend Class TestClass2
 End Class
 
 1 target compilation errors:
-BC30451: 'CSharpImpl.__Throw' is not declared. It may be inaccessible due to its protection level.", conversionOptions: EmptyNamespaceOptionStrictOff);
+BC30451: 'CSharpImpl.__Throw' is not declared. It may be inaccessible due to its protection level.",
+                conversionOptions: EmptyNamespaceOptionStrictOff);
         }
 
         [Fact]
@@ -346,11 +350,12 @@ End Class
 1 source compilation errors:
 CS0103: The name 'Console' does not exist in the current context");
         }
+
         [Fact]
         public async Task CoalescingExpression_AssignmentAsync()
         {
             await TestConversionCSharpToVisualBasicAsync(
-@"class TestClass {
+                @"class TestClass {
     string prop;
     string prop2;
     string Property {
@@ -457,10 +462,12 @@ BC30491: Expression does not produce a value.");
     End Sub
 End Class");
         }
+
         [Fact]
-        public async Task CompoundAssignmentTestAsync() {
+        public async Task CompoundAssignmentTestAsync()
+        {
             await TestConversionCSharpToVisualBasicAsync(
-@"public class TestClass {
+                @"public class TestClass {
     void TestMethod() {
         int x = 10;
         x *= 3;
@@ -999,10 +1006,12 @@ BC30451: 'GetProductList' is not declared. It may be inaccessible due to its pro
 BC36593: Expression of type '?' is not queryable. Make sure you are not missing an assembly reference and/or namespace import for the LINQ provider.
 BC32023: Expression is of type '?', which is not a collection type.");
         }
+
         [Fact]
-        public async Task MultilineSubExpressionWithSingleStatementAsync() {
+        public async Task MultilineSubExpressionWithSingleStatementAsync()
+        {
             await TestConversionCSharpToVisualBasicAsync(
-@"public class TestClass : System.Collections.ObjectModel.ObservableCollection<string> {
+                @"public class TestClass : System.Collections.ObjectModel.ObservableCollection<string> {
     public TestClass() {
         PropertyChanged += (o, e) => {
             if (e.PropertyName == ""AnyProperty"") {
@@ -1026,10 +1035,12 @@ BC32023: Expression is of type '?', which is not a collection type.");
     End Sub
 End Class");
         }
+
         [Fact]
-        public async Task MultilineFunctionExpressionWithSingleStatementAsync() {
+        public async Task MultilineFunctionExpressionWithSingleStatementAsync()
+        {
             await TestConversionCSharpToVisualBasicAsync(
-@"using System;
+                @"using System;
 public class TestClass {
     Func<object, string> create = o => {
         if(o is TestClass)
@@ -1059,14 +1070,15 @@ End Class");
         }
 
         [Fact]
-        public async Task PrefixUnaryExpression_SingleLineFunctionAsync() {
+        public async Task PrefixUnaryExpression_SingleLineFunctionAsync()
+        {
             await TestConversionCSharpToVisualBasicAsync(
-@"public class TestClass {
+                @"public class TestClass {
     public TestClass() {
         System.Func<string, bool> func = o => !string.IsNullOrEmpty(""test"");
     }
 }",
-@"Public Class TestClass
+                @"Public Class TestClass
     Public Sub New()
         Dim func As Func(Of String, Boolean) = Function(o) Not String.IsNullOrEmpty(""test"")
     End Sub
@@ -1074,9 +1086,10 @@ End Class");
         }
 
         [Fact]
-        public async Task Issue486_MustCastForTernaryAsync() {
+        public async Task Issue486_MustCastForTernaryAsync()
+        {
             await TestConversionCSharpToVisualBasicAsync(
-@"public class WhyWeNeedToCastNothing
+                @"public class WhyWeNeedToCastNothing
 {
     public void Example(int? vbInitValue)
     {
@@ -1084,7 +1097,7 @@ End Class");
         var withNull = vbInitValue != null ? (int?)8 : null;
     }
 }",
-@"Public Class WhyWeNeedToCastNothing
+                @"Public Class WhyWeNeedToCastNothing
     Public Sub Example(ByVal vbInitValue As Integer?)
         Dim withDefault = If(vbInitValue IsNot Nothing, 7, DirectCast(Nothing, Integer?))
         Dim withNull = If(vbInitValue IsNot Nothing, CType(8, Integer?), Nothing)
@@ -1093,9 +1106,10 @@ End Class");
         }
 
         [Fact]
-        public async Task Issue486_MustCastForOverloadAsync() {
+        public async Task Issue486_MustCastForOverloadAsync()
+        {
             await TestConversionCSharpToVisualBasicAsync(
-@"using System;
+                @"using System;
 
 public partial class WhyWeNeedToCastNothing
 {
@@ -1117,7 +1131,7 @@ public partial class WhyWeNeedToCastNothing
         return vbInitValue == null ? ""null"" : vbInitValue;
     }
 }",
-@"Imports System
+                @"Imports System
 
 Public Partial Class WhyWeNeedToCastNothing
     Public Shared Sub CorrectOverloadChosen()
@@ -1136,10 +1150,12 @@ Public Partial Class WhyWeNeedToCastNothing
     End Function
 End Class");
         }
+
         [Fact]
-        public async Task ErroneousCastNothingAsync() {
+        public async Task ErroneousCastNothingAsync()
+        {
             await TestConversionCSharpToVisualBasicAsync(
-@"using System;
+                @"using System;
 using System.Linq;
 
 public class Class1 {
@@ -1147,7 +1163,7 @@ public class Class1 {
         DateTime? nullableDate = values.SingleOrDefault(x => x != null);
     }
 }",
-@"Imports System.Linq
+                @"Imports System.Linq
 
 Public Class Class1
     Public Sub Example(ByVal values As Date?())
@@ -1157,9 +1173,10 @@ End Class", hasLineCommentConversionIssue: true);
         }
 
         [Fact]
-        public async Task EqualsExpressionAsync() {
+        public async Task EqualsExpressionAsync()
+        {
             await TestConversionCSharpToVisualBasicAsync(
-@"public class TestClass {
+                @"public class TestClass {
     public TestClass() {
         int i = 0;
         int j = 0;
@@ -1188,7 +1205,7 @@ End Class", hasLineCommentConversionIssue: true);
     }
     public void DoSomething() { }
 }",
-@"Public Class TestClass
+                @"Public Class TestClass
     Public Sub New()
         Dim i As Integer = 0
         Dim j As Integer = 0
@@ -1216,6 +1233,63 @@ CS0019: Operator '==' cannot be applied to operands of type 'int' and 'string'
 CS0019: Operator '==' cannot be applied to operands of type 'int' and 'object'
 CS0019: Operator '==' cannot be applied to operands of type 'string' and 'int'
 CS0019: Operator '==' cannot be applied to operands of type 'object' and 'int'");
+        }
+
+        [Fact]
+        public async Task TaskCompletionExpressionAsync()
+        {
+            await TestConversionCSharpToVisualBasicAsync(
+                @"using System;
+using System.Threading.Tasks;
+using System.Collections.Concurrent;
+public class TestClass {
+    private ConcurrentDictionary<Guid,
+        TaskCompletionSource<bool>> pendingOrders;
+    TaskCompletionSource<bool> orderComplete;
+    private void Sdk_OnOrderCompleted(object sender, OrderOutcome e)
+    {
+        this.pendingOrders.TryRemove(e.OrderId, out var tcs);
+        tcs.SetResult(e.Success);
+    }
+}
+
+public class OrderOutcome
+{
+    public Guid OrderId { get; set; }
+    public bool Success { get; set; }
+
+    public OrderOutcome(Guid orderId, bool success)
+    {
+        this.OrderId = orderId;
+        this.Success = success;
+    }
+}
+"
+                , @"Imports System
+Imports System.Threading.Tasks
+Imports System.Collections.Concurrent
+
+Public Class TestClass
+    Private pendingOrders As ConcurrentDictionary(Of Guid, TaskCompletionSource(Of Boolean))
+    Private orderComplete As TaskCompletionSource(Of Boolean)
+
+    Private Sub Sdk_OnOrderCompleted(ByVal sender As Object, ByVal e As OrderOutcome)
+        Dim tcs As TaskCompletionSource(Of Boolean) = Nothing
+        pendingOrders.TryRemove(e.OrderId, tcs)
+        tcs.SetResult(e.Success)
+    End Sub
+End Class
+
+Public Class OrderOutcome
+    Public Property OrderId As Guid
+    Public Property Success As Boolean
+
+    Public Sub New(ByVal orderId As Guid, ByVal success As Boolean)
+        Me.OrderId = orderId
+        Me.Success = success
+    End Sub
+End Class
+",hasLineCommentConversionIssue:true);
         }
     }
 }
