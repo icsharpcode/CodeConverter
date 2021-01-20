@@ -198,16 +198,7 @@ namespace ICSharpCode.CodeConverter.Util
             throw new NotSupportedException();
         }
 
-        public static Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax ToVbSyntax(this ITypeSymbol type, SemanticModel model, TypeSyntax typeSyntax)
-        {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            return VBasic.SyntaxFactory.ParseTypeName(type.ToMinimalDisplayString(model, typeSyntax.SpanStart))
-                .WithLeadingTrivia(typeSyntax.GetLeadingTrivia().ConvertTrivia())
-                .WithTrailingTrivia(typeSyntax.GetTrailingTrivia().ConvertTrivia());
-        }
-
-        public static IEnumerable<TOut> FollowProperty<TOut>(this TOut start, Func<TOut, TOut> getProperty) where TOut : class
+         public static IEnumerable<TOut> FollowProperty<TOut>(this TOut start, Func<TOut, TOut> getProperty) where TOut : class
         {
             return FollowProperty<TOut, TOut>(start, getProperty);
         }

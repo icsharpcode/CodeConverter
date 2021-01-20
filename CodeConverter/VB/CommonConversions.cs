@@ -148,9 +148,7 @@ namespace ICSharpCode.CodeConverter.VB
             TypeSyntax typeSyntax;
             if (des.Type.IsVar) {
                 var typeSymbol = ModelExtensions.GetSymbolInfo(_semanticModel, des.Type).ExtractBestMatch<ITypeSymbol>();
-                var csTypeSyntax =
-                   CS.SyntaxFactory.ParseTypeName(typeSymbol.ToMinimalDisplayString(_semanticModel, des.Type.SpanStart));
-                typeSyntax = (TypeSyntax)csTypeSyntax.Accept(_nodesVisitor);
+                typeSyntax =(TypeSyntax) VbSyntaxGenerator.TypeExpression(typeSymbol);
             } else {
                 typeSyntax = (TypeSyntax)des.Type.Accept(_nodesVisitor);
             }
@@ -188,7 +186,7 @@ namespace ICSharpCode.CodeConverter.VB
             TypeSyntax typeSyntax;
             if (des.Type.IsVar) {
                 var typeSymbol = ModelExtensions.GetSymbolInfo(_semanticModel, des.Type).ExtractBestMatch<ITypeSymbol>();
-                typeSyntax = typeSymbol?.ToVbSyntax(_semanticModel, des.Type);
+                typeSyntax = (TypeSyntax)VbSyntaxGenerator.TypeExpression(typeSymbol);
             } else {
                 typeSyntax = (TypeSyntax)des.Type.Accept(_nodesVisitor);
             }
