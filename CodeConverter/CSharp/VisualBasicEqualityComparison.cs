@@ -65,9 +65,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             bool requiresVbEqualityCheck = typeInfos.Any(t => t.Type?.SpecialType == SpecialType.System_Object);
 
-            if (typeInfos.All(t => t.Type != null) && typeInfos.All(
-                t => t.Type.SpecialType == SpecialType.System_String ||
-                     t.Type.IsArrayOf(SpecialType.System_Char))) {
+            if (typeInfos.All(
+                t => t.Type?.SpecialType == SpecialType.System_String ||
+                     t.Type.IsArrayOf(SpecialType.System_Char) || t.Type == null ) ) {
                 return RequiredType.StringOnly;
             };
 
