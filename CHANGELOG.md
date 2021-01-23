@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [8.2.2] - 2021-01-23
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Improve conversion accuracy for CInt [#658](https://github.com/icsharpcode/CodeConverter/pull/658)
 * Create non-static delegate when converting a shared event[#671](https://github.com/icsharpcode/CodeConverter/issues/671)
 * Improve implicit conversion of delegates [#632](https://github.com/icsharpcode/CodeConverter/issues/632)
