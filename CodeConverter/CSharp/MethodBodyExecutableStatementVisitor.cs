@@ -706,11 +706,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                             vbEquality.VbCoerceToNonNullString(vbExpr, csSwitchExpr, switchExprTypeInfo, true, s.Value, originalExpressionSyntax, caseTypeInfo, false).rhs != originalExpressionSyntax);
 
                         // CSharp requires an explicit cast from the base type (e.g. int) in most cases switching on an enum
-                        var csExpressionToUse = switchExprTypeInfo.ConvertedType?.IsEnumType() == true ^ caseTypeInfo.Type?.IsEnumType() == true ? correctTypeExpressionSyntax.Expr : originalExpressionSyntax;
+                        var isBooleanCase = caseTypeInfo.Type?.SpecialType == SpecialType.System_Boolean;
+                        var csExpressionToUse = IsEnumOrNullableEnum(switchExprTypeInfo.ConvertedType) ^ IsEnumOrNullableEnum(caseTypeInfo.Type) && !isBooleanCase ? correctTypeExpressionSyntax.Expr : originalExpressionSyntax;
 
                         var caseSwitchLabelSyntax = !wrapForStringComparison && correctTypeExpressionSyntax.IsConst && notAlreadyUsed
                             ? (SwitchLabelSyntax)SyntaxFactory.CaseSwitchLabel(csExpressionToUse)
-                            : WrapInCasePatternSwitchLabelSyntax(node, s.Value, csExpressionToUse);
+                            : WrapInCasePatternSwitchLabelSyntax(node, s.Value, csExpressionToUse, isBooleanCase);
                         labels.Add(caseSwitchLabelSyntax);
                     } else if (c is VBSyntax.ElseCaseClauseSyntax) {
                         labels.Add(SyntaxFactory.DefaultSwitchLabel());
@@ -729,7 +730,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                         var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, csLeft, await range.UpperBound.AcceptAsync<ExpressionSyntax>(_expressionVisitor));
                         var withinBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LogicalAndExpression, lowerBoundCheck, upperBoundCheck);
                         labels.Add(VarWhen(varName, withinBounds));
-                    } else throw new NotSupportedException(c.Kind().ToString());
+                    } else {
+                        throw new NotSupportedException(c.Kind().ToString());
+                    }
                 }
 
                 var csBlockStatements = (await ConvertStatementsAsync(block.Statements)).ToList();
@@ -744,6 +747,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             var switchStatementSyntax = ValidSyntaxFactory.SwitchStatement(csSwitchExpr, sections);
             return SingleStatement(switchStatementSyntax);
         }
+
+        private static bool IsEnumOrNullableEnum(ITypeSymbol convertedType) =>
+            convertedType?.IsEnumType() == true || convertedType?.GetNullableUnderlyingType()?.IsEnumType() == true;
 
         private static CasePatternSwitchLabelSyntax VarWhen(SyntaxToken varName, ExpressionSyntax binaryExp)
         {

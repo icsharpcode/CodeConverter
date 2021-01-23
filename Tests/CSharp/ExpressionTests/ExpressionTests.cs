@@ -1525,6 +1525,73 @@ internal static partial class Module1
         }
 
         [Fact]
+        public async Task SelectCaseIssue675Async()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class EnumTest
+    Public Enum UserInterface
+        Unknown
+        Spectrum
+        Wisdom
+    End Enum
+
+    Public Sub OnLoad(ui As UserInterface?)
+        Dim activity = 0
+            Select Case ui
+                Case ui Is Nothing
+                    activity = 1
+                Case UserInterface.Spectrum
+                    activity = 2
+                Case UserInterface.Wisdom
+                    activity = 3
+                Case Else
+                    activity = 4
+            End Select
+    End Sub
+End Class", @"
+public partial class EnumTest
+{
+    public enum UserInterface
+    {
+        Unknown,
+        Spectrum,
+        Wisdom
+    }
+
+    public void OnLoad(UserInterface? ui)
+    {
+        int activity = 0;
+        switch (ui)
+        {
+            case object _ when ui is null:
+                {
+                    activity = 1;
+                    break;
+                }
+
+            case UserInterface.Spectrum:
+                {
+                    activity = 2;
+                    break;
+                }
+
+            case UserInterface.Wisdom:
+                {
+                    activity = 3;
+                    break;
+                }
+
+            default:
+                {
+                    activity = 4;
+                    break;
+                }
+        }
+    }
+}");
+        }
+
+        [Fact]
         public async Task TupleAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
