@@ -45,20 +45,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             var body = (CSharpSyntaxNode)block ?? expressionBody;
+            var isAnonAsync = _semanticModel.GetOperation(vbNode) is IAnonymousFunctionOperation a && a.Symbol.IsAsync;
 
             LambdaExpressionSyntax lambda;
-            if (_semanticModel.GetOperation(vbNode) is IAnonymousFunctionOperation anonFuncOp) {
-                if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null) {
-                    lambda = anonFuncOp.Symbol.IsAsync ? SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body).WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword)) : SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
-                } else {
-                    lambda = anonFuncOp.Symbol.IsAsync ? SyntaxFactory.ParenthesizedLambdaExpression(param, body).WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword)) : SyntaxFactory.ParenthesizedLambdaExpression(param, body);
-                }
+            if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null) {
+                var l = SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
+                lambda = isAnonAsync ? l.WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword)) : l;
             } else {
-                if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null) {
-                    lambda = SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
-                } else {
-                    lambda = SyntaxFactory.ParenthesizedLambdaExpression(param, body);
-                }
+                var l = SyntaxFactory.ParenthesizedLambdaExpression(param, body);
+                lambda = isAnonAsync ? l.WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword)) : l;
             }
 
             return lambda;
