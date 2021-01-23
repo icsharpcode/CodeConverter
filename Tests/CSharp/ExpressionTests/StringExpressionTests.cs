@@ -136,7 +136,7 @@ public partial class Class1
             throw new Exception();
         }
 
-        if (s1 == null)
+        if (string.IsNullOrEmpty(s1))
         {
             // 
         }
@@ -197,7 +197,7 @@ public partial class Class1
             throw new Exception();
         }
 
-        if (s1 == null)
+        if (string.IsNullOrEmpty(s1))
         {
             // 
         }
