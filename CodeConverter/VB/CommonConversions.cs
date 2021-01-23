@@ -147,8 +147,9 @@ namespace ICSharpCode.CodeConverter.VB
             var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
             TypeSyntax typeSyntax;
             if (des.Type.IsVar) {
-                var typeSymbol = ModelExtensions.GetSymbolInfo(_semanticModel, des.Type).ExtractBestMatch<ITypeSymbol>();
-                typeSyntax =(TypeSyntax) VbSyntaxGenerator.TypeExpression(typeSymbol);
+                typeSyntax = ModelExtensions.GetSymbolInfo(_semanticModel, des.Type).ExtractBestMatch<ITypeSymbol>() is { } typeSymbol
+                    ? (TypeSyntax) VbSyntaxGenerator.TypeExpression(typeSymbol)
+                    : null;
             } else {
                 typeSyntax = (TypeSyntax)des.Type.Accept(_nodesVisitor);
             }
