@@ -47,11 +47,20 @@ namespace ICSharpCode.CodeConverter.CSharp
             var body = (CSharpSyntaxNode)block ?? expressionBody;
 
             LambdaExpressionSyntax lambda;
-            if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null) {
-                lambda = SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
+            if (_semanticModel.GetOperation(vbNode) is IAnonymousFunctionOperation anonFuncOp) {
+                if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null) {
+                    lambda = anonFuncOp.Symbol.IsAsync ? SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body).WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword)) : SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
+                } else {
+                    lambda = anonFuncOp.Symbol.IsAsync ? SyntaxFactory.ParenthesizedLambdaExpression(param, body).WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword)) : SyntaxFactory.ParenthesizedLambdaExpression(param, body);
+                }
             } else {
-                lambda = SyntaxFactory.ParenthesizedLambdaExpression(param, body);
+                if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null) {
+                    lambda = SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
+                } else {
+                    lambda = SyntaxFactory.ParenthesizedLambdaExpression(param, body);
+                }
             }
+
             return lambda;
         }
 

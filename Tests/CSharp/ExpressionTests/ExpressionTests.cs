@@ -1095,6 +1095,92 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task AsyncLambdaBodyExpressionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Async Sub TestMethod()
+        Dim test0 As Func(Of Task(Of Integer)) = Async Function()  2
+        Dim test1 As Func(Of Integer, Task(Of Integer)) = Async Function(a) a * 2
+        Dim test2 As Func(Of Integer, Integer, Task(Of Double)) = Async Function(a, b)
+            If b > 0 Then Return a / b
+            Return 0
+        End Function
+
+        Dim test3 As Func(Of Integer, Integer, Task(Of Integer)) = Async Function(a, b) a Mod b
+        Dim test4 As Func(Of Task(Of Integer)) = Async Function()  
+            dim i as Integer = 2
+            dim x as Integer = 3
+            return 3
+        End Function
+        
+Await test1(3)
+    End Sub
+End Class", @"using System;
+using System.Threading.Tasks;
+
+internal partial class TestClass
+{
+    private async void TestMethod()
+    {
+        Func<Task<int>> test0 = async () => 2;
+        Func<int, Task<int>> test1 = async a => a * 2;
+        Func<int, int, Task<double>> test2 = async (a, b) =>
+        {
+            if (b > 0)
+                return a / (double)b;
+            return 0d;
+        };
+        Func<int, int, Task<int>> test3 = async (a, b) => a % b;
+        Func<Task<int>> test4 = async () =>
+        {
+            int i = 2;
+            int x = 3;
+            return 3;
+        };
+        await test1(3);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task AsyncLambdaParameterAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        public Async Function mySub() As Task(Of Boolean)
+            Return Await Me.ExecuteAuthenticatedAsync(Async Function() As Task(Of Boolean)
+                Return Await DoSomethingAsync()
+            End Function)
+
+        End Function
+        Private Async Function ExecuteAuthenticatedAsync(myFunc As Func(Of Task(Of Boolean))) As Task(Of Boolean)
+            Return Await myFunc()
+        End Function
+        Private  Async Function DoSomethingAsync() As Task(Of Boolean)
+            Return True
+        End Function
+End Class", @"using System;
+using System.Threading.Tasks;
+
+internal partial class TestClass
+{
+    public async Task<bool> mySub()
+    {
+        return await ExecuteAuthenticatedAsync(async () => await DoSomethingAsync());
+    }
+
+    private async Task<bool> ExecuteAuthenticatedAsync(Func<Task<bool>> myFunc)
+    {
+        return await myFunc();
+    }
+
+    private async Task<bool> DoSomethingAsync()
+    {
+        return true;
+    }
+}");
+        }
+
+        [Fact]
         public async Task TypeInferredLambdaBodyExpressionAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
