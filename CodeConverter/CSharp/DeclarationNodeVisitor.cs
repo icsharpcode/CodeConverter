@@ -1229,7 +1229,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var delegateDecl = SyntaxFactory.DelegateDeclaration(
                     SyntaxFactory.List<AttributeListSyntax>(),
-                    modifiers,
+                    modifiers.RemoveOnly(m => m.IsKind(CSSyntaxKind.StaticKeyword)),
                     SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword)),
                     delegateName,
                     null,

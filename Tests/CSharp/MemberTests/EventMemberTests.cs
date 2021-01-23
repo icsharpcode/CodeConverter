@@ -24,6 +24,21 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task TestSharedEventAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Class TestClass
+    Public Shared Event TestEvent(a As String)
+End Class", @"
+internal partial class TestClass
+{
+    public static event TestEventEventHandler TestEvent;
+
+    public delegate void TestEventEventHandler(string a);
+}");
+        }
+
+        [Fact]
         public async Task TestEventWithNoDeclaredTypeOrHandlersAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
