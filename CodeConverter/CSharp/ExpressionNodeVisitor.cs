@@ -552,7 +552,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxKind.CollectionInitializerExpression :
                 node.IsParentKind(VBasic.SyntaxKind.CollectionInitializer) && IsComplexInitializer(node) ? SyntaxKind.ComplexElementInitializerExpression :
                 SyntaxKind.ArrayInitializerExpression;
-            var initializers = (await node.Initializers.SelectAsync(i => i.AcceptAsync(TriviaConvertingExpressionVisitor))).Cast<ExpressionSyntax>();
+            var initializers = (await node.Initializers.SelectAsync(async i => {
+                var convertedInitializer = await i.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+                return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(i, convertedInitializer, false);
+            }));
             var initializer = SyntaxFactory.InitializerExpression(initializerKind, SyntaxFactory.SeparatedList(initializers));
             if (isExplicitCollectionInitializer) return initializer;
 

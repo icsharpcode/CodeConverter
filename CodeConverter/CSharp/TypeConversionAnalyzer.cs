@@ -208,8 +208,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private CSS.NameSyntax GetCommonDelegateTypeOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType)
         {
+            var parentExceptParentheses = vbNode.Parent is VBSyntax.ExpressionSyntax parentExp ? parentExp.SkipOutOfParens() : vbNode.Parent;
+            if (vbConvertedType.Name != nameof(Delegate) &&
+                (parentExceptParentheses is VBSyntax.SimpleArgumentSyntax || parentExceptParentheses is VBSyntax.EqualsValueSyntax)) {
+                return null;
+            }
+
             if (vbNode.SkipIntoParens() is VBSyntax.LambdaExpressionSyntax vbLambda &&
-                vbConvertedType.Name == nameof(Delegate) &&
+                (vbConvertedType.TypeKind == TypeKind.Delegate || vbConvertedType.Name == nameof(Delegate) || vbConvertedType.SpecialType == SpecialType.System_Object) &&
                 _semanticModel.GetSymbolInfo(vbLambda).Symbol is IMethodSymbol lambdaSymbol)
             {
                 return CreateCommonDelegateTypeSyntax(lambdaSymbol);

@@ -1238,6 +1238,32 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task AnonymousLambdaArrayTypeConversionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Imports System.Diagnostics
+
+Public Class TargetTypeTestClass
+
+    Private Shared Sub Main()
+        Dim actions As Action() = {Sub() Debug.Print(1), Sub() Debug.Print(2)}
+        Dim objects = New List(Of Object) From {Sub() Debug.Print(3), Sub() Debug.Print(4)}
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+
+public partial class TargetTypeTestClass
+{
+    private static void Main()
+    {
+        var actions = new[] { new Action(() => Debug.Print(1.ToString())), new Action(() => Debug.Print(2.ToString())) };
+        var objects = new List<object>() { new Action(() => Debug.Print(3.ToString())), new Action(() => Debug.Print(4.ToString())) };
+    }
+}");
+        }
+
+        [Fact]
         public async Task AnonymousLambdaTypeConversionAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Class AnonymousLambdaTypeConversionTest
