@@ -47,13 +47,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             var body = (CSharpSyntaxNode)block ?? expressionBody;
             var isAnonAsync = _semanticModel.GetOperation(vbNode) is IAnonymousFunctionOperation a && a.Symbol.IsAsync;
 
+            var asyncKeyword = SyntaxFactory.Token(SyntaxKind.AsyncKeyword);
             LambdaExpressionSyntax lambda;
             if (param.Parameters.Count == 1 && param.Parameters.Single().Type == null) {
                 var l = SyntaxFactory.SimpleLambdaExpression(param.Parameters[0], body);
-                lambda = isAnonAsync ? l.WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword)) : l;
+                lambda = isAnonAsync ? l.WithAsyncKeyword(asyncKeyword) : l;
             } else {
                 var l = SyntaxFactory.ParenthesizedLambdaExpression(param, body);
-                lambda = isAnonAsync ? l.WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword)) : l;
+                lambda = isAnonAsync ? l.WithAsyncKeyword(asyncKeyword) : l;
             }
 
             return lambda;
