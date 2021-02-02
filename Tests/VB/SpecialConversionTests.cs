@@ -475,6 +475,32 @@ End Class");
         }
 
         [Fact]
+        public async Task Issue695HexAndBinaryLiteralsAsync()
+        {
+            await TestConversionCSharpToVisualBasicAsync(
+                @"class Test
+{
+    public decimal Int32Start   = 0x0;
+    public decimal Int32End     = 0x7FFFFFFF;
+    public decimal UInt32Start  = 0x80000000;
+    public decimal UInt32End    = 0xFFFFFFFF;
+    public decimal Int64Start   = 0x100000000;
+    public decimal Int64End     = 0x7FFFFFFFFFFFFFFF;
+    public decimal UInt64Start  = 0x8000000000000000;
+    public decimal UInt64End    = 0xFFFFFFFFFFFFFFFF;
+}", @"Friend Class Test
+    Public Int32Start As Decimal = &H0
+    Public Int32End As Decimal = &H7FFFFFFF
+    Public UInt32Start As Decimal = &H80000000UI
+    Public UInt32End As Decimal = &HFFFFFFFFUI
+    Public Int64Start As Decimal = &H100000000
+    Public Int64End As Decimal = &H7FFFFFFFFFFFFFFF
+    Public UInt64Start As Decimal = &H8000000000000000UL
+    Public UInt64End As Decimal = &HFFFFFFFFFFFFFFFFUL
+End Class");
+        }
+
+        [Fact]
         public async Task CaseConflict_LocalWithLocalAsync() {
             await TestConversionCSharpToVisualBasicAsync(
 @"void Test() {
