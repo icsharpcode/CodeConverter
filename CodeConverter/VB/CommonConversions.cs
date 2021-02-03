@@ -596,7 +596,7 @@ namespace ICSharpCode.CodeConverter.VB
             if (value is bool)
                 return (ExpressionSyntax)((bool)value ? generator.TrueLiteralExpression() : generator.FalseLiteralExpression());
 
-            valueText = valueText != null ? ConvertNumericLiteralValueText(valueText) : value.ToString();
+            valueText = valueText != null ? ConvertNumericLiteralValueText(valueText,value) : value.ToString();
 
             if (value is byte)
                 return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(valueText, (byte)value));
@@ -629,7 +629,7 @@ namespace ICSharpCode.CodeConverter.VB
         /// <summary>
         ///  https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/data-types/type-characters
         /// </summary>
-        private static string ConvertNumericLiteralValueText(string valueText)
+        private static string ConvertNumericLiteralValueText(string valueText,object value)
         {
             var replacements = new Dictionary<string, string> {
                 {"U", "UI"},
@@ -651,6 +651,16 @@ namespace ICSharpCode.CodeConverter.VB
             if (valueText.Length <= 2) return valueText;
 
             if (valueText.StartsWith("0x")) {
+                if (value switch {
+                    ulong _ => "UL",
+                    uint _ => "UI",
+                    _ => default
+                } is { } suffix) {
+                    if (!valueText.EndsWith(suffix)) {
+                        valueText += suffix;
+                    }
+                }
+
                 return "&H" + valueText.Substring(2).Replace("R", "D"); // Undo any accidental replacements that assumed this was a decimal;
             }
 

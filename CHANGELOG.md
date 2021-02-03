@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### C# -> VB
 
+* Hex values in UInt32 and Uint64 ranges not converted properly. [#695](https://github.com/icsharpcode/CodeConverter/pull/695)
 
 ## [8.2.2] - 2021-01-23
 
