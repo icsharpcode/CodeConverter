@@ -608,5 +608,99 @@ public partial class Issue584RaiseEventByRefDemo
 }
 ");
         }
+
+        [Fact]
+        public async Task Test_Issue701_MultiLineHandlesSyntaxAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Form1
+    Private Sub MultiClickHandler(sender As Object, e As EventArgs) Handles Button1.Click,
+                                                                            Button2.Click
+    End Sub
+End Class
+
+Partial Class Form1
+    Inherits System.Windows.Forms.Form
+
+    Private Sub InitializeComponent()
+        Me.Button1 = New System.Windows.Forms.Button()
+        Me.Button2 = New System.Windows.Forms.Button()
+    End Sub
+
+    Friend WithEvents Button1 As System.Windows.Forms.Button
+    Friend WithEvents Button2 As System.Windows.Forms.Button
+End Class",
+@"using System;
+using System.Runtime.CompilerServices;
+
+public partial class Form1
+{
+    private void MultiClickHandler(object sender, EventArgs e)
+    {
+    }
+}
+
+public partial class Form1 : System.Windows.Forms.Form
+{
+    private void InitializeComponent()
+    {
+        _Button1 = new System.Windows.Forms.Button();
+        _Button1.Click += new EventHandler(MultiClickHandler);
+        _Button2 = new System.Windows.Forms.Button();
+        _Button2.Click += new EventHandler(MultiClickHandler);
+    }
+
+    private System.Windows.Forms.Button _Button1;
+
+    internal System.Windows.Forms.Button Button1
+    {
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        get
+        {
+            return _Button1;
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        set
+        {
+            if (_Button1 != null)
+            {
+                _Button1.Click -= MultiClickHandler;
+            }
+
+            _Button1 = value;
+            if (_Button1 != null)
+            {
+                _Button1.Click += MultiClickHandler;
+            }
+        }
+    }
+
+    private System.Windows.Forms.Button _Button2;
+
+    internal System.Windows.Forms.Button Button2
+    {
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        get
+        {
+            return _Button2;
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        set
+        {
+            if (_Button2 != null)
+            {
+                _Button2.Click -= MultiClickHandler;
+            }
+
+            _Button2 = value;
+            if (_Button2 != null)
+            {
+                _Button2.Click += MultiClickHandler;
+            }
+        }
+    }
+}", hasLineCommentConversionIssue:true);
+        }
     }
 }

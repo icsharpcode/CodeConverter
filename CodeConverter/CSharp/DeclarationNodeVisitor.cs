@@ -629,7 +629,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     case VBSyntax.KeywordEventContainerSyntax _:
                         return "this";
                     default:
-                        return CommonConversions.CsEscapedIdentifier(p.GetText().ToString()).Text;
+                        return CommonConversions.CsEscapedIdentifier(p.GetText().ToString().Trim()).Text;
                 }
             }
         }
