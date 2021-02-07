@@ -63,6 +63,64 @@ public partial class TestEventWithNoType
         }
 
         [Fact]
+        public async Task TestEventsOnInterfaceAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Public Interface IFileSystem
+
+    Event FileChanged(FileData As String)
+    Event FileCreated(FileData As String)
+    Event FileDeleted(FileData As String)
+    Event FileRenamed(e As RenamedEventArgs)
+    Event WatcherError(e As ErrorEventArgs)
+
+End Interface
+
+Public Class FileSystemWin
+    Implements IFileSystem
+
+    Public Event FileChanged(FileData As String) Implements IFileSystem.FileChanged
+    Public Event FileCreated(FileData As String) Implements IFileSystem.FileCreated
+    Public Event FileDeleted(FileData As String) Implements IFileSystem.FileDeleted
+    Public Event FileRenamed(e As RenamedEventArgs) Implements IFileSystem.FileRenamed
+    Public Event WatcherError(e As ErrorEventArgs) Implements IFileSystem.WatcherError
+
+End Class", @"using System.IO;
+
+public partial interface IFileSystem
+{
+    event FileChangedEventHandler FileChanged;
+
+    delegate void FileChangedEventHandler(string FileData);
+
+    event FileCreatedEventHandler FileCreated;
+
+    delegate void FileCreatedEventHandler(string FileData);
+
+    event FileDeletedEventHandler FileDeleted;
+
+    delegate void FileDeletedEventHandler(string FileData);
+
+    event FileRenamedEventHandler FileRenamed;
+
+    delegate void FileRenamedEventHandler(RenamedEventArgs e);
+
+    event WatcherErrorEventHandler WatcherError;
+
+    delegate void WatcherErrorEventHandler(ErrorEventArgs e);
+}
+
+public partial class FileSystemWin : IFileSystem
+{
+    public event IFileSystem.FileChangedEventHandler FileChanged;
+    public event IFileSystem.FileCreatedEventHandler FileCreated;
+    public event IFileSystem.FileDeletedEventHandler FileDeleted;
+    public event IFileSystem.FileRenamedEventHandler FileRenamed;
+    public event IFileSystem.WatcherErrorEventHandler WatcherError;
+}");
+        }
+
+        [Fact]
         public async Task TestModuleHandlesWithEventsAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(

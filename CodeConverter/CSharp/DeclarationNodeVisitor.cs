@@ -1228,7 +1228,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, GetMemberContext(node));
             var id = CommonConversions.ConvertIdentifier(node.Identifier);
 
-            if (node.AsClause == null) {
+            var symbol = _semanticModel.GetDeclaredSymbol(node);
+            if (node.AsClause == null && symbol.BaseMember() == null) {
                 var delegateName = SyntaxFactory.Identifier(id.ValueText + "EventHandler");
 
                 var delegateDecl = SyntaxFactory.DelegateDeclaration(
@@ -1251,12 +1252,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 _additionalDeclarations.Add(node, new MemberDeclarationSyntax[] { delegateDecl });
                 return eventDecl;
             }
-
+            var type = symbol.Type != null || node.AsClause == null ? CommonConversions.GetTypeSyntax(symbol.Type) : await node.AsClause.Type.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor);
+            var declaration = SyntaxFactory.VariableDeclaration(type,
+                                SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)));
             return SyntaxFactory.EventFieldDeclaration(
                 SyntaxFactory.List(attributes),
                 modifiers,
-                SyntaxFactory.VariableDeclaration(await node.AsClause.Type.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor),
-                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)))
+                declaration
             );
         }
 

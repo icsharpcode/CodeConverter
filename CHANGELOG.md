@@ -9,7 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
-
+* All handlers from multi-line handles syntax now converted [#701](https://github.com/icsharpcode/CodeConverter/issues/701)
+* Implicilty typed inherited events no longer create extra delegates [#700](https://github.com/icsharpcode/CodeConverter/issues/700)
 
 ### C# -> VB
 
