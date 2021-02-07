@@ -726,8 +726,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
                 if (propSymbol.SetMethod != null) {
                     var setMethod = await CreateMethodDeclarationSyntaxAsync(node.ParameterList, SetMethodId(node), true);
-                    var valueParam = SyntaxFactory.Parameter(CommonConversions.CsEscapedIdentifier("value")).WithType(rawType);
-                    setMethod = setMethod.AddParameterListParameters(valueParam);
+                    setMethod = AddValueSetParameter(propSymbol, setMethod, rawType);
                     methodDeclarationSyntaxs.Add(setMethod);
                 }
                 _additionalDeclarations.Add(node, methodDeclarationSyntaxs.Skip(1).ToArray());
@@ -905,7 +904,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     if (await ShouldConvertAsParameterizedPropertyAsync(containingPropertyStmt)) {
                         var setMethod = await CreateMethodDeclarationSyntax(containingPropertyStmt?.ParameterList, true);
-                        return setMethod.AddParameterListParameters(SyntaxFactory.Parameter(CommonConversions.CsEscapedIdentifier("value")).WithType(returnType));
+                        return AddValueSetParameter(declaredPropSymbol, setMethod, returnType);
                     }
                     break;
                 case VBasic.SyntaxKind.AddHandlerAccessorBlock:
@@ -937,6 +936,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                     (ParameterListSyntax)parameterListSyntax, SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), body, null);
                 return methodDeclarationSyntax;
             }
+        }
+
+        private static MethodDeclarationSyntax AddValueSetParameter(IPropertySymbol declaredPropSymbol, MethodDeclarationSyntax setMethod, TypeSyntax returnType)
+        {
+            var valueParam = SyntaxFactory.Parameter(CommonConversions.CsEscapedIdentifier("value")).WithType(returnType);
+            if (declaredPropSymbol?.Parameters.Any(p => p.IsOptional) == true) valueParam = valueParam.WithDefault(SyntaxFactory.EqualsValueClause(ValidSyntaxFactory.DefaultExpression));
+            return setMethod.AddParameterListParameters(valueParam);
         }
 
         private static string SetMethodId(VBSyntax.PropertyStatementSyntax containingPropertyStmt)

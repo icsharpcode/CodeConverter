@@ -1069,8 +1069,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             EqualsValueClauseSyntax @default = null;
-            // Parameterized properties get compiled/converted to a methd with non-optional parameters
-            if (node.Default != null && node.Parent?.Parent?.IsKind(VBasic.SyntaxKind.PropertyStatement) != true) {
+            // Parameterized properties get compiled/converted to a method with non-optional parameters
+            if (node.Default != null) {
                 var defaultValue = node.Default.Value.SkipIntoParens();
                 if (_semanticModel.GetTypeInfo(defaultValue).Type?.SpecialType == SpecialType.System_DateTime) {
                     var constant = _semanticModel.GetConstantValue(defaultValue);

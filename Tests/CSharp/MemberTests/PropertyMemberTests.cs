@@ -165,7 +165,7 @@ public partial class Class1
 }", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
         }
 
-        [Fact]
+        [Fact] //https://github.com/icsharpcode/CodeConverter/issues/642
         public async Task TestOptionalParameterizedPropertyAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
@@ -195,12 +195,12 @@ internal partial class TestClass
     public string FirstName { get; set; }
     public string LastName { get; set; }
 
-    public string get_FullName(bool isFirst)
+    public string get_FullName(bool isFirst = false)
     {
         return FirstName + "" "" + LastName;
     }
 
-    internal void set_FullName(bool isFirst, string value)
+    internal void set_FullName(bool isFirst = false, string value = default)
     {
         if (isFirst)
             FirstName = value;
