@@ -628,8 +628,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                         return "base";
                     case VBSyntax.KeywordEventContainerSyntax _:
                         return "this";
+                    case VBSyntax.WithEventsEventContainerSyntax weecs:
+                        return CommonConversions.CsEscapedIdentifier(weecs.Identifier.Text).Text;
+                    case VBSyntax.WithEventsPropertyEventContainerSyntax wepecs:
+                        return CommonConversions.CsEscapedIdentifier(wepecs.Property.Identifier.Text).Text;
                     default:
-                        return CommonConversions.CsEscapedIdentifier(p.GetText().ToString().Trim()).Text;
+                        throw new ArgumentOutOfRangeException(nameof(p), p, $"Unrecognized event container: `{p}`");
                 }
             }
         }
