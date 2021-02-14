@@ -21,7 +21,22 @@ namespace VbLibrary.My
         private static MySettings defaultInstance = (MySettings)Synchronized(new MySettings());
 
         #region My.Settings Auto-Save Functionality
-        /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
+        /* TODO ERROR: Skipped IfDirectiveTrivia
+        #If _MyType = "WindowsForms" Then
+        *//* TODO ERROR: Skipped DisabledTextTrivia
+                Private Shared addedHandler As Boolean
+
+                Private Shared addedHandlerLockObject As New Object
+
+                <Global.System.Diagnostics.DebuggerNonUserCodeAttribute(), Global.System.ComponentModel.EditorBrowsableAttribute(Global.System.ComponentModel.EditorBrowsableState.Advanced)> _
+                Private Shared Sub AutoSaveSettings(ByVal sender As Global.System.Object, ByVal e As Global.System.EventArgs)
+                    If My.Application.SaveMySettingsOnExit Then
+                        My.Settings.Save()
+                    End If
+                End Sub
+        *//* TODO ERROR: Skipped EndIfDirectiveTrivia
+        #End If
+        */
         #endregion
 
         public static MySettings Default
@@ -29,7 +44,20 @@ namespace VbLibrary.My
             get
             {
 
-                /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
+                /* TODO ERROR: Skipped IfDirectiveTrivia
+                #If _MyType = "WindowsForms" Then
+                *//* TODO ERROR: Skipped DisabledTextTrivia
+                                   If Not addedHandler Then
+                                        SyncLock addedHandlerLockObject
+                                            If Not addedHandler Then
+                                                AddHandler My.Application.Shutdown, AddressOf AutoSaveSettings
+                                                addedHandler = True
+                                            End If
+                                        End SyncLock
+                                    End If
+                *//* TODO ERROR: Skipped EndIfDirectiveTrivia
+                #End If
+                */
                 return defaultInstance;
             }
         }

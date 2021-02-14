@@ -98,5 +98,57 @@ internal static partial class Program
 #endregion",
 hasLineCommentConversionIssue: true);//Auto-test code doesn't know to avoid adding comment on same line as region
         }
+
+        [Fact]
+        public async Task Issue15_IfTrueAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Public Class AClass
+    #If TRUE
+    Private Sub AMethod()
+    End Sub
+    #End If
+End Class",
+@"
+public partial class AClass
+{
+    /* TODO ERROR: Skipped IfDirectiveTrivia
+#If TRUE
+*/
+    private void AMethod()
+    {
+    }
+    /* TODO ERROR: Skipped EndIfDirectiveTrivia
+#End If
+*/
+}
+");
+        }
+
+        [Fact]
+        public async Task Issue15_IfFalseAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Public Class AClass
+    #If FALSE
+    Private Sub AMethod()
+    End Sub
+    #End If
+End Class",
+@"
+public partial class AClass
+{
+    /* TODO ERROR: Skipped IfDirectiveTrivia
+#If TRUE
+*/
+    private void AMethod()
+    {
+    }
+    /* TODO ERROR: Skipped EndIfDirectiveTrivia
+#End If
+*/
+}
+");
+        }
     }
 }
