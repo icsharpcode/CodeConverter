@@ -95,7 +95,8 @@ internal static partial class Program
 }
 #endregion
 #endregion
-#endregion");
+#endregion",
+hasLineCommentConversionIssue: true);//Auto-test code doesn't know to avoid adding comment on same line as region
         }
     }
 }
