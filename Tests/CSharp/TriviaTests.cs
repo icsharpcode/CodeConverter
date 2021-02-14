@@ -54,5 +54,48 @@ public partial class TestClass506
     }
 }");
         }
+
+        [Fact]
+        public async Task Issue15_NestedRegionsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"#Region ""Whole File""
+#Region ""Nested""
+Imports System
+
+#Region ""Class""
+Module Program
+#Region ""Inside Class""
+    Sub Main(args As String())
+#Region ""Inside Method""
+        Console.WriteLine(""Hello World!"")
+#End Region
+    End Sub
+#End Region
+End Module
+#End Region
+#End Region
+#End Region
+",
+@"#region Whole File
+#region Nested
+using System;
+
+#region Class
+internal static partial class Program
+{
+    #region Inside Class
+    public static void Main(string[] args)
+    {
+        #region Inside Method
+        Console.WriteLine(""Hello World!"");
+        #endregion
+    }
+    #endregion
+}
+#endregion
+#endregion
+#endregion");
+        }
     }
 }

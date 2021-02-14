@@ -20,7 +20,10 @@ namespace VbLibrary.My
     {
         private static MySettings defaultInstance = (MySettings)Synchronized(new MySettings());
 
-        /* TODO ERROR: Skipped RegionDirectiveTrivia *//* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia *//* TODO ERROR: Skipped EndRegionDirectiveTrivia */
+        #region My.Settings Auto-Save Functionality
+        /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
+        #endregion
+
         public static MySettings Default
         {
             get

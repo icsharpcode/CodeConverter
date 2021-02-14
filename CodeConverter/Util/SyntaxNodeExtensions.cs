@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CompilationUnitSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.CompilationUnitSyntax;
 using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 using VBSyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using FieldDeclarationSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.FieldDeclarationSyntax;
@@ -369,6 +370,8 @@ namespace ICSharpCode.CodeConverter.Util
 
         private static IEnumerable<SyntaxTrivia> ConvertVBTrivia(SyntaxTrivia t)
         {
+            var endOfLine = SyntaxFactory.EndOfLine(Environment.NewLine);
+
             if (t.IsKind(VBSyntaxKind.CommentTrivia)) {
                 yield return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.SingleLineCommentTrivia, $"// {t.GetCommentText()}");
                 yield break;
@@ -391,6 +394,19 @@ namespace ICSharpCode.CodeConverter.Util
                 // e.g. ToString\r\n()
                 // Because C Sharp needs those brackets. Handling each possible case of this is far more effort than it's worth.
                 yield return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.EndOfLineTrivia, t.ToString());
+                yield break;
+            }
+
+            if (t.HasStructure && t.GetStructure() is VBSyntax.RegionDirectiveTriviaSyntax rdts) {
+                var regionDirective = SyntaxFactory.RegionDirectiveTrivia(true);
+                var regionKeyword = regionDirective.RegionKeyword.WithTrailingTrivia(SyntaxFactory.Space);
+                var endOfDirectiveToken = regionDirective.EndOfDirectiveToken.WithLeadingTrivia(SyntaxFactory.PreprocessingMessage(rdts.Name.Text.Trim('"'))).WithTrailingTrivia(endOfLine);
+                yield return SyntaxFactory.Trivia(regionDirective.WithRegionKeyword(regionKeyword).WithEndOfDirectiveToken(endOfDirectiveToken));
+                yield break;
+            }
+
+            if (t.IsKind(VBSyntaxKind.EndRegionDirectiveTrivia)) {
+                yield return SyntaxFactory.Trivia(SyntaxFactory.EndRegionDirectiveTrivia(true).WithTrailingTrivia(endOfLine));
                 yield break;
             }
 
