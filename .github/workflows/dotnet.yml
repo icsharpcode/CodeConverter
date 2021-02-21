@@ -5,12 +5,14 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
-env:
-  CC_BUILD_VERSION: '8.2.2.${{ env.Project_Path }}'
-  
+ 
 jobs:
-  build:
+ build:
     runs-on: windows-latest
+    
+    env:
+      CC_BUILD_VERSION: '8.2.2.${{ env.Project_Path }}'
+
     steps:
     - uses: actions/checkout@v2
     - name: Update project version
