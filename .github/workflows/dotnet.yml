@@ -9,19 +9,17 @@ on:
 jobs:
  build:
     runs-on: windows-latest
-    
     env:
-      BuildVersion: '8.2.2.${{ env.Project_Path }}'
-
+      BuildVersion: '8.2.2'
     steps:
     - uses: actions/checkout@v2
     - name: Update project version
       uses: roryprimrose/set-vs-sdk-project-version@v1
       with:
         projectFilter: '**/CodeConverter.csproj'
-        version: ${{ env.BuildVersion }}
-        assemblyVersion: ${{ env.BuildVersion }}
-        fileVersion: ${{ env.BuildVersion }}
+        version: ${{ env.BuildVersion }}.${{ github.run_number }}
+        assemblyVersion: ${{ env.BuildVersion }}.${{ github.run_number }}
+        fileVersion: ${{ env.BuildVersion }}.${{ github.run_number }}
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
