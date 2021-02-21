@@ -39,7 +39,7 @@ jobs:
       env:
         Tests1: Tests\bin\${{ env.BuildTarget }}\ICSharpCode.CodeConverter.Tests.dll
     - name: Pack
-      run:  dotnet pack CodeConverter/CodeConverter.csproj
+      run:  dotnet pack CodeConverter/CodeConverter.csproj -c $env:BuildTarget
     - name: Upload NuGet package
       uses: actions/upload-artifact@v2
       with:
