@@ -12,6 +12,7 @@ jobs:
     env:
       BuildVersion: '8.2.2'
       BuildPlatform: Any CPU
+      BuildTarget: Release
     steps:
     - uses: actions/checkout@v2
     - name: Update project version
@@ -30,22 +31,22 @@ jobs:
       with:
        vs-version: '[16.6,16.9)'
     - name: Restore the application
-      run: msbuild CodeConverter.sln /t:Restore /p:Configuration=Release /p:Platform=$env:BuildPlatform 
+      run: msbuild CodeConverter.sln /t:Restore /p:Configuration=$env:BuildTarget /p:Platform=$env:BuildPlatform 
     - name: Build
-      run: msbuild CodeConverter.sln /p:Configuration=Release /p:Platform=$env:BuildPlatform 
+      run: msbuild CodeConverter.sln /p:Configuration=$env:BuildTarget /p:Platform=$env:BuildPlatform 
     - name: Execute unit tests
       run: dotnet test $env:Tests1
       env:
-        Tests1: Tests\bin\Release\ICSharpCode.CodeConverter.Tests.dll
+        Tests1: Tests\bin\${{ env.BuildTarget }}\ICSharpCode.CodeConverter.Tests.dll
     - name: Pack
       run:  dotnet pack CodeConverter/CodeConverter.csproj
     - name: Upload NuGet package
       uses: actions/upload-artifact@v2
       with:
         name: ICSharpCode.CodeConverter.${{ env.BuildVersion }}.nupkg
-        path: CodeConverter\bin\Release\ICSharpCode.CodeConverter.*.nupkg
+        path: CodeConverter\bin\${{ env.BuildTarget }}\ICSharpCode.CodeConverter.*.nupkg
     - name: Upload VSIX
       uses: actions/upload-artifact@v2
       with:
         name: ICSharpCode.CodeConverter.VsExtension.${{ env.BuildVersion }}.vsix
-        path: Vsix\bin\Release\ICSharpCode.CodeConverter.VsExtension.vsix
+        path: Vsix\bin\${{ env.BuildTarget }}\ICSharpCode.CodeConverter.VsExtension.vsix
