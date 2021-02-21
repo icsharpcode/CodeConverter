@@ -11,7 +11,7 @@ jobs:
     runs-on: windows-latest
     
     env:
-      CC_BUILD_VERSION: '8.2.2.${{ env.Project_Path }}'
+      BuildVersion: '8.2.2.${{ env.Project_Path }}'
 
     steps:
     - uses: actions/checkout@v2
@@ -19,9 +19,9 @@ jobs:
       uses: roryprimrose/set-vs-sdk-project-version@v1
       with:
         projectFilter: '**/CodeConverter.csproj'
-        version: ${{ CC_BUILD_VERSION }}
-        assemblyVersion: ${{ CC_BUILD_VERSION }}
-        fileVersion: ${{ CC_BUILD_VERSION }}
+        version: ${{ env.BuildVersion }}
+        assemblyVersion: ${{ env.BuildVersion }}
+        fileVersion: ${{ env.BuildVersion }}
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
@@ -37,10 +37,10 @@ jobs:
     - name: Upload Windows artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: ICSharpCode.CodeConverter.${{ CC_BUILD_VERSION }}.nupkg
+        name: ICSharpCode.CodeConverter.${{ env.BuildVersion }}.nupkg
         path: CodeConverter\bin\Release\ICSharpCode.CodeConverter.*.nupkg
     - name: Upload VSIX
       uses: actions/upload-artifact@v2
       with:
-        name: ICSharpCode.CodeConverter.VsExtension.${{ CC_BUILD_VERSION }}.vsix
+        name: ICSharpCode.CodeConverter.VsExtension.${{ env.BuildVersion }}.vsix
         path: Vsix\bin\Release\ICSharpCode.CodeConverter.VsExtension.vsix
