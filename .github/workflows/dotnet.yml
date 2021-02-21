@@ -1,0 +1,44 @@
+name: Build CodeConverter
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+env:
+  CC_BUILD_VERSION: '8.2.2.${{ env.Project_Path }}'
+  
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Update project version
+      uses: roryprimrose/set-vs-sdk-project-version@v1
+      with:
+        projectFilter: '**/CodeConverter.csproj'
+        version: ${{ CC_BUILD_VERSION }}
+        assemblyVersion: ${{ CC_BUILD_VERSION }}
+        fileVersion: ${{ CC_BUILD_VERSION }}
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore -c Release
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+    - name: Pack
+      run:  dotnet pack CodeConverter/CodeConverter.csproj
+    - name: Upload Windows artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: ICSharpCode.CodeConverter.${{ CC_BUILD_VERSION }}.nupkg
+        path: CodeConverter\bin\Release\ICSharpCode.CodeConverter.*.nupkg
+    - name: Upload VSIX
+      uses: actions/upload-artifact@v2
+      with:
+        name: ICSharpCode.CodeConverter.VsExtension.${{ CC_BUILD_VERSION }}.vsix
+        path: Vsix\bin\Release\ICSharpCode.CodeConverter.VsExtension.vsix
