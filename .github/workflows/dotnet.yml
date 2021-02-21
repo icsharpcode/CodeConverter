@@ -33,8 +33,10 @@ jobs:
       run: msbuild CodeConverter.sln /t:Restore /p:Configuration=Release /p:Platform=$env:BuildPlatform 
     - name: Build
       run: msbuild CodeConverter.sln /p:Configuration=Release /p:Platform=$env:BuildPlatform 
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+    - name: Execute unit tests
+      run: dotnet test $env:Tests1
+      env:
+        Tests1: Tests\bin\Release\ICSharpCode.CodeConverter.Tests.dll
     - name: Pack
       run:  dotnet pack CodeConverter/CodeConverter.csproj
     - name: Upload NuGet package
