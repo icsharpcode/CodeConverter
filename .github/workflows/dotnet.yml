@@ -32,7 +32,7 @@ jobs:
       run: dotnet test --no-build --verbosity normal
     - name: Pack
       run:  dotnet pack CodeConverter/CodeConverter.csproj
-    - name: Upload Windows artifacts
+    - name: Upload NuGet package
       uses: actions/upload-artifact@v2
       with:
         name: ICSharpCode.CodeConverter.${{ env.BuildVersion }}.nupkg
