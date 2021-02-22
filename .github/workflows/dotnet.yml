@@ -50,3 +50,8 @@ jobs:
       with:
         name: ICSharpCode.CodeConverter.VsExtension.${{ env.BuildVersion }}.vsix
         path: Vsix\bin\${{ env.BuildTarget }}\ICSharpCode.CodeConverter.VsExtension.vsix
+    - name: Upload code conv tool
+      uses: actions/upload-artifact@v2
+      with:
+        name: ICSharpCode.CodeConverter.CodeConv.${{ env.BuildVersion }}.nupkg
+        path: CommandLine\CodeConv\bin\${{ env.BuildTarget }}\ICSharpCode.CodeConverter.CodeConv.*.vsix
