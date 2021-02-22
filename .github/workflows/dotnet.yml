@@ -54,4 +54,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ICSharpCode.CodeConverter.CodeConv.${{ env.BuildVersion }}.nupkg
-        path: CommandLine\CodeConv\bin\${{ env.BuildTarget }}\ICSharpCode.CodeConverter.CodeConv.*.vsix
+        path: CommandLine\CodeConv\bin\${{ env.BuildTarget }}\ICSharpCode.CodeConverter.CodeConv.*.nupkg
