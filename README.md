@@ -1,4 +1,4 @@
-# Code Converter [![Build Status](https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_apis/build/status/icsharpcode.CodeConverter?branchName=master)](https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_build?definitionId=2&statusFilter=succeeded&repositoryFilter=2&branchFilter=32)
+# Code Converter [![Build CodeConverter](https://github.com/icsharpcode/CodeConverter/actions/workflows/dotnet.yml/badge.svg?branch=master&event=push)](https://github.com/icsharpcode/CodeConverter/actions/workflows/dotnet.yml)
 
 Convert code from VB.NET to C# and vice versa using Roslyn - all free and open source:
 * [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter) (~50k installs)
@@ -29,7 +29,7 @@ Currently, the VB -> C# conversion quality is higher than the C# -> VB conversio
 
 ## Other ways to use the converter
 * Latest CI build (potentially less stable):
-  * [See latest build](https://icsharpcode.visualstudio.com/icsharpcode-pipelines/_build?definitionId=2&statusFilter=succeeded&repositoryFilter=2&branchFilter=32)
+  * [See latest build](https://github.com/icsharpcode/CodeConverter/actions/workflows/dotnet.yml?query=is%3Asuccess+branch%3Amaster)
   * Uninstall current version, then install VSIX file inside "1 published" artifact
 * Integrating the NuGet library
   * Check out the [CodeConversion class](https://github.com/icsharpcode/CodeConverter/blob/8226313a8d46d5dd73bd35f07af2212e6155d0fd/Vsix/CodeConversion.cs#L226) in the VSIX project.
