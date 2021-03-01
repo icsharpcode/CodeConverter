@@ -90,22 +90,36 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .WithNodeInformation(node);
         }
 
+        public override async Task<CSharpSyntaxNode> VisitXmlEmbeddedExpression(VBSyntax.XmlEmbeddedExpressionSyntax node) =>
+            await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+
         public override async Task<CSharpSyntaxNode> VisitXmlElement(VBasic.Syntax.XmlElementSyntax node)
         {
             _extraUsingDirectives.Add("System.Xml.Linq");
-            var aggregatedContent = node.Content.Select(n => n.ToString()).Aggregate(String.Empty, (a, b) => a + b);
-            var xmlAsString = $"{node.StartTag}{aggregatedContent}{node.EndTag}".Trim();
+            var interpolations = await AcceptXmlInterpolated(node);
+            var interpolationsList = SyntaxFactory.List(interpolations);
+            var xmlAsString = $"{node.StartTag}{interpolationsList}{node.EndTag}".Trim();
+            var interpolatedString = SyntaxFactory.InterpolatedStringExpression(SyntaxFactory.Token(SyntaxKind.InterpolatedStringStartToken), interpolationsList, SyntaxFactory.Token(SyntaxKind.InterpolatedStringEndToken));
             return SyntaxFactory.InvocationExpression(
                     SyntaxFactory.MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
                         SyntaxFactory.IdentifierName("XElement"),
                         SyntaxFactory.IdentifierName("Parse")))
-                .WithArgumentList(
-                    ExpressionSyntaxExtensions.CreateArgList(
-                        SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,
-                            SyntaxFactory.Literal(xmlAsString))
-                    )
-                );
+                .WithArgumentList(ExpressionSyntaxExtensions.CreateArgList(interpolatedString));
+        }
+
+        private static InterpolatedStringTextSyntax InterpolatedStringText(string text) =>
+            SyntaxFactory.InterpolatedStringText(SyntaxFactory.Token(SyntaxFactory.TriviaList(), SyntaxKind.InterpolatedStringTextToken, text, text, SyntaxFactory.TriviaList()));
+
+        private async Task<IEnumerable<InterpolatedStringContentSyntax>> AcceptXmlInterpolated(VBSyntax.XmlNodeSyntax n)
+        {
+            if (n is VBSyntax.XmlElementSyntax xmlEs) {
+                return InterpolatedStringText(xmlEs.StartTag.ToString()).Yield()
+                .Concat(await xmlEs.Content.SelectManyAsync(AcceptXmlInterpolated))
+                .Concat(InterpolatedStringText(xmlEs.EndTag.ToString()));
+            }
+            var expression = await n.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+            return new[] { SyntaxFactory.Interpolation(expression) };
         }
 
         /// <summary>
