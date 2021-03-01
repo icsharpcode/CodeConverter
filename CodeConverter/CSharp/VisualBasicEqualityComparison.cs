@@ -91,8 +91,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public ExpressionSyntax VbCoerceToNonNullString(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo, bool knownNotNull = false)
         {
-            bool isStringType = typeInfo.Type.SpecialType == SpecialType.System_String;
-
             if (IsNothingOrEmpty(vbNode)) {
                 return EmptyStringExpression();
             }
@@ -101,7 +99,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return csNode;
             }
 
-            csNode = isStringType
+            csNode = typeInfo.Type.SpecialType == SpecialType.System_String
                 ? SyntaxFactory.ParenthesizedExpression(Coalesce(csNode, EmptyStringExpression()))
                 : Coalesce(csNode, EmptyCharArrayExpression());
 
