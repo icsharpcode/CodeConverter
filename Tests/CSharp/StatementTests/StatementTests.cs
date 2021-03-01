@@ -123,26 +123,6 @@ internal partial class TestClass
 }");
         }
 
-        [Fact]
-        public async Task AssignmentStatementWithXmlElementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod()
-        Dim b = <someXmlTag></someXmlTag>
-        Dim c = <someXmlTag><bla anAttribute=""itsValue"">tata</bla><someContent>tata</someContent></someXmlTag>
-    End Sub
-End Class", @"using System.Xml.Linq;
-
-internal partial class TestClass
-{
-    private void TestMethod()
-    {
-        XElement b = XElement.Parse(""<someXmlTag></someXmlTag>"");
-        XElement c = XElement.Parse(""<someXmlTag><bla anAttribute=\""itsValue\"">tata</bla><someContent>tata</someContent></someXmlTag>"");
-    }
-}");
-        }
-
         /// <summary>
         /// Implicitly typed lambdas exist in vb but are not happening in C#. See discussion on https://github.com/dotnet/roslyn/issues/14
         /// * For VB local declarations, inference happens. The closest equivalent in C# is a local function since Func/Action would be overly restrictive for some cases

@@ -120,7 +120,30 @@ BC36610: Name 'TransformDescription' is either not declared or not in the curren
 3 target compilation errors:
 CS0029: Cannot implicitly convert type 'System.Xml.Linq.XElement' to 'System.Xml.Linq.XDocument'
 CS1061: 'IEnumerable<XElement>' does not contain a definition for 'Value' and no accessible extension method 'Value' accepting a first argument of type 'IEnumerable<XElement>' could be found (are you missing a using directive or an assembly reference?)
-CS0103: The name 'TransformDescription' does not exist in the current context");
+CS0103: The name 'TransformDescription' does not exist in the current context",
+hasLineCommentConversionIssue: true);
+        }
+
+
+
+        [Fact]
+        public async Task AssignmentStatementWithXmlElementAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        Dim b = <someXmlTag></someXmlTag>
+        Dim c = <someXmlTag><bla anAttribute=""itsValue"">tata</bla><someContent>tata</someContent></someXmlTag>
+    End Sub
+End Class", @"using System.Xml.Linq;
+
+internal partial class TestClass
+{
+    private void TestMethod()
+    {
+        XElement b = XElement.Parse($@""<someXmlTag> </someXmlTag>"");
+        XElement c = XElement.Parse($@""<someXmlTag> <bla anAttribute=""""itsValue"""">{""tata""}</bla> <someContent>{""tata""}</someContent> </someXmlTag>"");
+    }
+}");
         }
     }
 }
