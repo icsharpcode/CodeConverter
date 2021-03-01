@@ -106,10 +106,15 @@ namespace ICSharpCode.CodeConverter.CSharp
         internal static string EscapeQuotes(string unquotedTextForUser, string valueTextForCompiler, bool isVerbatimString)
         {
             if (isVerbatimString) {
-                return valueTextForCompiler.Replace("\"", "\"\"");
+                return EscapeVerbatimQuotes(valueTextForCompiler);
             } else {
                 return unquotedTextForUser.Replace("\"\"", "\\\"");
             }
+        }
+
+        public static string EscapeVerbatimQuotes(string valueTextForCompiler)
+        {
+            return valueTextForCompiler.Replace("\"", "\"\"");
         }
 
         internal static string EscapeEscapeChar(string valueTextForCompiler)

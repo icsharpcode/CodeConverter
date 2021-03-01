@@ -244,7 +244,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var collectionRangeVariableSyntax = vbFromClause.Variables.Single();
             var expression = (CSSyntax.ExpressionSyntax)await collectionRangeVariableSyntax.Expression.AcceptAsync(_triviaConvertingVisitor);
             var parentOperation = _semanticModel.GetOperation(collectionRangeVariableSyntax.Expression)?.Parent;
-            if (parentOperation.IsImplicit && parentOperation is IInvocationOperation io &&
+            if (parentOperation != null && parentOperation.IsImplicit && parentOperation is IInvocationOperation io &&
                 io.TargetMethod.MethodKind == MethodKind.ReducedExtension && io.TargetMethod.Name == nameof(Enumerable.AsEnumerable)) {
                 expression = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(expression, io.TargetMethod.Name), SyntaxFactory.ArgumentList());
             }

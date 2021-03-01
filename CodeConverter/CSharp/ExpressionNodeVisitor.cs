@@ -93,13 +93,23 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<CSharpSyntaxNode> VisitXmlEmbeddedExpression(VBSyntax.XmlEmbeddedExpressionSyntax node) =>
             await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
 
+        public override async Task<CSharpSyntaxNode> VisitXmlDocument(VBasic.Syntax.XmlDocumentSyntax node)
+        {
+            var interpolationsList = SyntaxFactory.List(await node.PrecedingMisc.Concat(node.Root).Concat(node.FollowingMisc).SelectManyAsync(this.AcceptXmlInterpolated));
+            return InterpolatedString(interpolationsList);
+        }
+
         public override async Task<CSharpSyntaxNode> VisitXmlElement(VBasic.Syntax.XmlElementSyntax node)
         {
             _extraUsingDirectives.Add("System.Xml.Linq");
-            var interpolations = await AcceptXmlInterpolated(node);
-            var interpolationsList = SyntaxFactory.List(interpolations);
-            var xmlAsString = $"{node.StartTag}{interpolationsList}{node.EndTag}".Trim();
-            var interpolatedString = SyntaxFactory.InterpolatedStringExpression(SyntaxFactory.Token(SyntaxKind.InterpolatedStringStartToken), interpolationsList, SyntaxFactory.Token(SyntaxKind.InterpolatedStringEndToken));
+            var interpolationsList = SyntaxFactory.List(await AcceptXmlInterpolated(node));
+            return InterpolatedString(interpolationsList);
+        }
+
+        private CSharpSyntaxNode InterpolatedString(SyntaxList<InterpolatedStringContentSyntax> interpolationsList)
+        {
+            _extraUsingDirectives.Add("System.Xml.Linq");
+            var interpolatedString = SyntaxFactory.InterpolatedStringExpression(SyntaxFactory.Token(SyntaxKind.InterpolatedVerbatimStringStartToken), interpolationsList, SyntaxFactory.Token(SyntaxKind.InterpolatedStringEndToken));
             return SyntaxFactory.InvocationExpression(
                     SyntaxFactory.MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
@@ -114,13 +124,21 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<IEnumerable<InterpolatedStringContentSyntax>> AcceptXmlInterpolated(VBSyntax.XmlNodeSyntax n)
         {
             if (n is VBSyntax.XmlElementSyntax xmlEs) {
-                return InterpolatedStringText(xmlEs.StartTag.ToString()).Yield()
+                return InterpolatedStringText(LiteralConversions.EscapeVerbatimQuotes(xmlEs.StartTag.ToString())).Yield()
                 .Concat(await xmlEs.Content.SelectManyAsync(AcceptXmlInterpolated))
-                .Concat(InterpolatedStringText(xmlEs.EndTag.ToString()));
+                .Concat(InterpolatedStringText(LiteralConversions.EscapeVerbatimQuotes(xmlEs.EndTag.ToString())));
             }
             var expression = await n.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
             return new[] { SyntaxFactory.Interpolation(expression) };
         }
+
+        public override async Task<CSharpSyntaxNode> VisitXmlText(VBSyntax.XmlTextSyntax node) =>
+            CommonConversions.Literal(node.TextTokens.Aggregate("", (a, b) => a + LiteralConversions.EscapeVerbatimQuotes(b.Text)));
+
+        public async override Task<CSharpSyntaxNode> VisitXmlEmptyElement(VBSyntax.XmlEmptyElementSyntax node) =>
+            CommonConversions.Literal(LiteralConversions.EscapeVerbatimQuotes(node.ToString()));
+
+
 
         /// <summary>
         /// https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/xml/accessing-xml
@@ -132,7 +150,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var xElementMethodName = GetXElementMethodName(node);
 
-            MemberAccessExpressionSyntax elements = SyntaxFactory.MemberAccessExpression(
+            var elements = SyntaxFactory.MemberAccessExpression(
                 SyntaxKind.SimpleMemberAccessExpression,
                 await node.Base.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor),
                 SyntaxFactory.IdentifierName(xElementMethodName)
