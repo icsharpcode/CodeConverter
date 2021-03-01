@@ -4,11 +4,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
-
-### Vsix
+### Command line
+* The --Core-Only flag no longer requires a value [#704](https://github.com/icsharpcode/CodeConverter/issues/704)
 
 
 ### VB -> C#
+* Deal with NullReferenceException caused by Nothing literal [#707](https://github.com/icsharpcode/CodeConverter/issues/707)
+* Include text of region which can't be converted
+* Convert region names
 * All handlers from multi-line handles syntax now converted [#701](https://github.com/icsharpcode/CodeConverter/issues/701)
 * Implicilty typed inherited events no longer create extra delegates [#700](https://github.com/icsharpcode/CodeConverter/issues/700)
 * Keep optional parameters for parameterized properties [#642](https://github.com/icsharpcode/CodeConverter/issues/642)
