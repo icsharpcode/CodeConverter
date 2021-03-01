@@ -53,7 +53,7 @@ Remarks:
         [Option("-f|--force", "Wipe the output directory before conversion", CommandOptionType.NoValue)]
         public bool Force { get; }
 
-        [Option(CoreOptionDefinition, "Force dot net core build if converting only .NET Core projects and seeing pre-conversion compile errors", CommandOptionType.SingleValue)]
+        [Option(CoreOptionDefinition, "Force dot net core build if converting only .NET Core projects and seeing pre-conversion compile errors", CommandOptionType.NoValue)]
         public bool CoreOnlyProjects { get; }
 
         [Option("-b|--best-effort", "Overrides warnings about compilation issues with input, and attempts a best effort conversion anyway", CommandOptionType.NoValue)]
