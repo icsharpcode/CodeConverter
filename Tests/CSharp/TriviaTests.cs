@@ -148,5 +148,97 @@ public partial class AClass
 */
 }");
         }
+
+        [Fact]
+        public async Task Issue771_DoNotTrimLineCommentsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"
+'>> Thomas  16.03.2021
+'                       bei BearbeitungsTyp = ""SP__unten""
+Public Class AClass
+End Class",
+@"
+// >> Thomas  16.03.2021
+// bei BearbeitungsTyp = ""SP__unten""
+
+public partial class AClass
+{
+}");
+        }
+
+        [Fact]
+        public async Task Issue771_DoNotTrimBlockCommentsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"
+''' >> Thomas  16.03.2021
+'''                       bei BearbeitungsTyp = ""SP__unten""
+Public Class AClass
+End Class",
+@"
+/// >> Thomas  16.03.2021
+///                       bei BearbeitungsTyp = ""SP__unten""
+
+public partial class AClass
+{
+}");
+        }
+
+        [Fact]
+        public async Task TestMethodXmlDocAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Class TestClass
+    ''' <summary>Xml doc</summary>
+    Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
+        argument = Nothing
+        argument2 = Nothing
+        argument3 = Nothing
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    /// <summary>Xml doc</summary>
+    public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
+        where T : class, new()
+        where T2 : struct
+    {
+        argument = null;
+        argument2 = default;
+        argument3 = default;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task TestGeneratedMethodXmlDocAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Class TestClass
+    '''<summary>
+    '''  Returns the cached ResourceManager instance used by this class.
+    '''</summary>
+    Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
+        argument = Nothing
+        argument2 = Nothing
+        argument3 = Nothing
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    /// <summary>
+    /// Returns the cached ResourceManager instance used by this class.
+    /// </summary>
+    public void TestMethod<T, T2, T3>(out T argument, ref T2 argument2, T3 argument3)
+        where T : class, new()
+        where T2 : struct
+    {
+        argument = null;
+        argument2 = default;
+        argument3 = default;
+    }
+}");
+        }
     }
 }

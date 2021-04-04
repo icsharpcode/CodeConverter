@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Text.RegularExpressions;
 
 namespace ICSharpCode.CodeConverter.Util
 {
@@ -68,58 +69,30 @@ namespace ICSharpCode.CodeConverter.Util
                     commentText = commentText.Substring(2);
                 }
 
-                commentText = commentText.Trim();
 
                 var newLine = Environment.NewLine;
                 var lines = commentText.Split(new[] { newLine }, StringSplitOptions.None);
                 foreach (var line in lines) {
-                    var trimmedLine = line.Trim();
 
-                    // Note: we trim leading '*' characters in multi-line comments.
-                    // If the '*' was intentional, sorry, it's gone.
-                    if (trimmedLine.StartsWith("*")) {
-                        trimmedLine = trimmedLine.TrimStart('*');
-                        trimmedLine = trimmedLine.TrimStart(null);
-                    }
-
-                    textBuilder.AppendLine(trimmedLine);
+                    textBuilder.AppendLine(line);
                 }
 
-                // remove last line break
-                textBuilder.Remove(textBuilder.Length - newLine.Length, newLine.Length);
-
-                return textBuilder.ToString();
+                // remove trailing line breaks
+                return textBuilder.ToString().TrimEnd();
             } else if (trivia.IsKind(VBasic.SyntaxKind.DocumentationCommentTrivia) || CS.CSharpExtensions.Kind(trivia) == CS.SyntaxKind.SingleLineDocumentationCommentTrivia) {
                 var textBuilder = new StringBuilder();
 
-                if (commentText.EndsWith("*/")) {
-                    commentText = commentText.TrimEnd('\'');
-                }
-
-                if (commentText.StartsWith("'''")) {
-                    commentText = commentText.TrimStart('\'');
-                }
-
-                commentText = commentText.Trim();
-
                 var lines = commentText.Replace("\r\n", "\n").Split('\n');
                 foreach (var line in lines) {
-                    var trimmedLine = line.Trim();
-
-                    // Note: we trim leading ' characters in multi-line comments.
-                    // If the ' was intentional, sorry, it's gone.
-                    if (trimmedLine.StartsWith("'")) {
-                        trimmedLine = trimmedLine.TrimStart('\'');
-                        trimmedLine = trimmedLine.TrimStart(null);
-                    }
-                    if (trimmedLine.StartsWith("/")) {
-                        trimmedLine = trimmedLine.TrimStart('/');
-                        trimmedLine = trimmedLine.TrimStart(null);
-                    }
-
-                    textBuilder.AppendLine(trimmedLine);
+                    // Single line comment marker is part of the comment text
+                    string trimmed = Regex.Replace(line, @"^(\ *''')?\ ?", "");
+                    // Generated doc comments are indented by one space in VB, this is not idiomatic in C#
+                    // If someone has intentionally indented by a single space at the start for ascii art or something, this will unfortunately be lost.
+                    trimmed = Regex.Replace(trimmed, @"^\ ([^ ])", "$1");
+                    textBuilder.AppendLine(trimmed);
                 }
 
+                // remove trailing line breaks
                 return textBuilder.ToString().TrimEnd();
             }
 

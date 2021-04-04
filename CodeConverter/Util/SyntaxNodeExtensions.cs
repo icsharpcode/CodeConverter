@@ -380,8 +380,9 @@ namespace ICSharpCode.CodeConverter.Util
             if (t.IsKind(VBSyntaxKind.DocumentationCommentTrivia)) {
                 var previousWhitespace = t.GetPreviousTrivia(t.SyntaxTree, CancellationToken.None).ToString().Trim('\r', '\n');
                 var commentTextLines = t.GetCommentText().Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
-                var outputCommentText = "/// " + String.Join($"\r\n{previousWhitespace}/// ", commentTextLines) + Environment.NewLine;
+                var outputCommentText = "/// " + String.Join($"\r\n{previousWhitespace}/// ", commentTextLines);
                 yield return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.SingleLineCommentTrivia, outputCommentText); //It's always single line...even when it has multiple lines
+                yield return _endOfLine;
                 yield break;
             }
 
