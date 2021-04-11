@@ -28,6 +28,8 @@ jobs:
         dotnet-version: 3.1.x
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
+      with:
+       vs-version: '[16.6,)'
     - name: Restore the application
       run: msbuild CodeConverter.sln /t:Restore /p:Configuration=$env:BuildTarget /p:Platform=$env:BuildPlatform 
     - name: Build

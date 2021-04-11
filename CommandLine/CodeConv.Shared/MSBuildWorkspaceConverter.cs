@@ -121,7 +121,6 @@ namespace ICSharpCode.CodeConverter.CommandLine
                 MSBuildLocator.RegisterInstance(instance);
                 AppDomain.CurrentDomain.UseVersionAgnosticAssemblyResolution();
             }
-
             var hostServices = await ThreadSafeWorkspaceHelper.CreateHostServicesAsync(MSBuildMefHostServices.DefaultAssemblies);
             return MSBuildWorkspace.Create(buildProps, hostServices);
         }
