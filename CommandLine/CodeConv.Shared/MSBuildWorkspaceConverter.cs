@@ -84,9 +84,9 @@ namespace ICSharpCode.CodeConverter.CommandLine
             if (_bestEffortConversion) {
                 progress.Report("Attempting best effort conversion on broken input due to override");
             } else if (wrongFramework && _isNetCore) {
-                throw new ValidationException($"Compiling with dotnet core caused compilation errors, install VS2019+ or use the option `{CodeConvProgram.CoreOptionDefinition} false` to force attempted conversion with older versions (not recommended)");
+                throw new ValidationException($"Compiling with dotnet core caused compilation errors, install VS2019+ or use the option `{CodeConvProgram.CoreOptionDefinition} false` to force attempted conversion with older versions (not recommended){Environment.NewLine}{errorString}");
             } else if (wrongFramework && !_isNetCore) {
-                throw new ValidationException($"Compiling with .NET Framework MSBuild caused compilation errors, use the {CodeConvProgram.CoreOptionDefinition} true option if this is a .NET core only solution");
+                throw new ValidationException($"Compiling with .NET Framework MSBuild caused compilation errors, use the {CodeConvProgram.CoreOptionDefinition} true option if this is a .NET core only solution{Environment.NewLine}{errorString}");
             } else {
                 var mainMessage = "Fix compilation errors before conversion for an accurate conversion, or as a last resort, use the best effort conversion option";
                 throw new ValidationException($"{mainMessage}:{Environment.NewLine}{errorString}{Environment.NewLine}{mainMessage}");
