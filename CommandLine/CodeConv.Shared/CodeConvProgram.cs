@@ -171,7 +171,11 @@ Remarks:
 
         private static async Task<string?> GetLatestMsBuildExePathAsync()
         {
-            var vsWhereExe = Environment.ExpandEnvironmentVariables(@"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe");
+            // The second path here is available on github action agents: https://github.com/microsoft/setup-msbuild#how-does-this-work
+            var pathsToCheck = new[] { @"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe", @"%ProgramData%\chocolatey\bin" }
+                            .Select(Environment.ExpandEnvironmentVariables);
+            var vsWhereExe = pathsToCheck.FirstOrDefault(File.Exists)
+                ?? throw new FileNotFoundException($"Could not find VSWhere in: {string.Join(", ", pathsToCheck.Select(p => $"`{p}`"))}");
             var args = new[] { "-latest", "-prerelease", "-products", "*", "-requires", "Microsoft.Component.MSBuild", "-version", "[16.0,]", "-find", @"MSBuild\**\Bin\MSBuild.exe" };
             
             var (exitCode, stdOut, _) = await new ProcessStartInfo(vsWhereExe) {
