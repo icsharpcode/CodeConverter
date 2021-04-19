@@ -1,10 +1,7 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
-    using System.Text.RegularExpressions;
-
     internal static class PathConverter
     {
         public static string TogglePathExtension(string filePath)

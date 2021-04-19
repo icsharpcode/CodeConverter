@@ -1,8 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
-using ICSharpCode.CodeConverter.VB;
 using Xunit;
-using static ICSharpCode.CodeConverter.CommandLine.CodeConvProgram;
 
 namespace ICSharpCode.CodeConverter.Tests.VB
 {
@@ -19,13 +17,15 @@ namespace ICSharpCode.CodeConverter.Tests.VB
             _multiFileTestFixture = multiFileTestFixture;
         }
 
-        [Fact(Skip = "Doesn't work on Github actions agent")]
+        [Fact] /* enable for executing locally */
+        //[Fact(Skip = "Doesn't work on Github actions agent")]  /* disable for executing locally */
         public async Task ConvertWholeSolutionAsync()
         {
             await _multiFileTestFixture.ConvertProjectsWhereAsync(p => true, Language.VB);
         }
 
-        [Fact(Skip = "Doesn't work on Github actions agent")]
+        [Fact] /* enable for executing locally */
+        //[Fact(Skip = "Doesn't work on Github actions agent")]  /* disable for executing locally */
         public async Task ConvertCSharpConsoleAppOnlyAsync()
         {
             await _multiFileTestFixture.ConvertProjectsWhereAsync(p => p.Name == "CSharpConsoleApp", Language.VB);

@@ -4,13 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
+using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
-    using ICSharpCode.CodeConverter.CSharp;
-
     public class SolutionConverter
     {
         private readonly string _solutionFilePath;
