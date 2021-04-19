@@ -19,14 +19,15 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp
             _multiFileTestFixture = multiFileTestFixture;
         }
 
-        [Fact(Skip = "Doesn't work on Github actions agent")]
+        //[Fact(Skip = "Doesn't work on Github actions agent")]
+        [Fact]
         public async Task ConvertWholeSolutionAsync()
         {
 
             await _multiFileTestFixture.ConvertProjectsWhereAsync(p => true, Language.CS);
         }
 
-        [Fact(Skip = "Doesn't work on Github actions agent")]
+        [Fact]
         public async Task ConvertVbLibraryOnlyAsync()
         {
             await _multiFileTestFixture.ConvertProjectsWhereAsync(p => p.Name == "VbLibrary", Language.CS);

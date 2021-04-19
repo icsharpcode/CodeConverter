@@ -37,7 +37,7 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
         /// <summary>
         /// Turn it and run the test, then you can manually check the output loads/builds in VS.
         /// </summary>
-        private readonly bool _writeAllFilesForManualTesting = false;
+        private readonly bool _writeAllFilesForManualTesting = true;
 
         private static readonly string MultiFileCharacterizationDir = Path.Combine(TestConstants.GetTestDataDirectory(), "MultiFileCharacterization");
         private static readonly string OriginalSolutionDir = Path.Combine(MultiFileCharacterizationDir, "SourceFiles");

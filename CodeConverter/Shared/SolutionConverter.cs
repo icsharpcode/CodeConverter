@@ -9,6 +9,8 @@ using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
+    using ICSharpCode.CodeConverter.CSharp;
+
     public class SolutionConverter
     {
         private readonly string _solutionFilePath;
@@ -24,7 +26,7 @@ namespace ICSharpCode.CodeConverter.Shared
             IProgress<ConversionProgress> progress = null,
             CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
         {
-            var conversion = new TLanguageConversion {ConversionOptions = conversionOptions };
+            var conversion = new TLanguageConversion { ConversionOptions = conversionOptions };
             return CreateFor(conversion, projectsToConvert, progress, cancellationToken);
         }
 
@@ -89,12 +91,19 @@ namespace ICSharpCode.CodeConverter.Shared
             string sourceSolutionContents)
         {
             var projectReferenceReplacements = new List<(string Find, string Replace, bool FirstOnly)>();
-            foreach (var project in projectsToConvert)
-            {
+            foreach (var project in projectsToConvert) {
                 var projFilename = Path.GetFileName(project.FilePath);
+                var projDirPath = project.GetDirectoryPath();
+
                 var newProjFilename = PathConverter.TogglePathExtension(projFilename);
-                projectReferenceReplacements.Add((projFilename, newProjFilename, false));
-                if (!string.IsNullOrWhiteSpace(sourceSolutionContents)) projectReferenceReplacements.Add(GetProjectGuidReplacement(projFilename, sourceSolutionContents));
+
+                var projPath = PathConverter.GetFileDirPath(projFilename, projDirPath);
+                var newProjPath = PathConverter.GetFileDirPath(newProjFilename, projDirPath);
+
+                var projPathEscaped = Regex.Escape(projPath);
+
+                projectReferenceReplacements.Add((projPathEscaped, newProjPath, false));
+                if (!string.IsNullOrWhiteSpace(sourceSolutionContents)) projectReferenceReplacements.Add(GetProjectGuidReplacement(projPathEscaped, sourceSolutionContents));
             }
 
             return projectReferenceReplacements;
@@ -112,9 +121,9 @@ namespace ICSharpCode.CodeConverter.Shared
             };
         }
 
-        private static (string Find, string Replace, bool FirstOnly) GetProjectGuidReplacement(string projFilename, string contents)
+        private static (string Find, string Replace, bool FirstOnly) GetProjectGuidReplacement(string projPath, string contents)
         {
-            var projGuidRegex = new Regex(projFilename + @""", ""({[0-9A-Fa-f\-]{32,36}})("")");
+            var projGuidRegex = new Regex(projPath + @""", ""({[0-9A-Fa-f\-]{32,36}})("")");
             var projGuidMatch = projGuidRegex.Match(contents);
             var oldGuid = projGuidMatch.Groups[1].Value;
             var newGuid = GetDeterministicGuidFrom(new Guid(oldGuid));

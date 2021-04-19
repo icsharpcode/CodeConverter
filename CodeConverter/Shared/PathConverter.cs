@@ -3,6 +3,8 @@ using System.IO;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
+    using System.Text.RegularExpressions;
+
     internal static class PathConverter
     {
         public static string TogglePathExtension(string filePath)
@@ -32,6 +34,14 @@ namespace ICSharpCode.CodeConverter.Shared
                 default:
                     return originalExtension;
             }
+        }
+
+        public static string GetFileDirPath(string fileName, string dirPath)
+        {
+            var dirName = Path.GetFileName(dirPath);
+            var fileDirPath = Path.Combine(dirName ?? string.Empty, fileName);
+
+            return fileDirPath;
         }
     }
 }
