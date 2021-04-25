@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Reflection;
 using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
+using ICSharpCode.CodeConverter.Tests.TestRunners;
+using TestCases;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
 {
@@ -10,6 +12,8 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
     /// </summary>
     public class AccessExpressionTests : ConverterTestBase
     {
+        private static readonly Assembly[] AdditionalAssemblies = { typeof(OuterClass).Assembly };
+
         [Fact]
         public async Task MyClassExprAsync()
         {
@@ -470,6 +474,90 @@ internal partial class TestClass
         TestNamespace.TestModule.ModuleFunction();
     }
 }");
+        }
+
+        [Fact]
+        public async Task ModuleImportUnQualifiedMemberAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports TestCases.ModuleWithClassAndMethod
+
+Class TestClass
+    Public Sub TestMethod()
+        Dim mc = New ModuleClass()
+        mc.ModuleClassMethod()
+    End Sub
+End Class", @"using static TestCases.ModuleWithClassAndMethod;
+
+internal partial class TestClass
+{
+    public void TestMethod()
+    {
+        var mc = new ModuleClass();
+        mc.ModuleClassMethod();
+    }
+}", AdditionalAssemblies);
+        }
+
+        [Fact]
+        public async Task ModuleImportUnQualifiedNestedTypeAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports TestCases.ModuleWithClassAndMethod
+Class TestClass
+    Public Sub TestMethod()
+        ModuleMethod()
+    End Sub
+End Class", @"using static TestCases.ModuleWithClassAndMethod;
+
+internal partial class TestClass
+{
+    public void TestMethod()
+    {
+        ModuleMethod();
+    }
+}", AdditionalAssemblies);
+        }
+
+        [Fact]
+        public async Task ClassImportUnQualifiedStaticMemberAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq.Enumerable
+
+Class TestClass
+  Public Function TestMethod() As IEnumerable(Of String)
+    Return Empty(Of string)
+  End Function
+End Class", @"using System.Collections.Generic;
+using static System.Linq.Enumerable;
+
+internal partial class TestClass
+{
+    public IEnumerable<string> TestMethod()
+    {
+        return Empty<string>();
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ClassImportUnQualifiedNestedTypeAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports TestCases.OuterClass
+
+Class TestClass
+  Public Sub TestMethod()
+    Dim ic = New InnerClass()
+    ic.TestMethod()
+  End Sub
+End Class", @"using static TestCases.OuterClass;
+
+internal partial class TestClass
+{
+    public void TestMethod()
+    {
+        var ic = new InnerClass();
+        ic.TestMethod();
+    }
+}", AdditionalAssemblies);
         }
 
         [Fact]
