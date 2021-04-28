@@ -1171,14 +1171,102 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    public int FooDifferentName(ref string str, int i)
+    int IFoo.FooDifferentName(ref string str, int i)
     {
         return 4;
     }
 
-    public int BarDifferentName(ref string str, int i) => FooDifferentName(ref str, i);
+    public int BarDifferentName(ref string str, int i) => ((IFoo)this).FooDifferentName(ref str, i);
 }
 ");
+        }
+
+        [Fact]
+        public async Task IdenticalInterfaceMethodsWithRenamedInterfaceMembersAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Interface IFoo
+    Function DoFooBar(ByRef str As String, i As Integer) As Integer
+End Interface
+
+Public Interface IBar
+    Function DoFooBar(ByRef str As String, i As Integer) As Integer
+End Interface
+
+Public Class FooBar
+    Implements IFoo, IBar
+
+    Function Foo(ByRef str As String, i As Integer) As Integer Implements IFoo.DoFooBar
+        Return 4
+    End Function
+
+    Function Bar(ByRef str As String, i As Integer) As Integer Implements IBar.DoFooBar
+        Return 2
+    End Function
+
+End Class", @"
+public partial interface IFoo
+{
+    int DoFooBar(ref string str, int i);
+}
+
+public partial interface IBar
+{
+    int DoFooBar(ref string str, int i);
+}
+
+public partial class FooBar : IFoo, IBar
+{
+    int IFoo.DoFooBar(ref string str, int i)
+    {
+        return 4;
+    }
+
+    public int Foo(ref string str, int i) => ((IFoo)this).DoFooBar(ref str, i);
+
+    int IBar.DoFooBar(ref string str, int i)
+    {
+        return 2;
+    }
+
+    public int Bar(ref string str, int i) => ((IBar)this).DoFooBar(ref str, i);
+}
+");
+        }
+
+        [Fact]
+        public async Task RenamedInterfaceMemberFullyQualifiedAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace TestNamespace
+    Public Interface IFoo
+        Function DoFoo(ByRef str As String, i As Integer) As Integer
+    End Interface
+End Namespace
+
+Public Class Foo
+    Implements TestNamespace.IFoo
+
+    Function DoFooRenamed(ByRef str As String, i As Integer) As Integer Implements TestNamespace.IFoo.DoFoo
+        Return 4
+    End Function
+End Class", @"
+namespace TestNamespace
+{
+    public partial interface IFoo
+    {
+        int DoFoo(ref string str, int i);
+    }
+}
+
+public partial class Foo : TestNamespace.IFoo
+{
+    int TestNamespace.IFoo.DoFoo(ref string str, int i)
+    {
+        return 4;
+    }
+
+    public int DoFooRenamed(ref string str, int i) => ((TestNamespace.IFoo)this).DoFoo(ref str, i);
+}");
         }
 
         [Fact]

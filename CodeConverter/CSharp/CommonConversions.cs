@@ -682,5 +682,23 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return SyntaxFactory.BinaryExpression(CSSyntaxKind.EqualsExpression, otherArgument, ValidSyntaxFactory.DefaultExpression);
         }
+
+        public NameSyntax GetFullyQualifiedNameSyntax(INamespaceOrTypeSymbol symbol, bool allowGlobalPrefix = true)
+        {
+            switch (symbol) {
+                case ITypeSymbol ts:
+                    var nameSyntax = (NameSyntax)CsSyntaxGenerator.TypeExpression(ts);
+                    if (allowGlobalPrefix)
+                        return nameSyntax;
+                    var globalNameNode = nameSyntax.DescendantNodes().OfType<GlobalStatementSyntax>().FirstOrDefault();
+                    if (globalNameNode != null)
+                        nameSyntax = nameSyntax.ReplaceNodes((globalNameNode.Parent as QualifiedNameSyntax).Yield(), (orig, rewrite) => orig.Right);
+                    return nameSyntax;
+                case INamespaceSymbol ns:
+                    return SyntaxFactory.ParseName(ns.GetFullMetadataName());
+                default:
+                    throw new NotImplementedException($"Fully qualified name for {symbol.GetType().FullName} not implemented");
+            }
+        }
     }
 }
