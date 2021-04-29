@@ -309,17 +309,38 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         private static string WithDeclarationName(SyntaxToken id, ISymbol idSymbol, string text)
         {
-            //This also covers the case when the name is different (in VB you can have method X implements IFoo.Y), but doesn't resolve any resulting name clashes
-            var baseSymbol = idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property) ? idSymbol.FollowProperty(s => s.BaseMember()).Last() : idSymbol;
-            bool isDeclaration = baseSymbol.Locations.Any(l => l.SourceSpan == id.Span);
-            bool isPartial = baseSymbol.IsPartialClassDefinition() || baseSymbol.IsPartialMethodDefinition() ||
+            //This only renames references to interface member implementations for casing differences.
+            //Interface member renaming is covered by emitting explicit interface implementations with a delegating
+            //proxy property
+            var baseClassSymbol = GetBaseSymbol(idSymbol, s => s.ContainingType.IsClassType());
+            var baseSymbol = GetBaseSymbol(baseClassSymbol, s => true);
+
+            var isCasingDiffOnly = StringComparer.Ordinal.Equals(text, baseClassSymbol.Name) !=
+                                   StringComparer.OrdinalIgnoreCase.Equals(text, baseClassSymbol.Name);
+            var isInterfaceImplRef = baseSymbol.ContainingType.IsInterfaceType() && !(id.Parent is VBSyntax.StatementSyntax);
+            var isDeclaration = isInterfaceImplRef || baseSymbol.Locations.Any(l => l.SourceSpan == id.Span);
+
+            var isPartial = baseSymbol.IsPartialClassDefinition() || baseSymbol.IsPartialMethodDefinition() ||
                              baseSymbol.IsPartialMethodImplementation();
-            if (isPartial || !isDeclaration)
+
+            if (isInterfaceImplRef && isCasingDiffOnly)
+            {
+                return baseClassSymbol.Name;
+            }
+
+            if ((isPartial || !isDeclaration))
             {
                 text = baseSymbol.Name;
             }
 
             return text;
+        }
+
+        private static ISymbol GetBaseSymbol(ISymbol symbol, Func<ISymbol, bool> selector)
+        {
+            return symbol.IsKind(SymbolKind.Method) || symbol.IsKind(SymbolKind.Property)
+                ? (symbol.FollowProperty(s => s.BaseMember()).LastOrDefault(selector)) ?? symbol
+                : symbol;
         }
 
         public static SyntaxToken CsEscapedIdentifier(string text)

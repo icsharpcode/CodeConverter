@@ -1119,7 +1119,7 @@ CS0246: The type or namespace name 'AccessMask' could not be found (are you miss
         }
 
         [Fact]
-        public async Task Issue443_FixCaseForIntefaceMembersAsync()
+        public async Task Issue443_FixCaseForInterfaceMembersAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"Public Interface IFoo
@@ -1270,6 +1270,144 @@ public partial class Foo : TestNamespace.IFoo
         }
 
         [Fact]
+        public async Task RenamedInterfaceMemberConsumerCasingRenamedAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        Function DoFoo(ByRef str As String, i As Integer) As Integer
+    End Interface
+
+Public Class Foo
+    Implements IFoo
+
+    Function DoFooRenamed(ByRef str As String, i As Integer) As Integer Implements IFoo.DoFoo
+        Return 4
+    End Function
+End Class
+
+Public Class FooConsumer
+    Function DoFooRenamedConsumer(ByRef str As String, i As Integer) As Integer
+        Dim foo As New Foo
+        Return foo.DOFOORENAMED(str, i)
+    End Function
+End Class", @"
+public partial interface IFoo
+{
+    int DoFoo(ref string str, int i);
+}
+
+public partial class Foo : IFoo
+{
+    int IFoo.DoFoo(ref string str, int i)
+    {
+        return 4;
+    }
+
+    public int DoFooRenamed(ref string str, int i) => ((IFoo)this).DoFoo(ref str, i);
+}
+
+public partial class FooConsumer
+{
+    public int DoFooRenamedConsumer(ref string str, int i)
+    {
+        var foo = new Foo();
+        return foo.DoFooRenamed(ref str, i);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task InterfaceRenamedMemberConsumerAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        Function DoFoo(ByRef str As String, i As Integer) As Integer
+    End Interface
+
+Public Class Foo
+    Implements IFoo
+
+    Function DoFooRenamed(ByRef str As String, i As Integer) As Integer Implements IFoo.DoFoo
+        Return 4
+    End Function
+End Class
+
+Public Class FooConsumer
+    Function DoFooRenamedConsumer(ByRef str As String, i As Integer) As Integer
+        Dim foo As New Foo
+        Return foo.DoFooRenamed(str, i)
+    End Function
+End Class", @"
+public partial interface IFoo
+{
+    int DoFoo(ref string str, int i);
+}
+
+public partial class Foo : IFoo
+{
+    int IFoo.DoFoo(ref string str, int i)
+    {
+        return 4;
+    }
+
+    public int DoFooRenamed(ref string str, int i) => ((IFoo)this).DoFoo(ref str, i);
+}
+
+public partial class FooConsumer
+{
+    public int DoFooRenamedConsumer(ref string str, int i)
+    {
+        var foo = new Foo();
+        return foo.DoFooRenamed(ref str, i);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task PartialInterfaceRenamedMemberConsumerAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Partial Interface IFoo
+        Function DoFoo(ByRef str As String, i As Integer) As Integer
+    End Interface
+
+Public Class Foo
+    Implements IFoo
+
+    Function DoFooRenamed(ByRef str As String, i As Integer) As Integer Implements IFoo.DoFoo
+        Return 4
+    End Function
+End Class
+
+Public Class FooConsumer
+    Function DoFooRenamedConsumer(ByRef str As String, i As Integer) As Integer
+        Dim foo As New Foo
+        Return foo.DoFooRenamed(str, i)
+    End Function
+End Class", @"
+public partial interface IFoo
+{
+    int DoFoo(ref string str, int i);
+}
+
+public partial class Foo : IFoo
+{
+    int IFoo.DoFoo(ref string str, int i)
+    {
+        return 4;
+    }
+
+    public int DoFooRenamed(ref string str, int i) => ((IFoo)this).DoFoo(ref str, i);
+}
+
+public partial class FooConsumer
+{
+    public int DoFooRenamedConsumer(ref string str, int i)
+    {
+        var foo = new Foo();
+        return foo.DoFooRenamed(ref str, i);
+    }
+}");
+        }
+
+        [Fact]
         public async Task ExplicitInterfaceImplementationAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
@@ -1319,8 +1457,12 @@ public partial class Foo : IFoo
 ");
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         [Fact]
-        public async Task Issue444_InternalMemberDoesNotRequireDelegatingMethodAsync()
+        public async Task Issue444_InternalMemberDelegatingMethodAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"Public Interface IFoo
@@ -1341,10 +1483,12 @@ public partial interface IFoo
 
 internal partial class Foo : IFoo
 {
-    public int FooDifferentName(ref string str, int i)
+    int IFoo.FooDifferentName(ref string str, int i)
     {
         return 4;
     }
+
+    public int BarDifferentName(ref string str, int i) => ((IFoo)this).FooDifferentName(ref str, i);
 }
 ");
         }

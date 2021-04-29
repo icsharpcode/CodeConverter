@@ -65,6 +65,11 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
             return symbol?.TypeKind == TypeKind.Module;
         }
 
+        public static bool IsClassType(this ITypeSymbol? symbol)
+        {
+            return symbol?.TypeKind == TypeKind.Class;
+        }
+
         public static bool IsInterfaceType(this ITypeSymbol? symbol)
         {
             return symbol?.TypeKind == TypeKind.Interface;
