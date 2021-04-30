@@ -575,6 +575,144 @@ internal static partial class TestClass
         }
 
         [Fact]
+        public async Task TestExtensionWithinExtendedTypeAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Module Extensions
+    <Extension()>
+    Sub TestExtension(extendedClass As ExtendedClass)
+    End Sub
+End Module
+
+Class ExtendedClass
+  Sub TestExtensionConsumer()
+    TestExtension()
+  End Sub
+End Class", @"
+internal static partial class Extensions
+{
+    public static void TestExtension(this ExtendedClass extendedClass)
+    {
+    }
+}
+
+internal partial class ExtendedClass
+{
+    public void TestExtensionConsumer()
+    {
+        this.TestExtension();
+    }
+}");
+        }
+
+        [Fact]
+        public async Task TestExtensionWithinTypeDerivedFromExtendedTypeAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Module Extensions
+    <Extension()>
+    Sub TestExtension(extendedClass As ExtendedClass)
+    End Sub
+End Module
+
+Class ExtendedClass
+End Class
+
+Class DerivedClass
+    Inherits ExtendedClass
+
+  Sub TestExtensionConsumer()
+    TestExtension()
+  End Sub
+End Class", @"
+internal static partial class Extensions
+{
+    public static void TestExtension(this ExtendedClass extendedClass)
+    {
+    }
+}
+
+internal partial class ExtendedClass
+{
+}
+
+internal partial class DerivedClass : ExtendedClass
+{
+    public void TestExtensionConsumer()
+    {
+        this.TestExtension();
+    }
+}");
+        }
+
+        [Fact]
+        public async Task TestExtensionWithinNestedExtendedTypeAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Module Extensions
+    <Extension()>
+    Sub TestExtension(extendedClass As NestingClass.ExtendedClass)
+    End Sub
+End Module
+
+Class NestingClass
+    Class ExtendedClass
+      Sub TestExtensionConsumer()
+        TestExtension()
+      End Sub        
+    End Class
+End Class", @"
+internal static partial class Extensions
+{
+    public static void TestExtension(this NestingClass.ExtendedClass extendedClass)
+    {
+    }
+}
+
+internal partial class NestingClass
+{
+    public partial class ExtendedClass
+    {
+        public void TestExtensionConsumer()
+        {
+            this.TestExtension();
+        }
+    }
+}");
+        }
+
+        [Fact]
+        public async Task TestExtensionWithMeWithinExtendedTypeAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Module Extensions
+    <Extension()>
+    Sub TestExtension(extendedClass As ExtendedClass)
+    End Sub
+End Module
+
+Class ExtendedClass
+  Sub TestExtensionConsumer()
+    Me.TestExtension()
+  End Sub
+End Class", @"
+internal static partial class Extensions
+{
+    public static void TestExtension(this ExtendedClass extendedClass)
+    {
+    }
+}
+
+internal partial class ExtendedClass
+{
+    public void TestExtensionConsumer()
+    {
+        this.TestExtension();
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestConstructorAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
