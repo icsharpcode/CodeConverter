@@ -29,8 +29,7 @@ namespace ICSharpCode.CodeConverter.Shared
             typeof(System.Web.HttpUtility),
             typeof(System.Xml.XmlElement),
             typeof(System.Xml.Linq.XElement),
-            typeof(Microsoft.VisualBasic.Constants),
-            typeof(System.Data.SqlClient.SqlCommand),
+            typeof(Microsoft.VisualBasic.Constants)
         }.Select(t => t.Assembly).Concat(
             new[] { Assembly.Load("System.Runtime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a") }
             ).ToArray();

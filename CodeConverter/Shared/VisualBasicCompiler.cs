@@ -52,6 +52,10 @@ namespace ICSharpCode.CodeConverter.Shared
 
         public static VisualBasicCompilationOptions CreateCompilationOptions(string rootNamespace = null)
         {
+            //TODO fix Roslyn bug: adding system.data to globalimports,
+            // while also referencing system.data.datasetextensions and system.linq
+            // causes an unused system.data using.
+
             var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithGlobalImports(GlobalImport.Parse(
                     "System",

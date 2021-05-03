@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
-using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -846,8 +846,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<CSharpSyntaxNode> ConvertInvocationAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol invocationSymbol)
         {
             var expressionSymbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch<ISymbol>();
-            var expressionReturnType =
-                expressionSymbol?.GetReturnType() ?? _semanticModel.GetTypeInfo(node.Expression).Type;
+            var expressionType = _semanticModel.GetTypeInfo(node.Expression).Type;
+            var expressionReturnType = expressionSymbol?.GetReturnType() ?? expressionType;
             var operation = _semanticModel.GetOperation(node);
             if (expressionSymbol?.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic) &&
                 (await SubstituteVisualBasicMethodOrNullAsync(node) ?? await WithRemovedRedundantConversionOrNullAsync(node, expressionSymbol)) is { } csEquivalent) {
@@ -863,9 +863,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             // VB doesn't have a specialized node for element access because the syntax is ambiguous. Instead, it just uses an invocation expression or dictionary access expression, then figures out using the semantic model which one is most likely intended.
             // https://github.com/dotnet/roslyn/blob/master/src/Workspaces/VisualBasic/Portable/LanguageServices/VisualBasicSyntaxFactsService.vb#L768
-            var (convertedExpression, shouldBeElementAccess) = await ConvertInvocationSubExpression();
+            (var convertedExpression, bool shouldBeElementAccess) = await ConvertInvocationSubExpressionAsync(node, operation, expressionSymbol, expressionType, expressionReturnType, invocationSymbol, expr);
             if (shouldBeElementAccess) {
-                return await CreateElementAccess();
+                return await CreateElementAccess(node, convertedExpression);
             }
 
             if (expressionSymbol != null && expressionSymbol.IsKind(SymbolKind.Property) &&
@@ -873,38 +873,69 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return convertedExpression; //Parameterless property access
             }
 
-            if (expressionSymbol != null && (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault) &&
-                                             !expressionSymbol.Equals(invocationSymbol))) {
-                _extraUsingDirectives.Add(nameof(System) + "." + nameof(System.Linq));
-                convertedExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    convertedExpression,
-                    SyntaxFactory.IdentifierName(nameof(Enumerable.ElementAtOrDefault)));
+            if (!IsElementAtOrDefaultInvocation(invocationSymbol, expressionSymbol)) {
+                return SyntaxFactory.InvocationExpression(convertedExpression,
+                    await ConvertArgumentListOrEmptyAsync(node, node.ArgumentList));
             }
 
-            return SyntaxFactory.InvocationExpression(convertedExpression,
+            _extraUsingDirectives.Add(nameof(System) + "." + nameof(System.Linq));
+            var newExpression = CreateMemberAccess(convertedExpression, nameof(Enumerable.ElementAtOrDefault));
+
+            return SyntaxFactory.InvocationExpression(newExpression,
                 await ConvertArgumentListOrEmptyAsync(node, node.ArgumentList));
 
-            async Task<(ExpressionSyntax, bool isElementAccess)> ConvertInvocationSubExpression()
-            {
-                var isElementAccess = operation.IsPropertyElementAccess() ||
-                                      operation.IsArrayElementAccess() ||
-                                      ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
-                return ((ExpressionSyntax)expr, isElementAccess);
+        }
+
+        private async Task<(ExpressionSyntax, bool isElementAccess)> ConvertInvocationSubExpressionAsync(VBSyntax.InvocationExpressionSyntax node,
+            IOperation operation, ISymbol expressionSymbol, ISymbol expressionType, ITypeSymbol expressionReturnType,
+            ISymbol invocationSymbol, CSharpSyntaxNode expr)
+        {
+            var isElementAccess = operation.IsPropertyElementAccess() ||
+                                  operation.IsArrayElementAccess() ||
+                                  ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType) ||
+                                  IsElementAtOrDefaultDataTableInvocation(invocationSymbol, expressionSymbol, expressionType);
+
+            var expressionSyntax = (ExpressionSyntax)expr;
+            var expression = IsElementAtOrDefaultDataTableInvocation(invocationSymbol, expressionSymbol, expressionType)
+                ? CreateMemberAccess(expressionSyntax, nameof(DataTable.Rows)) //Fixes Roslyn bug of interpreting Datatable indexing as Enumerable.ElementAtOrDefault operation.
+                : expressionSyntax;
+
+            return (expression, isElementAccess);
+        }
+
+        private static bool IsElementAtOrDefaultDataTableInvocation(ISymbol invocationSymbol, ISymbol expressionSymbol, ISymbol expressionType)
+        {
+            return IsElementAtOrDefaultInvocation(invocationSymbol, expressionSymbol)
+                   && expressionType.Name == nameof(DataTable);
+        }
+
+        private static bool IsElementAtOrDefaultInvocation(ISymbol invocationSymbol, ISymbol expressionSymbol)
+        {
+            return (expressionSymbol != null
+                    && (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault)
+                        && !expressionSymbol.Equals(invocationSymbol)));
+        }
+
+        private async Task<CSharpSyntaxNode> CreateElementAccess(VBSyntax.InvocationExpressionSyntax node, ExpressionSyntax expression)
+        {
+            var args =
+                await node.ArgumentList.Arguments.AcceptSeparatedListAsync<VBSyntax.ArgumentSyntax, ArgumentSyntax>(TriviaConvertingExpressionVisitor);
+            var bracketedArgumentListSyntax = SyntaxFactory.BracketedArgumentList(args);
+            if (expression is ElementBindingExpressionSyntax binding &&
+                !binding.ArgumentList.Arguments.Any()) {
+                // Special case where structure changes due to conditional access (See VisitMemberAccessExpression)
+                return binding.WithArgumentList(bracketedArgumentListSyntax);
             }
 
-            async Task<CSharpSyntaxNode> CreateElementAccess()
-            {
-                var args =
-                    await node.ArgumentList.Arguments.AcceptSeparatedListAsync<VBSyntax.ArgumentSyntax, ArgumentSyntax>(TriviaConvertingExpressionVisitor);
-                var bracketedArgumentListSyntax = SyntaxFactory.BracketedArgumentList(args);
-                if (convertedExpression is ElementBindingExpressionSyntax binding &&
-                    !binding.ArgumentList.Arguments.Any()) {
-                    // Special case where structure changes due to conditional access (See VisitMemberAccessExpression)
-                    return binding.WithArgumentList(bracketedArgumentListSyntax);
-                } else {
-                    return SyntaxFactory.ElementAccessExpression(convertedExpression, bracketedArgumentListSyntax);
-                }
-            }
+            return SyntaxFactory.ElementAccessExpression(expression, bracketedArgumentListSyntax);
+        }
+
+        private static ExpressionSyntax CreateMemberAccess(ExpressionSyntax expression, string identifier)
+        {
+            var newExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                expression, SyntaxFactory.IdentifierName(identifier));
+
+            return newExpression;
         }
 
         private async Task<InvocationExpressionSyntax> TryConvertParameterizedPropertyAsync(IOperation operation,

@@ -204,6 +204,30 @@ public partial class Class1
         }
 
         [Fact]
+        public async Task DataTableIndexingAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
+
+Class TestClass
+    Private ReadOnly _myTable As DataTable
+
+    Sub TestMethod()
+      Dim dataRow = _myTable(0)
+    End Sub
+End Class", @"using System.Data;
+
+internal partial class TestClass
+{
+    private readonly DataTable _myTable;
+
+    public void TestMethod()
+    {
+        var dataRow = _myTable.Rows[0];
+    }
+}");
+        }
+
+        [Fact]
         public async Task ElementAtOrDefaultInvocationIsNotDuplicatedAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
