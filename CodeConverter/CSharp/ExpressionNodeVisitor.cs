@@ -575,6 +575,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
+        /// <remarks>Collection initialization has many variants in both VB and C#. Please add especially many test cases when touching this.</remarks>
         public override async Task<CSharpSyntaxNode> VisitCollectionInitializer(VBasic.Syntax.CollectionInitializerSyntax node)
         {
             var isExplicitCollectionInitializer = node.Parent is VBasic.Syntax.ObjectCollectionInitializerSyntax
@@ -591,17 +592,28 @@ namespace ICSharpCode.CodeConverter.CSharp
             var initializer = SyntaxFactory.InitializerExpression(initializerKind, SyntaxFactory.SeparatedList(initializers));
             if (isExplicitCollectionInitializer) return initializer;
 
-            if (!(_semanticModel.GetTypeInfo(node).ConvertedType is IArrayTypeSymbol arrayType)) return SyntaxFactory.ImplicitArrayCreationExpression(initializer);
-
-            if (!initializers.Any() && arrayType.Rank == 1) {
-
-                var arrayTypeArgs = SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList(CommonConversions.GetTypeSyntax(arrayType.ElementType)));
+            var convertedType = _semanticModel.GetTypeInfo(node).ConvertedType;
+            var dimensions = convertedType is IArrayTypeSymbol ats ? ats.Rank : 1; // For multidimensional array [,] note these are different from nested arrays [][]
+            if (!(convertedType.GetEnumerableElementTypeOrDefault() is {} elementType)) return SyntaxFactory.ImplicitArrayCreationExpression(initializer);
+            
+            if (!initializers.Any() && dimensions == 1) {
+                var arrayTypeArgs = SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList(CommonConversions.GetTypeSyntax(elementType)));
                 var arrayEmpty = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     SyntaxFactory.IdentifierName(nameof(Array)), SyntaxFactory.GenericName(nameof(Array.Empty)).WithTypeArgumentList(arrayTypeArgs));
                 return SyntaxFactory.InvocationExpression(arrayEmpty);
             }
-            var commas = Enumerable.Repeat(SyntaxFactory.Token(SyntaxKind.CommaToken), arrayType.Rank - 1);
-            return SyntaxFactory.ImplicitArrayCreationExpression(SyntaxFactory.TokenList(commas), initializer);
+
+            bool hasExpressionToInferTypeFrom = node.Initializers.SelectMany(n => n.DescendantNodesAndSelf()).Any(n => n is not VBasic.Syntax.CollectionInitializerSyntax);
+            if (hasExpressionToInferTypeFrom) {
+                var commas = Enumerable.Repeat(SyntaxFactory.Token(SyntaxKind.CommaToken), dimensions - 1);
+                return SyntaxFactory.ImplicitArrayCreationExpression(SyntaxFactory.TokenList(commas), initializer);
+            }
+
+            var arrayType = (ArrayTypeSyntax)CommonConversions.CsSyntaxGenerator.ArrayTypeExpression(CommonConversions.GetTypeSyntax(elementType));
+            var sizes = Enumerable.Repeat<ExpressionSyntax>(SyntaxFactory.OmittedArraySizeExpression(), dimensions);
+            var arrayRankSpecifierSyntax = SyntaxFactory.SingletonList(SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(sizes)));
+            arrayType = arrayType.WithRankSpecifiers(arrayRankSpecifierSyntax);
+            return SyntaxFactory.ArrayCreationExpression(arrayType, initializer);
         }
 
         private bool IsComplexInitializer(VBSyntax.CollectionInitializerSyntax node)

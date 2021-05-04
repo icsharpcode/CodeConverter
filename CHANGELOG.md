@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Keep optional parameters for parameterized properties [#642](https://github.com/icsharpcode/CodeConverter/issues/642)
 * Maintain leading whitespace in comments [#711](https://github.com/icsharpcode/CodeConverter/issues/711)
 * Avoid XmlException when referencing certain nuget packages [#714](https://github.com/icsharpcode/CodeConverter/issues/714)
+* Use explicit type as default for array creation [#713](https://github.com/icsharpcode/CodeConverter/issues/713)
 
 ### C# -> VB
 
