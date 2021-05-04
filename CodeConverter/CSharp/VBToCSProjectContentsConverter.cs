@@ -94,7 +94,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             string projDirPath = SourceProject.GetDirectoryPath();
             foreach (var doc in additionalDocumentsToConvert) {
                 string newPath = Path.Combine(projDirPath, Path.GetFileName(doc.FilePath));
-                if (newPath != doc.FilePath) {
+                if (Path.GetExtension(doc.FilePath).Equals(".resx", StringComparison.OrdinalIgnoreCase) && newPath != doc.FilePath) {
                     string newText = RebaseResxPaths(projDirPath, Path.GetDirectoryName(doc.FilePath), (await doc.GetTextAsync(cancellationToken)).ToString());
                     yield return new ConversionResult(newText) {
                         SourcePathOrNull = doc.FilePath,

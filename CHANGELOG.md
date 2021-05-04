@@ -4,18 +4,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
-
-### Vsix
-
-
-### VB -> C#
-
-
-### C# -> VB
-
-
-## [8.2.3] - 2021-04-04
-
 ### Command line
 * The --Core-Only flag no longer requires a value [#704](https://github.com/icsharpcode/CodeConverter/issues/704)
 
@@ -28,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Implicilty typed inherited events no longer create extra delegates [#700](https://github.com/icsharpcode/CodeConverter/issues/700)
 * Keep optional parameters for parameterized properties [#642](https://github.com/icsharpcode/CodeConverter/issues/642)
 * Maintain leading whitespace in comments [#711](https://github.com/icsharpcode/CodeConverter/issues/711)
+* Avoid XmlException when referencing certain nuget packages [#714](https://github.com/icsharpcode/CodeConverter/issues/714)
 
 ### C# -> VB
 
