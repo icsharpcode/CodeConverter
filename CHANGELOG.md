@@ -4,6 +4,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+
+### Vsix
+
+
+### VB -> C#
+
+
+### C# -> VB
+
+
+## [8.2.4] - 2021-05-04
+
 ### Command line
 * The --Core-Only flag no longer requires a value [#704](https://github.com/icsharpcode/CodeConverter/issues/704)
 

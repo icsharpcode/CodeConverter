@@ -10,7 +10,7 @@ jobs:
  build:
     runs-on: windows-latest
     env:
-      BuildVersion: '8.2.3'
+      BuildVersion: '8.2.4'
       BuildPlatform: Any CPU
       BuildTarget: Release
     steps:
