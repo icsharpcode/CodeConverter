@@ -1316,6 +1316,50 @@ public partial class FooConsumer
         }
 
         [Fact]
+        public async Task RenamedInterfacePropertyConsumerCasingRenamedAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        Property FooProp As Integer
+    End Interface
+
+Public Class Foo
+    Implements IFoo
+
+    Property FOOPROPRENAMED As Integer Implements IFoo.DoFoo
+End Class
+
+Public Class FooConsumer
+    Function DoFooRenamedConsumer(ByRef str As String, i As Integer) As Integer
+        Dim foo As New Foo
+        Return foo.FOOPROPRENAMED
+    End Function
+End Class", @"
+public partial interface IFoo
+{
+    int DoFoo(ref string str, int i);
+}
+
+public partial class Foo : IFoo
+{
+    int IFoo.DoFoo(ref string str, int i)
+    {
+        return 4;
+    }
+
+    public int DoFooRenamed(ref string str, int i) => ((IFoo)this).DoFoo(ref str, i);
+}
+
+public partial class FooConsumer
+{
+    public int DoFooRenamedConsumer(ref string str, int i)
+    {
+        var foo = new Foo();
+        return foo.DoFooRenamed(ref str, i);
+    }
+}");
+        }
+
+        [Fact]
         public async Task InterfaceRenamedMemberConsumerAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
