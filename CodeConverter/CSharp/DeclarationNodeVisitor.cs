@@ -676,7 +676,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var directlyConvertedCsIdentifier = CommonConversions.CsEscapedIdentifier(node.Identifier.Value as string);
             var csIdentifier = CommonConversions.ConvertIdentifier(node.Identifier);
 
-            var explicitInterfaceSpecifier = IsPrivateInterfaceImplementation(propSymbol) || IsRenamedInterfaceMember(directlyConvertedCsIdentifier, csIdentifier)
+            var explicitInterfaceSpecifier = IsPrivateInterfaceImplementation(propSymbol) || IsRenamedInterfaceMember(propSymbol, directlyConvertedCsIdentifier, csIdentifier)
                 ? SyntaxFactory.ExplicitInterfaceSpecifier(CommonConversions.GetFullyQualifiedNameSyntax(propSymbol.ExplicitInterfaceImplementations.First().ContainingType))
                 : null;
 
@@ -703,7 +703,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                           ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ObjectKeyword));
 
             // If we had to rename the property to match the interface, emit a property for external references with the old name to point to
-            if (IsRenamedInterfaceMember(directlyConvertedCsIdentifier, csIdentifier)) {
+            if (IsRenamedInterfaceMember(propSymbol, directlyConvertedCsIdentifier, csIdentifier)) {
                 var arrowClause = GetDelegatingClause(explicitInterfaceSpecifier, csIdentifier, null);
                 var declaration = SyntaxFactory.PropertyDeclaration(
                     attributes,
@@ -1137,12 +1137,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var parameterList = await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList();
                 var additionalDeclarations = new List<MemberDeclarationSyntax>();
 
-                var explicitInterfaceSpecifier = IsPrivateInterfaceImplementation(declaredSymbol) || IsRenamedInterfaceMember(directlyConvertedCsIdentifier, csIdentifier)
+                var explicitInterfaceSpecifier = IsPrivateInterfaceImplementation(declaredSymbol) || IsRenamedInterfaceMember(declaredSymbol, directlyConvertedCsIdentifier, csIdentifier)
                     ? SyntaxFactory.ExplicitInterfaceSpecifier(CommonConversions.GetFullyQualifiedNameSyntax(declaredSymbol.ExplicitInterfaceImplementations.First().ContainingType))
                     : null;
 
                 // If we had to rename the method to match the interface, emit a method for external references with the old name to point to
-                if (IsRenamedInterfaceMember(directlyConvertedCsIdentifier, csIdentifier)) {
+                if (IsRenamedInterfaceMember(declaredSymbol, directlyConvertedCsIdentifier, csIdentifier)) {
                     var arrowClause = GetDelegatingClause(explicitInterfaceSpecifier, csIdentifier, parameterList);
 
                     additionalDeclarations.Add(SyntaxFactory.MethodDeclaration(
@@ -1273,9 +1273,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             };
         }
 
-        private static bool IsRenamedInterfaceMember(SyntaxToken directlyConvertedCsIdentifier, SyntaxToken csIdentifier)
+        private static bool IsRenamedInterfaceMember(ISymbol declaredSymbol,
+            SyntaxToken directlyConvertedCsIdentifier, SyntaxToken csIdentifier)
         {
-            return !StringComparer.OrdinalIgnoreCase.Equals(directlyConvertedCsIdentifier.Value, csIdentifier.Value);
+            return declaredSymbol switch {
+                IMethodSymbol methodSymbol => !StringComparer.Ordinal.Equals(directlyConvertedCsIdentifier.Value,
+                                                  csIdentifier.Value)
+                                              && methodSymbol.ExplicitInterfaceImplementations.Any(),
+                IPropertySymbol propertySymbol => !StringComparer.Ordinal.Equals(directlyConvertedCsIdentifier.Value,
+                                                      csIdentifier.Value)
+                                                  && propertySymbol.ExplicitInterfaceImplementations.Any(),
+                _ => throw new ArgumentOutOfRangeException(nameof(declaredSymbol))
+            };
         }
 
         private static ArgumentListSyntax CreateDelegatingArgList(ParameterListSyntax parameterList)

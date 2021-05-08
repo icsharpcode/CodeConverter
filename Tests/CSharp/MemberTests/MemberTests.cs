@@ -1140,11 +1140,13 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    public int FooDifferentCase(out string str2)
+    int IFoo.FooDifferentCase(out string str2)
     {
         str2 = 2.ToString();
         return 3;
     }
+
+    public int fooDifferentCase(out string str2) => ((IFoo)this).FooDifferentCase(out str2);
 }
 ");
         }
@@ -1426,6 +1428,94 @@ public partial class FooConsumer
     {
         var foo = new Foo();
         return foo.FooPropRenamed;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task InterfaceMethodCasingRenamedConsumerAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        Function DoFoo(str As String, i As Integer) As Integer
+    End Interface
+
+Public Class Foo
+    Implements IFoo
+
+    Function dofoo(str As String, i As Integer) As Integer Implements IFoo.DoFoo
+        Return 4
+    End Function
+End Class
+
+Public Class FooConsumer
+    Function DoFooRenamedConsumer(str As String, i As Integer) As Integer
+        Dim foo As New Foo
+        Return foo.dofoo(str, i)
+    End Function
+End Class", @"
+public partial interface IFoo
+{
+    int DoFoo(string str, int i);
+}
+
+public partial class Foo : IFoo
+{
+    int IFoo.DoFoo(string str, int i)
+    {
+        return 4;
+    }
+
+    public int dofoo(string str, int i) => ((IFoo)this).DoFoo(str, i);
+}
+
+public partial class FooConsumer
+{
+    public int DoFooRenamedConsumer(string str, int i)
+    {
+        var foo = new Foo();
+        return foo.dofoo(str, i);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task InterfacePropertyCasingRenamedConsumerAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        Property FooProp As Integer
+    End Interface
+
+Public Class Foo
+    Implements IFoo
+
+    Property fooprop As Integer Implements IFoo.FooProp
+    
+End Class
+
+Public Class FooConsumer
+    Function GetFooRenamed() As Integer
+        Dim foo As New Foo
+        Return foo.fooprop
+    End Function
+End Class", @"
+public partial interface IFoo
+{
+    int FooProp { get; set; }
+}
+
+public partial class Foo : IFoo
+{
+    int IFoo.FooProp { get; set; }
+
+    public int fooprop => ((IFoo)this).FooProp;
+}
+
+public partial class FooConsumer
+{
+    public int GetFooRenamed()
+    {
+        var foo = new Foo();
+        return foo.fooprop;
     }
 }");
         }
