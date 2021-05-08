@@ -1235,7 +1235,49 @@ public partial class FooBar : IFoo, IBar
         }
 
         [Fact]
-        public async Task RenamedInterfaceMemberFullyQualifiedAsync()
+        public async Task IdenticalInterfacePropertiesWithRenamedInterfaceMembersAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Interface IFoo
+        Property FooBarProp As Integer
+    End Interface
+
+Public Interface IBar
+    Property FooBarProp As Integer
+End Interface
+
+Public Class FooBar
+    Implements IFoo, IBar
+
+    Property Foo As Integer Implements IFoo.FooBarProp
+
+    Property Bar As Integer Implements IBar.FooBarProp
+    
+End Class", @"
+public partial interface IFoo
+{
+    int FooBarProp { get; set; }
+}
+
+public partial interface IBar
+{
+    int FooBarProp { get; set; }
+}
+
+public partial class FooBar : IFoo, IBar
+{
+    int IFoo.FooBarProp { get; set; }
+
+    public int Foo => ((IFoo)this).FooBarProp;
+
+    int IBar.FooBarProp { get; set; }
+
+    public int Bar => ((IBar)this).FooBarProp;
+}");
+        }
+
+        [Fact]
+        public async Task RenamedInterfaceMethodFullyQualifiedAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Namespace TestNamespace
     Public Interface IFoo
@@ -1270,7 +1312,38 @@ public partial class Foo : TestNamespace.IFoo
         }
 
         [Fact]
-        public async Task RenamedInterfaceMemberConsumerCasingRenamedAsync()
+        public async Task RenamedInterfacePropertyFullyQualifiedAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Namespace TestNamespace
+    Public Interface IFoo
+        Property FooProp As Integer
+    End Interface
+End Namespace
+
+Public Class Foo
+    Implements TestNamespace.IFoo
+
+    Property FooPropRenamed As Integer Implements TestNamespace.IFoo.FooProp
+    
+End Class", @"
+namespace TestNamespace
+{
+    public partial interface IFoo
+    {
+        int FooProp { get; set; }
+    }
+}
+
+public partial class Foo : TestNamespace.IFoo
+{
+    int TestNamespace.IFoo.FooProp { get; set; }
+
+    public int FooPropRenamed => ((TestNamespace.IFoo)this).FooProp;
+}");
+        }
+
+        [Fact]
+        public async Task RenamedInterfaceMethodConsumerCasingRenamedAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
         Function DoFoo(ByRef str As String, i As Integer) As Integer
@@ -1325,42 +1398,40 @@ public partial class FooConsumer
 Public Class Foo
     Implements IFoo
 
-    Property FOOPROPRENAMED As Integer Implements IFoo.DoFoo
+    Property FooPropRenamed As Integer Implements IFoo.FooProp
+    
 End Class
 
 Public Class FooConsumer
-    Function DoFooRenamedConsumer(ByRef str As String, i As Integer) As Integer
+    Function GetFooRenamed() As Integer
         Dim foo As New Foo
         Return foo.FOOPROPRENAMED
     End Function
 End Class", @"
 public partial interface IFoo
 {
-    int DoFoo(ref string str, int i);
+    int FooProp { get; set; }
 }
 
 public partial class Foo : IFoo
 {
-    int IFoo.DoFoo(ref string str, int i)
-    {
-        return 4;
-    }
+    int IFoo.FooProp { get; set; }
 
-    public int DoFooRenamed(ref string str, int i) => ((IFoo)this).DoFoo(ref str, i);
+    public int FooPropRenamed => ((IFoo)this).FooProp;
 }
 
 public partial class FooConsumer
 {
-    public int DoFooRenamedConsumer(ref string str, int i)
+    public int GetFooRenamed()
     {
         var foo = new Foo();
-        return foo.DoFooRenamed(ref str, i);
+        return foo.FooPropRenamed;
     }
 }");
         }
 
         [Fact]
-        public async Task InterfaceRenamedMemberConsumerAsync()
+        public async Task InterfaceRenamedMethodConsumerAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
         Function DoFoo(ByRef str As String, i As Integer) As Integer
@@ -1406,7 +1477,49 @@ public partial class FooConsumer
         }
 
         [Fact]
-        public async Task PartialInterfaceRenamedMemberConsumerAsync()
+        public async Task InterfaceRenamedPropertyConsumerAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        Property FooProp As Integer
+    End Interface
+
+Public Class Foo
+    Implements IFoo
+
+    Property FooPropRenamed As Integer Implements IFoo.FooProp
+    
+End Class
+
+Public Class FooConsumer
+    Function GetFooRenamed() As Integer
+        Dim foo As New Foo
+        Return foo.FooPropRenamed
+    End Function
+End Class", @"
+public partial interface IFoo
+{
+    int FooProp { get; set; }
+}
+
+public partial class Foo : IFoo
+{
+    int IFoo.FooProp { get; set; }
+
+    public int FooPropRenamed => ((IFoo)this).FooProp;
+}
+
+public partial class FooConsumer
+{
+    public int GetFooRenamed()
+    {
+        var foo = new Foo();
+        return foo.FooPropRenamed;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task PartialInterfaceRenamedMethodConsumerAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Partial Interface IFoo
         Function DoFoo(ByRef str As String, i As Integer) As Integer
@@ -1452,6 +1565,48 @@ public partial class FooConsumer
         }
 
         [Fact]
+        public async Task PartialInterfaceRenamedPropertyConsumerAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Partial Interface IFoo
+        Property FooProp As Integer
+    End Interface
+
+Public Class Foo
+    Implements IFoo
+
+    Property FooPropRenamed As Integer Implements IFoo.FooProp
+    
+End Class
+
+Public Class FooConsumer
+    Function GetFooRenamed() As Integer
+        Dim foo As New Foo
+        Return foo.FooPropRenamed
+    End Function
+End Class", @"
+public partial interface IFoo
+{
+    int FooProp { get; set; }
+}
+
+public partial class Foo : IFoo
+{
+    int IFoo.FooProp { get; set; }
+
+    public int FooPropRenamed => ((IFoo)this).FooProp;
+}
+
+public partial class FooConsumer
+{
+    public int GetFooRenamed()
+    {
+        var foo = new Foo();
+        return foo.FooPropRenamed;
+    }
+}");
+        }
+
+        [Fact]
         public async Task ExplicitInterfaceImplementationAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
@@ -1485,6 +1640,56 @@ public partial interface IFoo
 public partial class Foo : IFoo
 {
     int IFoo.ExplicitFunc(ref string str, int i)
+    {
+        return 5;
+    }
+
+    int IFoo.get_ExplicitProp(string str)
+    {
+        return 5;
+    }
+
+    void IFoo.set_ExplicitProp(string str, int value)
+    {
+    }
+}
+");
+        }
+
+        [Fact]
+        public async Task ExplicitInterfaceImplementationOptionalParametersAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Interface IFoo
+  Property ExplicitProp(Optional str As String = """") As Integer
+  Function ExplicitFunc(Optional str2 As String = """", Optional i2 As Integer = 1) As Integer
+End Interface
+
+Public Class Foo
+  Implements IFoo
+
+  Private Function ExplicitFunc(Optional str As String = """", Optional i2 As Integer = 1) As Integer Implements IFoo.ExplicitFunc
+    Return 5
+  End Function
+    
+  Private Property ExplicitProp(Optional str As String = """") As Integer Implements IFoo.ExplicitProp
+    Get
+      Return 5
+    End Get
+    Set(value As Integer)
+    End Set
+  End Property
+End Class", @"
+public partial interface IFoo
+{
+    int get_ExplicitProp(string str = """");
+    void set_ExplicitProp(string str = """", int value = default);
+    int ExplicitFunc(string str2 = """", int i2 = 1);
+}
+
+public partial class Foo : IFoo
+{
+    int IFoo.ExplicitFunc(string str, int i2)
     {
         return 5;
     }

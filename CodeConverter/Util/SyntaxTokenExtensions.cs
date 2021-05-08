@@ -112,9 +112,14 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static bool IsCsVisibility(this SyntaxToken token, bool isVariableOrConst, bool isConstructor)
         {
-            return token.IsKind(SyntaxKind.PublicKeyword, SyntaxKind.InternalKeyword, SyntaxKind.ProtectedKeyword, SyntaxKind.PrivateKeyword)
+            return IsCsMemberVisibility(token)
                    || isVariableOrConst && token.IsKind(SyntaxKind.ConstKeyword)
                    || isConstructor && token.IsKind(SyntaxKind.StaticKeyword);
+        }
+
+        public static bool IsCsMemberVisibility(this SyntaxToken token)
+        {
+            return token.IsKind(SyntaxKind.PublicKeyword, SyntaxKind.InternalKeyword, SyntaxKind.ProtectedKeyword, SyntaxKind.PrivateKeyword);
         }
 
         public static SyntaxToken WithSourceMappingFrom(this SyntaxToken converted, SyntaxNodeOrToken fromToken)
