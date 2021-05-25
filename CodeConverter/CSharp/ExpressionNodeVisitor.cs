@@ -1066,8 +1066,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (node.Body is VBasic.Syntax.StatementSyntax statement) {
                 convertedStatements = await statement.Accept(await CreateMethodBodyVisitorAsync(node));
             } else {
-                var csNode = await node.Body.AcceptAsync(TriviaConvertingExpressionVisitor);
-                convertedStatements = new[] { SyntaxFactory.ExpressionStatement((ExpressionSyntax)csNode)};
+                var csNode = await node.Body.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+                convertedStatements = new[] { SyntaxFactory.ExpressionStatement(csNode)};
             }
             var param = await node.SubOrFunctionHeader.ParameterList.AcceptAsync<ParameterListSyntax>(TriviaConvertingExpressionVisitor);
             return await _lambdaConverter.ConvertAsync(node, param, convertedStatements);

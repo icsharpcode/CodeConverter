@@ -92,11 +92,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return null;
             }
 
-            private async Task<ExpressionSyntax> ConvertIsOrIsNotExpressionArgAsync(VBSyntax.ExpressionSyntax binaryExpressionArg)
-            {
-                return (ExpressionSyntax) (await ConvertMyGroupCollectionPropertyGetWithUnderlyingFieldAsync(binaryExpressionArg)
-                                           ?? await binaryExpressionArg.AcceptAsync(_triviaConvertingVisitor));
-            }
+            private async Task<ExpressionSyntax> ConvertIsOrIsNotExpressionArgAsync(VBSyntax.ExpressionSyntax binaryExpressionArg) =>
+                await ConvertMyGroupCollectionPropertyGetWithUnderlyingFieldAsync(binaryExpressionArg)
+                ?? await binaryExpressionArg.AcceptAsync<ExpressionSyntax>(_triviaConvertingVisitor);
 
             private async Task<ExpressionSyntax> ConvertMyGroupCollectionPropertyGetWithUnderlyingFieldAsync(SyntaxNode node)
             {

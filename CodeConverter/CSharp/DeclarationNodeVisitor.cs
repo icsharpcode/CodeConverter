@@ -926,14 +926,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             async Task<MethodDeclarationSyntax> CreateMethodDeclarationSyntax(VBSyntax.ParameterListSyntax containingPropParameterList, bool voidReturn)
             {
-                var parameterListSyntax = await containingPropParameterList.AcceptAsync(_triviaConvertingExpressionVisitor, sourceMap);
+                var parameterListSyntax = await containingPropParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor, sourceMap);
                 var methodModifiers = explicitInterfaceSpecifier != null ? modifiers.RemoveOnly(x => x.IsKind(CSSyntaxKind.PrivateKeyword))
                     : modifiers;
                 MethodDeclarationSyntax methodDeclarationSyntax = SyntaxFactory.MethodDeclaration(attributes, methodModifiers,
                     voidReturn ? SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword)) : returnType,
                     explicitInterfaceSpecifier,
                     SyntaxFactory.Identifier(potentialMethodId), null,
-                    (ParameterListSyntax)parameterListSyntax, SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), body, null);
+                    parameterListSyntax, SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), body, null);
                 return methodDeclarationSyntax;
             }
         }
@@ -1101,8 +1101,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
                 var (typeParameters, constraints) = await SplitTypeParametersAsync(node.TypeParameterList);
 
-                var returnType = (TypeSyntax)(declaredSymbol != null ? CommonConversions.GetTypeSyntax(declaredSymbol.ReturnType) :
-                    await (node.AsClause?.Type).AcceptAsync(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VoidKeyword)));
+                var returnType = (declaredSymbol != null ? CommonConversions.GetTypeSyntax(declaredSymbol.ReturnType) :
+                    await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VoidKeyword)));
 
                 var directlyConvertedCsIdentifier = CommonConversions.CsEscapedIdentifier(node.Identifier.Value as string);
                 var csIdentifier = CommonConversions.ConvertIdentifier(node.Identifier);
@@ -1338,8 +1338,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             _extraUsingDirectives.Add(DllImportType.Namespace);
             _extraUsingDirectives.Add(CharSetType.Namespace);
             var dllImportAttributeName = SyntaxFactory.ParseName(DllImportType.Name.Replace("Attribute", ""));
-            var dllImportLibLiteral = await node.LibraryName.AcceptAsync(_triviaConvertingExpressionVisitor);
-            importAttributes.Add(SyntaxFactory.AttributeArgument((ExpressionSyntax)dllImportLibLiteral));
+            var dllImportLibLiteral = await node.LibraryName.AcceptAsync<ExpressionSyntax>(_triviaConvertingExpressionVisitor);
+            importAttributes.Add(SyntaxFactory.AttributeArgument(dllImportLibLiteral));
 
             if (node.AliasName != null) {
                 importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("EntryPoint"), null, await node.AliasName.AcceptAsync<ExpressionSyntax>(_triviaConvertingExpressionVisitor)));

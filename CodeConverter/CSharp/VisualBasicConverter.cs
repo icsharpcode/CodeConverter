@@ -30,7 +30,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var semanticModel = compilation.GetSemanticModel(tree, true);
             var visualBasicSyntaxVisitor = new
                 DeclarationNodeVisitor(document, compilation, semanticModel, csharpViewOfVbSymbols, csSyntaxGenerator);
-            var converted = (CSS.CompilationUnitSyntax)await root.AcceptAsync(visualBasicSyntaxVisitor.TriviaConvertingDeclarationVisitor);
+            var converted = await root.AcceptAsync<CSS.CompilationUnitSyntax>(visualBasicSyntaxVisitor.TriviaConvertingDeclarationVisitor);
 
             return optionalOperations.MapSourceTriviaToTargetHandled(root, converted, document);
         }

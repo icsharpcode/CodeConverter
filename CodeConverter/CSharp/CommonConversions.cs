@@ -512,7 +512,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             // These attributes' semantic effects are expressed differently in CSharp.
             return await attributeList.Attributes.Where(a => !IsExtensionAttribute(a) && !IsOutAttribute(a))
-                .SelectAsync(async a => (CSSyntax.AttributeListSyntax)await a.AcceptAsync(TriviaConvertingExpressionVisitor));
+                .SelectAsync(async a => await a.AcceptAsync<CSSyntax.AttributeListSyntax>(TriviaConvertingExpressionVisitor));
         }
 
         public static CSSyntax.AttributeArgumentListSyntax CreateAttributeArgumentList(params CSSyntax.AttributeArgumentSyntax[] attributeArgumentSyntaxs)

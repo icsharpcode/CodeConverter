@@ -340,22 +340,22 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<CSSyntax.QueryClauseSyntax> ConvertLetClauseAsync(VBSyntax.LetClauseSyntax ls)
         {
             var singleVariable = ls.Variables.Single();
-            return SyntaxFactory.LetClause(CommonConversions.ConvertIdentifier(singleVariable.NameEquals.Identifier.Identifier), (CSSyntax.ExpressionSyntax) await singleVariable.Expression.AcceptAsync(_triviaConvertingVisitor));
+            return SyntaxFactory.LetClause(CommonConversions.ConvertIdentifier(singleVariable.NameEquals.Identifier.Identifier), await singleVariable.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor));
         }
 
         private async Task<CSSyntax.QueryClauseSyntax> ConvertOrderByClauseAsync(VBSyntax.OrderByClauseSyntax os)
         {
-            var orderingSyntaxs = await os.Orderings.SelectAsync(async o => (CSSyntax.OrderingSyntax) await o.AcceptAsync(_triviaConvertingVisitor));
+            var orderingSyntaxs = await os.Orderings.SelectAsync(async o => await o.AcceptAsync<CSSyntax.OrderingSyntax>(_triviaConvertingVisitor));
             return SyntaxFactory.OrderByClause(SyntaxFactory.SeparatedList(orderingSyntaxs));
         }
 
         private async Task<CSSyntax.QueryClauseSyntax> ConvertJoinClauseAsync(VBSyntax.JoinClauseSyntax js)
         {
             var variable = js.JoinedVariables.Single();
-            var joinLhs = SingleExpression(await js.JoinConditions.SelectAsync(async c => (CSSyntax.ExpressionSyntax) await c.Left.AcceptAsync(_triviaConvertingVisitor)));
-            var joinRhs = SingleExpression(await js.JoinConditions.SelectAsync(async c => (CSSyntax.ExpressionSyntax) await c.Right.AcceptAsync(_triviaConvertingVisitor)));
+            var joinLhs = SingleExpression(await js.JoinConditions.SelectAsync(async c => await c.Left.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor)));
+            var joinRhs = SingleExpression(await js.JoinConditions.SelectAsync(async c => await c.Right.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor)));
             var convertIdentifier = CommonConversions.ConvertIdentifier(variable.Identifier.Identifier);
-            var expressionSyntax = (CSSyntax.ExpressionSyntax) await variable.Expression.AcceptAsync(_triviaConvertingVisitor);
+            var expressionSyntax = await variable.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor);
 
             CSSyntax.JoinIntoClauseSyntax joinIntoClauseSyntax = null;
             if (js is VBSyntax.GroupJoinClauseSyntax gjs) {
