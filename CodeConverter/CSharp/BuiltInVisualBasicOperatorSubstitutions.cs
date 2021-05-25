@@ -17,6 +17,7 @@ using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -104,8 +105,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                         return await ConvertMyGroupCollectionPropertyGetWithUnderlyingFieldAsync(co.Operand.Syntax);
                     case IPropertyReferenceOperation pro when pro.Property.IsMyGroupCollectionProperty():
                         var associatedField = pro.Property.GetAssociatedField();
-                        var propertyReferenceOperation = ((IPropertyReferenceOperation)pro.Instance);
-                        var qualification = await propertyReferenceOperation.Syntax.AcceptAsync<ExpressionSyntax>(_triviaConvertingVisitor);
+                        var propertyReferenceSyntax = (VisualBasicSyntaxNode)((IPropertyReferenceOperation)pro.Instance).Syntax;
+                        var qualification = await propertyReferenceSyntax.AcceptAsync<ExpressionSyntax>(_triviaConvertingVisitor);
                         return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, qualification, SyntaxFactory.IdentifierName(associatedField.Name));
                     default:
                         return null;
