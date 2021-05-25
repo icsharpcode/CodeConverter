@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Prevent overrides and overloads appearing on the same property (https://github.com/icsharpcode/CodeConverter/issues/681)
 
 ### C# -> VB
 
@@ -17,10 +18,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [8.2.4] - 2021-05-04
 
 ### Command line
+
 * The --Core-Only flag no longer requires a value [#704](https://github.com/icsharpcode/CodeConverter/issues/704)
 
 
 ### VB -> C#
+
 * Deal with NullReferenceException caused by Nothing literal [#707](https://github.com/icsharpcode/CodeConverter/issues/707)
 * Include text of region which can't be converted
 * Convert region names

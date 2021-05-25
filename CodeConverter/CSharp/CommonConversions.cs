@@ -349,11 +349,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static bool? RequiresNewKeyword(ISymbol declaredSymbol)
         {
-            if (!(declaredSymbol is IMethodSymbol methodSymbol)) return null;
-            if (declaredSymbol.IsOverride ) return false;
-            var methodSignature = methodSymbol.GetUnqualifiedMethodSignature(true);
-            return declaredSymbol.ContainingType.FollowProperty(s => s.BaseType).Skip(1).Any(t => t.GetMembers()
-                .Any(s => s.Name == declaredSymbol.Name && s is IMethodSymbol m && m.GetUnqualifiedMethodSignature(true) == methodSignature));
+            if (declaredSymbol.IsOverride) return false;
+            if (declaredSymbol is IPropertySymbol propertySymbol || declaredSymbol is IMethodSymbol methodSymbol) {
+                var methodSignature = declaredSymbol.GetUnqualifiedMethodOrPropertySignature(true);
+                return declaredSymbol.ContainingType.FollowProperty(s => s.BaseType).Skip(1).Any(t => t.GetMembers()
+                    .Any(s => s.Name == declaredSymbol.Name && (s is IPropertySymbol || s is IMethodSymbol) && s.GetUnqualifiedMethodOrPropertySignature(true) == methodSignature));
+            }
+            return null;
         }
 
         private static bool ContextHasIdenticalDefaults(TokenContext context, TokenContext[] contextsWithIdenticalDefaults, ISymbol declaredSymbol)
