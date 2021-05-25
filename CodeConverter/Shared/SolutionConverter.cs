@@ -86,27 +86,8 @@ namespace ICSharpCode.CodeConverter.Shared
                 }).Where(c => !c.IsIdentity);
         }
 
-        private static List<(string Find, string Replace, bool FirstOnly)> GetProjectReferenceReplacements(IReadOnlyCollection<Project> projectsToConvert,
-            string sourceSolutionContents)
-        {
-            var projectReferenceReplacements = new List<(string Find, string Replace, bool FirstOnly)>();
-            foreach (var project in projectsToConvert) {
-                var projFilename = Path.GetFileName(project.FilePath);
-                var projDirPath = project.GetDirectoryPath();
-
-                var newProjFilename = PathConverter.TogglePathExtension(projFilename);
-
-                var projPath = PathConverter.GetFileDirPath(projFilename, projDirPath);
-                var newProjPath = PathConverter.GetFileDirPath(newProjFilename, projDirPath);
-
-                var projPathEscaped = Regex.Escape(projPath);
-
-                projectReferenceReplacements.Add((projPathEscaped, newProjPath, false));
-                if (!string.IsNullOrWhiteSpace(sourceSolutionContents)) projectReferenceReplacements.Add(GetProjectGuidReplacement(projPathEscaped, sourceSolutionContents));
-            }
-
-            return projectReferenceReplacements;
-        }
+        private static List<(string Find, string Replace, bool FirstOnly)> GetProjectReferenceReplacements(IReadOnlyCollection<Project> projectsToConvert, string sourceSolutionContents) =>
+            SolutionFileTextEditor.GetProjectReferenceReplacements(projectsToConvert.Select(p => (FilePath: p.FilePath, DirectoryPath: p.GetDirectoryPath())), sourceSolutionContents).ToList();
 
         private ConversionResult ConvertSolutionFile()
         {
@@ -120,26 +101,9 @@ namespace ICSharpCode.CodeConverter.Shared
             };
         }
 
-        private static (string Find, string Replace, bool FirstOnly) GetProjectGuidReplacement(string projPath, string contents)
-        {
-            var projGuidRegex = new Regex(projPath + @""", ""({[0-9A-Fa-f\-]{32,36}})("")");
-            var projGuidMatch = projGuidRegex.Match(contents);
-            var oldGuid = projGuidMatch.Groups[1].Value;
-            var newGuid = GetDeterministicGuidFrom(new Guid(oldGuid));
-            return (oldGuid, newGuid.ToString("B").ToUpperInvariant(), false);
-        }
-
         private IEnumerable<(string, string, bool)> GetProjectTypeReplacement(Project project, IReadOnlyCollection<(string, string)> typeGuidMappings)
         {
             return typeGuidMappings.Select(guidReplacement => ($@"Project\s*\(\s*""{guidReplacement.Item1}""\s*\)\s*=\s*""{project.Name}""", $@"Project(""{guidReplacement.Item2}"") = ""{project.Name}""", false));
-        }
-
-        private static Guid GetDeterministicGuidFrom(Guid guidToConvert)
-        {
-            var codeConverterStaticGuid = new Guid("{B224816B-CC58-4FF1-8258-CA7E629734A0}");
-            var deterministicNewBytes = codeConverterStaticGuid.ToByteArray().Zip(guidToConvert.ToByteArray(),
-                (fromFirst, fromSecond) => (byte)(fromFirst ^ fromSecond));
-            return new Guid(deterministicNewBytes.ToArray());
         }
     }
 }

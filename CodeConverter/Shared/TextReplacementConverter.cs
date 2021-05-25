@@ -13,7 +13,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var newProjectText = File.ReadAllText(filePath.FullName);
             newProjectText = newProjectText.Replace(replacements);
             string withReplacements = postReplacementTransform(newProjectText);
-            return new ConversionResult(withReplacements) { SourcePathOrNull = filePath.FullName, IsIdentity = newProjectText == withReplacements};
+            return new ConversionResult(withReplacements) { SourcePathOrNull = filePath.FullName, IsIdentity = newProjectText == withReplacements };
         }
 
         public static string Replace(this string originalText, IEnumerable<(string Find, string Replace, bool FirstOnly)> replacements)
