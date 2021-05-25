@@ -93,7 +93,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     new Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>();
                 while (vbBodyClauses.Any() && !RequiresMethodInvocation(vbBodyClauses.Peek())) {
                     var convertedClauses = new List<CSSyntax.QueryClauseSyntax>();
-                    while (vbBodyClauses.Any() && !RequiredContinuation(vbBodyClauses.Peek())) {
+                    while (vbBodyClauses.Any() && !RequiredContinuation(vbBodyClauses.Peek(), vbBodyClauses.Count - 1)) {
                         convertedClauses.Add(await ConvertQueryBodyClauseAsync(vbBodyClauses.Dequeue()));
                     }
 
@@ -233,11 +233,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                    || queryClauseSyntax is VBSyntax.DistinctClauseSyntax;
         }
 
-        private static bool RequiredContinuation(VBSyntax.QueryClauseSyntax queryClauseSyntax)
-        {
-            return queryClauseSyntax is VBSyntax.GroupByClauseSyntax
-                   || queryClauseSyntax is VBSyntax.SelectClauseSyntax;
-        }
+        /// <summary>
+        /// In VB, multiple selects work like Let clauses, but the last one needs to become the actual select (its name is discarded)
+        /// </summary>
+        private static bool RequiredContinuation(VBSyntax.QueryClauseSyntax queryClauseSyntax, int clausesAfter) => queryClauseSyntax is VBSyntax.GroupByClauseSyntax
+                || queryClauseSyntax is VBSyntax.SelectClauseSyntax sc && (sc.Variables.Any(v => v.NameEquals is null) || clausesAfter == 0);
 
         private async Task<CSSyntax.FromClauseSyntax> ConvertFromClauseSyntaxAsync(VBSyntax.FromClauseSyntax vbFromClause)
         {
@@ -284,20 +284,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.SelectClause(SyntaxFactory.IdentifierName(reusableCsFromId));
         }
 
-        private async Task<CSSyntax.QueryClauseSyntax> ConvertQueryBodyClauseAsync(VBSyntax.QueryClauseSyntax node)
+        private Task<CSSyntax.QueryClauseSyntax> ConvertQueryBodyClauseAsync(VBSyntax.QueryClauseSyntax node)
         {
-            return await node
-                .TypeSwitch<VBSyntax.QueryClauseSyntax, VBSyntax.FromClauseSyntax, VBSyntax.JoinClauseSyntax,
-                    VBSyntax.LetClauseSyntax, VBSyntax.OrderByClauseSyntax, VBSyntax.WhereClauseSyntax,
-                    Task<CSSyntax.QueryClauseSyntax>>(
-                    //(VBSyntax.AggregateClauseSyntax ags) => null,
-                    async syntax => (CSSyntax.QueryClauseSyntax) await ConvertFromClauseSyntaxAsync(syntax),
-                    ConvertJoinClauseAsync,
-                    ConvertLetClauseAsync,
-                    ConvertOrderByClauseAsync,
-                    ConvertWhereClauseAsync,
-                    _ => throw new NotImplementedException(
-                        $"Conversion for query clause with kind '{node.Kind()}' not implemented"));
+            return node switch {
+                VBSyntax.FromClauseSyntax x => ConvertFromQueryClauseSyntaxAsync(x),
+                VBSyntax.JoinClauseSyntax x => ConvertJoinClauseAsync(x),
+                VBSyntax.SelectClauseSyntax x => ConvertSelectClauseAsync(x),
+                VBSyntax.LetClauseSyntax x => ConvertLetClauseAsync(x),
+                VBSyntax.OrderByClauseSyntax x => ConvertOrderByClauseAsync(x),
+                VBSyntax.WhereClauseSyntax x => ConvertWhereClauseAsync(x),
+                _ => throw new NotImplementedException($"Conversion for query clause with kind '{node.Kind()}' not implemented")
+            };
+
+            async Task<CSSyntax.QueryClauseSyntax> ConvertFromQueryClauseSyntaxAsync(VBSyntax.FromClauseSyntax x) => await ConvertFromClauseSyntaxAsync(x);
         }
 
         private async Task<CSSyntax.ExpressionSyntax> GetGroupExpressionAsync(VBSyntax.GroupByClauseSyntax gs)
@@ -335,6 +334,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<CSSyntax.QueryClauseSyntax> ConvertWhereClauseAsync(VBSyntax.WhereClauseSyntax ws)
         {
             return SyntaxFactory.WhereClause(await ws.Condition.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor));
+        }
+
+        private async Task<CSSyntax.QueryClauseSyntax> ConvertSelectClauseAsync(VBSyntax.SelectClauseSyntax sc)
+        {
+            var singleVariable = sc.Variables.Single();
+            var identifier = CommonConversions.ConvertIdentifier(singleVariable.NameEquals.Identifier.Identifier);
+            return SyntaxFactory.LetClause(identifier, await singleVariable.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor));
         }
 
         private async Task<CSSyntax.QueryClauseSyntax> ConvertLetClauseAsync(VBSyntax.LetClauseSyntax ls)

@@ -652,6 +652,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
+        public override async Task<CSharpSyntaxNode> VisitVariableNameEquals(VBSyntax.VariableNameEqualsSyntax node) =>
+            SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier.Identifier)));
+
         public override async Task<CSharpSyntaxNode> VisitObjectCollectionInitializer(VBasic.Syntax.ObjectCollectionInitializerSyntax node)
         {
             return await node.Initializer.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor); //Dictionary initializer comes through here despite the FROM keyword not being in the source code
