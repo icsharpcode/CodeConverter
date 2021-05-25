@@ -18,6 +18,8 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private readonly VBasic.VisualBasicSyntaxVisitor<Task<CS.CSharpSyntaxNode>> _wrappedVisitor;
         private readonly SyntaxTree _syntaxTree;
+        private static readonly CSSyntax.StatementSyntax _dummyStatement = CS.SyntaxFactory.EmptyStatement();
+        private static readonly CSSyntax.LiteralExpressionSyntax _dummyLiteral = ValidSyntaxFactory.DefaultExpression;
 
         public CommentConvertingVisitorWrapper(VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>> wrappedVisitor, SyntaxTree syntaxTree)
         {
@@ -25,10 +27,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             _syntaxTree = syntaxTree;
         }
 
-        public async Task<T> AcceptAsync<T>(SyntaxNode vbNode, SourceTriviaMapKind sourceTriviaMap) where T : CS.CSharpSyntaxNode
-        {
-            return await ConvertHandledAsync<T>(vbNode, sourceTriviaMap);
-        }
+        public async Task<T> AcceptAsync<T>(VisualBasicSyntaxNode vbNode, SourceTriviaMapKind sourceTriviaMap) where T : CS.CSharpSyntaxNode =>
+            await ConvertHandledAsync<T>(vbNode, sourceTriviaMap);
 
         public async Task<SeparatedSyntaxList<TOut>> AcceptAsync<TIn, TOut>(SeparatedSyntaxList<TIn> vbNodes, SourceTriviaMapKind sourceTriviaMap) where TIn : VBasic.VisualBasicSyntaxNode where TOut : CS.CSharpSyntaxNode
         {
@@ -41,7 +41,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return CS.SyntaxFactory.SeparatedList(convertedNodes, convertedSeparators);
         }
 
-        private async Task<T> ConvertHandledAsync<T>(SyntaxNode vbNode, SourceTriviaMapKind sourceTriviaMap) where T : CS.CSharpSyntaxNode
+        private async Task<T> ConvertHandledAsync<T>(VisualBasicSyntaxNode vbNode, SourceTriviaMapKind sourceTriviaMap) where T : CS.CSharpSyntaxNode
         {
             try {
                 var converted = (T)await _wrappedVisitor.Visit(vbNode);
@@ -50,9 +50,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                     : sourceTriviaMap == SourceTriviaMapKind.SubNodesOnly
                         ? converted
                         : WithSourceMapping(vbNode, converted);
-            } catch (Exception e) when (typeof(T).IsAssignableFrom(typeof(CSSyntax.EmptyStatementSyntax))) {
-                var dummyStatement = (T)(object)CS.SyntaxFactory.EmptyStatement();
-                return dummyStatement.WithCsTrailingErrorComment((VBasic.VisualBasicSyntaxNode)vbNode, e);
+            } catch (Exception e) when (_dummyStatement is T dummy) {
+                return dummy.WithCsTrailingErrorComment(vbNode, e);
+            } catch (Exception e) when (_dummyLiteral is T dummy) {
+                return dummy.WithCsTrailingErrorComment(vbNode, e);
             } catch (Exception e) when (!(e is ExceptionWithNodeInformation)) {
                 throw e.WithNodeInformation(vbNode);
             }
