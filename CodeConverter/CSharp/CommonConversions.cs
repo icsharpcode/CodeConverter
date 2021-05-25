@@ -10,7 +10,6 @@ using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
@@ -64,7 +63,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             WinformsConversions = new WinformsConversions(typeContext);
         }
 
-        public async Task<(IReadOnlyCollection<(VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(
+        public async Task<(IReadOnlyCollection<(CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(
             VariableDeclaratorSyntax declarator, HashSet<ILocalSymbol> symbolsToSkip = null, bool preferExplicitType = false)
         {
             var vbInitValue = GetInitializerToConvert(declarator);
@@ -82,7 +81,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 requireExplicitTypeForAll |= vbInitIsNothingLiteral || isAnonymousFunction;
             }
 
-            var csVars = new Dictionary<string, (VariableDeclarationSyntax Decl, ITypeSymbol Type)>();
+            var csVars = new Dictionary<string, (CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type)>();
             var csMethods = new List<CSharpSyntaxNode>();
 
             foreach (var name in declarator.Names) {
@@ -124,7 +123,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return shouldPreferExplicitType;
         }
 
-        private async Task<EqualsValueClauseSyntax> ConvertEqualsValueClauseSyntaxAsync(
+        private async Task<CSSyntax.EqualsValueClauseSyntax> ConvertEqualsValueClauseSyntaxAsync(
             VariableDeclaratorSyntax vbDeclarator, VBSyntax.ModifiedIdentifierSyntax vbName,
             VBSyntax.ExpressionSyntax vbInitValue,
             ITypeSymbol declaredSymbolType,
@@ -136,7 +135,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool declaredConst = declaredSymbol is IFieldSymbol fieldSymbol && fieldSymbol.IsConst ||
                                  declaredSymbol is ILocalSymbol localSymbol && localSymbol.IsConst;
 
-            EqualsValueClauseSyntax equalsValueClauseSyntax;
+            CSSyntax.EqualsValueClauseSyntax equalsValueClauseSyntax;
             if (await GetInitializerFromNameAndTypeAsync(declaredSymbolType, vbName, initializerOrMethodDecl) is ExpressionSyntax
                 adjustedInitializerExpr)
             {
@@ -180,9 +179,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return "initial" + vbName.Identifier.ValueText.ToPascalCase();
         }
 
-        private VariableDeclarationSyntax CreateVariableDeclaration(VariableDeclaratorSyntax vbDeclarator, bool preferExplicitType,
+        private CSSyntax.VariableDeclarationSyntax CreateVariableDeclaration(VariableDeclaratorSyntax vbDeclarator, bool preferExplicitType,
             bool requireExplicitTypeForAll, ITypeSymbol vbInitializerType, ITypeSymbol declaredSymbolType,
-            EqualsValueClauseSyntax equalsValueClauseSyntax, IMethodSymbol initSymbol, CSSyntax.VariableDeclaratorSyntax v)
+            CSSyntax.EqualsValueClauseSyntax equalsValueClauseSyntax, IMethodSymbol initSymbol, CSSyntax.VariableDeclaratorSyntax v)
         {
             var requireExplicitType = requireExplicitTypeForAll ||
                                       vbInitializerType != null && !Equals(declaredSymbolType, vbInitializerType);
@@ -257,7 +256,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var arrayTypeSyntax = ((ArrayTypeSyntax)GetTypeSyntax(typeSymbol)).WithRankSpecifiers(rankSpecifiersWithSizes);
                 if (rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).Any(e => !e.IsKind(CSSyntaxKind.OmittedArraySizeExpression))) {
                     initializer = SyntaxFactory.ArrayCreationExpression(arrayTypeSyntax);
-                } else if (initializer is ImplicitArrayCreationExpressionSyntax iaces && iaces.Initializer != null) {
+                } else if (initializer is CSSyntax.ImplicitArrayCreationExpressionSyntax iaces && iaces.Initializer != null) {
                     initializer = SyntaxFactory.ArrayCreationExpression(arrayTypeSyntax, iaces.Initializer);
                 }
             }
@@ -516,7 +515,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .SelectAsync(async a => (CSSyntax.AttributeListSyntax)await a.AcceptAsync(TriviaConvertingExpressionVisitor));
         }
 
-        public static AttributeArgumentListSyntax CreateAttributeArgumentList(params AttributeArgumentSyntax[] attributeArgumentSyntaxs)
+        public static CSSyntax.AttributeArgumentListSyntax CreateAttributeArgumentList(params CSSyntax.AttributeArgumentSyntax[] attributeArgumentSyntaxs)
         {
             return SyntaxFactory.AttributeArgumentList(SyntaxFactory.SeparatedList(attributeArgumentSyntaxs));
         }
@@ -526,7 +525,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.LocalDeclarationStatement(CreateVariableDeclarationAndAssignment(variableName, initValue));
         }
 
-        public static VariableDeclarationSyntax CreateVariableDeclarationAndAssignment(string variableName,
+        public static CSSyntax.VariableDeclarationSyntax CreateVariableDeclarationAndAssignment(string variableName,
             ExpressionSyntax initValue, TypeSyntax explicitType = null)
         {
             CSSyntax.VariableDeclaratorSyntax variableDeclaratorSyntax = CreateVariableDeclarator(variableName, initValue);
