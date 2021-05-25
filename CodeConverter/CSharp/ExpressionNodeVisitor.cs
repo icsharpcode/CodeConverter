@@ -175,7 +175,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override Task<CSharpSyntaxNode> VisitXmlBracketedName(VBSyntax.XmlBracketedNameSyntax node)
         {
-            return node.Name.AcceptAsync(TriviaConvertingExpressionVisitor);
+            return node.Name.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
         }
 
         public override async Task<CSharpSyntaxNode> VisitXmlName(VBSyntax.XmlNameSyntax node)
@@ -357,7 +357,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitParenthesizedExpression(VBasic.Syntax.ParenthesizedExpressionSyntax node)
         {
-            var cSharpSyntaxNode = await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
+            var cSharpSyntaxNode = await node.Expression.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
             // If structural changes are necessary the expression may have been lifted a statement (e.g. Type inferred lambda)
             return cSharpSyntaxNode is ExpressionSyntax expr ? SyntaxFactory.ParenthesizedExpression(expr) : cSharpSyntaxNode;
         }
@@ -437,7 +437,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var argList = (VBasic.Syntax.ArgumentListSyntax)node.Parent;
             var invocation = argList.Parent;
             if (invocation is VBasic.Syntax.ArrayCreationExpressionSyntax)
-                return await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
+                return await node.Expression.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
             var symbol = GetInvocationSymbol(invocation);
             SyntaxToken token = default(SyntaxToken);
             var convertedArgExpression = (await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)).SkipIntoParens();
@@ -654,7 +654,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitObjectCollectionInitializer(VBasic.Syntax.ObjectCollectionInitializerSyntax node)
         {
-            return await node.Initializer.AcceptAsync(TriviaConvertingExpressionVisitor); //Dictionary initializer comes through here despite the FROM keyword not being in the source code
+            return await node.Initializer.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor); //Dictionary initializer comes through here despite the FROM keyword not being in the source code
         }
 
         public override async Task<CSharpSyntaxNode> VisitBinaryConditionalExpression(VBasic.Syntax.BinaryConditionalExpressionSyntax node)
@@ -866,7 +866,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return csEquivalent;
             }
 
-            var expr = await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
+            var expr = await node.Expression.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
             if (await TryConvertParameterizedPropertyAsync(operation, node, expr, node.ArgumentList) is {} invocation) {
                 return invocation;
             }

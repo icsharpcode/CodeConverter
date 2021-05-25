@@ -55,7 +55,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     if (rootExpression is CSSyntax.QueryExpressionSyntax qes)
                         rootExpression = SyntaxFactory.ParenthesizedExpression(qes);
                     var collectionRangeVariableSyntax = agg.Variables.Single();
-                    var toAggregate = await fas.Argument.AcceptAsync(_triviaConvertingVisitor);
+                    var toAggregate = await fas.Argument.AcceptAsync<CSharpSyntaxNode>(_triviaConvertingVisitor);
                     var methodTocall =
                         SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(fas.FunctionName)); //TODO
                     var rootWithMethodCall =

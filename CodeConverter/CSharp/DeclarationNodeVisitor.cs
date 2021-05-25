@@ -179,7 +179,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         private async Task<string> WithDeclarationNameCasingAsync(VBSyntax.NamespaceBlockSyntax node, ISymbol sym)
         {
-            var sourceName = (await node.NamespaceStatement.Name.AcceptAsync(_triviaConvertingExpressionVisitor)).ToString();
+            var sourceName = (await node.NamespaceStatement.Name.AcceptAsync<CSharpSyntaxNode>(_triviaConvertingExpressionVisitor)).ToString();
             var namespaceToDeclare = sym?.ToDisplayString() ?? sourceName;
             int lastIndex = namespaceToDeclare.LastIndexOf(sourceName, StringComparison.OrdinalIgnoreCase);
             if (lastIndex >= 0 && lastIndex + sourceName.Length == namespaceToDeclare.Length)
@@ -864,7 +864,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitPropertyBlock(VBSyntax.PropertyBlockSyntax node)
         {
-            return await node.PropertyStatement.AcceptAsync(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.SubNodesOnly);
+            return await node.PropertyStatement.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.SubNodesOnly);
         }
 
         public override async Task<CSharpSyntaxNode> VisitAccessorBlock(VBSyntax.AccessorBlockSyntax node)
@@ -1217,7 +1217,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var rawType = await (block.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? ValidSyntaxFactory.VarType;
 
-            var convertedAccessors = await node.Accessors.SelectAsync(async a => await a.AcceptAsync(TriviaConvertingDeclarationVisitor));
+            var convertedAccessors = await node.Accessors.SelectAsync(async a => await a.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingDeclarationVisitor));
             _additionalDeclarations.Add(node, convertedAccessors.OfType<MemberDeclarationSyntax>().ToArray());
             return SyntaxFactory.EventDeclaration(
                 SyntaxFactory.List(attributes),
@@ -1270,7 +1270,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitOperatorBlock(VBSyntax.OperatorBlockSyntax node)
         {
-            return await node.BlockStatement.AcceptAsync(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.SubNodesOnly);
+            return await node.BlockStatement.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.SubNodesOnly);
         }
 
         public override async Task<CSharpSyntaxNode> VisitOperatorStatement(VBSyntax.OperatorStatementSyntax node)

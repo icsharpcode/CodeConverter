@@ -67,7 +67,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             VariableDeclaratorSyntax declarator, HashSet<ILocalSymbol> symbolsToSkip = null, bool preferExplicitType = false)
         {
             var vbInitValue = GetInitializerToConvert(declarator);
-            var initializerOrMethodDecl = await vbInitValue.AcceptAsync(TriviaConvertingExpressionVisitor);
+            var initializerOrMethodDecl = await vbInitValue.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
             var vbInitializerTypeInfo = vbInitValue != null ? _semanticModel.GetTypeInfo(vbInitValue) : default(TypeInfo?);
             var vbInitializerType = vbInitValue != null ? vbInitializerTypeInfo.Value.Type : default(ITypeSymbol);
 
