@@ -171,8 +171,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                             SyntaxFactory.IdentifierName(reusableCsFromId);
                         selectOrGroup = SyntaxFactory.GroupClause(identifierNameSyntax, await GetGroupExpressionAsync(gcs));
                     } else {
-                        var item = (CSSyntax.IdentifierNameSyntax) await gcs.Items.Single().Expression.AcceptAsync(_triviaConvertingVisitor);
-                        var keyExpression = (CSSyntax.ExpressionSyntax) await gcs.Keys.Single().Expression.AcceptAsync(_triviaConvertingVisitor);
+                        var item = await gcs.Items.Single().Expression.AcceptAsync<CSSyntax.IdentifierNameSyntax>(_triviaConvertingVisitor);
+                        var keyExpression = await gcs.Keys.Single().Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor);
                         selectOrGroup = SyntaxFactory.GroupClause(item, keyExpression);
                     }
                     queryContinuation = nestedClause != null ? CreateGroupByContinuation(gcs, continuationClauses, nestedClause) : null;
@@ -201,11 +201,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBSyntax.DistinctClauseSyntax _:
                     return Enumerable.Empty<CSSyntax.ExpressionSyntax>();
                 case VBSyntax.PartitionClauseSyntax pcs:
-                    return new[] {(CSSyntax.ExpressionSyntax) await pcs.Count.AcceptAsync(_triviaConvertingVisitor)};
+                    return new[] {await pcs.Count.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor)};
                 case VBSyntax.PartitionWhileClauseSyntax pwcs: {
                     var lambdaParam = SyntaxFactory.Parameter(reusableCsFromId);
-                    var lambdaBody = (CSSyntax.ExpressionSyntax) await pwcs.Condition.AcceptAsync(_triviaConvertingVisitor);
-                    return new[] {(CSSyntax.ExpressionSyntax) SyntaxFactory.SimpleLambdaExpression(lambdaParam, lambdaBody)};
+                    var lambdaBody = await pwcs.Condition.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor);
+                    return new CSSyntax.ExpressionSyntax[] {SyntaxFactory.SimpleLambdaExpression(lambdaParam, lambdaBody)};
                 }
                 default:
                     throw new ArgumentOutOfRangeException(nameof(linqQuery), linqQuery.Kind(), null);
@@ -242,7 +242,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<CSSyntax.FromClauseSyntax> ConvertFromClauseSyntaxAsync(VBSyntax.FromClauseSyntax vbFromClause)
         {
             var collectionRangeVariableSyntax = vbFromClause.Variables.Single();
-            var expression = (CSSyntax.ExpressionSyntax)await collectionRangeVariableSyntax.Expression.AcceptAsync(_triviaConvertingVisitor);
+            var expression = await collectionRangeVariableSyntax.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor);
             var parentOperation = _semanticModel.GetOperation(collectionRangeVariableSyntax.Expression)?.Parent;
             if (parentOperation != null && parentOperation.IsImplicit && parentOperation is IInvocationOperation io &&
                 io.TargetMethod.MethodKind == MethodKind.ReducedExtension && io.TargetMethod.Name == nameof(Enumerable.AsEnumerable)) {
@@ -259,15 +259,15 @@ namespace ICSharpCode.CodeConverter.CSharp
             var collectionRangeVariableSyntax = vbAggClause.Variables.Single();
             var fromClauseSyntax = SyntaxFactory.FromClause(
                 CommonConversions.ConvertIdentifier(collectionRangeVariableSyntax.Identifier.Identifier),
-                (CSSyntax.ExpressionSyntax) await collectionRangeVariableSyntax.Expression.AcceptAsync(_triviaConvertingVisitor));
+                await collectionRangeVariableSyntax.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor));
             return fromClauseSyntax;
         }
 
         private async Task<CSSyntax.SelectClauseSyntax> ConvertSelectClauseSyntaxAsync(VBSyntax.SelectClauseSyntax vbSelectClause)
         {
             var selectedVariables = await vbSelectClause.Variables.SelectAsync(async v => {
-                    var nameEquals = (CSSyntax.NameEqualsSyntax) await v.NameEquals.AcceptAsync(_triviaConvertingVisitor);
-                    var expression = (CSSyntax.ExpressionSyntax) await v.Expression.AcceptAsync(_triviaConvertingVisitor);
+                    var nameEquals = await v.NameEquals.AcceptAsync<CSSyntax.NameEqualsSyntax>(_triviaConvertingVisitor);
+                    var expression = await v.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor);
                     return SyntaxFactory.AnonymousObjectMemberDeclarator(nameEquals, expression);
                 });
 
@@ -302,7 +302,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<CSSyntax.ExpressionSyntax> GetGroupExpressionAsync(VBSyntax.GroupByClauseSyntax gs)
         {
-            var groupExpressions = (await gs.Keys.SelectAsync(async k => (vb: k.Expression, cs: (CSSyntax.ExpressionSyntax)await k.Expression.AcceptAsync(_triviaConvertingVisitor)))).ToList();
+            var groupExpressions = (await gs.Keys.SelectAsync(async k => (vb: k.Expression, cs: await k.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor)))).ToList();
             return (groupExpressions.Count == 1) ? groupExpressions.Single().cs : CreateAnonymousType(groupExpressions);
         }
 
@@ -334,13 +334,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<CSSyntax.QueryClauseSyntax> ConvertWhereClauseAsync(VBSyntax.WhereClauseSyntax ws)
         {
-            return SyntaxFactory.WhereClause((CSSyntax.ExpressionSyntax) await ws.Condition.AcceptAsync(_triviaConvertingVisitor));
+            return SyntaxFactory.WhereClause(await ws.Condition.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor));
         }
 
         private async Task<CSSyntax.QueryClauseSyntax> ConvertLetClauseAsync(VBSyntax.LetClauseSyntax ls)
         {
             var singleVariable = ls.Variables.Single();
-            return SyntaxFactory.LetClause(CommonConversions.ConvertIdentifier(singleVariable.NameEquals.Identifier.Identifier), await singleVariable.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor));
+            var identifier = CommonConversions.ConvertIdentifier(singleVariable.NameEquals.Identifier.Identifier);
+            return SyntaxFactory.LetClause(identifier, await singleVariable.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor));
         }
 
         private async Task<CSSyntax.QueryClauseSyntax> ConvertOrderByClauseAsync(VBSyntax.OrderByClauseSyntax os)
