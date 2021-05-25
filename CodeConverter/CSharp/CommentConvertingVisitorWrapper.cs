@@ -18,8 +18,9 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private readonly VBasic.VisualBasicSyntaxVisitor<Task<CS.CSharpSyntaxNode>> _wrappedVisitor;
         private readonly SyntaxTree _syntaxTree;
-        private static readonly CSSyntax.StatementSyntax _dummyStatement = CS.SyntaxFactory.EmptyStatement();
         private static readonly CSSyntax.LiteralExpressionSyntax _dummyLiteral = ValidSyntaxFactory.DefaultExpression;
+        private static readonly CSSyntax.StatementSyntax _dummyStatement = CS.SyntaxFactory.EmptyStatement();
+        private static readonly CSSyntax.CompilationUnitSyntax _dummyCompilationUnit = CS.SyntaxFactory.CompilationUnit();
 
         public CommentConvertingVisitorWrapper(VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>> wrappedVisitor, SyntaxTree syntaxTree)
         {
@@ -50,9 +51,11 @@ namespace ICSharpCode.CodeConverter.CSharp
                     : sourceTriviaMap == SourceTriviaMapKind.SubNodesOnly
                         ? converted
                         : WithSourceMapping(vbNode, converted);
+            } catch (Exception e) when (_dummyLiteral is T dummy) {
+                return dummy.WithCsTrailingErrorComment(vbNode, e);
             } catch (Exception e) when (_dummyStatement is T dummy) {
                 return dummy.WithCsTrailingErrorComment(vbNode, e);
-            } catch (Exception e) when (_dummyLiteral is T dummy) {
+            } catch (Exception e) when (_dummyCompilationUnit is T dummy) {
                 return dummy.WithCsTrailingErrorComment(vbNode, e);
             } catch (Exception e) when (!(e is ExceptionWithNodeInformation)) {
                 throw e.WithNodeInformation(vbNode);
