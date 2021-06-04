@@ -22,6 +22,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private readonly ConversionOptions _conversionOptions;
         private readonly bool _useProjectLevelWinformsAdjustments;
+        private readonly IEnumerable<IAssemblySymbol> _assembliesBeingConverted;
         private CSharpCompilation _csharpViewOfVbSymbols;
         private Dictionary<string, string> _designerToResxRelativePath;
         private Project _convertedCsProject;
@@ -30,10 +31,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly IProgress<ConversionProgress> _progress;
         private readonly CancellationToken _cancellationToken;
 
-        public VBToCSProjectContentsConverter(ConversionOptions conversionOptions, bool useProjectLevelWinformsAdjustments, IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
+        public VBToCSProjectContentsConverter(ConversionOptions conversionOptions,
+            bool useProjectLevelWinformsAdjustments, IEnumerable<IAssemblySymbol> assembliesBeingConverted,
+            IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
             _conversionOptions = conversionOptions;
-            this._useProjectLevelWinformsAdjustments = useProjectLevelWinformsAdjustments;
+            _useProjectLevelWinformsAdjustments = useProjectLevelWinformsAdjustments;
+            _assembliesBeingConverted = assembliesBeingConverted;
             _progress = progress;
             _cancellationToken = cancellationToken;
             OptionalOperations = new OptionalOperations(conversionOptions.AbandonOptionalTasksAfter, progress, cancellationToken);
@@ -68,7 +72,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public async Task<SyntaxNode> SingleFirstPassAsync(Document document)
         {
-            return await VisualBasicConverter.ConvertCompilationTreeAsync(document, _csharpViewOfVbSymbols, _csharpReferenceProject, OptionalOperations, _cancellationToken);
+            return await VisualBasicConverter.ConvertCompilationTreeAsync(document, _csharpViewOfVbSymbols, _csharpReferenceProject, _assembliesBeingConverted, OptionalOperations, _cancellationToken);
         }
 
         public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProjectAsync(WipFileConversion<SyntaxNode>[] firstPassResults)
