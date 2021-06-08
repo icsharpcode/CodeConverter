@@ -10,5 +10,11 @@ namespace VbNetStandardLib
                 return "Const";
             }
         }
+
+        public void AnInterfaceMethod()
+        {
+        }
+
+        public void AMethodWithDifferentName() => AnInterfaceMethod();
     }
 }

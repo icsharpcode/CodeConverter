@@ -15,7 +15,10 @@ Module Module1
         Dim interfaceInstance As AnInterface = New AnInterfaceImplementation
         Dim classInstance As New AnInterfaceImplementation
         Console.WriteLine(interfaceInstance.AnInterfaceProperty)
-        Console.WriteLine(classInstance.APropertyWithDifferentNameThanPropertyFromInterface)
+        Console.WriteLine(classInstance.APropertyWithDifferentName)
+
+        interfaceInstance.AnInterfaceMethod()
+        classInstance.AMethodWithDifferentName()
     End Sub
 
 End Module

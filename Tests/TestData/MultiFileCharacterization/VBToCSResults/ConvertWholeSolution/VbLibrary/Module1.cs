@@ -23,6 +23,8 @@ namespace VbLibrary
             var classInstance = new AnInterfaceImplementation();
             Console.WriteLine(interfaceInstance.AnInterfaceProperty);
             Console.WriteLine(classInstance.AnInterfaceProperty);
+            interfaceInstance.AnInterfaceMethod();
+            classInstance.AnInterfaceMethod();
         }
     }
 }
