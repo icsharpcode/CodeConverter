@@ -308,16 +308,25 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             //This also covers the case when the name is different (in VB you can have method X implements IFoo.Y), but doesn't resolve any resulting name clashes
             var assemblyIdentities = assembliesBeingConverted.Select(t => t.Identity);
+            ISymbol baseSymbol = default;
             var containingType = idSymbol.ContainingType;
-            ISymbol baseSymbol;
 
-            if (idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property))
+            if (idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property)) 
             {
                 var possibleSymbols = idSymbol.FollowProperty(s => s.BaseMember());
-                var possibleSymbol = possibleSymbols.LastOrDefault(s => !assemblyIdentities.Contains(s.ContainingAssembly.Identity) && s.ContainingType.Equals(containingType));
-                baseSymbol = possibleSymbol ?? possibleSymbols.Last();
-            }
-            else
+                foreach (var possibleSymbol in possibleSymbols)
+                {
+                    if (!assemblyIdentities.Contains(possibleSymbol.ContainingAssembly.Identity) && possibleSymbol.ContainingType.Equals(containingType)) 
+                    {
+                        baseSymbol = possibleSymbol;
+                        break;
+                    }
+
+                    baseSymbol = possibleSymbol;
+                }
+
+            } 
+            else 
             {
                 baseSymbol = idSymbol;
             }

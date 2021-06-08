@@ -66,7 +66,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private async Task<IAsyncEnumerable<ConversionResult>> ConvertProjects()
         {
             var assemblies = _projectsToConvert.Select(t => t.GetCompilationAsync(_cancellationToken));
-            var assembliesBeingConverted = (await Task.WhenAll(assemblies)).Select(t => t.Assembly);
+            var assembliesBeingConverted = (await Task.WhenAll(assemblies)).Select(t => t.Assembly).ToList();
             return _projectsToConvert.ToAsyncEnumerable().SelectMany(project => ConvertProject(project, assembliesBeingConverted));
         }
 
