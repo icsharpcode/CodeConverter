@@ -324,7 +324,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                     baseSymbol = possibleSymbol;
                 }
-
             } 
             else 
             {
