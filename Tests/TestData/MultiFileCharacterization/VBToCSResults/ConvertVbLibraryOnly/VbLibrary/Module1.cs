@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.VisualBasic.CompilerServices;
+using VbNetStandardLib;
 
 namespace VbLibrary
 {
@@ -18,6 +19,10 @@ namespace VbLibrary
         public static void Main()
         {
             Console.Write((int)AClass.NestedEnum.First);
+            AnInterface interfaceInstance = new AnInterfaceImplementation();
+            var classInstance = new AnInterfaceImplementation();
+            Console.WriteLine(interfaceInstance.AnInterfaceProperty);
+            Console.WriteLine(classInstance.APropertyWithDifferentNameThanPropertyFromInterface);
         }
     }
 }
