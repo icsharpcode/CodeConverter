@@ -4,13 +4,14 @@
     <AssemblyName>ICSharpCode.CodeConverter</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter</RootNamespace>
     <Company>ICSharpCode</Company>
-    <Description>Convert VB.NET to/from C#
-* Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
-* Actively developed: User feedback helps us continuously strive for a more accurate conversion.
-* Completely free and open source
-This nuget package is useful if you're building a tool which converts code, or if you want finer-grained control over what's converted.
-See https://github.com/icsharpcode/CodeConverter for a pre-built command line, visual studio extension and web converter.
-</Description>
+    <Description>
+      Convert VB.NET to/from C#
+      * Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
+      * Actively developed: User feedback helps us continuously strive for a more accurate conversion.
+      * Completely free and open source
+      This nuget package is useful if you're building a tool which converts code, or if you want finer-grained control over what's converted.
+      See https://github.com/icsharpcode/CodeConverter for a pre-built command line, visual studio extension and web converter.
+    </Description>
     <Product>Code Converter for C# to/from VB.NET</Product>
     <Copyright>Copyright (c) 2017-2020 AlphaSierraPapa for the CodeConverter team</Copyright>
     <AssemblyVersion>8.2.3.0</AssemblyVersion>
@@ -46,6 +47,7 @@ See https://github.com/icsharpcode/CodeConverter for a pre-built command line, v
     <PackageReference Include="Microsoft.VisualStudio.Composition" Version="15.8.98" />
     <PackageReference Include="Microsoft.VisualStudio.Threading" Version="15.8.122" />
     <PackageReference Include="System.Globalization.Extensions" Version="4.3.0" />
+    <PackageReference Include="System.IO.Abstractions" Version="13.2.33" />
     <PackageReference Include="System.Linq.Async" Version="4.0.0" />
     <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.6.0">
       <IncludeAssets>all</IncludeAssets>

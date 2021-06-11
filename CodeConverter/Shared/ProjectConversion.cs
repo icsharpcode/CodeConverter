@@ -10,10 +10,11 @@ using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Text;
-
 namespace ICSharpCode.CodeConverter.Shared
 {
+    using System.IO.Abstractions;
+    using Microsoft.CodeAnalysis.Text;
+
     public class ProjectConversion
     {
         private readonly IProjectContentsConverter _projectContentsConverter;
@@ -22,7 +23,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly ILanguageConversion _languageConversion;
         private readonly bool _showCompilationErrors;
         private readonly bool _returnSelectedNode;
-        private static readonly string[] BannedPaths = new[] { ".AssemblyAttributes.", "\\bin\\", "\\obj\\" };
+        private static readonly string[] BannedPaths = { ".AssemblyAttributes.", "\\bin\\", "\\obj\\" };
         private readonly CancellationToken _cancellationToken;
 
         private ProjectConversion(IProjectContentsConverter projectContentsConverter, IEnumerable<Document> documentsToConvert, IEnumerable<TextDocument> additionalDocumentsToConvert,

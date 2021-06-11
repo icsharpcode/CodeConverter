@@ -1,36 +1,91 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-
-namespace ICSharpCode.CodeConverter.Shared
+﻿namespace ICSharpCode.CodeConverter.Shared
 {
-    public class SolutionFileTextEditor
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text.RegularExpressions;
+
+    public class SolutionFileTextEditor : ISolutionFileTextEditor
     {
-        public static IEnumerable<(string Find, string Replace, bool FirstOnly)> GetProjectReferenceReplacements(IEnumerable<(string FilePath, string DirectoryPath)> projectsToConvert, string sourceSolutionContents)
+        public List<(string Find, string Replace, bool FirstOnly)> GetSolutionFileProjectReferenceReplacements(
+            IEnumerable<(string Name, string RelativeProjPath)> projTuples, string sourceSolutionContents,
+            IReadOnlyCollection<(string, string)> projTypeGuidMappings)
         {
-            foreach (var (projFilePath, projDirPath) in projectsToConvert) {
-                var projFilename = Path.GetFileName(projFilePath);
+            if (string.IsNullOrWhiteSpace(sourceSolutionContents)) return new List<(string Find, string Replace, bool FirstOnly)>();
 
-                var newProjFilename = PathConverter.TogglePathExtension(projFilename);
+            var projectReferenceReplacements = new List<(string Find, string Replace, bool FirstOnly)>();
+            foreach ((string projName, string relativeProjPath) in projTuples)
+            {
+                var newProjPath = @"""" + PathConverter.TogglePathExtension(relativeProjPath) + @""", ";
+                var projPathEscaped = @"""" + Regex.Escape(relativeProjPath);
 
-                var projPath = PathConverter.GetFileDirPath(projFilename, projDirPath);
-                var newProjPath = PathConverter.GetFileDirPath(newProjFilename, projDirPath);
+                (string oldType, string newType) = GetProjectTypeReplacement(projTypeGuidMappings, projName, projPathEscaped,
+                    sourceSolutionContents);
+                (string oldGuid, string newGuid, bool firstOnly) = GetProjectGuidReplacement(projPathEscaped, sourceSolutionContents);
 
-                var projPathEscaped = Regex.Escape(projPath);
+                var oldProjRefReplacement = oldType + projPathEscaped + @""", """ + oldGuid + @"""";
+                var newProjRefReplacement = newType + newProjPath + @"""" + newGuid + @"""";
 
-                yield return (projPathEscaped, newProjPath, false);
-                if (!string.IsNullOrWhiteSpace(sourceSolutionContents) && GetProjectGuidReplacement(projPathEscaped, sourceSolutionContents) is { } replacement) yield return replacement;
+                projectReferenceReplacements.Add((oldProjRefReplacement, newProjRefReplacement, false));
+
+                // this is needed for the guid replacement in the SolutionConfigurationPlatforms GlobalSection 
+                projectReferenceReplacements.Add((oldGuid, newGuid, firstOnly));
             }
+
+            return projectReferenceReplacements;
         }
 
-        private static (string Find, string Replace, bool FirstOnly)? GetProjectGuidReplacement(string projPath, string contents)
+        public List<(string Find, string Replace, bool FirstOnly)> GetProjectFileProjectReferenceReplacements(
+            IEnumerable<(string Name, string RelativeProjPath, string ProjContents)> projTuples, string sourceSolutionContents)
+        {
+            var projectReferenceReplacements = new List<(string Find, string Replace, bool FirstOnly)>();
+            foreach ((string _, string relativeProjPath, string projContents) in projTuples)
+            {
+                var escapedProjPath = Regex.Escape(relativeProjPath);
+                var projRefRegex = new Regex(@"(\\|"")" + escapedProjPath);
+
+                var projRefMatch = projRefRegex.Match(projContents);
+                var characterBeforePath = projRefMatch.Groups[1].Value;
+
+                var extendedEscProjPath = Regex.Escape(characterBeforePath) + escapedProjPath;
+                var newProjPath = characterBeforePath + PathConverter.TogglePathExtension(relativeProjPath);
+
+                projectReferenceReplacements.Add((extendedEscProjPath, newProjPath, false));
+                if (string.IsNullOrWhiteSpace(sourceSolutionContents)) {
+                    continue;
+                }
+
+                projectReferenceReplacements.Add(GetProjectGuidReplacement(escapedProjPath, sourceSolutionContents));
+            }
+
+            return projectReferenceReplacements;
+        }
+
+        private static (string oldProjTypeReference, string newProjTypeReference) GetProjectTypeReplacement(
+            IEnumerable<(string oldTypeGuid, string newTypeGuid)> projTypeGuidMappings, string projName, string projPath,
+            string contents)
+        {
+            foreach ((string oldTypeGuid, string newTypeGuid) in projTypeGuidMappings)
+            {
+                var oldProjTypeReference = $@"Project\s*\(\s*""{oldTypeGuid}""\s*\)\s*=\s*""{projName}"", ";
+                var projGuidRegex = new Regex($@"({oldProjTypeReference})({projPath})");
+                var projTypeReference = projGuidRegex.Match(contents);
+                if(projTypeReference.Groups.Count == 0) continue;
+
+                var oldReference = Regex.Escape(projTypeReference.Groups[1].Value);
+                var newProjTypeReference = $@"Project(""{newTypeGuid}"") = ""{projName}"", ";
+
+                return (oldReference, newProjTypeReference);
+            }
+
+            return default;
+        }
+
+        private static (string Find, string Replace, bool FirstOnly) GetProjectGuidReplacement(string projPath,
+            string contents)
         {
             var projGuidRegex = new Regex(projPath + @""", ""({[0-9A-Fa-f\-]{32,36}})("")");
             var projGuidMatch = projGuidRegex.Match(contents);
-            if (!projGuidMatch.Success) return null;
-
             var oldGuid = projGuidMatch.Groups[1].Value;
             var newGuid = GetDeterministicGuidFrom(new Guid(oldGuid));
             return (oldGuid, newGuid.ToString("B").ToUpperInvariant(), false);
