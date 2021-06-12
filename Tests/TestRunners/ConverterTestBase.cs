@@ -185,8 +185,10 @@ End Sub";
             return baseConversion.CanBeContainedByMethod(node);
         }
 
-        async Task<IProjectContentsConverter> ILanguageConversion.CreateProjectContentsConverterAsync(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken) {
-            return await baseConversion.CreateProjectContentsConverterAsync(project, progress, cancellationToken);
+        async Task<IProjectContentsConverter> ILanguageConversion.CreateProjectContentsConverterAsync(Project project,
+            IEnumerable<IAssemblySymbol> assembliesBeingConverted, IProgress<ConversionProgress> progress,
+            CancellationToken cancellationToken) {
+            return await baseConversion.CreateProjectContentsConverterAsync(project, assembliesBeingConverted, progress, cancellationToken);
         }
 
         async Task<Document> ILanguageConversion.CreateProjectDocumentFromTreeAsync(SyntaxTree tree, IEnumerable<MetadataReference> references)

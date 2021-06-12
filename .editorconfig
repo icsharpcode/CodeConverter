@@ -149,3 +149,6 @@ dotnet_diagnostic.RCS1123.severity = none
 
 # Default severity for analyzer diagnostics with category 'Performance' - turn this up to warn when looking for performance issues
 dotnet_analyzer_diagnostic.category-Performance.severity = suggestion
+
+# CC0097: You have missing/unexistent parameters in Xml Docs
+dotnet_diagnostic.CC0097.severity = none

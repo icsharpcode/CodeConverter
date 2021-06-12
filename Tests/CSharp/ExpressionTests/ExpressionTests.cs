@@ -475,17 +475,84 @@ public partial class A
         public async Task EmptyArrayExpressionAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"
-Public Class Issue495
+Public Class Issue495AndIssue713
     Public Function Empty() As Integer()
+        Dim emptySingle As IEnumerable(Of Integer) = {}
+        Dim initializedSingle As IEnumerable(Of Integer) = {1}
+        Dim emptyNested As Integer()() = {}
+        Dim initializedNested(1)() As Integer
+        Dim empty2d As Integer(,) = {{}}
+        Dim initialized2d As Integer(,) = {{1}}
         Return {}
     End Function
 End Class", @"using System;
+using System.Collections.Generic;
 
-public partial class Issue495
+public partial class Issue495AndIssue713
 {
     public int[] Empty()
     {
+        IEnumerable<int> emptySingle = Array.Empty<int>();
+        IEnumerable<int> initializedSingle = new[] { 1 };
+        var emptyNested = Array.Empty<int[]>();
+        var initializedNested = new int[2][];
+        var empty2d = new int[,] { { } };
+        var initialized2d = new[,] { { 1 } };
         return Array.Empty<int>();
+    }
+}");
+        }
+
+        [Fact]
+        public async Task InitializedArrayExpressionAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Public Class Issue713
+    Public Function Empty() As Integer()
+        Dim initializedSingle As IEnumerable(Of Integer) = {1}
+        Dim initialized2d As Integer(,) = {{1}}
+        Return {}
+    End Function
+End Class", @"using System;
+using System.Collections.Generic;
+
+public partial class Issue713
+{
+    public int[] Empty()
+    {
+        IEnumerable<int> initializedSingle = new[] { 1 };
+        var initialized2d = new[,] { { 1 } };
+        return Array.Empty<int>();
+    }
+}");
+        }
+
+        [Fact]
+        public async Task EmptyArrayParameterAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+    Public Sub s()
+        If Validate({}) Then
+        End If
+    End Sub
+    Private Function Validate(w As IEnumerable(Of Int16)) As Boolean
+        Return True
+    End Function
+End Class", @"using System;
+using System.Collections.Generic;
+
+public partial class VisualBasicClass
+{
+    public void s()
+    {
+        if (Validate(Array.Empty<short>()))
+        {
+        }
+    }
+
+    private bool Validate(IEnumerable<short> w)
+    {
+        return true;
     }
 }");
         }

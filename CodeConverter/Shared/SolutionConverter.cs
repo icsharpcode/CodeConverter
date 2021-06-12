@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using System.IO.Abstractions;
@@ -80,24 +81,27 @@ namespace ICSharpCode.CodeConverter.Shared
             _solutionFileTextEditor = solutionFileTextEditor;
         }
 
-        public IAsyncEnumerable<ConversionResult> Convert()
+        public async Task<IAsyncEnumerable<ConversionResult>> Convert()
         {
             var projectsToUpdateReferencesOnly = _projectsToConvert.First().Solution.Projects.Except(_projectsToConvert);
             var solutionResult = string.IsNullOrWhiteSpace(_sourceSolutionContents) ? Enumerable.Empty<ConversionResult>() : ConvertSolutionFile().Yield();
-            return ConvertProjects()
+            var convertedProjects = await ConvertProjects();
+            return convertedProjects
                 .Concat(UpdateProjectReferences(projectsToUpdateReferencesOnly).Concat(solutionResult).ToAsyncEnumerable());
         }
 
-        private IAsyncEnumerable<ConversionResult> ConvertProjects()
+        private async Task<IAsyncEnumerable<ConversionResult>> ConvertProjects()
         {
-            return _projectsToConvert.ToAsyncEnumerable().SelectMany(project => ConvertProject(project));
+            var assemblies = _projectsToConvert.Select(t => t.GetCompilationAsync(_cancellationToken));
+            var assembliesBeingConverted = (await Task.WhenAll(assemblies)).Select(t => t.Assembly).ToList();
+            return _projectsToConvert.ToAsyncEnumerable().SelectMany(project => ConvertProject(project, assembliesBeingConverted));
         }
 
-        private IAsyncEnumerable<ConversionResult> ConvertProject(Project project)
+        private IAsyncEnumerable<ConversionResult> ConvertProject(Project project, IEnumerable<IAssemblySymbol> assembliesBeingConverted)
         {
             var replacements = _projectReferenceReplacements.ToArray();
             _progress.Report(new ConversionProgress($"Converting {project.Name}..."));
-            return ProjectConversion.ConvertProject(project, _languageConversion, _progress, _cancellationToken, replacements);
+            return ProjectConversion.ConvertProject(project, _languageConversion, _progress, assembliesBeingConverted, _cancellationToken, replacements);
         }
 
         private IEnumerable<ConversionResult> UpdateProjectReferences(IEnumerable<Project> projectsToUpdateReferencesOnly)

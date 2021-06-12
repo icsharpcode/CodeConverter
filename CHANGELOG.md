@@ -10,17 +10,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Prevent overrides and overloads appearing on the same property [#681](https://github.com/icsharpcode/CodeConverter/issues/681)
+* Convert `Select x = ` into `let x = ` within Linq [#717](https://github.com/icsharpcode/CodeConverter/issues/717)
 
 ### C# -> VB
 
 
-## [8.2.3] - 2021-04-04
+## [8.2.4] - 2021-05-04
 
 ### Command line
+
 * The --Core-Only flag no longer requires a value [#704](https://github.com/icsharpcode/CodeConverter/issues/704)
 
 
 ### VB -> C#
+
 * Deal with NullReferenceException caused by Nothing literal [#707](https://github.com/icsharpcode/CodeConverter/issues/707)
 * Include text of region which can't be converted
 * Convert region names
@@ -28,6 +32,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Implicilty typed inherited events no longer create extra delegates [#700](https://github.com/icsharpcode/CodeConverter/issues/700)
 * Keep optional parameters for parameterized properties [#642](https://github.com/icsharpcode/CodeConverter/issues/642)
 * Maintain leading whitespace in comments [#711](https://github.com/icsharpcode/CodeConverter/issues/711)
+* Avoid XmlException when referencing certain nuget packages [#714](https://github.com/icsharpcode/CodeConverter/issues/714)
+* Use explicit type as default for array creation [#713](https://github.com/icsharpcode/CodeConverter/issues/713)
 
 ### C# -> VB
 
