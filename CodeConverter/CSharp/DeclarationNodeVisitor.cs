@@ -31,12 +31,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static readonly Type DllImportType = typeof(DllImportAttribute);
         private static readonly Type CharSetType = typeof(CharSet);
         private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SemicolonToken);
-        private readonly CSharpCompilation _csCompilation;
         private readonly SyntaxGenerator _csSyntaxGenerator;
         private readonly Compilation _vbCompilation;
         private readonly SemanticModel _semanticModel;
         private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
-        private readonly TypeContext _typeContext = new TypeContext();
+        private readonly TypeContext _typeContext;
         private uint _failedMemberConversionMarkerCount;
         private readonly HashSet<string> _extraUsingDirectives = new HashSet<string>();
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
@@ -51,12 +50,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         internal HoistedNodeState AdditionalLocals => _typeContext.HoistedState;
 
         public DeclarationNodeVisitor(Document document, Compilation compilation, SemanticModel semanticModel,
-            CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator)
+            CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator,
+            IEnumerable<IAssemblySymbol> assembliesBeingConverted)
         {
             _vbCompilation = compilation;
             _semanticModel = semanticModel;
-            _csCompilation = csCompilation;
             _csSyntaxGenerator = csSyntaxGenerator;
+            _typeContext = new TypeContext {AssembliesBeingConverted = assembliesBeingConverted};
             _visualBasicEqualityComparison = new VisualBasicEqualityComparison(_semanticModel, _extraUsingDirectives);
             TriviaConvertingDeclarationVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
             var expressionEvaluator = new ExpressionEvaluator(semanticModel, _visualBasicEqualityComparison);

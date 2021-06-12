@@ -63,8 +63,8 @@ namespace ICSharpCode.CodeConverter.CommandLine
                 : LanguageNames.CSharp;
 
             var projectsToConvert = solution.Projects.Where(p => p.Language == languageNameToConvert && shouldConvertProject(p)).ToArray();
-            var results = SolutionConverter.CreateFor(languageConversion, projectsToConvert, progress, token).Convert();
-            await foreach (var r in results) yield return r;
+            var results = await SolutionConverter.CreateFor(languageConversion, projectsToConvert, progress, token).Convert();
+            await foreach (var r in results.WithCancellation(token)) yield return r;
         }
 
         private async Task<Solution> GetSolutionAsync(string projectOrSolutionFile, IProgress<string> progress)

@@ -25,17 +25,17 @@ namespace ICSharpCode.CodeConverter.CSharp
         private const string UnresolvedNamespaceDiagnosticId = "CS0246";
         private const string FabricatedAssemblyName = ISymbolExtensions.ForcePartialTypesAssemblyName;
         private VBToCSProjectContentsConverter _vbToCsProjectContentsConverter;
-        private IProgress<ConversionProgress> _progress;
         private CancellationToken _cancellationToken;
 
         public ConversionOptions ConversionOptions { get; set; }
 
-        public async Task<IProjectContentsConverter> CreateProjectContentsConverterAsync(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
+        public async Task<IProjectContentsConverter> CreateProjectContentsConverterAsync(Project project,
+            IEnumerable<IAssemblySymbol> assembliesBeingConverted, IProgress<ConversionProgress> progress,
+            CancellationToken cancellationToken)
         {
-            _progress = progress;
             _cancellationToken = cancellationToken;
             bool useProjectLevelWinformsAdjustments = project.AssemblyName != FabricatedAssemblyName;
-            _vbToCsProjectContentsConverter = new VBToCSProjectContentsConverter(ConversionOptions, useProjectLevelWinformsAdjustments, progress, cancellationToken);
+            _vbToCsProjectContentsConverter = new VBToCSProjectContentsConverter(ConversionOptions, useProjectLevelWinformsAdjustments, assembliesBeingConverted, progress, cancellationToken);
             await _vbToCsProjectContentsConverter.InitializeSourceAsync(project);
             return _vbToCsProjectContentsConverter;
         }

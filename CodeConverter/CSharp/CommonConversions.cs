@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
@@ -273,7 +271,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
                 var idSymbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol ?? _semanticModel.GetDeclaredSymbol(id.Parent);
                 if (idSymbol != null && !String.IsNullOrWhiteSpace(idSymbol.Name)) {
-                    text = WithDeclarationName(id, idSymbol, text);
+                    text = WithDeclarationName(id, idSymbol, text, _typeContext.AssembliesBeingConverted);
                     var normalizedText = text.WithHalfWidthLatinCharacters();
                     if (idSymbol.IsConstructor() && isAttribute) {
                         text = idSymbol.ContainingType.Name;
@@ -306,10 +304,32 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <seealso cref="DeclarationNodeVisitor.WithDeclarationNameCasingAsync(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
         /// <seealso cref="CommonConversions.WithDeclarationNameCasing(TypeSyntax, ITypeSymbol)"/>
         /// </summary>
-        private static string WithDeclarationName(SyntaxToken id, ISymbol idSymbol, string text)
+        private static string WithDeclarationName(SyntaxToken id, ISymbol idSymbol, string text, IEnumerable<IAssemblySymbol> assembliesBeingConverted)
         {
             //This also covers the case when the name is different (in VB you can have method X implements IFoo.Y), but doesn't resolve any resulting name clashes
-            var baseSymbol = idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property) ? idSymbol.FollowProperty(s => s.BaseMember()).Last() : idSymbol;
+            var assemblyIdentities = assembliesBeingConverted.Select(t => t.Identity);
+            ISymbol baseSymbol = default;
+            var containingType = idSymbol.ContainingType;
+
+            if (idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property)) 
+            {
+                var possibleSymbols = idSymbol.FollowProperty(s => s.BaseMember());
+                foreach (var possibleSymbol in possibleSymbols)
+                {
+                    if (!assemblyIdentities.Contains(possibleSymbol.ContainingAssembly.Identity) && possibleSymbol.ContainingType.Equals(containingType)) 
+                    {
+                        baseSymbol = possibleSymbol;
+                        break;
+                    }
+
+                    baseSymbol = possibleSymbol;
+                }
+            } 
+            else 
+            {
+                baseSymbol = idSymbol;
+            }
+
             bool isDeclaration = baseSymbol.Locations.Any(l => l.SourceSpan == id.Span);
             bool isPartial = baseSymbol.IsPartialClassDefinition() || baseSymbol.IsPartialMethodDefinition() ||
                              baseSymbol.IsPartialMethodImplementation();
