@@ -63,7 +63,7 @@ namespace ICSharpCode.CodeConverter.CommandLine
                 : LanguageNames.CSharp;
 
             var projectsToConvert = solution.Projects.Where(p => p.Language == languageNameToConvert && shouldConvertProject(p)).ToArray();
-            var results = await SolutionConverter.CreateFor(languageConversion, projectsToConvert, progress, token).Convert();
+            var results = SolutionConverter.CreateFor(languageConversion, projectsToConvert, progress, token).Convert();
             await foreach (var r in results.WithCancellation(token)) yield return r;
         }
 

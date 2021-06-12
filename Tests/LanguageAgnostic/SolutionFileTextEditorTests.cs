@@ -1,18 +1,18 @@
-﻿namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
-{
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.IO.Abstractions;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using ICSharpCode.CodeConverter.CSharp;
-    using ICSharpCode.CodeConverter.Shared;
-    using Microsoft.CodeAnalysis;
-    using Moq;
-    using Xunit;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Abstractions;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Shared;
+using Microsoft.CodeAnalysis;
+using Moq;
+using Xunit;
 
+namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
+{
     public class SolutionFileTextEditorTests : IDisposable
     {
         private Solution _sln;
@@ -246,9 +246,7 @@
             var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionProjectReference);
 
             //Act
-            var convertedProjFile = (await slnConverter.Convert().SingleAwaitAsync(result => 
-                new ValueTask<bool>(result.SourcePathOrNull == referencingProject.FilePath)))
-               .ConvertedCode;
+            var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
 
             //Assert
             var expectedProjFile = GetProjectProjectReference(new []
@@ -286,9 +284,7 @@
             var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionProjectReference);
 
             //Act
-            var convertedProjFile = (await slnConverter.Convert().SingleAwaitAsync(result => 
-                    new ValueTask<bool>(result.SourcePathOrNull == referencingProject.FilePath)))
-               .ConvertedCode;
+            var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
 
             //Assert
             var expectedProjFile = GetProjectProjectReference(new []
@@ -326,9 +322,7 @@
             var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionProjectReference);
 
             //Act
-            var convertedProjFile = (await slnConverter.Convert().SingleAwaitAsync(result => 
-                    new ValueTask<bool>(result.SourcePathOrNull == referencingProject.FilePath)))
-               .ConvertedCode;
+            var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
 
             //Assert
             var expectedProjFile = GetProjectProjectReference(new []
@@ -366,9 +360,7 @@
             var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionProjectReference);
 
             //Act
-            var convertedProjFile = (await slnConverter.Convert().SingleAwaitAsync(result => 
-                    new ValueTask<bool>(result.SourcePathOrNull == referencingProject.FilePath)))
-               .ConvertedCode;
+            var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
 
             //Assert
             var expectedProjFile = GetProjectProjectReference(new []
@@ -411,9 +403,7 @@
             var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionProjectReference);
 
             //Act
-            var convertedProjFile = (await slnConverter.Convert().SingleAwaitAsync(result => 
-                    new ValueTask<bool>(result.SourcePathOrNull == referencingProject.FilePath)))
-               .ConvertedCode;
+            var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
 
             //Assert
             var expectedProjFile = GetProjectProjectReference(new []
@@ -443,10 +433,10 @@
             var testProjReference = new ProjectReference(testProject.Id);
             var otherTestProjReference = new ProjectReference(otherTestProject.Id);
             _sln = _sln.WithProjectReferences(referencingProject.Id,
-                new[] {testProjReference, otherTestProjReference});
+                new[] { testProjReference, otherTestProjReference });
             testProject = _sln.GetProject(testProject.Id);
 
-            var projReference = GetProjectProjectReference(new []
+            var projReference = GetProjectProjectReference(new[]
             {
                 @"..\Prefix.VbLibrary\VbLibrary.vbproj",
                 @"..\VbLibrary\VbLibrary.vbproj"
@@ -455,15 +445,13 @@
             _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns(projReference);
             TextReplacementConverter.FileSystem = _fsMock.Object;
 
-            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionProjectReference);
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> { testProject }, solutionProjectReference);
 
             //Act
-            var convertedProjFile = (await slnConverter.Convert().SingleAwaitAsync(result => 
-                    new ValueTask<bool>(result.SourcePathOrNull == referencingProject.FilePath)))
-               .ConvertedCode;
+            var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
 
             //Assert
-            var expectedProjFile = GetProjectProjectReference(new []
+            var expectedProjFile = GetProjectProjectReference(new[]
             {
                 @"..\Prefix.VbLibrary\VbLibrary.vbproj",
                 @"..\VbLibrary\VbLibrary.csproj"
@@ -550,6 +538,12 @@ EndProject";
             var project = _sln.GetProject(projectId);
 
             return project;
+        }
+
+        private static async Task<string> GetConvertedCode(SolutionConverter slnConverter, Project referencingProject)
+        {
+            return (await slnConverter.Convert().SingleAsync(result => result.SourcePathOrNull == referencingProject.FilePath))
+                           .ConvertedCode;
         }
     }
 }
