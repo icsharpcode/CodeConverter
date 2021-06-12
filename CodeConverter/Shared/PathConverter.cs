@@ -33,5 +33,13 @@ namespace ICSharpCode.CodeConverter.Shared
                     return originalExtension;
             }
         }
+
+        public static string GetRelativePath(string relativeTo, string path)
+        {
+            var uri = new Uri(relativeTo);
+            var rel = Uri.UnescapeDataString(uri.MakeRelativeUri(new Uri(path)).ToString()).Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+
+            return rel;
+        }
     }
 }
