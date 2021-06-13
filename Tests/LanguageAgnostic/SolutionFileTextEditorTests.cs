@@ -516,7 +516,8 @@ EndProject";
 
         private static Solution CreateTestSolution()
         {
-            var ws = new AdhocWorkspace();
+            var ws = Task.Run(() => ThreadSafeWorkspaceHelper.CreateAdhocWorkspace.GetValueAsync())
+               .GetAwaiter().GetResult();
             var solutionId = SolutionId.CreateNewId(SlnName);
             var versionStamp = VersionStamp.Create();
             var solutionInfo = SolutionInfo.Create(solutionId, versionStamp, SlnFilePath);

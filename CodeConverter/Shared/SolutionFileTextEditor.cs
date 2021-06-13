@@ -89,7 +89,8 @@
             var projGuidMatch = projGuidRegex.Match(contents);
 
             if (!projGuidMatch.Success) {
-                throw new OperationCanceledException($"{nameof(guidPattern)} {guidPattern} doesn't match with sourceSlnFileContents {contents}");
+                throw new OperationCanceledException($"{nameof(guidPattern)} {guidPattern} doesn't match with" +
+                                                     $" sourceSlnFileContents {contents}");
             }
 
             var oldGuid = projGuidMatch.Groups[1].Value;
