@@ -29,7 +29,7 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
 
         public void Dispose()
         {
-            _sln = null;
+            _sln.Workspace.Dispose();
             _fsMock.Reset();
             SolutionConverter.FileSystem = new FileSystem();
             TextReplacementConverter.FileSystem = new FileSystem();
