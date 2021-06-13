@@ -32,6 +32,7 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             _sln = null;
             _fsMock.Reset();
             SolutionConverter.FileSystem = new FileSystem();
+            TextReplacementConverter.FileSystem = new FileSystem();
         }
 
         [Fact]
