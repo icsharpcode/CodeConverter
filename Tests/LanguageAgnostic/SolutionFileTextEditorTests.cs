@@ -24,15 +24,12 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
         {
             _sln = CreateTestSolution();
             _fsMock = new Mock<IFileSystem>();
-            SolutionConverter.FileSystem = _fsMock.Object;
         }
 
         public void Dispose()
         {
             _sln.Workspace.Dispose();
             _fsMock.Reset();
-            SolutionConverter.FileSystem = new FileSystem();
-            TextReplacementConverter.FileSystem = new FileSystem();
         }
 
         [Fact]
@@ -47,7 +44,8 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             var testProject = AddTestProject("VbLibrary", null);
             _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns("");
 
-            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionFileProjectReference);
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject},
+                fileSystem: _fsMock.Object, solutionContents: solutionFileProjectReference);
 
             //Act
             var convertedSlnFile = slnConverter.ConvertSolutionFile().ConvertedCode;
@@ -72,7 +70,8 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             var testProject = AddTestProject("VbLibrary", "VbLibrary");
             _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns("");
 
-            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionFileProjectReference);
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject},
+                fileSystem: _fsMock.Object, solutionContents: solutionFileProjectReference);
 
             //Act
             var convertedSlnFile = slnConverter.ConvertSolutionFile().ConvertedCode;
@@ -98,7 +97,8 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             var testProject = AddTestProject("VbLibrary", "VbLibrary");
             _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns("");
 
-            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionFileProjectReference);
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject},
+                fileSystem: _fsMock.Object, solutionContents: solutionFileProjectReference);
 
             //Act
             var convertedSlnFile = slnConverter.ConvertSolutionFile().ConvertedCode;
@@ -125,7 +125,8 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             var testProject = AddTestProject("VbLibrary", "VbLibrary");
             _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns("");
 
-            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionFileProjectReference);
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject},
+                fileSystem: _fsMock.Object, solutionContents: solutionFileProjectReference);
 
             //Act
             var convertedSlnFile = slnConverter.ConvertSolutionFile().ConvertedCode;
@@ -152,7 +153,8 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             var testProject = AddTestProject("VbLibrary", "VbLibrary");
             _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns("");
 
-            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionFileProjectReference);
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject},
+                fileSystem: _fsMock.Object, solutionContents: solutionFileProjectReference);
 
             //Act
             var convertedSlnFile = slnConverter.ConvertSolutionFile().ConvertedCode;
@@ -179,7 +181,8 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             var testProject = AddTestProject("VbLibrary", null);
             _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns("");
 
-            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionFileProjectReference);
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject},
+                fileSystem: _fsMock.Object, solutionContents: solutionFileProjectReference);
 
             //Act
             var convertedSlnFile = slnConverter.ConvertSolutionFile().ConvertedCode;
@@ -206,7 +209,8 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             var testProject = AddTestProject("VbLibrary", null);
             _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns("");
 
-            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionFileProjectReference);
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject},
+                fileSystem: _fsMock.Object, solutionContents: solutionFileProjectReference);
 
             //Act
             var convertedSlnFile = slnConverter.ConvertSolutionFile().ConvertedCode;
@@ -242,9 +246,9 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             });
 
             _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns(projReference);
-            TextReplacementConverter.FileSystem = _fsMock.Object;
 
-            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionProjectReference);
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject},
+                fileSystem: _fsMock.Object, solutionContents: solutionProjectReference);
 
             //Act
             var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
@@ -280,9 +284,9 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             });
 
             _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns(projReference);
-            TextReplacementConverter.FileSystem = _fsMock.Object;
 
-            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionProjectReference);
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject},
+                fileSystem: _fsMock.Object, solutionContents: solutionProjectReference);
 
             //Act
             var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
@@ -318,9 +322,9 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             });
 
             _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns(projReference);
-            TextReplacementConverter.FileSystem = _fsMock.Object;
 
-            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionProjectReference);
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject},
+                fileSystem: _fsMock.Object, solutionContents: solutionProjectReference);
 
             //Act
             var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
@@ -356,9 +360,9 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             });
 
             _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns(projReference);
-            TextReplacementConverter.FileSystem = _fsMock.Object;
 
-            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionProjectReference);
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject},
+                fileSystem: _fsMock.Object, solutionContents: solutionProjectReference);
 
             //Act
             var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
@@ -399,9 +403,9 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             });
 
             _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns(projReference);
-            TextReplacementConverter.FileSystem = _fsMock.Object;
 
-            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject}, solutionProjectReference);
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject},
+                fileSystem: _fsMock.Object, solutionContents: solutionProjectReference);
 
             //Act
             var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
@@ -444,9 +448,9 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             });
 
             _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns(projReference);
-            TextReplacementConverter.FileSystem = _fsMock.Object;
 
-            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> { testProject }, solutionProjectReference);
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> { testProject },
+                fileSystem: _fsMock.Object, solutionContents: solutionProjectReference);
 
             //Act
             var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);

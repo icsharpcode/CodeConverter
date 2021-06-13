@@ -10,11 +10,10 @@ using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
+
 namespace ICSharpCode.CodeConverter.Shared
 {
-    using System.IO.Abstractions;
-    using Microsoft.CodeAnalysis.Text;
-
     public class ProjectConversion
     {
         private readonly IProjectContentsConverter _projectContentsConverter;
@@ -82,7 +81,8 @@ namespace ICSharpCode.CodeConverter.Shared
         }
 
         public static async IAsyncEnumerable<ConversionResult> ConvertProject(Project project,
-            ILanguageConversion languageConversion, IProgress<ConversionProgress> progress,
+            ILanguageConversion languageConversion, TextReplacementConverter textReplacementConverter,
+            IProgress<ConversionProgress> progress,
             IEnumerable<IAssemblySymbol> assembliesBeingConverted,
             [EnumeratorCancellation] CancellationToken cancellationToken,
             params (string Find, string Replace, bool FirstOnly)[] replacements)
@@ -93,12 +93,14 @@ namespace ICSharpCode.CodeConverter.Shared
             var sourceFilePaths = project.Documents.Concat(projectContentsConverter.SourceProject.AdditionalDocuments).Select(d => d.FilePath).ToImmutableHashSet();
             var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress, cancellationToken);
 
-            var results = WithProjectFile(projectContentsConverter, languageConversion, sourceFilePaths, convertProjectContents, replacements);
+            var results = WithProjectFile(projectContentsConverter, textReplacementConverter, languageConversion, sourceFilePaths, convertProjectContents, replacements);
             await foreach (var result in results.WithCancellation(cancellationToken)) yield return result;
         }
 
         /// <remarks>Perf: Keep lazy so that we don't keep an extra copy of all files in memory at once</remarks>
-        private static async IAsyncEnumerable<ConversionResult> WithProjectFile(IProjectContentsConverter projectContentsConverter, ILanguageConversion languageConversion, ImmutableHashSet<string> originalSourcePaths, IAsyncEnumerable<ConversionResult> convertProjectContents, (string Find, string Replace, bool FirstOnly)[] replacements)
+        private static async IAsyncEnumerable<ConversionResult> WithProjectFile(IProjectContentsConverter projectContentsConverter, TextReplacementConverter textReplacementConverter,
+            ILanguageConversion languageConversion, ImmutableHashSet<string> originalSourcePaths,
+            IAsyncEnumerable<ConversionResult> convertProjectContents, (string Find, string Replace, bool FirstOnly)[] replacements)
         {
             var project = projectContentsConverter.SourceProject;
             var projectDir = project.GetDirectoryPath();
@@ -129,14 +131,17 @@ namespace ICSharpCode.CodeConverter.Shared
                     ChangeLanguageVersionRegex(projectContentsConverter.LanguageVersion)
                 }).ToArray();
 
-            yield return ConvertProjectFile(project, languageConversion, replacementSpecs);
+            yield return ConvertProjectFile(project, languageConversion, textReplacementConverter, replacementSpecs);
         }
 
         public static ConversionResult ConvertProjectFile(Project project,
             ILanguageConversion languageConversion,
+            TextReplacementConverter textReplacementConverter,
             params (string Find, string Replace, bool FirstOnly)[] textReplacements)
         {
-            return new FileInfo(project.FilePath).ConversionResultFromReplacements(textReplacements,
+            var fileInfo = new FileInfo(project.FilePath);
+
+            return textReplacementConverter.ConversionResultFromReplacements(fileInfo, textReplacements,
                 languageConversion.PostTransformProjectFile);
         }
 
