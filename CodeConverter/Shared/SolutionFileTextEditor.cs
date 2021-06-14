@@ -84,8 +84,15 @@
         private static (string Find, string Replace, bool FirstOnly) GetProjectGuidReplacement(string projPath,
             string contents)
         {
-            var projGuidRegex = new Regex(projPath + @""", ""({[0-9A-Fa-f\-]{32,36}})("")");
+            var guidPattern = projPath + @""", ""({[0-9A-Fa-f\-]{32,36}})("")";
+            var projGuidRegex = new Regex(guidPattern);
             var projGuidMatch = projGuidRegex.Match(contents);
+
+            if (!projGuidMatch.Success) {
+                throw new OperationCanceledException($"{nameof(guidPattern)} {guidPattern} doesn't match with" +
+                                                     $" sourceSlnFileContents {contents}");
+            }
+
             var oldGuid = projGuidMatch.Groups[1].Value;
             var newGuid = GetDeterministicGuidFrom(new Guid(oldGuid));
             return (oldGuid, newGuid.ToString("B").ToUpperInvariant(), false);

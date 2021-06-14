@@ -20,39 +20,34 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly ILanguageConversion _languageConversion;
         private readonly SolutionFileTextEditor _solutionFileTextEditor;
         private readonly CancellationToken _cancellationToken;
-
-        public static IFileSystem FileSystem { get; set; } = new FileSystem();
-
-        public static SolutionConverter CreateFor<TLanguageConversion>(IReadOnlyCollection<Project> projectsToConvert, string sourceSolutionContents)
-            where TLanguageConversion : ILanguageConversion, new()
-        {
-            return CreateFor<TLanguageConversion>(projectsToConvert, solutionContents: sourceSolutionContents);
-        }
+        private readonly TextReplacementConverter _textReplacementConverter;
 
         public static SolutionConverter CreateFor<TLanguageConversion>(IReadOnlyCollection<Project> projectsToConvert,
             ConversionOptions conversionOptions = default,
             IProgress<ConversionProgress> progress = null,
             CancellationToken cancellationToken = default,
+            IFileSystem fileSystem = null,
             string solutionContents = "") where TLanguageConversion : ILanguageConversion, new()
         {
             var conversion = new TLanguageConversion { ConversionOptions = conversionOptions };
-            return CreateFor(conversion, projectsToConvert, progress, cancellationToken, solutionContents);
+            return CreateFor(conversion, projectsToConvert, progress, cancellationToken, fileSystem, solutionContents);
         }
 
         public static SolutionConverter CreateFor(ILanguageConversion languageConversion, IReadOnlyCollection<Project> projectsToConvert,
-            IProgress<ConversionProgress> progress,
-            CancellationToken cancellationToken, string solutionContents = "")
+            IProgress<ConversionProgress> progress, CancellationToken cancellationToken, IFileSystem fileSystem = null, string solutionContents = "")
         {
             languageConversion.ConversionOptions ??= new ConversionOptions();
+            fileSystem ??= new FileSystem();
+
             var solutionFilePath = projectsToConvert.First().Solution.FilePath;
-            var sourceSolutionContents = File.Exists(solutionFilePath)
-                ? FileSystem.File.ReadAllText(solutionFilePath)
+            var sourceSolutionContents = fileSystem.File.Exists(solutionFilePath)
+                ? fileSystem.File.ReadAllText(solutionFilePath)
                 : solutionContents;
 
             var projTuples = projectsToConvert.Select(proj =>
             {
                 var relativeProjPath = PathConverter.GetRelativePath(solutionFilePath, proj.FilePath);
-                var projContents = FileSystem.File.ReadAllText(proj.FilePath);
+                var projContents = fileSystem.File.ReadAllText(proj.FilePath);
 
                 return (proj.Name, RelativeProjPath: relativeProjPath, ProjContents: projContents);
             });
@@ -61,7 +56,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var projectReferenceReplacements = solutionFileTextEditor.GetProjectFileProjectReferenceReplacements(projTuples, sourceSolutionContents);
 
             return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements,
-                progress ?? new Progress<ConversionProgress>(), cancellationToken, languageConversion, solutionFileTextEditor);
+                progress ?? new Progress<ConversionProgress>(), cancellationToken, languageConversion, solutionFileTextEditor, fileSystem);
         }
 
         private SolutionConverter(string solutionFilePath,
@@ -69,7 +64,7 @@ namespace ICSharpCode.CodeConverter.Shared
             List<(string Find, string Replace, bool FirstOnly)> projectReferenceReplacements,
             IProgress<ConversionProgress> showProgressMessage,
             CancellationToken cancellationToken, ILanguageConversion languageConversion,
-            SolutionFileTextEditor solutionFileTextEditor)
+            SolutionFileTextEditor solutionFileTextEditor, IFileSystem fileSystem)
         {
             _solutionFilePath = solutionFilePath;
             _sourceSolutionContents = sourceSolutionContents;
@@ -79,6 +74,7 @@ namespace ICSharpCode.CodeConverter.Shared
             _languageConversion = languageConversion;
             _cancellationToken = cancellationToken;
             _solutionFileTextEditor = solutionFileTextEditor;
+            _textReplacementConverter = new TextReplacementConverter(fileSystem);
         }
 
         public async IAsyncEnumerable<ConversionResult> Convert()
@@ -103,7 +99,7 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var replacements = _projectReferenceReplacements.ToArray();
             _progress.Report(new ConversionProgress($"Converting {project.Name}..."));
-            return ProjectConversion.ConvertProject(project, _languageConversion, _progress, assembliesBeingConverted, _cancellationToken, replacements);
+            return ProjectConversion.ConvertProject(project, _languageConversion, _textReplacementConverter, _progress, assembliesBeingConverted, _cancellationToken, replacements);
         }
 
         private IEnumerable<ConversionResult> UpdateProjectReferences(IEnumerable<Project> projectsToUpdateReferencesOnly)
@@ -111,9 +107,12 @@ namespace ICSharpCode.CodeConverter.Shared
             var conversionResults = projectsToUpdateReferencesOnly
                .Where(p => p.FilePath != null) //Some project types like Websites don't have a project file
                .Select(project => {
-                    var withReferencesReplaced =
-                        new FileInfo(project.FilePath).ConversionResultFromReplacements(_projectReferenceReplacements);
+                    var fileInfo = new FileInfo(project.FilePath);
+
+                    var withReferencesReplaced = 
+                        _textReplacementConverter.ConversionResultFromReplacements(fileInfo, _projectReferenceReplacements);
                     withReferencesReplaced.TargetPathOrNull = withReferencesReplaced.SourcePathOrNull;
+
                     return withReferencesReplaced;
                 });
 
@@ -129,7 +128,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var slnProjectReferenceReplacements = _solutionFileTextEditor.GetSolutionFileProjectReferenceReplacements(relativeProjPaths,
                 _sourceSolutionContents, projectTypeGuidMappings);
 
-            var convertedSolutionContents = _sourceSolutionContents.Replace(slnProjectReferenceReplacements);
+            var convertedSolutionContents = _textReplacementConverter.Replace(_sourceSolutionContents, slnProjectReferenceReplacements);
             return new ConversionResult(convertedSolutionContents) {
                 SourcePathOrNull = _solutionFilePath,
                 TargetPathOrNull = _solutionFilePath

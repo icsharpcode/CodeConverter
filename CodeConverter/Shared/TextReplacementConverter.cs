@@ -6,20 +6,26 @@ namespace ICSharpCode.CodeConverter.Shared
     using System.Text.RegularExpressions;
     using System.IO.Abstractions;
 
-    public static class TextReplacementConverter
+    public class TextReplacementConverter
     {
-        public static IFileSystem FileSystem { get; set; } = new FileSystem();
+        private readonly IFileSystem _fileSystem;
 
-        public static ConversionResult ConversionResultFromReplacements(this FileInfo filePath, IEnumerable<(string Find, string Replace, bool FirstOnly)> replacements, Func<string, string> postReplacementTransform = null)
+        public TextReplacementConverter(IFileSystem fileSystem)
+        {
+            _fileSystem = fileSystem;
+        }
+
+        public ConversionResult ConversionResultFromReplacements(FileInfo filePath, IEnumerable<(string Find, string Replace, bool FirstOnly)> replacements,
+            Func<string, string> postReplacementTransform = null)
         {
             postReplacementTransform ??= (s => s);
-            var oldProjectText = FileSystem.File.ReadAllText(filePath.FullName);
-            var newProjectText = oldProjectText.Replace(replacements);
+            var oldProjectText = _fileSystem.File.ReadAllText(filePath.FullName);
+            var newProjectText = Replace(oldProjectText, replacements);
             string withReplacements = postReplacementTransform(newProjectText);
             return new ConversionResult(withReplacements) { SourcePathOrNull = filePath.FullName, IsIdentity = oldProjectText == withReplacements};
         }
 
-        public static string Replace(this string originalText, IEnumerable<(string Find, string Replace, bool FirstOnly)> replacements)
+        public string Replace(string originalText, IEnumerable<(string Find, string Replace, bool FirstOnly)> replacements)
         {
             foreach (var (oldValue, newValue, firstOnly) in replacements) {
                 Regex regex = new Regex(oldValue, RegexOptions.IgnoreCase);

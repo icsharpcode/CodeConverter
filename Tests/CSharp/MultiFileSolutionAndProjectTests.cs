@@ -17,16 +17,14 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp
             _multiFileTestFixture = multiFileTestFixture;
         }
 
-        //[Fact] /* enable for executing locally */
-        [Fact(Skip = "Doesn't work on Github actions agent")] /* disable for executing locally */
+        [Fact] /* enable for executing locally */
         public async Task ConvertWholeSolutionAsync()
         {
 
             await _multiFileTestFixture.ConvertProjectsWhereAsync(p => true, Language.CS);
         }
 
-        //[Fact] /* enable for executing locally */
-        [Fact(Skip = "Doesn't work on Github actions agent")]  /* disable for executing locally */
+        [Fact] /* enable for executing locally */
         public async Task ConvertVbLibraryOnlyAsync()
         {
             await _multiFileTestFixture.ConvertProjectsWhereAsync(p => p.Name == "VbLibrary", Language.CS);
