@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [8.2.5] - 2021-06-19
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Prevent overrides and overloads appearing on the same property [#681](https://github.com/icsharpcode/CodeConverter/issues/681)
 * Convert `Select x = ` into `let x = ` within Linq [#717](https://github.com/icsharpcode/CodeConverter/issues/717)
 
