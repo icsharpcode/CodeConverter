@@ -14,6 +14,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### C# -> VB
 
 
+## [8.3.0] - 2021-07-02
+
+
+### Vsix
+* Support for VS2022
+
 ## [8.2.5] - 2021-06-19
 
 
