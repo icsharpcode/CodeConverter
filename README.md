@@ -36,7 +36,7 @@ Currently, the VB -> C# conversion quality is higher than the C# -> VB conversio
   * Or check out the [ConverterController](https://github.com/icsharpcode/CodeConverter/blob/master/Web/ConverterController.cs) for a more web-focused API.
 
 ## Building/running from source
-1. Ensure you have [.NET Core SDK 5.0+](https://dotnet.microsoft.com/download)
+1. Ensure you have [.NET Core SDK 3.1+](https://dotnet.microsoft.com/download/dotnet-core/3.1)
 2. Open the solution in Visual Studio 2017+
 3. To run the website, set CodeConverter.Web as the startup project
 4. To run the Visual Studio extension, set Vsix as the startup project
