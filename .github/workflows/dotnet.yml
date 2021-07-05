@@ -22,10 +22,13 @@ jobs:
         version: ${{ env.BuildVersion }}.${{ github.run_number }}
         assemblyVersion: ${{ env.BuildVersion }}.${{ github.run_number }}
         fileVersion: ${{ env.BuildVersion }}.${{ github.run_number }}
-    - name: Setup .NET
+    - name: Setup .NET for build
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 5.0.x
+    - name: Setup .NET for test data projects
+      uses: actions/setup-dotnet@v1
+      with:
         dotnet-version: 3.1.x
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v1.0.2
