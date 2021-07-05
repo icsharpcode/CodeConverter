@@ -7,6 +7,34 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
     public class LinqExpressionTests : ConverterTestBase
     {
         [Fact]
+        public async Task Issue635_LinqDistinctOrderByAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Imports System.Collections.Generic
+Imports System.Linq
+
+Public Class Issue635
+    Dim l As List(Of Integer)
+    Dim listSortedDistinct = From x In l Order By x Distinct
+End Class",
+@"using System.Collections.Generic;
+using System.Linq;
+
+public partial class Issue635
+{
+    public Issue635()
+    {
+        listSortedDistinct = (from x in l
+                              orderby x
+                              select x).Distinct();
+    }
+
+    private List<int> l;
+    private object listSortedDistinct;
+}");
+        }
+
+        [Fact]
         public async Task Linq1Async()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub SimpleQuery()

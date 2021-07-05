@@ -93,12 +93,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                     new Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>();
                 while (vbBodyClauses.Any() && !RequiresMethodInvocation(vbBodyClauses.Peek())) {
                     var convertedClauses = new List<CSSyntax.QueryClauseSyntax>();
-                    while (vbBodyClauses.Any() && !RequiredContinuation(vbBodyClauses.Peek(), vbBodyClauses.Count - 1)) {
+                    while (vbBodyClauses.Any() && !RequiredContinuation(vbBodyClauses.Peek(), vbBodyClauses.Count - 1) && !RequiresMethodInvocation(vbBodyClauses.Peek())) {
                         convertedClauses.Add(await ConvertQueryBodyClauseAsync(vbBodyClauses.Dequeue()));
                     }
 
                     var convertQueryBodyClauses = (SyntaxFactory.List(convertedClauses),
-                        vbBodyClauses.Any() ? vbBodyClauses.Dequeue() : null);
+                        vbBodyClauses.Any() && !RequiresMethodInvocation(vbBodyClauses.Peek()) ? vbBodyClauses.Dequeue() : null);
                     querySectionsReversed.Enqueue(convertQueryBodyClauses);
                 }
                 querySegments.Add((querySectionsReversed, vbBodyClauses.Any() ? vbBodyClauses.Dequeue() : null));
