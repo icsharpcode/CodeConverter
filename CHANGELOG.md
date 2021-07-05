@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
-* Convert `orderby distinct` in linq - fixes #635
+* Convert `orderby distinct` in linq [#736](https://github.com/icsharpcode/CodeConverter/issues/736)
+* Convert nested Select queries in linq [#635](https://github.com/icsharpcode/CodeConverter/issues/635)
 
 ### C# -> VB
 

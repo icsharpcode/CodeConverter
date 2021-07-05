@@ -14,7 +14,7 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 namespace ICSharpCode.CodeConverter.CSharp
 {
     /// <remarks>
-    ///  Grammar info: http://kursinfo.himolde.no/in-kurs/IBE150/VBspec.htm#_Toc248253288
+    ///  Grammar info: https://web.archive.org/web/20170715190715/http://kursinfo.himolde.no/in-kurs/IBE150/VBspec.htm#_Toc248253288
     /// </remarks>
     internal class QueryConverter
     {
@@ -91,9 +91,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             while (vbBodyClauses.Any()) {
                 var querySectionsReversed =
                     new Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>();
-                while (vbBodyClauses.Any() && !RequiresMethodInvocation(vbBodyClauses.Peek())) {
+                while (vbBodyClauses.Any() && !RequiresMethodInvocation(vbBodyClauses.Peek()) && !EndsInSelect(querySectionsReversed)) {
                     var convertedClauses = new List<CSSyntax.QueryClauseSyntax>();
-                    while (vbBodyClauses.Any() && !RequiredContinuation(vbBodyClauses.Peek(), vbBodyClauses.Count - 1) && !RequiresMethodInvocation(vbBodyClauses.Peek())) {
+                    while (IsPartOfSegment(vbBodyClauses)) {
                         convertedClauses.Add(await ConvertQueryBodyClauseAsync(vbBodyClauses.Dequeue()));
                     }
 
@@ -101,19 +101,29 @@ namespace ICSharpCode.CodeConverter.CSharp
                         vbBodyClauses.Any() && !RequiresMethodInvocation(vbBodyClauses.Peek()) ? vbBodyClauses.Dequeue() : null);
                     querySectionsReversed.Enqueue(convertQueryBodyClauses);
                 }
-                querySegments.Add((querySectionsReversed, vbBodyClauses.Any() ? vbBodyClauses.Dequeue() : null));
+                querySegments.Add((querySectionsReversed, vbBodyClauses.Any() && !EndsInSelect(querySectionsReversed) ? vbBodyClauses.Dequeue() : null));
             }
             return querySegments;
         }
+
+        private static bool EndsInSelect(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, QueryClauseSyntax)> querySectionsReversed) =>
+            querySectionsReversed.LastOrDefault().Item2 is VBSyntax.SelectClauseSyntax;
+
+        private static bool IsPartOfSegment(Queue<QueryClauseSyntax> vbBodyClauses) =>
+            vbBodyClauses.Any() && !RequiredContinuation(vbBodyClauses) && !RequiresMethodInvocation(vbBodyClauses.Peek());
+
+        private static bool RequiredContinuation(Queue<QueryClauseSyntax> vbBodyClauses) =>
+            RequiredContinuation(vbBodyClauses.Peek(), vbBodyClauses.Count - 1);
 
         private async Task<CSharpSyntaxNode> ConvertQuerySegmentsAsync(IEnumerable<(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>, VBSyntax.QueryClauseSyntax)> querySegments, CSSyntax.FromClauseSyntax fromClauseSyntax)
         {
             CSSyntax.ExpressionSyntax query = null;
             foreach (var (queryContinuation, queryEnd) in querySegments) {
-                query = (CSSyntax.ExpressionSyntax) await ConvertQueryWithContinuationsAsync(queryContinuation, fromClauseSyntax);
-                if (queryEnd == null) return query;
+                query = (CSSyntax.ExpressionSyntax)await ConvertQueryWithContinuationsAsync(queryContinuation, fromClauseSyntax);
                 var reusableFromCsId = fromClauseSyntax.Identifier.WithoutSourceMapping();
-                query = await ConvertQueryToLinqAsync(reusableFromCsId, queryEnd, query);
+                if (queryEnd is not null) {
+                    query = await ConvertQueryToLinqAsync(reusableFromCsId, queryEnd, query);
+                }
                 fromClauseSyntax = SyntaxFactory.FromClause(reusableFromCsId, query);
             }
 
@@ -179,6 +189,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     break;
                 case VBSyntax.SelectClauseSyntax scs:
                     selectOrGroup = await ConvertSelectClauseSyntaxAsync(scs);
+                    if (nestedClause != null) {
+                        var newId = SyntaxFactory.Identifier("inner");
+                    }
                     break;
                 default:
                     throw new NotImplementedException($"Clause kind '{clauseEnd.Kind()}' is not yet implemented");

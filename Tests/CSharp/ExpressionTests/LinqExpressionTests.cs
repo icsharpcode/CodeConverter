@@ -7,6 +7,39 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
     public class LinqExpressionTests : ConverterTestBase
     {
         [Fact]
+        public async Task Issue736_LinqEarlySelectAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Imports System.Collections.Generic
+Imports System.Linq
+
+Public Class Issue635
+    Dim foo As Object
+    Dim l As List(Of Issue635)
+    Dim listSelectWhere = From t in l
+            Select t.foo
+            Where 1 = 2
+End Class",
+@"using System.Collections.Generic;
+using System.Linq;
+
+public partial class Issue635
+{
+    public Issue635()
+    {
+        listSelectWhere = from t in
+                              from t in l
+                              select t.foo
+                          where 1 == 2
+                          select t;
+    }
+
+    private object foo;
+    private List<Issue635> l;
+    private object listSelectWhere;
+}", hasLineCommentConversionIssue: true /*Fields re-ordered*/);
+        }
+        [Fact]
         public async Task Issue635_LinqDistinctOrderByAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"
