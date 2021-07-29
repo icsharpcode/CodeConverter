@@ -7,9 +7,9 @@ assignees: ''
 
 ---
 
-### Input code
+### VB.Net input code
 ```vbnet
-If relevant, please enter some example code here to reproduce the issue, or the steps taken to cause the issue.
+If relevant, please enter some example VB.NET code here to reproduce the issue, or the steps taken to cause the issue.
 ```
 
 ### Erroneous output

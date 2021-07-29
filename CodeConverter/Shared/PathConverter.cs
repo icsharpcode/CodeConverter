@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
@@ -33,12 +34,12 @@ namespace ICSharpCode.CodeConverter.Shared
             }
         }
 
-        public static string GetFileDirPath(string fileName, string dirPath)
+        public static string GetRelativePath(string relativeTo, string path)
         {
-            var dirName = Path.GetFileName(dirPath);
-            var fileDirPath = Path.Combine(dirName ?? string.Empty, fileName);
+            var uri = new Uri(relativeTo);
+            var rel = Uri.UnescapeDataString(uri.MakeRelativeUri(new Uri(path)).ToString()).Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
 
-            return fileDirPath;
+            return rel;
         }
     }
 }

@@ -116,5 +116,11 @@
     </None>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\VbNetStandardLib\VbNetStandardLib.csproj">
+      <Project>{49DF6752-696A-0F7B-1455-E2F06769DFAE}</Project>
+      <Name>VbNetStandardLib</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

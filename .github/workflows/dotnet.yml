@@ -10,7 +10,7 @@ jobs:
  build:
     runs-on: windows-latest
     env:
-      BuildVersion: '8.2.3'
+      BuildVersion: '8.3.0'
       BuildPlatform: Any CPU
       BuildTarget: Release
     steps:
@@ -22,7 +22,7 @@ jobs:
         version: ${{ env.BuildVersion }}.${{ github.run_number }}
         assemblyVersion: ${{ env.BuildVersion }}.${{ github.run_number }}
         fileVersion: ${{ env.BuildVersion }}.${{ github.run_number }}
-    - name: Setup .NET
+    - name: Setup .NET for main build
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 3.1.x

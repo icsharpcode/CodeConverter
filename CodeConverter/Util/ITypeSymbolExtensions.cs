@@ -56,7 +56,7 @@ namespace ICSharpCode.CodeConverter.Util
             return SymbolEquivalenceComparer.Instance.Equals(GetEnumerableElementTypeOrDefault(symbol), typeArg);
         }
 
-        private static ITypeSymbol GetEnumerableElementTypeOrDefault(ITypeSymbol symbol)
+        public static ITypeSymbol GetEnumerableElementTypeOrDefault(this ITypeSymbol symbol)
         {
             if (symbol is IArrayTypeSymbol ats) return ats.ElementType;
             if (symbol is INamedTypeSymbol nt) return nt.Yield().Concat(nt.AllInterfaces).OfType<INamedTypeSymbol>()

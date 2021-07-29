@@ -631,6 +631,50 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task Issue681_OverloadsOverridesPropertyAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Public Class C 
+    Inherits B
+
+    Public ReadOnly Overloads Overrides Property X()
+        Get
+            Return Nothing
+        End Get
+    End Property
+End Class
+
+Public Class B
+    Public ReadOnly Overridable Property X()
+        Get
+            Return Nothing
+        End Get
+    End Property
+End Class", @"
+public partial class C : B
+{
+    public override object X
+    {
+        get
+        {
+            return null;
+        }
+    }
+}
+
+public partial class B
+{
+    public virtual object X
+    {
+        get
+        {
+            return null;
+        }
+    }
+}");
+        }
+
+        [Fact]
         public async Task PartialFriendClassWithOverloadsAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(

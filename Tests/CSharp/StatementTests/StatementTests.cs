@@ -750,14 +750,14 @@ internal partial class TestClass
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer() = {1, 2, 3}
+        Dim b As Integer() = {1, 2, 4}
     End Sub
 End Class", @"
 internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = new[] { 1, 2, 3 };
+        var b = new[] { 1, 2, 4 };
     }
 }");
         }
@@ -956,14 +956,14 @@ internal partial class TestClass
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer(,) = New Integer(,) {{1, 2}, {3, 4}}
+        Dim b As Integer(,) = New Integer(,) {{1, 3}, {2, 4}}
     End Sub
 End Class", @"
 internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = new int[,] { { 1, 2 }, { 3, 4 } };
+        var b = new int[,] { { 1, 3 }, { 2, 4 } };
     }
 }");
         }
