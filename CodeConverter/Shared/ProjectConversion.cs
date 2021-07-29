@@ -62,9 +62,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 document = await WithAnnotatedSelectionAsync(document, conversionOptions.SelectedTextSpan);
             }
 
-            var assemblyBeingConverted = (await document.Project.GetCompilationAsync(cancellationToken)).Assembly;
-            var assembliesBeingConverted = new[] {assemblyBeingConverted};
-            var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(document.Project, assembliesBeingConverted, progress, cancellationToken);
+            var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(document.Project, progress, cancellationToken);
 
             document = projectContentsConverter.SourceProject.GetDocument(document.Id);
 
@@ -83,13 +81,12 @@ namespace ICSharpCode.CodeConverter.Shared
         public static async IAsyncEnumerable<ConversionResult> ConvertProject(Project project,
             ILanguageConversion languageConversion, TextReplacementConverter textReplacementConverter,
             IProgress<ConversionProgress> progress,
-            IEnumerable<IAssemblySymbol> assembliesBeingConverted,
             [EnumeratorCancellation] CancellationToken cancellationToken,
             params (string Find, string Replace, bool FirstOnly)[] replacements)
         {
             progress ??= new Progress<ConversionProgress>();
             using var roslynEntryPoint = await RoslynEntryPointAsync(progress);
-            var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(project, assembliesBeingConverted, progress, cancellationToken);
+            var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(project, progress, cancellationToken);
             var sourceFilePaths = project.Documents.Concat(projectContentsConverter.SourceProject.AdditionalDocuments).Select(d => d.FilePath).ToImmutableHashSet();
             var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress, cancellationToken);
 

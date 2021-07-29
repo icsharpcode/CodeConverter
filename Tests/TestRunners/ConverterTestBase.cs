@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
@@ -150,6 +149,7 @@ End Sub";
                 if (RecharacterizeByWritingExpectedOverActual) TestFileRewriter.UpdateFiles(expectedConversion, actualConversion);
                 return sb.ToString();
             });
+
             Assert.False(RecharacterizeByWritingExpectedOverActual, $"Test setup issue: Set {nameof(RecharacterizeByWritingExpectedOverActual)} to false after using it");
         }
 
@@ -159,80 +159,101 @@ End Sub";
         {
             var lines = Utils.HomogenizeEol(code).Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             var lineNumbersAdded = new List<string>();
-            var newLines = lines.Select((line, i) => {
+            var newLines = lines.Select((line, i) =>
+            {
                 var lineNumber = i.ToString();
                 var potentialExistingComments = line.Split(new[] { singleLineCommentStart }, StringSplitOptions.None).Skip(1);
                 if (potentialExistingComments.Count() == 1 || !lineCanHaveComment(line)) return line;
                 lineNumbersAdded.Add(lineNumber);
                 return line + singleLineCommentStart + commentPrefix + lineNumber;
             }).ToArray();
+
             return (newLines, lineNumbersAdded);
         }
 
         public static void Fail(string message) => throw new XunitException(message);
     }
-    public class CSToVBWithoutSimplifierConversion : ILanguageConversion {
-        private readonly CSToVBConversion baseConversion;
-        public CSToVBWithoutSimplifierConversion() {
-            this.baseConversion = new CSToVBConversion();
+    public class CSToVBWithoutSimplifierConversion : ILanguageConversion
+    {
+        private readonly CSToVBConversion _baseConversion;
+
+        public CSToVBWithoutSimplifierConversion()
+        {
+            _baseConversion = new CSToVBConversion();
         }
 
-        string ILanguageConversion.TargetLanguage => baseConversion.TargetLanguage;
+        string ILanguageConversion.TargetLanguage => _baseConversion.TargetLanguage;
 
-        ConversionOptions ILanguageConversion.ConversionOptions { get => baseConversion.ConversionOptions; set => baseConversion.ConversionOptions = value; }
+        ConversionOptions ILanguageConversion.ConversionOptions
+        {
+            get => _baseConversion.ConversionOptions;
+            set => _baseConversion.ConversionOptions = value;
+        }
 
-        bool ILanguageConversion.CanBeContainedByMethod(SyntaxNode node) {
-            return baseConversion.CanBeContainedByMethod(node);
+        bool ILanguageConversion.CanBeContainedByMethod(SyntaxNode node)
+        {
+            return _baseConversion.CanBeContainedByMethod(node);
         }
 
         async Task<IProjectContentsConverter> ILanguageConversion.CreateProjectContentsConverterAsync(Project project,
-            IEnumerable<IAssemblySymbol> assembliesBeingConverted, IProgress<ConversionProgress> progress,
-            CancellationToken cancellationToken) {
-            return await baseConversion.CreateProjectContentsConverterAsync(project, assembliesBeingConverted, progress, cancellationToken);
+            IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
+        {
+            return await _baseConversion.CreateProjectContentsConverterAsync(project, progress, cancellationToken);
         }
 
         async Task<Document> ILanguageConversion.CreateProjectDocumentFromTreeAsync(SyntaxTree tree, IEnumerable<MetadataReference> references)
         {
-            return await baseConversion.CreateProjectDocumentFromTreeAsync(tree, references);
+            return await _baseConversion.CreateProjectDocumentFromTreeAsync(tree, references);
         }
 
-        SyntaxTree ILanguageConversion.CreateTree(string text) {
-            return baseConversion.CreateTree(text);
+        SyntaxTree ILanguageConversion.CreateTree(string text)
+        {
+            return _baseConversion.CreateTree(text);
         }
 
-        List<SyntaxNode> ILanguageConversion.FindSingleImportantChild(SyntaxNode annotatedNode) {
-            return baseConversion.FindSingleImportantChild(annotatedNode);
+        List<SyntaxNode> ILanguageConversion.FindSingleImportantChild(SyntaxNode annotatedNode)
+        {
+            return _baseConversion.FindSingleImportantChild(annotatedNode);
         }
 
-        IEnumerable<(string, string)> ILanguageConversion.GetProjectFileReplacementRegexes() {
-            return baseConversion.GetProjectFileReplacementRegexes();
+        IEnumerable<(string, string)> ILanguageConversion.GetProjectFileReplacementRegexes()
+        {
+            return _baseConversion.GetProjectFileReplacementRegexes();
         }
 
-        IReadOnlyCollection<(string, string)> ILanguageConversion.GetProjectTypeGuidMappings() {
-            return baseConversion.GetProjectTypeGuidMappings();
+        IReadOnlyCollection<(string, string)> ILanguageConversion.GetProjectTypeGuidMappings()
+        {
+            return _baseConversion.GetProjectTypeGuidMappings();
         }
 
-        SyntaxNode ILanguageConversion.GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes, bool surroundedWithMethod) {
-            return baseConversion.GetSurroundedNode(descendantNodes, surroundedWithMethod);
+        SyntaxNode ILanguageConversion.GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes, bool surroundedWithMethod)
+        {
+            return _baseConversion.GetSurroundedNode(descendantNodes, surroundedWithMethod);
         }
 
-        bool ILanguageConversion.MustBeContainedByClass(SyntaxNode node) {
-            return baseConversion.MustBeContainedByClass(node);
+        bool ILanguageConversion.MustBeContainedByClass(SyntaxNode node)
+        {
+            return _baseConversion.MustBeContainedByClass(node);
         }
 
-        string ILanguageConversion.PostTransformProjectFile(string xml) {
-            return baseConversion.PostTransformProjectFile(xml);
+        string ILanguageConversion.PostTransformProjectFile(string xml)
+        {
+            return _baseConversion.PostTransformProjectFile(xml);
         }
 
-        async Task<Document> ILanguageConversion.SingleSecondPassAsync(Document doc) {
+        async Task<Document> ILanguageConversion.SingleSecondPassAsync(Document doc)
+        {
             return doc;
         }
 
-        string ILanguageConversion.WithSurroundingClass(string text) {
-            return baseConversion.WithSurroundingClass(text);
+        string ILanguageConversion.WithSurroundingClass(string text)
+        {
+            return _baseConversion.WithSurroundingClass(text);
         }
-        string ILanguageConversion.WithSurroundingMethod(string text) {
-            return baseConversion.WithSurroundingMethod(text);
+
+        string ILanguageConversion.WithSurroundingMethod(string text)
+        {
+            return _baseConversion.WithSurroundingMethod(text);
         }
     }
 }
