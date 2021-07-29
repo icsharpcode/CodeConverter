@@ -175,7 +175,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override Task<CSharpSyntaxNode> VisitXmlBracketedName(VBSyntax.XmlBracketedNameSyntax node)
         {
-            return node.Name.AcceptAsync(TriviaConvertingExpressionVisitor);
+            return node.Name.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
         }
 
         public override async Task<CSharpSyntaxNode> VisitXmlName(VBSyntax.XmlNameSyntax node)
@@ -357,7 +357,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitParenthesizedExpression(VBasic.Syntax.ParenthesizedExpressionSyntax node)
         {
-            var cSharpSyntaxNode = await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
+            var cSharpSyntaxNode = await node.Expression.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
             // If structural changes are necessary the expression may have been lifted a statement (e.g. Type inferred lambda)
             return cSharpSyntaxNode is ExpressionSyntax expr ? SyntaxFactory.ParenthesizedExpression(expr) : cSharpSyntaxNode;
         }
@@ -437,7 +437,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var argList = (VBasic.Syntax.ArgumentListSyntax)node.Parent;
             var invocation = argList.Parent;
             if (invocation is VBasic.Syntax.ArrayCreationExpressionSyntax)
-                return await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
+                return await node.Expression.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
             var symbol = GetInvocationSymbol(invocation);
             SyntaxToken token = default(SyntaxToken);
             var convertedArgExpression = (await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)).SkipIntoParens();
@@ -575,6 +575,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
+        /// <remarks>Collection initialization has many variants in both VB and C#. Please add especially many test cases when touching this.</remarks>
         public override async Task<CSharpSyntaxNode> VisitCollectionInitializer(VBasic.Syntax.CollectionInitializerSyntax node)
         {
             var isExplicitCollectionInitializer = node.Parent is VBasic.Syntax.ObjectCollectionInitializerSyntax
@@ -591,17 +592,28 @@ namespace ICSharpCode.CodeConverter.CSharp
             var initializer = SyntaxFactory.InitializerExpression(initializerKind, SyntaxFactory.SeparatedList(initializers));
             if (isExplicitCollectionInitializer) return initializer;
 
-            if (!(_semanticModel.GetTypeInfo(node).ConvertedType is IArrayTypeSymbol arrayType)) return SyntaxFactory.ImplicitArrayCreationExpression(initializer);
-
-            if (!initializers.Any() && arrayType.Rank == 1) {
-
-                var arrayTypeArgs = SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList(CommonConversions.GetTypeSyntax(arrayType.ElementType)));
+            var convertedType = _semanticModel.GetTypeInfo(node).ConvertedType;
+            var dimensions = convertedType is IArrayTypeSymbol ats ? ats.Rank : 1; // For multidimensional array [,] note these are different from nested arrays [][]
+            if (!(convertedType.GetEnumerableElementTypeOrDefault() is {} elementType)) return SyntaxFactory.ImplicitArrayCreationExpression(initializer);
+            
+            if (!initializers.Any() && dimensions == 1) {
+                var arrayTypeArgs = SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList(CommonConversions.GetTypeSyntax(elementType)));
                 var arrayEmpty = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     SyntaxFactory.IdentifierName(nameof(Array)), SyntaxFactory.GenericName(nameof(Array.Empty)).WithTypeArgumentList(arrayTypeArgs));
                 return SyntaxFactory.InvocationExpression(arrayEmpty);
             }
-            var commas = Enumerable.Repeat(SyntaxFactory.Token(SyntaxKind.CommaToken), arrayType.Rank - 1);
-            return SyntaxFactory.ImplicitArrayCreationExpression(SyntaxFactory.TokenList(commas), initializer);
+
+            bool hasExpressionToInferTypeFrom = node.Initializers.SelectMany(n => n.DescendantNodesAndSelf()).Any(n => n is not VBasic.Syntax.CollectionInitializerSyntax);
+            if (hasExpressionToInferTypeFrom) {
+                var commas = Enumerable.Repeat(SyntaxFactory.Token(SyntaxKind.CommaToken), dimensions - 1);
+                return SyntaxFactory.ImplicitArrayCreationExpression(SyntaxFactory.TokenList(commas), initializer);
+            }
+
+            var arrayType = (ArrayTypeSyntax)CommonConversions.CsSyntaxGenerator.ArrayTypeExpression(CommonConversions.GetTypeSyntax(elementType));
+            var sizes = Enumerable.Repeat<ExpressionSyntax>(SyntaxFactory.OmittedArraySizeExpression(), dimensions);
+            var arrayRankSpecifierSyntax = SyntaxFactory.SingletonList(SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(sizes)));
+            arrayType = arrayType.WithRankSpecifiers(arrayRankSpecifierSyntax);
+            return SyntaxFactory.ArrayCreationExpression(arrayType, initializer);
         }
 
         private bool IsComplexInitializer(VBSyntax.CollectionInitializerSyntax node)
@@ -640,9 +652,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
+        public override async Task<CSharpSyntaxNode> VisitVariableNameEquals(VBSyntax.VariableNameEqualsSyntax node) =>
+            SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier.Identifier)));
+
         public override async Task<CSharpSyntaxNode> VisitObjectCollectionInitializer(VBasic.Syntax.ObjectCollectionInitializerSyntax node)
         {
-            return await node.Initializer.AcceptAsync(TriviaConvertingExpressionVisitor); //Dictionary initializer comes through here despite the FROM keyword not being in the source code
+            return await node.Initializer.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor); //Dictionary initializer comes through here despite the FROM keyword not being in the source code
         }
 
         public override async Task<CSharpSyntaxNode> VisitBinaryConditionalExpression(VBasic.Syntax.BinaryConditionalExpressionSyntax node)
@@ -854,7 +869,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return csEquivalent;
             }
 
-            var expr = await node.Expression.AcceptAsync(TriviaConvertingExpressionVisitor);
+            var expr = await node.Expression.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
             if (await TryConvertParameterizedPropertyAsync(operation, node, expr, node.ArgumentList) is {} invocation) {
                 return invocation;
             }
@@ -1085,8 +1100,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (node.Body is VBasic.Syntax.StatementSyntax statement) {
                 convertedStatements = await statement.Accept(await CreateMethodBodyVisitorAsync(node));
             } else {
-                var csNode = await node.Body.AcceptAsync(TriviaConvertingExpressionVisitor);
-                convertedStatements = new[] { SyntaxFactory.ExpressionStatement((ExpressionSyntax)csNode)};
+                var csNode = await node.Body.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+                convertedStatements = new[] { SyntaxFactory.ExpressionStatement(csNode)};
             }
             var param = await node.SubOrFunctionHeader.ParameterList.AcceptAsync<ParameterListSyntax>(TriviaConvertingExpressionVisitor);
             return await _lambdaConverter.ConvertAsync(node, param, convertedStatements);

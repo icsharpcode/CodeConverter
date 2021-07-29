@@ -26,7 +26,9 @@ namespace ICSharpCode.CodeConverter.VB
         private IProgress<ConversionProgress> _progress;
         private CancellationToken _cancellationToken;
 
-        public async Task<IProjectContentsConverter> CreateProjectContentsConverterAsync(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
+        public async Task<IProjectContentsConverter> CreateProjectContentsConverterAsync(Project project,
+            IEnumerable<IAssemblySymbol> assembliesBeingConverted, IProgress<ConversionProgress> progress,
+            CancellationToken cancellationToken)
         {
             _progress = progress;
             _cancellationToken = cancellationToken;

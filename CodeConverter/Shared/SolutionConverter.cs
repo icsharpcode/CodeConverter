@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
-using ICSharpCode.CodeConverter.CSharp;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using System.IO.Abstractions;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
@@ -18,32 +18,53 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly List<(string Find, string Replace, bool FirstOnly)> _projectReferenceReplacements;
         private readonly IProgress<ConversionProgress> _progress;
         private readonly ILanguageConversion _languageConversion;
+        private readonly SolutionFileTextEditor _solutionFileTextEditor;
         private readonly CancellationToken _cancellationToken;
+        private readonly TextReplacementConverter _textReplacementConverter;
 
         public static SolutionConverter CreateFor<TLanguageConversion>(IReadOnlyCollection<Project> projectsToConvert,
             ConversionOptions conversionOptions = default,
             IProgress<ConversionProgress> progress = null,
-            CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
+            CancellationToken cancellationToken = default,
+            IFileSystem fileSystem = null,
+            string solutionContents = "") where TLanguageConversion : ILanguageConversion, new()
         {
             var conversion = new TLanguageConversion { ConversionOptions = conversionOptions };
-            return CreateFor(conversion, projectsToConvert, progress, cancellationToken);
+            return CreateFor(conversion, projectsToConvert, progress, cancellationToken, fileSystem, solutionContents);
         }
 
         public static SolutionConverter CreateFor(ILanguageConversion languageConversion, IReadOnlyCollection<Project> projectsToConvert,
-            IProgress<ConversionProgress> progress,
-            CancellationToken cancellationToken)
+            IProgress<ConversionProgress> progress, CancellationToken cancellationToken, IFileSystem fileSystem = null, string solutionContents = "")
         {
             languageConversion.ConversionOptions ??= new ConversionOptions();
+            fileSystem ??= new FileSystem();
+
             var solutionFilePath = projectsToConvert.First().Solution.FilePath;
-            var sourceSolutionContents = File.Exists(solutionFilePath) ? File.ReadAllText(solutionFilePath) : "";
-            var projectReferenceReplacements = GetProjectReferenceReplacements(projectsToConvert, sourceSolutionContents);
-            return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, progress ?? new Progress<ConversionProgress>(), cancellationToken, languageConversion);
+            var sourceSolutionContents = fileSystem.File.Exists(solutionFilePath)
+                ? fileSystem.File.ReadAllText(solutionFilePath)
+                : solutionContents;
+
+            var projTuples = projectsToConvert.Select(proj =>
+            {
+                var relativeProjPath = PathConverter.GetRelativePath(solutionFilePath, proj.FilePath);
+                var projContents = fileSystem.File.ReadAllText(proj.FilePath);
+
+                return (proj.Name, RelativeProjPath: relativeProjPath, ProjContents: projContents);
+            });
+
+            var solutionFileTextEditor = new SolutionFileTextEditor();
+            var projectReferenceReplacements = solutionFileTextEditor.GetProjectFileProjectReferenceReplacements(projTuples, sourceSolutionContents);
+
+            return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements,
+                progress ?? new Progress<ConversionProgress>(), cancellationToken, languageConversion, solutionFileTextEditor, fileSystem);
         }
 
         private SolutionConverter(string solutionFilePath,
             string sourceSolutionContents, IReadOnlyCollection<Project> projectsToConvert,
-            List<(string Find, string Replace, bool FirstOnly)> projectReferenceReplacements, IProgress<ConversionProgress> showProgressMessage,
-            CancellationToken cancellationToken, ILanguageConversion languageConversion)
+            List<(string Find, string Replace, bool FirstOnly)> projectReferenceReplacements,
+            IProgress<ConversionProgress> showProgressMessage,
+            CancellationToken cancellationToken, ILanguageConversion languageConversion,
+            SolutionFileTextEditor solutionFileTextEditor, IFileSystem fileSystem)
         {
             _solutionFilePath = solutionFilePath;
             _sourceSolutionContents = sourceSolutionContents;
@@ -52,94 +73,66 @@ namespace ICSharpCode.CodeConverter.Shared
             _progress = showProgressMessage;
             _languageConversion = languageConversion;
             _cancellationToken = cancellationToken;
+            _solutionFileTextEditor = solutionFileTextEditor;
+            _textReplacementConverter = new TextReplacementConverter(fileSystem);
         }
 
-        public IAsyncEnumerable<ConversionResult> Convert()
+        public async IAsyncEnumerable<ConversionResult> Convert()
         {
             var projectsToUpdateReferencesOnly = _projectsToConvert.First().Solution.Projects.Except(_projectsToConvert);
             var solutionResult = string.IsNullOrWhiteSpace(_sourceSolutionContents) ? Enumerable.Empty<ConversionResult>() : ConvertSolutionFile().Yield();
-            return ConvertProjects()
-                .Concat(UpdateProjectReferences(projectsToUpdateReferencesOnly).Concat(solutionResult).ToAsyncEnumerable());
+            var convertedProjects = await ConvertProjects();
+            var projectsAndSolutionResults = UpdateProjectReferences(projectsToUpdateReferencesOnly).Concat(solutionResult).ToAsyncEnumerable();
+            await foreach (var p in convertedProjects.Concat(projectsAndSolutionResults)) {
+                yield return p;
+            }
         }
 
-        private IAsyncEnumerable<ConversionResult> ConvertProjects()
+        private async Task<IAsyncEnumerable<ConversionResult>> ConvertProjects()
         {
-            return _projectsToConvert.ToAsyncEnumerable().SelectMany(project => ConvertProject(project));
+            var assemblies = _projectsToConvert.Select(t => t.GetCompilationAsync(_cancellationToken));
+            var assembliesBeingConverted = (await Task.WhenAll(assemblies)).Select(t => t.Assembly).ToList();
+            return _projectsToConvert.ToAsyncEnumerable().SelectMany(project => ConvertProject(project, assembliesBeingConverted));
         }
 
-        private IAsyncEnumerable<ConversionResult> ConvertProject(Project project)
+        private IAsyncEnumerable<ConversionResult> ConvertProject(Project project, IEnumerable<IAssemblySymbol> assembliesBeingConverted)
         {
             var replacements = _projectReferenceReplacements.ToArray();
             _progress.Report(new ConversionProgress($"Converting {project.Name}..."));
-            return ProjectConversion.ConvertProject(project, _languageConversion, _progress, _cancellationToken, replacements);
+            return ProjectConversion.ConvertProject(project, _languageConversion, _textReplacementConverter, _progress, assembliesBeingConverted, _cancellationToken, replacements);
         }
 
         private IEnumerable<ConversionResult> UpdateProjectReferences(IEnumerable<Project> projectsToUpdateReferencesOnly)
         {
-            return projectsToUpdateReferencesOnly
-                .Where(p => p.FilePath != null) //Some project types like Websites don't have a project file
-                .Select(project => {
-                    var withReferencesReplaced =
-                        new FileInfo(project.FilePath).ConversionResultFromReplacements(_projectReferenceReplacements);
+            var conversionResults = projectsToUpdateReferencesOnly
+               .Where(p => p.FilePath != null) //Some project types like Websites don't have a project file
+               .Select(project => {
+                    var fileInfo = new FileInfo(project.FilePath);
+
+                    var withReferencesReplaced = 
+                        _textReplacementConverter.ConversionResultFromReplacements(fileInfo, _projectReferenceReplacements);
                     withReferencesReplaced.TargetPathOrNull = withReferencesReplaced.SourcePathOrNull;
+
                     return withReferencesReplaced;
-                }).Where(c => !c.IsIdentity);
+                });
+
+            return conversionResults.Where(c => !c.IsIdentity);
         }
 
-        private static List<(string Find, string Replace, bool FirstOnly)> GetProjectReferenceReplacements(IReadOnlyCollection<Project> projectsToConvert,
-            string sourceSolutionContents)
-        {
-            var projectReferenceReplacements = new List<(string Find, string Replace, bool FirstOnly)>();
-            foreach (var project in projectsToConvert) {
-                var projFilename = Path.GetFileName(project.FilePath);
-                var projDirPath = project.GetDirectoryPath();
-
-                var newProjFilename = PathConverter.TogglePathExtension(projFilename);
-
-                var projPath = PathConverter.GetFileDirPath(projFilename, projDirPath);
-                var newProjPath = PathConverter.GetFileDirPath(newProjFilename, projDirPath);
-
-                var projPathEscaped = Regex.Escape(projPath);
-
-                projectReferenceReplacements.Add((projPathEscaped, newProjPath, false));
-                if (!string.IsNullOrWhiteSpace(sourceSolutionContents)) projectReferenceReplacements.Add(GetProjectGuidReplacement(projPathEscaped, sourceSolutionContents));
-            }
-
-            return projectReferenceReplacements;
-        }
-
-        private ConversionResult ConvertSolutionFile()
+        public ConversionResult ConvertSolutionFile()
         {
             var projectTypeGuidMappings = _languageConversion.GetProjectTypeGuidMappings();
-            var projectTypeReplacements = _projectsToConvert.SelectMany(project => GetProjectTypeReplacement(project, projectTypeGuidMappings)).ToList();
+            var relativeProjPaths = _projectsToConvert.Select(proj =>
+                (proj.Name, RelativeProjPath: PathConverter.GetRelativePath(_solutionFilePath, proj.FilePath)));
 
-            var convertedSolutionContents = _sourceSolutionContents.Replace(_projectReferenceReplacements.Concat(projectTypeReplacements));
+            var slnProjectReferenceReplacements = _solutionFileTextEditor.GetSolutionFileProjectReferenceReplacements(relativeProjPaths,
+                _sourceSolutionContents, projectTypeGuidMappings);
+
+            var convertedSolutionContents = _textReplacementConverter.Replace(_sourceSolutionContents, slnProjectReferenceReplacements);
             return new ConversionResult(convertedSolutionContents) {
                 SourcePathOrNull = _solutionFilePath,
                 TargetPathOrNull = _solutionFilePath
             };
-        }
-
-        private static (string Find, string Replace, bool FirstOnly) GetProjectGuidReplacement(string projPath, string contents)
-        {
-            var projGuidRegex = new Regex(projPath + @""", ""({[0-9A-Fa-f\-]{32,36}})("")");
-            var projGuidMatch = projGuidRegex.Match(contents);
-            var oldGuid = projGuidMatch.Groups[1].Value;
-            var newGuid = GetDeterministicGuidFrom(new Guid(oldGuid));
-            return (oldGuid, newGuid.ToString("B").ToUpperInvariant(), false);
-        }
-
-        private IEnumerable<(string, string, bool)> GetProjectTypeReplacement(Project project, IReadOnlyCollection<(string, string)> typeGuidMappings)
-        {
-            return typeGuidMappings.Select(guidReplacement => ($@"Project\s*\(\s*""{guidReplacement.Item1}""\s*\)\s*=\s*""{project.Name}""", $@"Project(""{guidReplacement.Item2}"") = ""{project.Name}""", false));
-        }
-
-        private static Guid GetDeterministicGuidFrom(Guid guidToConvert)
-        {
-            var codeConverterStaticGuid = new Guid("{B224816B-CC58-4FF1-8258-CA7E629734A0}");
-            var deterministicNewBytes = codeConverterStaticGuid.ToByteArray().Zip(guidToConvert.ToByteArray(),
-                (fromFirst, fromSecond) => (byte)(fromFirst ^ fromSecond));
-            return new Guid(deterministicNewBytes.ToArray());
         }
     }
 }
