@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Convert nested Select queries in linq [#635](https://github.com/icsharpcode/CodeConverter/issues/635)
 
 ### C# -> VB
-
+* Guess some common using statements for incomplete fragments [#743](https://github.com/icsharpcode/CodeConverter/issues/743)
 
 ## [8.3.0] - 2021-07-02
 

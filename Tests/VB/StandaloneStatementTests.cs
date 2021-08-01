@@ -17,6 +17,22 @@ num = 5",
 expectSurroundingMethodBlock: true);
         }
 
+        /// <summary>
+        /// Tests guessing common using statements for fragments
+        /// </summary>
+        [Fact]
+        public async Task SubLambdaAsync()
+        {
+            await TestConversionCSharpToVisualBasicAsync(
+@"list.ForEach(i => Console.Write(""{0}\t"", i));",
+@"list.ForEach(Sub(i) Console.Write(""{0}"" & vbTab, i))
+
+1 source compilation errors:
+CS0103: The name 'list' does not exist in the current context
+1 target compilation errors:
+BC32042: Too few type arguments to 'List(Of T)'.");
+        }
+
         [Fact]
         public async Task ObjectMemberInitializerSyntaxAsync()
         {
@@ -106,14 +122,15 @@ End Namespace");
 @"this.DataContext = from task in tasks
     where task.Priority == pri
     select task;",
-                @"Me.DataContext = From task In tasks Where task.Priority Is pri Select task
+            @"Me.DataContext = From task In tasks Where task.Priority Is pri Select task
 
-2 source compilation errors:
+3 source compilation errors:
 CS1061: 'SurroundingClass' does not contain a definition for 'DataContext' and no accessible extension method 'DataContext' accepting a first argument of type 'SurroundingClass' could be found (are you missing a using directive or an assembly reference?)
 CS0103: The name 'tasks' does not exist in the current context
+CS0103: The name 'pri' does not exist in the current context
 3 target compilation errors:
 BC30456: 'DataContext' is not a member of 'SurroundingClass'.
-BC30451: 'tasks' is not declared. It may be inaccessible due to its protection level.
+BC30112: 'System.Threading.Tasks' is a namespace and cannot be used as an expression.
 BC36610: Name 'pri' is either not declared or not in the current scope.");
         }
     }
