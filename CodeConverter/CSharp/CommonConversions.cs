@@ -759,7 +759,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public async Task<string> GetClassificationLastTokenAsync(VBSyntax.SimpleImportsClauseSyntax clause)
         {
-            //Global imports aren't associated with a document and no need for static for aliases
+            // Global imports aren't associated with a document and no need to classify aliases
             if (clause.SyntaxTree.FilePath == string.Empty || clause.Alias != null) { return null;}
 
             var span = clause.GetLastToken().Span;

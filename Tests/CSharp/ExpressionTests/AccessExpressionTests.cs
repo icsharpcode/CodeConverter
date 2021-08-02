@@ -483,6 +483,26 @@ internal partial class TestClass
 
 Class TestClass
     Public Sub TestMethod()
+        ModuleMethod()
+    End Sub
+End Class", @"using static TestCases.ModuleWithClassAndMethod;
+
+internal partial class TestClass
+{
+    public void TestMethod()
+    {
+        ModuleMethod();
+    }
+}", AdditionalAssemblies);
+        }
+
+        [Fact]
+        public async Task ModuleImportUnQualifiedNestedTypeAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports TestCases.ModuleWithClassAndMethod
+
+Class TestClass
+    Public Sub TestMethod()
         Dim mc = New ModuleClass()
         mc.ModuleClassMethod()
     End Sub
@@ -494,25 +514,6 @@ internal partial class TestClass
     {
         var mc = new ModuleClass();
         mc.ModuleClassMethod();
-    }
-}", AdditionalAssemblies);
-        }
-
-        [Fact]
-        public async Task ModuleImportUnQualifiedNestedTypeAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports TestCases.ModuleWithClassAndMethod
-Class TestClass
-    Public Sub TestMethod()
-        ModuleMethod()
-    End Sub
-End Class", @"using static TestCases.ModuleWithClassAndMethod;
-
-internal partial class TestClass
-{
-    public void TestMethod()
-    {
-        ModuleMethod();
     }
 }", AdditionalAssemblies);
         }
