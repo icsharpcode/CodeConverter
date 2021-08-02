@@ -28,23 +28,21 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// </summary>
     internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
     {
-        private static readonly Type ConvertType = typeof(Microsoft.VisualBasic.CompilerServices.Conversions);
+        private static readonly Type ConvertType = typeof(Conversions);
         public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; }
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _extraUsingDirectives;
         private readonly IOperatorConverter _operatorConverter;
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
-        private readonly Stack<ExpressionSyntax> _withBlockLhs = new Stack<ExpressionSyntax>();
+        private readonly Stack<ExpressionSyntax> _withBlockLhs = new();
         private readonly ITypeContext _typeContext;
         private readonly QueryConverter _queryConverter;
         private readonly Lazy<IDictionary<ITypeSymbol, string>> _convertMethodsLookupByReturnType;
-        private readonly Compilation _csCompilation;
         private readonly LambdaConverter _lambdaConverter;
         private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
 
         public ExpressionNodeVisitor(SemanticModel semanticModel,
-            VisualBasicEqualityComparison visualBasicEqualityComparison,
-            Compilation csCompilation, ITypeContext typeContext, CommonConversions commonConversions,
+            VisualBasicEqualityComparison visualBasicEqualityComparison, ITypeContext typeContext, CommonConversions commonConversions,
             HashSet<string> extraUsingDirectives)
         {
             CommonConversions = commonConversions;
@@ -53,7 +51,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             _visualBasicEqualityComparison = visualBasicEqualityComparison;
             TriviaConvertingExpressionVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
             _queryConverter = new QueryConverter(commonConversions, _semanticModel, TriviaConvertingExpressionVisitor);
-            _csCompilation = csCompilation;
             _typeContext = typeContext;
             _extraUsingDirectives = extraUsingDirectives;
             _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison, commonConversions.TypeConversionAnalyzer);
@@ -878,9 +875,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             // VB doesn't have a specialized node for element access because the syntax is ambiguous. Instead, it just uses an invocation expression or dictionary access expression, then figures out using the semantic model which one is most likely intended.
             // https://github.com/dotnet/roslyn/blob/master/src/Workspaces/VisualBasic/Portable/LanguageServices/VisualBasicSyntaxFactsService.vb#L768
-            (var convertedExpression, bool shouldBeElementAccess) = await ConvertInvocationSubExpressionAsync(node, operation, expressionSymbol, expressionType, expressionReturnType, invocationSymbol, expr);
+            (var convertedExpression, bool shouldBeElementAccess) = await ConvertInvocationSubExpressionAsync(node, operation, expressionSymbol, expressionReturnType, expr);
             if (shouldBeElementAccess) {
-                return await CreateElementAccess(node, convertedExpression);
+                return await CreateElementAccessAsync(node, convertedExpression);
             }
 
             if (expressionSymbol != null && expressionSymbol.IsKind(SymbolKind.Property) &&
@@ -893,8 +890,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     await ConvertArgumentListOrEmptyAsync(node, node.ArgumentList));
             }
 
-            _extraUsingDirectives.Add(nameof(System) + "." + nameof(System.Linq));
-            var newExpression = CreateMemberAccess(convertedExpression, nameof(Enumerable.ElementAtOrDefault));
+            var newExpression = GetElementAtOrDefaultExpression(expressionType, convertedExpression);
 
             return SyntaxFactory.InvocationExpression(newExpression,
                 await ConvertArgumentListOrEmptyAsync(node, node.ArgumentList));
@@ -902,36 +898,18 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         private async Task<(ExpressionSyntax, bool isElementAccess)> ConvertInvocationSubExpressionAsync(VBSyntax.InvocationExpressionSyntax node,
-            IOperation operation, ISymbol expressionSymbol, ISymbol expressionType, ITypeSymbol expressionReturnType,
-            ISymbol invocationSymbol, CSharpSyntaxNode expr)
+            IOperation operation, ISymbol expressionSymbol, ITypeSymbol expressionReturnType, CSharpSyntaxNode expr)
         {
-            var isElementAccess = operation.IsPropertyElementAccess() ||
-                                  operation.IsArrayElementAccess() ||
-                                  ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType) ||
-                                  IsElementAtOrDefaultDataTableInvocation(invocationSymbol, expressionSymbol, expressionType);
+            var isElementAccess = operation.IsPropertyElementAccess()
+                                  || operation.IsArrayElementAccess()
+                                  || ProbablyNotAMethodCall(node, expressionSymbol, expressionReturnType);
 
             var expressionSyntax = (ExpressionSyntax)expr;
-            var expression = IsElementAtOrDefaultDataTableInvocation(invocationSymbol, expressionSymbol, expressionType)
-                ? CreateMemberAccess(expressionSyntax, nameof(DataTable.Rows)) //Fixes Roslyn bug of interpreting Datatable indexing as Enumerable.ElementAtOrDefault operation.
-                : expressionSyntax;
 
-            return (expression, isElementAccess);
+            return (expressionSyntax, isElementAccess);
         }
 
-        private static bool IsElementAtOrDefaultDataTableInvocation(ISymbol invocationSymbol, ISymbol expressionSymbol, ISymbol expressionType)
-        {
-            return IsElementAtOrDefaultInvocation(invocationSymbol, expressionSymbol)
-                   && expressionType.Name == nameof(DataTable);
-        }
-
-        private static bool IsElementAtOrDefaultInvocation(ISymbol invocationSymbol, ISymbol expressionSymbol)
-        {
-            return (expressionSymbol != null
-                    && (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault)
-                        && !expressionSymbol.Equals(invocationSymbol)));
-        }
-
-        private async Task<CSharpSyntaxNode> CreateElementAccess(VBSyntax.InvocationExpressionSyntax node, ExpressionSyntax expression)
+        private async Task<CSharpSyntaxNode> CreateElementAccessAsync(VBSyntax.InvocationExpressionSyntax node, ExpressionSyntax expression)
         {
             var args =
                 await node.ArgumentList.Arguments.AcceptSeparatedListAsync<VBSyntax.ArgumentSyntax, ArgumentSyntax>(TriviaConvertingExpressionVisitor);
@@ -945,10 +923,30 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.ElementAccessExpression(expression, bracketedArgumentListSyntax);
         }
 
-        private static ExpressionSyntax CreateMemberAccess(ExpressionSyntax expression, string identifier)
+        private static bool IsElementAtOrDefaultInvocation(ISymbol invocationSymbol, ISymbol expressionSymbol)
         {
+            return (expressionSymbol != null
+                    && (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault)
+                        && !expressionSymbol.Equals(invocationSymbol)));
+        }
+
+        private ExpressionSyntax GetElementAtOrDefaultExpression(ISymbol expressionType,
+            ExpressionSyntax expression)
+        {
+            _extraUsingDirectives.Add(nameof(System) + "." + nameof(System.Linq));
+
+            // The Vb compiler interprets Datatable indexing as a AsEnumerable().ElementAtOrDefault() operation.
+            if (expressionType.Name == nameof(DataTable))
+            {
+                _extraUsingDirectives.Add(nameof(System) + "." + nameof(System.Data));
+
+                expression = SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(
+                    SyntaxKind.SimpleMemberAccessExpression, expression,
+                    SyntaxFactory.IdentifierName(nameof(DataTableExtensions.AsEnumerable))));
+            }
+
             var newExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                expression, SyntaxFactory.IdentifierName(identifier));
+                expression, SyntaxFactory.IdentifierName(nameof(Enumerable.ElementAtOrDefault)));
 
             return newExpression;
         }

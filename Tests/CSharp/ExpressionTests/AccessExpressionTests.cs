@@ -215,6 +215,7 @@ Class TestClass
       Dim dataRow = _myTable(0)
     End Sub
 End Class", @"using System.Data;
+using System.Linq;
 
 internal partial class TestClass
 {
@@ -222,7 +223,7 @@ internal partial class TestClass
 
     public void TestMethod()
     {
-        var dataRow = _myTable.Rows[0];
+        var dataRow = _myTable.AsEnumerable().ElementAtOrDefault(0);
     }
 }");
         }

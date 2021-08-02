@@ -46,6 +46,7 @@
     <PackageReference Include="Microsoft.VisualBasic" Version="10.3.0" />
     <PackageReference Include="Microsoft.VisualStudio.Composition" Version="15.8.98" />
     <PackageReference Include="Microsoft.VisualStudio.Threading" Version="15.8.122" />
+    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="System.Globalization.Extensions" Version="4.3.0" />
     <PackageReference Include="System.IO.Abstractions" Version="13.2.33" />
     <PackageReference Include="System.Linq.Async" Version="4.0.0" />
