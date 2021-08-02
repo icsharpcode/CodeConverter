@@ -22,7 +22,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly ILanguageConversion _languageConversion;
         private readonly bool _showCompilationErrors;
         private readonly bool _returnSelectedNode;
-        private static readonly string[] BannedPaths = new[] { ".AssemblyAttributes.", "\\bin\\", "\\obj\\" };
+        private static readonly string[] BannedPaths = { ".AssemblyAttributes.", "\\bin\\", "\\obj\\" };
         private readonly CancellationToken _cancellationToken;
 
         private ProjectConversion(IProjectContentsConverter projectContentsConverter, IEnumerable<Document> documentsToConvert, IEnumerable<TextDocument> additionalDocumentsToConvert,
@@ -62,7 +62,9 @@ namespace ICSharpCode.CodeConverter.Shared
                 document = await WithAnnotatedSelectionAsync(document, conversionOptions.SelectedTextSpan);
             }
 
-            var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(document.Project, progress, cancellationToken);
+            var assemblyBeingConverted = (await document.Project.GetCompilationAsync(cancellationToken)).Assembly;
+            var assembliesBeingConverted = new[] {assemblyBeingConverted};
+            var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(document.Project, assembliesBeingConverted, progress, cancellationToken);
 
             document = projectContentsConverter.SourceProject.GetDocument(document.Id);
 
@@ -79,23 +81,26 @@ namespace ICSharpCode.CodeConverter.Shared
         }
 
         public static async IAsyncEnumerable<ConversionResult> ConvertProject(Project project,
-            ILanguageConversion languageConversion, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken cancellationToken,
+            ILanguageConversion languageConversion, TextReplacementConverter textReplacementConverter,
+            IProgress<ConversionProgress> progress,
+            IEnumerable<IAssemblySymbol> assembliesBeingConverted,
+            [EnumeratorCancellation] CancellationToken cancellationToken,
             params (string Find, string Replace, bool FirstOnly)[] replacements)
         {
             progress ??= new Progress<ConversionProgress>();
             using var roslynEntryPoint = await RoslynEntryPointAsync(progress);
-
-            var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(project, progress, cancellationToken);
+            var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(project, assembliesBeingConverted, progress, cancellationToken);
             var sourceFilePaths = project.Documents.Concat(projectContentsConverter.SourceProject.AdditionalDocuments).Select(d => d.FilePath).ToImmutableHashSet();
-            project = projectContentsConverter.SourceProject;
             var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress, cancellationToken);
 
-            var results = WithProjectFile(projectContentsConverter, languageConversion, sourceFilePaths, convertProjectContents, replacements);
+            var results = WithProjectFile(projectContentsConverter, textReplacementConverter, languageConversion, sourceFilePaths, convertProjectContents, replacements);
             await foreach (var result in results.WithCancellation(cancellationToken)) yield return result;
         }
 
         /// <remarks>Perf: Keep lazy so that we don't keep an extra copy of all files in memory at once</remarks>
-        private static async IAsyncEnumerable<ConversionResult> WithProjectFile(IProjectContentsConverter projectContentsConverter, ILanguageConversion languageConversion, ImmutableHashSet<string> originalSourcePaths, IAsyncEnumerable<ConversionResult> convertProjectContents, (string Find, string Replace, bool FirstOnly)[] replacements)
+        private static async IAsyncEnumerable<ConversionResult> WithProjectFile(IProjectContentsConverter projectContentsConverter, TextReplacementConverter textReplacementConverter,
+            ILanguageConversion languageConversion, ImmutableHashSet<string> originalSourcePaths,
+            IAsyncEnumerable<ConversionResult> convertProjectContents, (string Find, string Replace, bool FirstOnly)[] replacements)
         {
             var project = projectContentsConverter.SourceProject;
             var projectDir = project.GetDirectoryPath();
@@ -126,14 +131,17 @@ namespace ICSharpCode.CodeConverter.Shared
                     ChangeLanguageVersionRegex(projectContentsConverter.LanguageVersion)
                 }).ToArray();
 
-            yield return ConvertProjectFile(project, languageConversion, replacementSpecs);
+            yield return ConvertProjectFile(project, languageConversion, textReplacementConverter, replacementSpecs);
         }
 
         public static ConversionResult ConvertProjectFile(Project project,
             ILanguageConversion languageConversion,
+            TextReplacementConverter textReplacementConverter,
             params (string Find, string Replace, bool FirstOnly)[] textReplacements)
         {
-            return new FileInfo(project.FilePath).ConversionResultFromReplacements(textReplacements,
+            var fileInfo = new FileInfo(project.FilePath);
+
+            return textReplacementConverter.ConversionResultFromReplacements(fileInfo, textReplacements,
                 languageConversion.PostTransformProjectFile);
         }
 

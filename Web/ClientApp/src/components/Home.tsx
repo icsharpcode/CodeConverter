@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import axios from "axios";
 import ClientSettings from "../ClientSettings.json"
-import { ControlledEditor } from "@monaco-editor/react";
+import  Editor  from "@monaco-editor/react";
 import * as monacoEditor from "monaco-editor";
 
 export const Home = () => {
@@ -28,10 +28,10 @@ export const Home = () => {
             }
         });
     };
-    const setDefaultInput = (conversionType: string) => {
-        setConversionType(conversionType);
+    const setDefaultInput = (type: string) => {
+        setConversionType(type);
         if (!inputCode || inputCode === defaultVbCode || inputCode === defaultCsCode) {
-            setInputCode(conversionType === vbNetToCsId ? defaultVbCode : defaultCsCode);
+            setInputCode(type === vbNetToCsId ? defaultVbCode : defaultCsCode);
             setConvertedCode("");
         } else if (convertedCode) {
             setInputCode(convertedCode);
@@ -100,11 +100,11 @@ export const Home = () => {
             <div id="app">
                 <div className="form-group">
                     <label>Input code ({conversionIsFromVb ? "VB.NET" : "C#"})</label>
-                    <ControlledEditor
+                    <Editor
                         className="code-editor"
                         value={inputCode} language={conversionIsFromVb ? "vb" : "csharp"} 
-                        onChange={(ev, code) => setInputCode(code || "")}
-                        editorDidMount={ (_, editor) => { inputEditor.current = editor; selectAndFocus(inputEditor); } }
+                        onChange={( code, _) => setInputCode(code || "")}
+                        onMount={ ( editor,_) => { inputEditor.current = editor; selectAndFocus(inputEditor); } }
                         height="30vh"
                         options={{ ...commonEditorOptions }}
                     />
@@ -126,12 +126,12 @@ export const Home = () => {
                 </div>
                 <div className="form-group">
                     <label>Converted code ({conversionIsFromVb ? "C#" : "VB.NET"})</label>
-                    <ControlledEditor
+                    <Editor
                         className="code-editor"
                         value={convertedCode}
                         language={conversionIsFromVb ? "csharp" : "vb"}
-                        onChange={(ev, code) => setConvertedCode(code || "")}
-                        editorDidMount={(_, editor) => outputEditor.current = editor}
+                        onChange={(code, _) => setConvertedCode(code || "")}
+                        onMount={(editor, _) => outputEditor.current = editor}
                         height="30vh"
                         options={{ ...commonEditorOptions, readOnly: true }}
                     />

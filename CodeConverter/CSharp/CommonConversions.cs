@@ -9,7 +9,6 @@ using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
@@ -64,16 +63,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             WinformsConversions = new WinformsConversions(typeContext);
         }
 
-        public async
-            Task<(IReadOnlyCollection<(VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables,
-                IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(
-                VariableDeclaratorSyntax declarator, HashSet<ILocalSymbol> symbolsToSkip = null,
-                bool preferExplicitType = false)
+        public async Task<(IReadOnlyCollection<(CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(
+            VariableDeclaratorSyntax declarator, HashSet<ILocalSymbol> symbolsToSkip = null, bool preferExplicitType = false)
         {
             var vbInitValue = GetInitializerToConvert(declarator);
-            var initializerOrMethodDecl = await vbInitValue.AcceptAsync(TriviaConvertingExpressionVisitor);
-            var vbInitializerTypeInfo =
-                vbInitValue != null ? _semanticModel.GetTypeInfo(vbInitValue) : default(TypeInfo?);
+            var initializerOrMethodDecl = await vbInitValue.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
+            var vbInitializerTypeInfo = vbInitValue != null ? _semanticModel.GetTypeInfo(vbInitValue) : default(TypeInfo?);
             var vbInitializerType = vbInitValue != null ? vbInitializerTypeInfo.Value.Type : default(ITypeSymbol);
 
             bool requireExplicitTypeForAll = declarator.Names.Count > 1;
@@ -87,7 +82,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 requireExplicitTypeForAll |= vbInitIsNothingLiteral || isAnonymousFunction;
             }
 
-            var csVars = new Dictionary<string, (VariableDeclarationSyntax Decl, ITypeSymbol Type)>();
+            var csVars = new Dictionary<string, (CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type)>();
             var csMethods = new List<CSharpSyntaxNode>();
 
             foreach (var name in declarator.Names) {
@@ -135,7 +130,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return shouldPreferExplicitType;
         }
 
-        private async Task<EqualsValueClauseSyntax> ConvertEqualsValueClauseSyntaxAsync(
+        private async Task<CSSyntax.EqualsValueClauseSyntax> ConvertEqualsValueClauseSyntaxAsync(
             VariableDeclaratorSyntax vbDeclarator, VBSyntax.ModifiedIdentifierSyntax vbName,
             VBSyntax.ExpressionSyntax vbInitValue,
             ITypeSymbol declaredSymbolType,
@@ -147,10 +142,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             bool declaredConst = declaredSymbol is IFieldSymbol fieldSymbol && fieldSymbol.IsConst ||
                                  declaredSymbol is ILocalSymbol localSymbol && localSymbol.IsConst;
 
-            EqualsValueClauseSyntax equalsValueClauseSyntax;
-            if (await GetInitializerFromNameAndTypeAsync(declaredSymbolType, vbName, initializerOrMethodDecl) is
-                ExpressionSyntax
-                adjustedInitializerExpr) {
+            CSSyntax.EqualsValueClauseSyntax equalsValueClauseSyntax;
+            if (await GetInitializerFromNameAndTypeAsync(declaredSymbolType, vbName, initializerOrMethodDecl) is ExpressionSyntax
+                adjustedInitializerExpr)
+            {
                 var convertedInitializer = vbInitValue != null
                     ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr,
                         isConst: declaredConst)
@@ -194,11 +189,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return "initial" + vbName.Identifier.ValueText.ToPascalCase();
         }
 
-        private VariableDeclarationSyntax CreateVariableDeclaration(VariableDeclaratorSyntax vbDeclarator,
-            bool preferExplicitType,
+        private CSSyntax.VariableDeclarationSyntax CreateVariableDeclaration(VariableDeclaratorSyntax vbDeclarator, bool preferExplicitType,
             bool requireExplicitTypeForAll, ITypeSymbol vbInitializerType, ITypeSymbol declaredSymbolType,
-            EqualsValueClauseSyntax equalsValueClauseSyntax, IMethodSymbol initSymbol,
-            CSSyntax.VariableDeclaratorSyntax v)
+            CSSyntax.EqualsValueClauseSyntax equalsValueClauseSyntax, IMethodSymbol initSymbol, CSSyntax.VariableDeclaratorSyntax v)
         {
             var requireExplicitType = requireExplicitTypeForAll ||
                                       vbInitializerType != null && !Equals(declaredSymbolType, vbInitializerType);
@@ -276,7 +269,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes)
                     .Any(e => !e.IsKind(CSSyntaxKind.OmittedArraySizeExpression))) {
                     initializer = SyntaxFactory.ArrayCreationExpression(arrayTypeSyntax);
-                } else if (initializer is ImplicitArrayCreationExpressionSyntax iaces && iaces.Initializer != null) {
+                } else if (initializer is CSSyntax.ImplicitArrayCreationExpressionSyntax iaces && iaces.Initializer != null) {
                     initializer = SyntaxFactory.ArrayCreationExpression(arrayTypeSyntax, iaces.Initializer);
                 }
             }
@@ -296,7 +289,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var idSymbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol ??
                                _semanticModel.GetDeclaredSymbol(id.Parent);
                 if (idSymbol != null && !String.IsNullOrWhiteSpace(idSymbol.Name)) {
-                    text = WithDeclarationName(id, idSymbol, text);
+                    text = WithDeclarationName(id, idSymbol, text, _typeContext.AssembliesBeingConverted);
                     var normalizedText = text.WithHalfWidthLatinCharacters();
                     if (idSymbol.IsConstructor() && isAttribute) {
                         text = idSymbol.ContainingType.Name;
@@ -339,16 +332,37 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <seealso cref="DeclarationNodeVisitor.WithDeclarationNameCasingAsync(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
         /// <seealso cref="CommonConversions.WithDeclarationNameCasing(TypeSyntax, ITypeSymbol)"/>
         /// </summary>
-        private static string WithDeclarationName(SyntaxToken id, ISymbol idSymbol, string text)
+        private static string WithDeclarationName(SyntaxToken id, ISymbol idSymbol, string text, IEnumerable<IAssemblySymbol> assembliesBeingConverted)
         {
             //This also covers the case when the name is different (in VB you can have method X implements IFoo.Y), but doesn't resolve any resulting name clashes
-            var baseSymbol = idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property)
-                ? idSymbol.FollowProperty(s => s.BaseMember()).Last()
-                : idSymbol;
+            var assemblyIdentities = assembliesBeingConverted.Select(t => t.Identity);
+            ISymbol baseSymbol = default;
+            var containingType = idSymbol.ContainingType;
+
+            if (idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property)) 
+            {
+                var possibleSymbols = idSymbol.FollowProperty(s => s.BaseMember());
+                foreach (var possibleSymbol in possibleSymbols)
+                {
+                    if (!assemblyIdentities.Contains(possibleSymbol.ContainingAssembly.Identity) && possibleSymbol.ContainingType.Equals(containingType)) 
+                    {
+                        baseSymbol = possibleSymbol;
+                        break;
+                    }
+
+                    baseSymbol = possibleSymbol;
+                }
+            } 
+            else 
+            {
+                baseSymbol = idSymbol;
+            }
+
             bool isDeclaration = baseSymbol.Locations.Any(l => l.SourceSpan == id.Span);
             bool isPartial = baseSymbol.IsPartialClassDefinition() || baseSymbol.IsPartialMethodDefinition() ||
                              baseSymbol.IsPartialMethodImplementation();
-            if (isPartial || !isDeclaration) {
+            if (isPartial || !isDeclaration)
+            {
                 text = baseSymbol.Name;
             }
 
@@ -387,12 +401,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private static bool? RequiresNewKeyword(ISymbol declaredSymbol)
         {
-            if (!(declaredSymbol is IMethodSymbol methodSymbol)) return null;
             if (declaredSymbol.IsOverride) return false;
-            var methodSignature = methodSymbol.GetUnqualifiedMethodSignature(true);
-            return declaredSymbol.ContainingType.FollowProperty(s => s.BaseType).Skip(1).Any(t => t.GetMembers()
-                .Any(s => s.Name == declaredSymbol.Name && s is IMethodSymbol m &&
-                          m.GetUnqualifiedMethodSignature(true) == methodSignature));
+            if (declaredSymbol is IPropertySymbol propertySymbol || declaredSymbol is IMethodSymbol methodSymbol) {
+                var methodSignature = declaredSymbol.GetUnqualifiedMethodOrPropertySignature(true);
+                return declaredSymbol.ContainingType.FollowProperty(s => s.BaseType).Skip(1).Any(t => t.GetMembers()
+                    .Any(s => s.Name == declaredSymbol.Name && (s is IPropertySymbol || s is IMethodSymbol) && s.GetUnqualifiedMethodOrPropertySignature(true) == methodSignature));
+            }
+            return null;
         }
 
         private static bool ContextHasIdenticalDefaults(TokenContext context,
@@ -567,12 +582,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             // These attributes' semantic effects are expressed differently in CSharp.
             return await attributeList.Attributes.Where(a => !IsExtensionAttribute(a) && !IsOutAttribute(a))
-                .SelectAsync(async a =>
-                    (CSSyntax.AttributeListSyntax)await a.AcceptAsync(TriviaConvertingExpressionVisitor));
+                .SelectAsync(async a => await a.AcceptAsync<CSSyntax.AttributeListSyntax>(TriviaConvertingExpressionVisitor));
         }
 
-        public static AttributeArgumentListSyntax CreateAttributeArgumentList(
-            params AttributeArgumentSyntax[] attributeArgumentSyntaxs)
+        public static CSSyntax.AttributeArgumentListSyntax CreateAttributeArgumentList(params CSSyntax.AttributeArgumentSyntax[] attributeArgumentSyntaxs)
         {
             return SyntaxFactory.AttributeArgumentList(SyntaxFactory.SeparatedList(attributeArgumentSyntaxs));
         }
@@ -584,7 +597,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 CreateVariableDeclarationAndAssignment(variableName, initValue));
         }
 
-        public static VariableDeclarationSyntax CreateVariableDeclarationAndAssignment(string variableName,
+        public static CSSyntax.VariableDeclarationSyntax CreateVariableDeclarationAndAssignment(string variableName,
             ExpressionSyntax initValue, TypeSyntax explicitType = null)
         {
             CSSyntax.VariableDeclaratorSyntax variableDeclaratorSyntax =

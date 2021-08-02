@@ -233,10 +233,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override async Task<SyntaxList<StatementSyntax>> VisitEraseStatement(VBSyntax.EraseStatementSyntax node)
         {
             var eraseStatements = await node.Expressions.SelectAsync<VBSyntax.ExpressionSyntax, StatementSyntax>(async arrayExpression => {
-                var lhs = await arrayExpression.AcceptAsync(_expressionVisitor);
+                var lhs = await arrayExpression.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
                 var rhs = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
                 var assignmentExpressionSyntax =
-                    SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, (ExpressionSyntax)lhs,
+                    SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, lhs,
                         rhs);
                 return SyntaxFactory.ExpressionStatement(assignmentExpressionSyntax);
             });

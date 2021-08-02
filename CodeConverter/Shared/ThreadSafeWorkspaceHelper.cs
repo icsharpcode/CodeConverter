@@ -18,11 +18,21 @@ namespace ICSharpCode.CodeConverter.Shared
     public static class ThreadSafeWorkspaceHelper
     {
         /// <summary>
+        /// Create an empty adhoc workspace
+        /// </summary>
+        public static AsyncLazy<AdhocWorkspace> CreateAdhocWorkspace { get; } = new(async () =>
+        {
+            var hostServices = await CreateHostServicesAsync(MefHostServices.DefaultAssemblies);
+            return new AdhocWorkspace(hostServices);
+        }, JoinableTaskFactorySingleton.Instance);
+
+        /// <summary>
         /// Empty solution in an adhoc workspace
         /// </summary>
-        public static AsyncLazy<Solution> EmptyAdhocSolution { get; } = new AsyncLazy<Solution>(async () => {
-            var hostServices = await CreateHostServicesAsync(MefHostServices.DefaultAssemblies);
-            return new AdhocWorkspace(hostServices).CurrentSolution;
+        public static AsyncLazy<Solution> EmptyAdhocSolution { get; } = new(async () =>
+        {
+            var adhocWorkspace = await CreateAdhocWorkspace.GetValueAsync();
+            return adhocWorkspace.CurrentSolution;
         }, JoinableTaskFactorySingleton.Instance);
 
         /// <summary>
