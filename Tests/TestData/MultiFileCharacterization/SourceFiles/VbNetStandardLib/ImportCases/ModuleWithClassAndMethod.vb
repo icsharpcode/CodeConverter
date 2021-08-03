@@ -1,4 +1,4 @@
-﻿'no type promotion
+'no type promotion
 Public Module ModuleWithClassAndMethod
     Public Sub ModuleMethod()
     End Sub

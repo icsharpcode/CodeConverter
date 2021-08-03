@@ -35,8 +35,6 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "CodeConv.Shared", "CommandL
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Func", "Func\Func.csproj", "{4A2AA3A2-7C6D-4429-AFA9-B9AFD9AAD877}"
 EndProject
-Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "TestCases", "TestCases\TestCases.vbproj", "{28A005FC-675F-49A2-8B50-9DB3B93F6F02}"
-EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		CommandLine\CodeConv.Shared\CodeConv.Shared.projitems*{160f0b34-0f6f-4532-8d7b-39064956364d}*SharedItemsImports = 5
@@ -76,10 +74,6 @@ Global
 		{4A2AA3A2-7C6D-4429-AFA9-B9AFD9AAD877}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4A2AA3A2-7C6D-4429-AFA9-B9AFD9AAD877}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4A2AA3A2-7C6D-4429-AFA9-B9AFD9AAD877}.Release|Any CPU.Build.0 = Release|Any CPU
-		{28A005FC-675F-49A2-8B50-9DB3B93F6F02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{28A005FC-675F-49A2-8B50-9DB3B93F6F02}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{28A005FC-675F-49A2-8B50-9DB3B93F6F02}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{28A005FC-675F-49A2-8B50-9DB3B93F6F02}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

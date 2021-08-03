@@ -71,6 +71,8 @@
   <ItemGroup>
     <Compile Include="AClass.vb" />
     <Compile Include="AnEnum.vb" />
+    <Compile Include="ImportCases\ClassImportClass.vb" />
+    <Compile Include="ImportCases\ModuleImportClass.vb" />
     <Compile Include="Module1.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">

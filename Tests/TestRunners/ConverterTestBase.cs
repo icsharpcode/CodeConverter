@@ -99,24 +99,27 @@ End Sub";
         }
 
         /// <summary>
-        /// <paramref name="missingSemanticInfo"/> is currently unused but acts as documentation, and in future will be used to decide whether to check if the input/output compiles
+        /// <paramref name="missingSemanticInfo"/> is currently unused but acts as documentation,
+        /// and in future will be used to decide whether to check if the input/output compiles
         /// </summary>
-        public async Task TestConversionVisualBasicToCSharpAsync(string visualBasicCode, string expectedCsharpCode, bool expectSurroundingBlock = false, bool missingSemanticInfo = false, bool hasLineCommentConversionIssue = false)
-        {
-            await TestConversionVisualBasicToCSharpAsync(visualBasicCode, expectedCsharpCode, new Assembly[0], expectSurroundingBlock, missingSemanticInfo, hasLineCommentConversionIssue);
-        }
-
-        /// <summary>
-        /// <paramref name="missingSemanticInfo"/> is currently unused but acts as documentation, and in future will be used to decide whether to check if the input/output compiles
-        /// </summary>
-        public async Task TestConversionVisualBasicToCSharpAsync(string visualBasicCode, string expectedCsharpCode, Assembly[] additionalAssemblies, bool expectSurroundingBlock = false, bool missingSemanticInfo = false, bool hasLineCommentConversionIssue = false)
+        public async Task TestConversionVisualBasicToCSharpAsync(string visualBasicCode, string expectedCsharpCode,
+            bool expectSurroundingBlock = false, bool missingSemanticInfo = false,
+            bool hasLineCommentConversionIssue = false)
         {
             if (expectSurroundingBlock) expectedCsharpCode = SurroundWithBlock(expectedCsharpCode);
-            var conversionOptions = new TextConversionOptions(DefaultReferences.With(additionalAssemblies)) { RootNamespaceOverride = _rootNamespace, ShowCompilationErrors = !expectSurroundingBlock };
-            await AssertConvertedCodeResultEqualsAsync<VBToCSConversion>(visualBasicCode, expectedCsharpCode, conversionOptions);
+            var conversionOptions = new TextConversionOptions(DefaultReferences.NetStandard2)
+            {
+                RootNamespaceOverride = _rootNamespace,
+                ShowCompilationErrors = !expectSurroundingBlock
+            };
 
-            if (_testVbtoCsCommentsByDefault && !hasLineCommentConversionIssue) {
-                await AssertLineCommentsConvertedInSameOrderAsync<VBToCSConversion>(visualBasicCode, null, "'", _ => true);
+            await AssertConvertedCodeResultEqualsAsync<VBToCSConversion>(visualBasicCode,
+                expectedCsharpCode, conversionOptions);
+
+            if (_testVbtoCsCommentsByDefault && !hasLineCommentConversionIssue)
+            {
+                await AssertLineCommentsConvertedInSameOrderAsync<VBToCSConversion>(visualBasicCode, null,
+                    "'", _ => true);
             }
         }
 
