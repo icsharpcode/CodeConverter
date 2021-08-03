@@ -8,13 +8,11 @@ export const About = () =>
                 The code you submit is not stored in any form. Therefore, please <a href="https://github.com/icsharpcode/CodeConverter/issues">report errors</a>.
             </p>
             <p>
-                For larger conversions please use the <a href="https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter">Code Converter Extension</a>
-                for Visual Studio, which uses full project context to significantly improve conversion. It runs completely locally without calling this REST API.
+                For larger conversions please use the <a href="https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter">Code Converter Extension</a> for Visual Studio, which uses full project context to significantly improve conversion. It runs completely locally without calling this REST API.
             </p>
             <p>
                 The code for this Web site can be found in the <a href="https://github.com/icsharpcode/CodeConverter/">Code Converter GitHub repository</a>.
-                The client library for the REST API plus some smaller clients are accessible via the
-                <a href="https://github.com/christophwille/roslyncodeconverterclients">clients repository</a>,
+                The client library for the REST API plus some smaller clients are accessible via the <a href="https://github.com/christophwille/roslyncodeconverterclients">clients repository</a>,
                 which has a downloadable release of the <a href="https://github.com/christophwille/roslyncodeconverterclients/releases">Windows desktop client</a>.
             </p>
             <p>

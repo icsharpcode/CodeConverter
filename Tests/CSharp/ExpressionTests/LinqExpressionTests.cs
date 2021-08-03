@@ -7,6 +7,67 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
     public class LinqExpressionTests : ConverterTestBase
     {
         [Fact]
+        public async Task Issue736_LinqEarlySelectAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Imports System.Collections.Generic
+Imports System.Linq
+
+Public Class Issue635
+    Dim foo As Object
+    Dim l As List(Of Issue635)
+    Dim listSelectWhere = From t in l
+            Select t.foo
+            Where 1 = 2
+End Class",
+@"using System.Collections.Generic;
+using System.Linq;
+
+public partial class Issue635
+{
+    public Issue635()
+    {
+        listSelectWhere = from t in
+                              from t in l
+                              select t.foo
+                          where 1 == 2
+                          select t;
+    }
+
+    private object foo;
+    private List<Issue635> l;
+    private object listSelectWhere;
+}", hasLineCommentConversionIssue: true /*Fields re-ordered*/);
+        }
+        [Fact]
+        public async Task Issue635_LinqDistinctOrderByAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Imports System.Collections.Generic
+Imports System.Linq
+
+Public Class Issue635
+    Dim l As List(Of Integer)
+    Dim listSortedDistinct = From x In l Order By x Distinct
+End Class",
+@"using System.Collections.Generic;
+using System.Linq;
+
+public partial class Issue635
+{
+    public Issue635()
+    {
+        listSortedDistinct = (from x in l
+                              orderby x
+                              select x).Distinct();
+    }
+
+    private List<int> l;
+    private object listSortedDistinct;
+}");
+        }
+
+        [Fact]
         public async Task Linq1Async()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub SimpleQuery()
@@ -330,6 +391,47 @@ public partial class Class1
     }
 }");
             // Current characterization is slightly wrong, I think it still needs this on the end "into g select new { Length = g.Key.Length, Count = g.Key.Count, Group = g.AsEnumerable() }"
+        }
+
+        [Fact()]
+        public async Task LinqSelectVariableDeclarationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Imports System.Linq
+
+Public Class Class717
+        Sub Main()
+        Dim arr(1) as Integer
+        arr(0) = 0
+        arr(1) = 1
+
+        Dim r = From e In arr
+                Select p = $""value: {e}""
+                Select l = p.Substring(1)
+                Select x = l
+
+        For each m In r
+            Console.WriteLine(m)
+        Next
+    End Sub
+End Class", @"using System;
+using System.Linq;
+
+public partial class Class717
+{
+    public void Main()
+    {
+        var arr = new int[2];
+        arr[0] = 0;
+        arr[1] = 1;
+        var r = from e in arr
+                let p = $""value: {e}""
+                let l = p.Substring(1)
+                select l;
+        foreach (var m in r)
+            Console.WriteLine(m);
+    }
+}");
         }
 
         [Fact]

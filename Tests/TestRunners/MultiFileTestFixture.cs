@@ -9,7 +9,6 @@ using ICSharpCode.CodeConverter.CommandLine;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Xunit;
-using static ICSharpCode.CodeConverter.CommandLine.CodeConvProgram;
 using SearchOption = System.IO.SearchOption;
 
 namespace ICSharpCode.CodeConverter.Tests.TestRunners
@@ -20,9 +19,9 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
     ///
     /// To add a new multi-file characterization test:
     /// 1. Open TestData\MultiFileCharacterization\SourceFiles\CharacterizationTestSolution.sln in another Visual Studio instance and make any changes to the source files.
-    /// 2. Set _writeNewCharacterization to true
+    /// 2. Set WriteAllFilesForManualTesting to true
     /// 3. Run the MultiFileSolutionAndProjectTests for both VB and CSharp.
-    /// 4. Set _writeNewCharacterization to false
+    /// 4. Set WriteAllFilesForManualTesting to false
     /// 5. Commit the result
     /// If you're testing something specific, try to make it clear with a well-named method/class/file or by adding comments in the source file.
     /// </summary>
@@ -34,10 +33,11 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
     public sealed class MultiFileTestFixture : ICollectionFixture<MultiFileTestFixture>
     {
         public const string Collection = "Uses MSBuild";
+
         /// <summary>
         /// Turn it and run the test, then you can manually check the output loads/builds in VS.
         /// </summary>
-        private readonly bool _writeAllFilesForManualTesting = true;
+        private const bool WriteAllFilesForManualTesting = false;
 
         private static readonly string MultiFileCharacterizationDir = Path.Combine(TestConstants.GetTestDataDirectory(), "MultiFileCharacterization");
         private static readonly string OriginalSolutionDir = Path.Combine(MultiFileCharacterizationDir, "SourceFiles");
@@ -61,7 +61,7 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
                 AssertNoConversionErrors(conversionResults);
             } finally {
                 if (recharacterizeByWritingExpectedOverActual) {
-                    await ConversionResultWriter.WriteConvertedAsync(results.ToAsyncEnumerable(), SolutionFile, expectedResultDirectory, true, _writeAllFilesForManualTesting, new Progress<string>(), default);
+                    await ConversionResultWriter.WriteConvertedAsync(results.ToAsyncEnumerable(), SolutionFile, expectedResultDirectory, true, WriteAllFilesForManualTesting, new Progress<string>(), default);
                 }
             }
 

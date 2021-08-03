@@ -50,7 +50,19 @@ namespace ICSharpCode.CodeConverter.VsExtension
             _outputPane = outputPaneAsync;
 
             _solutionEvents = VisualStudioInteraction.Dte.Events.SolutionEvents;
-            _solutionEvents.Opened += () => OnSolutionOpenedAsync().Forget();
+            SignUpToSolutionOpened();
+        }
+
+        private void SignUpToSolutionOpened()
+        {
+            try {
+                SignUpToSolutionOpenedPriorToVs2022();
+            } catch (MissingMethodException) {
+            }
+
+            // When attempting to call this function, it throws an MissingMethodException in VS2022 onwards.
+            // I don't know another way to get this behaviour that was available in VS2017, so we'll forego this until we can drop VS2017 support and use a more recent interface
+            void SignUpToSolutionOpenedPriorToVs2022() => _solutionEvents.Opened += () => OnSolutionOpenedAsync().Forget();
         }
 
         public async Task ClearAsync()

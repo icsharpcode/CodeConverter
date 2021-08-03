@@ -12,6 +12,7 @@
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Moq" Version="4.16.1" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
   </ItemGroup>
@@ -30,8 +31,8 @@
   </ItemGroup>
   <ItemGroup Label="ReSharper test runner requirements">
     <PackageReference Include="Microsoft.CodeAnalysis.Features" Version="3.4.0" />
-    <PackageReference Include="Microsoft.Build" Version="16.8.0" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="16.8.0" />
+    <PackageReference Include="Microsoft.Build" Version="16.10.0" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="16.10.0" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Web" />

@@ -272,8 +272,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             var conversionOptions = new ConversionOptions(){AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()};
             var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects, progress: CreateOutputWindowProgress(), cancellationToken: cancellationToken, conversionOptions: conversionOptions);
 
-            var results = solutionConverter.Convert();
-            await foreach(var result in results) yield return result;
+            await foreach (var result in solutionConverter.Convert()) yield return result;
         }
 
         private async Task<TimeSpan> GetAbandonOptionalTasksAfterAsync() => TimeSpan.FromMinutes((await GetOptions()).FormattingTimeout);

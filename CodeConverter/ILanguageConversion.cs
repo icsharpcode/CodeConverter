@@ -24,7 +24,9 @@ namespace ICSharpCode.CodeConverter
         string TargetLanguage { get; }
         ConversionOptions ConversionOptions { get; set; }
 
-        Task<IProjectContentsConverter> CreateProjectContentsConverterAsync(Project project, IProgress<ConversionProgress> progress, CancellationToken cancellationToken);
+        Task<IProjectContentsConverter> CreateProjectContentsConverterAsync(Project project,
+            IEnumerable<IAssemblySymbol> assembliesBeingConverted, IProgress<ConversionProgress> progress,
+            CancellationToken cancellationToken);
         string PostTransformProjectFile(string xml);
 
         Task<Document> CreateProjectDocumentFromTreeAsync(SyntaxTree tree, IEnumerable<MetadataReference> references);

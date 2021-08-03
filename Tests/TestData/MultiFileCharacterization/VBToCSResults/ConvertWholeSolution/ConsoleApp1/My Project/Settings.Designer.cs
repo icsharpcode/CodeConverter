@@ -8,54 +8,76 @@
 // </auto-generated>
 // ------------------------------------------------------------------------------
 
-using System.Threading.Tasks;
-using System.Data;
 using System.Diagnostics;
 using Microsoft.VisualBasic;
-using System.Linq;
-using System.Collections.Generic;
-using System.Collections;
-using System;
-using System.Xml.Linq;
 
-
-namespace My
+namespace ConsoleApp1.My
 {
-    [global::System.Runtime.CompilerServices.CompilerGenerated()]
-    [global::System.CodeDom.Compiler.GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "11.0.0.0")]
-    [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-    internal sealed partial class MySettings : global::System.Configuration.ApplicationSettingsBase
+    [System.Runtime.CompilerServices.CompilerGenerated()]
+    [System.CodeDom.Compiler.GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "11.0.0.0")]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
+    internal sealed partial class MySettings : System.Configuration.ApplicationSettingsBase
     {
-        private static MySettings defaultInstance = (MySettings)global::System.Configuration.ApplicationSettingsBase.Synchronized(new MySettings());
+        private static MySettings defaultInstance = (MySettings)Synchronized(new MySettings());
 
-        /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
+        #region My.Settings Auto-Save Functionality
+        /* TODO ERROR: Skipped IfDirectiveTrivia
+        #If _MyType = "WindowsForms" Then
+        *//* TODO ERROR: Skipped DisabledTextTrivia
+                Private Shared addedHandler As Boolean
+
+                Private Shared addedHandlerLockObject As New Object
+
+                <Global.System.Diagnostics.DebuggerNonUserCodeAttribute(), Global.System.ComponentModel.EditorBrowsableAttribute(Global.System.ComponentModel.EditorBrowsableState.Advanced)> _
+                Private Shared Sub AutoSaveSettings(ByVal sender As Global.System.Object, ByVal e As Global.System.EventArgs)
+                    If My.Application.SaveMySettingsOnExit Then
+                        My.Settings.Save()
+                    End If
+                End Sub
+        *//* TODO ERROR: Skipped EndIfDirectiveTrivia
+        #End If
+        */
+        #endregion
+
         public static MySettings Default
         {
             get
             {
 
-                /* TODO ERROR: Skipped IfDirectiveTrivia *//* TODO ERROR: Skipped DisabledTextTrivia *//* TODO ERROR: Skipped EndIfDirectiveTrivia */
+                /* TODO ERROR: Skipped IfDirectiveTrivia
+                #If _MyType = "WindowsForms" Then
+                *//* TODO ERROR: Skipped DisabledTextTrivia
+                                   If Not addedHandler Then
+                                        SyncLock addedHandlerLockObject
+                                            If Not addedHandler Then
+                                                AddHandler My.Application.Shutdown, AddressOf AutoSaveSettings
+                                                addedHandler = True
+                                            End If
+                                        End SyncLock
+                                    End If
+                *//* TODO ERROR: Skipped EndIfDirectiveTrivia
+                #End If
+                */
                 return defaultInstance;
             }
         }
     }
 }
 
-namespace My
+namespace ConsoleApp1.My
 {
-    [global::Microsoft.VisualBasic.HideModuleName()]
-    [global::System.Diagnostics.DebuggerNonUserCode()]
-    [global::System.Runtime.CompilerServices.CompilerGenerated()]
+    [HideModuleName()]
+    [DebuggerNonUserCode()]
+    [System.Runtime.CompilerServices.CompilerGenerated()]
     internal static class MySettingsProperty
     {
-        [global::System.ComponentModel.Design.HelpKeyword("My.Settings")]
-        internal static global::ConsoleApp1.My.MySettings Settings
+        [System.ComponentModel.Design.HelpKeyword("My.Settings")]
+        internal static MySettings Settings
         {
             get
             {
-                return global::ConsoleApp1.My.MySettings.Default;
+                return MySettings.Default;
             }
         }
     }
 }
-
