@@ -465,6 +465,32 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
             Assert.Equal(expectedProjFile, Utils.HomogenizeEol(convertedProjFile));
         }
 
+        [Fact]
+        public void ConvertSolutionFile_WhenProjectIsMultiTargetThenUpdated()
+        {
+            //Arrange
+            var solutionFileProjectReference = GetSolutionProjectReference(new[]
+            {
+                ("778DAE3C-4631-46EA-AA77-85C1314464D9", @"VbLibrary\VbLibrary.vbproj", "23195658-FBE7-4A3E-B79D-91AAC2D428E7")
+            });
+
+            var testProject = AddTestProject("VbLibrary", "VbLibrary", "VbLibrary (net48)");
+            _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns("");
+
+            var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> {testProject},
+                fileSystem: _fsMock.Object, solutionContents: solutionFileProjectReference);
+
+            //Act
+            var convertedSlnFile = slnConverter.ConvertSolutionFile().ConvertedCode;
+
+            //Assert
+            var expectedSlnFile = GetSolutionProjectReference(new[] {
+                ("9A19103F-16F7-4668-BE54-9A1E7A4F7556", @"VbLibrary\VbLibrary.csproj", "913DD733-37BF-05CF-35C5-5BD4A0431C47")
+            });
+
+            Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
+        }
+
         private static string GetSolutionProjectReference(IEnumerable<(string ProjTypeGuid, string RelativeProjPath, string ProjRefGuid)> projRefTuples)
         {
             return GetSolutionProjectReference(projRefTuples
