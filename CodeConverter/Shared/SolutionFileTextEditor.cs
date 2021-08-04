@@ -14,10 +14,11 @@
             if (string.IsNullOrWhiteSpace(sourceSolutionContents)) return new List<(string Find, string Replace, bool FirstOnly)>();
 
             var projectReferenceReplacements = new List<(string Find, string Replace, bool FirstOnly)>();
-            foreach ((string projName, string relativeProjPath) in projTuples)
+            foreach ((string name, string relativeProjPath) in projTuples)
             {
                 var newProjPath = @"""" + PathConverter.TogglePathExtension(relativeProjPath) + @""", ";
                 var projPathEscaped = @"""" + Regex.Escape(relativeProjPath);
+                var projName = GetProjNameWithoutFramework(name);
 
                 (string oldType, string newType) = GetProjectTypeReplacement(projTypeGuidMappings, projName, projPathEscaped,
                     sourceSolutionContents);
@@ -61,6 +62,12 @@
             return projectReferenceReplacements;
         }
 
+        // Gets the project name without the framework specifier (in case of multiple target frameworks)
+        private static string GetProjNameWithoutFramework(string projName)
+        {
+            return Regex.Replace(projName, @"\s\(net.*\)", "");
+        }
+
         private static (string oldProjTypeReference, string newProjTypeReference) GetProjectTypeReplacement(
             IEnumerable<(string oldTypeGuid, string newTypeGuid)> projTypeGuidMappings, string projName, string projPath,
             string contents)
@@ -70,7 +77,7 @@
                 var oldProjTypeReference = $@"Project\s*\(\s*""{oldTypeGuid}""\s*\)\s*=\s*""{projName}"", ";
                 var projGuidRegex = new Regex($@"({oldProjTypeReference})({projPath})");
                 var projTypeReference = projGuidRegex.Match(contents);
-                if(projTypeReference.Groups.Count == 0) continue;
+                if(!projTypeReference.Success) continue;
 
                 var oldReference = Regex.Escape(projTypeReference.Groups[1].Value);
                 var newProjTypeReference = $@"Project(""{newTypeGuid}"") = ""{projName}"", ";
