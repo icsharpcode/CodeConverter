@@ -19,9 +19,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             !ShouldExpandNode(node, root, semanticModel) && !IsRoslynInstanceExpressionBug(node as MemberAccessExpressionSyntax);
 
         public bool ShouldExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel) =>
-            ShouldExpandName(node) || ShouldExpandMemberAccess(node, root, semanticModel);
+            ShouldExpandName(node) || ShouldExpandMemberAccess(node, semanticModel);
 
-        private static bool ShouldExpandMemberAccess(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel)
+        private static bool ShouldExpandMemberAccess(SyntaxNode node, SemanticModel semanticModel)
         {
             return node is MemberAccessExpressionSyntax maes && !IsRoslynInstanceExpressionBug(maes) &&
                    ShouldBeQualified(node, semanticModel.GetSymbolInfo(node).Symbol, semanticModel);
@@ -34,13 +34,28 @@ namespace ICSharpCode.CodeConverter.CSharp
             Workspace workspace)
         {
             var symbol = semanticModel.GetSymbolInfo(node).Symbol;
-            if (node is SimpleNameSyntax sns && GetDefaultImplicitInstance(sns, symbol, semanticModel) is {} defaultImplicitInstance) {
-                if (defaultImplicitInstance.InheritsFromOrEquals(symbol.ContainingType)) {
-                    return MemberAccess(SyntaxFactory.MeExpression(), sns);
+            if (node is SimpleNameSyntax sns && GetDefaultImplicitInstance(sns, symbol, semanticModel) is {} defaultImplicitInstance)
+            {
+                var nameNoTrivia = sns.WithoutLeadingTrivia();
+                var leadingTrivia = sns.GetLeadingTrivia();
+
+                if (defaultImplicitInstance.InheritsFromOrEquals(symbol.ContainingType))
+                {
+                    var meKeyword = SyntaxFactory.Token(leadingTrivia, SyntaxKind.MeKeyword);
+
+                    return MemberAccess(SyntaxFactory.MeExpression(meKeyword), nameNoTrivia);
                 }
 
-                if (semanticModel.GetOperation(node) is IMemberReferenceOperation { Instance: { Syntax: ExpressionSyntax implicitInstance } }) {
-                    return MemberAccess(implicitInstance, sns);
+                if (semanticModel.GetOperation(node) is IMemberReferenceOperation { Instance: { Syntax: ExpressionSyntax implicitInstance } })
+                {
+                    return MemberAccess(implicitInstance.WithPrependedLeadingTrivia(leadingTrivia), nameNoTrivia);
+                }
+
+                if (IsReducedExtensionInExtendedTypeOrDerivedType(node, symbol, semanticModel))
+                {
+                    var meKeyword = SyntaxFactory.Token(leadingTrivia, SyntaxKind.MeKeyword);
+
+                    return MemberAccess(SyntaxFactory.MeExpression(meKeyword), nameNoTrivia);
                 }
             }
 
@@ -49,6 +64,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return MemberAccess(promotedInstance, SyntaxFactory.IdentifierName(member.Name));
             }
             return IsOriginalSymbolGenericMethod(semanticModel, node) ? node : Simplifier.Expand(node, semanticModel, workspace);
+        }
+
+        private static bool IsReducedExtensionInExtendedTypeOrDerivedType(SyntaxNode node, ISymbol symbol, SemanticModel semanticModel)
+        {
+            return symbol.IsReducedExtension() && IsReceiverTypeOrDerivedTypeEnclosingType(node, (IMethodSymbol)symbol, semanticModel);
+        }
+
+        private static bool IsReceiverTypeOrDerivedTypeEnclosingType(SyntaxNode node, IMethodSymbol symbol, SemanticModel semanticModel)
+        {
+            var classType = (ITypeSymbol)node.GetEnclosingDeclaredTypeSymbol(semanticModel);
+
+            return classType.InheritsFromOrEquals(symbol.ReceiverType);
         }
 
         /// <summary>

@@ -77,9 +77,13 @@ namespace ICSharpCode.CodeConverter.Shared
             var workspace = document.Project.Solution.Workspace;
             var root = await document.GetSyntaxRootAsync(cancellationToken);
             try {
-                var newRoot = root.ReplaceNodes(root.DescendantNodes(n => expander.ShouldExpandWithinNode(n, root, semanticModel)).Where(n => expander.ShouldExpandNode(n, root, semanticModel)),
+                var filteredNodes = root.DescendantNodes(n => expander.ShouldExpandWithinNode(n, root, semanticModel))
+                    .Where(n => expander.ShouldExpandNode(n, root, semanticModel));
+
+                var newRoot = root.ReplaceNodes(filteredNodes, 
                     (node, rewrittenNode) => TryExpandNode(expander, node, root, semanticModel, workspace, cancellationToken)
                 );
+
                 return document.WithSyntaxRoot(newRoot);
             } catch (Exception ex) {
                 var warningText = "Conversion warning: Name qualification failed for this file. " + ex;
