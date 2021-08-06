@@ -50,8 +50,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public CommonConversions(Document document, SemanticModel semanticModel,
             TypeConversionAnalyzer typeConversionAnalyzer, SyntaxGenerator csSyntaxGenerator,
-            CSharpCompilation csCompilation, ITypeContext typeContext,
-            VisualBasicEqualityComparison visualBasicEqualityComparison)
+            CSharpCompilation csCompilation, ITypeContext typeContext, VisualBasicEqualityComparison visualBasicEqualityComparison)
         {
             TypeConversionAnalyzer = typeConversionAnalyzer;
             Document = document;
@@ -75,8 +74,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             IMethodSymbol initSymbol = null;
             if (vbInitValue != null) {
                 TypeInfo expType = vbInitializerTypeInfo.Value;
-                preferExplicitType |=
-                    ShouldPreferExplicitType(vbInitValue, expType.ConvertedType, out bool vbInitIsNothingLiteral);
+                preferExplicitType |= ShouldPreferExplicitType(vbInitValue, expType.ConvertedType, out bool vbInitIsNothingLiteral);
                 initSymbol = _semanticModel.GetSymbolInfo(vbInitValue).Symbol as IMethodSymbol;
                 bool isAnonymousFunction = initSymbol?.IsAnonymousFunction() == true;
                 requireExplicitTypeForAll |= vbInitIsNothingLiteral || isAnonymousFunction;
@@ -90,12 +88,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var declaredSymbol = _semanticModel.GetDeclaredSymbol(name);
                 if (symbolsToSkip?.Contains(declaredSymbol) == true) continue;
                 var declaredSymbolType = declaredSymbol.GetSymbolType();
-                var equalsValueClauseSyntax = await ConvertEqualsValueClauseSyntaxAsync(declarator, name, vbInitValue,
-                    declaredSymbolType, declaredSymbol, initializerOrMethodDecl);
-                var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier), null,
-                    equalsValueClauseSyntax);
-                string k = declaredSymbolType?.GetFullMetadataName() ??
-                           name.ToString(); //Use likely unique key if the type symbol isn't available
+                var equalsValueClauseSyntax = await ConvertEqualsValueClauseSyntaxAsync(declarator, name, vbInitValue, declaredSymbolType, declaredSymbol, initializerOrMethodDecl);
+                var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier), null, equalsValueClauseSyntax);
+                string k = declaredSymbolType?.GetFullMetadataName() ?? name.ToString();//Use likely unique key if the type symbol isn't available
 
                 if (csVars.TryGetValue(k, out var decl)) {
                     csVars[k] = (decl.Decl.AddVariables(v), decl.Type);
@@ -122,11 +117,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             var op = _semanticModel.GetExpressionOperation(exp);
             exp = op.Syntax as VBSyntax.ExpressionSyntax;
             var vbInitConstantValue = _semanticModel.GetConstantValue(exp);
-            isNothingLiteral = vbInitConstantValue.HasValue && vbInitConstantValue.Value == null ||
-                               exp is VBSyntax.LiteralExpressionSyntax les &&
-                               les.IsKind(SyntaxKind.NothingLiteralExpression);
-            bool shouldPreferExplicitType = expConvertedType != null &&
-                                            (expConvertedType.HasCsKeyword() || !expConvertedType.Equals(op.Type));
+            isNothingLiteral = vbInitConstantValue.HasValue && vbInitConstantValue.Value == null || exp is VBSyntax.LiteralExpressionSyntax les && les.IsKind(SyntaxKind.NothingLiteralExpression);
+            bool shouldPreferExplicitType = expConvertedType != null && (expConvertedType.HasCsKeyword() || !expConvertedType.Equals(op.Type));
             return shouldPreferExplicitType;
         }
 
@@ -147,34 +139,31 @@ namespace ICSharpCode.CodeConverter.CSharp
                 adjustedInitializerExpr)
             {
                 var convertedInitializer = vbInitValue != null
-                    ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr,
-                        isConst: declaredConst)
+                    ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr, isConst: declaredConst)
                     : adjustedInitializerExpr;
 
                 if (isField && !declaredSymbol.IsStatic && !_semanticModel.IsDefinitelyStatic(vbName, vbInitValue)) {
                     if (!_typeContext.Initializers.HasInstanceConstructorsOutsideThisPart) {
-                        var lhs = SyntaxFactory.IdentifierName(ConvertIdentifier(vbName.Identifier,
-                            sourceTriviaMapKind: SourceTriviaMapKind.None));
-                        _typeContext.Initializers.AdditionalInstanceInitializers.Add((lhs,
-                            CSSyntaxKind.SimpleAssignmentExpression, adjustedInitializerExpr));
+                        var lhs = SyntaxFactory.IdentifierName(ConvertIdentifier(vbName.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None));
+                        _typeContext.Initializers.AdditionalInstanceInitializers.Add((lhs, CSSyntaxKind.SimpleAssignmentExpression, adjustedInitializerExpr));
                         equalsValueClauseSyntax = null;
                     } else {
                         var returnBlock = SyntaxFactory.Block(SyntaxFactory.ReturnStatement(adjustedInitializerExpr));
-                        _typeContext.HoistedState.Hoist<HoistedParameterlessFunction>(
-                            new HoistedParameterlessFunction(GetInitialValueFunctionName(vbName), csTypeSyntax,
-                                returnBlock));
+                        _typeContext.HoistedState.Hoist<HoistedParameterlessFunction>(new HoistedParameterlessFunction(GetInitialValueFunctionName(vbName), csTypeSyntax, returnBlock));
                         equalsValueClauseSyntax = null;
                     }
                 } else {
                     equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
                 }
-            } else if (isField || declaredSymbol != null &&
-                _semanticModel.IsDefinitelyAssignedBeforeRead(declaredSymbol, vbName)) {
+            }
+            else if (isField || declaredSymbol != null && _semanticModel.IsDefinitelyAssignedBeforeRead(declaredSymbol, vbName))
+            {
                 equalsValueClauseSyntax = null;
-            } else {
+            }
+            else
+            {
                 // VB initializes variables to their default
-                equalsValueClauseSyntax =
-                    SyntaxFactory.EqualsValueClause(SyntaxFactory.DefaultExpression(csTypeSyntax));
+                equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(SyntaxFactory.DefaultExpression(csTypeSyntax));
             }
 
             return equalsValueClauseSyntax;
@@ -206,8 +195,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var parameters = method.Parameters.Select(p => p.Type).ToArray();
             if (method.ReturnsVoid) {
-                return parameters.Any()
-                    ? (TypeSyntax)CsSyntaxGenerator.GenericName(nameof(Action), parameters)
+                return parameters.Any() ? (TypeSyntax)CsSyntaxGenerator.GenericName(nameof(Action), parameters)
                     : SyntaxFactory.ParseTypeName("Action");
             }
 
@@ -234,40 +222,38 @@ namespace ICSharpCode.CodeConverter.CSharp
             var originalNames = vbType.DescendantNodes().OfType<CSSyntax.IdentifierNameSyntax>()
                 .Select(i => i.ToString()).ToList();
 
-            return syntax.ReplaceNodes(syntax.DescendantNodes().OfType<CSSyntax.IdentifierNameSyntax>(),
-                (oldNode, n) => {
-                    var originalName = originalNames.FirstOrDefault(on =>
-                        string.Equals(@on, oldNode.ToString(), StringComparison.OrdinalIgnoreCase));
-                    return originalName != null ? SyntaxFactory.IdentifierName(originalName) : oldNode;
-                });
+            return syntax.ReplaceNodes(syntax.DescendantNodes().OfType<CSSyntax.IdentifierNameSyntax>(), (oldNode, n) =>
+            {
+                var originalName = originalNames.FirstOrDefault(on => string.Equals(@on, oldNode.ToString(), StringComparison.OrdinalIgnoreCase));
+                return originalName != null ? SyntaxFactory.IdentifierName(originalName) : oldNode;
+            });
         }
 
         private static VBSyntax.ExpressionSyntax GetInitializerToConvert(VariableDeclaratorSyntax declarator)
         {
             return declarator.AsClause?.TypeSwitch(
-                (VBSyntax.SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
-                (VBSyntax.AsNewClauseSyntax c) => c.NewExpression
-            ) ?? declarator.Initializer?.Value;
+                       (VBSyntax.SimpleAsClauseSyntax _) => declarator.Initializer?.Value,
+                       (VBSyntax.AsNewClauseSyntax c) => c.NewExpression
+                   ) ?? declarator.Initializer?.Value;
         }
 
         private async Task<CSharpSyntaxNode> GetInitializerFromNameAndTypeAsync(ITypeSymbol typeSymbol,
             VBSyntax.ModifiedIdentifierSyntax name, CSharpSyntaxNode initializer)
         {
-            if (!SyntaxTokenExtensions.IsKind(name.Nullable, SyntaxKind.None)) {
-                if (typeSymbol.IsArrayType()) {
+            if (!SyntaxTokenExtensions.IsKind(name.Nullable, SyntaxKind.None))
+            {
+                if (typeSymbol.IsArrayType())
+                {
                     initializer = null;
                 }
             }
 
-            var rankSpecifiers =
-                await ConvertArrayRankSpecifierSyntaxesAsync(name.ArrayRankSpecifiers, name.ArrayBounds, false);
-            if (rankSpecifiers.Count > 0) {
-                var rankSpecifiersWithSizes =
-                    await ConvertArrayRankSpecifierSyntaxesAsync(name.ArrayRankSpecifiers, name.ArrayBounds);
-                var arrayTypeSyntax =
-                    ((ArrayTypeSyntax)GetTypeSyntax(typeSymbol)).WithRankSpecifiers(rankSpecifiersWithSizes);
-                if (rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes)
-                    .Any(e => !e.IsKind(CSSyntaxKind.OmittedArraySizeExpression))) {
+            var rankSpecifiers = await ConvertArrayRankSpecifierSyntaxesAsync(name.ArrayRankSpecifiers, name.ArrayBounds, false);
+            if (rankSpecifiers.Count > 0)
+            {
+                var rankSpecifiersWithSizes = await ConvertArrayRankSpecifierSyntaxesAsync(name.ArrayRankSpecifiers, name.ArrayBounds);
+                var arrayTypeSyntax = ((ArrayTypeSyntax)GetTypeSyntax(typeSymbol)).WithRankSpecifiers(rankSpecifiersWithSizes);
+                if (rankSpecifiersWithSizes.SelectMany(ars => ars.Sizes).Any(e => !e.IsKind(CSSyntaxKind.OmittedArraySizeExpression))) {
                     initializer = SyntaxFactory.ArrayCreationExpression(arrayTypeSyntax);
                 } else if (initializer is CSSyntax.ImplicitArrayCreationExpressionSyntax iaces && iaces.Initializer != null) {
                     initializer = SyntaxFactory.ArrayCreationExpression(arrayTypeSyntax, iaces.Initializer);
@@ -277,17 +263,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             return initializer;
         }
 
-        public ExpressionSyntax Literal(object o, string textForUser = null, ITypeSymbol convertedType = null) =>
-            LiteralConversions.GetLiteralExpression(o, textForUser, convertedType);
+        public ExpressionSyntax Literal(object o, string textForUser = null, ITypeSymbol convertedType = null) => LiteralConversions.GetLiteralExpression(o, textForUser, convertedType);
 
-        public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false,
-            SourceTriviaMapKind sourceTriviaMapKind = SourceTriviaMapKind.All)
+        public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false, SourceTriviaMapKind sourceTriviaMapKind = SourceTriviaMapKind.All)
         {
             string text = id.ValueText;
 
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
-                var idSymbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol ??
-                               _semanticModel.GetDeclaredSymbol(id.Parent);
+                var idSymbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol ?? _semanticModel.GetDeclaredSymbol(id.Parent);
                 if (idSymbol != null && !String.IsNullOrWhiteSpace(idSymbol.Name)) {
                     text = WithDeclarationName(id, idSymbol, text, _typeContext.AssembliesBeingConverted);
                     var normalizedText = text.WithHalfWidthLatinCharacters();
@@ -295,29 +278,19 @@ namespace ICSharpCode.CodeConverter.CSharp
                         text = idSymbol.ContainingType.Name;
                         if (normalizedText.EndsWith("Attribute", StringComparison.OrdinalIgnoreCase))
                             text = text.Remove(text.Length - "Attribute".Length);
-                    } else if (idSymbol.IsKind(SymbolKind.Parameter) &&
-                               idSymbol.ContainingSymbol.IsAccessorWithValueInCsharp() &&
-                               ((idSymbol.IsImplicitlyDeclared && idSymbol.Name.WithHalfWidthLatinCharacters()
-                                    .Equals("value", StringComparison.OrdinalIgnoreCase)) ||
-                                idSymbol.Equals(idSymbol.ContainingSymbol.GetParameters()
-                                    .FirstOrDefault(x => !x.IsImplicitlyDeclared)))) {
+                    } else if (idSymbol.IsKind(SymbolKind.Parameter) && idSymbol.ContainingSymbol.IsAccessorWithValueInCsharp() && ((idSymbol.IsImplicitlyDeclared && idSymbol.Name.WithHalfWidthLatinCharacters().Equals("value", StringComparison.OrdinalIgnoreCase)) || idSymbol.Equals(idSymbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared)))) {
                         // The case above is basically that if the symbol is a parameter, and the corresponding definition is a property set definition
                         // AND the first explicitly declared parameter is this symbol, we need to replace it with value.
                         text = "value";
-                    } else if (normalizedText.StartsWith("_", StringComparison.OrdinalIgnoreCase) &&
-                               idSymbol is IFieldSymbol propertyFieldSymbol &&
-                               propertyFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
+                    } else if (normalizedText.StartsWith("_", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol propertyFieldSymbol && propertyFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
                         text = propertyFieldSymbol.AssociatedSymbol.Name;
-                    } else if (normalizedText.EndsWith("Event", StringComparison.OrdinalIgnoreCase) &&
-                               idSymbol is IFieldSymbol eventFieldSymbol &&
-                               eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
+                    } else if (normalizedText.EndsWith("Event", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol eventFieldSymbol && eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
                         text = eventFieldSymbol.AssociatedSymbol.Name;
                     } else if (WinformsConversions.MustInlinePropertyWithEventsAccess(id.Parent, idSymbol)) {
                         // For C# Winforms designer, we need to use direct field access - see other usage of MustInlinePropertyWithEventsAccess
                         text = "_" + text;
                     }
                 }
-
                 var csId = CsEscapedIdentifier(text);
                 return sourceTriviaMapKind != SourceTriviaMapKind.None ? csId : csId.WithSourceMappingFrom(id);
             } else {
@@ -376,21 +349,16 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public SyntaxTokenList ConvertModifiers(SyntaxNode node, IReadOnlyCollection<SyntaxToken> modifiers,
-            TokenContext context = TokenContext.Global, bool isVariableOrConst = false,
-            params CSSyntaxKind[] extraCsModifierKinds)
+            TokenContext context = TokenContext.Global, bool isVariableOrConst = false, params CSSyntaxKind[] extraCsModifierKinds)
         {
             ISymbol declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
             var declaredAccessibility = declaredSymbol?.DeclaredAccessibility ?? Accessibility.NotApplicable;
             modifiers = modifiers.Where(m =>
                 !m.IsKind(SyntaxKind.OverloadsKeyword) || RequiresNewKeyword(declaredSymbol) != false).ToList();
-            var contextsWithIdenticalDefaults = new[] {
-                TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface
-            };
-            bool isPartial = declaredSymbol.IsPartialClassDefinition() || declaredSymbol.IsPartialMethodDefinition() ||
-                             declaredSymbol.IsPartialMethodImplementation();
-            bool implicitVisibility =
-                ContextHasIdenticalDefaults(context, contextsWithIdenticalDefaults, declaredSymbol)
-                || isVariableOrConst || declaredSymbol.IsStaticConstructor();
+            var contextsWithIdenticalDefaults = new[] { TokenContext.Global, TokenContext.Local, TokenContext.InterfaceOrModule, TokenContext.MemberInInterface };
+            bool isPartial = declaredSymbol.IsPartialClassDefinition() || declaredSymbol.IsPartialMethodDefinition() || declaredSymbol.IsPartialMethodImplementation();
+            bool implicitVisibility = ContextHasIdenticalDefaults(context, contextsWithIdenticalDefaults, declaredSymbol)
+                                      || isVariableOrConst || declaredSymbol.IsStaticConstructor();
             if (implicitVisibility && !isPartial) declaredAccessibility = Accessibility.NotApplicable;
             var modifierSyntaxs = ConvertModifiersCore(declaredAccessibility, modifiers, context)
                 .Concat(extraCsModifierKinds.Select(SyntaxFactory.Token))
@@ -410,8 +378,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return null;
         }
 
-        private static bool ContextHasIdenticalDefaults(TokenContext context,
-            TokenContext[] contextsWithIdenticalDefaults, ISymbol declaredSymbol)
+        private static bool ContextHasIdenticalDefaults(TokenContext context, TokenContext[] contextsWithIdenticalDefaults, ISymbol declaredSymbol)
         {
             if (!contextsWithIdenticalDefaults.Contains(context)) {
                 return false;
@@ -427,7 +394,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case SyntaxKind.DateKeyword:
                     return SyntaxFactory.Identifier("DateTime");
             }
-
             var token = vbSyntaxKind.ConvertToken(context);
             return token == CSSyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));
         }
@@ -438,8 +404,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var remainingModifiers = modifiers.ToList();
             if (declaredAccessibility != Accessibility.NotApplicable) {
                 remainingModifiers = remainingModifiers.Where(m => !m.IsVbVisibility(false, false)).ToList();
-                foreach (var visibilitySyntaxKind in CsSyntaxAccessibilityKindForContext(declaredAccessibility, context)
-                ) {
+                foreach (var visibilitySyntaxKind in CsSyntaxAccessibilityKindForContext(declaredAccessibility, context)) {
                     yield return SyntaxFactory.Token(visibilitySyntaxKind);
                 }
             }
@@ -448,9 +413,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var m = ConvertModifier(token, context);
                 if (m.HasValue) yield return m.Value;
             }
-
             if (context == TokenContext.MemberInModule &&
-                !remainingModifiers.Any(a => VisualBasicExtensions.Kind(a) == SyntaxKind.ConstKeyword))
+                    !remainingModifiers.Any(a => VisualBasicExtensions.Kind(a) == SyntaxKind.ConstKeyword ))
                 yield return SyntaxFactory.Token(CSSyntaxKind.StaticKeyword);
         }
 
@@ -465,15 +429,15 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             switch (declaredAccessibility) {
                 case Accessibility.Private:
-                    return new[] {CSSyntaxKind.PrivateKeyword};
+                    return new[] { CSSyntaxKind.PrivateKeyword };
                 case Accessibility.Protected:
-                    return new[] {CSSyntaxKind.ProtectedKeyword};
+                    return new[] { CSSyntaxKind.ProtectedKeyword };
                 case Accessibility.Internal:
-                    return new[] {CSSyntaxKind.InternalKeyword};
+                    return new[] { CSSyntaxKind.InternalKeyword };
                 case Accessibility.ProtectedOrInternal:
-                    return new[] {CSSyntaxKind.ProtectedKeyword, CSSyntaxKind.InternalKeyword};
+                    return new[] { CSSyntaxKind.ProtectedKeyword, CSSyntaxKind.InternalKeyword };
                 case Accessibility.Public:
-                    return new[] {CSSyntaxKind.PublicKeyword};
+                    return new[] { CSSyntaxKind.PublicKeyword };
                 case Accessibility.ProtectedAndInternal:
                 case Accessibility.NotApplicable:
                 default:
@@ -496,8 +460,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public bool IsConversionOperator(SyntaxToken token)
         {
-            bool isConvOp = token.IsKind(CSSyntaxKind.ExplicitKeyword, CSSyntaxKind.ImplicitKeyword)
-                            || token.IsKind(SyntaxKind.NarrowingKeyword, SyntaxKind.WideningKeyword);
+            bool isConvOp= token.IsKind(CSSyntaxKind.ExplicitKeyword, CSSyntaxKind.ImplicitKeyword)
+                           ||token.IsKind(SyntaxKind.NarrowingKeyword, SyntaxKind.WideningKeyword);
             return isConvOp;
         }
 
@@ -505,28 +469,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxList<VBSyntax.ArrayRankSpecifierSyntax> arrayRankSpecifierSyntaxs,
             ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
         {
-            var bounds = SyntaxFactory.List(await arrayRankSpecifierSyntaxs.SelectAsync(async r =>
-                await r.AcceptAsync<ArrayRankSpecifierSyntax>(TriviaConvertingExpressionVisitor)));
+            var bounds = SyntaxFactory.List(await arrayRankSpecifierSyntaxs.SelectAsync(async r => await r.AcceptAsync<ArrayRankSpecifierSyntax>(TriviaConvertingExpressionVisitor)));
 
             if (nodeArrayBounds != null) {
-                ArrayRankSpecifierSyntax arrayRankSpecifierSyntax =
-                    await ConvertArrayBoundsAsync(nodeArrayBounds, withSizes);
+                ArrayRankSpecifierSyntax arrayRankSpecifierSyntax = await ConvertArrayBoundsAsync(nodeArrayBounds, withSizes);
                 bounds = bounds.Insert(0, arrayRankSpecifierSyntax);
             }
 
             return bounds;
         }
 
-        public async Task<ArrayRankSpecifierSyntax> ConvertArrayBoundsAsync(ArgumentListSyntax nodeArrayBounds,
-            bool withSizes = true)
+        public async Task<ArrayRankSpecifierSyntax> ConvertArrayBoundsAsync(ArgumentListSyntax nodeArrayBounds, bool withSizes = true)
         {
             SeparatedSyntaxList<VBSyntax.ArgumentSyntax> arguments = nodeArrayBounds.Arguments;
             var sizesSpecified = arguments.Any(a => !a.IsOmitted);
             var rank = arguments.Count;
             if (!sizesSpecified) rank += 1;
 
-            var convertedArrayBounds = withSizes && sizesSpecified
-                ? await ConvertArrayBoundsAsync(arguments)
+            var convertedArrayBounds = withSizes && sizesSpecified ? await ConvertArrayBoundsAsync(arguments)
                 : Enumerable.Repeat(SyntaxFactory.OmittedArraySizeExpression(), rank);
             var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(
                 SyntaxFactory.SeparatedList(
@@ -534,17 +494,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             return arrayRankSpecifierSyntax;
         }
 
-        private async Task<IEnumerable<ExpressionSyntax>> ConvertArrayBoundsAsync(
-            SeparatedSyntaxList<VBSyntax.ArgumentSyntax> arguments)
+        private async Task<IEnumerable<ExpressionSyntax>> ConvertArrayBoundsAsync(SeparatedSyntaxList<VBSyntax.ArgumentSyntax> arguments)
         {
             return await arguments.SelectAsync(async a => {
                 VBSyntax.ExpressionSyntax upperBoundExpression = a is VBSyntax.SimpleArgumentSyntax sas ? sas.Expression
                     : a is VBSyntax.RangeArgumentSyntax ras ? ras.UpperBound
                     : throw new ArgumentOutOfRangeException(nameof(a), a, null);
-                var increaseArrayUpperBoundExpressionAsync =
-                    await IncreaseArrayUpperBoundExpressionAsync(upperBoundExpression);
-                return TypeConversionAnalyzer.AddExplicitConversion(upperBoundExpression,
-                    increaseArrayUpperBoundExpressionAsync);
+                var increaseArrayUpperBoundExpressionAsync = await IncreaseArrayUpperBoundExpressionAsync(upperBoundExpression);
+                return TypeConversionAnalyzer.AddExplicitConversion(upperBoundExpression, increaseArrayUpperBoundExpressionAsync);
             });
         }
 
@@ -553,32 +510,26 @@ namespace ICSharpCode.CodeConverter.CSharp
             var op = _semanticModel.GetOperation(expr);
             var constant = op.ConstantValue;
             if (constant.HasValue && constant.Value is int)
-                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression,
-                    SyntaxFactory.Literal((int)constant.Value + 1));
+                return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((int)constant.Value + 1));
 
             var convertedExpression = await expr.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
 
             if (op is IBinaryOperation bOp && bOp.OperatorKind == BinaryOperatorKind.Subtract &&
-                bOp.RightOperand.ConstantValue.HasValue && bOp.RightOperand.ConstantValue.Value is int subtractedVal &&
-                subtractedVal == 1
-                && convertedExpression.SkipIntoParens() is CSSyntax.BinaryExpressionSyntax bExp &&
-                bExp.IsKind(CSSyntaxKind.SubtractExpression))
+                bOp.RightOperand.ConstantValue.HasValue && bOp.RightOperand.ConstantValue.Value is int subtractedVal && subtractedVal == 1
+                && convertedExpression.SkipIntoParens() is CSSyntax.BinaryExpressionSyntax bExp && bExp.IsKind(CSSyntaxKind.SubtractExpression))
                 return bExp.Left;
 
             return SyntaxFactory.BinaryExpression(
                 CSSyntaxKind.SubtractExpression,
-                convertedExpression, SyntaxFactory.Token(CSSyntaxKind.PlusToken),
-                SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+                convertedExpression, SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
         }
 
-        public async Task<SyntaxList<CSSyntax.AttributeListSyntax>> ConvertAttributesAsync(
-            SyntaxList<VBSyntax.AttributeListSyntax> attributeListSyntaxs)
+        public async Task<SyntaxList<CSSyntax.AttributeListSyntax>> ConvertAttributesAsync(SyntaxList<VBSyntax.AttributeListSyntax> attributeListSyntaxs)
         {
             return SyntaxFactory.List(await attributeListSyntaxs.SelectManyAsync(ConvertAttributeAsync));
         }
 
-        public async Task<IEnumerable<CSSyntax.AttributeListSyntax>> ConvertAttributeAsync(
-            VBSyntax.AttributeListSyntax attributeList)
+        public async Task<IEnumerable<CSSyntax.AttributeListSyntax>> ConvertAttributeAsync(VBSyntax.AttributeListSyntax attributeList)
         {
             // These attributes' semantic effects are expressed differently in CSharp.
             return await attributeList.Attributes.Where(a => !IsExtensionAttribute(a) && !IsOutAttribute(a))
@@ -590,26 +541,22 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.AttributeArgumentList(SyntaxFactory.SeparatedList(attributeArgumentSyntaxs));
         }
 
-        public static CSSyntax.LocalDeclarationStatementSyntax CreateLocalVariableDeclarationAndAssignment(
-            string variableName, ExpressionSyntax initValue)
+        public static CSSyntax.LocalDeclarationStatementSyntax CreateLocalVariableDeclarationAndAssignment(string variableName, ExpressionSyntax initValue)
         {
-            return SyntaxFactory.LocalDeclarationStatement(
-                CreateVariableDeclarationAndAssignment(variableName, initValue));
+            return SyntaxFactory.LocalDeclarationStatement(CreateVariableDeclarationAndAssignment(variableName, initValue));
         }
 
         public static CSSyntax.VariableDeclarationSyntax CreateVariableDeclarationAndAssignment(string variableName,
             ExpressionSyntax initValue, TypeSyntax explicitType = null)
         {
-            CSSyntax.VariableDeclaratorSyntax variableDeclaratorSyntax =
-                CreateVariableDeclarator(variableName, initValue);
+            CSSyntax.VariableDeclaratorSyntax variableDeclaratorSyntax = CreateVariableDeclarator(variableName, initValue);
             var variableDeclarationSyntax = SyntaxFactory.VariableDeclaration(
                 explicitType ?? ValidSyntaxFactory.VarType,
                 SyntaxFactory.SingletonSeparatedList(variableDeclaratorSyntax));
             return variableDeclarationSyntax;
         }
 
-        public static CSSyntax.VariableDeclaratorSyntax CreateVariableDeclarator(string variableName,
-            ExpressionSyntax initValue)
+        public static CSSyntax.VariableDeclaratorSyntax CreateVariableDeclarator(string variableName, ExpressionSyntax initValue)
         {
             var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(
                 SyntaxFactory.Identifier(variableName), null,
@@ -617,8 +564,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return variableDeclaratorSyntax;
         }
 
-        public async Task<(string, ExpressionSyntax extraArg)> GetParameterizedPropertyAccessMethodAsync(
-            IOperation operation)
+        public async Task<(string, ExpressionSyntax extraArg)> GetParameterizedPropertyAccessMethodAsync(IOperation operation)
         {
             if (operation is IPropertyReferenceOperation pro && pro.Arguments.Any() &&
                 !VBasic.VisualBasicExtensions.IsDefault(pro.Property)) {
@@ -634,7 +580,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<ExpressionSyntax> GetParameterizedSetterArgAsync(IOperation operation)
         {
-            var vbNode = (VBSyntax.ExpressionSyntax)operation.Parent.Syntax.ChildNodes().ElementAt(1);
+            var vbNode = (VBSyntax.ExpressionSyntax) operation.Parent.Syntax.ChildNodes().ElementAt(1);
             var csNode = await vbNode.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
             return TypeConversionAnalyzer.AddExplicitConversion(vbNode, csNode, forceTargetType: operation.Type);
         }
@@ -645,19 +591,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (_semanticModel.GetDeclaredSymbol(node) is IMethodSymbol ms && ms.ReturnsVoidOrAsyncTask()) {
                 return null;
             }
-
+            
 
             bool assignsToMethodNameVariable = false;
 
             if (!node.Statements.IsEmpty()) {
                 string methodName = GetMethodBlockBaseIdentifierForImplicitReturn(node).ValueText ?? "";
-                Func<ISymbol, bool> equalsMethodName = s =>
-                    s.IsKind(SymbolKind.Local) && s.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase);
+                Func<ISymbol, bool> equalsMethodName = s => s.IsKind(SymbolKind.Local) && s.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase);
                 var flow = _semanticModel.AnalyzeDataFlow(node.Statements.First(), node.Statements.Last());
 
                 if (flow.Succeeded) {
-                    assignsToMethodNameVariable = flow.ReadInside.Any(equalsMethodName) ||
-                                                  flow.WrittenInside.Any(equalsMethodName);
+                    assignsToMethodNameVariable = flow.ReadInside.Any(equalsMethodName) || flow.WrittenInside.Any(equalsMethodName);
                 }
             }
 
@@ -680,15 +624,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             } else if (vbMethodBlock is VBSyntax.MethodBlockSyntax mb) {
                 return mb.SubOrFunctionStatement.Identifier;
             } else {
-                throw new NotImplementedException("MethodBlockBaseIdentifier " +
-                                                  VisualBasicExtensions.Kind(vbMethodBlock).ToString());
+                throw new NotImplementedException("MethodBlockBaseIdentifier " + VisualBasicExtensions.Kind(vbMethodBlock).ToString());
             }
         }
 
         public static bool IsDefaultIndexer(SyntaxNode node)
         {
-            return node is VBSyntax.PropertyStatementSyntax pss && pss.Modifiers.Any(m =>
-                SyntaxTokenExtensions.IsKind(m, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DefaultKeyword));
+            return node is VBSyntax.PropertyStatementSyntax pss && pss.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DefaultKeyword));
         }
 
 
@@ -705,13 +647,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         public bool IsExtensionAttribute(VBSyntax.AttributeSyntax a)
         {
             return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
-                ?.Equals(ExtensionAttributeType.FullName) == true;
+                       ?.Equals(ExtensionAttributeType.FullName) == true;
         }
 
         public bool IsOutAttribute(VBSyntax.AttributeSyntax a)
         {
             return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
-                ?.Equals(OutAttributeType.FullName) == true;
+                       ?.Equals(OutAttributeType.FullName) == true;
         }
 
         public ISymbol GetDeclaredCsOriginalSymbolOrNull(VBasic.VisualBasicSyntaxNode node)
@@ -733,12 +675,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static ExpressionSyntax ThrowawayParameters(ExpressionSyntax invocable, int paramCount)
         {
             var names = Enumerable.Range(1, paramCount).Select<int, string>(i =>
-                new string(Enumerable.Repeat('_', i).ToArray())
-            ).ToArray();
-            var parameters =
-                CreateParameterList(names.Select(n => SyntaxFactory.Parameter(SyntaxFactory.Identifier(n))));
-            return SyntaxFactory.ParenthesizedLambdaExpression(parameters,
-                SyntaxFactory.InvocationExpression(invocable));
+                                            new string(Enumerable.Repeat('_', i).ToArray())
+                                        ).ToArray();
+            var parameters = CreateParameterList(names.Select(n => SyntaxFactory.Parameter(SyntaxFactory.Identifier(n))));
+            return SyntaxFactory.ParenthesizedLambdaExpression(parameters, SyntaxFactory.InvocationExpression(invocable));
         }
 
         public static CSSyntax.ParameterListSyntax CreateParameterList(IEnumerable<SyntaxNode> ps)
@@ -746,17 +686,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(ps));
         }
 
-        public static CSSyntax.BinaryExpressionSyntax NotNothingComparison(ExpressionSyntax otherArgument,
-            bool isReferenceType)
+        public static CSSyntax.BinaryExpressionSyntax NotNothingComparison(ExpressionSyntax otherArgument, bool isReferenceType)
         {
             if (isReferenceType) {
                 // When we upgrade the CodeAnalysis version, we'll be able to use a RecursivePattern of "{}" instead
-                return SyntaxFactory.BinaryExpression(CSSyntaxKind.IsExpression, otherArgument,
-                    ValidSyntaxFactory.ObjectType);
+                return SyntaxFactory.BinaryExpression(CSSyntaxKind.IsExpression, otherArgument, ValidSyntaxFactory.ObjectType);
             }
-
-            return SyntaxFactory.BinaryExpression(CSSyntaxKind.NotEqualsExpression, otherArgument,
-                ValidSyntaxFactory.DefaultExpression);
+            return SyntaxFactory.BinaryExpression(CSSyntaxKind.NotEqualsExpression, otherArgument, ValidSyntaxFactory.DefaultExpression);
         }
 
         public static ExpressionSyntax NothingComparison(ExpressionSyntax otherArgument, bool isReferenceType)
@@ -766,8 +702,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     SyntaxFactory.ConstantPattern(ValidSyntaxFactory.NullExpression));
             }
 
-            return SyntaxFactory.BinaryExpression(CSSyntaxKind.EqualsExpression, otherArgument,
-                ValidSyntaxFactory.DefaultExpression);
+            return SyntaxFactory.BinaryExpression(CSSyntaxKind.EqualsExpression, otherArgument, ValidSyntaxFactory.DefaultExpression);
         }
 
         public async Task<string> GetClassificationLastTokenAsync(VBSyntax.SimpleImportsClauseSyntax clause)
