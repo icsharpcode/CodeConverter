@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
@@ -702,6 +703,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return SyntaxFactory.BinaryExpression(CSSyntaxKind.EqualsExpression, otherArgument, ValidSyntaxFactory.DefaultExpression);
+        }
+
+        public async Task<string> GetClassificationLastTokenAsync(VBSyntax.SimpleImportsClauseSyntax clause)
+        {
+            // Global imports aren't associated with a document and no need to classify aliases
+            if (clause.SyntaxTree.FilePath == string.Empty || clause.Alias != null) { return null;}
+
+            var span = clause.GetLastToken().Span;
+            var spans = await Classifier.GetClassifiedSpansAsync(Document, span);
+
+            return spans.Last().ClassificationType;
         }
     }
 }
