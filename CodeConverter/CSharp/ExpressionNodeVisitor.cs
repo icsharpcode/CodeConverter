@@ -1619,12 +1619,21 @@ namespace ICSharpCode.CodeConverter.CSharp
             var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch<ISymbol>();
             if (symbol?.Name == "ChrW" || symbol?.Name == "Chr") {
                 var vbArg = node.ArgumentList.Arguments.Single().GetExpression();
-                var csArg = await vbArg.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-                cSharpSyntaxNode = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbArg, csArg, true, true, true, forceTargetType: _semanticModel.GetTypeInfo(node).Type);
+                var constValue = _semanticModel.GetConstantValue(vbArg);
+                if (IsCultureInvariant(symbol, constValue)) {
+                    var csArg = await vbArg.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+                    cSharpSyntaxNode = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, csArg, true, true, true, forceTargetType: _semanticModel.GetTypeInfo(node).Type);
+                }
             }
 
             return cSharpSyntaxNode;
         }
+
+        /// <summary>
+        /// https://github.com/icsharpcode/CodeConverter/issues/745
+        /// </summary>
+        private static bool IsCultureInvariant(ISymbol symbol, Optional<object> constValue) =>
+            symbol.Name == "ChrW" || symbol.Name == "Chr" && constValue.HasValue && Convert.ToUInt64(constValue.Value) <= 127;
 
         private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(SyntaxNode node, ExpressionSyntax id)
         {

@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 * Convert `orderby distinct` in linq [#736](https://github.com/icsharpcode/CodeConverter/issues/736)
 * Convert nested Select queries in linq [#635](https://github.com/icsharpcode/CodeConverter/issues/635)
+* `Chr` converted to `Strings.Chr` where code page aware conversion needed [#745](https://github.com/icsharpcode/CodeConverter/issues/745)
 
 ### C# -> VB
 * Guess some common using statements for incomplete fragments [#743](https://github.com/icsharpcode/CodeConverter/issues/743)
