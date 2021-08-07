@@ -52,7 +52,9 @@ namespace ICSharpCode.CodeConverter.Shared
 
         public static VisualBasicCompilationOptions CreateCompilationOptions(string rootNamespace = null)
         {
-            // Caution: The simplifier won't always remove imports unused by the code (e.g. System.Data)
+            // Caution: The simplifier won't always remove imports unused by the code
+            // Known cases are unresolved usings and overload resolution across namespaces (e.g. System.Data.Where
+            // and System.Linq.Where)
 
             var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithGlobalImports(GlobalImport.Parse(
