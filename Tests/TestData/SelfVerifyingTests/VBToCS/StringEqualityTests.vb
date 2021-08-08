@@ -13,6 +13,19 @@ Public Class StringEqualityTests
     End Sub
 
     <Fact>
+    Public Sub TestChrIsCodePageAwareInVB()
+        Dim someValue = Chr(148)
+        Assert.Equal(148, Strings.Asc(someValue))
+    End Sub
+
+    <Fact>
+    Public Sub TestNonConstChrIsCodePageAwareInVB()
+        Dim oneHundred = 100
+        Dim someValue = Chr(oneHundred + 48)
+        Assert.Equal(148, Strings.Asc(someValue))
+    End Sub
+
+    <Fact>
     Public Sub VisualBasicEqualityOfCharArrays()
         Assert.True(New Char() {} = New Char() {}, "Char arrays should be compared as strings because that's what happens in VB")
     End Sub

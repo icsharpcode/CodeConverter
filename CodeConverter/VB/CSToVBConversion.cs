@@ -181,7 +181,14 @@ namespace ICSharpCode.CodeConverter.VB
         public string WithSurroundingClass(string text)
         {
             var modifier = text.Contains("abstract ") ? "abstract " : "";
-            return $@"{modifier}class SurroundingClass
+            return $@"using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+{modifier}class SurroundingClass
 {{
 {text}
 }}";

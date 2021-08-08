@@ -757,32 +757,54 @@ End Module");
         [Fact]
         public async Task LambdaBodyExpressionAsync()
         {
-            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"using System;
+
+class TestClass
 {
     void TestMethod()
     {
-        var test = a => { return a * 2 };
-        var test2 = (a, b) => { if (b > 0) return a / b; return 0; }
-        var test3 = (a, b) => a % b;
+        Func<int, int> test = a => { return a * 2; };
+        Func<int, int, int> test2 = (a, b) => { if (b > 0) return a / b; return 0; };
+        Func<int, int, int> test3 = (a, b) => a % b;
 
         test(3);
     }
-}", @"Friend Class TestClass
-    Private Sub TestMethod()
-        Dim test = Function(a) a * 2
-        Dim test2 = Function(a, b)
-                        If b > 0 Then Return a / b
-                        Return 0
-                    End Function
+}", @"Imports System
 
-        Dim test3 = Function(a, b) a Mod b
+Friend Class TestClass
+    Private Sub TestMethod()
+        Dim test As Func(Of Integer, Integer) = Function(a) a * 2
+        Dim test2 As Func(Of Integer, Integer, Integer) = Function(a, b)
+                                                              If b > 0 Then Return a / b
+                                                              Return 0
+                                                          End Function
+
+        Dim test3 As Func(Of Integer, Integer, Integer) = Function(a, b) a Mod b
         test(3)
     End Sub
-End Class
+End Class");
+        }
 
-2 source compilation errors:
-CS1002: ; expected
-CS0815: Cannot assign lambda expression to an implicitly-typed variable");
+        [Fact]
+        public async Task LambdaBodySubExpressionAsync()
+        {
+            await TestConversionCSharpToVisualBasicAsync(@"using System;
+using System.Collections.Generic;
+
+class TestClass
+{
+    void TestMethod()
+    {
+        new List<int>().ForEach(x => Console.WriteLine(x));
+    }
+}", @"Imports System
+Imports System.Collections.Generic
+
+Friend Class TestClass
+    Private Sub TestMethod()
+        Call New List(Of Integer)().ForEach(Sub(x) Console.WriteLine(x))
+    End Sub
+End Class");
         }
 
         [Fact]
@@ -838,11 +860,7 @@ CS0103: The name 'Console' does not exist in the current context");
     For Each n In res
         Console.WriteLine(n)
     Next
-End Sub
-
-2 source compilation errors:
-CS1935: Could not find an implementation of the query pattern for source type 'int[]'.  'Where' not found.  Are you missing a reference to 'System.Core.dll' or a using directive for 'System.Linq'?
-CS0103: The name 'Console' does not exist in the current context");
+End Sub");
         }
 
         [Fact]
@@ -883,11 +901,7 @@ CS0103: The name 'Console' does not exist in the current context");
             Console.WriteLine(n)
         Next
     Next
-End Sub
-
-2 source compilation errors:
-CS1935: Could not find an implementation of the query pattern for source type 'int[]'.  'GroupBy' not found.  Are you missing a reference to 'System.Core.dll' or a using directive for 'System.Linq'?
-CS0103: The name 'Console' does not exist in the current context");
+End Sub");
         }
 
         [Fact]
@@ -997,10 +1011,8 @@ BC30451: 'GetProductList' is not declared. It may be inaccessible due to its pro
     Next
 End Sub
 
-3 source compilation errors:
+1 source compilation errors:
 CS0103: The name 'GetProductList' does not exist in the current context
-CS1935: Could not find an implementation of the query pattern for source type 'string[]'.  'GroupJoin' not found.  Are you missing a reference to 'System.Core.dll' or a using directive for 'System.Linq'?
-CS0103: The name 'Console' does not exist in the current context
 3 target compilation errors:
 BC30451: 'GetProductList' is not declared. It may be inaccessible due to its protection level.
 BC36593: Expression of type '?' is not queryable. Make sure you are not missing an assembly reference and/or namespace import for the LINQ provider.

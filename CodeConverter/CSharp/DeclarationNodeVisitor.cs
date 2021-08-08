@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
@@ -149,9 +150,25 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitSimpleImportsClause(VBSyntax.SimpleImportsClauseSyntax node)
         {
-            var nameEqualsSyntax = node.Alias == null ? null
+            var nameEqualsSyntax = node.Alias == null
+                ? null
                 : SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(node.Alias.Identifier)));
-            var usingDirective = SyntaxFactory.UsingDirective(nameEqualsSyntax, await node.Name.AcceptAsync<NameSyntax>(_triviaConvertingExpressionVisitor));
+
+            var name = await node.Name.AcceptAsync<NameSyntax>(_triviaConvertingExpressionVisitor);
+
+            //Add static keyword for class and module imports
+            var classification = await CommonConversions.GetClassificationLastTokenAsync(node);
+            var staticToken = SyntaxFactory.Token(CSSyntaxKind.StaticKeyword);
+            var staticClassifications = new List<string>
+                {
+                    ClassificationTypeNames.ClassName,
+                    ClassificationTypeNames.ModuleName
+                };
+
+            var usingDirective = staticClassifications.Contains(classification)
+                ? SyntaxFactory.UsingDirective(staticToken, nameEqualsSyntax, name)
+                : SyntaxFactory.UsingDirective(nameEqualsSyntax, name);
+
             return usingDirective;
         }
 
